@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/Backend/">
+    <Project Path="Tycoon.Backend.Api/Tycoon.Backend.Api.csproj" />
+    <Project Path="Tycoon.Backend.Application/Tycoon.Backend.Application.csproj" />
+    <Project Path="Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj" />
+    <Project Path="Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Data/">
+    <Project Path="ElasticSearch/Elastic.csproj" />
+    <Project Path="Mongo/Mongo.csproj" />
+    <Project Path="Postgres/Postgres.csproj" />
+  </Folder>
+  <Folder Name="/Hosting/">
+    <Project Path="Tycoon.AppHost/Tycoon.AppHost.csproj" />
+    <Project Path="Tycoon.Hosting.Elasticsearch/Tycoon.Hosting.Elasticsearch.csproj" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj" />
+    <Project Path="Tycoon.Shared.Observability/Tycoon.Shared.Observability.csproj" />
+    <Project Path="Tycoon.Shared/Tycoon.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj" />
+    <Project Path="Tycoon.Backend.Application.Tests/Tycoon.Backend.Application.Tests.csproj" />
+  </Folder>
+  <Project Path="Tycoon.MigrationService/Tycoon.MigrationService.csproj" />
+  <Project Path="Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj" />
+</Solution>
