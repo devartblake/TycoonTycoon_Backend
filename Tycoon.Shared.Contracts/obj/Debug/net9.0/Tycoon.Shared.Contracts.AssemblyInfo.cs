@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tycoon.Shared.Contracts")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1c012134a35aa52c6487125ac49dd514084e403c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6fe8d2301850e3660c64097ef4304356d5b807bf")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tycoon.Shared.Contracts")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tycoon.Shared.Contracts")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
