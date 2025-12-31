@@ -1,1 +1,35 @@
-/.vs
+# =========================
+# .NET / Visual Studio
+# =========================
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.iml
+.vscode/
+
+# dotnet tools / local caches
+artifacts/
+TestResults/
+coverage/
+coverage.cobertura.xml
+
+# NuGet / paket caches (optional; usually safe)
+**/packages/
+paket-files/
+
+# ASP.NET Core
+appsettings.*.json.user
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
