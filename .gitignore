@@ -45,3 +45,4 @@ Thumbs.db
 /Postgres/bin/**
 /Tycoon/obj/**
 /Tycoon/bin/**
+*.cache
