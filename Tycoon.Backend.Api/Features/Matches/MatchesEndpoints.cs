@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Matches;
+using Tycoon.Backend.Application.Moderation;
+using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.Matches
@@ -15,17 +17,28 @@ namespace Tycoon.Backend.Api.Features.Matches
         {
             var g = app.MapGroup("/matches").WithTags("Matches");
 
-            g.MapPost("/start", async ([FromBody] StartMatchRequest req, IMediator mediator, CancellationToken ct) =>
+            g.MapPost("/start", async (
+                [FromBody] StartMatchRequest req,
+                ModerationService moderation,
+                IMediator mediator,
+                CancellationToken ct) =>
             {
+                var status = await moderation.GetEffectiveStatusAsync(req.HostPlayerId, ct);
+                if (status == ModerationStatus.Banned)
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+
                 var res = await mediator.Send(new StartMatch(req.HostPlayerId, req.Mode), ct);
                 return Results.Ok(res);
             });
 
-            g.MapPost("/submit", async ([FromBody] SubmitMatchRequest req, IMediator mediator, CancellationToken ct) =>
+            g.MapPost("/submit", async (
+                [FromBody] SubmitMatchRequest req,
+                IMediator mediator,
+                CancellationToken ct) =>
             {
                 var res = await mediator.Send(new SubmitMatch(req), ct);
                 return Results.Ok(res);
-            }).RequireRateLimiting("matched-submit");
+            }).RequireRateLimiting("matches-submit");
 
             g.MapGet("/{matchId:guid}", async ([FromRoute] Guid matchId, IAppDb db, CancellationToken ct) =>
             {

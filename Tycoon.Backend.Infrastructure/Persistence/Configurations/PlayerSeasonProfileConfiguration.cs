@@ -4,7 +4,7 @@ using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 {
-    public sealed class PlayerSeasonProfileConfig : IEntityTypeConfiguration<PlayerSeasonProfile>
+    public sealed class PlayerSeasonProfileConfiguration : IEntityTypeConfiguration<PlayerSeasonProfile>
     {
         public void Configure(EntityTypeBuilder<PlayerSeasonProfile> b)
         {
@@ -13,6 +13,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 
             b.Property(x => x.SeasonId).IsRequired();
             b.Property(x => x.PlayerId).IsRequired();
+
             b.HasIndex(x => new { x.SeasonId, x.PlayerId }).IsUnique();
 
             b.Property(x => x.RankPoints).IsRequired();
@@ -27,7 +28,9 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 
             b.Property(x => x.UpdatedAtUtc).IsRequired();
 
+            // Helpful indexes for leadeboard/tier queries
             b.HasIndex(x => new { x.SeasonId, x.RankPoints });
+            b.HasIndex(x => new {x.SeasonId, x.SeasonRank });
             b.HasIndex(x => new { x.SeasonId, x.Tier, x.TierRank });
         }
     }

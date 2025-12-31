@@ -48,6 +48,9 @@ namespace Tycoon.Backend.Application
             // Anti-Cheat
             services.AddSingleton<AntiCheat.AntiCheatService>();
 
+            // Moderation
+            services.AddScoped<Moderation.ModerationService>();
+
             return services;
         }
     }

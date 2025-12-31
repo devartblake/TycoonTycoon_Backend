@@ -33,7 +33,8 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<PlayerSeasonProfile> PlayerSeasonProfiles { get; }
         DbSet<SeasonPointTransaction> SeasonPointTransactions { get; }
         DbSet<AntiCheatFlag> AntiCheatFlags { get; }
-
+        DbSet<PlayerModerationProfile> PlayerModerationProfiles { get; }
+        DbSet<ModerationActionLog> ModerationActionLogs { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);

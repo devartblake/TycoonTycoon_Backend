@@ -4,7 +4,7 @@ using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 {
-    public sealed class SeasonConfig : IEntityTypeConfiguration<Season>
+    public sealed class SeasonConfiguration : IEntityTypeConfiguration<Season>
     {
         public void Configure(EntityTypeBuilder<Season> b)
         {
@@ -15,6 +15,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
             b.HasIndex(x => x.SeasonNumber).IsUnique();
 
             b.Property(x => x.Name).HasMaxLength(80).IsRequired();
+
+            // If your Season.Status is SeasonStatus enum from contracts
             b.Property(x => x.Status).IsRequired();
 
             b.Property(x => x.StartsAtUtc).IsRequired();

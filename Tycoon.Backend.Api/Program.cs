@@ -16,6 +16,7 @@ using Tycoon.Backend.Api.Features.AdminAntiCheat;
 using Tycoon.Backend.Api.Features.AdminEconomy;
 using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
+using Tycoon.Backend.Api.Features.AdminModeration;
 using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminSeasons;
@@ -172,6 +173,7 @@ AdminSkillsEndpoints.Map(admin);
 AdminMatchesEndpoints.Map(admin);
 AdminSeasonsEndpoints.Map(admin);
 AdminAntiCheatEndpoints.Map(admin);
+AdminModerationEndpoints.Map(admin);
 
 // IMPORTANT:
 // Do NOT migrate here anymore. Tycoon.MigrationService owns migrations + seeding now.

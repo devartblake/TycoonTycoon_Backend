@@ -4,7 +4,7 @@ using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 {
-    public sealed class AntiCheatFlagConfig : IEntityTypeConfiguration<AntiCheatFlag>
+    public sealed class AntiCheatFlagConfiguration : IEntityTypeConfiguration<AntiCheatFlag>
     {
         public void Configure(EntityTypeBuilder<AntiCheatFlag> b)
         {
@@ -26,7 +26,6 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 
             b.Property(x => x.CreatedAtUtc).IsRequired();
             b.HasIndex(x => x.CreatedAtUtc);
-
             b.HasIndex(x => new { x.Severity, x.CreatedAtUtc });
         }
     }

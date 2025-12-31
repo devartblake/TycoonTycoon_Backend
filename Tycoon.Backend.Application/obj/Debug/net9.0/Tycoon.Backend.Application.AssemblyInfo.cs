@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tycoon.Backend.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6fe8d2301850e3660c64097ef4304356d5b807bf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6694fd6daeb7f726d68c3004d9d4767fef17f32b")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tycoon.Backend.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tycoon.Backend.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

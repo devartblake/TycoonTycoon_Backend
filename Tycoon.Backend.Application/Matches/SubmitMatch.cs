@@ -4,6 +4,7 @@ using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.AntiCheat;
 // Economy types assumed from your Step 5
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.Moderation;
 using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -18,7 +19,8 @@ namespace Tycoon.Backend.Application.Matches
         AntiCheatService antiCheat,
         SeasonService seasons,
         SeasonPointsService seasonsPoints,
-        TierAssignmentService tiers)
+        TierAssignmentService tiers,
+        ModerationService moderation)
         : IRequestHandler<SubmitMatch, SubmitMatchResponse>
     {
         public async Task<SubmitMatchResponse> Handle(SubmitMatch r, CancellationToken ct)
@@ -44,6 +46,25 @@ namespace Tycoon.Backend.Application.Matches
 
             if (match is null)
                 return new SubmitMatchResponse(req.EventId, req.MatchId, "NotFound", Array.Empty<MatchAwardDto>());
+
+            // Moderation enforcement (Policy A)
+            var restricted = false;
+
+            foreach (var p in req.Participants)
+            {
+                var status = await moderation.GetEffectiveStatusAsync(p.PlayerId, ct);
+
+                if (status == ModerationStatus.Banned)
+                {
+                    // Do not mint economy or season points; do not leak ban details.
+                    FinishHost(match, req);
+                    await db.SaveChangesAsync(ct);
+                    return new SubmitMatchResponse(req.EventId, req.MatchId, "Rejected", Array.Empty<MatchAwardDto>());
+                }
+
+                if (status == ModerationStatus.Restricted)
+                    restricted = true;
+            }
 
             // Persist summary snapshot
             var result = new MatchResult(
@@ -80,20 +101,26 @@ namespace Tycoon.Backend.Application.Matches
                 await db.SaveChangesAsync(ct);
             }
 
-            var blockRewards = AntiCheatService.ShouldBlockRewards(flags);
+            var antiCheatBlocks = AntiCheatService.ShouldBlockRewards(flags);
+            var blockRewards = antiCheatBlocks || restricted;
 
-            // Reward policy (deterministic, tune later via remote config)
-            var awards = await AwardAsync(req, match, econ, ct);
+            IReadOnlyList<MatchAwardDto> awards = Array.Empty<MatchAwardDto>();
 
             if (!blockRewards)
             {
-                await ApplySeasonPointsAndRanksAsync(req, match, ct); 
+                // Only mint economy when allowed
+                awards = await AwardAsync(req, match, econ, ct);
+
+                // Only apply season points when allowed
+                await ApplySeasonPointsAndRanksAsync(req, match, ct);
             }
-            else
-            {
-                // Still finish host for downstream domain event pipeline, but do not award economy/season points
-                // Optional: you can also force req.Status = Aborted here if you want.
-            }
+
+            // Always finish host to preserve domain-event pipeline
+            FinishHost(match, req);
+
+            await db.SaveChangesAsync(ct);
+
+            return new SubmitMatchResponse(req.EventId, req.MatchId, "Applied", awards);
 
             // Finish match for host (preserves your existing domain-event based mission/tier wiring)
             FinishHost(match, req);

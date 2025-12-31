@@ -3,6 +3,7 @@ using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Infrastructure.Events;
+using Tycoon.Backend.Infrastructure.Persistence.Configurations;
 
 namespace Tycoon.Backend.Infrastructure.Persistence
 {
@@ -46,6 +47,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<PlayerSeasonProfile> PlayerSeasonProfiles => Set<PlayerSeasonProfile>();
         public DbSet<SeasonPointTransaction> SeasonPointTransactions => Set<SeasonPointTransaction>();
         public DbSet<AntiCheatFlag> AntiCheatFlags => Set<AntiCheatFlag>();
+        public DbSet<PlayerModerationProfile> PlayerModerationProfiles => Set<PlayerModerationProfile>();
+        public DbSet<ModerationActionLog> ModerationActionLogs => Set<ModerationActionLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

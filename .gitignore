@@ -33,16 +33,20 @@ appsettings.*.json.user
 # OS
 .DS_Store
 Thumbs.db
-/ElasticSearch/obj/**
-/ElasticSearch/bin/**
-/ElasticSearch/.vs
-/ElasticSearch/*.user
-/ElasticSearch/*.suo
-/ElasticSearch/*.userosscache
-/Mongo/obj/**
-/Mongo/bin/**
-/Postgres/obj/**
-/Postgres/bin/**
-/Tycoon/obj/**
-/Tycoon/bin/**
+ElasticSearch/obj/**
+ElasticSearch/bin/**
+ElasticSearch/.vs
+ElasticSearch/*.user
+ElasticSearch/*.suo
+ElasticSearch/*.userosscache
+Mongo/obj/**
+Mongo/bin/**
+Postgres/obj/**
+Postgres/bin/**
+Tycoon/obj/**
+Tycoon/bin/**
+**/.DS_Store
+**/obj/**
+**/bin/**
+# Caches
 *.cache
