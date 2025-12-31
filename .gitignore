@@ -1,8 +1,8 @@
 # =========================
 # .NET / Visual Studio
 # =========================
-**/bin/
-**/obj/
+**/bin/**
+**/obj/**
 *.user
 *.suo
 *.userosscache
