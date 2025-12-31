@@ -37,6 +37,17 @@ namespace Tycoon.Backend.Application
             // Skill Tree
             services.AddScoped<Skills.SkillTreeService>();
 
+            // Submit Match
+            services.AddScoped<Matches.SubmitMatch>();
+
+            // Seasons
+            services.AddScoped<Seasons.SeasonService>();
+            services.AddScoped<Seasons.SeasonPointsService>();
+            services.AddScoped<Seasons.TierAssignmentService>();
+
+            // Anti-Cheat
+            services.AddSingleton<AntiCheat.AntiCheatService>();
+
             return services;
         }
     }

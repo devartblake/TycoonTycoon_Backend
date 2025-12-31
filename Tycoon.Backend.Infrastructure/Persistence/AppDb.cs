@@ -23,7 +23,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<Player> Players => Set<Player>();
         public DbSet<Match> Matches => Set<Match>();
         public DbSet<MatchRound> MatchRounds => Set<MatchRound>();
-
+        public DbSet<MatchResult> MatchResults => Set<MatchResult>();
+        public DbSet<MatchParticipantResult> MatchParticipantResults => Set<MatchParticipantResult>();
         public DbSet<Mission> Missions => Set<Mission>();
         public DbSet<MissionClaim> MissionClaims => Set<MissionClaim>();
         public DbSet<ProcessedGameplayEvent> ProcessedGameplayEvents => Set<ProcessedGameplayEvent>();
@@ -41,6 +42,10 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<PlayerPowerup> PlayerPowerups => Set<PlayerPowerup>();
         public DbSet<SkillNode> SkillNodes => Set<SkillNode>();
         public DbSet<PlayerSkillUnlock> PlayerSkillUnlocks => Set<PlayerSkillUnlock>();
+        public DbSet<Season> Seasons => Set<Season>();
+        public DbSet<PlayerSeasonProfile> PlayerSeasonProfiles => Set<PlayerSeasonProfile>();
+        public DbSet<SeasonPointTransaction> SeasonPointTransactions => Set<SeasonPointTransaction>();
+        public DbSet<AntiCheatFlag> AntiCheatFlags => Set<AntiCheatFlag>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

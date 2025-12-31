@@ -2,6 +2,7 @@
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,15 +10,20 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Tycoon.Backend.Api.Features.AdminAnalytics;
+using Tycoon.Backend.Api.Features.AdminAntiCheat;
 using Tycoon.Backend.Api.Features.AdminEconomy;
+using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
 using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
+using Tycoon.Backend.Api.Features.AdminSeasons;
 using Tycoon.Backend.Api.Features.AdminSkills;
 using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.Referrals;
+using Tycoon.Backend.Api.Features.Seasons;
 using Tycoon.Backend.Api.Features.Skills;
 using Tycoon.Backend.Api.Middleware;
 using Tycoon.Backend.Api.Realtime;
@@ -91,6 +97,25 @@ builder.Services
         };
     });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("matches-submit", httpContext =>
+    {
+        // Key by IP by default; if you have auth later, key by user id.
+        var key = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: key,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,                 // 10 submits
+                Window = TimeSpan.FromSeconds(10),// per 10 seconds
+                QueueLimit = 0
+            });
+    });
+});
+
 // Authorization + policies
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 
@@ -98,6 +123,8 @@ var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 // Admin ops key gate (path-based on /admin/analytics and optional metadata)
 app.UseMiddleware<AdminOpsKeyMiddleware>();
@@ -132,6 +159,7 @@ ReferralsEndpoints.Map(app);
 QrEndpoints.Map(app);
 SkillsEndpoints.Map(app);
 PowerupsEndpoints.Map(app);
+SeasonsEndpoints.Map(app);
 
 var admin = app.MapGroup("/admin")
     .RequireAdminOpsKey();
@@ -141,6 +169,9 @@ AdminAnalyticsEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);
 AdminPowerupsEndpoints.Map(admin);
 AdminSkillsEndpoints.Map(admin);
+AdminMatchesEndpoints.Map(admin);
+AdminSeasonsEndpoints.Map(admin);
+AdminAntiCheatEndpoints.Map(admin);
 
 // IMPORTANT:
 // Do NOT migrate here anymore. Tycoon.MigrationService owns migrations + seeding now.
