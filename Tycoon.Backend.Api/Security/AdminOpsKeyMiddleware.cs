@@ -1,17 +1,26 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Tycoon.Backend.Api.Security
 {
     /// <summary>
     /// Admin ops key gate for internal/privileged endpoints.
-    /// Default behavior:
-    /// - Applies to any request under /admin/analytics
-    /// - Requires header X-Admin-Ops-Key to match AdminOps:Key
     ///
-    /// Optional behavior (future-proof):
-    /// - If an endpoint is decorated with RequireAdminOpsKeyAttribute metadata,
-    ///   this middleware will enforce the ops key even outside /admin/analytics.
+    /// Default behavior:
+    /// - Applies to any request under /admin/analytics (legacy compatibility).
+    /// - Also applies to any endpoint decorated with RequireAdminOpsKeyAttribute metadata.
+    ///
+    /// Recommended usage going forward:
+    /// - Apply ops-key to all /admin/* routes using the RouteGroupBuilder extension:
+    ///     var admin = app.MapGroup("/admin").RequireAdminOpsKey();
+    ///
+    /// Config:
+    /// - AdminOps:Enabled (bool, default true)
+    /// - AdminOps:Key (string)
+    /// - AdminOps:Header (string, default "X-Admin-Ops-Key")
     /// </summary>
     public sealed class AdminOpsKeyMiddleware
     {
@@ -26,8 +35,15 @@ namespace Tycoon.Backend.Api.Security
 
         public async Task Invoke(HttpContext ctx)
         {
+            var enabled = _cfg.GetValue("AdminOps:Enabled", true);
+            if (!enabled)
+            {
+                await _next(ctx);
+                return;
+            }
+
             // Enforce ops-key if:
-            // 1) request is under the admin analytics prefix, OR
+            // 1) request is under the admin analytics prefix (legacy default), OR
             // 2) endpoint metadata explicitly requests it.
             var endpoint = ctx.GetEndpoint();
             var metaEnforced = endpoint?.Metadata.GetMetadata<RequireAdminOpsKeyAttribute>() is not null;
@@ -40,23 +56,29 @@ namespace Tycoon.Backend.Api.Security
                 return;
             }
 
-            var key = _cfg["AdminOps:Key"] ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(key))
+            var headerName = _cfg["AdminOps:Header"];
+            if (string.IsNullOrWhiteSpace(headerName))
+                headerName = "X-Admin-Ops-Key";
+
+            var expectedKey = _cfg["AdminOps:Key"] ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(expectedKey))
             {
                 ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
                 await ctx.Response.WriteAsync("AdminOps key not configured.");
                 return;
             }
 
-            var headerName = _cfg["AdminOps:Header"];
-            if (string.IsNullOrWhiteSpace(headerName))
-                headerName = "X-Admin-Ops-Key";
-
             if (!ctx.Request.Headers.TryGetValue(headerName, out var provided) ||
-                !string.Equals(provided.ToString(), key, StringComparison.Ordinal))
+                string.IsNullOrWhiteSpace(provided))
             {
-                // 401 is more semantically correct than 403 here because authentication failed.
                 ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await ctx.Response.WriteAsync("Missing admin ops key.");
+                return;
+            }
+
+            if (!string.Equals(provided.ToString(), expectedKey, StringComparison.Ordinal))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
                 await ctx.Response.WriteAsync("Invalid admin ops key.");
                 return;
             }
@@ -71,4 +93,42 @@ namespace Tycoon.Backend.Api.Security
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
     public sealed class RequireAdminOpsKeyAttribute : Attribute { }
+
+    /// <summary>
+    /// Minimal API group wrapper. Prefer this for /admin/* route groups.
+    /// This uses an endpoint filter so it scopes neatly to the group and does not require global middleware.
+    /// </summary>
+    public static class AdminOpsKeyRouteGroupExtensions
+    {
+        public static RouteGroupBuilder RequireAdminOpsKey(this RouteGroupBuilder group)
+        {
+            group.AddEndpointFilter(async (context, next) =>
+            {
+                var http = context.HttpContext;
+                var cfg = http.RequestServices.GetRequiredService<IConfiguration>();
+
+                var enabled = cfg.GetValue("AdminOps:Enabled", true);
+                if (!enabled) return await next(context);
+
+                var headerName = cfg["AdminOps:Header"];
+                if (string.IsNullOrWhiteSpace(headerName))
+                    headerName = "X-Admin-Ops-Key";
+
+                var expectedKey = cfg["AdminOps:Key"] ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(expectedKey))
+                    return Results.Problem("AdminOps key not configured.", statusCode: 503);
+
+                if (!http.Request.Headers.TryGetValue(headerName, out var provided) ||
+                    string.IsNullOrWhiteSpace(provided))
+                    return Results.Unauthorized();
+
+                if (!string.Equals(provided.ToString(), expectedKey, StringComparison.Ordinal))
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+                return await next(context);
+            });
+
+            return group;
+        }
+    }
 }

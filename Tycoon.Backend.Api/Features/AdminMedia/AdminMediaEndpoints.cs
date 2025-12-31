@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Tycoon.Backend.Application.Media;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -8,9 +9,9 @@ namespace Tycoon.Backend.Api.Features.AdminMedia
 {
     public static class AdminMediaEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(RouteGroupBuilder admin)
         {
-            var g = app.MapGroup("/admin/media").WithTags("Admin/Media");
+            var g = admin.MapGroup("/admin/media").WithTags("Admin/Media");
 
             g.MapPost("/intent", ([FromBody] CreateUploadIntentRequest req, MediaService media) =>
             {

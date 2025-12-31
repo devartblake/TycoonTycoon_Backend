@@ -20,6 +20,12 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<Question> Questions { get; }
         DbSet<QuestionOption> QuestionOptions { get; }
         DbSet<QuestionTag> QuestionTags { get; }
+        DbSet<PlayerWallet> PlayerWallets { get; }
+        DbSet<EconomyTransaction> EconomyTransactions { get; }
+        DbSet<EconomyTransactionLine> EconomyTransactionLines { get; }
+        DbSet<PlayerPowerup> PlayerPowerups { get; }
+        DbSet<SkillNode> SkillNodes { get; }
+        DbSet<PlayerSkillUnlock> PlayerSkillUnlocks { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);

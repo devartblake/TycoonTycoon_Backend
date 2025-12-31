@@ -35,7 +35,12 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<Question> Questions => Set<Question>();
         public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
         public DbSet<QuestionTag> QuestionTags => Set<QuestionTag>();
-
+        public DbSet<PlayerWallet> PlayerWallets => Set<PlayerWallet>();
+        public DbSet<EconomyTransaction> EconomyTransactions => Set<EconomyTransaction>();
+        public DbSet<EconomyTransactionLine> EconomyTransactionLines => Set<EconomyTransactionLine>();
+        public DbSet<PlayerPowerup> PlayerPowerups => Set<PlayerPowerup>();
+        public DbSet<SkillNode> SkillNodes => Set<SkillNode>();
+        public DbSet<PlayerSkillUnlock> PlayerSkillUnlocks => Set<PlayerSkillUnlock>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

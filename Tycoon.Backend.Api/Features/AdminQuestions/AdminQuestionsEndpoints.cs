@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Tycoon.Backend.Application.Questions;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -9,9 +10,9 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
 {
     public static class AdminQuestionsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(RouteGroupBuilder admin)
         {
-            var g = app.MapGroup("/admin/questions").WithTags("Admin/Questions");
+            var g = admin.MapGroup("/admin/questions").WithTags("Admin/Questions");
 
             g.MapGet("/", async (
                 [FromQuery] string? search,

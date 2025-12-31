@@ -26,7 +26,16 @@ namespace Tycoon.Backend.Application
             services.AddScoped<Leaderboards.LeaderboardRecalculationJob>();
 
             // Media
-            services.AddSingleton<Tycoon.Backend.Application.Media.MediaService>();
+            services.AddSingleton<Media.MediaService>();
+
+            // Economy
+            services.AddScoped<Economy.EconomyService>();
+
+            // Powerups
+            services.AddScoped<Powerups.PowerupService>();
+
+            // Skill Tree
+            services.AddScoped<Skills.SkillTreeService>();
 
             return services;
         }

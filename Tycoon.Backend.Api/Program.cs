@@ -9,10 +9,16 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
+using Tycoon.Backend.Api.Features.AdminAnalytics;
+using Tycoon.Backend.Api.Features.AdminEconomy;
 using Tycoon.Backend.Api.Features.AdminMedia;
+using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
+using Tycoon.Backend.Api.Features.AdminSkills;
+using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.Referrals;
+using Tycoon.Backend.Api.Features.Skills;
 using Tycoon.Backend.Api.Middleware;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
@@ -124,8 +130,17 @@ Tycoon.Backend.Api.Features.Missions.MissionsEndpoints.Map(app);
 Tycoon.Backend.Api.Features.Leaderboards.LeaderboardsEndpoints.Map(app);
 ReferralsEndpoints.Map(app);
 QrEndpoints.Map(app);
-AdminQuestionsEndpoints.Map(app);
-AdminMediaEndpoints.Map(app);
+SkillsEndpoints.Map(app);
+PowerupsEndpoints.Map(app);
+
+var admin = app.MapGroup("/admin")
+    .RequireAdminOpsKey();
+AdminQuestionsEndpoints.Map(admin);
+AdminMediaEndpoints.Map(admin);
+AdminAnalyticsEndpoints.Map(admin);
+AdminEconomyEndpoints.Map(admin);
+AdminPowerupsEndpoints.Map(admin);
+AdminSkillsEndpoints.Map(admin);
 
 // IMPORTANT:
 // Do NOT migrate here anymore. Tycoon.MigrationService owns migrations + seeding now.
@@ -136,10 +151,6 @@ RecurringJob.AddOrUpdate<Tycoon.Backend.Application.Leaderboards.LeaderboardReca
     job => job.Run(),
     "0 5 * * *" // 5:00 UTC daily; adjust as desired
 );
-
-
-// Analytics admin endpoints
-Tycoon.Backend.Api.Features.Analytics.AnalyticsAdminEndpoints.Map(app);
 
 app.Run();
 
