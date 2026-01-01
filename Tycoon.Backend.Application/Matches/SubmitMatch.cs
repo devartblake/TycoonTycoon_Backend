@@ -4,6 +4,7 @@ using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.AntiCheat;
 // Economy types assumed from your Step 5
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.Enforcement;
 using Tycoon.Backend.Application.Moderation;
 using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Domain.Entities;
@@ -20,7 +21,8 @@ namespace Tycoon.Backend.Application.Matches
         SeasonService seasons,
         SeasonPointsService seasonsPoints,
         TierAssignmentService tiers,
-        ModerationService moderation)
+        ModerationService moderation,
+        EnforcementService enforcement)
         : IRequestHandler<SubmitMatch, SubmitMatchResponse>
     {
         public async Task<SubmitMatchResponse> Handle(SubmitMatch r, CancellationToken ct)
@@ -66,6 +68,24 @@ namespace Tycoon.Backend.Application.Matches
                     restricted = true;
             }
 
+            var allowRewards = true;
+            var allowSeasonPoints = true;
+
+            foreach (var p in req.Participants)
+            {
+                var decision = await enforcement.EvaluateAsync(p.PlayerId, ct);
+
+                if (!decision.CanSubmitMatch)
+                {
+                    FinishHost(match, req);
+                    await db.SaveChangesAsync(ct);
+                    return new SubmitMatchResponse(req.EventId, req.MatchId, "Rejected", Array.Empty<MatchAwardDto>());
+                }
+
+                if (!decision.AllowRewards) allowRewards = false;
+                if (!decision.AllowSeasonPoints) allowSeasonPoints = false;
+            }
+
             // Persist summary snapshot
             var result = new MatchResult(
                 matchId: req.MatchId,
@@ -101,8 +121,9 @@ namespace Tycoon.Backend.Application.Matches
                 await db.SaveChangesAsync(ct);
             }
 
-            var antiCheatBlocks = AntiCheatService.ShouldBlockRewards(flags);
-            var blockRewards = antiCheatBlocks || restricted;
+            var antiCheatBlocksRewards = AntiCheatService.ShouldBlockRewards(flags);
+            var blockRewards = antiCheatBlocksRewards || !allowRewards;
+            var blockSeason = antiCheatBlocksRewards ||!allowRewards;
 
             IReadOnlyList<MatchAwardDto> awards = Array.Empty<MatchAwardDto>();
 
@@ -115,12 +136,10 @@ namespace Tycoon.Backend.Application.Matches
                 await ApplySeasonPointsAndRanksAsync(req, match, ct);
             }
 
-            // Always finish host to preserve domain-event pipeline
-            FinishHost(match, req);
-
-            await db.SaveChangesAsync(ct);
-
-            return new SubmitMatchResponse(req.EventId, req.MatchId, "Applied", awards);
+            if (!blockSeason)
+            {
+                await ApplySeasonPointsAndRanksAsync(req, match, ct);
+            }
 
             // Finish match for host (preserves your existing domain-event based mission/tier wiring)
             FinishHost(match, req);

@@ -1,12 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Tycoon.Shared.Contracts.Dtos
+﻿namespace Tycoon.Shared.Contracts.Dtos
 {
-    internal class AntiCheatAnalyticsDtos
-    {
-    }
+    public sealed record AntiCheatRuleCountDto(
+        string RuleKey,
+        int Severity,
+        int Count
+    );
+
+    public sealed record AntiCheatSummaryDto(
+        DateTimeOffset WindowStartUtc,
+        DateTimeOffset WindowEndUtc,
+        int TotalFlags,
+        int SevereFlags,
+        int WarningFlags,
+        int InfoFlags,
+        IReadOnlyList<AntiCheatRuleCountDto> ByRule
+    );
+
+    public sealed record PlayerRiskRowDto(
+        Guid PlayerId,
+        int SevereCount,
+        int WarningCount,
+        int CurrentStatus,
+        DateTimeOffset LastFlagAtUtc
+    );
+
+    public sealed record PlayerRiskListResponseDto(
+        int Page,
+        int PageSize,
+        int Total,
+        IReadOnlyList<PlayerRiskRowDto> Items
+    );
 }

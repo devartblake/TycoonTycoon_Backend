@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Seasons
 {
@@ -7,6 +8,13 @@ namespace Tycoon.Backend.Application.Seasons
     {
         public async Task RecomputeAsync(Guid seasonId, int usersPerTier = 100, CancellationToken ct = default)
         {
+            var season = await db.Seasons.FirstOrDefaultAsync(x => x.Id == seasonId, ct);
+            if (season is null) return;
+
+            // Only recompute ranks while Active or Closing
+            if (season.Status != SeasonStatus.Active && season.Status != SeasonStatus.Closed)
+                return;
+
             // Order by rank points desc, then updatedAt (stable-ish)
             var profiles = await db.PlayerSeasonProfiles
                 .Where(x => x.SeasonId == seasonId)

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Enforcement;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Application.Moderation;
 using Tycoon.Backend.Domain.Entities;
@@ -19,10 +20,15 @@ namespace Tycoon.Backend.Api.Features.Matches
 
             g.MapPost("/start", async (
                 [FromBody] StartMatchRequest req,
+                EnforcementService enforcement,
                 ModerationService moderation,
                 IMediator mediator,
                 CancellationToken ct) =>
             {
+                var decision = await enforcement.EvaluateAsync(req.HostPlayerId, ct);
+                if (!decision.CanStartMatch)
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+
                 var status = await moderation.GetEffectiveStatusAsync(req.HostPlayerId, ct);
                 if (status == ModerationStatus.Banned)
                     return Results.StatusCode(StatusCodes.Status403Forbidden);

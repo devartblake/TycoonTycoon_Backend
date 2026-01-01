@@ -4,7 +4,7 @@ using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 {
-    public sealed class EconomyTransactionLineConfig : IEntityTypeConfiguration<EconomyTransactionLine>
+    public sealed class EconomyTransactionLineConfiguration : IEntityTypeConfiguration<EconomyTransactionLine>
     {
         public void Configure(EntityTypeBuilder<EconomyTransactionLine> b)
         {

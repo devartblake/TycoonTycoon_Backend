@@ -4,12 +4,15 @@ using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 {
-    public sealed class EconomyTransactionConfig : IEntityTypeConfiguration<EconomyTransaction>
+    public sealed class EconomyTransactionConfiguration : IEntityTypeConfiguration<EconomyTransaction>
     {
         public void Configure(EntityTypeBuilder<EconomyTransaction> b)
         {
             b.ToTable("economy_transactions");
             b.HasKey(x => x.Id);
+
+            b.Property(x => x.ReversalOfTransactionId);
+            b.HasIndex(x => x.ReversalOfTransactionId);
 
             b.Property(x => x.EventId).IsRequired();
             b.HasIndex(x => x.EventId).IsUnique(); // idempotency

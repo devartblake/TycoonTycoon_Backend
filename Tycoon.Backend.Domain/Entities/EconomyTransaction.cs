@@ -5,6 +5,7 @@ namespace Tycoon.Backend.Domain.Entities
     public sealed class EconomyTransaction
     {
         public Guid Id { get; private set; } = Guid.NewGuid();
+        public Guid? ReversalOfTransactionId { get; private set; }
 
         public Guid EventId { get; private set; }
         public Guid PlayerId { get; private set; }
@@ -16,6 +17,11 @@ namespace Tycoon.Backend.Domain.Entities
         public List<EconomyTransactionLine> Lines { get; private set; } = new();
 
         private EconomyTransaction() { } // EF
+
+        public void MarkAsReversalOf(Guid originalTransactionId)
+        {
+            ReversalOfTransactionId = originalTransactionId;
+        }
 
         public EconomyTransaction(Guid eventId, Guid playerId, string kind, string? note)
         {

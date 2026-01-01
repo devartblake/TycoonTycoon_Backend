@@ -50,6 +50,10 @@ namespace Tycoon.Backend.Application
 
             // Moderation
             services.AddScoped<Moderation.ModerationService>();
+            services.AddScoped<Moderation.EscalationService>();
+
+            // Enforcement - Centralize moderation, anti-cheat and season enforcement
+            services.AddScoped<Enforcement.EnforcementService>();
 
             return services;
         }

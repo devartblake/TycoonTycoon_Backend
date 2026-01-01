@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tycoon.MigrationService")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6694fd6daeb7f726d68c3004d9d4767fef17f32b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4f3c38f94e5a0aa642cb12df3c5b67673f335fca")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tycoon.MigrationService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tycoon.MigrationService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

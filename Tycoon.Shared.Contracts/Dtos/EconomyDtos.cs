@@ -50,4 +50,9 @@
         int Total,
         IReadOnlyList<EconomyTxnListItemDto> Items
     );
+
+    public sealed record AdminRollbackEconomyRequest(
+        Guid EventId,
+        string Reason
+    );
 }
