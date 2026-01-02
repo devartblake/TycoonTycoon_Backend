@@ -1067,3 +1067,12 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\obj\Debug
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\obj\Debug\net9.0\Tycoon.Backend.Api.Tests.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\obj\Debug\net9.0\Tycoon.Backend.Api.Tests.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\obj\Debug\net9.0\ref\Tycoon.Backend.Api.Tests.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Microsoft.AspNetCore.Connections.Abstractions.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Microsoft.AspNetCore.Http.Connections.Client.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Microsoft.AspNetCore.Http.Connections.Common.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Microsoft.AspNetCore.SignalR.Client.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Microsoft.AspNetCore.SignalR.Client.Core.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Microsoft.AspNetCore.SignalR.Common.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Microsoft.AspNetCore.SignalR.Protocols.Json.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Microsoft.Extensions.Features.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\System.Net.ServerSentEvents.dll

@@ -55,6 +55,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<Party> Parties => Set<Party>();
         public DbSet<PartyMember> PartyMembers => Set<PartyMember>();
         public DbSet<PartyInvite> PartyInvites => Set<PartyInvite>();
+        public DbSet<PartyMatchmakingTicket> PartyMatchmakingTickets => Set<PartyMatchmakingTicket>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -2,7 +2,7 @@
 
 namespace Tycoon.Backend.Api.Realtime
 {
-    public sealed class MatchHub : Hub
+    public sealed class MatchHub(IConnectionRegistry registry) : Hub
     {
         public async Task JoinMatch(Guid matchId)
             => await Groups.AddToGroupAsync(Context.ConnectionId, $"match:{matchId}");
@@ -26,8 +26,10 @@ namespace Tycoon.Backend.Api.Realtime
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var playerIdStr = Context.GetHttpContext()?.Request.Query["playerId"].ToString();
+
             if (Guid.TryParse(playerIdStr, out var playerId))
             {
+                registry.Remove(playerId, Context.ConnectionId);
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"player:{playerId}");
             }
 

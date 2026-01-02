@@ -1,12 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Tycoon.Shared.Contracts.Dtos
+﻿namespace Tycoon.Shared.Contracts.Dtos
 {
-    internal class PartyMatchmakingDtos
-    {
-    }
+    public sealed record PartyEnqueueRequest(
+        Guid LeaderPlayerId,
+        string Mode,
+        int Tier
+    );
+
+    public sealed record PartyQueueResultDto(
+        string Status,          // Queued | Matched | Forbidden | PartyNotReady
+        Guid? TicketId,
+        Guid PartyId,
+        Guid? OpponentPartyId,
+        Guid? MatchId // Only set when Status == "Matched"
+    );
 }

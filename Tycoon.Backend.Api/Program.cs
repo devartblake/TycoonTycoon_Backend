@@ -26,6 +26,7 @@ using Tycoon.Backend.Api.Features.Leaderboards;
 using Tycoon.Backend.Api.Features.Matches;
 using Tycoon.Backend.Api.Features.Matchmaking;
 using Tycoon.Backend.Api.Features.Missions;
+using Tycoon.Backend.Api.Features.Party;
 using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
@@ -37,6 +38,8 @@ using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application;
 using Tycoon.Backend.Application.Matchmaking;
+using Tycoon.Backend.Application.Realtime;
+using Tycoon.Backend.Application.Social;
 using Tycoon.Backend.Infrastructure;
 using Tycoon.Shared.Observability;
 
@@ -125,6 +128,10 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddSingleton<IMatchmakingNotifier, SignalRMatchmakingNotifier>();
+builder.Services.AddSingleton<IPartyMatchmakingNotifier, SignalRPartyMatchmakingNotifier>();
+builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
+builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
+
 
 // Authorization + policies
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
@@ -172,6 +179,7 @@ SkillsEndpoints.Map(app);
 PowerupsEndpoints.Map(app);
 SeasonsEndpoints.Map(app);
 FriendsEndpoints.Map(app);
+PartyEndpoints.Map(app);
 
 var admin = app.MapGroup("/admin")
     .RequireAdminOpsKey();

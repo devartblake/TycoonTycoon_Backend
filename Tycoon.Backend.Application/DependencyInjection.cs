@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
+using Tycoon.Backend.Application.Realtime;
 
 namespace Tycoon.Backend.Application
 {
@@ -13,6 +14,7 @@ namespace Tycoon.Backend.Application
             var asm = Assembly.GetExecutingAssembly();
 
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(asm));
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
             services.AddValidatorsFromAssembly(asm);
 
             // Match
@@ -63,7 +65,13 @@ namespace Tycoon.Backend.Application
             services.AddScoped<Enforcement.EnforcementService>();
 
             // Social
-            services.AddScoped<Tycoon.Backend.Application.Social.FriendsService>();
+            services.AddScoped<Social.FriendsService>();
+            services.AddScoped<Social.PartyService>();
+            services.AddScoped<Social.PartyMatchmakingService>();
+            services.TryAddSingleton<Social.IPartyMatchmakingNotifier, Social.NullPartyMatchmakingNotifier>();
+
+            // Realtime
+            services.TryAddSingleton<IPresenceReader, NullPresenceReader>();
 
             return services;
         }
