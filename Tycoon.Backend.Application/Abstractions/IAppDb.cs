@@ -35,6 +35,11 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<AntiCheatFlag> AntiCheatFlags { get; }
         DbSet<PlayerModerationProfile> PlayerModerationProfiles { get; }
         DbSet<ModerationActionLog> ModerationActionLogs { get; }
+        DbSet<FriendRequest> FriendRequests { get; }
+        DbSet<FriendEdge> FriendEdges { get; }
+        DbSet<Party> Parties { get; }
+        DbSet<PartyMember> PartyMembers { get; }
+        DbSet<PartyInvite> PartyInvites { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);

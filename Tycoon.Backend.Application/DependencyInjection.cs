@@ -62,6 +62,9 @@ namespace Tycoon.Backend.Application
             // Enforcement - Centralize moderation, anti-cheat and season enforcement
             services.AddScoped<Enforcement.EnforcementService>();
 
+            // Social
+            services.AddScoped<Tycoon.Backend.Application.Social.FriendsService>();
+
             return services;
         }
     }

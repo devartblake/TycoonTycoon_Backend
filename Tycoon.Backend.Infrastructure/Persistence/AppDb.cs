@@ -50,6 +50,11 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<AntiCheatFlag> AntiCheatFlags => Set<AntiCheatFlag>();
         public DbSet<PlayerModerationProfile> PlayerModerationProfiles => Set<PlayerModerationProfile>();
         public DbSet<ModerationActionLog> ModerationActionLogs => Set<ModerationActionLog>();
+        public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
+        public DbSet<FriendEdge> FriendEdges => Set<FriendEdge>();
+        public DbSet<Party> Parties => Set<Party>();
+        public DbSet<PartyMember> PartyMembers => Set<PartyMember>();
+        public DbSet<PartyInvite> PartyInvites => Set<PartyInvite>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

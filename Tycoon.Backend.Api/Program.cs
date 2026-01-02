@@ -21,6 +21,7 @@ using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminSeasons;
 using Tycoon.Backend.Api.Features.AdminSkills;
+using Tycoon.Backend.Api.Features.Friends;
 using Tycoon.Backend.Api.Features.Leaderboards;
 using Tycoon.Backend.Api.Features.Matches;
 using Tycoon.Backend.Api.Features.Matchmaking;
@@ -170,6 +171,7 @@ QrEndpoints.Map(app);
 SkillsEndpoints.Map(app);
 PowerupsEndpoints.Map(app);
 SeasonsEndpoints.Map(app);
+FriendsEndpoints.Map(app);
 
 var admin = app.MapGroup("/admin")
     .RequireAdminOpsKey();
