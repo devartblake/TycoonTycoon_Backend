@@ -12,12 +12,14 @@ namespace Tycoon.Backend.Domain.Entities
         public string Mode { get; private set; } = "solo";
         public DateTimeOffset StartedAt { get; private set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? FinishedAt { get; private set; }
+        public byte[]? RowVersion { get; private set; } // EF Core concurrency token
 
         /// <summary>
         /// Stores per-question outcomes (historical log).
         /// Note: This currently represents "question attempts", not "round summaries".
         /// </summary>
         public List<MatchRound> Rounds { get; private set; } = new();
+        public object CreatedAtUtc { get; set; }
 
         private Match() { } // EF Core
 

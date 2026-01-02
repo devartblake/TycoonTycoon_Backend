@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
 
 namespace Tycoon.Backend.Application
@@ -13,6 +14,12 @@ namespace Tycoon.Backend.Application
 
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(asm));
             services.AddValidatorsFromAssembly(asm);
+
+            // Match
+            services.AddScoped<Matches.StartMatch>();
+            services.AddScoped<Matchmaking.MatchmakingService>();
+            services.TryAddSingleton<Matchmaking.IMatchmakingNotifier,Matchmaking.NullMatchmakingNotifier>();
+
 
             // Missions
             services.AddScoped<Missions.MissionProgressService>();

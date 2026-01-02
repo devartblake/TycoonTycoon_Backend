@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tycoon.Backend.Application.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4f3c38f94e5a0aa642cb12df3c5b67673f335fca")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aa26c05872e02d58e12ab50c1f8e3efe90fac913")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tycoon.Backend.Application.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tycoon.Backend.Application.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

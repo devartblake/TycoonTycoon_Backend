@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tycoon.AppHost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6694fd6daeb7f726d68c3004d9d4767fef17f32b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aa26c05872e02d58e12ab50c1f8e3efe90fac913")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tycoon.AppHost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tycoon.AppHost")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

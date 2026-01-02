@@ -21,6 +21,11 @@ using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminSeasons;
 using Tycoon.Backend.Api.Features.AdminSkills;
+using Tycoon.Backend.Api.Features.Leaderboards;
+using Tycoon.Backend.Api.Features.Matches;
+using Tycoon.Backend.Api.Features.Matchmaking;
+using Tycoon.Backend.Api.Features.Missions;
+using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.Referrals;
@@ -30,6 +35,7 @@ using Tycoon.Backend.Api.Middleware;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application;
+using Tycoon.Backend.Application.Matchmaking;
 using Tycoon.Backend.Infrastructure;
 using Tycoon.Shared.Observability;
 
@@ -117,6 +123,8 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+builder.Services.AddSingleton<IMatchmakingNotifier, SignalRMatchmakingNotifier>();
+
 // Authorization + policies
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 
@@ -152,10 +160,11 @@ app.MapHub<PresenceHub>("/ws/presence");
 app.MapHub<NotificationHub>("/ws/notify");
 
 // Map feature endpoints
-Tycoon.Backend.Api.Features.Players.PlayersEndpoints.Map(app);
-Tycoon.Backend.Api.Features.Matches.MatchesEndpoints.Map(app);
-Tycoon.Backend.Api.Features.Missions.MissionsEndpoints.Map(app);
-Tycoon.Backend.Api.Features.Leaderboards.LeaderboardsEndpoints.Map(app);
+PlayersEndpoints.Map(app);
+MatchesEndpoints.Map(app);
+MatchmakingEndpoints.Map(app);
+MissionsEndpoints.Map(app);
+LeaderboardsEndpoints.Map(app);
 ReferralsEndpoints.Map(app);
 QrEndpoints.Map(app);
 SkillsEndpoints.Map(app);

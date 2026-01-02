@@ -26,6 +26,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<MatchRound> MatchRounds => Set<MatchRound>();
         public DbSet<MatchResult> MatchResults => Set<MatchResult>();
         public DbSet<MatchParticipantResult> MatchParticipantResults => Set<MatchParticipantResult>();
+        public DbSet<MatchmakingTicket> MatchmakingTickets => Set<MatchmakingTicket>();
         public DbSet<Mission> Missions => Set<Mission>();
         public DbSet<MissionClaim> MissionClaims => Set<MissionClaim>();
         public DbSet<ProcessedGameplayEvent> ProcessedGameplayEvents => Set<ProcessedGameplayEvent>();

@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<MatchRound> MatchRounds { get; }
         DbSet<MatchResult> MatchResults { get; }
         DbSet<MatchParticipantResult> MatchParticipantResults { get; }
-
+        DbSet<MatchmakingTicket> MatchmakingTickets { get; }
         DbSet<Mission> Missions { get; }
         DbSet<MissionClaim> MissionClaims { get; }
         DbSet<ProcessedGameplayEvent> ProcessedGameplayEvents { get; }

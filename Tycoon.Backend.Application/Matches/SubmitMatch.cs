@@ -49,6 +49,17 @@ namespace Tycoon.Backend.Application.Matches
             if (match is null)
                 return new SubmitMatchResponse(req.EventId, req.MatchId, "NotFound", Array.Empty<MatchAwardDto>());
 
+            // If match is already finished, treat as already submitted.
+            if (match.FinishedAt is not null)
+                return new SubmitMatchResponse(req.EventId, req.MatchId, "AlreadySubmitted", Array.Empty<MatchAwardDto>());
+
+            // Block multiple results for the same match (double-submit protection).
+            var alreadyHasResult = await db.MatchResults.AsNoTracking()
+                .AnyAsync(x => x.MatchId == req.MatchId, ct);
+
+            if (alreadyHasResult)
+                return new SubmitMatchResponse(req.EventId, req.MatchId, "AlreadySubmitted", Array.Empty<MatchAwardDto>());
+
             // Moderation enforcement (Policy A)
             var restricted = false;
 
@@ -98,9 +109,18 @@ namespace Tycoon.Backend.Application.Matches
             );
 
             db.MatchResults.Add(result);
-            await db.SaveChangesAsync(ct); // ensure result.Id
 
-            foreach (var p in req.Participants)
+            try
+            {
+                await db.SaveChangesAsync(ct); // ensure result.Id
+            }
+            catch (DbUpdateException)
+            {
+                // Another submit likely won the race and inserted a result first.
+                return new SubmitMatchResponse(req.EventId, req.MatchId, "AlreadySubmitted", Array.Empty<MatchAwardDto>());
+            }
+
+                foreach (var p in req.Participants)
             {
                 db.MatchParticipantResults.Add(new MatchParticipantResult(
                     matchResultId: result.Id,
