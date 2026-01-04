@@ -207,6 +207,28 @@ namespace Tycoon.Backend.Application.Social
                 db.PartyMatchLinks.Add(new PartyMatchLink(oppTicket.PartyId, matchId));
                 await db.SaveChangesAsync(ct);
 
+                // strict correctness: snapshot party membership at match creation time
+                var partyIds = new[] { selfTicket.PartyId, oppTicket.PartyId };
+
+                var members = await db.PartyMembers
+                    .Where(m => partyIds.Contains(m.PartyId))
+                    .Select(m => new { m.PartyId, m.PlayerId, Role = m.Role.ToString() })
+                    .ToListAsync(ct);
+
+                foreach (var m in members)
+                {
+                    db.PartyMatchMembers.Add(new PartyMatchMember(
+                        partyId: m.PartyId,
+                        matchId: matchId,
+                        playerId: m.PlayerId,
+                        role: m.Role
+                    ));
+                }
+
+                // If you already called SaveChanges above for PartyMatchLinks,
+                // you can keep this as a second SaveChanges:
+                await db.SaveChangesAsync(ct);
+
                 // Notify both parties (to all members via player groups)
                 await notifier.NotifyPartyMatchedAsync(
                     partyId: selfTicket.PartyId,

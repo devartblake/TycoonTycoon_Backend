@@ -1,4 +1,6 @@
-﻿namespace Tycoon.Backend.Domain.Entities
+﻿using System.Text.Json;
+
+namespace Tycoon.Backend.Domain.Entities
 {
     public enum AntiCheatSeverity
     {
@@ -29,7 +31,8 @@
         public string? EvidenceJson { get; private set; }
 
         public DateTimeOffset CreatedAtUtc { get; private set; } = DateTimeOffset.UtcNow;
-
+        public DateTimeOffset? ReviewedAtUtc { get; private set; }
+        public string? ReviewedBy { get; private set; }
         private AntiCheatFlag() { }
 
         public AntiCheatFlag(
@@ -56,6 +59,12 @@
             Guid matchId,
             Guid partyId)
         {
+            var evidence = JsonSerializer.Serialize(new
+            {
+                partyId,
+                kind = "leader-left",
+            });
+
             return new AntiCheatFlag(
                 matchId: matchId,
                 playerId: playerId,
@@ -68,5 +77,10 @@
             );
         }
 
+        public void MarkReviewed(string reviewedBy)
+        {
+            ReviewedAtUtc = DateTimeOffset.UtcNow;
+            ReviewedBy = string.IsNullOrWhiteSpace(reviewedBy) ? "admin" : reviewedBy;
+        }
     }
 }

@@ -196,6 +196,7 @@ AdminModerationEndpoints.Map(admin);
 AdminEscalationEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);
 AdminAntiCheatAnalyticsEndpoints.Map(admin);
+AdminPartyAntiCheatEndpoints.Map(admin);
 
 // IMPORTANT:
 // Do NOT migrate here anymore. Tycoon.MigrationService owns migrations + seeding now.

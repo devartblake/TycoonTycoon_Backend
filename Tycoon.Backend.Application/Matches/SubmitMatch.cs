@@ -24,6 +24,7 @@ namespace Tycoon.Backend.Application.Matches
         TierAssignmentService tiers,
         ModerationService moderation,
         EnforcementService enforcement,
+        PartyIntegrityService partyIntegrity,
         PartyLifecycleService partLifecycle)
         : IRequestHandler<SubmitMatch, SubmitMatchResponse>
     {
@@ -135,6 +136,17 @@ namespace Tycoon.Backend.Application.Matches
             }
 
             var flags = antiCheat.Evaluate(req);
+
+            // Party integrity flags
+            var partyFlags = await partyIntegrity.EvaluateMatchSubmissionAsync(
+                matchId: req.MatchId,
+                participantPlayerIds: req.Participants.Select(p => p.PlayerId).ToList(),
+                ct: ct);
+
+            if (partyFlags.Count > 0)
+                flags.AddRange(partyFlags);
+
+            // Persist any flags (conre anti-cheat + party integrity)
             if (flags.Count > 0)
             {
                 foreach (var f in flags)
@@ -288,11 +300,7 @@ namespace Tycoon.Backend.Application.Matches
             );
         }
 
-        private static async Task<IReadOnlyList<MatchAwardDto>> AwardAsync(
-            SubmitMatchRequest req,
-            Match match,
-            EconomyService econ,
-            CancellationToken ct)
+        private static async Task<IReadOnlyList<MatchAwardDto>> AwardAsync(SubmitMatchRequest req, Match match, EconomyService econ, CancellationToken ct)
         {
             // Winner is highest score; ties -> draw
             var ordered = req.Participants.OrderByDescending(p => p.Score).ToList();

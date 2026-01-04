@@ -69,6 +69,7 @@ namespace Tycoon.Backend.Application
             services.AddScoped<Social.PartyMatchmakingService>();
             services.AddScoped<Social.PartyLifecycleService>();
             services.TryAddSingleton<Social.IPartyMatchmakingNotifier, Social.NullPartyMatchmakingNotifier>();
+            services.AddScoped<Social.PartyIntegrityService>();
 
             // Realtime
             services.TryAddSingleton<IPresenceReader, NullPresenceReader>();

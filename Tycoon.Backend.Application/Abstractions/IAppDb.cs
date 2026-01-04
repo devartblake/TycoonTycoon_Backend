@@ -42,6 +42,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<PartyInvite> PartyInvites { get; }
         DbSet<PartyMatchmakingTicket> PartyMatchmakingTickets { get; }
         DbSet<PartyMatchLink> PartyMatchLinks { get; }
+        DbSet<PartyMatchMember> PartyMatchMembers { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);
