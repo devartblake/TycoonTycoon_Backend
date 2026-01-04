@@ -36,5 +36,12 @@
         {
             Status = "Closed";
         }
+
+        public void SetLeader(Guid newLeaderPlayerId)
+        {
+            if (newLeaderPlayerId == Guid.Empty)
+                throw new ArgumentException("newLeaderPlayerId cannot be empty.");
+            LeaderPlayerId = newLeaderPlayerId;
+        }
     }
 }

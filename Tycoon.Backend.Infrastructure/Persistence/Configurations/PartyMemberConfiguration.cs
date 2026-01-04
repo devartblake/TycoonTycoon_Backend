@@ -13,6 +13,12 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
 
             b.Property(x => x.PartyId).IsRequired();
             b.Property(x => x.PlayerId).IsRequired();
+
+            b.Property(x => x.Role)
+                .HasConversion<string>()
+                .HasMaxLength(16)
+                .IsRequired();
+
             b.Property(x => x.JoinedAtUtc).IsRequired();
 
             b.HasIndex(x => new { x.PartyId, x.PlayerId }).IsUnique();

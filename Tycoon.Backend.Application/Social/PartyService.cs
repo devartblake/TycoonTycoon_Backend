@@ -1,12 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.AntiCheat;
 using Tycoon.Backend.Application.Realtime;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Social
 {
-    public sealed class PartyService(IAppDb db, IPartyMatchmakingNotifier notifier, IPresenceReader presence)
+    public sealed class PartyService(
+        IAppDb db,
+        IPartyMatchmakingNotifier notifier,
+        IPresenceReader presence,
+        AntiCheatService antiCheat)
     {
         // MVP: 2-player party (duos). Raise later as needed.
         private const int MaxPartySize = 2;
@@ -25,7 +30,7 @@ namespace Tycoon.Backend.Application.Social
             db.Parties.Add(party);
 
             // Leader is always a member
-            db.PartyMembers.Add(new PartyMember(party.Id, leaderPlayerId));
+            db.PartyMembers.Add(new PartyMember(party.Id, leaderPlayerId, PartyRole.Leader));
 
             await db.SaveChangesAsync(ct);
 
@@ -47,7 +52,7 @@ namespace Tycoon.Backend.Application.Social
             var members = await db.PartyMembers.AsNoTracking()
                 .Where(x => x.PartyId == partyId)
                 .OrderBy(x => x.JoinedAtUtc)
-                .Select(x => new PartyMemberDto(x.PlayerId, x.JoinedAtUtc))
+                .Select(x => new PartyMemberDto(x.PlayerId, x.Role.ToString(), x.JoinedAtUtc))
                 .ToListAsync(ct);
 
             return new PartyRosterDto(
@@ -208,7 +213,7 @@ namespace Tycoon.Backend.Application.Social
             }
 
             invite.Accept();
-            db.PartyMembers.Add(new PartyMember(invite.PartyId, invite.ToPlayerId));
+            db.PartyMembers.Add(new PartyMember(invite.PartyId, invite.ToPlayerId, PartyRole.Member));
 
             // Cancel any other pending invites for this player (optional but prevents confusion)
             await db.PartyInvites
@@ -261,42 +266,99 @@ namespace Tycoon.Backend.Application.Social
                 throw new InvalidOperationException("Party not found.");
             }
 
-            // Remove member row (if present)
-            var member = await db.PartyMembers.FirstOrDefaultAsync(x => x.PartyId == partyId && x.PlayerId == playerId, ct);
-            if (member is not null)
-                db.PartyMembers.Remove(member);
+            // Load all members (tracked)
+            var members = await db.PartyMembers
+                .Where(x => x.PartyId == partyId)
+                .ToListAsync(ct);
 
-            // If leader leaves OR party becomes empty => close party and clear membership
-            if (party.LeaderPlayerId == playerId)
+            var leaving = members.FirstOrDefault(m => m.PlayerId == playerId);
+            if (leaving is null)
+            {
+                await tx.RollbackAsync(ct);
+                return; // idempotent: already left
+            }
+
+            var wasLeader = (party.LeaderPlayerId == playerId) || (leaving.Role == PartyRole.Leader);
+
+            // Remove the leaving member
+            db.PartyMembers.Remove(leaving);
+
+            // Remaining members (in-memory)
+            var remaining = members.Where(m => m.PlayerId != playerId).ToList();
+
+            // If party is now empty -> close + cancel invites
+            if (remaining.Count == 0)
             {
                 party.Close();
 
-                var remaining = await db.PartyMembers.Where(x => x.PartyId == partyId).ToListAsync(ct);
-                if (remaining.Count > 0)
-                    db.PartyMembers.RemoveRange(remaining);
-
-                // Cancel any pending invites
                 await db.PartyInvites
                     .Where(x => x.PartyId == partyId && x.Status == "Pending")
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, "Cancelled"), ct);
+
+                await db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+
+                await NotifyRosterAsync(partyId, ct);
+                return;
             }
-            else
+
+            // If the leader left -> choose a new leader (random remaining member)
+            if (wasLeader)
             {
-                // if no members remain, close
-                var count = await db.PartyMembers.CountAsync(x => x.PartyId == partyId, ct);
-                if (count == 0)
+                // choose a random remaining member as leader
+                var candidate = remaining[Random.Shared.Next(remaining.Count)];
+
+                // update party leader
+                party.SetLeader(candidate.PlayerId); // preferred if exists
+
+                // If you do NOT have SetLeader, fallback:
+                // typeof(Party).GetProperty(nameof(Party.LeaderPlayerId))!.SetValue(party, candidate.PlayerId);
+
+                // update roles
+                foreach (var m in remaining)
                 {
-                    party.Close();
-                    await db.PartyInvites
-                        .Where(x => x.PartyId == partyId && x.Status == "Pending")
-                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, "Cancelled"), ct);
+                    if (m.PlayerId == candidate.PlayerId) m.PromoteToLeader();
+                    else m.DemoteToMember();
                 }
+
+                // Optional policy: if party was Queued, keep it Queued; if Open, keep Open.
+                // We do NOT auto-close just because leader left.
+            }
+
+            // If any pending invites exist and party is Closed later, we’d cancel them.
+            // Here we keep invites as-is; optionally cancel if leader left (to reduce confusion).
+            if (wasLeader)
+            {
+                await db.PartyInvites
+                    .Where(x => x.PartyId == partyId && x.Status == "Pending")
+                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, "Cancelled"), ct);
             }
 
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
 
             await NotifyRosterAsync(partyId, ct);
+
+            // 6I.7: mid-match flagging if leader left while a match link is active
+            if (wasLeader)
+            {
+                var activeLink = await db.PartyMatchLinks.AsNoTracking()
+                    .Where(x => x.PartyId == partyId && x.Status != "Closed")
+                    .OrderByDescending(x => x.CreatedAtUtc)
+                    .FirstOrDefaultAsync(ct);
+
+                if (activeLink is not null)
+                {
+                    // Flag leader abandonment (anti-cheat/abandon).
+                    // Adjust constructor to match your AntiCheatFlag shape if needed.
+                    db.AntiCheatFlags.Add(AntiCheatFlag.LeaderLeftPartyDuringMatch(
+                        playerId: playerId,
+                        matchId: activeLink.MatchId,
+                        partyId: partyId));
+
+                    await db.SaveChangesAsync(ct);
+                }
+            }
         }
 
         public async Task<PartyInvitesListResponseDto> ListInvitesAsync(Guid playerId, string box, int page, int pageSize, CancellationToken ct)
@@ -354,7 +416,7 @@ namespace Tycoon.Backend.Application.Social
         {
             var exists = await db.PartyMembers.AnyAsync(x => x.PartyId == partyId && x.PlayerId == playerId, ct);
             if (!exists)
-                db.PartyMembers.Add(new PartyMember(partyId, playerId));
+                db.PartyMembers.Add(new PartyMember(partyId, playerId, PartyRole.Member));
         }
 
         private static PartyInviteDto ToDto(PartyInvite i)

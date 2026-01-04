@@ -22,7 +22,6 @@ namespace Tycoon.Backend.Application
             services.AddScoped<Matchmaking.MatchmakingService>();
             services.TryAddSingleton<Matchmaking.IMatchmakingNotifier,Matchmaking.NullMatchmakingNotifier>();
 
-
             // Missions
             services.AddScoped<Missions.MissionProgressService>();
             services.AddTransient<Missions.Jobs.QuestionAnsweredMissionJob>();
@@ -68,6 +67,7 @@ namespace Tycoon.Backend.Application
             services.AddScoped<Social.FriendsService>();
             services.AddScoped<Social.PartyService>();
             services.AddScoped<Social.PartyMatchmakingService>();
+            services.AddScoped<Social.PartyLifecycleService>();
             services.TryAddSingleton<Social.IPartyMatchmakingNotifier, Social.NullPartyMatchmakingNotifier>();
 
             // Realtime

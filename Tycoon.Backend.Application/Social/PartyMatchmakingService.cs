@@ -202,6 +202,11 @@ namespace Tycoon.Backend.Application.Social
                 var started = await mediator.Send(new StartMatch(hostLeader, startMode), ct);
                 var matchId = started.MatchId;
 
+                // Persist party ↔ match links (durable lifecycle tracking)
+                db.PartyMatchLinks.Add(new PartyMatchLink(selfTicket.PartyId, matchId));
+                db.PartyMatchLinks.Add(new PartyMatchLink(oppTicket.PartyId, matchId));
+                await db.SaveChangesAsync(ct);
+
                 // Notify both parties (to all members via player groups)
                 await notifier.NotifyPartyMatchedAsync(
                     partyId: selfTicket.PartyId,

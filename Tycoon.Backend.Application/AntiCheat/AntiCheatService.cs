@@ -22,7 +22,8 @@ namespace Tycoon.Backend.Application.AntiCheat
                         severity: AntiCheatSeverity.Severe,
                         action: AntiCheatAction.BlockRewards,
                         message: "Correct/Wrong exceeds question count.",
-                        evidenceJson: JsonSerializer.Serialize(new { p.Correct, p.Wrong, req.QuestionCount })
+                        evidenceJson: JsonSerializer.Serialize(new { p.Correct, p.Wrong, req.QuestionCount }),
+                        createdAtUtc: DateTimeOffset.UtcNow
                     ));
                 }
             }
@@ -39,7 +40,8 @@ namespace Tycoon.Backend.Application.AntiCheat
                         AntiCheatSeverity.Warning,
                         AntiCheatAction.Warn,
                         "Average answer time is suspiciously low.",
-                        JsonSerializer.Serialize(new { p.AvgAnswerTimeMs })
+                        JsonSerializer.Serialize(new { p.AvgAnswerTimeMs }),
+                        createdAtUtc: DateTimeOffset.Now
                     ));
                 }
             }
@@ -55,7 +57,8 @@ namespace Tycoon.Backend.Application.AntiCheat
                     AntiCheatSeverity.Severe,
                     AntiCheatAction.BlockRewards,
                     "Duplicate player entries in participant list.",
-                    JsonSerializer.Serialize(new { dupPlayers })
+                    JsonSerializer.Serialize(new { dupPlayers }),
+                    createdAtUtc: DateTimeOffset.Now
                 ));
             }
 
@@ -71,7 +74,8 @@ namespace Tycoon.Backend.Application.AntiCheat
                         AntiCheatSeverity.Severe,
                         AntiCheatAction.BlockRewards,
                         "Negative values in match stats.",
-                        JsonSerializer.Serialize(new { p.Score, p.Correct, p.Wrong, p.AvgAnswerTimeMs })
+                        JsonSerializer.Serialize(new { p.Score, p.Correct, p.Wrong, p.AvgAnswerTimeMs }),
+                        createdAtUtc: DateTimeOffset.Now
                     ));
                 }
             }

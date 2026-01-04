@@ -7,6 +7,7 @@ using Tycoon.Backend.Application.Economy;
 using Tycoon.Backend.Application.Enforcement;
 using Tycoon.Backend.Application.Moderation;
 using Tycoon.Backend.Application.Seasons;
+using Tycoon.Backend.Application.Social;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -22,7 +23,8 @@ namespace Tycoon.Backend.Application.Matches
         SeasonPointsService seasonsPoints,
         TierAssignmentService tiers,
         ModerationService moderation,
-        EnforcementService enforcement)
+        EnforcementService enforcement,
+        PartyLifecycleService partLifecycle)
         : IRequestHandler<SubmitMatch, SubmitMatchResponse>
     {
         public async Task<SubmitMatchResponse> Handle(SubmitMatch r, CancellationToken ct)
@@ -142,31 +144,49 @@ namespace Tycoon.Backend.Application.Matches
             }
 
             var antiCheatBlocksRewards = AntiCheatService.ShouldBlockRewards(flags);
+
             var blockRewards = antiCheatBlocksRewards || !allowRewards;
-            var blockSeason = antiCheatBlocksRewards ||!allowRewards;
+            // IMPORTANT: season blocking should use allowSeasonPoints (not allowRewards)
+            var blockSeason = antiCheatBlocksRewards || !allowSeasonPoints;
 
             IReadOnlyList<MatchAwardDto> awards = Array.Empty<MatchAwardDto>();
 
+            // Mint economy rewards only when allowed
             if (!blockRewards)
             {
-                // Only mint economy when allowed
                 awards = await AwardAsync(req, match, econ, ct);
-
-                // Only apply season points when allowed
-                await ApplySeasonPointsAndRanksAsync(req, match, ct);
             }
 
+            // Apply season points only when allowed
             if (!blockSeason)
             {
                 await ApplySeasonPointsAndRanksAsync(req, match, ct);
             }
 
-            // Finish match for host (preserves your existing domain-event based mission/tier wiring)
+            // Finish match for host (preserves your existing domain-event based wiring)
             FinishHost(match, req);
 
             await db.SaveChangesAsync(ct);
 
+            // 6I.6: Auto-close parties linked to this match when final
+            if (req.Status == MatchStatus.Completed || req.Status == MatchStatus.Aborted)
+            {
+                try
+                {
+                    await partLifecycle.ClosePartiesForMatchAsync(
+                        matchId: req.MatchId,
+                        reason: $"Match {req.Status}",
+                        ct: ct);
+                }
+                catch
+                {
+                    // Do not fail match submission if party closure notifications fail.
+                    // You can log this later if you have ILogger<SubmitMatchHandler>.
+                }
+            }
+
             return new SubmitMatchResponse(req.EventId, req.MatchId, "Applied", awards);
+
         }
         private async Task ApplySeasonPointsAndRanksAsync(SubmitMatchRequest req, Match match, CancellationToken ct)
         {

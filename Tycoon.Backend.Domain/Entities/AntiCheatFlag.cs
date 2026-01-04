@@ -39,7 +39,8 @@
             AntiCheatSeverity severity,
             AntiCheatAction action,
             string message,
-            string? evidenceJson)
+            string? evidenceJson,
+            DateTimeOffset createdAtUtc)
         {
             MatchId = matchId;
             PlayerId = playerId;
@@ -50,5 +51,22 @@
             EvidenceJson = evidenceJson;
             CreatedAtUtc = DateTimeOffset.UtcNow;
         }
+        public static AntiCheatFlag LeaderLeftPartyDuringMatch(
+            Guid playerId,
+            Guid matchId,
+            Guid partyId)
+        {
+            return new AntiCheatFlag(
+                matchId: matchId,
+                playerId: playerId,
+                ruleKey: "party-leader-left",
+                severity: AntiCheatSeverity.Warning,
+                action: AntiCheatAction.Warn,
+                message: $"Leader left party {partyId} during active match.",
+                evidenceJson: null,
+                createdAtUtc: DateTimeOffset.UtcNow
+            );
+        }
+
     }
 }

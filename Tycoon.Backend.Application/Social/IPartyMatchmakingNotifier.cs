@@ -20,6 +20,14 @@ namespace Tycoon.Backend.Application.Social
             IReadOnlyList<Guid> memberPlayerIds,
             IReadOnlyList<Guid> onlinePlayerIds,
             CancellationToken ct);
+
+        Task NotifyPartyClosedAsync(
+            Guid partyId,
+            Guid matchId,
+            IReadOnlyList<Guid> memberPlayerIds,
+            string reason,
+            CancellationToken ct);
+
     }
 
     public sealed class NullPartyMatchmakingNotifier : IPartyMatchmakingNotifier
@@ -40,5 +48,7 @@ namespace Tycoon.Backend.Application.Social
             IReadOnlyList<Guid> memberPlayerIds,
             IReadOnlyList<Guid> onlinePlayerIds,
             CancellationToken ct) => Task.CompletedTask;
+        public Task NotifyPartyClosedAsync(Guid partyId, Guid matchId, IReadOnlyList<Guid> memberPlayerIds, string reason, CancellationToken ct)
+            => Task.CompletedTask;
     }
 }

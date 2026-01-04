@@ -50,6 +50,7 @@
 
     public sealed record PartyMemberDto(
         Guid PlayerId,
+        string Role,
         DateTimeOffset JoinedAtUtc
     );
 
