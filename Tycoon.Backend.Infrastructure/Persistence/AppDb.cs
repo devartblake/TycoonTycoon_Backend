@@ -58,10 +58,13 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<PartyMatchmakingTicket> PartyMatchmakingTickets => Set<PartyMatchmakingTicket>();
         public DbSet<PartyMatchLink> PartyMatchLinks => Set<PartyMatchLink>();
         public DbSet<PartyMatchMember> PartyMatchMembers => Set<PartyMatchMember>();
+        public DbSet<SeasonRewardClaim> SeasonRewardClaims => Set<SeasonRewardClaim>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.ApplyConfiguration(new SeasonRewardClaimConfiguration());
 
             // Optional: ensures EF picks up IEntityTypeConfiguration<> if you add them later.
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDb).Assembly);

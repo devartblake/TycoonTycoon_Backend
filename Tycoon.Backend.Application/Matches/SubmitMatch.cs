@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.AntiCheat;
 // Economy types assumed from your Step 5
@@ -25,9 +26,11 @@ namespace Tycoon.Backend.Application.Matches
         ModerationService moderation,
         EnforcementService enforcement,
         PartyIntegrityService partyIntegrity,
-        PartyLifecycleService partLifecycle)
+        PartyLifecycleService partLifecycle,
+        IOptions<RankedSeasonOptions> rankedOptions)
         : IRequestHandler<SubmitMatch, SubmitMatchResponse>
     {
+        private readonly RankedSeasonOptions _ranked = rankedOptions.Value;
         public async Task<SubmitMatchResponse> Handle(SubmitMatch r, CancellationToken ct)
         {
             var req = r.Request;
@@ -135,7 +138,7 @@ namespace Tycoon.Backend.Application.Matches
                 ));
             }
 
-            var flags = antiCheat.Evaluate(req);
+            var flags = antiCheat.Evaluate(req).ToList();
 
             // Party integrity flags
             var partyFlags = await partyIntegrity.EvaluateMatchSubmissionAsync(
@@ -206,6 +209,10 @@ namespace Tycoon.Backend.Application.Matches
             if (req.Status != MatchStatus.Completed)
                 return;
 
+            // Only ranked contributes to season ladder
+            if (!req.Mode.Equals("ranked", StringComparison.OrdinalIgnoreCase))
+                return;
+
             // Get active season
             var active = await seasons.GetActiveAsync(ct);
             if (active is null)
@@ -227,9 +234,25 @@ namespace Tycoon.Backend.Application.Matches
                 var win = !isDraw && winnerPlayerId.HasValue && p.PlayerId == winnerPlayerId.Value;
                 var draw = isDraw;
 
-                // Default policy (tune later):
-                // Win: +30, Draw: +15, Loss: +5, plus (correct / 2)
-                var delta = (win ? 30 : draw ? 15 : 5) + (Math.Max(0, p.Correct) / 2);
+                // Load or create profile ONCE
+                var profile = await db.PlayerSeasonProfiles
+                    .FirstOrDefaultAsync(x => x.SeasonId == seasonId && x.PlayerId == p.PlayerId, ct);
+
+                if (profile is null)
+                {
+                    profile = new PlayerSeasonProfile(seasonId, p.PlayerId, 0);
+                    db.PlayerSeasonProfiles.Add(profile);
+                }
+
+                // Placement-aware delta
+                var isPlacement = profile.PlacementMatchesCompleted < _ranked.PlacementMatchesRequired;
+
+                int basePts = isPlacement
+                    ? (win ? _ranked.PlacementWinPoints : draw ? _ranked.PlacementDrawPoints : _ranked.PlacementLossPoints)
+                    : (win ? _ranked.RankedWinBase : draw ? _ranked.RankedDrawBase : _ranked.RankedLossBase);
+
+                var perfPts = Math.Max(0, p.Correct) / _ranked.CorrectDivisor;
+                var delta = basePts + perfPts;
 
                 // Use deterministic per-player event id derived from submit event id
                 // This keeps season points idempotent per match submission retry.
@@ -245,19 +268,9 @@ namespace Tycoon.Backend.Application.Matches
                     $"match:{req.MatchId}"
                 ), ct);
 
-                // Update W/L/D counters on profile (non-ledger state)
-                // We do this in a safe way: get profile and update stats.
-                var profile = await db.PlayerSeasonProfiles
-                    .FirstOrDefaultAsync(x => x.SeasonId == seasonId && x.PlayerId == p.PlayerId, ct);
-
-                // Profile should exist because ApplyAsync creates it, but defensive anyway
-                if (profile is null)
-                {
-                    profile = new PlayerSeasonProfile(seasonId, p.PlayerId, 0);
-                    db.PlayerSeasonProfiles.Add(profile);
-                }
-
+                // Update profile counters ONCE
                 profile.ApplyMatchOutcome(win: win, draw: draw);
+                profile.RecordRankedMatchCompleted();
             }
 
             // Recompute tier ranks (100 users per tier)

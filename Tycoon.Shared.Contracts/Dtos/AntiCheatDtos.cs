@@ -8,7 +8,10 @@
         int Severity,
         int Action,
         string Message,
-        DateTimeOffset CreatedAtUtc
+        DateTimeOffset CreatedAtUtc,
+        DateTimeOffset? ReviewedAtUtc,
+        string? ReviewedBy,
+        string? ReviewNote
     );
 
     public sealed record AntiCheatFlagListResponseDto(

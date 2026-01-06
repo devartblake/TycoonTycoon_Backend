@@ -134,14 +134,14 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
             g.MapPut("/flags/{id:guid}/review", async (
                 IAppDb db,
                 Guid id,
-                ReviewFlagRequestDto body,
+                ReviewAntiCheatFlagRequestDto body,
                 CancellationToken ct) =>
             {
                 var flag = await db.AntiCheatFlags.FirstOrDefaultAsync(x => x.Id == id, ct);
                 if (flag is null)
                     return Results.NotFound();
 
-                flag.MarkReviewed(body.ReviewedBy ?? "admin");
+                flag.MarkReviewed(body.ReviewedBy, body.Note);
 
                 await db.SaveChangesAsync(ct);
                 return Results.NoContent();
