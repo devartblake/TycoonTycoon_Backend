@@ -27,6 +27,15 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
             b.Property(x => x.CreatedAtUtc).IsRequired();
             b.HasIndex(x => x.CreatedAtUtc);
             b.HasIndex(x => new { x.Severity, x.CreatedAtUtc });
+
+            b.Property(x => x.ReviewedAtUtc);
+            b.HasIndex(x => x.ReviewedAtUtc);
+
+            b.Property(x => x.ReviewedBy).HasMaxLength(64);
+            b.Property(x => x.ReviewNote).HasMaxLength(400);
+
+            // Optional: speeds up “unreviewed severe flags”
+            b.HasIndex(x => new { x.Severity, x.ReviewedAtUtc, x.CreatedAtUtc });
         }
     }
 }

@@ -63,5 +63,23 @@
             SeasonRank = Math.Max(0, seasonRank);
             UpdatedAtUtc = DateTimeOffset.UtcNow;
         }
+        public int PlacementMatchesCompleted { get; private set; }
+        public DateTimeOffset? LastPromotionAtUtc { get; private set; }
+        public DateTimeOffset? LastDemotionAtUtc { get; private set; }
+
+        public void RecordRankedMatchCompleted()
+        {
+            PlacementMatchesCompleted++;
+        }
+
+        public bool CanPromote(DateTimeOffset nowUtc, int cooldownDays)
+            => LastPromotionAtUtc is null || (nowUtc - LastPromotionAtUtc.Value).TotalDays >= cooldownDays;
+
+        public bool CanDemote(DateTimeOffset nowUtc, int cooldownDays)
+            => LastDemotionAtUtc is null || (nowUtc - LastDemotionAtUtc.Value).TotalDays >= cooldownDays;
+
+        public void MarkPromoted(DateTimeOffset nowUtc) => LastPromotionAtUtc = nowUtc;
+        public void MarkDemoted(DateTimeOffset nowUtc) => LastDemotionAtUtc = nowUtc;
+
     }
 }

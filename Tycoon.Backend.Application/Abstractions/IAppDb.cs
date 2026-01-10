@@ -30,6 +30,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<SkillNode> SkillNodes { get; }
         DbSet<PlayerSkillUnlock> PlayerSkillUnlocks { get; }
         DbSet<Season> Seasons { get; }
+        DbSet<SeasonRewardClaim> SeasonRewardClaims { get; }
         DbSet<PlayerSeasonProfile> PlayerSeasonProfiles { get; }
         DbSet<SeasonPointTransaction> SeasonPointTransactions { get; }
         DbSet<AntiCheatFlag> AntiCheatFlags { get; }

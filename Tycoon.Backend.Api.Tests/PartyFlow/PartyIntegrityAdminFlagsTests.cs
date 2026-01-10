@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Backend.Infrastructure.Persistence;
@@ -9,7 +10,11 @@ using Xunit;
 using PartyEntity = Tycoon.Backend.Domain.Entities.Party;
 using MatchEntity = Tycoon.Backend.Domain.Entities.Match;
 
-namespace Tycoon.Backend.Api.Tests.PartyFlow;
+// ✅ Avoid Party namespace collision
+using PartyEntity = Tycoon.Backend.Domain.Entities.Party;
+using MatchEntity = Tycoon.Backend.Domain.Entities.Match;
+
+namespace Tycoon.Backend.Api.Tests.Party;
 
 public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFactory>
 {
@@ -28,7 +33,6 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
     [Fact]
     public async Task SubmitMatch_MissingPartyMember_WritesPartyMemberMissingFlag()
     {
-        // Arrange: Create party + match + party link + membership snapshot
         var partyId = Guid.NewGuid();
         var leaderId = Guid.NewGuid();
         var mateId = Guid.NewGuid();
@@ -47,7 +51,6 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
             Status: MatchStatus.Completed,
             Participants: new[]
             {
-                // Only leader submits; mate is missing
                 new MatchParticipantResultDto(
                     PlayerId: leaderId,
                     Score: 100,
@@ -58,20 +61,17 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
             }
         );
 
-        // Act
         var resp = await _http.PostAsJsonAsync(SubmitRoute, req);
         resp.EnsureSuccessStatusCode();
 
-        // Assert: flag exists in DB
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-        var flags = db.AntiCheatFlags
+        var flags = await db.AntiCheatFlags.AsNoTracking()
             .Where(f => f.MatchId == matchId && f.RuleKey == "party-member-missing-from-submit")
-            .ToList();
+            .ToListAsync();
 
         flags.Should().NotBeEmpty();
-
         flags[0].EvidenceJson.Should().NotBeNullOrWhiteSpace();
         flags[0].EvidenceJson!.Should().Contain(partyId.ToString());
         flags[0].Message.Should().Contain("missing");
@@ -80,7 +80,6 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
     [Fact]
     public async Task AdminPartyFlags_ReturnsPartyIdParsedFromEvidence()
     {
-        // Arrange: seed a flag that contains evidenceJson.partyId
         var matchId = Guid.NewGuid();
         var partyId = Guid.NewGuid();
 
@@ -102,9 +101,8 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
             await db.SaveChangesAsync();
         }
 
-        // Act: call admin endpoint
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key"); // adjust to your factory config
+        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key"); // align to your factory config
 
         var r = await admin.GetAsync("/admin/anti-cheat/party/flags?page=1&pageSize=50&sinceUtc=" +
                                      Uri.EscapeDataString(DateTimeOffset.UtcNow.AddDays(-1).ToString("O")));
@@ -124,27 +122,61 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-        // Party
+        // ✅ Party (disambiguated)
         var party = new PartyEntity(leaderId);
-        typeof(PartyEntity).GetProperty(nameof(PartyEntity.Id))!.SetValue(party, partyId);
+
+        // Force Party.Id (private setter) via reflection
+        SetEntityId(party, partyId);
+
         db.Parties.Add(party);
 
         // Members
         db.PartyMembers.Add(new PartyMember(partyId, leaderId, PartyRole.Leader));
         db.PartyMembers.Add(new PartyMember(partyId, mateId, PartyRole.Member));
 
-        // Match (minimal)
-        var match = new Match(hostPlayerId: leaderId, mode: "ranked");
-        typeof(Match).GetProperty(nameof(Match.Id))!.SetValue(match, matchId);
+        // ✅ Match ctor only supports (hostPlayerId, mode)
+        var match = new MatchEntity(hostPlayerId: leaderId, mode: "ranked");
+        SetEntityId(match, matchId);
         db.Matches.Add(match);
 
         // Link
         db.PartyMatchLinks.Add(new PartyMatchLink(partyId, matchId));
 
-        // Snapshot (6J strict correctness)
+        // Snapshot
         db.PartyMatchMembers.Add(new PartyMatchMember(partyId, matchId, leaderId, "Leader"));
         db.PartyMatchMembers.Add(new PartyMatchMember(partyId, matchId, mateId, "Member"));
 
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Robust reflection setter for EF-style entities where Id is on a base type.
+    /// </summary>
+    private static void SetEntityId(object entity, Guid id)
+    {
+        var t = entity.GetType();
+
+        // try Id on the concrete type
+        var p = t.GetProperty("Id", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+        if (p is not null && p.PropertyType == typeof(Guid))
+        {
+            p.SetValue(entity, id);
+            return;
+        }
+
+        // try Id on base types
+        var bt = t.BaseType;
+        while (bt is not null)
+        {
+            var bp = bt.GetProperty("Id", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+            if (bp is not null && bp.PropertyType == typeof(Guid))
+            {
+                bp.SetValue(entity, id);
+                return;
+            }
+            bt = bt.BaseType;
+        }
+
+        throw new InvalidOperationException($"Could not set Id via reflection for entity type {t.FullName}.");
     }
 }

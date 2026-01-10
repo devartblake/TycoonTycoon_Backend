@@ -19,6 +19,7 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
                 [FromQuery] int pageSize,
                 [FromQuery] int? severity,
                 [FromQuery] Guid? playerId,
+                [FromQuery] bool? unreviewedOnly,
                 IAppDb db,
                 CancellationToken ct) =>
             {
@@ -29,6 +30,7 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
 
                 if (severity.HasValue) q = q.Where(x => (int)x.Severity == severity.Value);
                 if (playerId.HasValue) q = q.Where(x => x.PlayerId == playerId.Value);
+                if (unreviewedOnly == true) q = q.Where(x => x.ReviewedAtUtc == null);
 
                 q = q.OrderByDescending(x => x.CreatedAtUtc);
 
@@ -43,12 +45,35 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
                         (int)x.Severity,
                         (int)x.Action,
                         x.Message,
-                        x.CreatedAtUtc
+                        x.CreatedAtUtc,
+                        x.ReviewedAtUtc,
+                        x.ReviewedBy,
+                        x.ReviewNote
                     ))
                     .ToListAsync(ct);
 
                 return Results.Ok(new AntiCheatFlagListResponseDto(page, pageSize, total, items));
             });
+
+            // Map both review routes to the same handler
+            g.MapPut("/flags/{id:guid}/review", ReviewFlagInternal);
+            g.MapPut("/party/flags/{id:guid}/review", ReviewFlagInternal);
+        }
+
+        private static async Task<IResult> ReviewFlagInternal(
+            Guid id,
+            ReviewAntiCheatFlagRequestDto body,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var flag = await db.AntiCheatFlags.FirstOrDefaultAsync(x => x.Id == id, ct);
+            if (flag is null)
+                return Results.NotFound();
+
+            flag.MarkReviewed(body.ReviewedBy, body.Note);
+            await db.SaveChangesAsync(ct);
+
+            return Results.NoContent();
         }
     }
 }

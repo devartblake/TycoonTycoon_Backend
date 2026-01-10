@@ -180,6 +180,8 @@ PowerupsEndpoints.Map(app);
 SeasonsEndpoints.Map(app);
 FriendsEndpoints.Map(app);
 PartyEndpoints.Map(app);
+RankedLeaderboardsEndpoints.Map(app);
+SeasonRewardsEndpoints.Map(app);
 
 var admin = app.MapGroup("/admin")
     .RequireAdminOpsKey();
@@ -197,6 +199,8 @@ AdminEscalationEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);
 AdminAntiCheatAnalyticsEndpoints.Map(admin);
 AdminPartyAntiCheatEndpoints.Map(admin);
+AdminAntiCheatEndpoints.Map(admin);
+AdminSeasonRewardsEndpoints.Map(admin);
 
 // IMPORTANT:
 // Do NOT migrate here anymore. Tycoon.MigrationService owns migrations + seeding now.

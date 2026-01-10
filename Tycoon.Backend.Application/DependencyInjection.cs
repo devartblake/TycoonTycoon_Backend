@@ -3,7 +3,9 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
+using Tycoon.Backend.Application.Leaderboards;
 using Tycoon.Backend.Application.Realtime;
+using Tycoon.Backend.Application.Seasons;
 
 namespace Tycoon.Backend.Application
 {
@@ -73,6 +75,11 @@ namespace Tycoon.Backend.Application
 
             // Realtime
             services.TryAddSingleton<IPresenceReader, NullPresenceReader>();
+
+            // Seasonal Ranks
+            services.Configure<RankedSeasonOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<RankedLeaderboardService>();
+            services.AddScoped<SeasonRewardsService>();
 
             return services;
         }

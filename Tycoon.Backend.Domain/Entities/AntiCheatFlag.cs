@@ -31,8 +31,13 @@ namespace Tycoon.Backend.Domain.Entities
         public string? EvidenceJson { get; private set; }
 
         public DateTimeOffset CreatedAtUtc { get; private set; } = DateTimeOffset.UtcNow;
+
+        // Admin review workflow
         public DateTimeOffset? ReviewedAtUtc { get; private set; }
         public string? ReviewedBy { get; private set; }
+        public string? ReviewNote { get; private set; }
+
+        public bool IsReviewed => ReviewedAtUtc is not null;
         private AntiCheatFlag() { }
 
         public AntiCheatFlag(
@@ -77,10 +82,14 @@ namespace Tycoon.Backend.Domain.Entities
             );
         }
 
-        public void MarkReviewed(string reviewedBy)
+        public void MarkReviewed(string reviewedBy, string? note)
         {
+            if (IsReviewed) return; // idempotent; or throw if you prefer strictness
+
             ReviewedAtUtc = DateTimeOffset.UtcNow;
-            ReviewedBy = string.IsNullOrWhiteSpace(reviewedBy) ? "admin" : reviewedBy;
+            ReviewedBy = string.IsNullOrWhiteSpace(reviewedBy) ? "admin" : reviewedBy.Trim();
+            ReviewNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
         }
+
     }
 }
