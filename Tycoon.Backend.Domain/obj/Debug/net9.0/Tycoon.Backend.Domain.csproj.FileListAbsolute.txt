@@ -29,3 +29,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Domain\obj\Debug\ne
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Domain\obj\Debug\net9.0\refint\Tycoon.Backend.Domain.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Domain\obj\Debug\net9.0\Tycoon.Backend.Domain.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Domain\obj\Debug\net9.0\ref\Tycoon.Backend.Domain.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Domain\obj\Debug\net9.0\Tycoon.Backend.Domain.sourcelink.json

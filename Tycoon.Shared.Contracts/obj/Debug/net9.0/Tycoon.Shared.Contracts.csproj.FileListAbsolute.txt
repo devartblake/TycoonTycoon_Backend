@@ -21,3 +21,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Contracts\obj\Debug\
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Contracts\obj\Debug\net9.0\refint\Tycoon.Shared.Contracts.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Contracts\obj\Debug\net9.0\Tycoon.Shared.Contracts.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Contracts\obj\Debug\net9.0\ref\Tycoon.Shared.Contracts.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Contracts\obj\Debug\net9.0\Tycoon.Shared.Contracts.sourcelink.json

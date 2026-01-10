@@ -543,3 +543,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\re
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\ref\Tycoon.AppHost.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.sourcelink.json

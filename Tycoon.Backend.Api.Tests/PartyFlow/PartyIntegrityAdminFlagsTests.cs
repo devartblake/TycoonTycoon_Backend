@@ -6,8 +6,10 @@ using Tycoon.Backend.Infrastructure.Persistence;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 using Xunit;
+using PartyEntity = Tycoon.Backend.Domain.Entities.Party;
+using MatchEntity = Tycoon.Backend.Domain.Entities.Match;
 
-namespace Tycoon.Backend.Api.Tests.Party;
+namespace Tycoon.Backend.Api.Tests.PartyFlow;
 
 public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFactory>
 {
@@ -93,7 +95,8 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
                 severity: AntiCheatSeverity.Warning,
                 action: AntiCheatAction.Warn,
                 message: "Match submit missing party member(s).",
-                evidenceJson: System.Text.Json.JsonSerializer.Serialize(new { partyId })
+                evidenceJson: System.Text.Json.JsonSerializer.Serialize(new { partyId }),
+                createdAtUtc: DateTimeOffset.UtcNow
             ));
 
             await db.SaveChangesAsync();
@@ -122,8 +125,8 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
         // Party
-        var party = new Party(leaderId);
-        typeof(Party).GetProperty(nameof(Party.Id))!.SetValue(party, partyId);
+        var party = new PartyEntity(leaderId);
+        typeof(PartyEntity).GetProperty(nameof(PartyEntity.Id))!.SetValue(party, partyId);
         db.Parties.Add(party);
 
         // Members
@@ -131,7 +134,7 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
         db.PartyMembers.Add(new PartyMember(partyId, mateId, PartyRole.Member));
 
         // Match (minimal)
-        var match = new Match(hostPlayerId: leaderId, mode: "ranked", category: "general", questionCount: 10);
+        var match = new Match(hostPlayerId: leaderId, mode: "ranked");
         typeof(Match).GetProperty(nameof(Match.Id))!.SetValue(match, matchId);
         db.Matches.Add(match);
 

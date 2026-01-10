@@ -23,3 +23,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\n
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\refint\Tycoon.ServiceDefaults.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\ref\Tycoon.ServiceDefaults.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.sourcelink.json

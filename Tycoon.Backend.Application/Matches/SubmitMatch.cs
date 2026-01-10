@@ -135,7 +135,7 @@ namespace Tycoon.Backend.Application.Matches
                 ));
             }
 
-            var flags = antiCheat.Evaluate(req);
+            var flags = antiCheat.Evaluate(req).ToList();
 
             // Party integrity flags
             var partyFlags = await partyIntegrity.EvaluateMatchSubmissionAsync(

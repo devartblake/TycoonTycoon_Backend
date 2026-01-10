@@ -23,3 +23,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tyc
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\refint\Tycoon.Shared.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\ref\Tycoon.Shared.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.sourcelink.json

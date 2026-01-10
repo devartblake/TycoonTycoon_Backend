@@ -289,3 +289,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\ref\Tycoon.Backend.Api.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.sourcelink.json

@@ -23,3 +23,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\De
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\refint\Tycoon.Shared.Observability.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\ref\Tycoon.Shared.Observability.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.sourcelink.json

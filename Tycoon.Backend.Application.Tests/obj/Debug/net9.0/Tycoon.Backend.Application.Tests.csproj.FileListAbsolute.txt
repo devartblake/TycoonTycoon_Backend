@@ -429,3 +429,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\o
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\ref\Tycoon.Backend.Application.Tests.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.sourcelink.json

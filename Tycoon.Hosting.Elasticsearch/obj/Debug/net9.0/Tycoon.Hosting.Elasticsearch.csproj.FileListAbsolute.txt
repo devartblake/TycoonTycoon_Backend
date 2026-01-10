@@ -23,3 +23,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Hosting.Elasticsearch\obj\D
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Hosting.Elasticsearch\obj\Debug\net9.0\refint\Tycoon.Hosting.Elasticsearch.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Hosting.Elasticsearch\obj\Debug\net9.0\Tycoon.Hosting.Elasticsearch.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Hosting.Elasticsearch\obj\Debug\net9.0\ref\Tycoon.Hosting.Elasticsearch.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Hosting.Elasticsearch\obj\Debug\net9.0\Tycoon.Hosting.Elasticsearch.sourcelink.json

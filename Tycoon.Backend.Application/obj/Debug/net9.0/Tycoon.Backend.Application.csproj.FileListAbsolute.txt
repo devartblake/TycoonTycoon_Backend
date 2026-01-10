@@ -33,3 +33,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application\obj\Deb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application\obj\Debug\net9.0\refint\Tycoon.Backend.Application.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application\obj\Debug\net9.0\Tycoon.Backend.Application.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application\obj\Debug\net9.0\ref\Tycoon.Backend.Application.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application\obj\Debug\net9.0\Tycoon.Backend.Application.sourcelink.json

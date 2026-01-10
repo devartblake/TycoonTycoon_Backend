@@ -485,3 +485,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\ref\Tycoon.MigrationService.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.sourcelink.json

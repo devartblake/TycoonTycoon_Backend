@@ -27,3 +27,4 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Postgres\obj\Debug\net9.0\refint\P
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Postgres\obj\Debug\net9.0\Postgres.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Postgres\obj\Debug\net9.0\Postgres.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Postgres\obj\Debug\net9.0\ref\Postgres.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Postgres\obj\Debug\net9.0\Postgres.sourcelink.json
