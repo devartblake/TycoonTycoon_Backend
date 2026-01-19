@@ -10,10 +10,6 @@ using Xunit;
 using PartyEntity = Tycoon.Backend.Domain.Entities.Party;
 using MatchEntity = Tycoon.Backend.Domain.Entities.Match;
 
-// ✅ Avoid Party namespace collision
-using PartyEntity = Tycoon.Backend.Domain.Entities.Party;
-using MatchEntity = Tycoon.Backend.Domain.Entities.Match;
-
 namespace Tycoon.Backend.Api.Tests.Party;
 
 public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFactory>

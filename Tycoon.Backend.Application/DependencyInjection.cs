@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
@@ -80,6 +81,9 @@ namespace Tycoon.Backend.Application
             services.Configure<RankedSeasonOptions>(cfg => { /* defaults ok */ });
             services.AddScoped<RankedLeaderboardService>();
             services.AddScoped<SeasonRewardsService>();
+
+            //services.Configure<SeasonRewardOptions>(configuration.GetSection("SeasonRewards"));
+            services.AddScoped<SeasonRewardJob>();
 
             return services;
         }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tycoon.Shared.Observability")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d9f8b73f180912d428a45d0cc46c7caa272429a8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+73831f535bbb1e7aee2630d7d8d11f61ff5e66d3")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tycoon.Shared.Observability")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tycoon.Shared.Observability")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
