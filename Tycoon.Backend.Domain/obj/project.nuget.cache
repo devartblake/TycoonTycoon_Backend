@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "dKttoNeaCok=",
+  "dgSpecHash": "kIzxqg20zd0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj",
+  "projectFilePath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\scorp\\.nuget\\packages\\mediatr\\9.0.0\\mediatr.9.0.0.nupkg.sha512"
+    "C:\\Users\\lmxbl\\.nuget\\packages\\mediatr\\9.0.0\\mediatr.9.0.0.nupkg.sha512"
   ],
   "logs": []
 }

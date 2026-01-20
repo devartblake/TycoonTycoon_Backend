@@ -1,0 +1,136 @@
+# =========================
+
+# Core build artifacts
+
+# =========================
+
+**/bin/
+**/obj/
+**/out/
+**/artifacts/
+**/*.user
+**/*.suo
+**/*.cache
+**/*.log
+
+# =========================
+
+# .NET / NuGet
+
+# =========================
+
+**/.vs/
+**/.vscode/
+**/.idea/
+**/.nuget/
+**/packages/
+**/TestResults/
+
+# =========================
+
+# Tests & test artifacts
+
+# =========================
+
+**/*Tests/
+**/*Test/
+**/*Tests.*/
+**/*Test.*/
+**/*.trx
+**/*.coverage
+**/*.coveragexml
+**/coverage/
+**/coverage-report/
+
+# =========================
+
+# Git / VCS
+
+# =========================
+
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# =========================
+
+# Local secrets & env
+
+# =========================
+
+.env
+.env.*
+!.env.example
+secrets/
+**/secrets/
+**/*secret*
+**/*password*
+**/*apikey*
+**/*token*
+
+# =========================
+
+# OS / editor noise
+
+# =========================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+
+# Docker noise
+
+# =========================
+
+docker-compose.override.yml
+docker-compose.*.override.yml
+
+# =========================
+
+# Node / frontend (if added later)
+
+# =========================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+
+# =========================
+
+# Python (defensive)
+
+# =========================
+
+**pycache**/
+*.pyc
+*.pyo
+*.pyd
+.env/
+venv/
+.venv/
+
+# =========================
+
+# Archives / exports
+
+# =========================
+
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# =========================
+
+# Documentation builds
+
+# =========================
+
+**/site/
+**/dist/
+**/build/

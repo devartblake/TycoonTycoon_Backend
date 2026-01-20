@@ -1,0 +1,199 @@
+name: tycoon
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tycoon_postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-tycoon_db}"
+      POSTGRES_USER: "${POSTGRES_USER:-tycoon_user}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-tycoon_password_123}"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/postgres:/docker-entrypoint-initdb.d
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tycoon_user} -d ${POSTGRES_DB:-tycoon_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongodb:
+    image: mongo:7.0
+    container_name: tycoon_mongodb
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}"
+      MONGO_INITDB_DATABASE: "${MONGO_INITDB_DATABASE:-tycoon_db}"
+
+      # Used by init script (01-init.js) to create app user:
+      MONGO_APP_USER: "${MONGO_APP_USER:-tycoon_app_user}"
+      MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:-tycoon_app_password_123}"
+      MONGO_APP_DB: "${MONGO_APP_DB:-tycoon_db}"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./init/mongo:/docker-entrypoint-initdb.d
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: tycoon_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass '${REDIS_PASSWORD:-tycoon_redis_password_123}'"]
+    volumes:
+      - redis_data:/data
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD:-tycoon_redis_password_123}' ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: tycoon_elasticsearch
+    restart: unless-stopped
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.security.enrollment.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-tycoon_elastic_password_123}
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -u elastic:${ELASTIC_PASSWORD:-tycoon_elastic_password_123} http://localhost:9200/_cluster/health?pretty >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: tycoon_kibana
+    restart: unless-stopped
+    profiles: ["dev"]
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-tycoon_elastic_password_123}
+    depends_on:
+      - elasticsearch
+    networks: [tycoon-net]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: tycoon_pgadmin
+    restart: unless-stopped
+    profiles: ["dev"]
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@tycoon.local}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-admin_password_123}"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks: [tycoon-net]
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: tycoon_mongo_express
+    restart: unless-stopped
+    profiles: ["dev"]
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}"
+      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}:${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}@mongodb:27017/"
+      ME_CONFIG_BASICAUTH_USERNAME: "${MONGO_EXPRESS_USERNAME:-admin}"
+      ME_CONFIG_BASICAUTH_PASSWORD: "${MONGO_EXPRESS_PASSWORD:-admin_password_123}"
+    depends_on:
+      - mongodb
+    networks: [tycoon-net]
+
+  # OPTIONAL: API container (leave disabled until Dockerfile.api path is confirmed)
+  backend-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: tycoon_backend_api
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_HTTP_PORT:-5000}:5000"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      ASPNETCORE_URLS: "http://+:5000"
+      ConnectionStrings__PostgreSQL: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
+      ConnectionStrings__MongoDB: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-tycoon_redis_password_123}"
+      ElasticSearch__Uri: "http://elasticsearch:9200"
+      ElasticSearch__Username: "elastic"
+      ElasticSearch__Password: "${ELASTIC_PASSWORD:-tycoon_elastic_password_123}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks: [tycoon-net]
+
+  migration:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.migrate
+    container_name: tycoon_migration
+    restart: "no"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+
+      # Align with the API's connection string resolution:
+      # Program.cs mentions tycoon-db (Aspire) or db for Hangfire. We keep "db" here.
+      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
+
+      # Optional: if your infrastructure layer reads these as well, keep them consistent.
+      ConnectionStrings__tycoon-db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
+      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-tycoon_redis_password_123}"
+      ConnectionStrings__cache: "redis:6379,password=${REDIS_PASSWORD:-tycoon_redis_password_123}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [tycoon-net]
+
+networks:
+  tycoon-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  mongodb_config:
+  redis_data:
+  elasticsearch_data:
+  pgadmin_data:

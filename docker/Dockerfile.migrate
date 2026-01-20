@@ -1,0 +1,18 @@
+# docker/Dockerfile.migrate
+# Purpose: build a tiny runner image that applies EF migrations + seeds via Tycoon.MigrationService
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy repo
+COPY . .
+
+# Restore + publish the migration service
+RUN dotnet restore "./Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+RUN dotnet publish "./Tycoon.MigrationService/Tycoon.MigrationService.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/runtime:9.0 AS final
+WORKDIR /app
+
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "Tycoon.MigrationService.dll"]

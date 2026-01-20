@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj": {}
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj": {}
   },
   "projects": {
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj",
         "projectName": "Elastic",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\ElasticSearch\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,7 +26,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -45,7 +44,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -88,24 +87,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj",
         "projectName": "Mongo",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Mongo\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Mongo\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -114,7 +113,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -133,7 +131,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -168,24 +166,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj",
         "projectName": "Postgres",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Postgres\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -194,7 +192,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -213,7 +210,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -250,24 +247,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
         "projectName": "Tycoon.AppHost",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.AppHost\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -276,21 +273,20 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj"
               }
             }
           }
@@ -305,7 +301,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -348,24 +344,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj",
         "projectName": "Tycoon.Backend.Api",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -374,24 +370,23 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj"
               }
             }
           }
@@ -406,7 +401,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -469,24 +464,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj",
         "projectName": "Tycoon.Backend.Application",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -495,18 +490,17 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
               }
             }
           }
@@ -521,7 +515,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -568,24 +562,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj",
         "projectName": "Tycoon.Backend.Domain",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -594,15 +588,14 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
               }
             }
           }
@@ -617,7 +610,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -644,24 +637,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj",
         "projectName": "Tycoon.Backend.Infrastructure",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -670,21 +663,20 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj"
               }
             }
           }
@@ -699,7 +691,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -786,24 +778,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj",
         "projectName": "Tycoon.Hosting.Elasticsearch",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -812,7 +804,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -831,7 +822,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -858,24 +849,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj",
         "projectName": "Tycoon.MigrationService",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -884,33 +875,32 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Mongo\\Mongo.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj"
               },
-              "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj": {
-                "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj"
+              "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj": {
+                "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj"
               }
             }
           }
@@ -925,7 +915,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -982,24 +972,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj",
         "projectName": "Tycoon.ServiceDefaults",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -1008,7 +998,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -1027,7 +1016,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -1078,24 +1067,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj",
         "projectName": "Tycoon.Shared.Contracts",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -1104,7 +1093,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -1123,7 +1111,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -1144,24 +1132,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj",
         "projectName": "Tycoon.Shared.Observability",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -1170,7 +1158,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -1189,7 +1176,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -1268,7 +1255,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

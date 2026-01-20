@@ -1,0 +1,5 @@
+
+services:
+  elasticsearch:
+    environment:
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms256m -Xmx256m}

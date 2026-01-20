@@ -1,0 +1,35 @@
+.PHONY: up up-dev down logs ps clean health
+
+COMPOSE = docker compose -f docker/compose.yml
+COMPOSE_DEV = docker compose -f docker/compose.yml -f docker/compose.dev.yml --profile dev
+
+up:
+	$(COMPOSE) up -d
+
+up-dev:
+	$(COMPOSE_DEV) up -d
+
+down:
+	$(COMPOSE) down
+
+logs:
+	$(COMPOSE) logs -f
+
+ps:
+	$(COMPOSE) ps
+
+clean:
+	@echo "This deletes volumes (data). Continue? [y/N]" && read ans && [ $${ans:-N} = y ]
+	$(COMPOSE) down -v --remove-orphans
+
+health:
+	@echo "PostgreSQL:" && $(COMPOSE) exec -T postgres pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || true
+	@echo "MongoDB:" && $(COMPOSE) exec -T mongodb mongosh --eval "db.adminCommand('ping')" || true
+	@echo "Redis:" && $(COMPOSE) exec -T redis sh -lc "redis-cli -a '$$REDIS_PASSWORD' ping" || true
+	@echo "Elasticsearch:" && curl -fsS -u elastic:$$ELASTIC_PASSWORD http://localhost:$$ELASTICSEARCH_PORT/_cluster/health?pretty || true
+
+.PHONY: migrate
+
+migrate:
+$(COMPOSE) up -d
+	docker compose -f docker/compose.yml run --rm migration

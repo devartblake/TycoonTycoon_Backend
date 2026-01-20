@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tycoon.ServiceDefaults")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+12e65f73c5d0b0a570a8049139ed01f560201cc5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fc5c1476731fcb58759b02126dc586274e9be154")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tycoon.ServiceDefaults")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tycoon.ServiceDefaults")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
