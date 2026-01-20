@@ -201,6 +201,7 @@ AdminAntiCheatAnalyticsEndpoints.Map(admin);
 AdminPartyAntiCheatEndpoints.Map(admin);
 AdminAntiCheatEndpoints.Map(admin);
 AdminSeasonRewardsEndpoints.Map(admin);
+AdminSeasonLifecycleEndpoints.Map(admin);
 
 // IMPORTANT:
 // Do NOT migrate here anymore. Tycoon.MigrationService owns migrations + seeding now.

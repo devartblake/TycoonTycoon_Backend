@@ -84,6 +84,7 @@ namespace Tycoon.Backend.Application
 
             //services.Configure<SeasonRewardOptions>(configuration.GetSection("SeasonRewards"));
             services.AddScoped<SeasonRewardJob>();
+            services.AddScoped<SeasonCloseOrchestrator>();
 
             return services;
         }

@@ -24,7 +24,7 @@ namespace Tycoon.Backend.Application.Seasons
             // Only one active season at a time
             var active = await db.Seasons.Where(x => x.Status == SeasonStatus.Active).ToListAsync(ct);
             foreach (var s in active)
-                s.Close(); // close any prior active season defensively
+                s.Close(DateTimeOffset.UtcNow); // close any prior active season defensively
 
             season.Activate();
             await db.SaveChangesAsync(ct);
@@ -37,7 +37,7 @@ namespace Tycoon.Backend.Application.Seasons
             var season = await db.Seasons.FirstOrDefaultAsync(x => x.Id == req.SeasonId, ct);
             if (season is null) return (null, null);
 
-            season.Close();
+            season.Close(DateTimeOffset.UtcNow);
             await db.SaveChangesAsync(ct);
 
             SeasonDto? nextDto = null;

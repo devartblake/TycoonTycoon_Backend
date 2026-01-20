@@ -25,26 +25,26 @@ public sealed class SeasonRewardJob
         if (rules is null || rules.Count == 0)
             return;
 
-        var profiles = await _db.PlayerSeasonProfiles
-            .Where(p => p.SeasonId == seasonId)
-            .ToListAsync(ct);
+        var rows = await _db.SeasonRankSnapshots
+        .AsNoTracking()
+        .Where(r => r.SeasonId == seasonId)
+        .ToListAsync(ct);
 
-        foreach (var p in profiles)
+        foreach (var r in rows)
         {
-            var rule = rules.FirstOrDefault(r => r.Tier == p.Tier && p.TierRank <= r.MaxTierRank);
-            if (rule is null)
-                continue;
+            var rule = rules.FirstOrDefault(x => x.Tier == r.Tier && r.TierRank <= x.MaxTierRank);
+            if (rule is null) continue;
 
             await _economy.ApplyAsync(new CreateEconomyTxnRequest(
-                EventId: DeterministicGuid(seasonId, p.PlayerId),
-                PlayerId: p.PlayerId,
+                EventId: DeterministicGuid(seasonId, r.PlayerId),
+                PlayerId: r.PlayerId,
                 Kind: "season-reward",
                 Lines: new[]
                 {
-                    new EconomyLineDto(CurrencyType.Xp, rule.RewardXp),
-                    new EconomyLineDto(CurrencyType.Coins, rule.RewardCoins),
+            new EconomyLineDto(CurrencyType.Xp, rule.RewardXp),
+            new EconomyLineDto(CurrencyType.Coins, rule.RewardCoins),
                 },
-                Note: $"season:{seasonId}"
+                Note: $"season:{seasonId}:final"
             ), ct);
         }
     }

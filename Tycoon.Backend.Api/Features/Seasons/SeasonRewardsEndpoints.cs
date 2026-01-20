@@ -33,5 +33,17 @@ public static class SeasonRewardsEndpoints
             var r = await svc.ClaimAsync(playerId, body, ct);
             return Results.Ok(r);
         });
+
+        // Preview eligibility (admin hook)
+        g.MapGet("/preview/{playerId:guid}", async (
+            Guid playerId,
+            Guid? seasonId,
+            SeasonRewardsService rewards,
+            CancellationToken ct) =>
+        {
+            var dto = await rewards.GetEligibilityAsync(playerId, seasonId, ct);
+            return Results.Ok(dto);
+        });
+
     }
 }

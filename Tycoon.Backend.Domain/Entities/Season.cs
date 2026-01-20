@@ -8,7 +8,7 @@ namespace Tycoon.Backend.Domain.Entities
         public int SeasonNumber { get; private set; }
         public string Name { get; private set; } = string.Empty;
         public SeasonStatus Status { get; private set; }
-
+        public DateTimeOffset ClosedAtUtc { get; private set; }
         public DateTimeOffset StartsAtUtc { get; private set; }
         public DateTimeOffset EndsAtUtc { get; private set; }
         public DateTimeOffset CreatedAtUtc { get; private set; } = DateTimeOffset.UtcNow;
@@ -29,9 +29,10 @@ namespace Tycoon.Backend.Domain.Entities
             Status = SeasonStatus.Active;
         }
 
-        public void Close()
+        public void Close(DateTimeOffset closedAtUtc)
         {
             Status = SeasonStatus.Closed;
+            ClosedAtUtc = closedAtUtc; // ensure you have this nullable property
         }
     }
 }

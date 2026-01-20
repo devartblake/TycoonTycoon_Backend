@@ -23,7 +23,7 @@ public sealed class SeasonRolloverJob(IAppDb db, SeasonService seasons)
             if (season is null)
                 return;
 
-            season.Close();
+            season.Close(DateTimeOffset.UtcNow);
             await db.SaveChangesAsync(ct);
 
             // Optionally create next season here (or admin-created)
