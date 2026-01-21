@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Analytics.Abstractions;
@@ -59,8 +60,10 @@ namespace Tycoon.Backend.Infrastructure
             }
 
             // Mongo (analytics)
+            var analyticsEnabled = cfg.GetValue("Analytics:Enabled", true);
+
             var mongo = cfg.GetConnectionString("mongo") ?? cfg["Mongo:ConnectionString"];
-            if (!string.IsNullOrWhiteSpace(mongo))
+            if (analyticsEnabled && !string.IsNullOrWhiteSpace(mongo))
             {
                 services.Configure<MongoOptions>(o =>
                 {
@@ -71,8 +74,10 @@ namespace Tycoon.Backend.Infrastructure
                 });
 
                 services.AddSingleton<MongoClientFactory>();
-                services.AddSingleton<IAnalyticsEventWriter, MongoAnalyticsEventWriter>();
-                services.AddSingleton<IRollupStore, MongoRollupStore>();
+
+                // Replace default no-op registrations with Mongo-backed implementations
+                services.Replace(ServiceDescriptor.Singleton<IAnalyticsEventWriter, MongoAnalyticsEventWriter>());
+                services.Replace(ServiceDescriptor.Singleton<IRollupStore, MongoRollupStore>());
 
                 // Step 7: rollup replay source
                 services.AddSingleton<MongoRollupReader>();

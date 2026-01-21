@@ -54,6 +54,15 @@ builder.Services.Configure<JsonOptions>(o => o.SerializerOptions.Converters.Add(
 builder.Services.AddEndpointsApiExplorer().AddSwaggerGen();
 builder.Services.AddCors();
 
+// Analytics: No-op writer if disabled
+var analyticsEnabled = builder.Configuration.GetValue("Analytics:Enabled", false);
+if (!analyticsEnabled)
+{
+    builder.Services.AddSingleton<
+        Tycoon.Backend.Application.Analytics.Abstractions.IAnalyticsEventWriter,
+        Tycoon.Backend.Application.Analytics.NoopAnalyticsEventWriter>();
+}
+
 // Infra & App
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
@@ -88,15 +97,6 @@ if (hangfireEnabled)
            }));
 
     builder.Services.AddHangfireServer();
-}
-
-// Analytics: No-op writer if disabled
-var analyticsEnabled = builder.Configuration.GetValue("Analytics:Enabled", false);
-if (!analyticsEnabled)
-{
-    builder.Services.AddSingleton<
-        Tycoon.Backend.Application.Analytics.Abstractions.IAnalyticsEventWriter,
-        Tycoon.Backend.Application.Analytics.NoopAnalyticsEventWriter>();
 }
 
 // JWT Authentication
@@ -170,10 +170,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger().UseSwaggerUI();
 }
 
-app.UseHangfireDashboard("/hangfire" /*, new Hangfire.Dashboard.DashboardOptions
+if (hangfireEnabled)
+{
+    app.UseHangfireDashboard("/hangfire" /*, new Hangfire.Dashboard.DashboardOptions
 {
     Authorization = new[] { new HangfireAuthorizationFilter() }
 }*/);
+
+    // Hangfire recurring job placeholder
+    RecurringJob.AddOrUpdate<Tycoon.Backend.Application.Leaderboards.LeaderboardRecalculationJob>(
+        "daily-leaderboard-recalc",
+        job => job.Run(),
+        "0 5 * * *" // 5:00 UTC daily; adjust as desired
+    );
+}
 
 app.UseRouting();
 app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowed(_ => true));
@@ -218,16 +228,6 @@ AdminPartyAntiCheatEndpoints.Map(admin);
 AdminAntiCheatEndpoints.Map(admin);
 AdminSeasonRewardsEndpoints.Map(admin);
 AdminSeasonLifecycleEndpoints.Map(admin);
-
-// IMPORTANT:
-// Do NOT migrate here anymore. Tycoon.MigrationService owns migrations + seeding now.
-
-// Hangfire recurring job placeholder
-RecurringJob.AddOrUpdate<Tycoon.Backend.Application.Leaderboards.LeaderboardRecalculationJob>(
-    "daily-leaderboard-recalc",
-    job => job.Run(),
-    "0 5 * * *" // 5:00 UTC daily; adjust as desired
-);
 
 app.Run();
 
