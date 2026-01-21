@@ -17,5 +17,5 @@ public class Tycoon_AppHost
     /// <summary>
     /// The path to the Aspire Host project.
     /// </summary>
-    public static string ProjectPath => """C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.AppHost""";
+    public static string ProjectPath => """C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.AppHost""";
 }
