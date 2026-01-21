@@ -68,19 +68,35 @@ if (!string.IsNullOrWhiteSpace(redis))
 
 var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", true);
 
-if (!hangfireEnabled)
+if (hangfireEnabled)
 {
     // Hangfire (Postgres storage). Aspire typically names Postgres db "tycoon-db".
-    var hangfireDb = builder.Configuration.GetConnectionString("tycoon-db")
-                    ?? builder.Configuration.GetConnectionString("db");
+    var postgres =
+        builder.Configuration.GetConnectionString("tycoon-db")
+        ?? builder.Configuration.GetConnectionString("db");
 
-    if (string.IsNullOrWhiteSpace(hangfireDb))
-        throw new InvalidOperationException("Missing PostgreSQL connection string for Hangfire. Provide ConnectionStrings:tycoon-db (Aspire) or ConnectionStrings:db.");
+    // Use your existing Postgres connection for Hangfire storage.
+    builder.Services.AddHangfire(cfg =>
+        cfg.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+           .UseSimpleAssemblyNameTypeSerializer()
+           .UseRecommendedSerializerSettings()
+           .UsePostgreSqlStorage(postgres, new PostgreSqlStorageOptions
+           {
+               // Reasonable local defaults; tune later.
+               QueuePollInterval = TimeSpan.FromSeconds(5),
+               InvisibilityTimeout = TimeSpan.FromMinutes(5),
+           }));
 
-    builder.Services.AddHangfire(cfg => cfg.UseSimpleAssemblyNameTypeSerializer()
-                                           .UseRecommendedSerializerSettings()
-                                           .UsePostgreSqlStorage(hangfireDb));
     builder.Services.AddHangfireServer();
+}
+
+// Analytics: No-op writer if disabled
+var analyticsEnabled = builder.Configuration.GetValue("Analytics:Enabled", false);
+if (!analyticsEnabled)
+{
+    builder.Services.AddSingleton<
+        Tycoon.Backend.Application.Analytics.Abstractions.IAnalyticsEventWriter,
+        Tycoon.Backend.Application.Analytics.NoopAnalyticsEventWriter>();
 }
 
 // JWT Authentication

@@ -21,7 +21,7 @@ namespace Tycoon.Backend.Application
             services.AddValidatorsFromAssembly(asm);
 
             // Match
-            services.AddScoped<Matches.StartMatch>();
+            //services.AddScoped<Matches.StartMatch>();
             services.AddScoped<Matchmaking.MatchmakingService>();
             services.TryAddSingleton<Matchmaking.IMatchmakingNotifier,Matchmaking.NullMatchmakingNotifier>();
 
@@ -49,7 +49,7 @@ namespace Tycoon.Backend.Application
             services.AddScoped<Skills.SkillTreeService>();
 
             // Submit Match
-            services.AddScoped<Matches.SubmitMatch>();
+            //services.AddScoped<Matches.SubmitMatch>();
 
             // Seasons
             services.AddScoped<Seasons.SeasonService>();
