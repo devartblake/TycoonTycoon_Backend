@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Tycoon.Backend.Application.Analytics.Models;
 using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Application.Abstractions
@@ -23,6 +24,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<Question> Questions { get; }
         DbSet<QuestionOption> QuestionOptions { get; }
         DbSet<QuestionTag> QuestionTags { get; }
+        DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents { get; }
         DbSet<PlayerWallet> PlayerWallets { get; }
         DbSet<EconomyTransaction> EconomyTransactions { get; }
         DbSet<EconomyTransactionLine> EconomyTransactionLines { get; }
