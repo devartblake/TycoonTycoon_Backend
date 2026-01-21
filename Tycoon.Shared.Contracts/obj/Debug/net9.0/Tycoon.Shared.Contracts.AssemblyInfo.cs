@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tycoon.Shared.Contracts")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76a160d0d8744a6281e2e8144342137bcb9245b6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b940cb6b244cb334066a3029bf43b0731be5029a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tycoon.Shared.Contracts")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tycoon.Shared.Contracts")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
