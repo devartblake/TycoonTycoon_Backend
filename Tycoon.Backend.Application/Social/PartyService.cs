@@ -10,8 +10,7 @@ namespace Tycoon.Backend.Application.Social
     public sealed class PartyService(
         IAppDb db,
         IPartyMatchmakingNotifier notifier,
-        IPresenceReader presence,
-        AntiCheatService antiCheat)
+        IPresenceReader presence)
     {
         // MVP: 2-player party (duos). Raise later as needed.
         private const int MaxPartySize = 2;

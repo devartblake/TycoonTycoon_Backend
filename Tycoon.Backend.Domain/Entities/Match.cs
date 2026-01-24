@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Domain.Entities
         public Guid HostPlayerId { get; private set; }
         public string Mode { get; private set; } = "solo";
         public DateTimeOffset StartedAt { get; private set; } = DateTimeOffset.UtcNow;
-        public DateTimeOffset? FinishedAt { get; private set; }
+        public DateTimeOffset? FinishedAt { get; private set; } = DateTimeOffset.UtcNow;
         public byte[]? RowVersion { get; private set; } // EF Core concurrency token
 
         /// <summary>
@@ -19,7 +19,7 @@ namespace Tycoon.Backend.Domain.Entities
         /// Note: This currently represents "question attempts", not "round summaries".
         /// </summary>
         public List<MatchRound> Rounds { get; private set; } = new();
-        public object CreatedAtUtc { get; set; }
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
         private Match() { } // EF Core
 

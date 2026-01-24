@@ -537,7 +537,6 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\testhost.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Tycoon.Backend.Api.deps.json
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Tycoon.Backend.Api.runtimeconfig.json
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\appsettings.json
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\Tycoon.Backend.Api.exe
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\testhost.exe
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api.Tests\bin\Debug\net9.0\MvcTestingAppManifest.json

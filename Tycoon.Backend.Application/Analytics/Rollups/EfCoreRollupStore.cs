@@ -1,87 +1,158 @@
-﻿using Tycoon.Backend.Application.Analytics.Abstractions;
-using Tycoon.Backend.Application.Analytics.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Tycoon.Backend.Application.Abstractions;
-using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Application.Analytics.Abstractions;
+using Tycoon.Backend.Application.Analytics.Models;
 
-namespace Tycoon.Backend.Application.Analytics.Rollups
+namespace Tycoon.Backend.Application.Analytics.Rollups;
+
+/// <summary>
+/// EF Core implementation of IRollupStore.
+/// Performs upsert behavior for daily rollups using (UtcDate, Mode, Category, Difficulty) keys,
+/// and for player daily rollups using (UtcDate, PlayerId, Mode, Category, Difficulty) keys.
+/// </summary>
+public sealed class EfCoreRollupStore : IRollupStore
 {
-    public sealed class EfCoreRollupStore : IRollupStore
+    private readonly IAppDb _db;
+
+    public EfCoreRollupStore(IAppDb db)
     {
-        private readonly IAppDb _db;
+        _db = db;
+    }
 
-        public EfCoreRollupStore(IAppDb db)
+    public async Task<QuestionAnsweredDailyRollup> UpsertDailyRollupAsync(
+        DateOnly utcDate,
+        string mode,
+        string category,
+        int difficulty,
+        bool isCorrect,
+        int answerTimeMs,
+        DateTime answeredAtUtc,
+        CancellationToken ct)
+    {
+        // Normalize strings to ensure consistent keys
+        mode = (mode ?? string.Empty).Trim();
+        category = (category ?? string.Empty).Trim();
+
+        var existing = await _db.QuestionAnsweredDailyRollups
+            .FirstOrDefaultAsync(r =>
+                r.UtcDate == utcDate &&
+                r.Mode == mode &&
+                r.Category == category &&
+                r.Difficulty == difficulty,
+                ct);
+
+        if (existing is null)
         {
-            _db = db;
+            existing = new QuestionAnsweredDailyRollup
+            {
+                UtcDate = utcDate,
+                Mode = mode,
+                Category = category,
+                Difficulty = difficulty,
+                TotalAnswers = 0,
+                CorrectAnswers = 0,
+                WrongAnswers = 0,
+                SumAnswerTimeMs = 0,
+                MinAnswerTimeMs = answerTimeMs, // Initialize with current
+                MaxAnswerTimeMs = answerTimeMs, // Initialize with current
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            _db.QuestionAnsweredDailyRollups.Add(existing);
+        }
+        else
+        {
+            // Update Min/Max for existing records
+            existing.MinAnswerTimeMs = existing.MinAnswerTimeMs == 0
+                ? answerTimeMs
+                : Math.Min(existing.MinAnswerTimeMs, answerTimeMs);
+
+            existing.MaxAnswerTimeMs = Math.Max(existing.MaxAnswerTimeMs, answerTimeMs);
         }
 
-        public async Task<DailyRollup> UpsertDailyRollupAsync(
-            DateOnly utcDate,
-            string mode,
-            string category,
-            int difficulty,
-            bool isCorrect,
-            int answerTimeMs,
-            DateTime answeredAtUtc,
-            CancellationToken ct)
+        // Increment counters
+        existing.TotalAnswers += 1;
+        if (isCorrect)
+            existing.CorrectAnswers += 1;
+        else
+            existing.WrongAnswers += 1;
+
+        if (answerTimeMs > 0)
+            existing.SumAnswerTimeMs += answerTimeMs;
+
+        existing.UpdatedAtUtc = answeredAtUtc;
+
+        await _db.SaveChangesAsync(ct);
+        return existing;
+    }
+
+    public async Task<QuestionAnsweredPlayerDailyRollup> UpsertPlayerDailyRollupAsync(
+        DateOnly utcDate,
+        Guid playerId,
+        string mode,
+        string category,
+        int difficulty,
+        bool isCorrect,
+        int answerTimeMs,
+        DateTime answeredAtUtc,
+        CancellationToken ct)
+    {
+        mode = (mode ?? string.Empty).Trim();
+        category = (category ?? string.Empty).Trim();
+
+        var existing = await _db.QuestionAnsweredPlayerDailyRollups
+            .FirstOrDefaultAsync(r =>
+                r.UtcDate == utcDate &&
+                r.PlayerId == playerId &&
+                r.Mode == mode &&
+                r.Category == category &&
+                r.Difficulty == difficulty,
+                ct);
+
+        if (existing is null)
         {
-            var rollup = await _db.DailyRollups
-                .SingleOrDefaultAsync(x =>
-                    x.UtcDate == utcDate &&
-                    x.Mode == mode &&
-                    x.Category == category &&
-                    x.Difficulty == difficulty,
-                    ct);
-
-            if (rollup is null)
+            existing = new QuestionAnsweredPlayerDailyRollup
             {
-                rollup = DailyRollup.Create(
-                    utcDate, mode, category, difficulty,
-                    isCorrect, answerTimeMs, answeredAtUtc);
+                UtcDate = utcDate,
+                PlayerId = playerId,
+                Mode = mode,
+                Category = category,
+                Difficulty = difficulty,
+                TotalAnswers = 0,
+                CorrectAnswers = 0,
+                WrongAnswers = 0,
+                SumAnswerTimeMs = 0,
+                MinAnswerTimeMs = answerTimeMs,
+                MaxAnswerTimeMs = answerTimeMs,
+                CreatedAtUtc = DateTime.UtcNow
+            };
 
-                _db.DailyRollups.Add(rollup);
-            }
-            else
-            {
-                rollup.Apply(isCorrect, answerTimeMs, answeredAtUtc);
-            }
+            _db.QuestionAnsweredPlayerDailyRollups.Add(existing);
+        }
+        else
+        {
+            existing.MinAnswerTimeMs = existing.MinAnswerTimeMs == 0
+                ? answerTimeMs
+                : Math.Min(existing.MinAnswerTimeMs, answerTimeMs);
 
-            return rollup;
+            existing.MaxAnswerTimeMs = Math.Max(existing.MaxAnswerTimeMs, answerTimeMs);
         }
 
-        public async Task<PlayerDailyRollup> UpsertPlayerDailyRollupAsync(
-            DateOnly utcDate,
-            Guid playerId,
-            string mode,
-            string category,
-            int difficulty,
-            bool isCorrect,
-            int answerTimeMs,
-            DateTime answeredAtUtc,
-            CancellationToken ct)
-        {
-            var rollup = await _db.PlayerDailyRollups
-                .SingleOrDefaultAsync(x =>
-                    x.UtcDate == utcDate &&
-                    x.PlayerId == playerId &&
-                    x.Mode == mode &&
-                    x.Category == category &&
-                    x.Difficulty == difficulty,
-                    ct);
+        existing.TotalAnswers += 1;
+        if (isCorrect)
+            existing.CorrectAnswers += 1;
+        else
+            existing.WrongAnswers += 1;
 
-            if (rollup is null)
-            {
-                rollup = PlayerDailyRollup.Create(
-                    utcDate, playerId, mode, category,
-                    difficulty, isCorrect, answerTimeMs, answeredAtUtc);
+        if (answerTimeMs > 0)
+            existing.SumAnswerTimeMs += answerTimeMs;
 
-                _db.PlayerDailyRollups.Add(rollup);
-            }
-            else
-            {
-                rollup.Apply(isCorrect, answerTimeMs, answeredAtUtc);
-            }
+        existing.UpdatedAtUtc = answeredAtUtc;
 
-            return rollup;
-        }
+        await _db.SaveChangesAsync(ct);
+        return existing;
     }
 }

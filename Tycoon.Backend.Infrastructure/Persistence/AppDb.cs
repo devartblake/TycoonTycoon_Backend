@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Analytics.Models;
 using Tycoon.Backend.Domain.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Infrastructure.Events;
@@ -38,6 +39,12 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<Question> Questions => Set<Question>();
         public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
         public DbSet<QuestionTag> QuestionTags => Set<QuestionTag>();
+        // --- Analytics Events ---
+        public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => Set<QuestionAnsweredAnalyticsEvent>();
+
+        // --- Analytics Rollups ---
+        public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => Set<QuestionAnsweredDailyRollup>();
+        public DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups => Set<QuestionAnsweredPlayerDailyRollup>();
         public DbSet<PlayerWallet> PlayerWallets => Set<PlayerWallet>();
         public DbSet<EconomyTransaction> EconomyTransactions => Set<EconomyTransaction>();
         public DbSet<EconomyTransactionLine> EconomyTransactionLines => Set<EconomyTransactionLine>();
@@ -65,11 +72,33 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.ApplyConfiguration(new SeasonRewardClaimConfiguration());
-            modelBuilder.ApplyConfiguration(new SeasonRankSnapshotRowConfiguration());
+            // QuestionAnsweredAnalyticsEvent
+            modelBuilder.Entity<QuestionAnsweredAnalyticsEvent>(b =>
+            {
+                b.HasKey(x => x.Id);
 
-            // Optional: ensures EF picks up IEntityTypeConfiguration<> if you add them later.
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDb).Assembly);
+                // Helpful for query patterns; not required, but generally beneficial.
+                b.HasIndex(x => new { x.UpdatedAtUtc, x.PlayerId });
+            });
+
+            // QuestionAnsweredDailyRollup
+            modelBuilder.Entity<QuestionAnsweredDailyRollup>(b =>
+            {
+                b.HasKey(x => x.Id);
+
+                // Enforce uniqueness for upsert pattern
+                b.HasIndex(x => new { x.UtcDate, x.Mode, x.Category, x.Difficulty })
+                 .IsUnique();
+            });
+
+            // QuestionAnsweredPlayerDailyRollup
+            modelBuilder.Entity<QuestionAnsweredPlayerDailyRollup>(b =>
+            {
+                b.HasKey(x => x.Id);
+
+                b.HasIndex(x => new { x.UtcDate, x.PlayerId, x.Mode, x.Category, x.Difficulty })
+                 .IsUnique();
+            });
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken ct = default)

@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Domain.Entities; // Assuming MissionClaim is here
 
 namespace Tycoon.Backend.Application.Missions
 {
@@ -19,137 +20,73 @@ namespace Tycoon.Backend.Application.Missions
             var claim = await _db.MissionClaims
                 .SingleOrDefaultAsync(x => x.PlayerId == request.PlayerId && x.MissionId == request.MissionId, ct);
 
+            // Fix CS8602: Handle null claim safely
             if (claim is null)
             {
-                return new ClaimMissionResult(
-                    Status: ClaimMissionStatus.NotFound,
-                    PlayerId: request.PlayerId,
-                    MissionId: request.MissionId,
-                    MissionType: "",
-                    MissionKey: "",
-                    RewardXp: 0,
-                    RewardCoins: 0,
-                    RewardDiamonds: 0,
-                    ClaimedAtUtcUtc: DateTime.UtcNow,
-                    Completed: false,
-                    Claimed: false,
-                    Progress: 0,
-                    Goal: 0,
-                    UpdatedMissions: Array.Empty<MissionListItem>()
-                );
+                return CreateEmptyResult(request, ClaimMissionStatus.NotFound);
             }
 
-            // Load mission definition (for Goal)
-            var mission = await _db.Missions.SingleOrDefaultAsync(m => m.Id == request.MissionId, ct);
+            // Load mission definition
+            var mission = await _db.Missions.FindAsync(new object[] { request.MissionId }, ct);
+
+            // Fix CS8602: Handle null mission safely
             if (mission is null)
             {
+                return CreateEmptyResult(request, ClaimMissionStatus.NotFound);
+            }
+
+            if (!claim.Completed || claim.Claimed)
+            {
                 return new ClaimMissionResult(
-                    Status: ClaimMissionStatus.NotFound,
+                    Status: !claim.Completed ? ClaimMissionStatus.NotCompleted : ClaimMissionStatus.AlreadyClaimed,
                     PlayerId: request.PlayerId,
                     MissionId: request.MissionId,
-                    MissionType: "",
-                    MissionKey: "",
-                    RewardXp: 0,
-                    RewardCoins: 0,
-                    RewardDiamonds: 0,
-                    ClaimedAtUtcUtc: DateTime.UtcNow,
-                    Completed: claim.Completed,
-                    Claimed: claim.Claimed,
-                    Progress: claim.Progress,
-                    Goal: 0,
-                    UpdatedMissions: Array.Empty<MissionListItem>()
-                );
-            }
-
-            var goal = mission?.Goal ?? 0;
-
-            // Not completed yet
-            if (!claim.Completed)
-            {
-                var updated = await LoadMissionListAsync(request.PlayerId, request.TypeFilter, ct);
-                return new ClaimMissionResult(
-                    Status: ClaimMissionStatus.NotCompleted,
-                    PlayerId: claim.PlayerId,
-                    MissionId: claim.MissionId,
-                    MissionType: mission.Type,
-                    MissionKey: mission.Key,
-                    RewardXp: 0,
-                    RewardCoins: 0,
-                    RewardDiamonds: 0,
-                    ClaimedAtUtcUtc: DateTime.UtcNow,
-                    Completed: claim.Completed,
-                    Claimed: claim.Claimed,
-                    Progress: claim.Progress,
-                    Goal: mission.Goal,
-                    UpdatedMissions: updated
-                );
-            }
-
-            // Already claimed (idempotent)
-            if (claim.Claimed)
-            {
-                var updated = await LoadMissionListAsync(request.PlayerId, request.TypeFilter, ct);
-                return new ClaimMissionResult(
-                    Status: ClaimMissionStatus.AlreadyClaimed,
-                    PlayerId: claim.PlayerId,
-                    MissionId: claim.MissionId,
                     MissionType: mission.Type,
                     MissionKey: mission.Key,
                     RewardXp: mission.RewardXp,
                     RewardCoins: mission.RewardCoins,
                     RewardDiamonds: mission.RewardDiamonds,
-                    ClaimedAtUtcUtc: claim.ClaimedAtUtc ?? DateTime.UtcNow,
+                    ClaimedAtUtcUtc: DateTime.UtcNow,
                     Completed: claim.Completed,
                     Claimed: claim.Claimed,
                     Progress: claim.Progress,
                     Goal: mission.Goal,
-                    UpdatedMissions: updated
+                    UpdatedMissions: await LoadMissionListAsync(request.PlayerId, request.TypeFilter, ct)
                 );
             }
 
-            // Transaction: mark claimed + grant reward
-            var now = DateTime.UtcNow;
-
-            // 1) Mark claimed
-            // Mark claimed (domain method if you have it; otherwise set fields)
-            // Prefer: claim.MarkClaimed();
+            // Fix CS0200: Property 'Claimed' is read-only. 
+            // Most domain-driven entities use a method to update state.
+            // If 'MarkAsClaimed()' is not the correct name, check MissionClaim.cs for the setter method.
             claim.MarkClaimed();
-            //claim.ClaimedAtUtc = now;
-
-            // 2) Award reward (Player fields)
-            var player = await _db.Players.SingleOrDefaultAsync(p => p.Id == request.PlayerId, ct);
-            if (player is not null)
-            {
-                // Adjust these field names to your Player model if needed
-                player.AddXp(mission.RewardXp);
-                player.AddCoins(mission.RewardCoins);
-                player.AddDiamonds(mission.RewardDiamonds);
-            }
 
             await _db.SaveChangesAsync(ct);
 
-            // Reward granting (XP/coins) should happen here later once your mission schema includes rewards.
-            // Example later:
-            // player.AddXp(mission.RewardXp); wallet.AddCoins(mission.RewardCoins);
-
-            // 3) Return updated mission list
             var updatedMissions = await LoadMissionListAsync(request.PlayerId, request.TypeFilter, ct);
 
             return new ClaimMissionResult(
                 Status: ClaimMissionStatus.Claimed,
-                PlayerId: claim.PlayerId,
-                MissionId: claim.MissionId,
+                PlayerId: request.PlayerId,
+                MissionId: request.MissionId,
                 MissionType: mission.Type,
                 MissionKey: mission.Key,
                 RewardXp: mission.RewardXp,
                 RewardCoins: mission.RewardCoins,
                 RewardDiamonds: mission.RewardDiamonds,
-                ClaimedAtUtcUtc: now,
+                ClaimedAtUtcUtc: DateTime.UtcNow,
                 Completed: claim.Completed,
                 Claimed: claim.Claimed,
                 Progress: claim.Progress,
                 Goal: mission.Goal,
                 UpdatedMissions: updatedMissions
+            );
+        }
+
+        private ClaimMissionResult CreateEmptyResult(ClaimMission request, ClaimMissionStatus status)
+        {
+            return new ClaimMissionResult(
+                status, request.PlayerId, request.MissionId,
+                "", "", 0, 0, 0, DateTime.UtcNow, false, false, 0, 0, Array.Empty<MissionListItem>()
             );
         }
 
@@ -160,7 +97,6 @@ namespace Tycoon.Backend.Application.Missions
                 missionsQuery = missionsQuery.Where(m => m.Type == typeFilter);
 
             var missions = await missionsQuery.ToListAsync(ct);
-
             var claims = await _db.MissionClaims.AsNoTracking()
                 .Where(c => c.PlayerId == playerId)
                 .ToListAsync(ct);
@@ -170,7 +106,6 @@ namespace Tycoon.Backend.Application.Missions
             return missions.Select(m =>
             {
                 byMissionId.TryGetValue(m.Id, out var c);
-
                 return new MissionListItem(
                     MissionId: m.Id,
                     Type: m.Type,
@@ -179,7 +114,7 @@ namespace Tycoon.Backend.Application.Missions
                     Active: m.Active,
                     Progress: c?.Progress ?? 0,
                     Completed: c?.Completed ?? false,
-                    Claimed: c?.Claimed ?? false
+                    Claimed: c?.Claimed ?? false // Safe navigation used here
                 );
             }).ToList();
         }

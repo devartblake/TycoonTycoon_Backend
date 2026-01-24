@@ -77,82 +77,6 @@ namespace Tycoon.Backend.Application.Economy
                 req.Lines, w.Xp, w.Coins, w.Diamonds, now);
         }
 
-        public async Task<EconomyTxnResultDto> RollbackAsync(
-            Guid originalEventId,
-            string reason,
-            CancellationToken ct)
-        {
-            var original = await _db.EconomyTransactions
-                .Include(x => x.Lines)
-                .FirstOrDefaultAsync(x => x.EventId == originalEventId, ct);
-
-            if (original is null)
-                throw new InvalidOperationException("Original transaction not found.");
-
-            // Prevent double rollback
-            var exists = await _db.EconomyTransactions
-                .AnyAsync(x => x.ReversalOfTransactionId == original.Id, ct);
-
-            if (exists)
-                throw new InvalidOperationException("Transaction already rolled back.");
-
-            var reversalLines = original.Lines
-                .Select(l => new EconomyLineDto(l.Currency, -l.Delta))
-                .ToList();
-
-            return await ApplyAsync(new CreateEconomyTxnRequest(
-                EventId: Guid.NewGuid(),
-                PlayerId: original.PlayerId,
-                Kind: "rollback",
-                Note: $"Rollback: {reason}",
-                Lines: reversalLines
-            ), ct);
-        }
-
-        public async Task<EconomyTxnResultDto> RollbackByEventIdAsync(
-            Guid originalEventId,
-            string reason,
-            CancellationToken ct)
-        {
-            var original = await _db.EconomyTransactions
-                .Include(x => x.Lines)
-                .FirstOrDefaultAsync(x => x.EventId == originalEventId, ct);
-
-            if (original is null)
-                throw new InvalidOperationException("Original transaction not found.");
-
-            // Prevent double roolback
-            var already = await _db.EconomyTransactions
-                .AnyAsync(x => x.ReversalOfTransactionId == original.Id, ct);
-
-            if (already)
-                throw new InvalidOperationException("Transaction already rolled back.");
-
-            // Create inverted lines
-            var invertedLines = original.Lines
-                .Select(l => new EconomyLineDto(l.Currency, -l.Delta))
-                .ToList();
-
-            // Use your existing ApplyAsync/Create flow so wallet updates remain consistent
-            var res = await ApplyAsync(new CreateEconomyTxnRequest(
-                EventId: Guid.NewGuid(),
-                PlayerId: original.PlayerId,
-                Kind: "rollback",
-                Note: $"Rollback of {original.EventId}: {reason}",
-                Lines: invertedLines
-            ), ct);
-
-            // IMPORTANT: link reversal txn back to original
-            var reversalTxn = await _db.EconomyTransactions
-                .FirstAsync(x => x.EventId == res.EventId, ct);
-
-            reversalTxn.MarkAsReversalOf(original.Id);
-
-            await _db.SaveChangesAsync(ct);
-
-            return res;
-        }
-
         public async Task<EconomyHistoryDto> GetHistoryAsync(Guid playerId, int page, int pageSize, CancellationToken ct)
         {
             page = Math.Max(1, page);
@@ -169,7 +93,8 @@ namespace Tycoon.Backend.Application.Economy
                 .Select(x => new EconomyTxnListItemDto(
                     x.EventId,
                     x.Kind,
-                    x.Lines.Select(l => new EconomyLineDto(l.Currency, l.Delta)).ToList(),
+                    (x.Lines ?? Enumerable.Empty<EconomyTransactionLine>())
+                        .Select(l => new EconomyLineDto(l.Currency, l.Delta)).ToList(),
                     x.CreatedAtUtc
                 ))
                 .ToListAsync(ct);
@@ -180,7 +105,14 @@ namespace Tycoon.Backend.Application.Economy
         private async Task<PlayerWallet> EnsureWalletAsync(Guid playerId, CancellationToken ct)
         {
             var w = await _db.PlayerWallets.AsNoTracking().FirstOrDefaultAsync(x => x.PlayerId == playerId, ct);
-            return w ?? new PlayerWallet(playerId);
+            if (w is null)
+            {
+                w = new PlayerWallet(playerId);
+                _db.PlayerWallets.Add(w);
+                await _db.SaveChangesAsync(ct);
+                return w;
+            }
+            return w;
         }
     }
 }

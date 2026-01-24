@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using System.Reflection;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Domain.Abstractions;
@@ -21,7 +22,7 @@ namespace Tycoon.Backend.Infrastructure
         /// Registers infrastructure services (EF Core, Redis cache, system clock).
         /// Uses connection string fallback so it works with Aspire or plain appsettings.
         /// </summary>
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration cfg)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration cfg,string? serviceName = null, params Assembly[] mediatRAssemblies)
         {
             var useInMemory = cfg.GetValue<bool>("Testing:UseInMemoryDb");
             if (useInMemory)

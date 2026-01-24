@@ -27,6 +27,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
                 .HasForeignKey(x => x.MatchId)
                 .OnDelete(DeleteBehavior.Cascade);
             b.HasIndex(x => x.HostPlayerId);
+            b.Ignore(x => x.CreatedAtUtc);
             b.HasIndex(x => x.StartedAt);
         }
     }

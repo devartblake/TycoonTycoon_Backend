@@ -1,26 +1,34 @@
 ﻿namespace Tycoon.Backend.Application.Analytics.Models
 {
     /// <summary>
-    /// Per-player daily rollup keyed by (utcDate, playerId, mode, category, difficulty).
-    /// Stored in Mongo; indexed into Elasticsearch.
+    /// Aggregated daily rollup for question answers for a specific player.
     /// </summary>
-    public sealed record QuestionAnsweredPlayerDailyRollup(
-        string Id,                 // deterministic
-        DateOnly UtcDate,
-        Guid PlayerId,
-        string Mode,
-        string Category,
-        int Difficulty,
-        long TotalAnswers,
-        long CorrectAnswers,
-        long WrongAnswers,
-        long SumAnswerTimeMs,
-        long MinAnswerTimeMs,
-        long MaxAnswerTimeMs,
-        DateTime UpdatedAtUtc
-    )
+    public sealed class QuestionAnsweredPlayerDailyRollup
     {
-        public double Accuracy => TotalAnswers == 0 ? 0 : (double)CorrectAnswers / TotalAnswers;
-        public double AvgAnswerTimeMs => TotalAnswers == 0 ? 0 : (double)SumAnswerTimeMs / TotalAnswers;
+        public string Id { get; set; } = string.Empty;
+
+        public DateOnly UtcDate { get; set; }
+
+        public Guid PlayerId { get; set; }
+
+        public string Mode { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public int Difficulty { get; set; }
+
+        public int TotalAnswers { get; set; }
+        public int CorrectAnswers { get; set; }
+        public int WrongAnswers { get; set; }
+
+        public long SumAnswerTimeMs { get; set; }
+
+        public int MinAnswerTimeMs { get; set; }
+        public int MaxAnswerTimeMs { get; set; }
+
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        // Helper methods for analytics display
+        public double Accuracy => TotalAnswers <= 0 ? 0d : (double)CorrectAnswers / TotalAnswers;
+        public int AvgAnswerTimeMs => TotalAnswers <= 0 ? 0 : (int)(SumAnswerTimeMs / TotalAnswers);
     }
 }

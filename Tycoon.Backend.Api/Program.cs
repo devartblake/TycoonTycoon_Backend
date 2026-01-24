@@ -59,8 +59,7 @@ var analyticsEnabled = builder.Configuration.GetValue("Analytics:Enabled", false
 if (!analyticsEnabled)
 {
     builder.Services.AddSingleton<
-        Tycoon.Backend.Application.Analytics.Abstractions.IAnalyticsEventWriter,
-        Tycoon.Backend.Application.Analytics.NoopAnalyticsEventWriter>();
+        Tycoon.Backend.Application.Analytics.Abstractions.IAnalyticsEventWriter>();
 }
 
 // Infra & App

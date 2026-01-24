@@ -61,15 +61,15 @@ namespace Tycoon.Backend.Application.Missions.Jobs
                 matchId, playerId, answeredAtUtc, mode, category, difficulty, isCorrect, answerTimeMs);
 
             var evt = new QuestionAnsweredAnalyticsEvent(
-                Id: eventId,
-                MatchId: matchId,
-                PlayerId: playerId,
-                Mode: mode,
-                Category: category,
-                Difficulty: difficulty,
-                IsCorrect: isCorrect,
-                AnswerTimeMs: answerTimeMs,
-                AnsweredAtUtc: answeredAtUtc
+                id: eventId,
+                matchId: matchId,
+                playerId: playerId,
+                mode: mode,
+                category: category,
+                difficulty: difficulty,
+                isCorrect: isCorrect,
+                answerTimeMs: answerTimeMs,
+                answeredAtUtc: answeredAtUtc
             );
 
             await _eventWriter.UpsertQuestionAnsweredEventAsync(evt, ct);

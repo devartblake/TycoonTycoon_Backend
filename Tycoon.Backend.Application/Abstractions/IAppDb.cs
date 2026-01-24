@@ -25,6 +25,8 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<QuestionOption> QuestionOptions { get; }
         DbSet<QuestionTag> QuestionTags { get; }
         DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents { get; }
+        DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups { get; }
+        DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups { get; }
         DbSet<PlayerWallet> PlayerWallets { get; }
         DbSet<EconomyTransaction> EconomyTransactions { get; }
         DbSet<EconomyTransactionLine> EconomyTransactionLines { get; }

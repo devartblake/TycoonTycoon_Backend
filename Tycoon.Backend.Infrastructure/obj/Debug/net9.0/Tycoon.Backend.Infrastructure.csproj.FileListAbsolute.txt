@@ -20,7 +20,6 @@ C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Infrastruc
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Infrastructure\bin\Debug\net9.0\appsettings.json
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Infrastructure\bin\Debug\net9.0\Tycoon.Shared.Observability.dll
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Infrastructure\bin\Debug\net9.0\Tycoon.Shared.Observability.pdb
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Infrastructure\bin\Debug\net9.0\appsettings.json
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Infrastructure\bin\Debug\net9.0\Tycoon.Backend.Infrastructure.deps.json
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Infrastructure\bin\Debug\net9.0\Tycoon.Backend.Infrastructure.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Infrastructure\bin\Debug\net9.0\Tycoon.Backend.Infrastructure.pdb

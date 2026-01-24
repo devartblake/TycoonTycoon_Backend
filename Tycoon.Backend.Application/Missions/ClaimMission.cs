@@ -7,7 +7,8 @@ namespace Tycoon.Backend.Application.Missions
         Claimed = 0,
         AlreadyClaimed = 1,
         NotCompleted = 2,
-        NotFound = 3
+        NotFound = 3,
+        Success = 4
     }
 
     public sealed record MissionListItem(

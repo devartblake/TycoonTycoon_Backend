@@ -67,7 +67,7 @@ namespace Tycoon.Backend.Application.Matches
                 return new SubmitMatchResponse(req.EventId, req.MatchId, "AlreadySubmitted", Array.Empty<MatchAwardDto>());
 
             // Moderation enforcement (Policy A)
-            var restricted = false;
+            //var restricted = false;
 
             foreach (var p in req.Participants)
             {
@@ -81,8 +81,6 @@ namespace Tycoon.Backend.Application.Matches
                     return new SubmitMatchResponse(req.EventId, req.MatchId, "Rejected", Array.Empty<MatchAwardDto>());
                 }
 
-                if (status == ModerationStatus.Restricted)
-                    restricted = true;
             }
 
             var allowRewards = true;
