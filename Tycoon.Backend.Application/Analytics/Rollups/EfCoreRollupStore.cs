@@ -23,7 +23,7 @@ public sealed class EfCoreRollupStore : IRollupStore
     }
 
     public async Task<QuestionAnsweredDailyRollup> UpsertDailyRollupAsync(
-        DateOnly utcDate,
+        DateOnly day,
         string mode,
         string category,
         int difficulty,
@@ -38,7 +38,7 @@ public sealed class EfCoreRollupStore : IRollupStore
 
         var existing = await _db.QuestionAnsweredDailyRollups
             .FirstOrDefaultAsync(r =>
-                r.UtcDate == utcDate &&
+                r.Day == day &&
                 r.Mode == mode &&
                 r.Category == category &&
                 r.Difficulty == difficulty,
@@ -48,17 +48,20 @@ public sealed class EfCoreRollupStore : IRollupStore
         {
             existing = new QuestionAnsweredDailyRollup
             {
-                UtcDate = utcDate,
+                Day = day,
                 Mode = mode,
                 Category = category,
                 Difficulty = difficulty,
+
                 TotalAnswers = 0,
                 CorrectAnswers = 0,
                 WrongAnswers = 0,
                 SumAnswerTimeMs = 0,
                 MinAnswerTimeMs = answerTimeMs, // Initialize with current
                 MaxAnswerTimeMs = answerTimeMs, // Initialize with current
-                CreatedAtUtc = DateTime.UtcNow
+
+                CreatedAtUtc = DateTime.UtcNow,
+                UpdatedAtUtc = answeredAtUtc
             };
 
             _db.QuestionAnsweredDailyRollups.Add(existing);
@@ -90,7 +93,7 @@ public sealed class EfCoreRollupStore : IRollupStore
     }
 
     public async Task<QuestionAnsweredPlayerDailyRollup> UpsertPlayerDailyRollupAsync(
-        DateOnly utcDate,
+        DateOnly day,
         Guid playerId,
         string mode,
         string category,
@@ -105,7 +108,7 @@ public sealed class EfCoreRollupStore : IRollupStore
 
         var existing = await _db.QuestionAnsweredPlayerDailyRollups
             .FirstOrDefaultAsync(r =>
-                r.UtcDate == utcDate &&
+                r.Day == day &&
                 r.PlayerId == playerId &&
                 r.Mode == mode &&
                 r.Category == category &&
@@ -116,18 +119,21 @@ public sealed class EfCoreRollupStore : IRollupStore
         {
             existing = new QuestionAnsweredPlayerDailyRollup
             {
-                UtcDate = utcDate,
+                Day = day,
                 PlayerId = playerId,
                 Mode = mode,
                 Category = category,
                 Difficulty = difficulty,
+
                 TotalAnswers = 0,
                 CorrectAnswers = 0,
                 WrongAnswers = 0,
                 SumAnswerTimeMs = 0,
                 MinAnswerTimeMs = answerTimeMs,
                 MaxAnswerTimeMs = answerTimeMs,
-                CreatedAtUtc = DateTime.UtcNow
+
+                CreatedAtUtc = DateTime.UtcNow,
+                UpdatedAtUtc = answeredAtUtc
             };
 
             _db.QuestionAnsweredPlayerDailyRollups.Add(existing);
@@ -142,14 +148,12 @@ public sealed class EfCoreRollupStore : IRollupStore
         }
 
         existing.TotalAnswers += 1;
-        if (isCorrect)
-            existing.CorrectAnswers += 1;
-        else
-            existing.WrongAnswers += 1;
 
-        if (answerTimeMs > 0)
-            existing.SumAnswerTimeMs += answerTimeMs;
+        if (isCorrect) existing.CorrectAnswers += 1;
+        else existing.WrongAnswers += 1;
 
+        if (answerTimeMs > 0) existing.SumAnswerTimeMs += answerTimeMs;
+        
         existing.UpdatedAtUtc = answeredAtUtc;
 
         await _db.SaveChangesAsync(ct);

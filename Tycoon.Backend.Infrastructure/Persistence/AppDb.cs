@@ -87,8 +87,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence
                 b.HasKey(x => x.Id);
 
                 // Enforce uniqueness for upsert pattern
-                b.HasIndex(x => new { x.UtcDate, x.Mode, x.Category, x.Difficulty })
-                 .IsUnique();
+                b.HasIndex(x => new { x.Day, x.Mode, x.Category, x.Difficulty })
+                 .IsUnique(false);
             });
 
             // QuestionAnsweredPlayerDailyRollup
@@ -96,8 +96,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence
             {
                 b.HasKey(x => x.Id);
 
-                b.HasIndex(x => new { x.UtcDate, x.PlayerId, x.Mode, x.Category, x.Difficulty })
-                 .IsUnique();
+                b.HasIndex(x => new { x.Day, x.PlayerId, x.Mode, x.Category, x.Difficulty })
+                 .IsUnique(false);
             });
         }
 

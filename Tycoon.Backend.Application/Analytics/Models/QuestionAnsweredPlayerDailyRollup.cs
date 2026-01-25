@@ -7,7 +7,7 @@
     {
         public string Id { get; set; } = string.Empty;
 
-        public DateOnly UtcDate { get; set; }
+        public DateOnly Day { get; set; }
 
         public Guid PlayerId { get; set; }
 

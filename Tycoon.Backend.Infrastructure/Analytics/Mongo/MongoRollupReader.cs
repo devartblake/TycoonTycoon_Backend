@@ -22,7 +22,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Mongo
             DateOnly? toUtcDate,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
         {
-            var filter = BuildUtcDateFilter<QuestionAnsweredDailyRollup>(x => x.UtcDate, fromUtcDate, toUtcDate);
+            var filter = BuildUtcDateFilter<QuestionAnsweredDailyRollup>(x => x.Day, fromUtcDate, toUtcDate);
 
             using var cursor = await _daily.Find(filter).ToCursorAsync(ct);
             while (await cursor.MoveNextAsync(ct))
@@ -37,7 +37,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Mongo
             DateOnly? toUtcDate,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
         {
-            var filter = BuildUtcDateFilter<QuestionAnsweredPlayerDailyRollup>(x => x.UtcDate, fromUtcDate, toUtcDate);
+            var filter = BuildUtcDateFilter<QuestionAnsweredPlayerDailyRollup>(x => x.Day, fromUtcDate, toUtcDate);
 
             using var cursor = await _playerDaily.Find(filter).ToCursorAsync(ct);
             while (await cursor.MoveNextAsync(ct))

@@ -88,12 +88,14 @@ if (hangfireEnabled)
         cfg.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
            .UseSimpleAssemblyNameTypeSerializer()
            .UseRecommendedSerializerSettings()
-           .UsePostgreSqlStorage(postgres, new PostgreSqlStorageOptions
-           {
-               // Reasonable local defaults; tune later.
-               QueuePollInterval = TimeSpan.FromSeconds(5),
-               InvisibilityTimeout = TimeSpan.FromMinutes(5),
-           }));
+           //.UsePostgreSqlStorage(postgres, new PostgreSqlStorageOptions
+           //{
+           //    // Reasonable local defaults; tune later.
+           //    QueuePollInterval = TimeSpan.FromSeconds(5),
+           //    InvisibilityTimeout = TimeSpan.FromMinutes(5),
+           //}))
+           .UsePostgreSqlStorage(builder.Configuration.GetConnectionString("hangfire-db")
+               ?? builder.Configuration.GetConnectionString("db"))); ;
 
     builder.Services.AddHangfireServer();
 }
@@ -146,7 +148,6 @@ builder.Services.AddSingleton<IMatchmakingNotifier, SignalRMatchmakingNotifier>(
 builder.Services.AddSingleton<IPartyMatchmakingNotifier, SignalRPartyMatchmakingNotifier>();
 builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
-
 
 // Authorization + policies
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());

@@ -17,7 +17,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Mongo
         }
 
         public async Task<QuestionAnsweredDailyRollup> UpsertDailyRollupAsync(
-            DateOnly utcDate,
+            DateOnly day,
             string mode,
             string category,
             int difficulty,
@@ -26,14 +26,14 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Mongo
             DateTime answeredAtUtc,
             CancellationToken ct)
         {
-            var id = AnalyticsIds.DailyRollupId(utcDate, mode, category, difficulty);
+            var id = AnalyticsIds.DailyRollupId(day, mode, category, difficulty);
 
             // Atomic update pipeline
             var filter = Builders<QuestionAnsweredDailyRollup>.Filter.Eq(x => x.Id, id);
 
             var update = Builders<QuestionAnsweredDailyRollup>.Update
                 .SetOnInsert(x => x.Id, id)
-                .SetOnInsert(x => x.UtcDate, utcDate)
+                .SetOnInsert(x => x.Day, day)
                 .SetOnInsert(x => x.Mode, mode)
                 .SetOnInsert(x => x.Category, category)
                 .SetOnInsert(x => x.Difficulty, difficulty)
@@ -66,7 +66,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Mongo
         }
 
         public async Task<QuestionAnsweredPlayerDailyRollup> UpsertPlayerDailyRollupAsync(
-            DateOnly utcDate,
+            DateOnly day,
             Guid playerId,
             string mode,
             string category,
@@ -76,13 +76,13 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Mongo
             DateTime answeredAtUtc,
             CancellationToken ct)
         {
-            var id = AnalyticsIds.PlayerDailyRollupId(utcDate, playerId, mode, category, difficulty);
+            var id = AnalyticsIds.PlayerDailyRollupId(day, playerId, mode, category, difficulty);
 
             var filter = Builders<QuestionAnsweredPlayerDailyRollup>.Filter.Eq(x => x.Id, id);
 
             var update = Builders<QuestionAnsweredPlayerDailyRollup>.Update
                 .SetOnInsert(x => x.Id, id)
-                .SetOnInsert(x => x.UtcDate, utcDate)
+                .SetOnInsert(x => x.Day, day)
                 .SetOnInsert(x => x.PlayerId, playerId)
                 .SetOnInsert(x => x.Mode, mode)
                 .SetOnInsert(x => x.Category, category)

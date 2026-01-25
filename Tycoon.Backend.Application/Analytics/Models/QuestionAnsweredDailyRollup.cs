@@ -8,7 +8,7 @@
         public string Id { get; set; } = string.Empty;
 
         /// <summary>UTC Date (date-only) this rollup is aggregated for.</summary>
-        public DateOnly UtcDate { get; set; } // Aligned with Store filter logic
+        public DateOnly Day { get; set; } // Aligned with Store filter logic
 
         public string Mode { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
