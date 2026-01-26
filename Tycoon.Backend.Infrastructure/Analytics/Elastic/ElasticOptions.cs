@@ -3,6 +3,8 @@
     public sealed class ElasticOptions
     {
         public string Url { get; set; } = string.Empty;
+        public string Username { get; set; } = "elastic";
+        public string Password { get; set; } = string.Empty;
         // Read aliases (use these for queries)
         public string DailyReadAlias { get; set; } = "tycoon-qa-daily-rollups";
         public string PlayerDailyReadAlias { get; set; } = "tycoon-qa-player-daily-rollups";

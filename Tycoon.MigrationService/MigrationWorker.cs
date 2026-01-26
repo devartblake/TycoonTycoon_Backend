@@ -49,12 +49,26 @@ namespace Tycoon.MigrationService
 
                 // -----------------------------
                 // 1) Optional Elastic admin bits
+                // ✅ WRAPPED IN TRY-CATCH to not block migrations
                 // -----------------------------
                 var admin = scope.ServiceProvider.GetService<Tycoon.Backend.Infrastructure.Analytics.Elastic.ElasticAdmin>();
                 if (admin is not null)
                 {
-                    _log.Information("Ensuring Elasticsearch templates...");
-                    await admin.EnsureTemplatesAsync(stoppingToken);
+                    try
+                    {
+                        _log.Information("Ensuring Elasticsearch templates...");
+                        await admin.EnsureTemplatesAsync(stoppingToken);
+                        _log.Information("Elasticsearch templates created successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        // ✅ Log error but continue with migrations
+                        _log.Warning(ex, "Failed to create Elasticsearch templates. Continuing with migrations anyway...");
+                        _log.Warning("To fix this, either:");
+                        _log.Warning("  1. Downgrade Elastic.Clients.Elasticsearch to version 8.x (recommended)");
+                        _log.Warning("  2. Upgrade Elasticsearch server to version 9.x");
+                        _log.Warning("  3. Disable Elasticsearch in configuration");
+                    }
                 }
                 else
                 {
@@ -64,8 +78,17 @@ namespace Tycoon.MigrationService
                 var bootstrapper = scope.ServiceProvider.GetService<Tycoon.Backend.Infrastructure.Analytics.Elastic.ElasticIndexBootstrapper>();
                 if (bootstrapper is not null)
                 {
-                    _log.Information("Ensuring Elasticsearch indices exist...");
-                    await bootstrapper.EnsureCreatedAsync(stoppingToken);
+                    try
+                    {
+                        _log.Information("Ensuring Elasticsearch indices exist...");
+                        await bootstrapper.EnsureCreatedAsync(stoppingToken);
+                        _log.Information("Elasticsearch indices created successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        // ✅ Log error but continue
+                        _log.Warning(ex, "Failed to create Elasticsearch indices. Continuing with migrations anyway...");
+                    }
                 }
                 else
                 {
@@ -98,14 +121,17 @@ namespace Tycoon.MigrationService
 
                     _log.Information("Applying EF migrations…");
                     await db.Database.MigrateAsync(stoppingToken);
+                    _log.Information("EF migrations completed successfully");
 
                     _log.Information("Seeding Tiers and Missions (idempotent)…");
                     var seeder = scope.ServiceProvider.GetRequiredService<AppSeeder>();
                     await seeder.SeedAsync(db);
+                    _log.Information("Seeding completed successfully");
 
                     _log.Information("Resetting Daily/Weekly mission claims (idempotent)…");
                     var reset = scope.ServiceProvider.GetRequiredService<MissionResetService>();
                     await reset.ResetAsync(db, stoppingToken);
+                    _log.Information("Mission claims reset completed successfully");
                 }
                 else
                 {
@@ -124,12 +150,19 @@ namespace Tycoon.MigrationService
                     }
                     else
                     {
-                        _log.Information("Rebuilding Elastic rollups from Mongo… from={FromUtcDate} to={ToUtcDate}",
-                            fromUtcDate?.ToString("yyyy-MM-dd"), toUtcDate?.ToString("yyyy-MM-dd"));
+                        try
+                        {
+                            _log.Information("Rebuilding Elastic rollups from Mongo… from={FromUtcDate} to={ToUtcDate}",
+                                fromUtcDate?.ToString("yyyy-MM-dd"), toUtcDate?.ToString("yyyy-MM-dd"));
 
-                        await rebuilder.RebuildElasticFromMongoAsync(fromUtcDate, toUtcDate, stoppingToken);
+                            await rebuilder.RebuildElasticFromMongoAsync(fromUtcDate, toUtcDate, stoppingToken);
 
-                        _log.Information("Elastic rollup rebuild completed.");
+                            _log.Information("Elastic rollup rebuild completed.");
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.Warning(ex, "Failed to rebuild Elastic rollups. This is not critical.");
+                        }
                     }
                 }
                 else
@@ -137,7 +170,8 @@ namespace Tycoon.MigrationService
                     _log.Information("Elastic rebuild disabled (MigrationService:RebuildElastic:Enabled=false and Mode does not request rebuild).");
                 }
 
-                _log.Information("MigrationService completed successfully.");
+                _log.Information("✅ MigrationService completed successfully.");
+                _log.Information("Note: If Elasticsearch template creation failed, you can fix it later by downgrading the Elastic client to version 8.x");
             }
             catch (Exception ex)
             {

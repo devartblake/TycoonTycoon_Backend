@@ -3390,7 +3390,8 @@
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
           "Elastic": "1.0.0",
-          "Microsoft.Extensions.Hosting": "9.0.11",
+          "MediatR": "14.0.0",
+          "Microsoft.Extensions.Hosting": "9.0.4",
           "Mongo": "1.0.0",
           "Newtonsoft.Json": "13.0.1",
           "Postgres": "1.0.0",

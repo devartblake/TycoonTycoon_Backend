@@ -1,5 +1,6 @@
 ﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text;
@@ -10,17 +11,22 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 {
     /// <summary>
     /// Elastic admin utilities: templates + (optional) ILM/aliases via raw REST calls.
-    /// Works with Elastic.Clients.Elasticsearch v9 without relying on missing typed surfaces.
+    /// ✅ Enhanced with better error logging
     /// </summary>
     public sealed class ElasticAdmin
     {
         private readonly ElasticsearchClient _client;
         private readonly ElasticOptions _opt;
+        private readonly ILogger<ElasticAdmin>? _logger;
 
-        public ElasticAdmin(ElasticsearchClient client, IOptions<ElasticOptions> opt)
+        public ElasticAdmin(
+            ElasticsearchClient client,
+            IOptions<ElasticOptions> opt,
+            ILogger<ElasticAdmin>? logger = null)
         {
             _client = client;
             _opt = opt.Value;
+            _logger = logger;
 
             if (string.IsNullOrWhiteSpace(_opt.Url))
                 throw new InvalidOperationException("ElasticOptions.Url is missing.");
@@ -38,75 +44,165 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 
         private async Task EnsureDailyRollupTemplateAsync(string templateName, CancellationToken ct)
         {
-            var exists = await _client.Indices.ExistsIndexTemplateAsync(templateName, ct);
-            if (exists.Exists) return;
+            try
+            {
+                _logger?.LogInformation("Checking if template '{TemplateName}' exists...", templateName);
 
-            var put = await _client.Indices.PutIndexTemplateAsync(templateName, t => t
-                .IndexPatterns(new[] { $"{_opt.DailyWriteAlias}*" })
-                .Template(tmp => tmp
-                    .Settings(s => s
-                        .NumberOfShards(1)
-                        .NumberOfReplicas(0)
+                var exists = await _client.Indices.ExistsIndexTemplateAsync(templateName, ct);
+
+                if (exists.Exists)
+                {
+                    _logger?.LogInformation("Template '{TemplateName}' already exists, skipping creation", templateName);
+                    return;
+                }
+
+                _logger?.LogInformation("Creating template '{TemplateName}'...", templateName);
+
+                var put = await _client.Indices.PutIndexTemplateAsync(templateName, t => t
+                    .IndexPatterns(new[] { $"{_opt.DailyWriteAlias}*" })
+                    .Template(tmp => tmp
+                        .Settings(s => s
+                            .NumberOfShards(1)
+                            .NumberOfReplicas(0)
+                        )
+                        .Mappings(m => m.Properties(p => p
+                            .Keyword("id")
+                            .Date("utcDate", d => d.Format("strict_date"))
+                            .Keyword("mode")
+                            .Keyword("category")
+                            .IntegerNumber("difficulty")
+                            .LongNumber("totalAnswers")
+                            .LongNumber("correctAnswers")
+                            .LongNumber("wrongAnswers")
+                            .LongNumber("sumAnswerTimeMs")
+                            .LongNumber("minAnswerTimeMs")
+                            .LongNumber("maxAnswerTimeMs")
+                            .DoubleNumber("accuracy")
+                            .DoubleNumber("avgAnswerTimeMs")
+                            .Date("updatedAtUtc", d => d.Format("strict_date_optional_time||epoch_millis"))
+                        ))
                     )
-                    .Mappings(m => m.Properties(p => p
-                        .Keyword("id")
-                        .Date("utcDate", d => d.Format("strict_date"))
-                        .Keyword("mode")
-                        .Keyword("category")
-                        .IntegerNumber("difficulty")
-                        .LongNumber("totalAnswers")
-                        .LongNumber("correctAnswers")
-                        .LongNumber("wrongAnswers")
-                        .LongNumber("sumAnswerTimeMs")
-                        .LongNumber("minAnswerTimeMs")
-                        .LongNumber("maxAnswerTimeMs")
-                        .DoubleNumber("accuracy")
-                        .DoubleNumber("avgAnswerTimeMs")
-                        .Date("updatedAtUtc", d => d.Format("strict_date_optional_time||epoch_millis"))
-                    ))
-                )
-                .Priority(500)
-                .Version(1), ct);
+                    .Priority(500)
+                    .Version(1), ct);
 
-            if (!put.IsValidResponse)
-                throw new InvalidOperationException($"Failed to create index template '{templateName}': {put.ElasticsearchServerError}");
+                if (!put.IsValidResponse)
+                {
+                    // ✅ Enhanced error logging
+                    var errorDetails = new StringBuilder();
+                    errorDetails.AppendLine($"Failed to create index template '{templateName}'");
+
+                    if (put.ElasticsearchServerError != null)
+                    {
+                        errorDetails.AppendLine($"Server Error: {put.ElasticsearchServerError}");
+                        errorDetails.AppendLine($"Error Type: {put.ElasticsearchServerError.Error?.Type}");
+                        errorDetails.AppendLine($"Error Reason: {put.ElasticsearchServerError.Error?.Reason}");
+                    }
+
+                    if (put.ApiCallDetails != null)
+                    {
+                        errorDetails.AppendLine($"HTTP Status: {put.ApiCallDetails.HttpStatusCode}");
+                        errorDetails.AppendLine($"Debug Information: {put.ApiCallDetails.DebugInformation}");
+                    }
+
+                    if (put.TryGetOriginalException(out var ex))
+                    {
+                        errorDetails.AppendLine($"Original Exception: {ex.Message}");
+                    }
+
+                    _logger?.LogError("Template creation failed. Details: {ErrorDetails}", errorDetails.ToString());
+
+                    throw new InvalidOperationException(errorDetails.ToString());
+                }
+
+                _logger?.LogInformation("Successfully created template '{TemplateName}'", templateName);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Exception while ensuring template '{TemplateName}'", templateName);
+                throw;
+            }
         }
 
         private async Task EnsurePlayerDailyRollupTemplateAsync(string templateName, CancellationToken ct)
         {
-            var exists = await _client.Indices.ExistsIndexTemplateAsync(templateName, ct);
-            if (exists.Exists) return;
+            try
+            {
+                _logger?.LogInformation("Checking if template '{TemplateName}' exists...", templateName);
 
-            var put = await _client.Indices.PutIndexTemplateAsync(templateName, t => t
-                .IndexPatterns(new[] { $"{_opt.PlayerDailyWriteAlias}*" })
-                .Template(tmp => tmp
-                    .Settings(s => s
-                        .NumberOfShards(1)
-                        .NumberOfReplicas(0)
+                var exists = await _client.Indices.ExistsIndexTemplateAsync(templateName, ct);
+
+                if (exists.Exists)
+                {
+                    _logger?.LogInformation("Template '{TemplateName}' already exists, skipping creation", templateName);
+                    return;
+                }
+
+                _logger?.LogInformation("Creating template '{TemplateName}'...", templateName);
+
+                var put = await _client.Indices.PutIndexTemplateAsync(templateName, t => t
+                    .IndexPatterns(new[] { $"{_opt.PlayerDailyWriteAlias}*" })
+                    .Template(tmp => tmp
+                        .Settings(s => s
+                            .NumberOfShards(1)
+                            .NumberOfReplicas(0)
+                        )
+                        .Mappings(m => m.Properties(p => p
+                            .Keyword("id")
+                            .Date("utcDate", d => d.Format("strict_date"))
+                            .Keyword("playerId")
+                            .Keyword("mode")
+                            .Keyword("category")
+                            .IntegerNumber("difficulty")
+                            .LongNumber("totalAnswers")
+                            .LongNumber("correctAnswers")
+                            .LongNumber("wrongAnswers")
+                            .LongNumber("sumAnswerTimeMs")
+                            .LongNumber("minAnswerTimeMs")
+                            .LongNumber("maxAnswerTimeMs")
+                            .DoubleNumber("accuracy")
+                            .DoubleNumber("avgAnswerTimeMs")
+                            .Date("updatedAtUtc", d => d.Format("strict_date_optional_time||epoch_millis"))
+                        ))
                     )
-                    .Mappings(m => m.Properties(p => p
-                        .Keyword("id")
-                        .Date("utcDate", d => d.Format("strict_date"))
-                        .Keyword("playerId")
-                        .Keyword("mode")
-                        .Keyword("category")
-                        .IntegerNumber("difficulty")
-                        .LongNumber("totalAnswers")
-                        .LongNumber("correctAnswers")
-                        .LongNumber("wrongAnswers")
-                        .LongNumber("sumAnswerTimeMs")
-                        .LongNumber("minAnswerTimeMs")
-                        .LongNumber("maxAnswerTimeMs")
-                        .DoubleNumber("accuracy")
-                        .DoubleNumber("avgAnswerTimeMs")
-                        .Date("updatedAtUtc", d => d.Format("strict_date_optional_time||epoch_millis"))
-                    ))
-                )
-                .Priority(500)
-                .Version(1), ct);
+                    .Priority(500)
+                    .Version(1), ct);
 
-            if (!put.IsValidResponse)
-                throw new InvalidOperationException($"Failed to create index template '{templateName}': {put.ElasticsearchServerError}");
+                if (!put.IsValidResponse)
+                {
+                    // ✅ Enhanced error logging
+                    var errorDetails = new StringBuilder();
+                    errorDetails.AppendLine($"Failed to create index template '{templateName}'");
+
+                    if (put.ElasticsearchServerError != null)
+                    {
+                        errorDetails.AppendLine($"Server Error: {put.ElasticsearchServerError}");
+                        errorDetails.AppendLine($"Error Type: {put.ElasticsearchServerError.Error?.Type}");
+                        errorDetails.AppendLine($"Error Reason: {put.ElasticsearchServerError.Error?.Reason}");
+                    }
+
+                    if (put.ApiCallDetails != null)
+                    {
+                        errorDetails.AppendLine($"HTTP Status: {put.ApiCallDetails.HttpStatusCode}");
+                        errorDetails.AppendLine($"Debug Information: {put.ApiCallDetails.DebugInformation}");
+                    }
+
+                    if (put.TryGetOriginalException(out var ex))
+                    {
+                        errorDetails.AppendLine($"Original Exception: {ex.Message}");
+                    }
+
+                    _logger?.LogError("Template creation failed. Details: {ErrorDetails}", errorDetails.ToString());
+
+                    throw new InvalidOperationException(errorDetails.ToString());
+                }
+
+                _logger?.LogInformation("Successfully created template '{TemplateName}'", templateName);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Exception while ensuring template '{TemplateName}'", templateName);
+                throw;
+            }
         }
 
         // ------------------------------------------------------------
@@ -155,7 +251,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                 aliases = new Dictionary<string, object>
                 {
                     [writeAlias] = new { is_write_index = true },
-                    [readAlias]  = new { }
+                    [readAlias] = new { }
                 }
             };
 

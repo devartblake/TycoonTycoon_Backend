@@ -29,7 +29,7 @@ public sealed class EfCoreRollupStore : IRollupStore
         int difficulty,
         bool isCorrect,
         int answerTimeMs,
-        DateTime answeredAtUtc,
+        DateTime occurredAtUtc,
         CancellationToken ct)
     {
         // Normalize strings to ensure consistent keys
@@ -60,8 +60,8 @@ public sealed class EfCoreRollupStore : IRollupStore
                 MinAnswerTimeMs = answerTimeMs, // Initialize with current
                 MaxAnswerTimeMs = answerTimeMs, // Initialize with current
 
-                CreatedAtUtc = DateTime.UtcNow,
-                UpdatedAtUtc = answeredAtUtc
+                CreatedAtUtc = occurredAtUtc,
+                UpdatedAtUtc = occurredAtUtc
             };
 
             _db.QuestionAnsweredDailyRollups.Add(existing);
@@ -86,7 +86,7 @@ public sealed class EfCoreRollupStore : IRollupStore
         if (answerTimeMs > 0)
             existing.SumAnswerTimeMs += answerTimeMs;
 
-        existing.UpdatedAtUtc = answeredAtUtc;
+        existing.UpdatedAtUtc = occurredAtUtc;
 
         await _db.SaveChangesAsync(ct);
         return existing;
@@ -100,7 +100,7 @@ public sealed class EfCoreRollupStore : IRollupStore
         int difficulty,
         bool isCorrect,
         int answerTimeMs,
-        DateTime answeredAtUtc,
+        DateTime occurredAtUtc,
         CancellationToken ct)
     {
         mode = (mode ?? string.Empty).Trim();
@@ -132,8 +132,8 @@ public sealed class EfCoreRollupStore : IRollupStore
                 MinAnswerTimeMs = answerTimeMs,
                 MaxAnswerTimeMs = answerTimeMs,
 
-                CreatedAtUtc = DateTime.UtcNow,
-                UpdatedAtUtc = answeredAtUtc
+                CreatedAtUtc = occurredAtUtc,
+                UpdatedAtUtc = occurredAtUtc
             };
 
             _db.QuestionAnsweredPlayerDailyRollups.Add(existing);
@@ -151,10 +151,9 @@ public sealed class EfCoreRollupStore : IRollupStore
 
         if (isCorrect) existing.CorrectAnswers += 1;
         else existing.WrongAnswers += 1;
-
         if (answerTimeMs > 0) existing.SumAnswerTimeMs += answerTimeMs;
         
-        existing.UpdatedAtUtc = answeredAtUtc;
+        existing.UpdatedAtUtc = occurredAtUtc;
 
         await _db.SaveChangesAsync(ct);
         return existing;
