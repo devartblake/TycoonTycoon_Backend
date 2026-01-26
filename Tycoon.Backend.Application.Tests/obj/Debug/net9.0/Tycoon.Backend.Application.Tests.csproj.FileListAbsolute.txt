@@ -1,7 +1,6 @@
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\.msCoverageSourceRootsMapping_Tycoon.Backend.Application.Tests
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\CoverletSourceRootsMapping_Tycoon.Backend.Application.Tests
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\testhost.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\appsettings.json
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\testhost.exe
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\xunit.runner.visualstudio.testadapter.dll
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\xunit.runner.reporters.netcoreapp10.dll
