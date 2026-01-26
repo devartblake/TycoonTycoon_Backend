@@ -801,15 +801,15 @@
           }
         }
       },
-      "Humanizer.Core/2.14.1": {
+      "Humanizer.Core/3.0.1": {
         "type": "package",
         "compile": {
-          "lib/net6.0/Humanizer.dll": {
+          "lib/net8.0/Humanizer.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net6.0/Humanizer.dll": {
+          "lib/net8.0/Humanizer.dll": {
             "related": ".xml"
           }
         }
@@ -3272,6 +3272,7 @@
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
           "Bogus": "35.6.5",
+          "Humanizer.Core": "3.0.1",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4"
         },
         "compile": {
@@ -3288,9 +3289,10 @@
           "Hangfire.AspNetCore": "1.8.22",
           "Hangfire.Core": "1.8.22",
           "Hangfire.PostgreSql": "1.20.0",
+          "Humanizer.Core": "3.0.1",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.11",
           "Microsoft.AspNetCore.SignalR.StackExchangeRedis": "9.0.11",
-          "Newtonsoft.Json": "13.0.1",
+          "Newtonsoft.Json": "13.0.4",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.14.0",
           "Serilog.AspNetCore": "9.0.0",
           "Serilog.Enrichers.Environment": "3.0.1",
@@ -3331,7 +3333,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "MediatR": "9.0.0",
+          "MediatR": "14.0.0",
           "Tycoon.Shared.Contracts": "1.0.0"
         },
         "compile": {
@@ -3358,7 +3360,7 @@
           "Microsoft.Extensions.Configuration.Json": "9.0.11",
           "Microsoft.Extensions.Options.ConfigurationExtensions": "9.0.11",
           "MongoDB.Driver": "3.5.2",
-          "Newtonsoft.Json": "13.0.1",
+          "Newtonsoft.Json": "13.0.4",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
           "Polly": "8.6.5",
           "Tycoon.Backend.Application": "1.0.0",
@@ -3376,7 +3378,8 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "Aspire.Hosting": "13.1.0"
+          "Aspire.Hosting": "13.1.0",
+          "Humanizer.Core": "3.0.1"
         },
         "compile": {
           "bin/placeholder/Tycoon.Hosting.Elasticsearch.dll": {}
@@ -3390,10 +3393,11 @@
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
           "Elastic": "1.0.0",
+          "Humanizer.Core": "3.0.1",
           "MediatR": "14.0.0",
           "Microsoft.Extensions.Hosting": "9.0.4",
           "Mongo": "1.0.0",
-          "Newtonsoft.Json": "13.0.1",
+          "Newtonsoft.Json": "13.0.4",
           "Postgres": "1.0.0",
           "Serilog": "4.3.0",
           "Serilog.AspNetCore": "9.0.0",
@@ -4306,19 +4310,22 @@
         "tools/install.sql"
       ]
     },
-    "Humanizer.Core/2.14.1": {
-      "sha512": "lQKvtaTDOXnoVJ20ibTuSIOf2i0uO0MPbDhd1jm238I+U/2ZnRENj0cktKZhtchBMtCUSRQ5v4xBCUbKNmyVMw==",
+    "Humanizer.Core/3.0.1": {
+      "sha512": "scB3+KcxNmEjZK5V8rKCW2gIiL8m8KH91w14FuuExyhi9xTyAJ+jr+DDxGdy12mHmioe2uvjxTfMgM7WmSUFlw==",
       "type": "package",
-      "path": "humanizer.core/2.14.1",
+      "path": "humanizer.core/3.0.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "humanizer.core.2.14.1.nupkg.sha512",
+        "analyzers/dotnet/roslyn3.8/cs/Humanizer.Analyzers.dll",
+        "humanizer.core.3.0.1.nupkg.sha512",
         "humanizer.core.nuspec",
-        "lib/net6.0/Humanizer.dll",
-        "lib/net6.0/Humanizer.xml",
-        "lib/netstandard1.0/Humanizer.dll",
-        "lib/netstandard1.0/Humanizer.xml",
+        "lib/net10.0/Humanizer.dll",
+        "lib/net10.0/Humanizer.xml",
+        "lib/net48/Humanizer.dll",
+        "lib/net48/Humanizer.xml",
+        "lib/net8.0/Humanizer.dll",
+        "lib/net8.0/Humanizer.xml",
         "lib/netstandard2.0/Humanizer.dll",
         "lib/netstandard2.0/Humanizer.xml",
         "logo.png"
@@ -7989,29 +7996,30 @@
       "Aspire.Hosting.PostgreSQL >= 13.1.0",
       "Aspire.Hosting.RabbitMQ >= 13.1.0",
       "Aspire.Hosting.Redis >= 13.1.0",
+      "Humanizer.Core >= 3.0.1",
       "Tycoon.Backend.Api >= 1.0.0",
       "Tycoon.Hosting.Elasticsearch >= 1.0.0",
       "Tycoon.MigrationService >= 1.0.0"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Theoretical\\.nuget\\packages\\": {},
+    "C:\\Users\\scorp\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
+      "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
       "projectName": "Tycoon.AppHost",
-      "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
-      "packagesPath": "C:\\Users\\Theoretical\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\obj\\",
+      "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
+      "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Theoretical\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -8027,14 +8035,14 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj"
             }
           }
         }
@@ -8074,6 +8082,10 @@
           "Aspire.Hosting.Redis": {
             "target": "Package",
             "version": "[13.1.0, )"
+          },
+          "Humanizer.Core": {
+            "target": "Package",
+            "version": "[3.0.1, )"
           }
         },
         "imports": [
@@ -8092,7 +8104,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

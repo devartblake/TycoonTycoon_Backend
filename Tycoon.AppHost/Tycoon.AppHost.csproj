@@ -13,6 +13,7 @@
     <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.1.0" />
+    <PackageReference Include="Humanizer.Core" Version="3.0.1" />
   </ItemGroup>
 
   <ItemGroup>

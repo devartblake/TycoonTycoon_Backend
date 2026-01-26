@@ -250,6 +250,19 @@
           }
         }
       },
+      "Humanizer.Core/3.0.1": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/Humanizer.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Humanizer.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "MediatR/14.0.0": {
         "type": "package",
         "dependencies": {
@@ -1760,15 +1773,15 @@
           }
         }
       },
-      "Newtonsoft.Json/13.0.1": {
+      "Newtonsoft.Json/13.0.4": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/Newtonsoft.Json.dll": {
+          "lib/net6.0/Newtonsoft.Json.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/netstandard2.0/Newtonsoft.Json.dll": {
+          "lib/net6.0/Newtonsoft.Json.dll": {
             "related": ".xml"
           }
         }
@@ -2641,9 +2654,10 @@
           "Hangfire.AspNetCore": "1.8.22",
           "Hangfire.Core": "1.8.22",
           "Hangfire.PostgreSql": "1.20.0",
+          "Humanizer.Core": "3.0.1",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.11",
           "Microsoft.AspNetCore.SignalR.StackExchangeRedis": "9.0.11",
-          "Newtonsoft.Json": "13.0.1",
+          "Newtonsoft.Json": "13.0.4",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.14.0",
           "Serilog.AspNetCore": "9.0.0",
           "Serilog.Enrichers.Environment": "3.0.1",
@@ -2684,7 +2698,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "MediatR": "9.0.0",
+          "MediatR": "14.0.0",
           "Tycoon.Shared.Contracts": "1.0.0"
         },
         "compile": {
@@ -2711,7 +2725,7 @@
           "Microsoft.Extensions.Configuration.Json": "9.0.11",
           "Microsoft.Extensions.Options.ConfigurationExtensions": "9.0.11",
           "MongoDB.Driver": "3.5.2",
-          "Newtonsoft.Json": "13.0.1",
+          "Newtonsoft.Json": "13.0.4",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
           "Polly": "8.6.5",
           "Tycoon.Backend.Application": "1.0.0",
@@ -3178,6 +3192,27 @@
         "lib/netstandard2.0/Hangfire.SqlServer.dll",
         "lib/netstandard2.0/Hangfire.SqlServer.xml",
         "tools/install.sql"
+      ]
+    },
+    "Humanizer.Core/3.0.1": {
+      "sha512": "scB3+KcxNmEjZK5V8rKCW2gIiL8m8KH91w14FuuExyhi9xTyAJ+jr+DDxGdy12mHmioe2uvjxTfMgM7WmSUFlw==",
+      "type": "package",
+      "path": "humanizer.core/3.0.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "analyzers/dotnet/roslyn3.8/cs/Humanizer.Analyzers.dll",
+        "humanizer.core.3.0.1.nupkg.sha512",
+        "humanizer.core.nuspec",
+        "lib/net10.0/Humanizer.dll",
+        "lib/net10.0/Humanizer.xml",
+        "lib/net48/Humanizer.dll",
+        "lib/net48/Humanizer.xml",
+        "lib/net8.0/Humanizer.dll",
+        "lib/net8.0/Humanizer.xml",
+        "lib/netstandard2.0/Humanizer.dll",
+        "lib/netstandard2.0/Humanizer.xml",
+        "logo.png"
       ]
     },
     "MediatR/14.0.0": {
@@ -5371,14 +5406,15 @@
         "packageIcon.png"
       ]
     },
-    "Newtonsoft.Json/13.0.1": {
-      "sha512": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A==",
+    "Newtonsoft.Json/13.0.4": {
+      "sha512": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A==",
       "type": "package",
-      "path": "newtonsoft.json/13.0.1",
+      "path": "newtonsoft.json/13.0.4",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "LICENSE.md",
+        "README.md",
         "lib/net20/Newtonsoft.Json.dll",
         "lib/net20/Newtonsoft.Json.xml",
         "lib/net35/Newtonsoft.Json.dll",
@@ -5387,13 +5423,15 @@
         "lib/net40/Newtonsoft.Json.xml",
         "lib/net45/Newtonsoft.Json.dll",
         "lib/net45/Newtonsoft.Json.xml",
+        "lib/net6.0/Newtonsoft.Json.dll",
+        "lib/net6.0/Newtonsoft.Json.xml",
         "lib/netstandard1.0/Newtonsoft.Json.dll",
         "lib/netstandard1.0/Newtonsoft.Json.xml",
         "lib/netstandard1.3/Newtonsoft.Json.dll",
         "lib/netstandard1.3/Newtonsoft.Json.xml",
         "lib/netstandard2.0/Newtonsoft.Json.dll",
         "lib/netstandard2.0/Newtonsoft.Json.xml",
-        "newtonsoft.json.13.0.1.nupkg.sha512",
+        "newtonsoft.json.13.0.4.nupkg.sha512",
         "newtonsoft.json.nuspec",
         "packageIcon.png"
       ]
@@ -6802,23 +6840,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Theoretical\\.nuget\\packages\\": {},
+    "C:\\Users\\scorp\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\Tycoon.Backend.Api.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\Tycoon.Backend.Api.Tests.csproj",
       "projectName": "Tycoon.Backend.Api.Tests",
-      "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\Tycoon.Backend.Api.Tests.csproj",
-      "packagesPath": "C:\\Users\\Theoretical\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\obj\\",
+      "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\Tycoon.Backend.Api.Tests.csproj",
+      "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Theoretical\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -6834,14 +6872,14 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
             }
           }
         }
@@ -6907,7 +6945,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

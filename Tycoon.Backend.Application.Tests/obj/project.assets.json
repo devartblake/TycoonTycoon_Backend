@@ -1411,15 +1411,15 @@
           }
         }
       },
-      "Newtonsoft.Json/13.0.1": {
+      "Newtonsoft.Json/13.0.4": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/Newtonsoft.Json.dll": {
+          "lib/net6.0/Newtonsoft.Json.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/netstandard2.0/Newtonsoft.Json.dll": {
+          "lib/net6.0/Newtonsoft.Json.dll": {
             "related": ".xml"
           }
         }
@@ -2194,7 +2194,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "MediatR": "9.0.0",
+          "MediatR": "14.0.0",
           "Tycoon.Shared.Contracts": "1.0.0"
         },
         "compile": {
@@ -2221,7 +2221,7 @@
           "Microsoft.Extensions.Configuration.Json": "9.0.11",
           "Microsoft.Extensions.Options.ConfigurationExtensions": "9.0.11",
           "MongoDB.Driver": "3.5.2",
-          "Newtonsoft.Json": "13.0.1",
+          "Newtonsoft.Json": "13.0.4",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
           "Polly": "8.6.5",
           "Tycoon.Backend.Application": "1.0.0",
@@ -4182,14 +4182,15 @@
         "packageIcon.png"
       ]
     },
-    "Newtonsoft.Json/13.0.1": {
-      "sha512": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A==",
+    "Newtonsoft.Json/13.0.4": {
+      "sha512": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A==",
       "type": "package",
-      "path": "newtonsoft.json/13.0.1",
+      "path": "newtonsoft.json/13.0.4",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "LICENSE.md",
+        "README.md",
         "lib/net20/Newtonsoft.Json.dll",
         "lib/net20/Newtonsoft.Json.xml",
         "lib/net35/Newtonsoft.Json.dll",
@@ -4198,13 +4199,15 @@
         "lib/net40/Newtonsoft.Json.xml",
         "lib/net45/Newtonsoft.Json.dll",
         "lib/net45/Newtonsoft.Json.xml",
+        "lib/net6.0/Newtonsoft.Json.dll",
+        "lib/net6.0/Newtonsoft.Json.xml",
         "lib/netstandard1.0/Newtonsoft.Json.dll",
         "lib/netstandard1.0/Newtonsoft.Json.xml",
         "lib/netstandard1.3/Newtonsoft.Json.dll",
         "lib/netstandard1.3/Newtonsoft.Json.xml",
         "lib/netstandard2.0/Newtonsoft.Json.dll",
         "lib/netstandard2.0/Newtonsoft.Json.xml",
-        "newtonsoft.json.13.0.1.nupkg.sha512",
+        "newtonsoft.json.13.0.4.nupkg.sha512",
         "newtonsoft.json.nuspec",
         "packageIcon.png"
       ]
@@ -5459,23 +5462,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Theoretical\\.nuget\\packages\\": {},
+    "C:\\Users\\scorp\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application.Tests\\Tycoon.Backend.Application.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application.Tests\\Tycoon.Backend.Application.Tests.csproj",
       "projectName": "Tycoon.Backend.Application.Tests",
-      "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application.Tests\\Tycoon.Backend.Application.Tests.csproj",
-      "packagesPath": "C:\\Users\\Theoretical\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application.Tests\\obj\\",
+      "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application.Tests\\Tycoon.Backend.Application.Tests.csproj",
+      "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Theoretical\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -5491,17 +5494,17 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
+            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
+              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
             }
           }
         }
@@ -5563,7 +5566,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

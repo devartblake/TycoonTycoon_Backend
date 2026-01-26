@@ -15,15 +15,15 @@
           }
         }
       },
-      "Humanizer.Core/2.14.1": {
+      "Humanizer.Core/3.0.1": {
         "type": "package",
         "compile": {
-          "lib/net6.0/_._": {
+          "lib/net8.0/Humanizer.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net6.0/Humanizer.dll": {
+          "lib/net8.0/Humanizer.dll": {
             "related": ".xml"
           }
         }
@@ -949,19 +949,22 @@
         "lib/netstandard2.0/Bogus.xml"
       ]
     },
-    "Humanizer.Core/2.14.1": {
-      "sha512": "lQKvtaTDOXnoVJ20ibTuSIOf2i0uO0MPbDhd1jm238I+U/2ZnRENj0cktKZhtchBMtCUSRQ5v4xBCUbKNmyVMw==",
+    "Humanizer.Core/3.0.1": {
+      "sha512": "scB3+KcxNmEjZK5V8rKCW2gIiL8m8KH91w14FuuExyhi9xTyAJ+jr+DDxGdy12mHmioe2uvjxTfMgM7WmSUFlw==",
       "type": "package",
-      "path": "humanizer.core/2.14.1",
+      "path": "humanizer.core/3.0.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "humanizer.core.2.14.1.nupkg.sha512",
+        "analyzers/dotnet/roslyn3.8/cs/Humanizer.Analyzers.dll",
+        "humanizer.core.3.0.1.nupkg.sha512",
         "humanizer.core.nuspec",
-        "lib/net6.0/Humanizer.dll",
-        "lib/net6.0/Humanizer.xml",
-        "lib/netstandard1.0/Humanizer.dll",
-        "lib/netstandard1.0/Humanizer.xml",
+        "lib/net10.0/Humanizer.dll",
+        "lib/net10.0/Humanizer.xml",
+        "lib/net48/Humanizer.dll",
+        "lib/net48/Humanizer.xml",
+        "lib/net8.0/Humanizer.dll",
+        "lib/net8.0/Humanizer.xml",
         "lib/netstandard2.0/Humanizer.dll",
         "lib/netstandard2.0/Humanizer.xml",
         "logo.png"
@@ -2812,28 +2815,29 @@
   "projectFileDependencyGroups": {
     "net9.0": [
       "Bogus >= 35.6.5",
+      "Humanizer.Core >= 3.0.1",
       "Microsoft.EntityFrameworkCore.Design >= 9.0.11",
       "Npgsql.EntityFrameworkCore.PostgreSQL >= 9.0.4"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Theoretical\\.nuget\\packages\\": {},
+    "C:\\Users\\scorp\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj",
+      "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj",
       "projectName": "Postgres",
-      "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj",
-      "packagesPath": "C:\\Users\\Theoretical\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Postgres\\obj\\",
+      "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\Postgres.csproj",
+      "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Postgres\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Theoretical\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -2871,6 +2875,10 @@
             "target": "Package",
             "version": "[35.6.5, )"
           },
+          "Humanizer.Core": {
+            "target": "Package",
+            "version": "[3.0.1, )"
+          },
           "Microsoft.EntityFrameworkCore.Design": {
             "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
             "suppressParent": "All",
@@ -2898,7 +2906,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

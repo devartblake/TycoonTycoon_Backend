@@ -64,6 +64,18 @@ builder.Services.AddEndpointsApiExplorer();
 // ✅ IMPROVED SWAGGER CONFIGURATION
 builder.Services.AddSwaggerGen(c =>
 {
+    c.MapType<DateOnly>(() => new Microsoft.OpenApi.Models.OpenApiSchema
+    {
+        Type = "string",
+        Format = "date"
+    });
+
+    c.MapType<TimeOnly>(() => new Microsoft.OpenApi.Models.OpenApiSchema
+    {
+        Type = "string",
+        Format = "time"
+    });
+
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Tycoon Backend API",

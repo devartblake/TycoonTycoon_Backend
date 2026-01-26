@@ -31,6 +31,12 @@ try
                 cfg.RegisterServicesFromAssembly(typeof(Tycoon.Backend.Infrastructure.DependencyInjection).Assembly);
             });
 
+            // Register MediatR 14.0.0 (required by DomainEventDispatcher)
+            services.AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(typeof(Tycoon.Backend.Infrastructure.DependencyInjection).Assembly);
+            });
+
             // Infrastructure (EF Core, Mongo, Elastic, Redis, clock, dispatcher, etc.)
             services.AddInfrastructure(ctx.Configuration);
 
