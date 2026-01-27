@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Analytics.Models;
 using Tycoon.Backend.Domain.Abstractions;
@@ -39,12 +40,6 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<Question> Questions => Set<Question>();
         public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
         public DbSet<QuestionTag> QuestionTags => Set<QuestionTag>();
-        // --- Analytics Events ---
-        public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => Set<QuestionAnsweredAnalyticsEvent>();
-
-        // --- Analytics Rollups ---
-        public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => Set<QuestionAnsweredDailyRollup>();
-        public DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups => Set<QuestionAnsweredPlayerDailyRollup>();
         public DbSet<PlayerWallet> PlayerWallets => Set<PlayerWallet>();
         public DbSet<EconomyTransaction> EconomyTransactions => Set<EconomyTransaction>();
         public DbSet<EconomyTransactionLine> EconomyTransactionLines => Set<EconomyTransactionLine>();
@@ -68,37 +63,57 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<SeasonRewardClaim> SeasonRewardClaims => Set<SeasonRewardClaim>();
         public DbSet<SeasonRankSnapshotRow> SeasonRankSnapshots => Set<SeasonRankSnapshotRow>();
 
+        public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => throw new NotImplementedException();
+
+        public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => throw new NotImplementedException();
+
+        public DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups => throw new NotImplementedException();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // QuestionAnsweredAnalyticsEvent
-            modelBuilder.Entity<QuestionAnsweredAnalyticsEvent>(b =>
+            modelBuilder.ApplyConfiguration(new SeasonRewardClaimConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonRankSnapshotRowConfiguration());
+
+            // Ensure we pick up all IEntityTypeConfiguration<> classes.
+            //
+            // IMPORTANT: We intentionally scan BOTH the Infrastructure assembly (this DbContext)
+            // and the Domain assembly (where entity CLR types live). This makes the system more
+            // robust to accidental misplacement of configuration classes and prevents silent
+            // model drift (e.g., join entities being discovered without keys).
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDb).Assembly);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(Player).Assembly);
+
+            // Hard guardrail: fail fast with an actionable error if any entity type is discovered
+            // without a primary key. This prevents opaque "requires a primary key" failures later
+            // in migration/runtime and makes it obvious which types are misconfigured.
+            ValidateAllEntityTypesHaveKeys((IModel)modelBuilder.Model);
+        }
+
+        private static void ValidateAllEntityTypesHaveKeys(IModel model)
+        {
+            // EF will sometimes create shared-type entity types (e.g., many-to-many dictionaries).
+            // Those are typically keyless by design. We only guard *real* entities.
+            var offenders = model
+            .GetEntityTypes()
+            .Where(et =>
+                !et.IsOwned() &&
+                et.FindPrimaryKey() is null &&
+                et.GetAnnotations().All(a => a.Name != "Relational:ViewName"))
+            .Select(et => et.DisplayName())
+            .OrderBy(n => n)
+            .ToList();
+
+            if (offenders.Count == 0)
             {
-                b.HasKey(x => x.Id);
+                return;
+            }
 
-                // Helpful for query patterns; not required, but generally beneficial.
-                b.HasIndex(x => new { x.UpdatedAtUtc, x.PlayerId });
-            });
-
-            // QuestionAnsweredDailyRollup
-            modelBuilder.Entity<QuestionAnsweredDailyRollup>(b =>
-            {
-                b.HasKey(x => x.Id);
-
-                // Enforce uniqueness for upsert pattern
-                b.HasIndex(x => new { x.Day, x.Mode, x.Category, x.Difficulty })
-                 .IsUnique(false);
-            });
-
-            // QuestionAnsweredPlayerDailyRollup
-            modelBuilder.Entity<QuestionAnsweredPlayerDailyRollup>(b =>
-            {
-                b.HasKey(x => x.Id);
-
-                b.HasIndex(x => new { x.Day, x.PlayerId, x.Mode, x.Category, x.Difficulty })
-                 .IsUnique(false);
-            });
+            throw new InvalidOperationException(
+                "EF model validation failed: the following entity types have no primary key configured. " +
+                "Add HasKey(...) in an IEntityTypeConfiguration<> (preferred) or mark the type as keyless via HasNoKey(). " +
+                "Offenders: " + string.Join(", ", offenders));
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken ct = default)

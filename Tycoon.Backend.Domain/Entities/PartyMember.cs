@@ -5,6 +5,7 @@
         Leader = 1,
         Member = 2
     }
+
     public sealed class PartyMember
     {
         public Guid Id { get; private set; } = Guid.NewGuid();

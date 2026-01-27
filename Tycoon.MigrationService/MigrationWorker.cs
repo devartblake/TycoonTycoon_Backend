@@ -86,7 +86,7 @@ namespace Tycoon.MigrationService
                     }
                     catch (Exception ex)
                     {
-                        // ✅ Log error but continue
+                        // Log error but continue
                         _log.Warning(ex, "Failed to create Elasticsearch indices. Continuing with migrations anyway...");
                     }
                 }

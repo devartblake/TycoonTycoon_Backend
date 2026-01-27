@@ -53,7 +53,7 @@
           "dependencies": {
             "Elastic.Clients.Elasticsearch": {
               "target": "Package",
-              "version": "[9.2.2, )"
+              "version": "[8.*, )"
             },
             "Microsoft.Extensions.Configuration": {
               "target": "Package",
@@ -411,6 +411,10 @@
             "MediatR": {
               "target": "Package",
               "version": "[14.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.11, )"
             }
           },
           "imports": [
@@ -492,11 +496,11 @@
           "dependencies": {
             "Elastic.Clients.Elasticsearch": {
               "target": "Package",
-              "version": "[9.2.2, )"
+              "version": "[8.*, )"
             },
             "Elastic.Transport": {
               "target": "Package",
-              "version": "[0.10.2, )"
+              "version": "[0.10.3, )"
             },
             "Hangfire.Core": {
               "target": "Package",

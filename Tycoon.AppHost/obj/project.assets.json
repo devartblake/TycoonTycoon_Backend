@@ -453,7 +453,7 @@
           }
         }
       },
-      "Elastic.Clients.Elasticsearch/9.2.2": {
+      "Elastic.Clients.Elasticsearch/8.19.13": {
         "type": "package",
         "dependencies": {
           "Elastic.Transport": "0.10.1"
@@ -469,7 +469,7 @@
           }
         }
       },
-      "Elastic.Transport/0.10.2": {
+      "Elastic.Transport/0.10.3": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.DiagnosticSource": "10.0.0",
@@ -3239,7 +3239,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "Elastic.Clients.Elasticsearch": "9.2.2",
+          "Elastic.Clients.Elasticsearch": "8.0.0",
           "Microsoft.Extensions.Configuration": "9.0.11",
           "Microsoft.Extensions.Configuration.Binder": "9.0.11",
           "Microsoft.Extensions.DependencyInjection": "9.0.11",
@@ -3334,6 +3334,7 @@
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
           "MediatR": "14.0.0",
+          "Microsoft.EntityFrameworkCore": "9.0.11",
           "Tycoon.Shared.Contracts": "1.0.0"
         },
         "compile": {
@@ -3347,8 +3348,8 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "Elastic.Clients.Elasticsearch": "9.2.2",
-          "Elastic.Transport": "0.10.2",
+          "Elastic.Clients.Elasticsearch": "8.0.0",
+          "Elastic.Transport": "0.10.3",
           "Hangfire.Core": "1.8.22",
           "MediatR": "14.0.0",
           "Microsoft.EntityFrameworkCore": "9.0.11",
@@ -3767,16 +3768,16 @@
         "lib/netstandard2.1/DnsClient.xml"
       ]
     },
-    "Elastic.Clients.Elasticsearch/9.2.2": {
-      "sha512": "4X2a9r+4YvzJY5b26OFRhOcfisAZuz7XSvkgmUWcbFJi17VlelPC9mjxuyTEz+3g7uoQ0CNDR6eXzYyoggIt6w==",
+    "Elastic.Clients.Elasticsearch/8.19.13": {
+      "sha512": "r5/IgwIwc2pe2nKg9XEcURRNN2Yvk47AEFER5ABeEiZ7Q+AwIXiJCKzSKC83JGXvl3tDHt6CQERvJyxBnWmkfA==",
       "type": "package",
-      "path": "elastic.clients.elasticsearch/9.2.2",
+      "path": "elastic.clients.elasticsearch/8.19.13",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "LICENSE.txt",
         "README.md",
-        "elastic.clients.elasticsearch.9.2.2.nupkg.sha512",
+        "elastic.clients.elasticsearch.8.19.13.nupkg.sha512",
         "elastic.clients.elasticsearch.nuspec",
         "lib/net462/Elastic.Clients.Elasticsearch.dll",
         "lib/net462/Elastic.Clients.Elasticsearch.xml",
@@ -3791,14 +3792,14 @@
         "nuget-icon.png"
       ]
     },
-    "Elastic.Transport/0.10.2": {
-      "sha512": "n2ppXCHj5wnviJYLIbcBe0ITF8tevVXGON6/AKTMoLQWTAHR/N49ffIi/S0aV0972p7C7yX9ncHhEOuritMjAA==",
+    "Elastic.Transport/0.10.3": {
+      "sha512": "DkHBUyfj1xpbDYfDHNWqCQHeAmZbEPrBqKA3dPMpfHQjzicG8269p+aXh3VrnEojfk4YVoj6DuI1SiwFdHmIzw==",
       "type": "package",
-      "path": "elastic.transport/0.10.2",
+      "path": "elastic.transport/0.10.3",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "elastic.transport.0.10.2.nupkg.sha512",
+        "elastic.transport.0.10.3.nupkg.sha512",
         "elastic.transport.nuspec",
         "lib/net10.0/Elastic.Transport.dll",
         "lib/net10.0/Elastic.Transport.pdb",
