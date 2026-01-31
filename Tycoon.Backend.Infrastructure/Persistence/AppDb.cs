@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Serilog;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Analytics.Models;
@@ -131,6 +132,36 @@ namespace Tycoon.Backend.Infrastructure.Persistence
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Migration-only diagnostic: logs entity types that would break migrations because they have no PK.
+        /// Do NOT call during normal runtime; call from MigrationService before Database.MigrateAsync().
+        /// </summary>
+        public void LogEntitiesMissingPrimaryKeysForMigrations(ILogger log)
+        {
+            var model = Model;
+
+            var offenders = model
+                .GetEntityTypes()
+                .Where(et =>
+                {
+                    var ro = (IReadOnlyEntityType)et;
+                    return !ro.IsOwned()
+                           && ro.FindPrimaryKey() is null;
+                })
+                .Select(et => et.DisplayName())
+                .OrderBy(n => n)
+                .ToList();
+
+            if (offenders.Count == 0)
+            {
+                log.Information("EF Model Guard: all entity types have primary keys (or are owned/keyless).");
+                return;
+            }
+
+            log.Warning("EF Model Guard: {Count} entity types have NO primary key (will break migrations): {Offenders}",
+                offenders.Count, offenders);
         }
     }
 }

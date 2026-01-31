@@ -427,15 +427,15 @@
           }
         }
       },
-      "Dapper/2.0.123": {
+      "Dapper/2.1.66": {
         "type": "package",
         "compile": {
-          "lib/net5.0/Dapper.dll": {
+          "lib/net8.0/Dapper.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net5.0/Dapper.dll": {
+          "lib/net8.0/Dapper.dll": {
             "related": ".xml"
           }
         }
@@ -453,18 +453,18 @@
           }
         }
       },
-      "Elastic.Clients.Elasticsearch/8.19.14": {
+      "Elastic.Clients.Elasticsearch/8.19.0": {
         "type": "package",
         "dependencies": {
-          "Elastic.Transport": "0.10.3"
+          "Elastic.Transport": "0.9.2"
         },
         "compile": {
-          "lib/net9.0/Elastic.Clients.Elasticsearch.dll": {
+          "lib/net8.0/Elastic.Clients.Elasticsearch.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net9.0/Elastic.Clients.Elasticsearch.dll": {
+          "lib/net8.0/Elastic.Clients.Elasticsearch.dll": {
             "related": ".xml"
           }
         }
@@ -922,24 +922,25 @@
           "lib/netstandard2.1/MediatR.Extensions.Microsoft.DependencyInjection.dll": {}
         }
       },
-      "MessagePack/2.5.192": {
+      "MessagePack/3.1.4": {
         "type": "package",
         "dependencies": {
-          "MessagePack.Annotations": "2.5.192",
-          "Microsoft.NET.StringTools": "17.6.3"
+          "MessagePack.Annotations": "3.1.4",
+          "MessagePackAnalyzer": "3.1.4",
+          "Microsoft.NET.StringTools": "17.11.4"
         },
         "compile": {
-          "lib/net6.0/MessagePack.dll": {
+          "lib/net9.0/MessagePack.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net6.0/MessagePack.dll": {
+          "lib/net9.0/MessagePack.dll": {
             "related": ".xml"
           }
         }
       },
-      "MessagePack.Annotations/2.5.192": {
+      "MessagePack.Annotations/3.1.4": {
         "type": "package",
         "compile": {
           "lib/netstandard2.0/MessagePack.Annotations.dll": {
@@ -950,6 +951,12 @@
           "lib/netstandard2.0/MessagePack.Annotations.dll": {
             "related": ".xml"
           }
+        }
+      },
+      "MessagePackAnalyzer/3.1.4": {
+        "type": "package",
+        "build": {
+          "build/_._": {}
         }
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer/9.0.11": {
@@ -1057,13 +1064,13 @@
           }
         }
       },
-      "Microsoft.EntityFrameworkCore.Relational/9.0.1": {
+      "Microsoft.EntityFrameworkCore.Relational/9.0.11": {
         "type": "package",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "9.0.1",
-          "Microsoft.Extensions.Caching.Memory": "9.0.1",
-          "Microsoft.Extensions.Configuration.Abstractions": "9.0.1",
-          "Microsoft.Extensions.Logging": "9.0.1"
+          "Microsoft.EntityFrameworkCore": "9.0.11",
+          "Microsoft.Extensions.Caching.Memory": "9.0.11",
+          "Microsoft.Extensions.Configuration.Abstractions": "9.0.11",
+          "Microsoft.Extensions.Logging": "9.0.11"
         },
         "compile": {
           "lib/net8.0/Microsoft.EntityFrameworkCore.Relational.dll": {
@@ -2149,15 +2156,15 @@
           }
         }
       },
-      "Microsoft.NET.StringTools/17.6.3": {
+      "Microsoft.NET.StringTools/17.11.4": {
         "type": "package",
         "compile": {
-          "ref/net7.0/_._": {
+          "ref/net8.0/_._": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net7.0/Microsoft.NET.StringTools.dll": {
+          "lib/net8.0/Microsoft.NET.StringTools.dll": {
             "related": ".pdb;.xml"
           }
         }
@@ -3239,7 +3246,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "Elastic.Clients.Elasticsearch": "8.0.0",
+          "Elastic.Clients.Elasticsearch": "8.19.0",
           "Microsoft.Extensions.Configuration": "9.0.11",
           "Microsoft.Extensions.Configuration.Binder": "9.0.11",
           "Microsoft.Extensions.DependencyInjection": "9.0.11",
@@ -3348,12 +3355,13 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "Elastic.Clients.Elasticsearch": "8.0.0",
+          "Elastic.Clients.Elasticsearch": "8.19.0",
           "Elastic.Transport": "0.10.3",
           "Hangfire.Core": "1.8.22",
           "MediatR": "14.0.0",
           "Microsoft.EntityFrameworkCore": "9.0.11",
           "Microsoft.EntityFrameworkCore.InMemory": "9.0.11",
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
           "Microsoft.Extensions.Caching.StackExchangeRedis": "9.0.11",
           "Microsoft.Extensions.Configuration": "9.0.11",
           "Microsoft.Extensions.Configuration.EnvironmentVariables": "9.0.11",
@@ -3396,9 +3404,11 @@
           "Elastic": "1.0.0",
           "Humanizer.Core": "3.0.1",
           "MediatR": "14.0.0",
-          "Microsoft.Extensions.Hosting": "9.0.4",
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
+          "Microsoft.Extensions.Hosting": "9.0.11",
           "Mongo": "1.0.0",
           "Newtonsoft.Json": "13.0.4",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
           "Postgres": "1.0.0",
           "Serilog": "4.3.0",
           "Serilog.AspNetCore": "9.0.0",
@@ -3450,7 +3460,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "Microsoft.Extensions.Hosting": "9.0.4",
+          "Microsoft.Extensions.Hosting": "9.0.11",
           "OpenTelemetry": "1.14.0",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.14.0",
           "OpenTelemetry.Extensions.Hosting": "1.14.0",
@@ -3727,22 +3737,23 @@
         "lib/netstandard2.0/Bogus.xml"
       ]
     },
-    "Dapper/2.0.123": {
-      "sha512": "RDFF4rBLLmbpi6pwkY7q/M6UXHRJEOerplDGE5jwEkP/JGJnBauAClYavNKJPW1yOTWRPIyfj4is3EaJxQXILQ==",
+    "Dapper/2.1.66": {
+      "sha512": "/q77jUgDOS+bzkmk3Vy9SiWMaetTw+NOoPAV0xPBsGVAyljd5S6P+4RUW7R3ZUGGr9lDRyPKgAMj2UAOwvqZYw==",
       "type": "package",
-      "path": "dapper/2.0.123",
+      "path": "dapper/2.1.66",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Dapper.png",
-        "dapper.2.0.123.nupkg.sha512",
+        "dapper.2.1.66.nupkg.sha512",
         "dapper.nuspec",
         "lib/net461/Dapper.dll",
         "lib/net461/Dapper.xml",
-        "lib/net5.0/Dapper.dll",
-        "lib/net5.0/Dapper.xml",
+        "lib/net8.0/Dapper.dll",
+        "lib/net8.0/Dapper.xml",
         "lib/netstandard2.0/Dapper.dll",
-        "lib/netstandard2.0/Dapper.xml"
+        "lib/netstandard2.0/Dapper.xml",
+        "readme.md"
       ]
     },
     "DnsClient/1.8.0": {
@@ -3768,25 +3779,21 @@
         "lib/netstandard2.1/DnsClient.xml"
       ]
     },
-    "Elastic.Clients.Elasticsearch/8.19.14": {
-      "sha512": "2t+qzFU0zh4KquwWpc1KbQ3rIn1Jta9MExDgct8P9PJc59REUbX5kQZowTxQds+jOyi3lVK66dObD13UO74gbg==",
+    "Elastic.Clients.Elasticsearch/8.19.0": {
+      "sha512": "JIOohUkjTDNOqcFzny+f0A6efXLXhRdnGcOhwKsSxnic1Taor9CKXl56Pa1XpbhieCfRDkB/wylGwm+Vo2JNdw==",
       "type": "package",
-      "path": "elastic.clients.elasticsearch/8.19.14",
+      "path": "elastic.clients.elasticsearch/8.19.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "LICENSE.txt",
         "README.md",
-        "elastic.clients.elasticsearch.8.19.14.nupkg.sha512",
+        "elastic.clients.elasticsearch.8.19.0.nupkg.sha512",
         "elastic.clients.elasticsearch.nuspec",
-        "lib/net10.0/Elastic.Clients.Elasticsearch.dll",
-        "lib/net10.0/Elastic.Clients.Elasticsearch.xml",
         "lib/net462/Elastic.Clients.Elasticsearch.dll",
         "lib/net462/Elastic.Clients.Elasticsearch.xml",
         "lib/net8.0/Elastic.Clients.Elasticsearch.dll",
         "lib/net8.0/Elastic.Clients.Elasticsearch.xml",
-        "lib/net9.0/Elastic.Clients.Elasticsearch.dll",
-        "lib/net9.0/Elastic.Clients.Elasticsearch.xml",
         "lib/netstandard2.0/Elastic.Clients.Elasticsearch.dll",
         "lib/netstandard2.0/Elastic.Clients.Elasticsearch.xml",
         "lib/netstandard2.1/Elastic.Clients.Elasticsearch.dll",
@@ -4463,34 +4470,52 @@
         "mediatr.extensions.microsoft.dependencyinjection.nuspec"
       ]
     },
-    "MessagePack/2.5.192": {
-      "sha512": "Jtle5MaFeIFkdXtxQeL9Tu2Y3HsAQGoSntOzrn6Br/jrl6c8QmG22GEioT5HBtZJR0zw0s46OnKU8ei2M3QifA==",
+    "MessagePack/3.1.4": {
+      "sha512": "BH0wlHWmVoZpbAPyyt2Awbq30C+ZsS3eHSkYdnyUAbqVJ22fAJDzn2xTieBeoT5QlcBzp61vHcv878YJGfi3mg==",
       "type": "package",
-      "path": "messagepack/2.5.192",
+      "path": "messagepack/3.1.4",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/net472/MessagePack.dll",
         "lib/net472/MessagePack.xml",
-        "lib/net6.0/MessagePack.dll",
-        "lib/net6.0/MessagePack.xml",
+        "lib/net8.0/MessagePack.dll",
+        "lib/net8.0/MessagePack.xml",
+        "lib/net9.0/MessagePack.dll",
+        "lib/net9.0/MessagePack.xml",
         "lib/netstandard2.0/MessagePack.dll",
         "lib/netstandard2.0/MessagePack.xml",
-        "messagepack.2.5.192.nupkg.sha512",
+        "lib/netstandard2.1/MessagePack.dll",
+        "lib/netstandard2.1/MessagePack.xml",
+        "messagepack.3.1.4.nupkg.sha512",
         "messagepack.nuspec"
       ]
     },
-    "MessagePack.Annotations/2.5.192": {
-      "sha512": "jaJuwcgovWIZ8Zysdyf3b7b34/BrADw4v82GaEZymUhDd3ScMPrYd/cttekeDteJJPXseJxp04yTIcxiVUjTWg==",
+    "MessagePack.Annotations/3.1.4": {
+      "sha512": "aVWrDAkCdqxwQsz/q0ldPh2EFn48M99YUzE9OvZjMq2RNLKz4o2z88iGFvSvbMqOWRweRvKPHBJZe22PRqzslQ==",
       "type": "package",
-      "path": "messagepack.annotations/2.5.192",
+      "path": "messagepack.annotations/3.1.4",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/netstandard2.0/MessagePack.Annotations.dll",
         "lib/netstandard2.0/MessagePack.Annotations.xml",
-        "messagepack.annotations.2.5.192.nupkg.sha512",
+        "messagepack.annotations.3.1.4.nupkg.sha512",
         "messagepack.annotations.nuspec"
+      ]
+    },
+    "MessagePackAnalyzer/3.1.4": {
+      "sha512": "CTaSsN/liJ7MhLCAB7Z4ZLBNuVGCq9lt2BT/cbrc9vzGv89yK3CqIA+z9T19a11eQYl9etZHL6MQJgCqECRVpg==",
+      "type": "package",
+      "path": "messagepackanalyzer/3.1.4",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "analyzers/roslyn4.3/cs/MessagePack.Analyzers.CodeFixes.dll",
+        "analyzers/roslyn4.3/cs/MessagePack.SourceGenerator.dll",
+        "build/MessagePackAnalyzer.targets",
+        "messagepackanalyzer.3.1.4.nupkg.sha512",
+        "messagepackanalyzer.nuspec"
       ]
     },
     "Microsoft.AspNetCore.Authentication.JwtBearer/9.0.11": {
@@ -4653,10 +4678,10 @@
         "microsoft.entityframeworkcore.inmemory.nuspec"
       ]
     },
-    "Microsoft.EntityFrameworkCore.Relational/9.0.1": {
-      "sha512": "7Iu0h4oevRvH4IwPzmxuIJGYRt55TapoREGlluk75KCO7lenN0+QnzCl6cQDY48uDoxAUpJbpK2xW7o8Ix69dw==",
+    "Microsoft.EntityFrameworkCore.Relational/9.0.11": {
+      "sha512": "b6A19xFuU2F92C7N70+HSjRcxwDHTYTdZ/1PyLpHmzXt35G6ugCVKTPS+YJVK1u5ArrDFGQNu+EI+UrSRgUwGA==",
       "type": "package",
-      "path": "microsoft.entityframeworkcore.relational/9.0.1",
+      "path": "microsoft.entityframeworkcore.relational/9.0.11",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -4664,7 +4689,7 @@
         "PACKAGE.md",
         "lib/net8.0/Microsoft.EntityFrameworkCore.Relational.dll",
         "lib/net8.0/Microsoft.EntityFrameworkCore.Relational.xml",
-        "microsoft.entityframeworkcore.relational.9.0.1.nupkg.sha512",
+        "microsoft.entityframeworkcore.relational.9.0.11.nupkg.sha512",
         "microsoft.entityframeworkcore.relational.nuspec"
       ]
     },
@@ -6366,10 +6391,10 @@
         "microsoft.identitymodel.tokens.nuspec"
       ]
     },
-    "Microsoft.NET.StringTools/17.6.3": {
-      "sha512": "N0ZIanl1QCgvUumEL1laasU0a7sOE5ZwLZVTn0pAePnfhq8P7SvTjF8Axq+CnavuQkmdQpGNXQ1efZtu5kDFbA==",
+    "Microsoft.NET.StringTools/17.11.4": {
+      "sha512": "mudqUHhNpeqIdJoUx2YDWZO/I9uEDYVowan89R6wsomfnUJQk6HteoQTlNjZDixhT2B4IXMkMtgZtoceIjLRmA==",
       "type": "package",
-      "path": "microsoft.net.stringtools/17.6.3",
+      "path": "microsoft.net.stringtools/17.11.4",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -6378,19 +6403,19 @@
         "lib/net472/Microsoft.NET.StringTools.dll",
         "lib/net472/Microsoft.NET.StringTools.pdb",
         "lib/net472/Microsoft.NET.StringTools.xml",
-        "lib/net7.0/Microsoft.NET.StringTools.dll",
-        "lib/net7.0/Microsoft.NET.StringTools.pdb",
-        "lib/net7.0/Microsoft.NET.StringTools.xml",
+        "lib/net8.0/Microsoft.NET.StringTools.dll",
+        "lib/net8.0/Microsoft.NET.StringTools.pdb",
+        "lib/net8.0/Microsoft.NET.StringTools.xml",
         "lib/netstandard2.0/Microsoft.NET.StringTools.dll",
         "lib/netstandard2.0/Microsoft.NET.StringTools.pdb",
         "lib/netstandard2.0/Microsoft.NET.StringTools.xml",
-        "microsoft.net.stringtools.17.6.3.nupkg.sha512",
+        "microsoft.net.stringtools.17.11.4.nupkg.sha512",
         "microsoft.net.stringtools.nuspec",
         "notices/THIRDPARTYNOTICES.txt",
         "ref/net472/Microsoft.NET.StringTools.dll",
         "ref/net472/Microsoft.NET.StringTools.xml",
-        "ref/net7.0/Microsoft.NET.StringTools.dll",
-        "ref/net7.0/Microsoft.NET.StringTools.xml",
+        "ref/net8.0/Microsoft.NET.StringTools.dll",
+        "ref/net8.0/Microsoft.NET.StringTools.xml",
         "ref/netstandard2.0/Microsoft.NET.StringTools.dll",
         "ref/netstandard2.0/Microsoft.NET.StringTools.xml"
       ]
@@ -8018,6 +8043,8 @@
       "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\obj\\",
       "projectStyle": "PackageReference",
+      "centralPackageVersionsManagementEnabled": true,
+      "CentralPackageTransitivePinningEnabled": true,
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
@@ -8068,28 +8095,150 @@
         "dependencies": {
           "Aspire.Hosting.AppHost": {
             "target": "Package",
-            "version": "[13.1.0, )"
+            "version": "[13.1.0, )",
+            "versionCentrallyManaged": true
           },
           "Aspire.Hosting.MongoDB": {
             "target": "Package",
-            "version": "[13.1.0, )"
+            "version": "[13.1.0, )",
+            "versionCentrallyManaged": true
           },
           "Aspire.Hosting.PostgreSQL": {
             "target": "Package",
-            "version": "[13.1.0, )"
+            "version": "[13.1.0, )",
+            "versionCentrallyManaged": true
           },
           "Aspire.Hosting.RabbitMQ": {
             "target": "Package",
-            "version": "[13.1.0, )"
+            "version": "[13.1.0, )",
+            "versionCentrallyManaged": true
           },
           "Aspire.Hosting.Redis": {
             "target": "Package",
-            "version": "[13.1.0, )"
+            "version": "[13.1.0, )",
+            "versionCentrallyManaged": true
           },
           "Humanizer.Core": {
             "target": "Package",
-            "version": "[3.0.1, )"
+            "version": "[3.0.1, )",
+            "versionCentrallyManaged": true
           }
+        },
+        "centralPackageVersions": {
+          "Ardalis.Specification.EntityFrameworkCore": "9.3.1",
+          "Asp.Versioning.Http": "8.1.0",
+          "Asp.Versioning.Mvc.ApiExplorer": "8.1.0",
+          "Aspire.Hosting": "13.1.0",
+          "Aspire.Hosting.AppHost": "13.1.0",
+          "Aspire.Hosting.MongoDB": "13.1.0",
+          "Aspire.Hosting.PostgreSQL": "13.1.0",
+          "Aspire.Hosting.RabbitMQ": "13.1.0",
+          "Aspire.Hosting.Redis": "13.1.0",
+          "Aspire.MongoDB.Driver": "13.1.0",
+          "AspNetCore.HealthChecks.MongoDb": "9.0.0",
+          "AspNetCore.HealthChecks.Network": "9.0.0",
+          "AspNetCore.HealthChecks.NpgSql": "9.0.0",
+          "AspNetCore.HealthChecks.Prometheus.Metrics": "9.0.0",
+          "AspNetCore.HealthChecks.Publisher.Prometheus": "9.0.0",
+          "AspNetCore.HealthChecks.System": "9.0.0",
+          "Bogus": "35.6.5",
+          "coverlet.collector": "6.0.2",
+          "Dapper": "2.1.66",
+          "DotNetEnv": "3.1.1",
+          "EFCore.NamingConventions": "9.0.0",
+          "Elastic.Clients.Elasticsearch": "8.19.0",
+          "Elastic.Serilog.Sinks": "8.19.0",
+          "Elastic.Transport": "0.10.3",
+          "FluentAssertions": "7.0.0",
+          "FluentValidation": "12.1.1",
+          "FluentValidation.AspNetCore": "11.3.1",
+          "FluentValidation.DependencyInjectionExtensions": "12.1.1",
+          "Grafana.OpenTelemetry": "1.3.0",
+          "Hangfire": "1.8.22",
+          "Hangfire.AspNetCore": "1.8.22",
+          "Hangfire.Core": "1.8.22",
+          "Hangfire.PostgreSql": "1.20.0",
+          "Humanizer.Core": "3.0.1",
+          "LinqKit.Core": "1.2.9",
+          "MassTransit": "8.5.7",
+          "MassTransit.Abstractions": "8.5.7",
+          "MassTransit.Kafka": "8.5.7",
+          "MassTransit.RabbitMQ": "8.5.7",
+          "Mediator.Abstractions": "3.0.1",
+          "MediatR": "14.0.0",
+          "MediatR.Extensions.Microsoft.DependencyInjection": "11.0.0",
+          "MessagePack": "3.1.4",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.11",
+          "Microsoft.AspNetCore.HeaderPropagation": "9.0.11",
+          "Microsoft.AspNetCore.Mvc.Testing": "9.0.11",
+          "Microsoft.AspNetCore.OpenApi": "9.0.11",
+          "Microsoft.AspNetCore.SignalR.Client": "9.0.11",
+          "Microsoft.AspNetCore.SignalR.StackExchangeRedis": "9.0.11",
+          "Microsoft.Diagnostics.NETCore.Client": "0.2.652701",
+          "Microsoft.EntityFrameworkCore": "9.0.11",
+          "Microsoft.EntityFrameworkCore.Design": "9.0.11",
+          "Microsoft.EntityFrameworkCore.InMemory": "9.0.11",
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
+          "Microsoft.EntityFrameworkCore.Tools": "9.0.11",
+          "Microsoft.Extensions.Caching.Hybrid": "9.10.0",
+          "Microsoft.Extensions.Caching.StackExchangeRedis": "9.0.11",
+          "Microsoft.Extensions.Configuration": "9.0.11",
+          "Microsoft.Extensions.Configuration.Binder": "9.0.11",
+          "Microsoft.Extensions.Configuration.EnvironmentVariables": "9.0.11",
+          "Microsoft.Extensions.Configuration.FileExtensions": "9.0.11",
+          "Microsoft.Extensions.Configuration.Json": "9.0.11",
+          "Microsoft.Extensions.DependencyInjection": "9.0.11",
+          "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "9.0.11",
+          "Microsoft.Extensions.Hosting": "9.0.11",
+          "Microsoft.Extensions.Hosting.Abstractions": "9.0.11",
+          "Microsoft.Extensions.Http": "9.0.11",
+          "Microsoft.Extensions.Http.Polly": "9.0.11",
+          "Microsoft.Extensions.Http.Resilience": "9.10.0",
+          "Microsoft.Extensions.Options": "9.0.11",
+          "Microsoft.Extensions.Options.ConfigurationExtensions": "9.0.11",
+          "Microsoft.Extensions.Resilience": "9.10.0",
+          "Microsoft.Extensions.ServiceDiscovery": "9.5.2",
+          "Microsoft.NET.Test.Sdk": "17.12.0",
+          "MongoDB.Driver": "3.5.2",
+          "Newtonsoft.Json": "13.0.4",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
+          "Npgsql.OpenTelemetry": "10.0.0",
+          "OpenTelemetry": "1.14.0",
+          "OpenTelemetry.Exporter.Console": "1.14.0",
+          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.14.0",
+          "OpenTelemetry.Exporter.Prometheus.AspNetCore": "1.14.0-beta.1",
+          "OpenTelemetry.Exporter.Zipkin": "1.14.0",
+          "OpenTelemetry.Extensions.Hosting": "1.14.0",
+          "OpenTelemetry.Instrumentation.AspNetCore": "1.14.0",
+          "OpenTelemetry.Instrumentation.GrpcNetClient": "1.14.0-beta.1",
+          "OpenTelemetry.Instrumentation.Http": "1.14.0",
+          "OpenTelemetry.Instrumentation.Process": "1.14.0-beta.2",
+          "OpenTelemetry.Instrumentation.Runtime": "1.14.0",
+          "Polly": "8.6.5",
+          "Riok.Mapperly": "4.1.1",
+          "Scalar.AspNetCore": "2.11.8",
+          "Scrutor": "7.0.0",
+          "Serilog": "4.3.0",
+          "Serilog.AspNetCore": "9.0.0",
+          "Serilog.Enrichers.Environment": "3.0.1",
+          "Serilog.Exceptions": "8.4.0",
+          "Serilog.Extensions.Hosting": "9.0.0",
+          "Serilog.Settings.Configuration": "9.0.0",
+          "Serilog.Sinks.Async": "2.1.0",
+          "Serilog.Sinks.Console": "6.1.1",
+          "Serilog.Sinks.Grafana.Loki": "8.3.1",
+          "Serilog.Sinks.Seq": "9.0.0",
+          "Serilog.Sinks.Spectre": "0.5.0",
+          "Sieve": "2.5.5",
+          "SqlKata": "4.0.1",
+          "Swashbuckle.AspNetCore": "9.0.6",
+          "Swashbuckle.AspNetCore.Annotations": "9.0.6",
+          "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+          "System.Linq.Async": "7.0.0",
+          "System.Linq.Async.Queryable": "7.0.0",
+          "System.Net.Http.Json": "9.0.11",
+          "xunit": "2.9.3",
+          "xunit.runner.visualstudio": "2.8.2"
         },
         "imports": [
           "net461",
@@ -8108,6 +8257,230 @@
           }
         },
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  },
+  "centralTransitiveDependencyGroups": {
+    "net9.0": {
+      "AspNetCore.HealthChecks.MongoDb": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.0, )"
+      },
+      "AspNetCore.HealthChecks.NpgSql": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.0, )"
+      },
+      "Aspire.Hosting": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[13.1.0, )"
+      },
+      "Aspire.MongoDB.Driver": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[13.1.0, )"
+      },
+      "Bogus": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[35.6.5, )"
+      },
+      "Dapper": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[2.1.66, )"
+      },
+      "Elastic.Clients.Elasticsearch": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[8.19.0, )"
+      },
+      "Elastic.Transport": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[0.10.3, )"
+      },
+      "FluentValidation": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[12.1.1, )"
+      },
+      "FluentValidation.DependencyInjectionExtensions": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[12.1.1, )"
+      },
+      "Hangfire": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.8.22, )"
+      },
+      "Hangfire.AspNetCore": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.8.22, )"
+      },
+      "Hangfire.Core": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.8.22, )"
+      },
+      "Hangfire.PostgreSql": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.20.0, )"
+      },
+      "MediatR": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[14.0.0, )"
+      },
+      "MediatR.Extensions.Microsoft.DependencyInjection": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[11.0.0, )"
+      },
+      "MessagePack": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[3.1.4, )"
+      },
+      "Microsoft.AspNetCore.Authentication.JwtBearer": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.AspNetCore.SignalR.StackExchangeRedis": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.EntityFrameworkCore": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.EntityFrameworkCore.InMemory": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.EntityFrameworkCore.Relational": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Caching.StackExchangeRedis": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Configuration": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Configuration.Binder": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Configuration.EnvironmentVariables": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Configuration.FileExtensions": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Configuration.Json": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.DependencyInjection": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Hosting": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Hosting.Abstractions": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Http": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Http.Resilience": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.10.0, )"
+      },
+      "Microsoft.Extensions.Options": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Options.ConfigurationExtensions": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.Extensions.Resilience": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.10.0, )"
+      },
+      "Microsoft.Extensions.ServiceDiscovery": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.5.2, )"
+      },
+      "MongoDB.Driver": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[3.5.2, )"
+      },
+      "Newtonsoft.Json": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[13.0.4, )"
+      },
+      "Npgsql.EntityFrameworkCore.PostgreSQL": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.4, )"
+      },
+      "OpenTelemetry": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.14.0, )"
+      },
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.14.0, )"
+      },
+      "OpenTelemetry.Extensions.Hosting": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.14.0, )"
+      },
+      "OpenTelemetry.Instrumentation.AspNetCore": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.14.0, )"
+      },
+      "OpenTelemetry.Instrumentation.Http": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.14.0, )"
+      },
+      "OpenTelemetry.Instrumentation.Process": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.14.0-beta.2, )"
+      },
+      "OpenTelemetry.Instrumentation.Runtime": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[1.14.0, )"
+      },
+      "Polly": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[8.6.5, )"
+      },
+      "Serilog": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[4.3.0, )"
+      },
+      "Serilog.AspNetCore": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.0, )"
+      },
+      "Serilog.Enrichers.Environment": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[3.0.1, )"
+      },
+      "Serilog.Extensions.Hosting": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.0, )"
+      },
+      "Serilog.Settings.Configuration": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.0, )"
+      },
+      "Serilog.Sinks.Console": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[6.1.1, )"
+      },
+      "Swashbuckle.AspNetCore": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.6, )"
       }
     }
   }
