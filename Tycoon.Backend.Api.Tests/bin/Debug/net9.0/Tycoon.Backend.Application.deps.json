@@ -365,6 +365,7 @@
       "Tycoon.Backend.Domain/1.0.0": {
         "dependencies": {
           "MediatR": "14.0.0",
+          "Microsoft.EntityFrameworkCore": "9.0.11",
           "Tycoon.Shared.Contracts": "1.0.0"
         },
         "runtime": {

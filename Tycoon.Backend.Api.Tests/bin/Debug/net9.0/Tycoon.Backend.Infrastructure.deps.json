@@ -8,7 +8,7 @@
     ".NETCoreApp,Version=v9.0": {
       "Tycoon.Backend.Infrastructure/1.0.0": {
         "dependencies": {
-          "Elastic.Clients.Elasticsearch": "8.19.13",
+          "Elastic.Clients.Elasticsearch": "8.19.14",
           "Elastic.Transport": "0.10.3",
           "Hangfire.Core": "1.8.22",
           "MediatR": "14.0.0",
@@ -43,14 +43,14 @@
           }
         }
       },
-      "Elastic.Clients.Elasticsearch/8.19.13": {
+      "Elastic.Clients.Elasticsearch/8.19.14": {
         "dependencies": {
           "Elastic.Transport": "0.10.3"
         },
         "runtime": {
           "lib/net9.0/Elastic.Clients.Elasticsearch.dll": {
             "assemblyVersion": "8.0.0.0",
-            "fileVersion": "8.19.13.0"
+            "fileVersion": "8.19.14.0"
           }
         }
       },
@@ -1231,12 +1231,12 @@
       "path": "dnsclient/1.6.1",
       "hashPath": "dnsclient.1.6.1.nupkg.sha512"
     },
-    "Elastic.Clients.Elasticsearch/8.19.13": {
+    "Elastic.Clients.Elasticsearch/8.19.14": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-r5/IgwIwc2pe2nKg9XEcURRNN2Yvk47AEFER5ABeEiZ7Q+AwIXiJCKzSKC83JGXvl3tDHt6CQERvJyxBnWmkfA==",
-      "path": "elastic.clients.elasticsearch/8.19.13",
-      "hashPath": "elastic.clients.elasticsearch.8.19.13.nupkg.sha512"
+      "sha512": "sha512-2t+qzFU0zh4KquwWpc1KbQ3rIn1Jta9MExDgct8P9PJc59REUbX5kQZowTxQds+jOyi3lVK66dObD13UO74gbg==",
+      "path": "elastic.clients.elasticsearch/8.19.14",
+      "hashPath": "elastic.clients.elasticsearch.8.19.14.nupkg.sha512"
     },
     "Elastic.Transport/0.10.3": {
       "type": "package",

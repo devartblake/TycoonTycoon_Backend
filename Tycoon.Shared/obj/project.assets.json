@@ -433,7 +433,7 @@
           }
         }
       },
-      "Elastic.CommonSchema/9.0.0": {
+      "Elastic.CommonSchema/8.19.0": {
         "type": "package",
         "compile": {
           "lib/net9.0/Elastic.CommonSchema.dll": {
@@ -446,10 +446,10 @@
           }
         }
       },
-      "Elastic.CommonSchema.Serilog/9.0.0": {
+      "Elastic.CommonSchema.Serilog/8.19.0": {
         "type": "package",
         "dependencies": {
-          "Elastic.CommonSchema": "9.0.0",
+          "Elastic.CommonSchema": "8.19.0",
           "Serilog": "4.3.0"
         },
         "compile": {
@@ -479,10 +479,10 @@
           }
         }
       },
-      "Elastic.Ingest.Elasticsearch.CommonSchema/9.0.0": {
+      "Elastic.Ingest.Elasticsearch.CommonSchema/8.19.0": {
         "type": "package",
         "dependencies": {
-          "Elastic.CommonSchema": "9.0.0",
+          "Elastic.CommonSchema": "8.19.0",
           "Elastic.Ingest.Elasticsearch": "0.14.0"
         },
         "compile": {
@@ -514,11 +514,11 @@
           }
         }
       },
-      "Elastic.Serilog.Sinks/9.0.0": {
+      "Elastic.Serilog.Sinks/8.19.0": {
         "type": "package",
         "dependencies": {
-          "Elastic.CommonSchema.Serilog": "9.0.0",
-          "Elastic.Ingest.Elasticsearch.CommonSchema": "9.0.0"
+          "Elastic.CommonSchema.Serilog": "8.19.0",
+          "Elastic.Ingest.Elasticsearch.CommonSchema": "8.19.0"
         },
         "compile": {
           "lib/net8.0/Elastic.Serilog.Sinks.dll": {
@@ -5616,15 +5616,15 @@
         "nuget-icon.png"
       ]
     },
-    "Elastic.CommonSchema/9.0.0": {
-      "sha512": "5I7rbqLobJZY2cf9EratD2peUva31eyfSwuf8Qm8gM5ButP5F/NNzcUuvsuAleBQXmAJb55CLnMxA9oMGYHdsg==",
+    "Elastic.CommonSchema/8.19.0": {
+      "sha512": "GBYtgYQsH/Woywy23/Eu5FeAjjauOZNkC4D+gD5prF8vl/B6pkTox+rL45Kt67ciryZyfiIHBSTZB7K51BXecw==",
       "type": "package",
-      "path": "elastic.commonschema/9.0.0",
+      "path": "elastic.commonschema/8.19.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
-        "elastic.commonschema.9.0.0.nupkg.sha512",
+        "elastic.commonschema.8.19.0.nupkg.sha512",
         "elastic.commonschema.nuspec",
         "lib/net462/Elastic.CommonSchema.dll",
         "lib/net462/Elastic.CommonSchema.pdb",
@@ -5645,15 +5645,15 @@
         "nuget-icon.png"
       ]
     },
-    "Elastic.CommonSchema.Serilog/9.0.0": {
-      "sha512": "5MF4qqoXRddo8YBzV+EbhSBqo6F8UIAbj28GVEyiobRt/MZRzE3ddYd6k51yYJ4ZJ4WMtdZk5Wv8o8YpqW51KA==",
+    "Elastic.CommonSchema.Serilog/8.19.0": {
+      "sha512": "mLTLS2sF2V7kF4PyBxZvQYhhyig38PChUULDr5cCHXoLXSoJs3swsu9GFUGXRHdn20LZ8yUC+qDmPjQAgt3mOg==",
       "type": "package",
-      "path": "elastic.commonschema.serilog/9.0.0",
+      "path": "elastic.commonschema.serilog/8.19.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
-        "elastic.commonschema.serilog.9.0.0.nupkg.sha512",
+        "elastic.commonschema.serilog.8.19.0.nupkg.sha512",
         "elastic.commonschema.serilog.nuspec",
         "lib/net462/Elastic.CommonSchema.Serilog.dll",
         "lib/net462/Elastic.CommonSchema.Serilog.pdb",
@@ -5694,15 +5694,15 @@
         "nuget-icon.png"
       ]
     },
-    "Elastic.Ingest.Elasticsearch.CommonSchema/9.0.0": {
-      "sha512": "TCmz6N/Vpspt9NxiFy2oWYqu4wc5UOAEqR7TZ3NNu/mLRfKx/0TUV3SXW+jIsacIsh/i5nb8JXRERwd/LbGpHg==",
+    "Elastic.Ingest.Elasticsearch.CommonSchema/8.19.0": {
+      "sha512": "nH32rDoGQ9CJ7fThO+zdg40EzPUDL5QaMNZkARQIPoCgQEQDJCiQcha9WTbGn+cVAVrCy3OMjvU95ef/5hq/dA==",
       "type": "package",
-      "path": "elastic.ingest.elasticsearch.commonschema/9.0.0",
+      "path": "elastic.ingest.elasticsearch.commonschema/8.19.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
-        "elastic.ingest.elasticsearch.commonschema.9.0.0.nupkg.sha512",
+        "elastic.ingest.elasticsearch.commonschema.8.19.0.nupkg.sha512",
         "elastic.ingest.elasticsearch.commonschema.nuspec",
         "lib/net8.0/Elastic.Ingest.Elasticsearch.CommonSchema.dll",
         "lib/net8.0/Elastic.Ingest.Elasticsearch.CommonSchema.pdb",
@@ -5740,15 +5740,15 @@
         "nuget-icon.png"
       ]
     },
-    "Elastic.Serilog.Sinks/9.0.0": {
-      "sha512": "cxQIl06rGe+LeqUkJtGOpLzqn0XfUES3kCgeNhyVEvzCuvNCMXpyDTum+/q2r4fnvyx/0u+ynW59rW6lGtp79A==",
+    "Elastic.Serilog.Sinks/8.19.0": {
+      "sha512": "SpzHsWi6u2s0FKm16LCE+/IaAVBAO8/fjswtcbKAizTd4hUDwGAOd5z0R7TmHqGpSM4veDIBfx2ZQiCJDuNBdQ==",
       "type": "package",
-      "path": "elastic.serilog.sinks/9.0.0",
+      "path": "elastic.serilog.sinks/8.19.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
-        "elastic.serilog.sinks.9.0.0.nupkg.sha512",
+        "elastic.serilog.sinks.8.19.0.nupkg.sha512",
         "elastic.serilog.sinks.nuspec",
         "lib/net8.0/Elastic.Serilog.Sinks.dll",
         "lib/net8.0/Elastic.Serilog.Sinks.pdb",
@@ -14036,7 +14036,7 @@
       "Dapper >= 2.1.66",
       "DotNetEnv >= 3.1.1",
       "EFCore.NamingConventions >= 9.0.0",
-      "Elastic.Serilog.Sinks >= 9.0.0",
+      "Elastic.Serilog.Sinks >= 8.19.0",
       "FluentValidation.AspNetCore >= 11.3.1",
       "Grafana.OpenTelemetry >= 1.3.0",
       "Humanizer.Core >= 3.0.1",
@@ -14197,7 +14197,7 @@
           },
           "Elastic.Serilog.Sinks": {
             "target": "Package",
-            "version": "[9.0.0, )"
+            "version": "[8.19.0, )"
           },
           "FluentValidation.AspNetCore": {
             "target": "Package",

@@ -6,11 +6,11 @@ namespace Tycoon.MigrationService;
 
 internal static class ModelKeyGuard
 {
-    public static void LogKeylessEntities(DbContext db, ILogger logger)
+    public static void LogKeylessEntities(IEntityType et, DbContext db, ILogger logger)
     {
         var offenders = db.Model
             .GetEntityTypes()
-            .Where(et => !et.IsOwned() && !et.GetIsKeyless() && et.FindPrimaryKey() is null)
+            .Where(et => !et.IsOwned() && et.FindPrimaryKey() is null)
             .Select(et => et.DisplayName())
             .OrderBy(n => n)
             .ToList();

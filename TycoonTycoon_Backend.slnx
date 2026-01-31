@@ -22,6 +22,7 @@
   <Folder Name="/tests/">
     <Project Path="Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj" />
     <Project Path="Tycoon.Backend.Application.Tests/Tycoon.Backend.Application.Tests.csproj" />
+    <Project Path="Tycoon.Backend.Infrastructure.Tests/Tycoon.Backend.Infrastructure.Tests.csproj" Id="8d98ded1-ac41-422e-b33c-3b205eb68ebe" />
   </Folder>
   <Project Path="Tycoon.MigrationService/Tycoon.MigrationService.csproj" />
   <Project Path="Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj" />

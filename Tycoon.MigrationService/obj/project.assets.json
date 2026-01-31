@@ -76,10 +76,10 @@
           }
         }
       },
-      "Elastic.Clients.Elasticsearch/8.19.13": {
+      "Elastic.Clients.Elasticsearch/8.19.14": {
         "type": "package",
         "dependencies": {
-          "Elastic.Transport": "0.10.1"
+          "Elastic.Transport": "0.10.3"
         },
         "compile": {
           "lib/net9.0/Elastic.Clients.Elasticsearch.dll": {
@@ -2891,17 +2891,19 @@
         "lib/netstandard2.1/DnsClient.xml"
       ]
     },
-    "Elastic.Clients.Elasticsearch/8.19.13": {
-      "sha512": "r5/IgwIwc2pe2nKg9XEcURRNN2Yvk47AEFER5ABeEiZ7Q+AwIXiJCKzSKC83JGXvl3tDHt6CQERvJyxBnWmkfA==",
+    "Elastic.Clients.Elasticsearch/8.19.14": {
+      "sha512": "2t+qzFU0zh4KquwWpc1KbQ3rIn1Jta9MExDgct8P9PJc59REUbX5kQZowTxQds+jOyi3lVK66dObD13UO74gbg==",
       "type": "package",
-      "path": "elastic.clients.elasticsearch/8.19.13",
+      "path": "elastic.clients.elasticsearch/8.19.14",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "LICENSE.txt",
         "README.md",
-        "elastic.clients.elasticsearch.8.19.13.nupkg.sha512",
+        "elastic.clients.elasticsearch.8.19.14.nupkg.sha512",
         "elastic.clients.elasticsearch.nuspec",
+        "lib/net10.0/Elastic.Clients.Elasticsearch.dll",
+        "lib/net10.0/Elastic.Clients.Elasticsearch.xml",
         "lib/net462/Elastic.Clients.Elasticsearch.dll",
         "lib/net462/Elastic.Clients.Elasticsearch.xml",
         "lib/net8.0/Elastic.Clients.Elasticsearch.dll",
