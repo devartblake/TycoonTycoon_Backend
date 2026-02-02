@@ -1,18 +1,57 @@
-# docker/Dockerfile.migrate
-# Purpose: build a tiny runner image that applies EF migrations + seeds via Tycoon.MigrationService
-
+# ================================
+# Build Stage - Optimized with layer caching
+# ================================
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy repo
+# Copy Central Package Management files first
+COPY ["Directory.Build.props", "./"]
+COPY ["Directory.Packages.props", "./"]
+
+# Copy project files for dependency graph
+COPY ["Tycoon.MigrationService/Tycoon.MigrationService.csproj", "Tycoon.MigrationService/"]
+COPY ["Tycoon.Backend.Application/Tycoon.Backend.Application.csproj", "Tycoon.Backend.Application/"]
+COPY ["Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj", "Tycoon.Backend.Infrastructure/"]
+COPY ["Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj", "Tycoon.Backend.Domain/"]
+COPY ["Tycoon.Shared/Tycoon.Shared.csproj", "Tycoon.Shared/"]
+COPY ["Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj", "Tycoon.Shared.Contracts/"]
+COPY ["Tycoon.Shared.Observability/Tycoon.Shared.Observability.csproj", "Tycoon.Shared.Observability/"]
+COPY ["Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj", "Tycoon.ServiceDefaults/"]
+COPY ["ElasticSearch/Elastic.csproj", "ElasticSearch/"]
+COPY ["Mongo/Mongo.csproj", "Mongo/"]
+COPY ["Postgres/Postgres.csproj", "Postgres/"]
+
+# Restore packages - cached layer
+RUN dotnet restore "Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+
+# Copy everything else
 COPY . .
 
-# Restore + publish the migration service
-RUN dotnet restore "./Tycoon.MigrationService/Tycoon.MigrationService.csproj"
-RUN dotnet publish "./Tycoon.MigrationService/Tycoon.MigrationService.csproj" -c Release -o /app/publish /p:UseAppHost=false
+# Build and publish
+WORKDIR "/src/Tycoon.MigrationService"
+RUN dotnet build "Tycoon.MigrationService.csproj" -c Release -o /app/build --no-restore
 
+RUN dotnet publish "Tycoon.MigrationService.csproj" \
+    -c Release \
+    -o /app/publish \
+    /p:UseAppHost=false \
+    --no-restore \
+    --no-build
+
+# ================================
+# Runtime Stage
+# ================================
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
+# Copy published files
 COPY --from=build /app/publish .
+
+# Run as non-root user
+RUN addgroup --system --gid 1000 appuser && \
+    adduser --system --uid 1000 --ingroup appuser --shell /bin/false appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
 ENTRYPOINT ["dotnet", "Tycoon.MigrationService.dll"]

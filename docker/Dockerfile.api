@@ -1,20 +1,70 @@
+# ================================
+# Build Stage - Optimized with layer caching
+# ================================
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy solution and restore
+# Copy Central Package Management files first (rarely change)
+COPY ["Directory.Build.props", "./"]
+COPY ["Directory.Packages.props", "./"]
+
+# Copy ALL project files for dependency graph (changes infrequently)
+# This allows Docker to cache the restore layer when only source code changes
+COPY ["Tycoon.Backend.Api/Tycoon.Backend.Api.csproj", "Tycoon.Backend.Api/"]
+COPY ["Tycoon.Backend.Application/Tycoon.Backend.Application.csproj", "Tycoon.Backend.Application/"]
+COPY ["Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj", "Tycoon.Backend.Infrastructure/"]
+COPY ["Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj", "Tycoon.Backend.Domain/"]
+COPY ["Tycoon.Shared/Tycoon.Shared.csproj", "Tycoon.Shared/"]
+COPY ["Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj", "Tycoon.Shared.Contracts/"]
+COPY ["Tycoon.Shared.Observability/Tycoon.Shared.Observability.csproj", "Tycoon.Shared.Observability/"]
+COPY ["Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj", "Tycoon.ServiceDefaults/"]
+
+# Restore packages - This layer is cached unless .csproj or Directory.Packages.props changes
+RUN dotnet restore "Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+
+# Copy everything else (source code - changes frequently)
 COPY . .
 
-# IMPORTANT:
-# Update the project path below if your csproj name differs.
-RUN dotnet restore "./Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+# Build and publish
+WORKDIR "/src/Tycoon.Backend.Api"
+RUN dotnet build "Tycoon.Backend.Api.csproj" -c Release -o /app/build --no-restore
 
-RUN dotnet publish "./Tycoon.Backend.Api/Tycoon.Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Tycoon.Backend.Api.csproj" \
+    -c Release \
+    -o /app/publish \
+    /p:UseAppHost=false \
+    --no-restore \
+    --no-build
 
+# ================================
+# Runtime Stage - Minimal image
+# ================================
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
+
+# Install curl for health checks
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN addgroup --system --gid 1000 appuser && \
+    adduser --system --uid 1000 --ingroup appuser --shell /bin/false appuser
+
+# Copy published files
+COPY --from=build /app/publish .
+
+# Set ownership
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
 EXPOSE 5000
 
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:5000/healthz || exit 1
 
-COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "Tycoon.Backend.Api.dll"]

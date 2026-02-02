@@ -170,4 +170,67 @@
   <ItemGroup Label="Diagnostics">
     <PackageVersion Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.652701" />
   </ItemGroup>
+
+  <ItemGroup Label="Metrics">
+    <PackageVersion Include="prometheus-net" Version="8.2.1" />
+    <PackageVersion Include="prometheus-net.AspNetCore" Version="8.2.1" />
+    <PackageVersion Include="App.Metrics" Version="4.3.0" />
+    <PackageVersion Include="App.Metrics.AspNetCore" Version="4.3.0" />
+  </ItemGroup>
+  
+  <ItemGroup Label="Feature Management">
+    <PackageVersion Include="Microsoft.FeatureManagement" Version="4.0.0" />
+    <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Integration Testing">
+    <PackageVersion Include="Testcontainers" Version="3.11.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="3.11.0" />
+    <PackageVersion Include="Testcontainers.MongoDb" Version="3.11.0" />
+    <PackageVersion Include="Testcontainers.Elasticsearch" Version="3.11.0" />
+    <PackageVersion Include="Testcontainers.RabbitMq" Version="3.11.0" />
+    <PackageVersion Include="Testcontainers.Redis" Version="3.11.0" />
+    <PackageVersion Include="Respawn" Version="6.2.1" />
+    <PackageVersion Include="WireMock.Net" Version="1.6.8" />
+  </ItemGroup>
+
+  <ItemGroup Label="Code Quality">
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="9.32.0" />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
+    <PackageVersion Include="Roslynator.Analyzers" Version="4.12.9" />
+    <PackageVersion Include="SecurityCodeScan.VS2019" Version="5.6.7" />
+  </ItemGroup>
+
+  <ItemGroup Label="API Gateway">
+    <PackageVersion Include="Yarp.ReverseProxy" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Performance">
+    <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageVersion Include="NBomber" Version="5.11.0" />
+    <PackageVersion Include="NBomber.Http" Version="5.11.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Rate Limiting">
+    <PackageVersion Include="AspNetCoreRateLimit" Version="5.0.0" />
+    <PackageVersion Include="AspNetCoreRateLimit.Redis" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="GraphQL">
+    <PackageVersion Include="HotChocolate.AspNetCore" Version="14.2.2" />
+    <PackageVersion Include="HotChocolate.Data" Version="14.2.2" />
+    <PackageVersion Include="HotChocolate.Data.EntityFramework" Version="14.2.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="gRPC">
+    <PackageVersion Include="Grpc.AspNetCore" Version="2.76.0" />
+    <PackageVersion Include="Grpc.Tools" Version="2.76.0" />
+    <PackageVersion Include="Google.Protobuf" Version="3.33.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Scheduling">
+    <PackageVersion Include="Cronos" Version="0.8.4" />
+    <PackageVersion Include="NCrontab" Version="3.3.3" />
+  </ItemGroup>
+  
 </Project>

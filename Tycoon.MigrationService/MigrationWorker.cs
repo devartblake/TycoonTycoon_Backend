@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Serilog;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Infrastructure.Analytics.Elastic;
@@ -104,7 +103,7 @@ public sealed class MigrationWorker : BackgroundService
                 // ---- Detect "no migrations" early.
                 // If there are zero migrations, EF will create __EFMigrationsHistory and do nothing,
                 // then seeding will fail because your tables do not exist (e.g., \"Tiers\").
-                var migrations = (await db.Database.GetMigrationsAsync(stoppingToken)).ToList();
+                var migrations = (await db.Database.GetAppliedMigrationsAsync(stoppingToken)).ToList();
                 if (migrations.Count == 0)
                 {
                     _log.Error(

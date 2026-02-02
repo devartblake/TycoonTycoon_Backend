@@ -1,6 +1,9 @@
 name: tycoon
 
 services:
+  # ================================
+  # Databases
+  # ================================
   postgres:
     image: postgres:16-alpine
     container_name: tycoon_postgres
@@ -46,6 +49,9 @@ services:
       timeout: 5s
       retries: 10
 
+  # ================================
+  # Caching & Search
+  # ================================
   redis:
     image: redis:7-alpine
     container_name: tycoon_redis
@@ -84,6 +90,70 @@ services:
       timeout: 10s
       retries: 10
 
+  # ================================
+  # Message Queue
+  # ================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: tycoon_rabbitmq
+    restart: unless-stopped
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-tycoon_user}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-tycoon_rabbitmq_password_123}"
+      RABBITMQ_DEFAULT_VHOST: "${RABBITMQ_VHOST:-tycoon}"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ================================
+  # Monitoring (Dev Profile)
+  # ================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tycoon_prometheus
+    restart: unless-stopped
+    profiles: ["dev"]
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks: [tycoon-net]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tycoon_grafana
+    restart: unless-stopped
+    profiles: ["dev"]
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-admin_password_123}"
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks: [tycoon-net]
+
+  # ================================
+  # Admin UIs (Dev Profile)
+  # ================================
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
     container_name: tycoon_kibana
@@ -133,7 +203,9 @@ services:
       - mongodb
     networks: [tycoon-net]
 
-  # ✅ Migration Service - Runs migrations and seeds database
+  # ================================
+  # Backend Services
+  # ================================
   migration:
     build:
       context: ..
@@ -143,27 +215,27 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       
-      # ✅ Primary connection strings - matches your appsettings.json
+      # Database connections
       ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
       ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-tycoon_redis_password_123}"
       ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
       ConnectionStrings__elasticsearch: "http://elasticsearch:9200"
       
-      # ✅ Elasticsearch settings
+      # Elasticsearch
       Elastic__Url: "http://elasticsearch:9200"
       Elastic__Username: "elastic"
       Elastic__Password: "${ELASTIC_PASSWORD:-tycoon_elastic_password_123}"
       
-      # ✅ MongoDB settings
+      # MongoDB
       MongoSettings__Database: "tycoon_analytics"
       
-      # ✅ Migration service settings
+      # Migration settings
       MigrationService__Mode: "${MIGRATION_MODE:-MigrateAndSeed}"
       MigrationService__RebuildElastic__Enabled: "${REBUILD_ELASTIC:-false}"
       
-      # ✅ Observability
+      # Observability
       Observability__ServiceName: "Tycoon.MigrationService"
-      Serilog__MinimumLevel: "Information"
+      Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -173,9 +245,10 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks: [tycoon-net]
 
-  # ✅ Backend API
   backend-api:
     build:
       context: ..
@@ -188,41 +261,41 @@ services:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       ASPNETCORE_URLS: "http://+:5000"
       
-      # ✅ Database connections - matches your appsettings.json keys
+      # Database connections
       ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
       ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-tycoon_redis_password_123},defaultDatabase=0"
       ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
       ConnectionStrings__elasticsearch: "http://elastic:${ELASTIC_PASSWORD:-tycoon_elastic_password_123}@elasticsearch:9200"
       
-      # ✅ Elasticsearch settings
+      # Elasticsearch
       Elastic__Url: "http://elasticsearch:9200"
       Elastic__Username: "elastic"
       Elastic__Password: "${ELASTIC_PASSWORD:-tycoon_elastic_password_123}"
       Elastic__DailyWriteAlias: "tycoon-qa-daily-rollups"
       Elastic__PlayerDailyWriteAlias: "tycoon-qa-player-daily-rollups"
       
-      # ✅ MongoDB settings
+      # MongoDB
       Mongo__Database: "tycoon_analytics"
       MongoSettings__Database: "tycoon_analytics"
       
-      # ✅ Hangfire settings
+      # Hangfire
       Hangfire__Enabled: "${HANGFIRE_ENABLED:-true}"
       Hangfire__DashboardPath: "/hangfire"
       
-      # ✅ Analytics
+      # Analytics
       Analytics__Enabled: "${ANALYTICS_ENABLED:-true}"
       
-      # ✅ Admin Ops
+      # Admin Ops
       AdminOps__Enabled: "${ADMIN_OPS_ENABLED:-true}"
       AdminOps__Header: "X-Admin-Ops-Key"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
       
-      # ✅ Auth settings
+      # Auth
       Auth__JwtKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-chars}"
       
-      # ✅ Observability
+      # Observability
       Observability__ServiceName: "Tycoon.Backend.Api"
-      Serilog__MinimumLevel: "Information"
+      Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -231,6 +304,8 @@ services:
       redis:
         condition: service_healthy
       elasticsearch:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
@@ -242,14 +317,23 @@ services:
       retries: 3
       start_period: 40s
 
+# ================================
+# Networks
+# ================================
 networks:
   tycoon-net:
     driver: bridge
 
+# ================================
+# Volumes
+# ================================
 volumes:
   postgres_data:
   mongodb_data:
   mongodb_config:
   redis_data:
   elasticsearch_data:
+  rabbitmq_data:
   pgadmin_data:
+  prometheus_data:
+  grafana_data:

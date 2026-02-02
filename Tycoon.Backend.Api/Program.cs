@@ -3,6 +3,7 @@ using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.Configuration;
@@ -48,6 +49,9 @@ using Tycoon.Backend.Application.Matchmaking;
 using Tycoon.Backend.Application.Realtime;
 using Tycoon.Backend.Application.Social;
 using Tycoon.Backend.Infrastructure;
+using Tycoon.Backend.Infrastructure.Persistence.Extensions;
+using Tycoon.Backend.Infrastructure.Persistence.HealthChecks;
+using Tycoon.Backend.Infrastructure.Persistence.Startup;
 using Tycoon.Shared.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -286,6 +290,8 @@ builder.Services.AddSingleton<IPartyMatchmakingNotifier, SignalRPartyMatchmaking
 builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
 
+builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
+
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 
 var app = builder.Build();
@@ -369,6 +375,11 @@ app.MapGet("/", () => Results.Ok(new
         swagger = app.Environment.IsDevelopment()
     }
 })).AllowAnonymous().WithTags("Health");
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("ready")
+});
 
 app.MapGet("/healthz", () => Results.Ok(new
 {

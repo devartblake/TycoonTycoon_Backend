@@ -34,12 +34,10 @@
 
   <Target Name="FailIfNoEfMigrations" BeforeTargets="Publish;Build">
     <ItemGroup>
-      <_MigrationSources Include="**\Migrations\*.cs"
-                        Exclude="**\Migrations\*Designer.cs;**\Migrations\*Snapshot.cs" />
+      <_MigrationSources Include="**\Migrations\*.cs" Exclude="**\Migrations\*Designer.cs;**\Migrations\*Snapshot.cs" />
     </ItemGroup>
 
-    <Error Condition="'@(_MigrationSources)' == ''"
-           Text="EF migrations not found in Tycoon.Backend.Infrastructure. Add an initial migration before building/publishing." />
+    <Error Condition="'@(_MigrationSources)' == ''" Text="EF migrations not found in Tycoon.Backend.Infrastructure. Add an initial migration before building/publishing." />
   </Target>
 
 </Project>

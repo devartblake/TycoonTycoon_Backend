@@ -26,15 +26,7 @@
     <ProjectReference Include="..\Tycoon.Backend.Domain\Tycoon.Backend.Domain.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
     <ProjectReference Include="..\Tycoon.ServiceDefaults\Tycoon.ServiceDefaults.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <ProjectReference Include="..\Tycoon.Shared\Tycoon.Shared.csproj" />
   </ItemGroup>
 
 </Project>

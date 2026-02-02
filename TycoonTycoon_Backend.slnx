@@ -4,6 +4,7 @@
     <Project Path="Tycoon.Backend.Application/Tycoon.Backend.Application.csproj" />
     <Project Path="Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj" />
     <Project Path="Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj" />
+    <Project Path="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj" Id="6ebb1ab7-19b0-43b3-a87e-66cc35b699d2" />
   </Folder>
   <Folder Name="/Data/">
     <Project Path="ElasticSearch/Elastic.csproj" />

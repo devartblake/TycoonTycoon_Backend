@@ -17,6 +17,6 @@
     <Import Project="$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\9.0.11\buildTransitive\net8.0\Microsoft.Extensions.Configuration.UserSecrets.props" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.configuration.usersecrets\9.0.11\buildTransitive\net8.0\Microsoft.Extensions.Configuration.UserSecrets.props')" />
   </ImportGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgGrpc_Tools Condition=" '$(PkgGrpc_Tools)' == '' ">C:\Users\scorp\.nuget\packages\grpc.tools\2.72.0</PkgGrpc_Tools>
+    <PkgGrpc_Tools Condition=" '$(PkgGrpc_Tools)' == '' ">C:\Users\scorp\.nuget\packages\grpc.tools\2.76.0</PkgGrpc_Tools>
   </PropertyGroup>
 </Project>
