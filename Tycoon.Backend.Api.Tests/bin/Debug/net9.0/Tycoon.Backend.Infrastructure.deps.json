@@ -27,7 +27,6 @@
           "Polly": "8.6.5",
           "Tycoon.Backend.Application": "1.0.0",
           "Tycoon.Backend.Domain": "1.0.0",
-          "Tycoon.Backend.Migrations": "1.0.0",
           "Tycoon.Shared.Observability": "1.0.0"
         },
         "runtime": {
@@ -1186,18 +1185,6 @@
           }
         }
       },
-      "Tycoon.Backend.Migrations/1.0.0": {
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4"
-        },
-        "runtime": {
-          "Tycoon.Backend.Migrations.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
-          }
-        }
-      },
       "Tycoon.Shared.Contracts/1.0.0": {
         "runtime": {
           "Tycoon.Shared.Contracts.dll": {
@@ -1916,11 +1903,6 @@
       "sha512": ""
     },
     "Tycoon.Backend.Domain/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "Tycoon.Backend.Migrations/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

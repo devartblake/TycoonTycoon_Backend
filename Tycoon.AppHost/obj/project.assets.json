@@ -6601,7 +6601,6 @@
           "Polly": "8.6.5",
           "Tycoon.Backend.Application": "1.0.0",
           "Tycoon.Backend.Domain": "1.0.0",
-          "Tycoon.Backend.Migrations": "1.0.0",
           "Tycoon.Shared.Observability": "1.0.0"
         },
         "compile": {
@@ -6616,7 +6615,8 @@
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
           "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4"
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
+          "Tycoon.Backend.Infrastructure": "1.0.0"
         },
         "compile": {
           "bin/placeholder/Tycoon.Backend.Migrations.dll": {}

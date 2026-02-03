@@ -2867,7 +2867,6 @@
           "Polly": "8.6.5",
           "Tycoon.Backend.Application": "1.0.0",
           "Tycoon.Backend.Domain": "1.0.0",
-          "Tycoon.Backend.Migrations": "1.0.0",
           "Tycoon.Shared.Observability": "1.0.0"
         },
         "compile": {
@@ -2875,20 +2874,6 @@
         },
         "runtime": {
           "bin/placeholder/Tycoon.Backend.Infrastructure.dll": {}
-        }
-      },
-      "Tycoon.Backend.Migrations/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v9.0",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4"
-        },
-        "compile": {
-          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
         }
       },
       "Tycoon.Shared.Contracts/1.0.0": {
@@ -7125,11 +7110,6 @@
       "type": "project",
       "path": "../Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj",
       "msbuildProject": "../Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj"
-    },
-    "Tycoon.Backend.Migrations/1.0.0": {
-      "type": "project",
-      "path": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj",
-      "msbuildProject": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
     },
     "Tycoon.Shared.Contracts/1.0.0": {
       "type": "project",
