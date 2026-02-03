@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Tycoon.Backend.Application\Tycoon.Backend.Application.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Domain\Tycoon.Backend.Domain.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
+    <ProjectReference Include="..\Tycoon.Backend.Migrations\Tycoon.Backend.Migrations.csproj" />
     <ProjectReference Include="..\Tycoon.ServiceDefaults\Tycoon.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Tycoon.Shared\Tycoon.Shared.csproj" />
   </ItemGroup>

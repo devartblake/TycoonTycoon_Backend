@@ -5753,6 +5753,21 @@
           "bin/placeholder/Tycoon.Backend.Infrastructure.dll": {}
         }
       },
+      "Tycoon.Backend.Migrations/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
+          "Tycoon.Backend.Infrastructure": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
+        }
+      },
       "Tycoon.ServiceDefaults/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
@@ -15460,6 +15475,11 @@
       "path": "../Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj",
       "msbuildProject": "../Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj"
     },
+    "Tycoon.Backend.Migrations/1.0.0": {
+      "type": "project",
+      "path": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj",
+      "msbuildProject": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
+    },
     "Tycoon.ServiceDefaults/1.0.0": {
       "type": "project",
       "path": "../Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj",
@@ -15498,6 +15518,7 @@
       "Tycoon.Backend.Application >= 1.0.0",
       "Tycoon.Backend.Domain >= 1.0.0",
       "Tycoon.Backend.Infrastructure >= 1.0.0",
+      "Tycoon.Backend.Migrations >= 1.0.0",
       "Tycoon.ServiceDefaults >= 1.0.0",
       "Tycoon.Shared >= 1.0.0"
     ]
@@ -15553,6 +15574,9 @@
             },
             "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj": {
               "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj"
+            },
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Migrations\\Tycoon.Backend.Migrations.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Migrations\\Tycoon.Backend.Migrations.csproj"
             },
             "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj": {
               "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj"

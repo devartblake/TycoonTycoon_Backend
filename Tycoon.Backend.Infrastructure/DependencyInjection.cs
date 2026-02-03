@@ -26,7 +26,7 @@ namespace Tycoon.Backend.Infrastructure
         /// Registers infrastructure services (EF Core, Redis cache, system clock).
         /// Uses connection string fallback so it works with Aspire or plain appsettings.
         /// </summary>
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration cfg,string? serviceName = null, params Assembly[] mediatRAssemblies)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration cfg, string? serviceName = null, params Assembly[] mediatRAssemblies)
         {
             // PostgreSQL (EF Core)
             var postgres =
@@ -38,8 +38,12 @@ namespace Tycoon.Backend.Infrastructure
                     "Missing PostgreSQL connection string. Provide ConnectionStrings:tycoon-db (Aspire) or ConnectionStrings:db.");
 
             services.AddDbContext<AppDb>(opt =>
-                opt.UseNpgsql(postgres, npg =>
-                    npg.MigrationsAssembly(typeof(AppDb).Assembly.FullName)));
+            { 
+                opt.UseNpgsql(postgres, npgsql =>
+                {
+                    npgsql.MigrationsAssembly("Tycoon.Backend.Migrations");
+                });
+            });
 
             services.AddScoped<IAppDb>(sp => sp.GetRequiredService<AppDb>());
 

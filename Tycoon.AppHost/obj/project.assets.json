@@ -6610,6 +6610,21 @@
           "bin/placeholder/Tycoon.Backend.Infrastructure.dll": {}
         }
       },
+      "Tycoon.Backend.Migrations/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
+          "Tycoon.Backend.Infrastructure": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
+        }
+      },
       "Tycoon.Hosting.Elasticsearch/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
@@ -6643,6 +6658,7 @@
           "Tycoon.Backend.Application": "1.0.0",
           "Tycoon.Backend.Domain": "1.0.0",
           "Tycoon.Backend.Infrastructure": "1.0.0",
+          "Tycoon.Backend.Migrations": "1.0.0",
           "Tycoon.ServiceDefaults": "1.0.0",
           "Tycoon.Shared": "1.0.0"
         },
@@ -17175,6 +17191,11 @@
       "type": "project",
       "path": "../Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj",
       "msbuildProject": "../Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj"
+    },
+    "Tycoon.Backend.Migrations/1.0.0": {
+      "type": "project",
+      "path": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj",
+      "msbuildProject": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
     },
     "Tycoon.Hosting.Elasticsearch/1.0.0": {
       "type": "project",

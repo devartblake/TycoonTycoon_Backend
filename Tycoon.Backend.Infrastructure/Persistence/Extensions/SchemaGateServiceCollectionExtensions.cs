@@ -44,9 +44,9 @@ public static class SchemaGateServiceCollectionExtensions
                     opt.HealthCheckEnabled = opt.Enabled;
                 }
 
-                if (opt.TimeoutSeconds <= 0) opt.TimeoutSeconds = 10;
+                if (opt.TimeoutSeconds <= 0) opt.TimeoutSeconds = 30;
                 if (string.IsNullOrWhiteSpace(opt.Schema)) opt.Schema = "public";
-                opt.CriticalTables ??= Array.Empty<string>();
+                opt.RequiredTables ??= Array.Empty<string>();
                 if (string.IsNullOrWhiteSpace(opt.MigrationsHistoryTable)) opt.MigrationsHistoryTable = "__EFMigrationsHistory";
             });
 

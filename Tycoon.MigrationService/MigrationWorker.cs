@@ -1,5 +1,10 @@
 ﻿using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Infrastructure.Analytics.Elastic;
@@ -8,20 +13,6 @@ using Tycoon.MigrationService.Seeding;
 
 namespace Tycoon.MigrationService;
 
-/// <summary>
-/// One-shot worker:
-/// - Optionally ensures Elastic templates + indices (if Elastic is configured)
-/// - Applies EF migrations
-/// - Seeds tiers/missions (idempotent)
-/// - Resets mission claims (idempotent)
-/// - Optionally rebuilds Elastic rollups from Mongo (idempotent)
-///
-/// Mode flags:
-///   MigrationService:Mode = MigrateAndSeed | RebuildElastic | MigrateSeedAndRebuildElastic
-///   MigrationService:RebuildElastic:Enabled = true|false
-///   MigrationService:RebuildElastic:FromUtcDate = yyyy-MM-dd (optional)
-///   MigrationService:RebuildElastic:ToUtcDate   = yyyy-MM-dd (optional)
-/// </summary>
 public sealed class MigrationWorker : BackgroundService
 {
     private readonly IServiceProvider _sp;
@@ -29,10 +20,7 @@ public sealed class MigrationWorker : BackgroundService
     private readonly IConfiguration _cfg;
     private readonly Serilog.ILogger _log;
 
-    public MigrationWorker(
-        IServiceProvider sp,
-        IHostApplicationLifetime lifetime,
-        IConfiguration cfg)
+    public MigrationWorker(IServiceProvider sp, IHostApplicationLifetime lifetime, IConfiguration cfg)
     {
         _sp = sp;
         _lifetime = lifetime;
@@ -65,11 +53,7 @@ public sealed class MigrationWorker : BackgroundService
             // ---------------------------------------------
             // 1) Optional Elastic bootstrap (never blocks DB)
             // ---------------------------------------------
-            // If you have a dedicated switch, prefer:
-            //   Elastic:Enabled = true|false
-            // Fallback: treat "registered in DI" as enabled.
-            var elasticEnabled =
-                !bool.TryParse(_cfg["Elastic:Enabled"], out var eEnabled) || eEnabled;
+            var elasticEnabled = !bool.TryParse(_cfg["Elastic:Enabled"], out var eEnabled) || eEnabled;
 
             if (elasticEnabled)
             {
@@ -88,30 +72,18 @@ public sealed class MigrationWorker : BackgroundService
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-                // ---- Model guard: log offenders ONLY for migrations
-                // (Do not throw; just log. Keeps behavior dev-friendly.)
+                // (Optional) your model guard — log only, never block migrations
                 try
                 {
                     db.LogEntitiesMissingPrimaryKeysForMigrations(_log);
                 }
                 catch (Exception ex)
                 {
-                    // Guard must never break migrations. If it breaks, log and continue.
                     _log.Warning(ex, "Model key guard threw unexpectedly; continuing.");
                 }
 
-                // ---- Detect "no migrations" early.
-                // If there are zero migrations, EF will create __EFMigrationsHistory and do nothing,
-                // then seeding will fail because your tables do not exist (e.g., \"Tiers\").
-                var migrations = (await db.Database.GetAppliedMigrationsAsync(stoppingToken)).ToList();
-                if (migrations.Count == 0)
-                {
-                    _log.Error(
-                        "No migrations were found. Add an initial migration for the Infrastructure DbContext " +
-                        "and ensure the migration assembly is correct. Seeding cannot run without schema.");
-                    throw new InvalidOperationException(
-                        "No EF migrations found. Create and apply migrations before seeding.");
-                }
+                // ---- Migration-less deploy guard (robust, no extension methods)
+                EnsureMigrationsExistOrFail(db);
 
                 _log.Information("Applying EF migrations…");
                 await db.Database.MigrateAsync(stoppingToken);
@@ -140,19 +112,16 @@ public sealed class MigrationWorker : BackgroundService
                 var rebuilder = scope.ServiceProvider.GetService<IRollupRebuilder>();
                 if (rebuilder is null)
                 {
-                    _log.Warning(
-                        "IRollupRebuilder not registered. Ensure Mongo + Elastic are configured and DI is wired.");
+                    _log.Warning("IRollupRebuilder not registered. Ensure Mongo + Elastic are configured and DI is wired.");
                 }
                 else
                 {
                     try
                     {
-                        _log.Information(
-                            "Rebuilding Elastic rollups from Mongo… from={FromUtcDate} to={ToUtcDate}",
+                        _log.Information("Rebuilding Elastic rollups from Mongo… from={FromUtcDate} to={ToUtcDate}",
                             fromUtcDate?.ToString("yyyy-MM-dd"), toUtcDate?.ToString("yyyy-MM-dd"));
 
                         await rebuilder.RebuildElasticFromMongoAsync(fromUtcDate, toUtcDate, stoppingToken);
-
                         _log.Information("Elastic rollup rebuild completed.");
                     }
                     catch (Exception ex)
@@ -163,8 +132,7 @@ public sealed class MigrationWorker : BackgroundService
             }
             else
             {
-                _log.Information(
-                    "Elastic rebuild disabled (MigrationService:RebuildElastic:Enabled=false and Mode does not request rebuild).");
+                _log.Information("Elastic rebuild disabled (MigrationService:RebuildElastic:Enabled=false and Mode does not request rebuild).");
             }
 
             _log.Information("✅ MigrationService completed successfully.");
@@ -178,6 +146,27 @@ public sealed class MigrationWorker : BackgroundService
         {
             _lifetime.StopApplication();
         }
+    }
+
+    private void EnsureMigrationsExistOrFail(AppDb db)
+    {
+        // Requires Microsoft.EntityFrameworkCore.Relational + correct migrations assembly wiring.
+        // This checks the compiled migrations, not the DB state.
+        var migrationsAssembly = db.GetService<IMigrationsAssembly>();
+        var migrationsCount = migrationsAssembly.Migrations.Count;
+
+        if (migrationsCount == 0)
+        {
+            _log.Error(
+                "No EF migrations were found in the configured migrations assembly. " +
+                "Create an initial migration in Tycoon.Backend.Migrations and ensure UseNpgsql(...).MigrationsAssembly(\"Tycoon.Backend.Migrations\") is set.");
+
+            throw new InvalidOperationException(
+                "No EF migrations found. Create and apply migrations before seeding.");
+        }
+
+        _log.Information("Detected {MigrationsCount} migrations in assembly {MigrationsAssembly}.",
+            migrationsCount, migrationsAssembly.Assembly.GetName().Name);
     }
 
     private async Task TryEnsureElasticTemplatesAsync(IServiceScope scope, CancellationToken ct)
@@ -197,14 +186,8 @@ public sealed class MigrationWorker : BackgroundService
         }
         catch (Exception ex)
         {
-            // Log + continue (Elastic is optional)
             _log.Warning(ex, "Failed to create Elasticsearch templates. Continuing with migrations anyway…");
-
-            // Your log suggests a client/server major mismatch (client 9 vs server 8).
-            _log.Warning("To fix Elastic template failures, either:");
-            _log.Warning("  1) Align client major to server major (recommended: use Elastic.Clients.Elasticsearch 8.x with ES 8.x)");
-            _log.Warning("  2) Upgrade the Elasticsearch server to match the client major");
-            _log.Warning("  3) Disable Elasticsearch in configuration (Elastic:Enabled=false)");
+            _log.Warning("To fix Elastic template failures, align client/server majors (recommended: Elastic.Clients.Elasticsearch 8.x with ES 8.x), upgrade ES, or disable Elastic.");
         }
     }
 
@@ -225,7 +208,6 @@ public sealed class MigrationWorker : BackgroundService
         }
         catch (Exception ex)
         {
-            // Log + continue (Elastic is optional)
             _log.Warning(ex, "Failed to create Elasticsearch indices. Continuing with migrations anyway…");
         }
     }
@@ -235,11 +217,12 @@ public sealed class MigrationWorker : BackgroundService
         if (string.IsNullOrWhiteSpace(value))
             return null;
 
-        // Accept ISO yyyy-MM-dd (recommended)
-        if (DateOnly.TryParseExact(value.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+        var v = value.Trim();
+
+        if (DateOnly.TryParseExact(v, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
             return d;
 
-        if (DateOnly.TryParse(value.Trim(), out var fallback))
+        if (DateOnly.TryParse(v, out var fallback))
             return fallback;
 
         return null;
