@@ -1,16 +1,3 @@
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.csproj.AssemblyReference.cache
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.AssemblyInfoInputs.cache
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.AssemblyInfo.cs
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.csproj.CoreCompileInputs.cache
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\bin\Debug\net9.0\Tycoon.Shared.deps.json
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\bin\Debug\net9.0\Tycoon.Shared.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\bin\Debug\net9.0\Tycoon.Shared.pdb
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\refint\Tycoon.Shared.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.pdb
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\ref\Tycoon.Shared.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Shared\obj\Debug\net9.0\Tycoon.Shared.sourcelink.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared\bin\Debug\net9.0\Tycoon.Shared.deps.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared\bin\Debug\net9.0\Tycoon.Shared.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared\bin\Debug\net9.0\Tycoon.Shared.pdb

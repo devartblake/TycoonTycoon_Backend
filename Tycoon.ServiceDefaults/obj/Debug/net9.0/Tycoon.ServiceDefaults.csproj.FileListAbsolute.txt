@@ -1,16 +1,3 @@
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\bin\Debug\net9.0\Tycoon.ServiceDefaults.deps.json
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\bin\Debug\net9.0\Tycoon.ServiceDefaults.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\bin\Debug\net9.0\Tycoon.ServiceDefaults.pdb
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.csproj.AssemblyReference.cache
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.AssemblyInfoInputs.cache
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.AssemblyInfo.cs
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.csproj.CoreCompileInputs.cache
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\refint\Tycoon.ServiceDefaults.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.pdb
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\ref\Tycoon.ServiceDefaults.dll
-C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\obj\Debug\net9.0\Tycoon.ServiceDefaults.sourcelink.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\bin\Debug\net9.0\Tycoon.ServiceDefaults.deps.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\bin\Debug\net9.0\Tycoon.ServiceDefaults.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.ServiceDefaults\bin\Debug\net9.0\Tycoon.ServiceDefaults.pdb
