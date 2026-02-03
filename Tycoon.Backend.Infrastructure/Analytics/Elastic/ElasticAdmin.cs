@@ -93,7 +93,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 
                     if (put.ElasticsearchServerError != null)
                     {
-                        errorDetails.AppendLine($"Server Error: {put.ElasticsearchServerError}");
+                        //errorDetails.AppendLine($"Server Error: {put.ElasticsearchServerError}");
                         errorDetails.AppendLine($"Error Type: {put.ElasticsearchServerError.Error?.Type}");
                         errorDetails.AppendLine($"Error Reason: {put.ElasticsearchServerError.Error?.Reason}");
                     }
@@ -175,7 +175,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 
                     if (put.ElasticsearchServerError != null)
                     {
-                        errorDetails.AppendLine($"Server Error: {put.ElasticsearchServerError}");
+                        //errorDetails.AppendLine($"Server Error: {put.ElasticsearchServerError}");
                         errorDetails.AppendLine($"Error Type: {put.ElasticsearchServerError.Error?.Type}");
                         errorDetails.AppendLine($"Error Reason: {put.ElasticsearchServerError.Error?.Reason}");
                     }

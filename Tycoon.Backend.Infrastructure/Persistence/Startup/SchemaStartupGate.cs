@@ -53,7 +53,7 @@ public sealed class SchemaStartupGate
             }
         }
 
-        foreach (var table in _opt.CriticalTables ?? Array.Empty<string>())
+        foreach (var table in _opt.RequiredTables ?? Array.Empty<string>())
         {
             if (string.IsNullOrWhiteSpace(table)) continue;
 

@@ -35,7 +35,7 @@ public sealed class SchemaHealthCheck : IHealthCheck
                     return HealthCheckResult.Unhealthy($"Missing {_opt.Schema}.{_opt.MigrationsHistoryTable}. Migrations likely not applied.");
             }
 
-            foreach (var table in _opt.CriticalTables ?? Array.Empty<string>())
+            foreach (var table in _opt.RequiredTables ?? Array.Empty<string>())
             {
                 if (string.IsNullOrWhiteSpace(table)) continue;
 
