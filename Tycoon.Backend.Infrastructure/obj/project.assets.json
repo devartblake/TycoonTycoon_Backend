@@ -1795,6 +1795,20 @@
           "bin/placeholder/Tycoon.Backend.Domain.dll": {}
         }
       },
+      "Tycoon.Backend.Migrations/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4"
+        },
+        "compile": {
+          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
+        }
+      },
       "Tycoon.Shared.Contracts/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
@@ -4473,6 +4487,11 @@
       "path": "../Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj",
       "msbuildProject": "../Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj"
     },
+    "Tycoon.Backend.Migrations/1.0.0": {
+      "type": "project",
+      "path": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj",
+      "msbuildProject": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
+    },
     "Tycoon.Shared.Contracts/1.0.0": {
       "type": "project",
       "path": "../Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj",
@@ -4505,21 +4524,22 @@
       "Polly >= 8.6.5",
       "Tycoon.Backend.Application >= 1.0.0",
       "Tycoon.Backend.Domain >= 1.0.0",
+      "Tycoon.Backend.Migrations >= 1.0.0",
       "Tycoon.Shared.Observability >= 1.0.0"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Theoretical\\.nuget\\packages\\": {},
+    "C:\\Users\\lmxbl\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj",
+      "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj",
       "projectName": "Tycoon.Backend.Infrastructure",
-      "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj",
-      "packagesPath": "C:\\Users\\Theoretical\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\obj\\",
+      "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\Tycoon.Backend.Infrastructure.csproj",
+      "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Infrastructure\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,
       "CentralPackageTransitivePinningEnabled": true,
@@ -4527,7 +4547,7 @@
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Theoretical\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -4536,21 +4556,23 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Migrations\\Tycoon.Backend.Migrations.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Migrations\\Tycoon.Backend.Migrations.csproj"
+            },
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj"
             }
           }
         }
@@ -4821,7 +4843,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     }
   },

@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Tycoon.Backend.Migrations;
 
-namespace Tycoon.Backend.Migrations
-{
-    internal class igrationAssemblyMarker
-    {
-    }
-}
+/// <summary>
+/// Marker type used to locate the migrations assembly.
+/// </summary>
+public sealed class MigrationsAssemblyMarker { }
