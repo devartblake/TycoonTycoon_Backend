@@ -1795,20 +1795,6 @@
           "bin/placeholder/Tycoon.Backend.Domain.dll": {}
         }
       },
-      "Tycoon.Backend.Migrations/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v9.0",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "9.0.11",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4"
-        },
-        "compile": {
-          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/Tycoon.Backend.Migrations.dll": {}
-        }
-      },
       "Tycoon.Shared.Contracts/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
@@ -4487,11 +4473,6 @@
       "path": "../Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj",
       "msbuildProject": "../Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj"
     },
-    "Tycoon.Backend.Migrations/1.0.0": {
-      "type": "project",
-      "path": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj",
-      "msbuildProject": "../Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
-    },
     "Tycoon.Shared.Contracts/1.0.0": {
       "type": "project",
       "path": "../Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj",
@@ -4524,7 +4505,6 @@
       "Polly >= 8.6.5",
       "Tycoon.Backend.Application >= 1.0.0",
       "Tycoon.Backend.Domain >= 1.0.0",
-      "Tycoon.Backend.Migrations >= 1.0.0",
       "Tycoon.Shared.Observability >= 1.0.0"
     ]
   },
@@ -4567,9 +4547,6 @@
             },
             "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj": {
               "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Domain\\Tycoon.Backend.Domain.csproj"
-            },
-            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Migrations\\Tycoon.Backend.Migrations.csproj": {
-              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Migrations\\Tycoon.Backend.Migrations.csproj"
             },
             "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj": {
               "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Observability\\Tycoon.Shared.Observability.csproj"
