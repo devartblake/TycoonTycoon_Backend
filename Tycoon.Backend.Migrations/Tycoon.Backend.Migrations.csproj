@@ -15,8 +15,7 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
-  </ItemGroup>
-
+	<ItemGroup>
+		<ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
+	</ItemGroup>
 </Project>
