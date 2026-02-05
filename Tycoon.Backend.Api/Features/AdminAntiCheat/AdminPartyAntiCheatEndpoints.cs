@@ -131,10 +131,11 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
                 ));
             });
 
+            // PUT /admin/anti-cheat/party/flags/{id:guid}/review
             g.MapPut("/flags/{id:guid}/review", async (
-                IAppDb db,
                 Guid id,
                 ReviewAntiCheatFlagRequestDto body,
+                IAppDb db,
                 CancellationToken ct) =>
             {
                 var flag = await db.AntiCheatFlags.FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -142,8 +143,8 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
                     return Results.NotFound();
 
                 flag.MarkReviewed(body.ReviewedBy, body.Note);
-
                 await db.SaveChangesAsync(ct);
+
                 return Results.NoContent();
             });
 

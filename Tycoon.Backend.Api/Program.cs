@@ -330,7 +330,7 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tycoon Backend API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tycoon Trivia Backend API v1");
         c.RoutePrefix = "swagger";
         c.DocumentTitle = "Tycoon API Documentation";
         c.DisplayRequestDuration();
