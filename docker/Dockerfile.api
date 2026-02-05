@@ -27,14 +27,13 @@ COPY . .
 
 # Build and publish
 WORKDIR "/src/Tycoon.Backend.Api"
-RUN dotnet build "Tycoon.Backend.Api.csproj" -c Release -o /app/build --no-restore
+RUN dotnet build "Tycoon.Backend.Api.csproj" -c Release --no-restore
 
 RUN dotnet publish "Tycoon.Backend.Api.csproj" \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false \
-    --no-restore \
-    --no-build
+    --no-restore
 
 # ================================
 # Runtime Stage - Minimal image
