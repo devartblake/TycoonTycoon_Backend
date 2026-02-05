@@ -3,6 +3,7 @@ using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
@@ -62,7 +63,7 @@ builder.AddObservability("Tycoon.Backend.Api");
 
 // JSON configuration
 builder.Services.Configure<JsonOptions>(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddControllers();
+// builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 // ✅ IMPROVED SWAGGER CONFIGURATION
@@ -251,6 +252,10 @@ builder.Services
         };
     });
 
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("var/dpkeys"));
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -428,7 +433,7 @@ app.MapGet("/swagger-debug", () =>
     }
 }).AllowAnonymous().WithTags("Debug");
 
-app.MapControllers();
+// app.MapControllers();
 
 // SignalR hubs
 app.MapHub<MatchHub>("/ws/match");

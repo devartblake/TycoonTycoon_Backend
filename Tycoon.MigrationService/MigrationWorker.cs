@@ -171,6 +171,14 @@ public sealed class MigrationWorker : BackgroundService
 
     private async Task TryEnsureElasticTemplatesAsync(IServiceScope scope, CancellationToken ct)
     {
+        // Probe first: if the client isn't registered, skip Elastic entirely.
+        var client = scope.ServiceProvider.GetService<Elastic.Clients.Elasticsearch.ElasticsearchClient>();
+        if (client is null)
+        {
+            _log.Information("ElasticsearchClient not registered. Skipping Elastic template creation.");
+            return;
+        }
+
         var admin = scope.ServiceProvider.GetService<ElasticAdmin>();
         if (admin is null)
         {
@@ -193,8 +201,16 @@ public sealed class MigrationWorker : BackgroundService
 
     private async Task TryEnsureElasticIndicesAsync(IServiceScope scope, CancellationToken ct)
     {
+        var client = scope.ServiceProvider.GetService<Elastic.Clients.Elasticsearch.ElasticsearchClient>();
+        if (client is null)
+        {
+            _log.Information("ElasticsearchClient not registered. Skipping Elastic index bootstrap.");
+            return;
+        }
+
         var bootstrapper = scope.ServiceProvider.GetService<ElasticIndexBootstrapper>();
         if (bootstrapper is null)
+            if (bootstrapper is null)
         {
             _log.Information("ElasticIndexBootstrapper not registered. Skipping index creation.");
             return;

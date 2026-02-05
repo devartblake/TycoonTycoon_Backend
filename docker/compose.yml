@@ -296,6 +296,8 @@ services:
       # Observability
       Observability__ServiceName: "Tycoon.Backend.Api"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
+    volumes:
+      - dpkeys:/var/dpkeys
     depends_on:
       postgres:
         condition: service_healthy
@@ -337,3 +339,4 @@ volumes:
   pgadmin_data:
   prometheus_data:
   grafana_data:
+  dpkeys:

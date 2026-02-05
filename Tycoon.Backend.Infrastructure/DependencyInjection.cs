@@ -1,7 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Transport;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.Reflection;
 using Tycoon.Backend.Application.Abstractions;
@@ -114,13 +117,60 @@ namespace Tycoon.Backend.Infrastructure
             }
 
             // Elasticsearch (rollup indexing + rebuild)
-            var elastic =
+            var elasticUrl =
                 cfg["Elastic:Url"]
                 ?? cfg.GetConnectionString("elasticsearch")
                 ?? cfg.GetConnectionString("elastic");
 
-            if (!string.IsNullOrWhiteSpace(elastic))
+            // Allow disabling explicitly
+            var elasticEnabled = cfg.GetValue("Elastic:Enabled", true);
+
+            if (elasticEnabled && !string.IsNullOrWhiteSpace(elasticUrl))
             {
+                // Bind + validate options once, then DI uses the typed value.
+                services.AddOptions<ElasticOptions>()
+                    .Configure(o =>
+                    {
+                        o.Url = elasticUrl;
+
+                        // Credentials (optional)
+                        o.Username = cfg["Elastic:Username"];
+                        o.Password = cfg["Elastic:Password"];
+
+                        // Aliases (optional defaults)
+                        o.DailyWriteAlias = cfg["Elastic:DailyWriteAlias"] ?? o.DailyWriteAlias;
+                        o.PlayerDailyWriteAlias = cfg["Elastic:PlayerDailyWriteAlias"] ?? o.PlayerDailyWriteAlias;
+                    })
+                    .Validate(o => !string.IsNullOrWhiteSpace(o.Url), "Elastic:Url is required when Elastic is enabled.");
+
+                // Register the resolved options value as a concrete singleton too (handy for non-IOptions consumers).
+                services.AddSingleton(sp => sp.GetRequiredService<IOptions<ElasticOptions>>().Value);
+
+                // ✅ The missing piece: typed ElasticsearchClient
+                services.AddSingleton(sp =>
+                {
+                    var opt = sp.GetRequiredService<IOptions<ElasticOptions>>().Value;
+
+                    var uri = new Uri(opt.Url);
+
+                    var settings = new ElasticsearchClientSettings(uri);
+
+                    // Basic auth if provided
+                    if (!string.IsNullOrWhiteSpace(opt.Username) && !string.IsNullOrWhiteSpace(opt.Password))
+                    {
+                        settings = settings.Authentication(new BasicAuthentication(opt.Username, opt.Password));
+                    }
+
+                    // DEV convenience: allow self-signed certs when https
+                    if (uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // If you want this ONLY in development, gate it via env checks in the calling project.
+                        settings = settings.ServerCertificateValidationCallback((_, _, _, _) => true);
+                    }
+
+                    return new ElasticsearchClient(settings);
+                });
+
                 // ... keep your existing Elastic registration block ...
                 services.AddSingleton<ElasticAdmin>();
                 services.AddSingleton<ElasticIndexBootstrapper>();
