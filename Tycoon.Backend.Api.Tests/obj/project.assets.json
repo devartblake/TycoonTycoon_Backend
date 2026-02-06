@@ -2848,6 +2848,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
+          "BCrypt.Net-Next": "4.0.3",
           "MediatR": "14.0.0",
           "Microsoft.EntityFrameworkCore": "9.0.11",
           "Tycoon.Shared.Contracts": "1.0.0"
