@@ -37,3 +37,16 @@ C:/Users/lmxbl/Documents/TycoonTycoon_Backend/Mongo/obj/Debug/net9.0/ref/Mongo.d
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Mongo/obj/Debug/net9.0/refint/Mongo.dll
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Mongo/obj/Debug/net9.0/Mongo.pdb
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Mongo/obj/Debug/net9.0/ref/Mongo.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\bin\Debug\net9.0\Mongo.deps.json
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\bin\Debug\net9.0\Mongo.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\bin\Debug\net9.0\Mongo.pdb
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\Mongo.csproj.AssemblyReference.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\Mongo.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\Mongo.AssemblyInfoInputs.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\Mongo.AssemblyInfo.cs
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\Mongo.csproj.CoreCompileInputs.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\Mongo.sourcelink.json
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\Mongo.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\refint\Mongo.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\Mongo.pdb
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Mongo\obj\Debug\net9.0\ref\Mongo.dll
