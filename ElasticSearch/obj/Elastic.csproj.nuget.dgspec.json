@@ -1,27 +1,33 @@
 {
   "format": 1,
   "restore": {
-    "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/ElasticSearch/Elastic.csproj": {}
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj": {}
   },
   "projects": {
-    "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/ElasticSearch/Elastic.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/ElasticSearch/Elastic.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj",
         "projectName": "Elastic",
-        "projectPath": "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/ElasticSearch/Elastic.csproj",
-        "packagesPath": "/home/runner/.nuget/packages/",
-        "outputPath": "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/ElasticSearch/obj/",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\Elastic.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\ElasticSearch\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/home/runner/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -93,6 +99,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -206,6 +213,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.15.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",
@@ -236,7 +244,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.310/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
