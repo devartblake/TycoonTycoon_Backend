@@ -62,7 +62,7 @@ namespace Tycoon.Backend.Application.Auth
             if (storedToken == null || !storedToken.IsValid())
                 throw new UnauthorizedAccessException("Invalid or expired refresh token");
 
-            var user = await _db.Users.FindAsync(new object[] { storedToken.UserId }, ct);
+            var user = storedToken.User;
             if (user == null)
                 throw new UnauthorizedAccessException("User not found");
 
@@ -87,7 +87,7 @@ namespace Tycoon.Backend.Application.Auth
             var user = await _db.Users.FindAsync(new object[] { userId }, ct);
             if (user != null)
             {
-                user.RemoveRefreshToken(deviceId);
+                user.RevokeRefreshToken(deviceId);
                 await _db.SaveChangesAsync(ct);
             }
         }

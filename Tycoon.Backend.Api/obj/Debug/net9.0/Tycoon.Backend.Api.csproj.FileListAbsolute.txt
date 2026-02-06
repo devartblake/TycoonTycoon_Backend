@@ -457,3 +457,4 @@ C:/Users/scorp/source/repos/TycoonTycoon_Backend/Tycoon.Backend.Api/obj/Debug/ne
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Api/obj/Debug/net9.0/Tycoon.Backend.Api.pdb
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Api/obj/Debug/net9.0/Tycoon.Backend.Api.genruntimeconfig.cache
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Api/obj/Debug/net9.0/ref/Tycoon.Backend.Api.dll
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Api/bin/Debug/net9.0/BCrypt.Net-Next.dll

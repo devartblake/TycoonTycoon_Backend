@@ -34,7 +34,7 @@ namespace Tycoon.Backend.Api.Features.Auth
                 }
                 catch (UnauthorizedAccessException ex)
                 {
-                    return Results.Unauthorized();
+                    return Results.Problem(statusCode: 401, detail: ex.Message);
                 }
             });
 

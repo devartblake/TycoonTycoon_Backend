@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Tycoon.Backend.Domain.Primitives;
 
 namespace Tycoon.Backend.Domain.Entities
@@ -54,7 +52,7 @@ namespace Tycoon.Backend.Domain.Entities
 
         public bool VerifyPassword(string password)
         {
-            return PasswordHash == HashPassword(password);
+            return BCrypt.Net.BCrypt.Verify(password, PasswordHash);
         }
 
         public void AddRefreshToken(string token, string deviceId, DateTimeOffset expiresAt)
@@ -62,16 +60,18 @@ namespace Tycoon.Backend.Domain.Entities
             RefreshTokens.Add(new RefreshToken(Id, token, deviceId, expiresAt));
         }
 
-        public void RemoveRefreshToken(string deviceId)
+        public void RevokeRefreshToken(string deviceId)
         {
-            RefreshTokens.RemoveAll(rt => rt.DeviceId == deviceId);
+            var tokensToRevoke = RefreshTokens.Where(rt => rt.DeviceId == deviceId).ToList();
+            foreach (var token in tokensToRevoke)
+            {
+                token.Revoke();
+            }
         }
 
         private static string HashPassword(string password)
         {
-            using var sha256 = SHA256.Create();
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(bytes);
+            return BCrypt.Net.BCrypt.HashPassword(password, BCrypt.Net.BCrypt.GenerateSalt(12));
         }
     }
 

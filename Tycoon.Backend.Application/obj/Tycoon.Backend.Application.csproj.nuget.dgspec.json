@@ -53,6 +53,11 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.0.3, )",
+              "versionCentrallyManaged": true
+            },
             "FluentValidation": {
               "target": "Package",
               "version": "[12.1.1, )",
@@ -110,6 +115,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -304,6 +310,11 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.0.3, )",
+              "versionCentrallyManaged": true
+            },
             "MediatR": {
               "target": "Package",
               "version": "[14.0.0, )",
@@ -336,6 +347,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -546,6 +558,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",

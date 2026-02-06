@@ -41,7 +41,7 @@ namespace Tycoon.Backend.Application.Auth
                 issuer: _settings.Issuer,
                 audience: _settings.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_settings.AccessTokenExpirationMinutes),
+                expires: DateTimeOffset.UtcNow.AddMinutes(_settings.AccessTokenExpirationMinutes).DateTime,
                 signingCredentials: creds
             );
 
