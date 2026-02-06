@@ -82,6 +82,11 @@
               "target": "Package",
               "version": "[9.0.11, )",
               "versionCentrallyManaged": true
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[8.3.0, )",
+              "versionCentrallyManaged": true
             }
           },
           "centralPackageVersions": {
@@ -218,6 +223,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.3.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",
@@ -443,6 +449,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.3.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",
@@ -652,6 +659,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.3.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",

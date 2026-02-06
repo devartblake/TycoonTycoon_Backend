@@ -158,6 +158,14 @@ if (analyticsEnabled)
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
 
+// JWT Configuration for Auth endpoints
+builder.Services.Configure<Tycoon.Backend.Application.Auth.JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
+builder.Services.AddSingleton<Tycoon.Backend.Application.Auth.IJwtService, 
+    Tycoon.Backend.Application.Auth.JwtService>();
+builder.Services.AddScoped<Tycoon.Backend.Application.Auth.IAuthService, 
+    Tycoon.Backend.Application.Auth.AuthService>();
+
 // SignalR with Redis
 var redis = builder.Configuration.GetConnectionString("redis")
             ?? builder.Configuration.GetConnectionString("cache")
@@ -441,6 +449,8 @@ app.MapHub<PresenceHub>("/ws/presence");
 app.MapHub<NotificationHub>("/ws/notify");
 
 // Feature endpoints
+Tycoon.Backend.Api.Features.Auth.AuthEndpoints.Map(app);
+Tycoon.Backend.Api.Features.Users.UsersEndpoints.Map(app);
 PlayersEndpoints.Map(app);
 MatchesEndpoints.Map(app);
 MatchmakingEndpoints.Map(app);

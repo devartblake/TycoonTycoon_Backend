@@ -63,6 +63,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<PartyMatchMember> PartyMatchMembers => Set<PartyMatchMember>();
         public DbSet<SeasonRewardClaim> SeasonRewardClaims => Set<SeasonRewardClaim>();
         public DbSet<SeasonRankSnapshotRow> SeasonRankSnapshots => Set<SeasonRankSnapshotRow>();
+        public DbSet<User> Users => Set<User>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
         public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => throw new NotImplementedException();
 

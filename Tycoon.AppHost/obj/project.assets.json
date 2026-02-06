@@ -5142,11 +5142,11 @@
           }
         }
       },
-      "System.IdentityModel.Tokens.Jwt/8.0.1": {
+      "System.IdentityModel.Tokens.Jwt/8.3.0": {
         "type": "package",
         "dependencies": {
-          "Microsoft.IdentityModel.JsonWebTokens": "8.0.1",
-          "Microsoft.IdentityModel.Tokens": "8.0.1"
+          "Microsoft.IdentityModel.JsonWebTokens": "8.3.0",
+          "Microsoft.IdentityModel.Tokens": "8.3.0"
         },
         "compile": {
           "lib/net9.0/System.IdentityModel.Tokens.Jwt.dll": {
@@ -6553,6 +6553,7 @@
           "MediatR": "14.0.0",
           "MediatR.Extensions.Microsoft.DependencyInjection": "11.0.0",
           "Microsoft.EntityFrameworkCore": "9.0.11",
+          "System.IdentityModel.Tokens.Jwt": "8.3.0",
           "Tycoon.Backend.Domain": "1.0.0",
           "Tycoon.Shared.Contracts": "1.0.0"
         },
@@ -13868,13 +13869,14 @@
         "system.globalization.extensions.nuspec"
       ]
     },
-    "System.IdentityModel.Tokens.Jwt/8.0.1": {
-      "sha512": "GJw3bYkWpOgvN3tJo5X4lYUeIFA2HD293FPUhKmp7qxS+g5ywAb34Dnd3cDAFLkcMohy5XTpoaZ4uAHuw0uSPQ==",
+    "System.IdentityModel.Tokens.Jwt/8.3.0": {
+      "sha512": "9GESpDG0Zb17HD5mBW/uEWi2yz/uKPmCthX2UhyLnk42moGH2FpMgXA2Y4l2Qc7P75eXSUTA6wb/c9D9GSVkzw==",
       "type": "package",
-      "path": "system.identitymodel.tokens.jwt/8.0.1",
+      "path": "system.identitymodel.tokens.jwt/8.3.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
+        "README.md",
         "lib/net462/System.IdentityModel.Tokens.Jwt.dll",
         "lib/net462/System.IdentityModel.Tokens.Jwt.xml",
         "lib/net472/System.IdentityModel.Tokens.Jwt.dll",
@@ -13887,7 +13889,7 @@
         "lib/net9.0/System.IdentityModel.Tokens.Jwt.xml",
         "lib/netstandard2.0/System.IdentityModel.Tokens.Jwt.dll",
         "lib/netstandard2.0/System.IdentityModel.Tokens.Jwt.xml",
-        "system.identitymodel.tokens.jwt.8.0.1.nupkg.sha512",
+        "system.identitymodel.tokens.jwt.8.3.0.nupkg.sha512",
         "system.identitymodel.tokens.jwt.nuspec"
       ]
     },
@@ -17461,6 +17463,7 @@
           "Swashbuckle.AspNetCore": "9.0.6",
           "Swashbuckle.AspNetCore.Annotations": "9.0.6",
           "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+          "System.IdentityModel.Tokens.Jwt": "8.3.0",
           "System.Linq.Async": "7.0.0",
           "System.Linq.Async.Queryable": "7.0.0",
           "System.Net.Http.Json": "9.0.11",
@@ -17892,6 +17895,10 @@
       "Swashbuckle.AspNetCore.ReDoc": {
         "include": "Runtime, Compile, Native, BuildTransitive",
         "version": "[9.0.6, )"
+      },
+      "System.IdentityModel.Tokens.Jwt": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[8.3.0, )"
       },
       "System.Linq.Async": {
         "include": "Runtime, Compile, Native, BuildTransitive",
