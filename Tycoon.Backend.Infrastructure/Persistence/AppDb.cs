@@ -80,13 +80,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence
             modelBuilder.ApplyConfiguration(new SeasonRankSnapshotRowConfiguration());
 
             // Ensure we pick up all IEntityTypeConfiguration<> classes.
-            //
-            // IMPORTANT: We intentionally scan BOTH the Infrastructure assembly (this DbContext)
-            // and the Domain assembly (where entity CLR types live). This makes the system more
-            // robust to accidental misplacement of configuration classes and prevents silent
-            // model drift (e.g., join entities being discovered without keys).
+            // All entity configurations are in the Infrastructure assembly.
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDb).Assembly);
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(Player).Assembly);
 
             // Hard guardrail: fail fast with an actionable error if any entity type is discovered
             // without a primary key. This prevents opaque "requires a primary key" failures later
