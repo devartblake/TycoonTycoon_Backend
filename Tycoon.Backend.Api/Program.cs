@@ -163,6 +163,17 @@ builder.Services.AddInfrastructure(builder.Configuration)
 // Register Authentication Service
 builder.Services.AddScoped<Tycoon.Backend.Application.Auth.IAuthService, Tycoon.Backend.Application.Auth.AuthService>();
 
+// Validate JWT configuration at startup
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException("JWT:Secret configuration is required but not set. Please configure a secure JWT secret key.");
+}
+if (jwtSecret.Length < 32)
+{
+    Console.WriteLine("⚠️ WARNING: JWT secret key should be at least 32 characters long for security.");
+}
+
 // SignalR with Redis
 var redis = builder.Configuration.GetConnectionString("redis")
             ?? builder.Configuration.GetConnectionString("cache")
@@ -239,6 +250,7 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(2),
+            NameClaimType = "sub"
         };
 
         o.Events = new JwtBearerEvents
