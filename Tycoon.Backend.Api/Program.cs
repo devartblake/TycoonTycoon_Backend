@@ -28,6 +28,7 @@ using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminSeasons;
 using Tycoon.Backend.Api.Features.AdminSkills;
+using Tycoon.Backend.Api.Features.Auth;
 using Tycoon.Backend.Api.Features.Friends;
 using Tycoon.Backend.Api.Features.Leaderboards;
 using Tycoon.Backend.Api.Features.Matches;
@@ -40,6 +41,7 @@ using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.Referrals;
 using Tycoon.Backend.Api.Features.Seasons;
 using Tycoon.Backend.Api.Features.Skills;
+using Tycoon.Backend.Api.Features.Users;
 using Tycoon.Backend.Api.Middleware;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
@@ -157,6 +159,9 @@ if (analyticsEnabled)
 // Infrastructure & Application
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
+
+// Register Authentication Service
+builder.Services.AddScoped<Tycoon.Backend.Application.Auth.IAuthService, Tycoon.Backend.Application.Auth.AuthService>();
 
 // SignalR with Redis
 var redis = builder.Configuration.GetConnectionString("redis")
@@ -441,6 +446,8 @@ app.MapHub<PresenceHub>("/ws/presence");
 app.MapHub<NotificationHub>("/ws/notify");
 
 // Feature endpoints
+AuthEndpoints.Map(app);
+UsersEndpoints.Map(app);
 PlayersEndpoints.Map(app);
 MatchesEndpoints.Map(app);
 MatchmakingEndpoints.Map(app);

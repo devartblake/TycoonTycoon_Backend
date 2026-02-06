@@ -11,3 +11,16 @@ C:/Users/scorp/source/repos/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/ob
 C:/Users/scorp/source/repos/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/refint/Tycoon.Hosting.Elasticsearch.dll
 C:/Users/scorp/source/repos/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.pdb
 C:/Users/scorp/source/repos/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/ref/Tycoon.Hosting.Elasticsearch.dll
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/bin/Debug/net9.0/Tycoon.Hosting.Elasticsearch.deps.json
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/bin/Debug/net9.0/Tycoon.Hosting.Elasticsearch.dll
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/bin/Debug/net9.0/Tycoon.Hosting.Elasticsearch.pdb
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.csproj.AssemblyReference.cache
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.AssemblyInfoInputs.cache
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.AssemblyInfo.cs
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.csproj.CoreCompileInputs.cache
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.sourcelink.json
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.dll
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/refint/Tycoon.Hosting.Elasticsearch.dll
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/Tycoon.Hosting.Elasticsearch.pdb
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Hosting.Elasticsearch/obj/Debug/net9.0/ref/Tycoon.Hosting.Elasticsearch.dll
