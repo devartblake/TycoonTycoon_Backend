@@ -111,6 +111,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -224,6 +225,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.15.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",
@@ -307,6 +309,11 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.0.3, )",
+              "versionCentrallyManaged": true
+            },
             "FluentValidation": {
               "target": "Package",
               "version": "[12.1.1, )",
@@ -336,6 +343,11 @@
               "target": "Package",
               "version": "[9.0.11, )",
               "versionCentrallyManaged": true
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[8.15.0, )",
+              "versionCentrallyManaged": true
             }
           },
           "centralPackageVersions": {
@@ -359,6 +371,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -472,6 +485,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.15.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",
@@ -584,6 +598,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -697,6 +712,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.15.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",
@@ -890,6 +906,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -1003,6 +1020,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.15.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",
@@ -1099,6 +1117,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -1212,6 +1231,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.15.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",
@@ -1380,6 +1400,7 @@
             "AspNetCore.HealthChecks.System": "9.0.0",
             "AspNetCoreRateLimit": "5.0.0",
             "AspNetCoreRateLimit.Redis": "2.0.0",
+            "BCrypt.Net-Next": "4.0.3",
             "BenchmarkDotNet": "0.14.0",
             "Bogus": "35.6.5",
             "coverlet.collector": "6.0.2",
@@ -1493,6 +1514,7 @@
             "Swashbuckle.AspNetCore": "9.0.6",
             "Swashbuckle.AspNetCore.Annotations": "9.0.6",
             "Swashbuckle.AspNetCore.ReDoc": "9.0.6",
+            "System.IdentityModel.Tokens.Jwt": "8.15.0",
             "System.Linq.Async": "7.0.0",
             "System.Linq.Async.Queryable": "7.0.0",
             "System.Net.Http.Json": "9.0.11",

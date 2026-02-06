@@ -724,6 +724,7 @@ C:/Users/lmxbl/Documents/TycoonTycoon_Backend/Tycoon.MigrationService/obj/Debug/
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.MigrationService/bin/Debug/net9.0/AWSSDK.Core.dll
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.MigrationService/bin/Debug/net9.0/AWSSDK.SimpleNotificationService.dll
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.MigrationService/bin/Debug/net9.0/AWSSDK.SQS.dll
+/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.MigrationService/bin/Debug/net9.0/BCrypt.Net-Next.dll
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.MigrationService/bin/Debug/net9.0/Bogus.dll
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.MigrationService/bin/Debug/net9.0/Cassandra.dll
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.MigrationService/bin/Debug/net9.0/Confluent.Kafka.dll
