@@ -450,5 +450,3 @@ C:/Users/scorp/source/repos/TycoonTycoon_Backend/Tycoon.Backend.Application.Test
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Application.Tests/obj/Debug/net9.0/Tycoon.Backend.Application.Tests.pdb
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Application.Tests/obj/Debug/net9.0/Tycoon.Backend.Application.Tests.genruntimeconfig.cache
 /home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Application.Tests/obj/Debug/net9.0/ref/Tycoon.Backend.Application.Tests.dll
-/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Application.Tests/bin/Debug/net9.0/System.IdentityModel.Tokens.Jwt.dll
-/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.Backend.Application.Tests/bin/Debug/net9.0/BCrypt.Net-Next.dll

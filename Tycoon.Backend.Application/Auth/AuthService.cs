@@ -1,5 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -10,99 +15,172 @@ namespace Tycoon.Backend.Application.Auth
     {
         Task<LoginResponse> LoginAsync(string email, string password, string deviceId, CancellationToken ct = default);
         Task<LoginResponse> RefreshAsync(string refreshToken, CancellationToken ct = default);
-        Task LogoutAsync(Guid userId, string deviceId, CancellationToken ct = default);
-        Task<UserDto> RegisterAsync(RegisterRequest request, CancellationToken ct = default);
-    }
+        private const int RefreshTokenLifetimeDays = 30;
 
-    public class AuthService : IAuthService
-    {
-        private readonly IAppDb _db;
-        private readonly IJwtService _jwtService;
-        private readonly JwtSettings _jwtSettings;
-
-        public AuthService(IAppDb db, IJwtService jwtService, IOptions<JwtSettings> jwtSettings)
+        public AuthService(IAppDb database, IConfiguration configuration)
         {
-            _db = db;
-            _jwtService = jwtService;
-            _jwtSettings = jwtSettings.Value;
+            _database = database;
+            _configuration = configuration;
         }
 
-        public async Task<LoginResponse> LoginAsync(string email, string password, string deviceId, CancellationToken ct = default)
+        private string JwtSigningKey => _configuration["Jwt:Secret"] 
+            ?? throw new InvalidOperationException("JWT signing key must be configured");
+        
+        private string TokenIssuerName => _configuration["Jwt:Issuer"] ?? "TycoonBackend";
+        
+        private int AccessTokenLifetime => int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var mins) 
+            ? mins : DefaultTokenExpiryMinutes;
+
+        public async Task<AuthResult> LoginAsync(string email, string password, string deviceId)
         {
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), ct);
-            if (user == null || !user.VerifyPassword(password))
-                throw new UnauthorizedAccessException("Invalid credentials");
+            var normalizedEmail = email.ToLowerInvariant();
+            var authenticatedUser = await _database.Users
+                .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
 
-            if (!user.IsActive)
-                throw new UnauthorizedAccessException("Account is inactive");
+            if (authenticatedUser == null)
+                throw new UnauthorizedAccessException("Authentication failed");
 
-            user.RecordLogin();
+            if (!ValidatePasswordHash(password, authenticatedUser.PasswordHash))
+                throw new UnauthorizedAccessException("Authentication failed");
 
-            var accessToken = _jwtService.GenerateAccessToken(user.Id, user.Email, user.Handle);
-            var refreshToken = _jwtService.GenerateRefreshToken();
-            var refreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
+            if (!authenticatedUser.IsActive)
+                throw new UnauthorizedAccessException("User account is not active");
 
-            user.AddRefreshToken(refreshToken, deviceId, refreshTokenExpiry);
-            await _db.SaveChangesAsync(ct);
+            authenticatedUser.RecordLogin();
+            await _database.SaveChangesAsync();
 
-            return new LoginResponse(
-                accessToken,
-                refreshToken,
-                _jwtSettings.AccessTokenExpirationMinutes * 60,
-                new UserDto(user.Id, user.Email, user.Handle, user.Country, user.AvatarUrl, user.CreatedAt)
-            );
+            var jwtToken = CreateJwtToken(authenticatedUser);
+            var deviceRefreshToken = await CreateRefreshTokenForDevice(authenticatedUser.Id, deviceId);
+
+            return BuildAuthResult(authenticatedUser, jwtToken, deviceRefreshToken);
         }
 
-        public async Task<LoginResponse> RefreshAsync(string refreshToken, CancellationToken ct = default)
+        public async Task<AuthResult> RefreshAsync(string refreshTokenString)
         {
-            var storedToken = await _db.RefreshTokens
-                .Include(rt => rt.User)
-                .FirstOrDefaultAsync(rt => rt.Token == refreshToken, ct);
+            var storedToken = await _database.RefreshTokens
+                .FirstOrDefaultAsync(rt => rt.Token == refreshTokenString && !rt.IsRevoked);
 
-            if (storedToken == null || !storedToken.IsValid())
-                throw new UnauthorizedAccessException("Invalid or expired refresh token");
+            var currentTime = DateTimeOffset.UtcNow;
+            if (storedToken == null || storedToken.ExpiresAt < currentTime)
+                throw new UnauthorizedAccessException("Token refresh failed");
 
-            var user = storedToken.User;
-            if (user == null)
-                throw new UnauthorizedAccessException("User not found");
-
-            var newAccessToken = _jwtService.GenerateAccessToken(user.Id, user.Email, user.Handle);
-            var newRefreshToken = _jwtService.GenerateRefreshToken();
-            var newRefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
+            var tokenOwner = await _database.Users
+                .FirstOrDefaultAsync(u => u.Id == storedToken.UserId);
+            
+            if (tokenOwner == null || !tokenOwner.IsActive)
+                throw new UnauthorizedAccessException("Token refresh failed");
 
             storedToken.Revoke();
-            user.AddRefreshToken(newRefreshToken, storedToken.DeviceId, newRefreshTokenExpiry);
-            await _db.SaveChangesAsync(ct);
 
-            return new LoginResponse(
-                newAccessToken,
-                newRefreshToken,
-                _jwtSettings.AccessTokenExpirationMinutes * 60,
-                new UserDto(user.Id, user.Email, user.Handle, user.Country, user.AvatarUrl, user.CreatedAt)
-            );
+            var newJwtToken = CreateJwtToken(tokenOwner);
+            var newDeviceToken = await CreateRefreshTokenForDevice(tokenOwner.Id, storedToken.DeviceId);
+
+            await _database.SaveChangesAsync();
+
+            return BuildAuthResult(tokenOwner, newJwtToken, newDeviceToken);
         }
 
-        public async Task LogoutAsync(Guid userId, string deviceId, CancellationToken ct = default)
+        public async Task LogoutAsync(string deviceId, Guid userId)
         {
-            var user = await _db.Users.FindAsync(new object[] { userId }, ct);
-            if (user != null)
+            var activeTokensForDevice = await _database.RefreshTokens
+                .Where(rt => rt.UserId == userId && rt.DeviceId == deviceId && !rt.IsRevoked)
+                .ToListAsync();
+
+            foreach (var token in activeTokensForDevice)
+                token.Revoke();
+
+            if (activeTokensForDevice.Any())
+                await _database.SaveChangesAsync();
+        }
+
+        public async Task<User> RegisterAsync(string email, string password, string handle, string? country = null)
+        {
+            var normalizedEmail = email.ToLowerInvariant();
+            
+            var emailConflict = await _database.Users
+                .AnyAsync(u => u.Email == normalizedEmail);
+            if (emailConflict)
+                throw new InvalidOperationException("This email is already in use");
+
+            var handleConflict = await _database.Users
+                .AnyAsync(u => u.Handle == handle);
+            if (handleConflict)
+                throw new InvalidOperationException("This handle is not available");
+
+            var securePasswordHash = ComputePasswordHash(password);
+            var newUser = new User(email, handle, securePasswordHash, country);
+
+            _database.Users.Add(newUser);
+            await _database.SaveChangesAsync();
+
+            return newUser;
+        }
+
+        private string CreateJwtToken(User user)
+        {
+            var userClaims = new List<Claim>
             {
-                user.RevokeRefreshToken(deviceId);
-                await _db.SaveChangesAsync(ct);
-            }
+                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Email, user.Email),
+                new("handle", user.Handle),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            var signingKeyBytes = Encoding.UTF8.GetBytes(JwtSigningKey);
+            var securityKey = new SymmetricSecurityKey(signingKeyBytes);
+            var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var tokenDescriptor = new JwtSecurityToken(
+                issuer: TokenIssuerName,
+                audience: TokenIssuerName,
+                claims: userClaims,
+                expires: DateTime.UtcNow.AddMinutes(AccessTokenLifetime),
+                signingCredentials: signingCredentials
+            );
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            return tokenHandler.WriteToken(tokenDescriptor);
         }
 
-        public async Task<UserDto> RegisterAsync(RegisterRequest request, CancellationToken ct = default)
+        private async Task<string> CreateRefreshTokenForDevice(Guid userId, string deviceId)
         {
-            var existingUser = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant(), ct);
-            if (existingUser != null)
-                throw new InvalidOperationException("User already exists");
+            var randomBytes = RandomNumberGenerator.GetBytes(64);
+            var tokenValue = Convert.ToBase64String(randomBytes);
+            var expirationTime = DateTimeOffset.UtcNow.AddDays(RefreshTokenLifetimeDays);
 
-            var user = new User(request.Email, request.Handle, request.Password, request.Country);
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync(ct);
+            var deviceToken = new RefreshToken(userId, tokenValue, deviceId, expirationTime);
+            _database.RefreshTokens.Add(deviceToken);
 
-            return new UserDto(user.Id, user.Email, user.Handle, user.Country, user.AvatarUrl, user.CreatedAt);
+            return tokenValue;
+        }
+
+        private string ComputePasswordHash(string plainTextPassword)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(plainTextPassword);
+        }
+
+        private bool ValidatePasswordHash(string plainTextPassword, string storedHash)
+        {
+            return BCrypt.Net.BCrypt.Verify(plainTextPassword, storedHash);
+        }
+
+        private AuthResult BuildAuthResult(User user, string jwtToken, string refreshToken)
+        {
+            var userProfile = new UserDto(
+                user.Id, 
+                user.Handle, 
+                user.Email, 
+                user.Country, 
+                user.Tier, 
+                user.Mmr
+            );
+
+            return new AuthResult(
+                jwtToken,
+                refreshToken,
+                AccessTokenLifetime * 60,
+                userProfile
+            );
         }
     }
 }

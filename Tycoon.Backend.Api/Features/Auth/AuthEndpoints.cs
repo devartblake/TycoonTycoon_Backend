@@ -10,56 +10,109 @@ namespace Tycoon.Backend.Api.Features.Auth
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/auth").WithTags("Authentication");
+            var authGroup = app.MapGroup("/auth").WithTags("Authentication");
 
-            g.MapPost("/register", async ([FromBody] RegisterRequest req, IAuthService auth, CancellationToken ct) =>
-            {
-                try
-                {
-                    var user = await auth.RegisterAsync(req, ct);
-                    return Results.Ok(user);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    return Results.Conflict(new { error = ex.Message });
-                }
-            });
+            authGroup.MapPost("/register", HandleRegistration);
+            authGroup.MapPost("/login", HandleLogin);
+            authGroup.MapPost("/refresh", HandleTokenRefresh);
+            authGroup.MapPost("/logout", HandleLogout).RequireAuthorization();
+        }
 
-            g.MapPost("/login", async ([FromBody] LoginRequest req, IAuthService auth, CancellationToken ct) =>
+        private static async Task<IResult> HandleRegistration(
+            [FromBody] RegisterRequest request, 
+            IAuthService authService, 
+            CancellationToken cancellation)
+        {
+            try
             {
-                try
-                {
-                    var result = await auth.LoginAsync(req.Email, req.Password, req.DeviceId, ct);
-                    return Results.Ok(result);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    return Results.Problem(statusCode: 401, detail: ex.Message);
-                }
-            });
+                var registeredUser = await authService.RegisterAsync(
+                    request.Email, 
+                    request.Password, 
+                    request.Handle, 
+                    request.Country);
+                
+                return Results.Created(
+                    $"/users/{registeredUser.Id}", 
+                    new { 
+                        userId = registeredUser.Id, 
+                        message = "Registration successful" 
+                    });
+            }
+            catch (InvalidOperationException error)
+            {
+                return Results.BadRequest(new { 
+                    error = "registration_failed", 
+                    message = error.Message 
+                });
+            }
+        }
 
-            g.MapPost("/refresh", async ([FromBody] RefreshRequest req, IAuthService auth, CancellationToken ct) =>
+        private static async Task<IResult> HandleLogin(
+            [FromBody] LoginRequest request, 
+            IAuthService authService, 
+            CancellationToken cancellation)
+        {
+            try
             {
-                try
-                {
-                    var result = await auth.RefreshAsync(req.RefreshToken, ct);
-                    return Results.Ok(result);
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return Results.Unauthorized();
-                }
-            });
+                var authData = await authService.LoginAsync(
+                    request.Email, 
+                    request.Password, 
+                    request.DeviceId);
+                
+                var loginResult = new LoginResponse(
+                    authData.AccessToken,
+                    authData.RefreshToken,
+                    authData.ExpiresIn,
+                    authData.User
+                );
+                
+                return Results.Ok(loginResult);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
+            }
+        }
 
-            g.MapPost("/logout", async ([FromBody] LogoutRequest req, IAuthService auth, HttpContext ctx, CancellationToken ct) =>
+        private static async Task<IResult> HandleTokenRefresh(
+            [FromBody] RefreshRequest request, 
+            IAuthService authService, 
+            CancellationToken cancellation)
+        {
+            try
             {
-                var userIdClaim = ctx.User.FindFirst("sub");
-                if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
-                {
-                    await auth.LogoutAsync(userId, req.DeviceId, ct);
-                }
-                return Results.NoContent();
-            }).RequireAuthorization();
+                var authData = await authService.RefreshAsync(request.RefreshToken);
+                
+                var refreshResult = new LoginResponse(
+                    authData.AccessToken,
+                    authData.RefreshToken,
+                    authData.ExpiresIn,
+                    authData.User
+                );
+                
+                return Results.Ok(refreshResult);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
+            }
+        }
+
+        private static async Task<IResult> HandleLogout(
+            [FromBody] LogoutRequest request, 
+            HttpContext httpContext, 
+            IAuthService authService, 
+            CancellationToken cancellation)
+        {
+            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            
+            if (userIdClaim?.Value == null) 
+                return Results.Unauthorized();
+
+            var parsedUserId = Guid.Parse(userIdClaim.Value);
+            await authService.LogoutAsync(request.DeviceId, parsedUserId);
+            
+            return Results.NoContent();
         }
     }
 }

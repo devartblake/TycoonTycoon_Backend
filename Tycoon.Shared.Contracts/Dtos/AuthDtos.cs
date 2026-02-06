@@ -1,10 +1,9 @@
 namespace Tycoon.Shared.Contracts.Dtos
 {
-    public record LoginRequest(
-        string Email,
-        string Password,
-        string DeviceId
-    );
+    public record LoginRequest(string Email, string Password, string DeviceId);
+    public record RefreshRequest(string RefreshToken);
+    public record LogoutRequest(string DeviceId);
+    public record RegisterRequest(string Email, string Password, string Handle, string? Country);
 
     public record LoginResponse(
         string AccessToken,
@@ -13,32 +12,14 @@ namespace Tycoon.Shared.Contracts.Dtos
         UserDto User
     );
 
-    public record RefreshRequest(
-        string RefreshToken
-    );
-
-    public record LogoutRequest(
-        string DeviceId
-    );
-
-    public record RegisterRequest(
-        string Email,
-        string Password,
-        string Handle,
-        string Country
-    );
-
     public record UserDto(
         Guid Id,
-        string Email,
         string Handle,
-        string Country,
-        string? AvatarUrl,
-        DateTimeOffset CreatedAt
+        string Email,
+        string? Country,
+        string? Tier,
+        int Mmr
     );
 
-    public record UpdateProfileRequest(
-        string Handle,
-        string Country
-    );
+    public record UpdateProfileRequest(string? Handle, string? Country);
 }

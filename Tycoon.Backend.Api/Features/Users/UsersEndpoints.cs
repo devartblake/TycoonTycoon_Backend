@@ -11,38 +11,75 @@ namespace Tycoon.Backend.Api.Features.Users
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/users").WithTags("Users").RequireAuthorization();
+            var usersGroup = app.MapGroup("/users")
+                .WithTags("Users")
+                .RequireAuthorization();
 
-            g.MapGet("/me", async (HttpContext ctx, IAppDb db, CancellationToken ct) =>
-            {
-                var userIdClaim = ctx.User.FindFirst("sub");
-                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                    return Results.Unauthorized();
+            usersGroup.MapGet("/me", RetrieveCurrentUser);
+            usersGroup.MapPatch("/me", UpdateCurrentUserProfile);
+        }
 
-                var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
-                if (user == null) return Results.NotFound();
+        private static async Task<IResult> RetrieveCurrentUser(
+            HttpContext httpContext, 
+            IAppDb database, 
+            CancellationToken cancellation)
+        {
+            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            
+            if (userIdClaim?.Value == null) 
+                return Results.Unauthorized();
 
-                return Results.Ok(new UserDto(user.Id, user.Email, user.Handle, user.Country, user.AvatarUrl, user.CreatedAt));
-            });
+            var parsedUserId = Guid.Parse(userIdClaim.Value);
+            var currentUser = await database.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == parsedUserId, cancellation);
+            
+            if (currentUser == null) 
+                return Results.NotFound();
 
-            g.MapPatch("/me", async (
-                [FromBody] UpdateProfileRequest req,
-                HttpContext ctx,
-                IAppDb db,
-                CancellationToken ct) =>
-            {
-                var userIdClaim = ctx.User.FindFirst("sub");
-                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                    return Results.Unauthorized();
+            var userProfile = new UserDto(
+                currentUser.Id, 
+                currentUser.Handle, 
+                currentUser.Email, 
+                currentUser.Country, 
+                currentUser.Tier, 
+                currentUser.Mmr
+            );
+            
+            return Results.Ok(userProfile);
+        }
 
-                var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-                if (user == null) return Results.NotFound();
+        private static async Task<IResult> UpdateCurrentUserProfile(
+            [FromBody] UpdateProfileRequest request,
+            HttpContext httpContext,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            
+            if (userIdClaim?.Value == null) 
+                return Results.Unauthorized();
 
-                user.UpdateProfile(req.Handle, req.Country);
-                await db.SaveChangesAsync(ct);
+            var parsedUserId = Guid.Parse(userIdClaim.Value);
+            var currentUser = await database.Users
+                .FirstOrDefaultAsync(u => u.Id == parsedUserId, cancellation);
+            
+            if (currentUser == null) 
+                return Results.NotFound();
 
-                return Results.Ok(new UserDto(user.Id, user.Email, user.Handle, user.Country, user.AvatarUrl, user.CreatedAt));
-            });
+            currentUser.UpdateProfile(request.Handle, request.Country);
+            await database.SaveChangesAsync(cancellation);
+
+            var updatedProfile = new UserDto(
+                currentUser.Id, 
+                currentUser.Handle, 
+                currentUser.Email, 
+                currentUser.Country, 
+                currentUser.Tier, 
+                currentUser.Mmr
+            );
+            
+            return Results.Ok(updatedProfile);
         }
     }
 }
