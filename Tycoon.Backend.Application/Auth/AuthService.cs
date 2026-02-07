@@ -24,6 +24,7 @@ namespace Tycoon.Backend.Application.Auth
             _configuration = configuration;
         }
 
+        // JWT signing
         private string JwtSigningKey => _configuration["Jwt:Secret"] 
             ?? throw new InvalidOperationException("JWT signing key must be configured");
         

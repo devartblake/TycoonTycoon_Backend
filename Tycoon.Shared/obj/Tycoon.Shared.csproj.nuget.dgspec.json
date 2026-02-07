@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared\\Tycoon.Shared.csproj": {}
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared\\Tycoon.Shared.csproj": {}
   },
   "projects": {
-    "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared\\Tycoon.Shared.csproj": {
+    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared\\Tycoon.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared\\Tycoon.Shared.csproj",
+        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared\\Tycoon.Shared.csproj",
         "projectName": "Tycoon.Shared",
-        "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared\\Tycoon.Shared.csproj",
-        "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared\\obj\\",
+        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared\\Tycoon.Shared.csproj",
+        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
@@ -19,7 +19,7 @@
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -28,7 +28,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -570,7 +569,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.310/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
