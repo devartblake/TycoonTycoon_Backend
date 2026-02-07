@@ -292,6 +292,7 @@ services:
       
       # Auth
       Auth__JwtKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-chars}"
+      JWT__Secret: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-chars}"
       
       # Observability
       Observability__ServiceName: "Tycoon.Backend.Api"

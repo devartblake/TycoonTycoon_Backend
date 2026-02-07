@@ -29,16 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Tycoon.Backend.Application\Tycoon.Backend.Application.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Domain\Tycoon.Backend.Domain.csproj" />
-    <ProjectReference Include="..\Tycoon.Backend.Migrations\Tycoon.Backend.Migrations.csproj" />
     <ProjectReference Include="..\Tycoon.Shared.Observability\Tycoon.Shared.Observability.csproj" />
   </ItemGroup>
-
-  <Target Name="FailIfNoEfMigrations" BeforeTargets="Publish;Build">
-    <ItemGroup>
-      <_MigrationSources Include="**\Migrations\*.cs" Exclude="**\Migrations\*Designer.cs;**\Migrations\*Snapshot.cs" />
-    </ItemGroup>
-
-    <Error Condition="'@(_MigrationSources)' == ''" Text="EF migrations not found in Tycoon.Backend.Infrastructure. Add an initial migration before building/publishing." />
-  </Target>
 
 </Project>

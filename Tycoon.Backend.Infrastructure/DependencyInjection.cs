@@ -14,7 +14,6 @@ using Tycoon.Backend.Infrastructure.Analytics.Mongo;
 using Tycoon.Backend.Infrastructure.Events;
 using Tycoon.Backend.Infrastructure.Persistence;
 using Tycoon.Backend.Infrastructure.Services;
-using Tycoon.Backend.Migrations;
 
 namespace Tycoon.Backend.Infrastructure
 {
@@ -62,7 +61,7 @@ namespace Tycoon.Backend.Infrastructure
                 opt.UseNpgsql(postgres, npgsql =>
                 {
                     // ✅ SINGLE SOURCE OF TRUTH
-                    npgsql.MigrationsAssembly(typeof(AppDbModelSnapshot).Assembly.FullName);
+                    npgsql.MigrationsAssembly("Tycoon.Backend.Migrations");
                 });
 
                 // Optional but recommended
