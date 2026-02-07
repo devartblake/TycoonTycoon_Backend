@@ -55,9 +55,9 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
                 return Results.Ok(new AntiCheatFlagListResponseDto(page, pageSize, total, items));
             });
 
-            // Map both review routes to the same handler
+            // Map review route for general anti-cheat flags
             g.MapPut("/flags/{id:guid}/review", ReviewFlagInternal);
-            g.MapPut("/party/flags/{id:guid}/review", ReviewFlagInternal);
+            // Note: Party-specific review handled by AdminPartyAntiCheatEndpoints
         }
 
         private static async Task<IResult> ReviewFlagInternal(

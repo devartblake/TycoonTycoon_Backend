@@ -239,16 +239,433 @@ If you later choose to use `Tycoon.AppHost` (Aspire-style orchestration):
 
 ## 9. Troubleshooting
 
-### API starts but cannot connect to DB
+### Common Issues and Solutions
 
-* Ensure Docker services are healthy
-* Verify you ran `Tycoon.MigrationService`
-* Confirm you are using **localhost**, not service names, in Option A
+#### Issue: Containers fail to start
 
-### Hangfire throws missing connection error
+**Symptoms:**
+- `docker compose up` exits with errors
+- Services show "unhealthy" status
+- Containers restart continuously
 
-* Ensure `ConnectionStrings:tycoon-db` or `db` is set
-* Hangfire is enabled only when configured (see `Program.cs`) 
+**Solutions:**
+
+1. **Check Docker resources**
+   ```bash
+   docker system df
+   docker system prune  # Clean up unused resources
+   ```
+
+2. **Verify Docker is running**
+   ```bash
+   docker info
+   ```
+
+3. **Check for port conflicts**
+   ```bash
+   # View all running containers
+   docker ps -a
+   
+   # Check specific port usage (example for PostgreSQL)
+   lsof -i :5432  # macOS/Linux
+   netstat -ano | findstr :5432  # Windows
+   ```
+
+4. **Review service logs**
+   ```bash
+   docker compose -f docker/compose.yml logs [service-name]
+   # Examples:
+   docker compose -f docker/compose.yml logs postgres
+   docker compose -f docker/compose.yml logs mongodb
+   ```
+
+#### Issue: Database connection errors
+
+**Symptoms:**
+- API throws "connection refused" errors
+- Migration service fails with timeout
+
+**Solutions:**
+
+1. **Verify services are healthy**
+   ```bash
+   make -f docker/MakeFile health
+   ```
+
+2. **Wait for services to fully initialize**
+   - PostgreSQL: 10-15 seconds
+   - MongoDB: 15-20 seconds
+   - Elasticsearch: 30-60 seconds
+
+3. **Check connection strings**
+   - Ensure `appsettings.json` matches `docker/.env`
+   - Database name: `tycoon_db`
+   - Username: `tycoon_user`
+   - Password: `tycoon_password_123`
+
+4. **Test database connectivity directly**
+   ```bash
+   # PostgreSQL
+   docker compose -f docker/compose.yml exec postgres \
+     psql -U tycoon_user -d tycoon_db -c "SELECT version();"
+   
+   # MongoDB
+   docker compose -f docker/compose.yml exec mongodb \
+     mongosh -u tycoon_admin -p tycoon_mongo_password_123 \
+     --eval "db.adminCommand('ping')"
+   
+   # Redis
+   docker compose -f docker/compose.yml exec redis \
+     redis-cli -a tycoon_redis_password_123 ping
+   ```
+
+#### Issue: Elasticsearch yellow/red health status
+
+**Symptoms:**
+- Elasticsearch health check fails
+- Slow response times
+- Index operations fail
+
+**Solutions:**
+
+1. **Check cluster health**
+   ```bash
+   curl -u elastic:tycoon_elastic_password_123 \
+     http://localhost:9200/_cluster/health?pretty
+   ```
+
+2. **Increase JVM heap size (if needed)**
+   - Edit `docker/.env`:
+     ```bash
+     ES_JAVA_OPTS=-Xms1g -Xmx1g  # Increase to 1GB
+     ```
+   - Restart Elasticsearch:
+     ```bash
+     docker compose -f docker/compose.yml restart elasticsearch
+     ```
+
+3. **Wait for initialization**
+   - Elasticsearch can take 30-60 seconds to fully start
+   - Yellow status is normal for single-node development
+
+4. **View Elasticsearch logs**
+   ```bash
+   docker compose -f docker/compose.yml logs elasticsearch | tail -100
+   ```
+
+#### Issue: Migration service fails
+
+**Symptoms:**
+- Migrations don't complete
+- "Migration failed" errors
+- Database schema not created
+
+**Solutions:**
+
+1. **Ensure dependencies are healthy**
+   ```bash
+   make -f docker/MakeFile health
+   ```
+
+2. **Run migrations manually**
+   ```bash
+   dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+   ```
+
+3. **Check migration logs**
+   ```bash
+   make -f docker/MakeFile migration-logs
+   ```
+
+4. **Reset database (⚠️ data loss)**
+   ```bash
+   make -f docker/MakeFile clean
+   make -f docker/MakeFile up
+   make -f docker/MakeFile migrate
+   ```
+
+#### Issue: Performance problems
+
+**Symptoms:**
+- Slow API responses
+- High CPU/memory usage
+- Containers crashing with OOM errors
+
+**Solutions:**
+
+1. **Allocate more resources to Docker**
+   - Docker Desktop → Settings → Resources
+   - Recommended: 4 CPUs, 8GB RAM minimum
+
+2. **Limit Elasticsearch memory**
+   - Already configured via `ES_JAVA_OPTS` in `.env`
+   - Default: 512MB, can increase if needed
+
+3. **Disable dev profile services**
+   ```bash
+   # Start only essential infrastructure
+   make -f docker/MakeFile up
+   ```
+
+4. **Monitor resource usage**
+   ```bash
+   docker stats
+   ```
+
+---
+
+## 10. Database Migration Workflow
+
+### Standard Migration Process
+
+1. **Start infrastructure**
+   ```bash
+   make -f docker/MakeFile up
+   ```
+
+2. **Wait for services to be healthy**
+   ```bash
+   make -f docker/MakeFile health
+   ```
+
+3. **Run migrations**
+   ```bash
+   make -f docker/MakeFile migrate
+   # OR manually:
+   dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+   ```
+
+### Creating New Migrations
+
+When you change entity models:
+
+1. **Navigate to Infrastructure project**
+   ```bash
+   cd Tycoon.Backend.Infrastructure
+   ```
+
+2. **Create migration**
+   ```bash
+   dotnet ef migrations add YourMigrationName \
+     --startup-project ../Tycoon.Backend.Api
+   ```
+
+3. **Review generated migration**
+   - Check `Migrations/` folder
+   - Verify Up() and Down() methods
+
+4. **Apply migration**
+   ```bash
+   # Via MigrationService (recommended)
+   dotnet run --project ../Tycoon.MigrationService/Tycoon.MigrationService.csproj
+   
+   # OR directly via EF tools
+   dotnet ef database update --startup-project ../Tycoon.Backend.Api
+   ```
+
+### Migration Modes
+
+Configure via environment variable or appsettings:
+
+**MigrateAndSeed (default)**
+```bash
+MIGRATION_MODE=MigrateAndSeed
+```
+- Applies EF Core migrations
+- Seeds reference data
+- Default mode for development
+
+**RebuildElastic**
+```bash
+MIGRATION_MODE=RebuildElastic
+REBUILD_ELASTIC=true
+REBUILD_ELASTIC_FROM_DATE=2025-01-01
+REBUILD_ELASTIC_TO_DATE=2025-12-31
+```
+- Rebuilds Elasticsearch indices
+- Useful after index mapping changes
+
+**MigrateSeedAndRebuildElastic**
+```bash
+MIGRATION_MODE=MigrateSeedAndRebuildElastic
+```
+- Runs migrations
+- Seeds data
+- Rebuilds Elasticsearch indices
+
+---
+
+## 11. Health Check Verification
+
+### Automated Health Checks
+
+```bash
+make -f docker/MakeFile health
+```
+
+### Manual Health Verification
+
+**PostgreSQL**
+```bash
+docker compose -f docker/compose.yml exec postgres \
+  pg_isready -U tycoon_user -d tycoon_db
+```
+
+**MongoDB**
+```bash
+docker compose -f docker/compose.yml exec mongodb \
+  mongosh -u tycoon_admin -p tycoon_mongo_password_123 \
+  --eval "db.adminCommand('ping')"
+```
+
+**Redis**
+```bash
+docker compose -f docker/compose.yml exec redis \
+  redis-cli -a tycoon_redis_password_123 ping
+```
+
+**Elasticsearch**
+```bash
+curl -u elastic:tycoon_elastic_password_123 \
+  http://localhost:9200/_cluster/health?pretty
+```
+
+**RabbitMQ**
+```bash
+docker compose -f docker/compose.yml exec rabbitmq \
+  rabbitmq-diagnostics ping
+```
+
+**Backend API** (when running)
+```bash
+curl http://localhost:5000/healthz
+```
+
+### Expected Health Check Outputs
+
+- PostgreSQL: "accepting connections"
+- MongoDB: "ok: 1"
+- Redis: "PONG"
+- Elasticsearch: status "yellow" or "green"
+- RabbitMQ: "pong"
+- API: HTTP 200 OK
+
+---
+
+## 12. Log Viewing Commands
+
+### View All Logs
+
+```bash
+make -f docker/MakeFile logs
+# OR:
+docker compose -f docker/compose.yml logs -f
+```
+
+### View Specific Service Logs
+
+```bash
+# API logs
+make -f docker/MakeFile api-logs
+# OR:
+docker compose -f docker/compose.yml logs -f backend-api
+
+# Migration logs
+make -f docker/MakeFile migration-logs
+# OR:
+docker compose -f docker/compose.yml logs migration
+
+# Infrastructure services
+docker compose -f docker/compose.yml logs -f postgres
+docker compose -f docker/compose.yml logs -f mongodb
+docker compose -f docker/compose.yml logs -f redis
+docker compose -f docker/compose.yml logs -f elasticsearch
+```
+
+### Filter and Search Logs
+
+```bash
+# Last 100 lines
+docker compose -f docker/compose.yml logs --tail=100 backend-api
+
+# Since specific time
+docker compose -f docker/compose.yml logs --since 2025-01-01T12:00:00
+
+# Filter with grep
+docker compose -f docker/compose.yml logs backend-api | grep ERROR
+
+# Multiple services
+docker compose -f docker/compose.yml logs -f postgres mongodb redis
+```
+
+### Export Logs
+
+```bash
+# Export to file
+docker compose -f docker/compose.yml logs backend-api > api-logs.txt
+
+# Export all logs
+docker compose -f docker/compose.yml logs > all-logs.txt
+```
+
+---
+
+## 13. Container Cleanup Procedures
+
+### Stop Services (Keep Data)
+
+```bash
+make -f docker/MakeFile down
+# OR:
+docker compose -f docker/compose.yml down
+```
+
+### Remove Volumes (⚠️ DELETES DATA)
+
+```bash
+make -f docker/MakeFile clean
+# OR:
+docker compose -f docker/compose.yml down -v --remove-orphans
+```
+
+### Remove Everything and Rebuild
+
+```bash
+# Complete cleanup
+docker compose -f docker/compose.yml down -v --remove-orphans
+docker system prune -a --volumes
+
+# Rebuild from scratch
+make -f docker/MakeFile up
+make -f docker/MakeFile migrate
+```
+
+### Clean Up Unused Resources
+
+```bash
+# Remove unused images, containers, networks
+docker system prune -a
+
+# Remove unused volumes
+docker volume prune
+
+# Remove dangling images
+docker image prune
+```
+
+### Selective Cleanup
+
+```bash
+# Remove specific service
+docker compose -f docker/compose.yml rm -s -v postgres
+
+# Remove specific volume
+docker volume rm tycoon_postgres_data
+
+# Stop and remove specific container
+docker stop tycoon_postgres
+docker rm tycoon_postgres
+```
 
 ---
 

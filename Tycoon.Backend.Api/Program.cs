@@ -3,6 +3,7 @@ using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
@@ -27,6 +28,7 @@ using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminSeasons;
 using Tycoon.Backend.Api.Features.AdminSkills;
+using Tycoon.Backend.Api.Features.Auth;
 using Tycoon.Backend.Api.Features.Friends;
 using Tycoon.Backend.Api.Features.Leaderboards;
 using Tycoon.Backend.Api.Features.Matches;
@@ -39,6 +41,7 @@ using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.Referrals;
 using Tycoon.Backend.Api.Features.Seasons;
 using Tycoon.Backend.Api.Features.Skills;
+using Tycoon.Backend.Api.Features.Users;
 using Tycoon.Backend.Api.Middleware;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
@@ -62,7 +65,7 @@ builder.AddObservability("Tycoon.Backend.Api");
 
 // JSON configuration
 builder.Services.Configure<JsonOptions>(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddControllers();
+// builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 // ✅ IMPROVED SWAGGER CONFIGURATION
@@ -157,6 +160,20 @@ if (analyticsEnabled)
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
 
+// Register Authentication Service
+builder.Services.AddScoped<Tycoon.Backend.Application.Auth.IAuthService, Tycoon.Backend.Application.Auth.AuthService>();
+
+// Validate JWT configuration at startup
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException("JWT:Secret configuration is required but not set. Please configure a secure JWT secret key.");
+}
+if (jwtSecret.Length < 32)
+{
+    Console.WriteLine("⚠️ WARNING: JWT secret key should be at least 32 characters long for security.");
+}
+
 // SignalR with Redis
 var redis = builder.Configuration.GetConnectionString("redis")
             ?? builder.Configuration.GetConnectionString("cache")
@@ -233,6 +250,7 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(2),
+            NameClaimType = "sub"
         };
 
         o.Events = new JwtBearerEvents
@@ -250,6 +268,10 @@ builder.Services
             }
         };
     });
+
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("var/dpkeys"));
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -325,7 +347,7 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tycoon Backend API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tycoon Trivia Backend API v1");
         c.RoutePrefix = "swagger";
         c.DocumentTitle = "Tycoon API Documentation";
         c.DisplayRequestDuration();
@@ -428,7 +450,7 @@ app.MapGet("/swagger-debug", () =>
     }
 }).AllowAnonymous().WithTags("Debug");
 
-app.MapControllers();
+// app.MapControllers();
 
 // SignalR hubs
 app.MapHub<MatchHub>("/ws/match");
@@ -436,6 +458,8 @@ app.MapHub<PresenceHub>("/ws/presence");
 app.MapHub<NotificationHub>("/ws/notify");
 
 // Feature endpoints
+AuthEndpoints.Map(app);
+UsersEndpoints.Map(app);
 PlayersEndpoints.Map(app);
 MatchesEndpoints.Map(app);
 MatchmakingEndpoints.Map(app);
