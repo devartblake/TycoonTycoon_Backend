@@ -109,7 +109,7 @@
         "runtime": {
           "lib/netcoreapp3.0/Hangfire.AspNetCore.dll": {
             "assemblyVersion": "1.8.22.0",
-            "fileVersion": "0.0.0.0"
+            "fileVersion": "1.8.22.0"
           }
         }
       },
@@ -120,7 +120,7 @@
         "runtime": {
           "lib/netstandard2.0/Hangfire.Core.dll": {
             "assemblyVersion": "1.8.22.0",
-            "fileVersion": "0.0.0.0"
+            "fileVersion": "1.8.22.0"
           }
         },
         "resources": {
@@ -178,7 +178,7 @@
         "runtime": {
           "lib/netstandard2.1/Hangfire.NetCore.dll": {
             "assemblyVersion": "1.8.22.0",
-            "fileVersion": "0.0.0.0"
+            "fileVersion": "1.8.22.0"
           }
         }
       },
@@ -189,7 +189,7 @@
         "runtime": {
           "lib/netstandard2.0/Hangfire.SqlServer.dll": {
             "assemblyVersion": "1.8.22.0",
-            "fileVersion": "0.0.0.0"
+            "fileVersion": "1.8.22.0"
           }
         }
       },
@@ -1095,12 +1095,6 @@
           }
         },
         "runtimeTargets": {
-          "runtimes/win/lib/net9.0/System.Diagnostics.EventLog.Messages.dll": {
-            "rid": "win",
-            "assetType": "runtime",
-            "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.1125.51716"
-          },
           "runtimes/win/lib/net9.0/System.Diagnostics.EventLog.dll": {
             "rid": "win",
             "assetType": "runtime",
@@ -1202,6 +1196,7 @@
       },
       "Tycoon.Backend.Domain/1.0.0": {
         "dependencies": {
+          "BCrypt.Net-Next": "4.0.3",
           "MediatR": "14.0.0",
           "Microsoft.EntityFrameworkCore": "9.0.11",
           "Tycoon.Shared.Contracts": "1.0.0"
