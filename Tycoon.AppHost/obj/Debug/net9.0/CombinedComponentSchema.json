@@ -64,5 +64,5 @@
     }
   },
   "type": "object",
-  "SourceSegments": "C:\\Users\\lmxbl\\.nuget\\packages\\aspire.mongodb.driver\\13.1.0\\ConfigurationSchema.json;C:\\Users\\lmxbl\\.nuget\\packages\\aspire.hosting.apphost\\13.1.0\\AspireAppHostConfiguration.json"
+  "SourceSegments": "C:\\Users\\scorp\\.nuget\\packages\\aspire.mongodb.driver\\13.1.0\\ConfigurationSchema.json;C:\\Users\\scorp\\.nuget\\packages\\aspire.hosting.apphost\\13.1.0\\AspireAppHostConfiguration.json"
 }

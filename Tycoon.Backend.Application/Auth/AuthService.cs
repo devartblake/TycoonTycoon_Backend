@@ -11,10 +11,11 @@ using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Auth
 {
-    public interface IAuthService
+    public sealed class AuthService : IAuthService
     {
-        Task<LoginResponse> LoginAsync(string email, string password, string deviceId, CancellationToken ct = default);
-        Task<LoginResponse> RefreshAsync(string refreshToken, CancellationToken ct = default);
+        private readonly IAppDb _database;
+        private readonly IConfiguration _configuration;
+        private const int DefaultTokenExpiryMinutes = 15;
         private const int RefreshTokenLifetimeDays = 30;
 
         public AuthService(IAppDb database, IConfiguration configuration)
