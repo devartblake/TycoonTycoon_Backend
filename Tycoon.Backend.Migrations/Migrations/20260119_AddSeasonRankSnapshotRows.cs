@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
+namespace Tycoon.Backend.Migrations.Migrations
 {
     public partial class AddSeasonRankSnapshotRows : Migration
     {
