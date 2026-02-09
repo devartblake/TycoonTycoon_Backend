@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Api.Features.AdminSeasons
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/seasons").WithTags("Admin/Seasons");
+            var g = admin.MapGroup("/seasons").WithTags("Admin/Seasons").WithOpenApi();
 
             g.MapGet("", async ([FromQuery] int page, [FromQuery] int pageSize, SeasonService svc, CancellationToken ct) =>
             {

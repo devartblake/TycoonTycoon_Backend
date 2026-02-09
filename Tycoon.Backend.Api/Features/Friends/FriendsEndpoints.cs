@@ -15,7 +15,7 @@ namespace Tycoon.Backend.Api.Features.Friends
         public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/friends")
-                .WithTags("Friends");
+                .WithTags("Friends").WithOpenApi();
 
             // POST /friends/request
             g.MapPost("/request", async (

@@ -14,7 +14,8 @@ namespace Tycoon.Backend.Api.Features.AdminAnalytics
             var g = admin.MapGroup("/admin/analytics")
                 .WithTags("Analytics")
                 .RequireAuthorization(AdminPolicies.AdminOnly)
-                .WithMetadata(new RequireAdminOpsKeyAttribute());
+                .WithMetadata(new RequireAdminOpsKeyAttribute())
+                .WithOpenApi();
 
             // POST /admin/analytics/rebuild-elastic-rollups?from=2025-01-01&to=2025-01-31
             g.MapPost("/rebuild-elastic-rollups", async (

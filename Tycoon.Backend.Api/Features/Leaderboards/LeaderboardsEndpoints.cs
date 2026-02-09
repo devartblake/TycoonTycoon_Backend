@@ -10,7 +10,7 @@ namespace Tycoon.Backend.Api.Features.Leaderboards
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/leaderboards").WithTags("Leaderboards");
+            var g = app.MapGroup("/leaderboards").WithTags("Leaderboards").WithOpenApi();
 
             // Existing: keep for now (until auth-sub binding is enforced)
             g.MapGet("/me/{playerId:guid}", async (Guid playerId, IMediator mediator, CancellationToken ct) =>

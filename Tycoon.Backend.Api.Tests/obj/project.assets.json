@@ -455,6 +455,25 @@
           "buildTransitive/net9.0/Microsoft.AspNetCore.Mvc.Testing.targets": {}
         }
       },
+      "Microsoft.AspNetCore.OpenApi/9.0.11": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.OpenApi": "1.6.17"
+        },
+        "compile": {
+          "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll": {
+            "related": ".xml"
+          }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
+      },
       "Microsoft.AspNetCore.SignalR.Client/9.0.11": {
         "type": "package",
         "dependencies": {
@@ -2804,6 +2823,7 @@
           "Hangfire.PostgreSql": "1.20.0",
           "Humanizer.Core": "3.0.1",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.11",
+          "Microsoft.AspNetCore.OpenApi": "9.0.11",
           "Microsoft.AspNetCore.SignalR.StackExchangeRedis": "9.0.11",
           "Newtonsoft.Json": "13.0.4",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.14.0",
@@ -3589,6 +3609,22 @@
         "microsoft.aspnetcore.mvc.testing.9.0.11.nupkg.sha512",
         "microsoft.aspnetcore.mvc.testing.nuspec",
         "tasks/netstandard2.0/Microsoft.AspNetCore.Mvc.Testing.Tasks.dll"
+      ]
+    },
+    "Microsoft.AspNetCore.OpenApi/9.0.11": {
+      "sha512": "rTa3lp6B8KM8AESIwLakTT6XaoUBTnjAZq2pRX6zS/BzQy6mOVUgaawRSyM0WHykHdwbfrEAmer3ys2xE4DVtg==",
+      "type": "package",
+      "path": "microsoft.aspnetcore.openapi/9.0.11",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "PACKAGE.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll",
+        "lib/net9.0/Microsoft.AspNetCore.OpenApi.xml",
+        "microsoft.aspnetcore.openapi.9.0.11.nupkg.sha512",
+        "microsoft.aspnetcore.openapi.nuspec"
       ]
     },
     "Microsoft.AspNetCore.SignalR.Client/9.0.11": {
@@ -7195,17 +7231,17 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\scorp\\.nuget\\packages\\": {},
+    "C:\\Users\\lmxbl\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\Tycoon.Backend.Api.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\Tycoon.Backend.Api.Tests.csproj",
       "projectName": "Tycoon.Backend.Api.Tests",
-      "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\Tycoon.Backend.Api.Tests.csproj",
-      "packagesPath": "C:\\Users\\scorp\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\obj\\",
+      "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\Tycoon.Backend.Api.Tests.csproj",
+      "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,
       "CentralPackageTransitivePinningEnabled": true,
@@ -7213,7 +7249,7 @@
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\scorp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -7222,21 +7258,20 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
-              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
             },
-            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
-              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Application\\Tycoon.Backend.Application.csproj"
             },
-            "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
-              "projectPath": "C:\\Users\\scorp\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Shared.Contracts\\Tycoon.Shared.Contracts.csproj"
             }
           }
         }
@@ -7459,7 +7494,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.310/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     }
   },
@@ -7522,6 +7557,10 @@
         "version": "[3.1.4, )"
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[9.0.11, )"
+      },
+      "Microsoft.AspNetCore.OpenApi": {
         "include": "Runtime, Compile, Native, BuildTransitive",
         "version": "[9.0.11, )"
       },

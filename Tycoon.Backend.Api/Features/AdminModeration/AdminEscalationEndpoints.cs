@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Api.Features.AdminModeration
 
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/moderation/escalation").WithTags("Admin/Moderation");
+            var g = admin.MapGroup("/moderation/escalation").WithTags("Admin/Moderation").WithOpenApi();
 
             g.MapPost("/run", async (
                 HttpContext ctx,

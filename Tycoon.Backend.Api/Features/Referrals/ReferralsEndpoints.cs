@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Api.Features.Referrals
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/referrals").WithTags("Referrals");
+            var g = app.MapGroup("/referrals").WithTags("Referrals").WithOpenApi();
 
             g.MapPost("/", async ([FromBody] CreateReferralCodeRequest req, IMediator mediator, CancellationToken ct) =>
             {

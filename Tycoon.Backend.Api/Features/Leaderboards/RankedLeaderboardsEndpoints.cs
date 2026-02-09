@@ -10,7 +10,7 @@ public static class RankedLeaderboardsEndpoints
 {
     public static void Map(WebApplication app)
     {
-        var g = app.MapGroup("/leaderboards/ranked").WithTags("Leaderboards/Ranked");
+        var g = app.MapGroup("/leaderboards/ranked").WithTags("Leaderboards/Ranked").WithOpenApi();
 
         g.MapGet("", async (
             [FromQuery] Guid? seasonId,

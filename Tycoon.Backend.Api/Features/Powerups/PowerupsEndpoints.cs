@@ -10,7 +10,7 @@ namespace Tycoon.Backend.Api.Features.Powerups
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/powerups").WithTags("Powerups");
+            var g = app.MapGroup("/powerups").WithTags("Powerups").WithOpenApi();
 
             g.MapGet("/state/{playerId:guid}", async ([FromRoute] Guid playerId, PowerupService svc, CancellationToken ct) =>
             {

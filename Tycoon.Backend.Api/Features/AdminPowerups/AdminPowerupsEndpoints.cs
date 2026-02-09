@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Api.Features.AdminPowerups
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/powerups").WithTags("Admin/Powerups");
+            var g = admin.MapGroup("/powerups").WithTags("Admin/Powerups").WithOpenApi();
 
             g.MapPost("/grant", async ([FromBody] GrantPowerupRequest req, PowerupService svc, CancellationToken ct) =>
             {

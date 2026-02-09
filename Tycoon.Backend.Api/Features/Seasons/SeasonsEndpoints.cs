@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Api.Features.Seasons
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/seasons").WithTags("Seasons");
+            var g = app.MapGroup("/seasons").WithTags("Seasons").WithOpenApi();
 
             g.MapGet("/active", async (SeasonService svc, CancellationToken ct) =>
             {

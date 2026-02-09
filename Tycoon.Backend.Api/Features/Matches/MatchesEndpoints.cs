@@ -16,7 +16,7 @@ namespace Tycoon.Backend.Api.Features.Matches
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/matches").WithTags("Matches");
+            var g = app.MapGroup("/matches").WithTags("Matches").WithOpenApi();
 
             g.MapPost("/start", async (
                 [FromBody] StartMatchRequest req,

@@ -10,7 +10,7 @@ namespace Tycoon.Backend.Api.Features.Auth
     {
         public static void Map(WebApplication app)
         {
-            var authGroup = app.MapGroup("/auth").WithTags("Authentication");
+            var authGroup = app.MapGroup("/auth").WithTags("Authentication").WithOpenApi();
 
             authGroup.MapPost("/register", HandleRegistration);
             authGroup.MapPost("/login", HandleLogin);

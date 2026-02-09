@@ -10,7 +10,7 @@ public static class SeasonRewardsEndpoints
 {
     public static void Map(WebApplication app)
     {
-        var g = app.MapGroup("/seasons/rewards").WithTags("Seasons/Rewards");
+        var g = app.MapGroup("/seasons/rewards").WithTags("Seasons/Rewards").WithOpenApi();
 
         // Eligibility (UI hook)
         g.MapGet("/eligibility/{playerId:guid}", async (

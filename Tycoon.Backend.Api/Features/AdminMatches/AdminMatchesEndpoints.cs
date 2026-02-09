@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Api.Features.AdminMatches
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/matches").WithTags("Admin/Matches");
+            var g = admin.MapGroup("/matches").WithTags("Admin/Matches").WithOpenApi();
 
             g.MapGet("", async (
                 [FromQuery] int page,

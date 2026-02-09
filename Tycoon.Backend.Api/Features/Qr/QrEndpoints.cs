@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Api.Features.Qr
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/qr").WithTags("QR");
+            var g = app.MapGroup("/qr").WithTags("QR").WithOpenApi();
 
             g.MapPost("/track-scan", async ([FromBody] TrackScanRequest req, IMediator mediator, CancellationToken ct) =>
             {

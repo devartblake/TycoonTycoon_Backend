@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Api.Features.Players
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/players").WithTags("Players");
+            var g = app.MapGroup("/players").WithTags("Players").WithOpenApi();
 
             g.MapPost("/", async ([FromBody] CreatePlayerRequest req, AppDb db, CancellationToken ct) =>
             {

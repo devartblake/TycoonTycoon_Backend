@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Api.Features.AdminMedia
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/admin/media").WithTags("Admin/Media");
+            var g = admin.MapGroup("/admin/media").WithTags("Admin/Media").WithOpenApi();
 
             g.MapPost("/intent", ([FromBody] CreateUploadIntentRequest req, MediaService media) =>
             {

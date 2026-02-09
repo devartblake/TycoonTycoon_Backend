@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -424,6 +425,23 @@ app.MapGet("/health/ready", () =>
     };
     return Results.Ok(health);
 }).AllowAnonymous().WithTags("Health");
+
+app.MapGet("/users/me", (ClaimsPrincipal user) =>
+{
+    var subject = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? user.FindFirstValue("sub")
+                  ?? user.Identity?.Name;
+
+    var email = user.FindFirstValue(ClaimTypes.Email);
+
+    return Results.Ok(new
+    {
+        subject,
+        email,
+        isAuthenticated = user.Identity?.IsAuthenticated ?? false,
+        claims = user.Claims.Select(c => new { c.Type, c.Value })
+    });
+}).RequireAuthorization().WithTags("Users").WithOpenApi();
 
 // ✅ Swagger test endpoint (for debugging)
 app.MapGet("/swagger-debug", () =>
