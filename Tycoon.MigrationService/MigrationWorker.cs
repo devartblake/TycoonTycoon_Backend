@@ -38,7 +38,7 @@ public sealed class MigrationWorker : BackgroundService
             // 0) Read mode flags
             // ---------------------------------------------
             var mode = (_cfg["MigrationService:Mode"] ?? "MigrateAndSeed").Trim();
-
+            var resetDatabase = bool.TryParse(_cfg["MigrationService:ResetDatabase"], out var resetDb) && resetDb;
             var rebuildEnabled =
                 bool.TryParse(_cfg["MigrationService:RebuildElastic:Enabled"], out var enabled) && enabled;
 
@@ -84,6 +84,12 @@ public sealed class MigrationWorker : BackgroundService
 
                 // ---- Migration-less deploy guard (robust, no extension methods)
                 EnsureMigrationsExistOrFail(db);
+
+                if (resetDatabase)
+                {
+                    _log.Warning("ResetDatabase enabled. Deleting database before applying migrations.");
+                    await db.Database.EnsureDeletedAsync(stoppingToken);
+                }
 
                 _log.Information("Applying EF migrations…");
                 await db.Database.MigrateAsync(stoppingToken);
