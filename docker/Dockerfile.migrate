@@ -2,6 +2,7 @@
 # Build Stage - Optimized with layer caching
 # ================================
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 # Copy Central Package Management files first
@@ -30,10 +31,10 @@ COPY . .
 
 # Build and publish
 WORKDIR "/src/Tycoon.MigrationService"
-RUN dotnet build "Tycoon.MigrationService.csproj" -c Release --no-restore
+RUN dotnet build "Tycoon.MigrationService.csproj" -c ${BUILD_CONFIGURATION} --no-restore
 
 RUN dotnet publish "Tycoon.MigrationService.csproj" \
-    -c Release \
+    -c ${BUILD_CONFIGURATION} \
     -o /app/publish \
     /p:UseAppHost=false \
     --no-restore
