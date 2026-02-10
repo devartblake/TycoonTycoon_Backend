@@ -210,10 +210,13 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.migrate
+      args:
+        - BUILD_CONFIGURATION="${BUILD_CONFIGURATION:-Release}"
     container_name: tycoon_migration
     restart: "no"
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      DOTNET_ENVIROMENT: "{ASPNETCORE_ENVIRONMENT:-Development}"
       
       # Database connections
       ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
@@ -231,6 +234,8 @@ services:
       
       # Migration settings
       MigrationService__Mode: "${MIGRATION_MODE:-MigrateAndSeed}"
+      MigrationService__AllowEnsureCreated: "${MIGRATION_ALLOW_ENSURE_CREATED:-false}"
+      MigrationService__ResetDatabase: "${MIGRATION_RESET_DATABASE:-false}"
       MigrationService__RebuildElastic__Enabled: "${REBUILD_ELASTIC:-false}"
       
       # Observability
@@ -253,6 +258,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
+      args:
+        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
     container_name: tycoon_backend_api
     restart: unless-stopped
     ports:

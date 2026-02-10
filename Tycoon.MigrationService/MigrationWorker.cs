@@ -39,8 +39,9 @@ public sealed class MigrationWorker : BackgroundService
             // ---------------------------------------------
             var mode = (_cfg["MigrationService:Mode"] ?? "MigrateAndSeed").Trim();
             var resetDatabase = bool.TryParse(_cfg["MigrationService:ResetDatabase"], out var resetDb) && resetDb;
-            var rebuildEnabled =
-                bool.TryParse(_cfg["MigrationService:RebuildElastic:Enabled"], out var enabled) && enabled;
+            var allowEnsureCreated = bool.TryParse(_cfg["MigrationService:AllowEnsureCreated"], out var allowCreated) && allowCreated;
+            
+            var rebuildEnabled = bool.TryParse(_cfg["MigrationService:RebuildElastic:Enabled"], out var enabled) && enabled;
 
             var modeRebuildOnly = mode.Equals("RebuildElastic", StringComparison.OrdinalIgnoreCase);
             var modeMigrateSeedAndRebuild = mode.Equals("MigrateSeedAndRebuildElastic", StringComparison.OrdinalIgnoreCase);
@@ -83,7 +84,8 @@ public sealed class MigrationWorker : BackgroundService
                 }
 
                 // ---- Migration-less deploy guard (robust, no extension methods)
-                EnsureMigrationsExistOrFail(db);
+                var migrationsAssembly = db.GetService<IMigrationsAssembly>();
+                var migrationsCount = migrationsAssembly.Migrations.Count;
 
                 if (resetDatabase)
                 {
@@ -91,9 +93,42 @@ public sealed class MigrationWorker : BackgroundService
                     await db.Database.EnsureDeletedAsync(stoppingToken);
                 }
 
-                _log.Information("Applying EF migrations…");
-                await db.Database.MigrateAsync(stoppingToken);
-                _log.Information("EF migrations completed successfully");
+                if (migrationsCount == 0)
+                {
+                    if (!allowEnsureCreated)
+                    {
+                        _log.Error(
+                            "No EF migrations were found in the configured migrations assembly. " +
+                            "Create an initial migration in Tycoon.Backend.Migrations and ensure UseNpgsql(...).MigrationsAssembly(\"Tycoon.Backend.Migrations\") is set.");
+
+                        throw new InvalidOperationException(
+                            "No EF migrations found. Create and apply migrations before seeding.");
+                    }
+
+                    if (resetDatabase)
+                    {
+                        _log.Warning("ResetDatabase enabled. Deleting database before EnsureCreated.");
+                        await db.Database.EnsureDeletedAsync(stoppingToken);
+                    }
+
+                    _log.Warning("No EF migrations found. Running EnsureCreated for dev-only bootstrap.");
+                    await db.Database.EnsureCreatedAsync(stoppingToken);
+                }
+                else
+                {
+                    _log.Information("Detected {MigrationsCount} migrations in assembly {MigrationsAssembly}.",
+                        migrationsCount, migrationsAssembly.Assembly.GetName().Name);
+
+                    if (resetDatabase)
+                    {
+                        _log.Warning("ResetDatabase enabled. Deleting database before applying migrations.");
+                        await db.Database.EnsureDeletedAsync(stoppingToken);
+                    }
+
+                    _log.Information("Applying EF migrations…");
+                    await db.Database.MigrateAsync(stoppingToken);
+                    _log.Information("EF migrations completed successfully");
+                }
 
                 _log.Information("Seeding Tiers and Missions (idempotent)…");
                 var seeder = scope.ServiceProvider.GetRequiredService<AppSeeder>();
@@ -156,8 +191,8 @@ public sealed class MigrationWorker : BackgroundService
 
     private void EnsureMigrationsExistOrFail(AppDb db)
     {
-        // Requires Microsoft.EntityFrameworkCore.Relational + correct migrations assembly wiring.
-        // This checks the compiled migrations, not the DB state.
+        // Deprecated: replaced by inline handling with AllowEnsureCreate
+
         var migrationsAssembly = db.GetService<IMigrationsAssembly>();
         var migrationsCount = migrationsAssembly.Migrations.Count;
 

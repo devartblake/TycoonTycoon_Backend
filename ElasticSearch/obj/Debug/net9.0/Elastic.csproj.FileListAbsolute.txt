@@ -24,3 +24,16 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Ela
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\refint\Elastic.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\ref\Elastic.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\bin\Debug\net9.0\Elastic.deps.json
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\bin\Debug\net9.0\Elastic.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\bin\Debug\net9.0\Elastic.pdb
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.csproj.AssemblyReference.cache
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.AssemblyInfoInputs.cache
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.AssemblyInfo.cs
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.csproj.CoreCompileInputs.cache
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.sourcelink.json
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\refint\Elastic.dll
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\Elastic.pdb
+C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\ElasticSearch\obj\Debug\net9.0\ref\Elastic.dll
