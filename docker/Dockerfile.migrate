@@ -50,6 +50,9 @@ RUN apt-get update && apt-get install -y \
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
+# Required by Npgsql/Kerberos-capable auth paths to avoid runtime shared-library warnings
+RUN apt-get update && apt-get install -y --no-install-recommends libgssapi-krb5-2 && rm -rf /var/lib/apt/lists/*
+
 # Copy published files
 COPY --from=build /app/publish .
 
