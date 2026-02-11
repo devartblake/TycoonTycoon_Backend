@@ -1,6 +1,7 @@
 ﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -51,24 +52,47 @@ namespace Tycoon.Backend.Infrastructure
                 return services;
             }
 
-            var postgres =
-                cfg.GetConnectionString("tycoon-db")
-                ?? cfg.GetConnectionString("db");
+            //var postgres =
+            //    cfg.GetConnectionString("tycoon-db")
+            //    ?? cfg.GetConnectionString("db");
 
-            if (string.IsNullOrWhiteSpace(postgres))
-                throw new InvalidOperationException(
-                    "Missing PostgreSQL connection string. Provide ConnectionStrings:tycoon-db (Aspire) or ConnectionStrings:db.");
+            //if (string.IsNullOrWhiteSpace(postgres))
+            //    throw new InvalidOperationException(
+            //        "Missing PostgreSQL connection string. Provide ConnectionStrings:tycoon-db (Aspire) or ConnectionStrings:db.");
 
             services.AddDbContext<AppDb>((sp, opt) =>
             {
-                opt.UseNpgsql(postgres, npgsql =>
+                var connectionString = cfg.GetConnectionString("db");
+
+                opt.UseNpgsql(connectionString, npgsql =>
                 {
                     // ✅ SINGLE SOURCE OF TRUTH
                     npgsql.MigrationsAssembly("Tycoon.Backend.Migrations");
+                    npgsql.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorCodesToAdd: null);
                 });
 
-                // Optional but recommended
-                opt.EnableDetailedErrors();
+                // Suppress pending model changes warning if configured
+                var suppressWarnings = cfg.GetValue<bool>("MigrationService:SuppressPendingModelWarnings");
+                if (suppressWarnings)
+                {
+                    opt.ConfigureWarnings(warnings =>
+                        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+                }
+
+                // Enable sensitive data logging in development
+                if (cfg.GetValue<bool>("Logging:EnableSensitiveDataLogging"))
+                {
+                    opt.EnableSensitiveDataLogging();
+                }
+
+                // Enable detailed errors in development
+                if (cfg.GetValue<bool>("Logging:EnableDetailedErrors"))
+                {
+                    opt.EnableDetailedErrors();
+                }
             });
 
             // Expose AppDb behind IAppDb

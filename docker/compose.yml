@@ -254,6 +254,40 @@ services:
         condition: service_healthy
     networks: [tycoon-net]
 
+  migration-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.migration-service
+    container_name: tycoon-migration-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      # QUICK FIX: Suppress pending model changes warning
+      - MigrationService__SuppressPendingModelWarnings=true
+      
+      # Database connection
+      - ConnectionStrings__AppDb=Host=postgres;Port=5432;Database=tycoon;Username=postgres;Password=postgres;Include Error Detail=true
+      
+      # Migration settings
+      - MigrationService__Mode=MigrateAndSeed
+      - MigrationService__ResetDatabase=false
+      - MigrationService__AllowEnsureCreated=false
+      
+      # Elastic settings
+      - Elastic__Enabled=true
+      - Elastic__Uris__0=http://elasticsearch:9200
+      
+      # Logging
+      - Logging__LogLevel__Default=Information
+      - Logging__LogLevel__Microsoft.EntityFrameworkCore=Warning
+      - Logging__EnableDetailedErrors=true
+    networks:
+      - tycoon-net
+    restart: on-failure
+
   backend-api:
     build:
       context: ..
