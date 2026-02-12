@@ -1404,7 +1404,7 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType ("text");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -1752,15 +1752,15 @@ namespace Tycoon.Backend.Migrations.Migrations
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.RefreshToken", b =>
-            {
-                b.HasOne("Tycoon.Backend.Domain.Entities.User", "User")
-                    .WithMany("RefreshTokens")
-                    .HasForeignKey("UserId")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired();
+                {
+                    b.HasOne("Tycoon.Backend.Domain.Entities.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                b.Navigation("User");
-            });
+                    b.Navigation("User");
+                });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.EconomyTransaction", b =>
                 {
@@ -1785,9 +1785,9 @@ namespace Tycoon.Backend.Migrations.Migrations
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.User", b =>
-            {
-                b.Navigation("RefreshTokens");
-            });
+                {
+                    b.Navigation("RefreshTokens");
+                });
 #pragma warning restore 612, 618
         }
     }
