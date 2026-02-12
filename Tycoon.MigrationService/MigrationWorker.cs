@@ -41,6 +41,7 @@ public sealed class MigrationWorker : BackgroundService
             var mode = (_cfg["MigrationService:Mode"] ?? "MigrateAndSeed").Trim();
             var resetDatabase = bool.TryParse(_cfg["MigrationService:ResetDatabase"], out var resetDb) && resetDb;
             var allowEnsureCreated = bool.TryParse(_cfg["MigrationService:AllowEnsureCreated"], out var allowCreated) && allowCreated;
+            var autoRepairOnMissingTables = !bool.TryParse(_cfg["MigrationService:AutoRepairOnMissingTables"], out var autoRepair) || autoRepair;
 
             var rebuildEnabled = bool.TryParse(_cfg["MigrationService:RebuildElastic:Enabled"], out var enabled) && enabled;
 
@@ -131,6 +132,8 @@ public sealed class MigrationWorker : BackgroundService
                     _log.Information("EF migrations completed successfully");
                 }
 
+                await EnsureCriticalTablesReadyAsync(db, autoRepairOnMissingTables, stoppingToken);
+
                 await VerifySeedPrerequisiteTablesAsync(db, stoppingToken);
 
                 _log.Information("Seeding Tiers and Missions (idempotent)…");
@@ -211,6 +214,71 @@ public sealed class MigrationWorker : BackgroundService
 
         _log.Information("Detected {MigrationsCount} migrations in assembly {MigrationsAssembly}.",
             migrationsCount, migrationsAssembly.Assembly.GetName().Name);
+    }
+
+    private async Task EnsureCriticalTablesReadyAsync(AppDb db, bool autoRepairOnMissingTables, CancellationToken ct)
+    {
+        var requiredTables = new[] { "Tiers", "Missions" };
+
+        var missingTables = new List<string>();
+        foreach (var table in requiredTables)
+        {
+            if (!await TableExistsAsync(db, table, ct))
+                missingTables.Add(table);
+        }
+
+        if (missingTables.Count == 0)
+            return;
+
+        _log.Warning("Schema mismatch detected after migration. Missing tables: {MissingTables}", string.Join(", ", missingTables));
+
+        if (!autoRepairOnMissingTables)
+        {
+            throw new InvalidOperationException(
+                $"Missing critical tables after migration ({string.Join(", ", missingTables)}). " +
+                "Enable MigrationService:AutoRepairOnMissingTables=true or reset the DB volume and rerun migrations.");
+        }
+
+        _log.Warning("AutoRepairOnMissingTables=true. Rebuilding schema by EnsureDeleted + Migrate.");
+        await db.Database.EnsureDeletedAsync(ct);
+        await db.Database.MigrateAsync(ct);
+
+        var stillMissing = new List<string>();
+        foreach (var table in requiredTables)
+        {
+            if (!await TableExistsAsync(db, table, ct))
+                stillMissing.Add(table);
+        }
+
+        if (stillMissing.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Schema repair failed. Missing tables after repair: {string.Join(", ", stillMissing)}");
+        }
+
+        _log.Information("Schema repair completed; required tables now exist.");
+    }
+
+    private static async Task<bool> TableExistsAsync(AppDb db, string tableName, CancellationToken ct)
+    {
+        var conn = db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await conn.OpenAsync(ct);
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT EXISTS (" +
+            "SELECT 1 FROM information_schema.tables " +
+            "WHERE table_schema = current_schema() AND table_name = @tableName" +
+            ")";
+
+        var p = cmd.CreateParameter();
+        p.ParameterName = "@tableName";
+        p.Value = tableName;
+        cmd.Parameters.Add(p);
+
+        var result = await cmd.ExecuteScalarAsync(ct);
+        return result is bool b && b;
     }
 
     private async Task TryEnsureElasticTemplatesAsync(IServiceScope scope, CancellationToken ct)
