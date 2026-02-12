@@ -15,6 +15,12 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Guard against stale/conflicted local migration artifacts accidentally copied into Docker context -->
+    <Compile Remove="Migrations/20260211002440_InitialCreate.cs" />
+    <Compile Remove="Migrations/20260211002440_InitialCreate.Designer.cs" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
 	</ItemGroup>
