@@ -236,6 +236,7 @@ services:
       MigrationService__Mode: "${MIGRATION_MODE:-MigrateAndSeed}"
       MigrationService__AllowEnsureCreated: "${MIGRATION_ALLOW_ENSURE_CREATED:-false}"
       MigrationService__ResetDatabase: "${MIGRATION_RESET_DATABASE:-false}"
+      MigrationService__AutoRepairOnMissingTables: "${MIGRATION_AUTO_REPAIR_MISSING_TABLES:-true}"
       MigrationService__RebuildElastic__Enabled: "${REBUILD_ELASTIC:-false}"
       
       # Observability
