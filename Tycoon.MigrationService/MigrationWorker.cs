@@ -28,7 +28,6 @@ public sealed class MigrationWorker : BackgroundService
         _cfg = cfg;
         _log = Log.ForContext<MigrationWorker>();
     }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
@@ -75,7 +74,7 @@ public sealed class MigrationWorker : BackgroundService
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-                // (Optional) your model guard — log only, never block migrations
+                // Model guard: log only, never block
                 try
                 {
                     db.LogEntitiesMissingPrimaryKeysForMigrations(_log);
@@ -85,7 +84,6 @@ public sealed class MigrationWorker : BackgroundService
                     _log.Warning(ex, "Model key guard threw unexpectedly; continuing.");
                 }
 
-                // ---- Migration-less deploy guard (robust, no extension methods)
                 var migrationsAssembly = db.GetService<IMigrationsAssembly>();
                 var migrationsCount = migrationsAssembly.Migrations.Count;
 
@@ -103,14 +101,7 @@ public sealed class MigrationWorker : BackgroundService
                             "No EF migrations were found in the configured migrations assembly. " +
                             "Create an initial migration in Tycoon.Backend.Migrations and ensure UseNpgsql(...).MigrationsAssembly(\"Tycoon.Backend.Migrations\") is set.");
 
-                        throw new InvalidOperationException(
-                            "No EF migrations found. Create and apply migrations before seeding.");
-                    }
-
-                    if (resetDatabase)
-                    {
-                        _log.Warning("ResetDatabase enabled. Deleting database before EnsureCreated.");
-                        await db.Database.EnsureDeletedAsync(stoppingToken);
+                        throw new InvalidOperationException("No EF migrations found. Create and apply migrations before seeding.");
                     }
 
                     _log.Warning("No EF migrations found. Running EnsureCreated for dev-only bootstrap.");
@@ -121,12 +112,6 @@ public sealed class MigrationWorker : BackgroundService
                     _log.Information("Detected {MigrationsCount} migrations in assembly {MigrationsAssembly}.",
                         migrationsCount, migrationsAssembly.Assembly.GetName().Name);
 
-                    if (resetDatabase)
-                    {
-                        _log.Warning("ResetDatabase enabled. Deleting database before applying migrations.");
-                        await db.Database.EnsureDeletedAsync(stoppingToken);
-                    }
-
                     _log.Information("Applying EF migrations…");
                     await db.Database.MigrateAsync(stoppingToken);
                     _log.Information("EF migrations completed successfully");
@@ -134,11 +119,12 @@ public sealed class MigrationWorker : BackgroundService
 
                 await EnsureCriticalTablesReadyAsync(db, autoRepairOnMissingTables, stoppingToken);
 
-                await VerifySeedPrerequisiteTablesAsync(db, stoppingToken);
+                // ✅ FIX: pass logger + ct (your CS7036)
+                await VerifySeedPrerequisiteTablesAsync(db, _log, stoppingToken);
 
                 _log.Information("Seeding Tiers and Missions (idempotent)…");
                 var seeder = scope.ServiceProvider.GetRequiredService<AppSeeder>();
-                await seeder.SeedAsync(db);
+                await seeder.SeedAsync(db, stoppingToken);
                 _log.Information("Seeding completed successfully");
 
                 _log.Information("Resetting Daily/Weekly mission claims (idempotent)…");
@@ -262,23 +248,35 @@ public sealed class MigrationWorker : BackgroundService
     private static async Task<bool> TableExistsAsync(AppDb db, string tableName, CancellationToken ct)
     {
         var conn = db.Database.GetDbConnection();
-        if (conn.State != System.Data.ConnectionState.Open)
-            await conn.OpenAsync(ct);
+        var openedHere = false;
 
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText =
-            "SELECT EXISTS (" +
-            "SELECT 1 FROM information_schema.tables " +
-            "WHERE table_schema = current_schema() AND table_name = @tableName" +
-            ")";
+        try
+        {
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                await conn.OpenAsync(ct);
+            }
 
-        var p = cmd.CreateParameter();
-        p.ParameterName = "@tableName";
-        p.Value = tableName;
-        cmd.Parameters.Add(p);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                "SELECT EXISTS (" +
+                "SELECT 1 FROM information_schema.tables " +
+                "WHERE table_schema = current_schema() AND table_name = @tableName" +
+                ")";
 
-        var result = await cmd.ExecuteScalarAsync(ct);
-        return result is bool b && b;
+            var p = cmd.CreateParameter();
+            p.ParameterName = "@tableName";
+            p.Value = tableName;
+            cmd.Parameters.Add(p);
+
+            var result = await cmd.ExecuteScalarAsync(ct);
+            return result is bool b && b;
+        }
+        finally
+        {
+            if (openedHere)
+                await conn.CloseAsync();
+        }
     }
 
     private async Task TryEnsureElasticTemplatesAsync(IServiceScope scope, CancellationToken ct)
@@ -355,70 +353,58 @@ public sealed class MigrationWorker : BackgroundService
         return null;
     }
 
-    private static async Task VerifySeedPrerequisiteTablesAsync(AppDb db, Serilog.ILogger log, CancellationToken ct)
+    private async Task VerifySeedPrerequisiteTablesAsync(AppDb db, Serilog.ILogger log, CancellationToken ct)
     {
-        // IMPORTANT:
-        // db.Database.GetDbConnection() returns the connection owned by EF Core.
-        // DO NOT dispose it (no "using"/"await using").
-        var conn = db.Database.GetDbConnection();
+        // Use a brand-new connection so we never interfere with EF Core’s connection lifecycle.
+        var cs = db.Database.GetConnectionString();
+        if (string.IsNullOrWhiteSpace(cs))
+            throw new InvalidOperationException("Database connection string was empty. Cannot validate schema.");
 
-        var openedHere = false;
-        try
+        var requiredTables = new[]
         {
-            if (conn.State != System.Data.ConnectionState.Open)
-            {
-                await conn.OpenAsync(ct);
-                openedHere = true;
-            }
+        "Tiers",
+        "Missions",
+        // add more if your seeding touches them (e.g., MissionClaims, SeasonProfiles, etc.)
+    };
 
-            // Your “minimum schema” contract: these must exist before seeding.
-            var requiredTables = new[]
-            {
-            "Tiers",
-            "Missions",
-            // add more if seeding touches them
-        };
+        await using var conn = new Npgsql.NpgsqlConnection(cs);
+        await conn.OpenAsync(ct);
 
-            foreach (var table in requiredTables)
+        foreach (var table in requiredTables)
+        {
+            if (!await TableExistsAsync(conn, table, schema: "public", ct))
             {
-                if (!await TableExistsAsync(conn, table, schema: "public", ct))
-                {
-                    log.Error(
-                        "Schema check failed: required table {Table} does not exist. " +
-                        "Migrations likely did not run or were not found/applied.",
-                        table);
+                _log.Error(
+                    "Schema check failed: required table {Table} does not exist in schema {Schema}. " +
+                    "Migrations were not found/applied, or they are targeting a different schema.",
+                    table, "public");
 
-                    throw new InvalidOperationException(
-                        $"Schema not present. Required table '{table}' does not exist.");
-                }
+                throw new InvalidOperationException(
+                    $"Schema not present. Required table '{table}' does not exist.");
             }
         }
-        finally
-        {
-            // Only close if WE opened it. Never dispose EF-owned connection.
-            if (openedHere)
-                await conn.CloseAsync();
-        }
+
+        _log.Information("Schema prerequisite check passed: required tables exist.");
     }
 
     private static async Task<bool> TableExistsAsync(System.Data.Common.DbConnection conn, string tableName, string schema, CancellationToken ct)
     {
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            SELECT EXISTS (
-                SELECT 1
-                FROM information_schema.tables
-                WHERE table_schema = @schema
-                  AND table_name   = @table
-            );";
+        SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = @schema
+              AND table_name   = @table
+        );";
 
         var pSchema = cmd.CreateParameter();
-        pSchema.ParameterName = "schema";
+        pSchema.ParameterName = "@schema";
         pSchema.Value = schema;
         cmd.Parameters.Add(pSchema);
 
         var pTable = cmd.CreateParameter();
-        pTable.ParameterName = "table";
+        pTable.ParameterName = "@table";
         pTable.Value = tableName;
         cmd.Parameters.Add(pTable);
 

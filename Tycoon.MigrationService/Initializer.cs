@@ -50,7 +50,7 @@ namespace Tycoon.MigrationService
                 var seeder = services.GetRequiredService<AppSeeder>();
 
                 _logger.LogInformation("Seeding Tiers and Missions (idempotent)…");
-                await seeder.SeedAsync(db);
+                await seeder.SeedAsync(db, stoppingToken);
 
                 _logger.LogInformation("MigrationService completed successfully.");
             }

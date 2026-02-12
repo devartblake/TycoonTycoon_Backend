@@ -34,7 +34,6 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<MissionClaim> MissionClaims => Set<MissionClaim>();
         public DbSet<ProcessedGameplayEvent> ProcessedGameplayEvents => Set<ProcessedGameplayEvent>();
         public DbSet<LeaderboardEntry> LeaderboardEntries => Set<LeaderboardEntry>();
-        public DbSet<Tier> Tiers => Set<Tier>();
         public DbSet<ReferralCode> ReferralCodes => Set<ReferralCode>();
         public DbSet<ReferralRedemption> ReferralRedemptions => Set<ReferralRedemption>();
         public DbSet<QrScanEvent> QrScanEvents => Set<QrScanEvent>();
@@ -65,6 +64,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<SeasonRankSnapshotRow> SeasonRankSnapshots => Set<SeasonRankSnapshotRow>();
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<Tier> Tiers => Set<Tier>();
 
         public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => throw new NotImplementedException();
 

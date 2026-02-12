@@ -6,10 +6,10 @@ namespace Tycoon.MigrationService.Seeding;
 
 public sealed class AppSeeder
 {
-    public async Task SeedAsync(AppDb db)
+    public async Task SeedAsync(AppDb db, CancellationToken ct)
     {
         // One transaction for consistency
-        await using var tx = await db.Database.BeginTransactionAsync();
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
 
         await SeedTiersAsync(db);
         await SeedMissionsAsync(db);
