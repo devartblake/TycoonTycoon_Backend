@@ -1,11 +1,12 @@
-﻿using System.Globalization;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Npgsql;
 using Serilog;
+using System.Globalization;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Infrastructure.Analytics.Elastic;
 using Tycoon.Backend.Infrastructure.Persistence;
@@ -41,7 +42,7 @@ public sealed class MigrationWorker : BackgroundService
             var resetDatabase = bool.TryParse(_cfg["MigrationService:ResetDatabase"], out var resetDb) && resetDb;
             var allowEnsureCreated = bool.TryParse(_cfg["MigrationService:AllowEnsureCreated"], out var allowCreated) && allowCreated;
             var autoRepairOnMissingTables = !bool.TryParse(_cfg["MigrationService:AutoRepairOnMissingTables"], out var autoRepair) || autoRepair;
-            
+
             var rebuildEnabled = bool.TryParse(_cfg["MigrationService:RebuildElastic:Enabled"], out var enabled) && enabled;
 
             var modeRebuildOnly = mode.Equals("RebuildElastic", StringComparison.OrdinalIgnoreCase);
@@ -132,6 +133,8 @@ public sealed class MigrationWorker : BackgroundService
                 }
 
                 await EnsureCriticalTablesReadyAsync(db, autoRepairOnMissingTables, stoppingToken);
+
+                await VerifySeedPrerequisiteTablesAsync(db, stoppingToken);
 
                 _log.Information("Seeding Tiers and Missions (idempotent)…");
                 var seeder = scope.ServiceProvider.GetRequiredService<AppSeeder>();
@@ -350,5 +353,42 @@ public sealed class MigrationWorker : BackgroundService
             return fallback;
 
         return null;
+    }
+
+    private async Task VerifySeedPrerequisiteTablesAsync(AppDb db, CancellationToken ct)
+    {
+        var requiredTables = new[] { "Tiers", "Missions", "MissionClaims" };
+
+        await using var conn = (NpgsqlConnection)db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+        {
+            await conn.OpenAsync(ct);
+        }
+
+        var missing = new List<string>();
+
+        foreach (var table in requiredTables)
+        {
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT to_regclass(@tableName) IS NOT NULL;";
+            cmd.Parameters.AddWithValue("tableName", $"\"{table}\"");
+
+            var exists = (bool)(await cmd.ExecuteScalarAsync(ct) ?? false);
+            if (!exists)
+            {
+                missing.Add(table);
+            }
+        }
+
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "Required tables are missing after migrations: " + string.Join(", ", missing) + ". " +
+            "This usually means an empty initial migration was already recorded in __EFMigrationsHistory. " +
+            "Reset the database (MigrationService:ResetDatabase=true) and rerun migrations, " +
+            "or manually remove the bad migration row before rerunning.");
     }
 }

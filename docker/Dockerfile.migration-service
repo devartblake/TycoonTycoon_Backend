@@ -1,0 +1,32 @@
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+WORKDIR /app
+
+# Install Kerberos libraries for PostgreSQL authentication
+RUN apt-get update && apt-get install -y \
+    libgssapi-krb5-2 \
+    krb5-user \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy project files
+COPY ["Tycoon.MigrationService/Tycoon.MigrationService.csproj", "Tycoon.MigrationService/"]
+COPY ["Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj", "Tycoon.Backend.Infrastructure/"]
+COPY ["Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj", "Tycoon.Backend.Migrations/"]
+# ... rest of your copies
+
+RUN dotnet restore "Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+
+COPY . .
+
+WORKDIR "/src/Tycoon.MigrationService"
+RUN dotnet build "Tycoon.MigrationService.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "Tycoon.MigrationService.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Tycoon.MigrationService.dll"]

@@ -39,6 +39,11 @@ RUN dotnet publish "Tycoon.MigrationService.csproj" \
     /p:UseAppHost=false \
     --no-restore
 
+# Install Kerberos libraries for PostgreSQL authentication
+RUN apt-get update && apt-get install -y \
+    libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 # ================================
 # Runtime Stage
 # ================================
