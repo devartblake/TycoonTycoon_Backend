@@ -251,7 +251,6 @@ public sealed class MigrationWorker : BackgroundService
 
         var bootstrapper = scope.ServiceProvider.GetService<ElasticIndexBootstrapper>();
         if (bootstrapper is null)
-            if (bootstrapper is null)
         {
             _log.Information("ElasticIndexBootstrapper not registered. Skipping index creation.");
             return;
