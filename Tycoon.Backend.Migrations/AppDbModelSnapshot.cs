@@ -1394,7 +1394,8 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.Property<string>("DeviceId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
@@ -1402,16 +1403,25 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.Property<bool>("IsRevoked")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "DeviceId", "IsRevoked");
 
                     b.ToTable("RefreshTokens");
                 });
@@ -1673,23 +1683,22 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("AvatarUrl")
-                        .HasColumnType("text");
-
                     b.Property<string>("Country")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Handle")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -1697,11 +1706,26 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("Mmr")
+                        .HasColumnType("integer");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Tier")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("Handle")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
@@ -1751,17 +1775,6 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.RefreshToken", b =>
-                {
-                    b.HasOne("Tycoon.Backend.Domain.Entities.User", "User")
-                        .WithMany("RefreshTokens")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.EconomyTransaction", b =>
                 {
                     b.Navigation("Lines");
@@ -1782,11 +1795,6 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.Navigation("Options");
 
                     b.Navigation("Tags");
-                });
-
-            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.User", b =>
-                {
-                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

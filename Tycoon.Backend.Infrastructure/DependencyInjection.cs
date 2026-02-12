@@ -62,7 +62,7 @@ namespace Tycoon.Backend.Infrastructure
 
             services.AddDbContext<AppDb>((sp, opt) =>
             {
-                var connectionString = cfg.GetConnectionString("db");
+                var connectionString = cfg.GetConnectionString("tycoon_db");
 
                 opt.UseNpgsql(connectionString, npgsql =>
                 {

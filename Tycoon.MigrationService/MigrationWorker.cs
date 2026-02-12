@@ -355,40 +355,74 @@ public sealed class MigrationWorker : BackgroundService
         return null;
     }
 
-    private async Task VerifySeedPrerequisiteTablesAsync(AppDb db, CancellationToken ct)
+    private static async Task VerifySeedPrerequisiteTablesAsync(AppDb db, Serilog.ILogger log, CancellationToken ct)
     {
-        var requiredTables = new[] { "Tiers", "Missions", "MissionClaims" };
+        // IMPORTANT:
+        // db.Database.GetDbConnection() returns the connection owned by EF Core.
+        // DO NOT dispose it (no "using"/"await using").
+        var conn = db.Database.GetDbConnection();
 
-        await using var conn = (NpgsqlConnection)db.Database.GetDbConnection();
-        if (conn.State != System.Data.ConnectionState.Open)
+        var openedHere = false;
+        try
         {
-            await conn.OpenAsync(ct);
-        }
-
-        var missing = new List<string>();
-
-        foreach (var table in requiredTables)
-        {
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT to_regclass(@tableName) IS NOT NULL;";
-            cmd.Parameters.AddWithValue("tableName", $"\"{table}\"");
-
-            var exists = (bool)(await cmd.ExecuteScalarAsync(ct) ?? false);
-            if (!exists)
+            if (conn.State != System.Data.ConnectionState.Open)
             {
-                missing.Add(table);
+                await conn.OpenAsync(ct);
+                openedHere = true;
+            }
+
+            // Your “minimum schema” contract: these must exist before seeding.
+            var requiredTables = new[]
+            {
+            "Tiers",
+            "Missions",
+            // add more if seeding touches them
+        };
+
+            foreach (var table in requiredTables)
+            {
+                if (!await TableExistsAsync(conn, table, schema: "public", ct))
+                {
+                    log.Error(
+                        "Schema check failed: required table {Table} does not exist. " +
+                        "Migrations likely did not run or were not found/applied.",
+                        table);
+
+                    throw new InvalidOperationException(
+                        $"Schema not present. Required table '{table}' does not exist.");
+                }
             }
         }
-
-        if (missing.Count == 0)
+        finally
         {
-            return;
+            // Only close if WE opened it. Never dispose EF-owned connection.
+            if (openedHere)
+                await conn.CloseAsync();
         }
+    }
 
-        throw new InvalidOperationException(
-            "Required tables are missing after migrations: " + string.Join(", ", missing) + ". " +
-            "This usually means an empty initial migration was already recorded in __EFMigrationsHistory. " +
-            "Reset the database (MigrationService:ResetDatabase=true) and rerun migrations, " +
-            "or manually remove the bad migration row before rerunning.");
+    private static async Task<bool> TableExistsAsync(System.Data.Common.DbConnection conn, string tableName, string schema, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = @schema
+                  AND table_name   = @table
+            );";
+
+        var pSchema = cmd.CreateParameter();
+        pSchema.ParameterName = "schema";
+        pSchema.Value = schema;
+        cmd.Parameters.Add(pSchema);
+
+        var pTable = cmd.CreateParameter();
+        pTable.ParameterName = "table";
+        pTable.Value = tableName;
+        cmd.Parameters.Add(pTable);
+
+        var result = await cmd.ExecuteScalarAsync(ct);
+        return result is bool b && b;
     }
 }
