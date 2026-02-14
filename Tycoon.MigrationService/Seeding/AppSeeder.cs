@@ -16,20 +16,25 @@ public sealed class AppSeeder
 
     public async Task SeedAsync(AppDb db, CancellationToken ct)
     {
-        // One transaction for consistency
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var executionStrategy = db.Database.CreateExecutionStrategy();
 
-        await SeedTiersAsync(db);
-        await SeedMissionsAsync(db);
+        await executionStrategy.ExecuteAsync(async () =>
+        {
+            // One transaction for consistency
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
 
-        await db.SaveChangesAsync();
-        await tx.CommitAsync();
+            await SeedTiersAsync(db, ct);
+            await SeedMissionsAsync(db, ct);
+
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        });
     }
 
-    private static async Task SeedTiersAsync(AppDb db)
+    private static async Task SeedTiersAsync(AppDb db, CancellationToken ct)
     {
         // If you already have tiers, do nothing.
-        if (await db.Tiers.AsNoTracking().AnyAsync()) return;
+        if (await db.Tiers.AsNoTracking().AnyAsync(ct)) return;
 
         // NOTE: This assumes Tier has a public constructor or settable properties.
         // If your Tier entity differs, tell me the exact fields and I’ll adapt this seed.
@@ -45,10 +50,10 @@ public sealed class AppSeeder
         db.Tiers.AddRange(tiers);
     }
 
-    private static async Task SeedMissionsAsync(AppDb db)
+    private static async Task SeedMissionsAsync(AppDb db, CancellationToken ct)
     {
         // If you already have missions, do nothing.
-        if (await db.Missions.AsNoTracking().AnyAsync()) return;
+        if (await db.Missions.AsNoTracking().AnyAsync(ct)) return;
 
         var missions = new List<Mission>
         {
