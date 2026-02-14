@@ -219,7 +219,7 @@ services:
       DOTNET_ENVIROMENT: "{ASPNETCORE_ENVIRONMENT:-Development}"
       
       # Database connections
-      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
+      ConnectionStrings__tycoon_db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
       ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-tycoon_redis_password_123}"
       ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
       ConnectionStrings__elasticsearch: "http://elasticsearch:9200"

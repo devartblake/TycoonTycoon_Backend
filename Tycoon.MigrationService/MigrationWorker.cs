@@ -181,27 +181,6 @@ public sealed class MigrationWorker : BackgroundService
         }
     }
 
-    private void EnsureMigrationsExistOrFail(AppDb db)
-    {
-        // Deprecated: replaced by inline handling with AllowEnsureCreate
-
-        var migrationsAssembly = db.GetService<IMigrationsAssembly>();
-        var migrationsCount = migrationsAssembly.Migrations.Count;
-
-        if (migrationsCount == 0)
-        {
-            _log.Error(
-                "No EF migrations were found in the configured migrations assembly. " +
-                "Create an initial migration in Tycoon.Backend.Migrations and ensure UseNpgsql(...).MigrationsAssembly(\"Tycoon.Backend.Migrations\") is set.");
-
-            throw new InvalidOperationException(
-                "No EF migrations found. Create and apply migrations before seeding.");
-        }
-
-        _log.Information("Detected {MigrationsCount} migrations in assembly {MigrationsAssembly}.",
-            migrationsCount, migrationsAssembly.Assembly.GetName().Name);
-    }
-
     private async Task EnsureCriticalTablesReadyAsync(AppDb db, bool autoRepairOnMissingTables, CancellationToken ct)
     {
         var requiredTables = new[] { "Tiers", "Missions" };
@@ -255,6 +234,7 @@ public sealed class MigrationWorker : BackgroundService
             if (conn.State != System.Data.ConnectionState.Open)
             {
                 await conn.OpenAsync(ct);
+                openedHere = true;
             }
 
             await using var cmd = conn.CreateCommand();
@@ -355,60 +335,37 @@ public sealed class MigrationWorker : BackgroundService
 
     private async Task VerifySeedPrerequisiteTablesAsync(AppDb db, Serilog.ILogger log, CancellationToken ct)
     {
-        // Use a brand-new connection so we never interfere with EF Core’s connection lifecycle.
-        var cs = db.Database.GetConnectionString();
-        if (string.IsNullOrWhiteSpace(cs))
-            throw new InvalidOperationException("Database connection string was empty. Cannot validate schema.");
-
         var requiredTables = new[]
         {
         "Tiers",
         "Missions",
         // add more if your seeding touches them (e.g., MissionClaims, SeasonProfiles, etc.)
-    };
+        };
 
-        await using var conn = new Npgsql.NpgsqlConnection(cs);
-        await conn.OpenAsync(ct);
+        var conn = db.Database.GetDbConnection();
+        var openedHere = false;
 
-        foreach (var table in requiredTables)
+        try
         {
-            if (!await TableExistsAsync(conn, table, schema: "public", ct))
+            if (conn.State != System.Data.ConnectionState.Open)
             {
-                _log.Error(
-                    "Schema check failed: required table {Table} does not exist in schema {Schema}. " +
-                    "Migrations were not found/applied, or they are targeting a different schema.",
-                    table, "public");
+                await conn.OpenAsync(ct);
+                openedHere = true;
+            }
 
-                throw new InvalidOperationException(
-                    $"Schema not present. Required table '{table}' does not exist.");
+            foreach (var table in requiredTables)
+            {
+                if (!await TableExistsAsync(db, table, ct))
+                {
+                    log.Error("Schema check failed: required table {Table} does not exist.", table);
+                    throw new InvalidOperationException($"Schema not present. Required table '{table}' does not exist.");
+                }
             }
         }
-
-        _log.Information("Schema prerequisite check passed: required tables exist.");
-    }
-
-    private static async Task<bool> TableExistsAsync(System.Data.Common.DbConnection conn, string tableName, string schema, CancellationToken ct)
-    {
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-        SELECT EXISTS (
-            SELECT 1
-            FROM information_schema.tables
-            WHERE table_schema = @schema
-              AND table_name   = @table
-        );";
-
-        var pSchema = cmd.CreateParameter();
-        pSchema.ParameterName = "@schema";
-        pSchema.Value = schema;
-        cmd.Parameters.Add(pSchema);
-
-        var pTable = cmd.CreateParameter();
-        pTable.ParameterName = "@table";
-        pTable.Value = tableName;
-        cmd.Parameters.Add(pTable);
-
-        var result = await cmd.ExecuteScalarAsync(ct);
-        return result is bool b && b;
+        finally
+        {
+            if (openedHere)
+                await conn.CloseAsync();
+        }
     }
 }

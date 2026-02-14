@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Serilog;
+using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Infrastructure.Persistence;
 
@@ -6,6 +7,13 @@ namespace Tycoon.MigrationService.Seeding;
 
 public sealed class AppSeeder
 {
+    private readonly Serilog.ILogger _log;
+
+    public AppSeeder()
+    {
+        _log = Log.ForContext<AppSeeder>();
+    }
+
     public async Task SeedAsync(AppDb db, CancellationToken ct)
     {
         // One transaction for consistency

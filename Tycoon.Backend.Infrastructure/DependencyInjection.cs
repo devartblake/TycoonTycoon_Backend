@@ -52,26 +52,47 @@ namespace Tycoon.Backend.Infrastructure
                 return services;
             }
 
-            //var postgres =
-            //    cfg.GetConnectionString("tycoon-db")
-            //    ?? cfg.GetConnectionString("db");
-
-            //if (string.IsNullOrWhiteSpace(postgres))
-            //    throw new InvalidOperationException(
-            //        "Missing PostgreSQL connection string. Provide ConnectionStrings:tycoon-db (Aspire) or ConnectionStrings:db.");
+            // ✅ Robust connection string resolution (Aspire + non-Aspire + legacy keys)
+            // IMPORTANT:
+            // - In Docker/Compose you often have ConnectionStrings:db
+            // - In Aspire you may have ConnectionStrings:tycoon-db (or a named resource)
+            // - Your current code only checks tycoon_db, which is why Docker shows empty connection string.
+            static string? ResolvePostgresConnectionString(IConfiguration cfg)
+            {
+                return
+                    cfg.GetConnectionString("tycoon_db") ??     // your current key (keep)
+                    cfg.GetConnectionString("tycoon-db") ??     // common Aspire naming
+                    cfg.GetConnectionString("tycoon-db-ro") ??  // optional
+                    cfg.GetConnectionString("db") ??           // common compose naming
+                    cfg.GetConnectionString("PostgreSQL") ??   // sometimes used
+                    cfg["Postgres:ConnectionString"] ??        // optional custom
+                    cfg["ConnectionStrings:postgres"] ??       // optional custom
+                    null;
+            }
 
             services.AddDbContext<AppDb>((sp, opt) =>
             {
-                var connectionString = cfg.GetConnectionString("tycoon_db");
+                var connectionString = ResolvePostgresConnectionString(cfg);
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException(
+                        "Missing PostgreSQL connection string. Provide one of:\n" +
+                        "  - ConnectionStrings:tycoon_db\n" +
+                        "  - ConnectionStrings:tycoon-db (Aspire)\n" +
+                        "  - ConnectionStrings:db (docker-compose common)\n" +
+                        "  - ConnectionStrings:PostgreSQL\n");
+                }
 
                 opt.UseNpgsql(connectionString, npgsql =>
                 {
-                    // ✅ SINGLE SOURCE OF TRUTH
+                    // ✅ SINGLE SOURCE OF TRUTH: migrations live here
                     npgsql.MigrationsAssembly("Tycoon.Backend.Migrations");
+
                     npgsql.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorCodesToAdd: null);
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorCodesToAdd: null);
                 });
 
                 // Suppress pending model changes warning if configured
@@ -82,13 +103,13 @@ namespace Tycoon.Backend.Infrastructure
                         warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
                 }
 
-                // Enable sensitive data logging in development
+                // Enable sensitive data logging in development (or when explicitly enabled)
                 if (cfg.GetValue<bool>("Logging:EnableSensitiveDataLogging"))
                 {
                     opt.EnableSensitiveDataLogging();
                 }
 
-                // Enable detailed errors in development
+                // Enable detailed errors in development (or when explicitly enabled)
                 if (cfg.GetValue<bool>("Logging:EnableDetailedErrors"))
                 {
                     opt.EnableDetailedErrors();
@@ -151,7 +172,6 @@ namespace Tycoon.Backend.Infrastructure
 
             if (elasticEnabled && !string.IsNullOrWhiteSpace(elasticUrl))
             {
-                // Bind + validate options once, then DI uses the typed value.
                 services.AddOptions<ElasticOptions>()
                     .Configure(o =>
                     {
@@ -167,19 +187,15 @@ namespace Tycoon.Backend.Infrastructure
                     })
                     .Validate(o => !string.IsNullOrWhiteSpace(o.Url), "Elastic:Url is required when Elastic is enabled.");
 
-                // Register the resolved options value as a concrete singleton too (handy for non-IOptions consumers).
                 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ElasticOptions>>().Value);
 
-                // ✅ The missing piece: typed ElasticsearchClient
                 services.AddSingleton(sp =>
                 {
                     var opt = sp.GetRequiredService<IOptions<ElasticOptions>>().Value;
-
                     var uri = new Uri(opt.Url);
 
                     var settings = new ElasticsearchClientSettings(uri);
 
-                    // Basic auth if provided
                     if (!string.IsNullOrWhiteSpace(opt.Username) && !string.IsNullOrWhiteSpace(opt.Password))
                     {
                         settings = settings.Authentication(new BasicAuthentication(opt.Username, opt.Password));
@@ -188,14 +204,12 @@ namespace Tycoon.Backend.Infrastructure
                     // DEV convenience: allow self-signed certs when https
                     if (uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
                     {
-                        // If you want this ONLY in development, gate it via env checks in the calling project.
                         settings = settings.ServerCertificateValidationCallback((_, _, _, _) => true);
                     }
 
                     return new ElasticsearchClient(settings);
                 });
 
-                // ... keep your existing Elastic registration block ...
                 services.AddSingleton<ElasticAdmin>();
                 services.AddSingleton<ElasticIndexBootstrapper>();
                 services.AddSingleton<IRollupIndexer, ElasticRollupIndexer>();
