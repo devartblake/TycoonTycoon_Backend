@@ -203,6 +203,37 @@ services:
       - mongodb
     networks: [tycoon-net]
 
+  dbgate:
+      image: dbgate/dbgate:latest
+      container_name: tycoon_dbgate
+      restart: unless-stopped
+      profiles: ["dev"]
+      ports:
+        - "${DBGATE_PORT:-3001}:3000"
+      environment:
+        CONNECTIONS: tycoon_postgres,tycoon_mongodb
+
+        LABEL_tycoon_postgres: "Tycoon PostgreSQL"
+        SERVER_tycoon_postgres: postgres
+        PORT_tycoon_postgres: 5432
+        ENGINE_tycoon_postgres: postgres@dbgate-plugin-postgres
+        USER_tycoon_postgres: "${POSTGRES_USER:-tycoon_user}"
+        PASSWORD_tycoon_postgres: "${POSTGRES_PASSWORD:-tycoon_password_123}"
+        DATABASE_tycoon_postgres: "${POSTGRES_DB:-tycoon_db}"
+
+        LABEL_tycoon_mongodb: "Tycoon MongoDB"
+        SERVER_tycoon_mongodb: mongodb
+        PORT_tycoon_mongodb: 27017
+        ENGINE_tycoon_mongodb: mongo@dbgate-plugin-mongo
+        USER_tycoon_mongodb: "${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}"
+        PASSWORD_tycoon_mongodb: "${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}"
+        DATABASE_tycoon_mongodb: "${MONGO_INITDB_DATABASE:-tycoon_db}"
+        URL_tycoon_mongodb: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}:${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}@mongodb:27017/${MONGO_INITDB_DATABASE:-tycoon_db}?authSource=admin"
+      depends_on:
+        - postgres
+        - mongodb
+      networks: [tycoon-net]
+
   # ================================
   # Backend Services
   # ================================
@@ -255,7 +286,6 @@ services:
         condition: service_healthy
     networks: [tycoon-net]
 
-
   backend-api:
     build:
       context: ..
@@ -307,7 +337,7 @@ services:
       Observability__ServiceName: "Tycoon.Backend.Api"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
     volumes:
-      - dpkeys:/var/dpkeys
+      - dpkeys:/app/var/dpkeys
     depends_on:
       postgres:
         condition: service_healthy
