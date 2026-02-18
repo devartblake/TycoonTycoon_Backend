@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Tycoon.Backend.Infrastructure;
 using Tycoon.MigrationService;
+using Tycoon.MigrationService.Options;
 using Tycoon.MigrationService.Seeding;
 using Tycoon.Shared.Observability;
 
@@ -33,6 +34,10 @@ try
 
             // Infrastructure (EF Core, Mongo, Elastic, Redis, clock, dispatcher, etc.)
             services.AddInfrastructure(ctx.Configuration);
+
+            // Bind MigrationServiceOptions from config section "MigrationService"
+            services.AddOptions<MigrationServiceOptions>()
+                .BindConfiguration("MigrationService");
 
             // Seeder + reset services
             services.AddTransient<AppSeeder>();

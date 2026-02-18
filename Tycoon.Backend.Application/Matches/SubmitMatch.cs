@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Abstractions;
@@ -17,7 +18,7 @@ namespace Tycoon.Backend.Application.Matches
     public sealed record SubmitMatch(SubmitMatchRequest Request) : IRequest<SubmitMatchResponse>;
 
     public sealed class SubmitMatchHandler(
-        IAppDb db, 
+        IAppDb db,
         EconomyService econ,
         AntiCheatService antiCheat,
         SeasonService seasons,
@@ -27,10 +28,12 @@ namespace Tycoon.Backend.Application.Matches
         EnforcementService enforcement,
         PartyIntegrityService partyIntegrity,
         PartyLifecycleService partLifecycle,
-        IOptions<RankedSeasonOptions> rankedOptions)
+        IOptions<RankedSeasonOptions> rankedOptions,
+        ILogger<SubmitMatchHandler> logger)
         : IRequestHandler<SubmitMatch, SubmitMatchResponse>
     {
         private readonly RankedSeasonOptions _ranked = rankedOptions.Value;
+        private readonly ILogger<SubmitMatchHandler> _logger = logger;
         public async Task<SubmitMatchResponse> Handle(SubmitMatch r, CancellationToken ct)
         {
             var req = r.Request;
@@ -124,7 +127,7 @@ namespace Tycoon.Backend.Application.Matches
                 return new SubmitMatchResponse(req.EventId, req.MatchId, "AlreadySubmitted", Array.Empty<MatchAwardDto>());
             }
 
-                foreach (var p in req.Participants)
+            foreach (var p in req.Participants)
             {
                 db.MatchParticipantResults.Add(new MatchParticipantResult(
                     matchResultId: result.Id,
@@ -191,10 +194,12 @@ namespace Tycoon.Backend.Application.Matches
                         reason: $"Match {req.Status}",
                         ct: ct);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Do not fail match submission if party closure notifications fail.
-                    // You can log this later if you have ILogger<SubmitMatchHandler>.
+                    // Party closure failure must not fail match submission, but must be visible.
+                    _logger.LogWarning(ex,
+                        "Party closure failed for match {MatchId} — match result was still applied.",
+                        req.MatchId);
                 }
             }
 
@@ -271,9 +276,9 @@ namespace Tycoon.Backend.Application.Matches
                 profile.RecordRankedMatchCompleted();
             }
 
-            // Recompute tier ranks (100 users per tier)
-            // For now we recompute every submit in dev; later optimize (queue/batch, debounce, periodic job).
-            await tiers.RecomputeAsync(seasonId, usersPerTier: 100, ct: ct);
+            // Tier recomputation is intentionally NOT called inline here.
+            // Use the LeaderboardRecalculationJob scheduled via Hangfire (e.g. every 5 minutes)
+            // to avoid a full rank recalculation in the hot path on every match submission.
         }
 
         private static void FinishHost(Match match, SubmitMatchRequest req)

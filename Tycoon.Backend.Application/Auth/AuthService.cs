@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
@@ -14,24 +14,19 @@ namespace Tycoon.Backend.Application.Auth
     public sealed class AuthService : IAuthService
     {
         private readonly IAppDb _database;
-        private readonly IConfiguration _configuration;
-        private const int DefaultTokenExpiryMinutes = 15;
-        private const int RefreshTokenLifetimeDays = 30;
+        private readonly JwtSettings _jwt;
 
-        public AuthService(IAppDb database, IConfiguration configuration)
+        public AuthService(IAppDb database, IOptions<JwtSettings> jwtOptions)
         {
             _database = database;
-            _configuration = configuration;
+            _jwt = jwtOptions.Value;
         }
 
-        // JWT signing
-        private string JwtSigningKey => _configuration["Jwt:Secret"] 
-            ?? throw new InvalidOperationException("JWT signing key must be configured");
-        
-        private string TokenIssuerName => _configuration["Jwt:Issuer"] ?? "TycoonBackend";
-        
-        private int AccessTokenLifetime => int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var mins) 
-            ? mins : DefaultTokenExpiryMinutes;
+        // Convenient aliases — values are validated at startup via ValidateDataAnnotations()
+        private string JwtSigningKey => _jwt.Secret;
+        private string TokenIssuerName => _jwt.Issuer;
+        private int AccessTokenLifetime => _jwt.AccessTokenExpirationMinutes;
+        private int RefreshTokenLifetimeDays => _jwt.RefreshTokenExpirationDays;
 
         public async Task<AuthResult> LoginAsync(string email, string password, string deviceId)
         {
@@ -68,7 +63,7 @@ namespace Tycoon.Backend.Application.Auth
 
             var tokenOwner = await _database.Users
                 .FirstOrDefaultAsync(u => u.Id == storedToken.UserId);
-            
+
             if (tokenOwner == null || !tokenOwner.IsActive)
                 throw new UnauthorizedAccessException("Token refresh failed");
 
@@ -98,7 +93,7 @@ namespace Tycoon.Backend.Application.Auth
         public async Task<User> RegisterAsync(string email, string password, string handle, string? country = null)
         {
             var normalizedEmail = email.ToLowerInvariant();
-            
+
             var emailConflict = await _database.Users
                 .AnyAsync(u => u.Email == normalizedEmail);
             if (emailConflict)
@@ -148,7 +143,7 @@ namespace Tycoon.Backend.Application.Auth
         {
             var randomBytes = RandomNumberGenerator.GetBytes(64);
             var tokenValue = Convert.ToBase64String(randomBytes);
-            var expirationTime = DateTimeOffset.UtcNow.AddDays(RefreshTokenLifetimeDays);
+            var expirationTime = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenExpirationDays);
 
             var deviceToken = new RefreshToken(userId, tokenValue, deviceId, expirationTime);
             _database.RefreshTokens.Add(deviceToken);
@@ -169,11 +164,11 @@ namespace Tycoon.Backend.Application.Auth
         private AuthResult BuildAuthResult(User user, string jwtToken, string refreshToken)
         {
             var userProfile = new UserDto(
-                user.Id, 
-                user.Handle, 
-                user.Email, 
-                user.Country, 
-                user.Tier, 
+                user.Id,
+                user.Handle,
+                user.Email,
+                user.Country,
+                user.Tier,
                 user.Mmr
             );
 

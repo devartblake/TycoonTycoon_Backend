@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Tycoon.MigrationService.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
@@ -21,11 +23,18 @@ public sealed class MigrationWorker : BackgroundService
     private readonly IConfiguration _cfg;
     private readonly Serilog.ILogger _log;
 
-    public MigrationWorker(IServiceProvider sp, IHostApplicationLifetime lifetime, IConfiguration cfg)
+    private readonly MigrationServiceOptions _options;
+
+    public MigrationWorker(
+        IServiceProvider sp,
+        IHostApplicationLifetime lifetime,
+        IConfiguration cfg,
+        IOptions<MigrationServiceOptions> options)
     {
         _sp = sp;
         _lifetime = lifetime;
         _cfg = cfg;
+        _options = options.Value;
         _log = Log.ForContext<MigrationWorker>();
     }
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -37,20 +46,20 @@ public sealed class MigrationWorker : BackgroundService
             // ---------------------------------------------
             // 0) Read mode flags
             // ---------------------------------------------
-            var mode = (_cfg["MigrationService:Mode"] ?? "MigrateAndSeed").Trim();
-            var resetDatabase = bool.TryParse(_cfg["MigrationService:ResetDatabase"], out var resetDb) && resetDb;
-            var allowEnsureCreated = bool.TryParse(_cfg["MigrationService:AllowEnsureCreated"], out var allowCreated) && allowCreated;
-            var autoRepairOnMissingTables = !bool.TryParse(_cfg["MigrationService:AutoRepairOnMissingTables"], out var autoRepair) || autoRepair;
+            var mode = _options.Mode.Trim();
+            var resetDatabase = _options.ResetDatabase;
+            var allowEnsureCreated = _options.AllowEnsureCreated;
+            var autoRepairOnMissingTables = _options.AutoRepairOnMissingTables;
 
-            var rebuildEnabled = bool.TryParse(_cfg["MigrationService:RebuildElastic:Enabled"], out var enabled) && enabled;
+            var rebuildEnabled = _options.RebuildElastic.Enabled;
 
             var modeRebuildOnly = mode.Equals("RebuildElastic", StringComparison.OrdinalIgnoreCase);
             var modeMigrateSeedAndRebuild = mode.Equals("MigrateSeedAndRebuildElastic", StringComparison.OrdinalIgnoreCase);
 
             var doRebuild = rebuildEnabled || modeRebuildOnly || modeMigrateSeedAndRebuild;
 
-            DateOnly? fromUtcDate = TryParseDateOnly(_cfg["MigrationService:RebuildElastic:FromUtcDate"]);
-            DateOnly? toUtcDate = TryParseDateOnly(_cfg["MigrationService:RebuildElastic:ToUtcDate"]);
+            DateOnly? fromUtcDate = _options.RebuildElastic.FromUtcDate;
+            DateOnly? toUtcDate = _options.RebuildElastic.ToUtcDate;
 
             // ---------------------------------------------
             // 1) Optional Elastic bootstrap (never blocks DB)

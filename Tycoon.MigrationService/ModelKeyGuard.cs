@@ -1,12 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Logging;
 
 namespace Tycoon.MigrationService;
 
 internal static class ModelKeyGuard
 {
-    public static void LogKeylessEntities(IEntityType et, DbContext db, ILogger logger)
+    /// <summary>
+    /// Logs any entity types in the model that have no primary key configured.
+    /// These will break EF migrations — add HasKey(...) or HasNoKey() to fix them.
+    /// </summary>
+    public static void LogKeylessEntities(DbContext db, ILogger logger)
     {
         var offenders = db.Model
             .GetEntityTypes()
@@ -27,7 +30,7 @@ internal static class ModelKeyGuard
             string.Join(", ", offenders)
         );
 
-        // Helpful hint: these often are join entities that forgot HasKey(...)
+        // Helpful hint: these are often join entities that forgot HasKey(...)
         var likelyJoinEntities = offenders
             .Where(n => n.Contains("Member", StringComparison.OrdinalIgnoreCase)
                      || n.Contains("Join", StringComparison.OrdinalIgnoreCase)

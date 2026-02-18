@@ -17,13 +17,12 @@ namespace Tycoon.Backend.Application
             var asm = Assembly.GetExecutingAssembly();
 
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(asm));
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
             services.AddValidatorsFromAssembly(asm);
 
             // Match
             //services.AddScoped<Matches.StartMatch>();
             services.AddScoped<Matchmaking.MatchmakingService>();
-            services.TryAddSingleton<Matchmaking.IMatchmakingNotifier,Matchmaking.NullMatchmakingNotifier>();
+            services.TryAddSingleton<Matchmaking.IMatchmakingNotifier, Matchmaking.NullMatchmakingNotifier>();
 
             // Missions
             services.AddScoped<Missions.MissionProgressService>();
@@ -35,6 +34,7 @@ namespace Tycoon.Backend.Application
             // Leaderboard recalculation
             services.AddScoped<Leaderboards.LeaderboardRecalculator>();
             services.AddScoped<Leaderboards.LeaderboardRecalculationJob>();
+            services.AddScoped<Seasons.TierRecalculationJob>();
 
             // Media
             services.AddSingleton<Media.MediaService>();

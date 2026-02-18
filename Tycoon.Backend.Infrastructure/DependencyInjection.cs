@@ -37,7 +37,6 @@ namespace Tycoon.Backend.Infrastructure
             // EF Core / Postgres (Option B)
             // ---------------------------
             var useInMemory = cfg.GetValue<bool>("Testing:UseInMemoryDb");
-
             if (useInMemory)
             {
                 // Defaults (in-memory safe)
@@ -48,26 +47,7 @@ namespace Tycoon.Backend.Infrastructure
 
                 services.AddSingleton<IClock, SystemClock>();
                 services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
-
                 return services;
-            }
-
-            // ✅ Robust connection string resolution (Aspire + non-Aspire + legacy keys)
-            // IMPORTANT:
-            // - In Docker/Compose you often have ConnectionStrings:db
-            // - In Aspire you may have ConnectionStrings:tycoon-db (or a named resource)
-            // - Your current code only checks tycoon_db, which is why Docker shows empty connection string.
-            static string? ResolvePostgresConnectionString(IConfiguration cfg)
-            {
-                return
-                    cfg.GetConnectionString("tycoon_db") ??     // your current key (keep)
-                    cfg.GetConnectionString("tycoon-db") ??     // common Aspire naming
-                    cfg.GetConnectionString("tycoon-db-ro") ??  // optional
-                    cfg.GetConnectionString("db") ??           // common compose naming
-                    cfg.GetConnectionString("PostgreSQL") ??   // sometimes used
-                    cfg["Postgres:ConnectionString"] ??        // optional custom
-                    cfg["ConnectionStrings:postgres"] ??       // optional custom
-                    null;
             }
 
             services.AddDbContext<AppDb>((sp, opt) =>
@@ -151,12 +131,14 @@ namespace Tycoon.Backend.Infrastructure
                 });
 
                 services.RemoveAll<IAnalyticsEventWriter>();
-                services.AddScoped<IAnalyticsEventWriter, PostgresAnalyticsEventWriter>();
+                services.RemoveAll<IRollupStore>();
 
                 services.AddSingleton<MongoClientFactory>();
 
-                services.Replace(ServiceDescriptor.Singleton<IRollupStore, MongoRollupStore>());
-                services.Replace(ServiceDescriptor.Singleton<IAnalyticsEventWriter, MongoAnalyticsEventWriter>());
+                // MongoRollupStore and MongoAnalyticsEventWriter only depend on MongoClientFactory
+                // (Singleton), so registering them as Singleton is safe and avoids scoped-in-singleton issues.
+                services.AddSingleton<IRollupStore, MongoRollupStore>();
+                services.AddSingleton<IAnalyticsEventWriter, MongoAnalyticsEventWriter>();
 
                 services.AddSingleton<MongoRollupReader>();
             }
@@ -224,6 +206,39 @@ namespace Tycoon.Backend.Infrastructure
             services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
             return services;
+        }
+
+
+        // ✅ Robust connection string resolution (Aspire + non-Aspire + legacy keys)
+        // IMPORTANT:
+        // - In Docker/Compose you often have ConnectionStrings:db
+        // - In Aspire you may have ConnectionStrings:tycoon-db (or a named resource)
+        // - Your current code only checks tycoon_db, which is why Docker shows empty connection string.
+        private static string? ResolvePostgresConnectionString(IConfiguration cfg)
+        {
+            // Supports docker-compose, Aspire, and local conventions.
+            var candidates = new (string Kind, string Key, string? Value)[]
+            {
+                ("ConnStr", "tycoon-db", cfg.GetConnectionString("tycoon-db")),  // common Aspire style
+                ("ConnStr", "tycoon_db", cfg.GetConnectionString("tycoon_db")),  // your current key
+                ("ConnStr", "db",       cfg.GetConnectionString("db")),         // common compose naming
+                ("ConnStr", "PostgreSQL", cfg.GetConnectionString("PostgreSQL")),  // sometimes used
+                ("Value",   "Postgres:ConnectionString", cfg["Postgres:ConnectionString"]), // optional custom
+                ("Value",   "ConnectionStrings:tycoon_db", cfg["ConnectionStrings:tycoon_db"]), // optional custom
+                ("Value",   "ConnectionStrings:db", cfg["ConnectionStrings:db"]),   // optional custom
+            };
+
+            var found = candidates.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.Value)).Value;
+            if (!string.IsNullOrWhiteSpace(found))
+                return found!;
+
+            var lookedFor = string.Join(", ", candidates.Select(c =>
+                c.Kind == "ConnStr" ? $"ConnectionStrings:{c.Key}" : c.Key));
+
+            throw new InvalidOperationException(
+                "Missing PostgreSQL connection string. " +
+                $"Looked for: {lookedFor}. " +
+                "Fix docker-compose by setting ConnectionStrings__db (or ConnectionStrings__tycoon_db).");
         }
     }
 }

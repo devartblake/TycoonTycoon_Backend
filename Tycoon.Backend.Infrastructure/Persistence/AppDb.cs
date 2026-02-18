@@ -66,11 +66,11 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<Tier> Tiers => Set<Tier>();
 
-        public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => throw new NotImplementedException();
+        public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => Set<QuestionAnsweredAnalyticsEvent>();
 
-        public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => throw new NotImplementedException();
+        public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => Set<QuestionAnsweredDailyRollup>();
 
-        public DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups => throw new NotImplementedException();
+        public DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups => Set<QuestionAnsweredPlayerDailyRollup>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

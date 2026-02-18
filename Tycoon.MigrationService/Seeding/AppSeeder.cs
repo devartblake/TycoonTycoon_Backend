@@ -26,8 +26,8 @@ public sealed class AppSeeder
             await SeedTiersAsync(db, ct);
             await SeedMissionsAsync(db, ct);
 
-            await db.SaveChangesAsync();
-            await tx.CommitAsync();
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
         });
     }
 

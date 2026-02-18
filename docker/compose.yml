@@ -152,7 +152,7 @@ services:
     networks: [tycoon-net]
 
   # ================================
-  # Admin UIs (Dev Profile)
+  # Admin UIs
   # ================================
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
@@ -177,7 +177,7 @@ services:
     ports:
       - "${PGADMIN_PORT:-5050}:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@tycoon.local}"
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@tycoon.app}"
       PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-admin_password_123}"
       PGADMIN_CONFIG_SERVER_MODE: "False"
     volumes:
@@ -336,8 +336,7 @@ services:
       # Observability
       Observability__ServiceName: "Tycoon.Backend.Api"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
-    volumes:
-      - dpkeys:/app/var/dpkeys
+      DataProtection__KeysPath: "${DATA_PROTECTION_KEYS_PATH:-/tmp/tycoon-dpkeys}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -379,4 +378,3 @@ volumes:
   pgadmin_data:
   prometheus_data:
   grafana_data:
-  dpkeys:

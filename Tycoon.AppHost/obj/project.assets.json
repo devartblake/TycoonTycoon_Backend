@@ -461,37 +461,6 @@
           }
         }
       },
-      "Aspire.MongoDB.Driver/13.1.0": {
-        "type": "package",
-        "dependencies": {
-          "AspNetCore.HealthChecks.MongoDb": "9.0.0",
-          "DnsClient": "1.8.0",
-          "Microsoft.Extensions.Configuration.Abstractions": "9.0.11",
-          "Microsoft.Extensions.Configuration.Binder": "9.0.11",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.11",
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "9.0.11",
-          "Microsoft.Extensions.Hosting.Abstractions": "9.0.11",
-          "Microsoft.Extensions.Logging.Abstractions": "9.0.11",
-          "Microsoft.Extensions.Options": "9.0.11",
-          "Microsoft.Extensions.Primitives": "9.0.11",
-          "MongoDB.Driver": "3.5.0",
-          "MongoDB.Driver.Core.Extensions.DiagnosticSources": "2.1.0",
-          "OpenTelemetry.Extensions.Hosting": "1.14.0"
-        },
-        "compile": {
-          "lib/net9.0/Aspire.MongoDB.Driver.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net9.0/Aspire.MongoDB.Driver.dll": {
-            "related": ".xml"
-          }
-        },
-        "build": {
-          "buildTransitive/net9.0/Aspire.MongoDB.Driver.targets": {}
-        }
-      },
       "AspNetCore.HealthChecks.MongoDb/9.0.0": {
         "type": "package",
         "dependencies": {
@@ -706,19 +675,6 @@
         },
         "runtime": {
           "lib/net6.0/BCrypt.Net-Next.dll": {
-            "related": ".xml"
-          }
-        }
-      },
-      "Bogus/35.6.5": {
-        "type": "package",
-        "compile": {
-          "lib/net6.0/Bogus.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net6.0/Bogus.dll": {
             "related": ".xml"
           }
         }
@@ -3301,20 +3257,6 @@
           }
         }
       },
-      "MongoDB.Driver.Core.Extensions.DiagnosticSources/2.1.0": {
-        "type": "package",
-        "dependencies": {
-          "MongoDB.Driver": "3.0.0",
-          "System.Collections.Immutable": "8.0.0",
-          "System.Diagnostics.DiagnosticSource": "8.0.0"
-        },
-        "compile": {
-          "lib/net8.0/MongoDB.Driver.Core.Extensions.DiagnosticSources.dll": {}
-        },
-        "runtime": {
-          "lib/net8.0/MongoDB.Driver.Core.Extensions.DiagnosticSources.dll": {}
-        }
-      },
       "Nerdbank.Streams/2.12.87": {
         "type": "package",
         "dependencies": {
@@ -4928,22 +4870,6 @@
           "lib/netstandard1.3/System.Collections.Concurrent.dll": {}
         }
       },
-      "System.Collections.Immutable/8.0.0": {
-        "type": "package",
-        "compile": {
-          "lib/net8.0/System.Collections.Immutable.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/System.Collections.Immutable.dll": {
-            "related": ".xml"
-          }
-        },
-        "build": {
-          "buildTransitive/net6.0/_._": {}
-        }
-      },
       "System.ComponentModel.Annotations/4.4.1": {
         "type": "package",
         "compile": {
@@ -6482,53 +6408,6 @@
           "lib/net7.0/ZstdSharp.dll": {}
         }
       },
-      "Elastic/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v9.0",
-        "dependencies": {
-          "Elastic.Clients.Elasticsearch": "8.19.0",
-          "Microsoft.Extensions.Configuration": "9.0.11",
-          "Microsoft.Extensions.Configuration.Binder": "9.0.11",
-          "Microsoft.Extensions.DependencyInjection": "9.0.11",
-          "Microsoft.Extensions.Hosting.Abstractions": "9.0.11"
-        },
-        "compile": {
-          "bin/placeholder/Elastic.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/Elastic.dll": {}
-        }
-      },
-      "Mongo/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v9.0",
-        "dependencies": {
-          "Aspire.MongoDB.Driver": "13.1.0",
-          "Microsoft.Extensions.Options": "9.0.11",
-          "MongoDB.Driver": "3.5.2"
-        },
-        "compile": {
-          "bin/placeholder/Mongo.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/Mongo.dll": {}
-        }
-      },
-      "Postgres/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v9.0",
-        "dependencies": {
-          "Bogus": "35.6.5",
-          "Humanizer.Core": "3.0.1",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4"
-        },
-        "compile": {
-          "bin/placeholder/Postgres.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/Postgres.dll": {}
-        }
-      },
       "Tycoon.Backend.Api/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
@@ -6660,13 +6539,10 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "Elastic": "1.0.0",
           "Humanizer.Core": "3.0.1",
           "MediatR": "14.0.0",
           "Microsoft.Extensions.Hosting": "9.0.11",
-          "Mongo": "1.0.0",
           "Newtonsoft.Json": "13.0.4",
-          "Postgres": "1.0.0",
           "Serilog": "4.3.0",
           "Serilog.AspNetCore": "9.0.0",
           "Serilog.Extensions.Hosting": "9.0.0",
@@ -7139,30 +7015,6 @@
         "lib/net8.0/Aspire.Hosting.Redis.xml"
       ]
     },
-    "Aspire.MongoDB.Driver/13.1.0": {
-      "sha512": "9lXY0eFfZhTrDAmlPrfT1SUQDhdLkSQmPQXPmHLaXXiYJVByv+dBxlxKXsp855SqYt2iuIe0Tfa6no1C2Abw3Q==",
-      "type": "package",
-      "path": "aspire.mongodb.driver/13.1.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "ConfigurationSchema.json",
-        "Icon.png",
-        "README.md",
-        "THIRD-PARTY-NOTICES.TXT",
-        "aspire.mongodb.driver.13.1.0.nupkg.sha512",
-        "aspire.mongodb.driver.nuspec",
-        "buildTransitive/net10.0/Aspire.MongoDB.Driver.targets",
-        "buildTransitive/net8.0/Aspire.MongoDB.Driver.targets",
-        "buildTransitive/net9.0/Aspire.MongoDB.Driver.targets",
-        "lib/net10.0/Aspire.MongoDB.Driver.dll",
-        "lib/net10.0/Aspire.MongoDB.Driver.xml",
-        "lib/net8.0/Aspire.MongoDB.Driver.dll",
-        "lib/net8.0/Aspire.MongoDB.Driver.xml",
-        "lib/net9.0/Aspire.MongoDB.Driver.dll",
-        "lib/net9.0/Aspire.MongoDB.Driver.xml"
-      ]
-    },
     "AspNetCore.HealthChecks.MongoDb/9.0.0": {
       "sha512": "WAmROqEXlVzjgCdEa9Zor2l6T29jsnKMJQPGbTnkrgpyqPcjwOomuh91CiAebmeWJ/CKenVX+fV/VFffnskgvw==",
       "type": "package",
@@ -7421,27 +7273,6 @@
         "lib/netstandard2.1/BCrypt.Net-Next.dll",
         "lib/netstandard2.1/BCrypt.Net-Next.xml",
         "readme.md"
-      ]
-    },
-    "Bogus/35.6.5": {
-      "sha512": "2FGZn+aAVHjmCgClgmGkTDBVZk0zkLvAKGaxEf5JL6b3i9JbHTE4wnuY4vHCuzlCmJdU6VZjgDfHwmYkQF8VAA==",
-      "type": "package",
-      "path": "bogus/35.6.5",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "LICENSE",
-        "bogus.128.png",
-        "bogus.35.6.5.nupkg.sha512",
-        "bogus.nuspec",
-        "lib/net40/Bogus.dll",
-        "lib/net40/Bogus.xml",
-        "lib/net6.0/Bogus.dll",
-        "lib/net6.0/Bogus.xml",
-        "lib/netstandard1.3/Bogus.dll",
-        "lib/netstandard1.3/Bogus.xml",
-        "lib/netstandard2.0/Bogus.dll",
-        "lib/netstandard2.0/Bogus.xml"
       ]
     },
     "CassandraCSharpDriver/3.22.0": {
@@ -11044,21 +10875,6 @@
         "packageIcon.png"
       ]
     },
-    "MongoDB.Driver.Core.Extensions.DiagnosticSources/2.1.0": {
-      "sha512": "Ffk8ejPKpEHb08f4PEfozMmodBZ8B9vHK/CyztFW0kDlxYs1buQQJmdKyH2K369kheYUeFcPUF2flakCFW9OsQ==",
-      "type": "package",
-      "path": "mongodb.driver.core.extensions.diagnosticsources/2.1.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "lib/net472/MongoDB.Driver.Core.Extensions.DiagnosticSources.dll",
-        "lib/net6.0/MongoDB.Driver.Core.Extensions.DiagnosticSources.dll",
-        "lib/net8.0/MongoDB.Driver.Core.Extensions.DiagnosticSources.dll",
-        "lib/netstandard2.1/MongoDB.Driver.Core.Extensions.DiagnosticSources.dll",
-        "mongodb.driver.core.extensions.diagnosticsources.2.1.0.nupkg.sha512",
-        "mongodb.driver.core.extensions.diagnosticsources.nuspec"
-      ]
-    },
     "Nerdbank.Streams/2.12.87": {
       "sha512": "oDKOeKZ865I5X8qmU3IXMyrAnssYEiYWTobPGdrqubN3RtTzEHIv+D6fwhdcfrdhPJzHjCkK/ORztR/IsnmA6g==",
       "type": "package",
@@ -13232,36 +13048,6 @@
         "ref/xamarinwatchos10/_._",
         "system.collections.concurrent.4.3.0.nupkg.sha512",
         "system.collections.concurrent.nuspec"
-      ]
-    },
-    "System.Collections.Immutable/8.0.0": {
-      "sha512": "AurL6Y5BA1WotzlEvVaIDpqzpIPvYnnldxru8oXJU2yFxFUy3+pNXjXd1ymO+RA0rq0+590Q8gaz2l3Sr7fmqg==",
-      "type": "package",
-      "path": "system.collections.immutable/8.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "LICENSE.TXT",
-        "PACKAGE.md",
-        "THIRD-PARTY-NOTICES.TXT",
-        "buildTransitive/net461/System.Collections.Immutable.targets",
-        "buildTransitive/net462/_._",
-        "buildTransitive/net6.0/_._",
-        "buildTransitive/netcoreapp2.0/System.Collections.Immutable.targets",
-        "lib/net462/System.Collections.Immutable.dll",
-        "lib/net462/System.Collections.Immutable.xml",
-        "lib/net6.0/System.Collections.Immutable.dll",
-        "lib/net6.0/System.Collections.Immutable.xml",
-        "lib/net7.0/System.Collections.Immutable.dll",
-        "lib/net7.0/System.Collections.Immutable.xml",
-        "lib/net8.0/System.Collections.Immutable.dll",
-        "lib/net8.0/System.Collections.Immutable.xml",
-        "lib/netstandard2.0/System.Collections.Immutable.dll",
-        "lib/netstandard2.0/System.Collections.Immutable.xml",
-        "system.collections.immutable.8.0.0.nupkg.sha512",
-        "system.collections.immutable.nuspec",
-        "useSharedDesignerContext.txt"
       ]
     },
     "System.ComponentModel.Annotations/4.4.1": {
@@ -17216,21 +17002,6 @@
         "zstdsharp.port.nuspec"
       ]
     },
-    "Elastic/1.0.0": {
-      "type": "project",
-      "path": "../ElasticSearch/Elastic.csproj",
-      "msbuildProject": "../ElasticSearch/Elastic.csproj"
-    },
-    "Mongo/1.0.0": {
-      "type": "project",
-      "path": "../Mongo/Mongo.csproj",
-      "msbuildProject": "../Mongo/Mongo.csproj"
-    },
-    "Postgres/1.0.0": {
-      "type": "project",
-      "path": "../Postgres/Postgres.csproj",
-      "msbuildProject": "../Postgres/Postgres.csproj"
-    },
     "Tycoon.Backend.Api/1.0.0": {
       "type": "project",
       "path": "../Tycoon.Backend.Api/Tycoon.Backend.Api.csproj",
@@ -17301,17 +17072,17 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Theoretical\\.nuget\\packages\\": {},
+    "C:\\Users\\lmxbl\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
+      "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
       "projectName": "Tycoon.AppHost",
-      "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
-      "packagesPath": "C:\\Users\\Theoretical\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.AppHost\\obj\\",
+      "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.AppHost\\Tycoon.AppHost.csproj",
+      "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.AppHost\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,
       "CentralPackageTransitivePinningEnabled": true,
@@ -17319,7 +17090,7 @@
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Theoretical\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -17328,21 +17099,20 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Backend.Api\\Tycoon.Backend.Api.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj"
             },
-            "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
-              "projectPath": "C:\\Users\\Theoretical\\source\\repos\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj"
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj"
             }
           }
         }
@@ -17560,7 +17330,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     }
   },
@@ -17606,17 +17376,9 @@
         "include": "Runtime, Compile, Native, BuildTransitive",
         "version": "[13.1.0, )"
       },
-      "Aspire.MongoDB.Driver": {
-        "include": "Runtime, Compile, Native, BuildTransitive",
-        "version": "[13.1.0, )"
-      },
       "BCrypt.Net-Next": {
         "include": "Runtime, Compile, Native, BuildTransitive",
         "version": "[4.0.3, )"
-      },
-      "Bogus": {
-        "include": "Runtime, Compile, Native, BuildTransitive",
-        "version": "[35.6.5, )"
       },
       "Dapper": {
         "include": "Runtime, Compile, Native, BuildTransitive",

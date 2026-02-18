@@ -49,6 +49,7 @@ using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Writers;
+using Tycoon.Backend.Application.Auth;
 using Tycoon.Backend.Application.Matchmaking;
 using Tycoon.Backend.Application.Realtime;
 using Tycoon.Backend.Application.Social;
@@ -59,6 +60,15 @@ using Tycoon.Backend.Infrastructure.Persistence.Startup;
 using Tycoon.Shared.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddOptions<JwtSettings>()
+    .BindConfiguration("Jwt")           // binds appsettings "Jwt" section
+    .ValidateDataAnnotations()          // enforces [Required], [MinLength], [Range]
+    .ValidateOnStart();                 // fails at startup, not first request
+
+// Register IAuthService
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Observability + Serilog + OTEL
 builder.AddObservability();
@@ -325,6 +335,8 @@ app.UseRouting();
 // ✅ Show detailed errors in development
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.UseDeveloperExceptionPage();
 }
 

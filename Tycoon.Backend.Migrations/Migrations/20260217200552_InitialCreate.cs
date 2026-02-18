@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
+namespace Tycoon.Backend.Migrations.Migrations
 {
     /// <inheritdoc />
-    public partial class AddAuthenticationSystem : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -571,6 +571,24 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "RefreshTokens",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Token = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    DeviceId = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    IsRevoked = table.Column<bool>(type: "boolean", nullable: false),
+                    RevokedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "season_point_transactions",
                 columns: table => new
                 {
@@ -686,11 +704,12 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    Handle = table.Column<string>(type: "text", nullable: false),
+                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Handle = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
-                    Country = table.Column<string>(type: "text", nullable: false),
-                    AvatarUrl = table.Column<string>(type: "text", nullable: true),
+                    Country = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: true),
+                    Tier = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
+                    Mmr = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     LastLoginAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false)
@@ -800,29 +819,6 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
                         name: "FK_question_tags_questions_QuestionId",
                         column: x => x.QuestionId,
                         principalTable: "questions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RefreshTokens",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Token = table.Column<string>(type: "text", nullable: false),
-                    DeviceId = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    IsRevoked = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_RefreshTokens_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1220,9 +1216,20 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
                 column: "ReferralCodeId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RefreshTokens_UserId",
+                name: "IX_RefreshTokens_ExpiresAt",
                 table: "RefreshTokens",
-                column: "UserId");
+                column: "ExpiresAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_Token",
+                table: "RefreshTokens",
+                column: "Token",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_UserId_DeviceId_IsRevoked",
+                table: "RefreshTokens",
+                columns: new[] { "UserId", "DeviceId", "IsRevoked" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_season_point_transactions_CreatedAtUtc",
@@ -1304,6 +1311,23 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
                 name: "IX_skill_nodes_Tier",
                 table: "skill_nodes",
                 column: "Tier");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_CreatedAt",
+                table: "Users",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                table: "Users",
+                column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Handle",
+                table: "Users",
+                column: "Handle",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -1427,6 +1451,9 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
                 name: "Tiers");
 
             migrationBuilder.DropTable(
+                name: "Users");
+
+            migrationBuilder.DropTable(
                 name: "economy_transactions");
 
             migrationBuilder.DropTable(
@@ -1437,9 +1464,6 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "questions");
-
-            migrationBuilder.DropTable(
-                name: "Users");
         }
     }
 }
