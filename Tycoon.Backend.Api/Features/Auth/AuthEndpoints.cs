@@ -13,6 +13,7 @@ namespace Tycoon.Backend.Api.Features.Auth
             var authGroup = app.MapGroup("/auth").WithTags("Authentication").WithOpenApi();
 
             authGroup.MapPost("/register", HandleRegistration);
+            authGroup.MapPost("/signup", HandleSignup);
             authGroup.MapPost("/login", HandleLogin);
             authGroup.MapPost("/refresh", HandleTokenRefresh);
             authGroup.MapPost("/logout", HandleLogout).RequireAuthorization();
@@ -44,6 +45,94 @@ namespace Tycoon.Backend.Api.Features.Auth
                     error = "registration_failed", 
                     message = error.Message 
                 });
+            }
+        }
+
+        /// <summary>
+        /// Registers a new user account and immediately logs them in, returning auth tokens.
+        /// This is the preferred endpoint for mobile apps that want to register + login in one call.
+        /// </summary>
+        private static async Task<IResult> HandleSignup(
+            [FromBody] SignupRequest request,
+            IAuthService authService,
+            CancellationToken cancellation)
+        {
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return Results.BadRequest(new { error = "Email is required" });
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+                return Results.BadRequest(new { error = "Password is required" });
+
+            if (string.IsNullOrWhiteSpace(request.DeviceId))
+                return Results.BadRequest(new { error = "DeviceId is required" });
+
+            if (request.Password.Length < 8)
+                return Results.BadRequest(new { error = "Password must be at least 8 characters" });
+
+            try
+            {
+                // Extract handle (username) from request
+                // Flutter sends "username" but backend uses "handle"
+                var handle = request.Username
+                    ?? request.Handle
+                    ?? request.Email.Split('@')[0]; // Fallback to email prefix
+
+                // Step 1: Register the user
+                var registeredUser = await authService.RegisterAsync(
+                    email: request.Email,
+                    password: request.Password,
+                    handle: handle,
+                    country: request.Country);
+
+                // Step 2: Immediately log them in to get tokens
+                var authData = await authService.LoginAsync(
+                    email: request.Email,
+                    password: request.Password,
+                    deviceId: request.DeviceId);
+
+                // Step 3: Return tokens + user info (same format as login)
+                var signupResult = new SignupResponse(
+                    AccessToken: authData.AccessToken,
+                    RefreshToken: authData.RefreshToken,
+                    ExpiresIn: authData.ExpiresIn,
+                    UserId: authData.User.Id.ToString(),
+                    User: authData.User
+                );
+
+                return Results.Ok(signupResult);
+            }
+            catch (InvalidOperationException error) when (error.Message.Contains("email is already in use"))
+            {
+                return Results.Conflict(new
+                {
+                    error = "email_already_exists",
+                    message = "This email is already registered"
+                });
+            }
+            catch (InvalidOperationException error) when (error.Message.Contains("handle is not available"))
+            {
+                return Results.Conflict(new
+                {
+                    error = "username_taken",
+                    message = "This username is already taken"
+                });
+            }
+            catch (InvalidOperationException error)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "signup_failed",
+                    message = error.Message
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // This shouldn't happen since we just created the account,
+                // but handle it gracefully just in case
+                return Results.Problem(
+                    detail: "Account created but auto-login failed",
+                    statusCode: 500);
             }
         }
 

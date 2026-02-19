@@ -4,12 +4,7 @@
     <Project Path="Tycoon.Backend.Application/Tycoon.Backend.Application.csproj" />
     <Project Path="Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj" />
     <Project Path="Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj" />
-    <Project Path="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj" Id="6ebb1ab7-19b0-43b3-a87e-66cc35b699d2" />
-  </Folder>
-  <Folder Name="/Data/">
-    <Project Path="ElasticSearch/Elastic.csproj" />
-    <Project Path="Mongo/Mongo.csproj" />
-    <Project Path="Postgres/Postgres.csproj" />
+    <Project Path="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj" />
   </Folder>
   <Folder Name="/Hosting/">
     <Project Path="Tycoon.AppHost/Tycoon.AppHost.csproj" />
@@ -23,7 +18,7 @@
   <Folder Name="/tests/">
     <Project Path="Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj" />
     <Project Path="Tycoon.Backend.Application.Tests/Tycoon.Backend.Application.Tests.csproj" />
-    <Project Path="Tycoon.Backend.Infrastructure.Tests/Tycoon.Backend.Infrastructure.Tests.csproj" Id="8d98ded1-ac41-422e-b33c-3b205eb68ebe" />
+    <Project Path="Tycoon.Backend.Infrastructure.Tests/Tycoon.Backend.Infrastructure.Tests.csproj" />
   </Folder>
   <Project Path="Tycoon.MigrationService/Tycoon.MigrationService.csproj" />
   <Project Path="Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj" />

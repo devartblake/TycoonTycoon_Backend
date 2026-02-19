@@ -23,9 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ElasticSearch\Elastic.csproj" />
-    <ProjectReference Include="..\Mongo\Mongo.csproj" />
-    <ProjectReference Include="..\Postgres\Postgres.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Application\Tycoon.Backend.Application.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Domain\Tycoon.Backend.Domain.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
