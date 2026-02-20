@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -395,67 +394,6 @@ if (hangfireEnabled)
         app.Logger.LogError(ex, "Failed to configure Hangfire recurring jobs");
     }
 }
-
-// Login
-app.MapPost("/auth/signup", async (
-    [FromBody] SignupRequest request,
-    [FromServices] IAuthService authService,
-    CancellationToken ct) =>
-{
-    // Validate input
-    if (string.IsNullOrWhiteSpace(request.Email))
-        return Results.BadRequest(new { error = "Email is required" });
-
-    if (string.IsNullOrWhiteSpace(request.Password))
-        return Results.BadRequest(new { error = "Password is required" });
-
-    if (string.IsNullOrWhiteSpace(request.DeviceId))
-        return Results.BadRequest(new { error = "DeviceId is required" });
-
-    if (request.Password.Length < 8)
-        return Results.BadRequest(new { error = "Password must be at least 8 characters" });
-
-    try
-    {
-        // Create the user account
-        var user = await authService.CreateUserAsync(
-            email: request.Email,
-            password: request.Password,
-            username: request.Username ?? request.Email.Split('@')[0],
-            ct: ct);
-
-        // Generate auth tokens for the new user
-        var tokens = await authService.CreateTokensForDeviceAsync(
-            userId: user.Id,
-            deviceId: request.DeviceId,
-            ct: ct);
-
-        return Results.Ok(new
-        {
-            accessToken = tokens.AccessToken,
-            refreshToken = tokens.RefreshToken,
-            expiresAtUtc = tokens.ExpiresAtUtc?.ToString("o"), // ISO 8601 format
-            userId = user.Id.ToString()
-        });
-    }
-    catch (InvalidOperationException ex) when (ex.Message.Contains("already exists"))
-    {
-        return Results.Conflict(new { error = "Email already registered" });
-    }
-    catch (Exception ex)
-    {
-        // Log the error
-        return Results.Problem(
-            detail: "An error occurred during signup",
-            statusCode: 500);
-    }
-})
-.WithName("Signup")
-.WithTags("Authentication")
-.Produces<SignupResponse>(200)
-.Produces(400)
-.Produces(409)
-.Produces(500);
 
 // Health endpoints
 app.MapGet("/", () => Results.Ok(new

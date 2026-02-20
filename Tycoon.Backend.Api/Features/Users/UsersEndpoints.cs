@@ -15,38 +15,7 @@ namespace Tycoon.Backend.Api.Features.Users
                 .WithTags("Users")
                 .RequireAuthorization();
 
-            usersGroup.MapGet("/me", RetrieveCurrentUser);
             usersGroup.MapPatch("/me", UpdateCurrentUserProfile);
-        }
-
-        private static async Task<IResult> RetrieveCurrentUser(
-            HttpContext httpContext, 
-            IAppDb database, 
-            CancellationToken cancellation)
-        {
-            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            
-            if (userIdClaim?.Value == null) 
-                return Results.Unauthorized();
-
-            var parsedUserId = Guid.Parse(userIdClaim.Value);
-            var currentUser = await database.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == parsedUserId, cancellation);
-            
-            if (currentUser == null) 
-                return Results.NotFound();
-
-            var userProfile = new UserDto(
-                currentUser.Id, 
-                currentUser.Handle, 
-                currentUser.Email, 
-                currentUser.Country, 
-                currentUser.Tier, 
-                currentUser.Mmr
-            );
-            
-            return Results.Ok(userProfile);
         }
 
         private static async Task<IResult> UpdateCurrentUserProfile(

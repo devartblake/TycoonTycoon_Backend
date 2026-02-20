@@ -139,44 +139,6 @@ namespace Tycoon.Backend.Application.Auth
             return tokenHandler.WriteToken(tokenDescriptor);
         }
 
-        public async Task<User> CreateUserAsync(
-        string email,
-        string password,
-        string? username = null,
-        CancellationToken ct = default)
-        {
-            // Check if email already exists
-            var existingUser = await _database.Users
-                .AsNoTracking()
-                .Where(u => u.Email == email)
-                .FirstOrDefaultAsync(ct);
-
-            if (existingUser != null)
-            {
-                throw new InvalidOperationException("A user with this email already exists");
-            }
-
-            // Hash the password
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
-
-            // Create the user entity
-            var newUser = new User(
-                // Id = Guid.NewGuid(),
-                email,
-                username ?? email.Split('@')[0],
-                passwordHash,
-                DateTime.UtcNow,
-                false // Set to true if you want to skip email verification
-                                         // Add any other required User properties here
-            );
-
-            // Save to database
-            _database.Users.Add(newUser);
-            await _database.SaveChangesAsync(ct);
-
-            return newUser;
-        }
-
         private async Task<string> CreateRefreshTokenForDevice(Guid userId, string deviceId)
         {
             var randomBytes = RandomNumberGenerator.GetBytes(64);
