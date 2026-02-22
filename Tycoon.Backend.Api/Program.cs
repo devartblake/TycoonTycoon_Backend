@@ -14,6 +14,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Net.WebSockets;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -350,6 +351,7 @@ app.UseCors(c => c.AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials()
                   .SetIsOriginAllowed(_ => true));
+app.UseWebSockets();
 app.UseRateLimiter();
 app.UseMiddleware<AdminOpsKeyMiddleware>();
 
@@ -483,6 +485,32 @@ app.MapGet("/swagger-debug", () =>
     }
 }).AllowAnonymous().WithTags("Debug");
 
+// WebSocket endpoint
+app.Map("/ws", async context =>
+{
+    if (context.WebSockets.IsWebSocketRequest)
+    {
+        using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+        // Send welcome message
+        var welcomeMsg = Encoding.UTF8.GetBytes("{\"op\":\"hello\",\"ts\":" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + "}");
+        await webSocket.SendAsync(
+            new ArraySegment<byte>(welcomeMsg),
+            WebSocketMessageType.Text,
+            true,
+            CancellationToken.None
+        );
+
+        // Keep connection alive
+        await HandleWebSocket(webSocket);
+    }
+    else
+    {
+        context.Response.StatusCode = 400;
+        await context.Response.WriteAsync("WebSocket connection required");
+    }
+});
+
 // app.MapControllers();
 
 // SignalR hubs
@@ -548,6 +576,37 @@ if (app.Environment.IsDevelopment())
 
 app.Run();
 
+async Task HandleWebSocket(WebSocket webSocket)
+{
+    var buffer = new byte[1024 * 4];
+
+    while (webSocket.State == WebSocketState.Open)
+    {
+        var result = await webSocket.ReceiveAsync(
+            new ArraySegment<byte>(buffer),
+            CancellationToken.None
+        );
+
+        if (result.MessageType == WebSocketMessageType.Close)
+        {
+            await webSocket.CloseAsync(
+                WebSocketCloseStatus.NormalClosure,
+                "Closing",
+                CancellationToken.None
+            );
+        }
+        else
+        {
+            // Echo back for testing
+            await webSocket.SendAsync(
+                new ArraySegment<byte>(buffer, 0, result.Count),
+                result.MessageType,
+                result.EndOfMessage,
+                CancellationToken.None
+            );
+        }
+    }
+}
 public partial class Program { }
 
 public class HangfireAuthorizationFilter : Hangfire.Dashboard.IDashboardAuthorizationFilter
