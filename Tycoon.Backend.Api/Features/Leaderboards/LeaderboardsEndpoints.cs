@@ -46,31 +46,96 @@ namespace Tycoon.Backend.Api.Features.Leaderboards
             });
         }
 
+
+        private sealed record LegacyLeaderboardRow(
+            Guid PlayerId,
+            string Username,
+            int Score,
+            int Rank,
+            int Tier,
+            int TierRank,
+            int Level);
+
         private static void MapLegacyLeaderboard(RouteGroupBuilder legacy)
         {
             legacy.MapGet("", async (
                 [FromQuery] int limit,
                 IAppDb db,
+                ILoggerFactory loggerFactory,
                 CancellationToken ct) =>
             {
+                var logger = loggerFactory.CreateLogger("Leaderboards.Legacy");
                 var take = limit <= 0 ? 100 : Math.Min(limit, 500);
 
-                var rows = await (
-                    from e in db.LeaderboardEntries.AsNoTracking()
-                    join p in db.Players.AsNoTracking() on e.PlayerId equals p.Id
-                    orderby e.GlobalRank ascending
-                    select new
-                    {
-                        e.PlayerId,
-                        p.Username,
-                        e.Score,
-                        Rank = e.GlobalRank,
-                        Tier = e.TierId,
-                        e.TierRank,
-                        p.Level
-                    })
-                    .Take(take)
-                    .ToListAsync(ct);
+                List<LegacyLeaderboardRow> rows;
+                try
+                {
+                    rows = await (
+                        from e in db.LeaderboardEntries.AsNoTracking()
+                        join p in db.Players.AsNoTracking() on e.PlayerId equals p.Id
+                        orderby e.GlobalRank ascending
+                        select new
+                        {
+                            e.PlayerId,
+                            p.Username,
+                            e.Score,
+                            Rank = e.GlobalRank,
+                            Tier = e.TierId,
+                            e.TierRank,
+                            p.Level
+                        })
+                        .Take(take)
+                                                .Select(x => new LegacyLeaderboardRow(
+                            x.PlayerId,
+                            x.Username,
+                            x.Score,
+                            x.Rank,
+                            x.Tier,
+                            x.TierRank,
+                            x.Level))
+                        .ToListAsync(ct);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Legacy leaderboard query failed; falling back to players snapshot.");
+
+                    var fallbackPlayers = await db.Players.AsNoTracking()
+                        .OrderByDescending(x => x.Score)
+                        .ThenBy(x => x.Id)
+                        .Take(take)
+                        .Select(x => new
+                        {
+                            PlayerId = x.Id,
+                            Username = x.Username,
+                            Score = x.Score,
+                            Rank = 0,
+                            Tier = 0,
+                            TierRank = 0,
+                            x.Level
+                        })
+                        .ToListAsync(ct);
+
+                    rows = fallbackPlayers
+                        .Select((x, i) => new
+                        {
+                            x.PlayerId,
+                            x.Username,
+                            x.Score,
+                            Rank = i + 1,
+                            x.Tier,
+                            x.TierRank,
+                            x.Level
+                        })
+                        .Select(x => new LegacyLeaderboardRow(
+                            x.PlayerId,
+                            x.Username,
+                            x.Score,
+                            x.Rank,
+                            x.Tier,
+                            x.TierRank,
+                            x.Level))
+                        .ToList();
+                }
 
                 var payload = rows.Select(x => new Dictionary<string, object?>
                 {
