@@ -37,9 +37,6 @@ using Tycoon.Backend.Api.Features.Matches;
 using Tycoon.Backend.Api.Features.Matchmaking;
 using Tycoon.Backend.Api.Features.Missions;
 using Tycoon.Backend.Api.Features.Mobile.Matches;
-using Tycoon.Backend.Api.Features.Mobile.Seasons;
-using Tycoon.Backend.Api.Features.Mobile.Players;
-using Tycoon.Backend.Api.Features.Mobile.Leaderboards;
 using Tycoon.Backend.Api.Features.Party;
 using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
@@ -515,9 +512,6 @@ SeasonRewardsEndpoints.Map(app);
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
 var mobile = app.MapGroup("/mobile").WithTags("Mobile").WithOpenApi();
 MobileMatchesEndpoints.Map(mobile);
-MobilePlayersEndpoints.Map(mobile);
-MobileLeaderboardsEndpoints.Map(mobile);
-MobileSeasonsEndpoints.Map(mobile);
 
 // Admin endpoints
 var admin = app.MapGroup("/admin").RequireAdminOpsKey();
