@@ -800,7 +800,6 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Asp.Versioning.Http.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Asp.Versioning.Mvc.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Asp.Versioning.Mvc.ApiExplorer.dll
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Aspire.MongoDB.Driver.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\HealthChecks.MongoDb.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\HealthChecks.Network.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\HealthChecks.NpgSql.dll
@@ -811,7 +810,6 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\AWSSDK.SimpleNotificationService.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\AWSSDK.SQS.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\BCrypt.Net-Next.dll
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Bogus.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Cassandra.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Confluent.Kafka.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Dapper.dll
@@ -926,7 +924,6 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Microsoft.Win32.SystemEvents.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\MongoDB.Bson.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\MongoDB.Driver.dll
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\MongoDB.Driver.Core.Extensions.DiagnosticSources.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Mono.TextTemplating.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Newtonsoft.Json.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Npgsql.dll
@@ -1138,9 +1135,6 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\runtimes\win\lib\net9.0\System.Text.Encodings.Web.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\runtimes\win\lib\netcoreapp3.0\System.Windows.Extensions.dll
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Elastic.dll
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Mongo.dll
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Postgres.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Backend.Application.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Backend.Domain.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Backend.Infrastructure.dll
@@ -1149,9 +1143,6 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Shared.Contracts.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Shared.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Shared.Observability.dll
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Elastic.pdb
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Mongo.pdb
-C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Postgres.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Backend.Application.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Backend.Domain.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\Tycoon.Backend.Infrastructure.pdb
