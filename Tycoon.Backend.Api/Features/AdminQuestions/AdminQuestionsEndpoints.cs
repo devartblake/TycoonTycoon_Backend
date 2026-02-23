@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Questions;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -49,13 +50,16 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                     PageSize: page is <= 0 ? 25 : Math.Clamp(pageSize, 1, 200)
                 ), ct);
 
-                return Results.Ok(dto);
+                var pageEnvelope = AdminApiResponses.Page(dto.Items, dto.Page, dto.PageSize, dto.Total);
+                return Results.Ok(pageEnvelope);
             });
 
             g.MapGet("/{id:guid}", async (Guid id, IMediator mediator, CancellationToken ct) =>
             {
                 var dto = await mediator.Send(new AdminGetQuestion(id), ct);
-                return dto is null ? Results.NotFound() : Results.Ok(dto);
+                return dto is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
+                    : Results.Ok(dto);
             });
 
             g.MapPost("", async ([FromBody] CreateQuestionRequest req, IMediator mediator, CancellationToken ct) =>
@@ -74,13 +78,18 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
             g.MapPut("/{id:guid}", async (Guid id, [FromBody] UpdateQuestionRequest req, IMediator mediator, CancellationToken ct) =>
             {
                 var dto = await mediator.Send(new AdminUpdateQuestion(id, req), ct);
-                return dto is null ? Results.NotFound() : Results.Ok(dto);
+                return dto is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
+                    : Results.Ok(new { id = dto.Id, updatedAt = DateTime.UtcNow });
             });
 
-            g.MapDelete("/{id:guid}", async (Guid id, IMediator mediator, CancellationToken ct) =>
+            // Legacy support
+            g.MapPut("/{id:guid}", async (Guid id, [FromBody] UpdateQuestionRequest req, IMediator mediator, CancellationToken ct) =>
             {
-                var ok = await mediator.Send(new AdminDeleteQuestion(id), ct);
-                return ok ? Results.NoContent() : Results.NotFound();
+                var dto = await mediator.Send(new AdminUpdateQuestion(id, req), ct);
+                return dto is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
+                    : Results.Ok(dto);
             });
 
             g.MapPost("/bulk", async ([FromBody] ImportQuestionsRequest req, IMediator mediator, CancellationToken ct) =>
@@ -123,6 +132,13 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 var dto = await mediator.Send(new AdminImportQuestions(req), ct);
                 return Results.Ok(dto);
             });
+        }
+
+        private static string BuildSort(string? sortBy, string? sortOrder)
+        {
+            var by = string.IsNullOrWhiteSpace(sortBy) ? "updated" : sortBy.Trim().ToLowerInvariant();
+            var order = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "asc" : "desc";
+            return $"{by}_{order}";
         }
 
         private static string BuildSort(string? sortBy, string? sortOrder)

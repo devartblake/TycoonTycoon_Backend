@@ -26,7 +26,7 @@ public static class AdminAuthEndpoints
 
         g.MapPost("/login", Login);
         g.MapPost("/refresh", Refresh);
-        g.MapGet("/me", Me);
+        g.MapGet("/me", Me).RequireAuthorization();
     }
 
     private static async Task<IResult> Login(
