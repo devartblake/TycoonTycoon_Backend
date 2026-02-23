@@ -22,14 +22,19 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Tycoon.Backend.Api.Features.AdminAnalytics;
 using Tycoon.Backend.Api.Features.AdminAntiCheat;
+using Tycoon.Backend.Api.Features.AdminAuth;
 using Tycoon.Backend.Api.Features.AdminEconomy;
+using Tycoon.Backend.Api.Features.AdminEventQueue;
 using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
 using Tycoon.Backend.Api.Features.AdminModeration;
+using Tycoon.Backend.Api.Features.AdminNotifications;
+using Tycoon.Backend.Api.Features.AdminConfig;
 using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminSeasons;
 using Tycoon.Backend.Api.Features.AdminSkills;
+using Tycoon.Backend.Api.Features.AdminUsers;
 using Tycoon.Backend.Api.Features.Analytics;
 using Tycoon.Backend.Api.Features.Auth;
 using Tycoon.Backend.Api.Features.Friends;
@@ -548,8 +553,18 @@ MobileLeaderboardsEndpoints.Map(mobile);
 MobileSeasonsEndpoints.Map(mobile);
 
 // Admin endpoints
-var admin = app.MapGroup("/admin").RequireAdminOpsKey();
+var adminAuth = app.MapGroup("/admin").RequireAdminOpsKey();
+AdminAuthEndpoints.Map(adminAuth);
+
+var admin = app.MapGroup("/admin")
+    .RequireAdminOpsKey()
+    .RequireAdminRoleClaims();
+
 AdminQuestionsEndpoints.Map(admin);
+AdminUsersEndpoints.Map(admin);
+AdminEventQueueEndpoints.Map(admin);
+AdminNotificationsEndpoints.Map(admin);
+AdminConfigEndpoints.Map(admin);
 AdminMediaEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);

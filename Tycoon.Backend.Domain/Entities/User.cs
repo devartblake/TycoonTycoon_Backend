@@ -48,5 +48,10 @@ namespace Tycoon.Backend.Domain.Entities
         {
             LastLoginAt = DateTimeOffset.UtcNow;
         }
+
+        public void SetActive(bool isActive)
+        {
+            IsActive = isActive;
+        }
     }
 }
