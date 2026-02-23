@@ -91,3 +91,10 @@ This priority split is intended to unblock frontend integration first and keep o
    - Add metrics and dashboards for notification send/schedule success/failure.
 4. Contract completeness and QA
    - Run full .NET test suite in CI with SDK installed and add contract tests for error envelopes on all admin endpoints.
+
+
+## Hardening progress
+
+- Replaced in-memory admin notifications/config endpoint state with database-backed persistence entities and EF mappings.
+- Added in-memory EF registration for test mode (`Testing:UseInMemoryDb`) so integration tests can execute against `AppDb`.
+- Remaining hardening work is focused on delivery workers/retries, stronger JWT scope policies, and CI test execution.

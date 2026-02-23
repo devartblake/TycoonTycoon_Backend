@@ -1,148 +1,232 @@
-using System.Collections.Concurrent;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.AdminNotifications;
 
 public static class AdminNotificationsEndpoints
 {
-    private static readonly ConcurrentDictionary<string, AdminNotificationChannelDto> Channels = new(
-        new[]
-        {
-            new KeyValuePair<string, AdminNotificationChannelDto>(
-                "admin_basic",
-                new AdminNotificationChannelDto("admin_basic", "Admin Basic", "General admin notifications", "high", true))
-        });
-
-    private static readonly ConcurrentDictionary<string, AdminNotificationScheduledItemDto> Schedules = new();
-    private static readonly ConcurrentDictionary<string, AdminNotificationTemplateDto> Templates = new();
-    private static readonly ConcurrentQueue<AdminNotificationHistoryItemDto> History = new();
-
     public static void Map(RouteGroupBuilder admin)
     {
         var g = admin.MapGroup("/notifications").WithTags("Admin/Notifications").WithOpenApi();
 
-        g.MapGet("/channels", () => Results.Ok(Channels.Values.OrderBy(x => x.Key)));
-
-        g.MapPut("/channels/{key}", (string key, [FromBody] UpsertAdminNotificationChannelRequest request) =>
+        g.MapGet("/channels", async (IAppDb db, CancellationToken ct) =>
         {
-            var dto = new AdminNotificationChannelDto(key, request.Name, request.Description, request.Importance, request.Enabled);
-            Channels[key] = dto;
-            return Results.Ok(dto);
+            await EnsureSeedChannel(db, ct);
+            var channels = await db.AdminNotificationChannels.AsNoTracking()
+                .OrderBy(x => x.Key)
+                .Select(x => new AdminNotificationChannelDto(x.Key, x.Name, x.Description, x.Importance, x.Enabled))
+                .ToListAsync(ct);
+            return Results.Ok(channels);
         });
 
-        g.MapPost("/send", ([FromBody] AdminNotificationSendRequest request) =>
+        g.MapPut("/channels/{key}", async (string key, [FromBody] UpsertAdminNotificationChannelRequest request, IAppDb db, CancellationToken ct) =>
         {
-            if (!Channels.ContainsKey(request.ChannelKey))
+            var channel = await db.AdminNotificationChannels.FirstOrDefaultAsync(x => x.Key == key, ct);
+            if (channel is null)
+            {
+                channel = new AdminNotificationChannel(key, request.Name, request.Description, request.Importance, request.Enabled);
+                db.AdminNotificationChannels.Add(channel);
+            }
+            else
+            {
+                channel.Update(request.Name, request.Description, request.Importance, request.Enabled);
+            }
+
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(new AdminNotificationChannelDto(channel.Key, channel.Name, channel.Description, channel.Importance, channel.Enabled));
+        });
+
+        g.MapPost("/send", async ([FromBody] AdminNotificationSendRequest request, IAppDb db, CancellationToken ct) =>
+        {
+            if (!await db.AdminNotificationChannels.AnyAsync(x => x.Key == request.ChannelKey, ct))
             {
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
             var jobId = $"push_job_{Guid.NewGuid():N}";
-            History.Enqueue(new AdminNotificationHistoryItemDto(
-                Id: jobId,
-                ChannelKey: request.ChannelKey,
-                Title: request.Title,
-                Status: "queued",
-                CreatedAt: DateTimeOffset.UtcNow,
-                Metadata: request.Payload));
+            db.AdminNotificationHistory.Add(new AdminNotificationHistory(
+                id: jobId,
+                channelKey: request.ChannelKey,
+                title: request.Title,
+                status: "queued",
+                createdAt: DateTimeOffset.UtcNow,
+                metadataJson: request.Payload is null ? null : JsonSerializer.Serialize(request.Payload)));
 
+            await db.SaveChangesAsync(ct);
             return Results.Accepted(value: new AdminNotificationSendResponse(jobId, EstimatedRecipients: 0));
         });
 
-        g.MapPost("/schedule", ([FromBody] AdminNotificationScheduleRequest request) =>
+        g.MapPost("/schedule", async ([FromBody] AdminNotificationScheduleRequest request, IAppDb db, CancellationToken ct) =>
         {
-            if (!Channels.ContainsKey(request.ChannelKey))
+            if (!await db.AdminNotificationChannels.AnyAsync(x => x.Key == request.ChannelKey, ct))
             {
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
             var scheduleId = $"sch_{Guid.NewGuid():N}";
-            var dto = new AdminNotificationScheduledItemDto(scheduleId, request.Title, request.ChannelKey, request.ScheduledAt, "scheduled");
-            Schedules[scheduleId] = dto;
+            db.AdminNotificationSchedules.Add(new AdminNotificationSchedule(scheduleId, request.Title, request.Body, request.ChannelKey, request.ScheduledAt));
+            await db.SaveChangesAsync(ct);
+
             return Results.Created($"/admin/notifications/scheduled/{scheduleId}", new AdminNotificationScheduleResponse(scheduleId));
         });
 
-        g.MapGet("/scheduled", ([FromQuery] int page, [FromQuery] int pageSize) =>
+        g.MapGet("/scheduled", async ([FromQuery] int page, [FromQuery] int pageSize, IAppDb db, CancellationToken ct) =>
         {
             page = page <= 0 ? 1 : page;
             pageSize = pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200);
 
-            var all = Schedules.Values.OrderBy(x => x.ScheduledAt).ToList();
-            var totalItems = all.Count;
-            var items = all.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var baseQ = db.AdminNotificationSchedules.AsNoTracking().Where(x => x.Status == "scheduled");
+            var totalItems = await baseQ.CountAsync(ct);
+            var items = await baseQ.OrderBy(x => x.ScheduledAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new AdminNotificationScheduledItemDto(x.ScheduleId, x.Title, x.ChannelKey, x.ScheduledAt, x.Status))
+                .ToListAsync(ct);
             var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
 
             return Results.Ok(new AdminNotificationScheduledListResponse(items, page, pageSize, totalItems, totalPages));
         });
 
-        g.MapDelete("/scheduled/{scheduleId}", (string scheduleId) =>
+        g.MapDelete("/scheduled/{scheduleId}", async (string scheduleId, IAppDb db, CancellationToken ct) =>
         {
-            return Schedules.TryRemove(scheduleId, out _)
-                ? Results.NoContent()
-                : AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Schedule not found.");
+            var schedule = await db.AdminNotificationSchedules.FirstOrDefaultAsync(x => x.ScheduleId == scheduleId, ct);
+            if (schedule is null)
+            {
+                return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Schedule not found.");
+            }
+
+            db.AdminNotificationSchedules.Remove(schedule);
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
         });
 
-        g.MapGet("/templates", () => Results.Ok(Templates.Values.OrderBy(x => x.Name)));
-
-        g.MapPost("/templates", ([FromBody] AdminNotificationTemplateRequest request) =>
+        g.MapGet("/templates", async (IAppDb db, CancellationToken ct) =>
         {
-            if (!Channels.ContainsKey(request.ChannelKey))
+            var templates = await db.AdminNotificationTemplates.AsNoTracking()
+                .OrderBy(x => x.Name)
+                .ToListAsync(ct);
+            var dtos = templates.Select(ToTemplateDto).ToList();
+            return Results.Ok(dtos);
+        });
+
+        g.MapPost("/templates", async ([FromBody] AdminNotificationTemplateRequest request, IAppDb db, CancellationToken ct) =>
+        {
+            if (!await db.AdminNotificationChannels.AnyAsync(x => x.Key == request.ChannelKey, ct))
             {
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
             var id = $"tpl_{Guid.NewGuid():N}";
-            var dto = new AdminNotificationTemplateDto(id, request.Name, request.Title, request.Body, request.ChannelKey, request.Variables, DateTimeOffset.UtcNow);
-            Templates[id] = dto;
-            return Results.Created($"/admin/notifications/templates/{id}", dto);
+            var entity = new AdminNotificationTemplate(id, request.Name, request.Title, request.Body, request.ChannelKey, JsonSerializer.Serialize(request.Variables));
+            db.AdminNotificationTemplates.Add(entity);
+            await db.SaveChangesAsync(ct);
+            return Results.Created($"/admin/notifications/templates/{id}", ToTemplateDto(entity));
         });
 
-        g.MapPatch("/templates/{templateId}", (string templateId, [FromBody] AdminNotificationTemplateRequest request) =>
+        g.MapPatch("/templates/{templateId}", async (string templateId, [FromBody] AdminNotificationTemplateRequest request, IAppDb db, CancellationToken ct) =>
         {
-            if (!Templates.ContainsKey(templateId))
+            var entity = await db.AdminNotificationTemplates.FirstOrDefaultAsync(x => x.TemplateId == templateId, ct);
+            if (entity is null)
             {
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Template not found.");
             }
 
-            if (!Channels.ContainsKey(request.ChannelKey))
+            if (!await db.AdminNotificationChannels.AnyAsync(x => x.Key == request.ChannelKey, ct))
             {
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
-            var dto = new AdminNotificationTemplateDto(templateId, request.Name, request.Title, request.Body, request.ChannelKey, request.Variables, DateTimeOffset.UtcNow);
-            Templates[templateId] = dto;
-            return Results.Ok(dto);
+            entity.Update(request.Name, request.Title, request.Body, request.ChannelKey, JsonSerializer.Serialize(request.Variables));
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(ToTemplateDto(entity));
         });
 
-        g.MapDelete("/templates/{templateId}", (string templateId) =>
+        g.MapDelete("/templates/{templateId}", async (string templateId, IAppDb db, CancellationToken ct) =>
         {
-            return Templates.TryRemove(templateId, out _)
-                ? Results.NoContent()
-                : AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Template not found.");
+            var entity = await db.AdminNotificationTemplates.FirstOrDefaultAsync(x => x.TemplateId == templateId, ct);
+            if (entity is null)
+            {
+                return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Template not found.");
+            }
+
+            db.AdminNotificationTemplates.Remove(entity);
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
         });
 
-        g.MapGet("/history", ([FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to, [FromQuery] string? channelKey, [FromQuery] string? status, [FromQuery] int page, [FromQuery] int pageSize) =>
+        g.MapGet("/history", async (
+            [FromQuery] DateTimeOffset? from,
+            [FromQuery] DateTimeOffset? to,
+            [FromQuery] string? channelKey,
+            [FromQuery] string? status,
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
+            IAppDb db,
+            CancellationToken ct) =>
         {
             page = page <= 0 ? 1 : page;
             pageSize = pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200);
 
-            var all = History.ToList().AsEnumerable();
-            if (from.HasValue) all = all.Where(x => x.CreatedAt >= from.Value);
-            if (to.HasValue) all = all.Where(x => x.CreatedAt <= to.Value);
-            if (!string.IsNullOrWhiteSpace(channelKey)) all = all.Where(x => string.Equals(x.ChannelKey, channelKey, StringComparison.OrdinalIgnoreCase));
-            if (!string.IsNullOrWhiteSpace(status)) all = all.Where(x => string.Equals(x.Status, status, StringComparison.OrdinalIgnoreCase));
+            var q = db.AdminNotificationHistory.AsNoTracking().AsQueryable();
+            if (from.HasValue) q = q.Where(x => x.CreatedAt >= from.Value);
+            if (to.HasValue) q = q.Where(x => x.CreatedAt <= to.Value);
+            if (!string.IsNullOrWhiteSpace(channelKey)) q = q.Where(x => x.ChannelKey == channelKey);
+            if (!string.IsNullOrWhiteSpace(status)) q = q.Where(x => x.Status == status);
 
-            var ordered = all.OrderByDescending(x => x.CreatedAt).ToList();
-            var totalItems = ordered.Count;
-            var items = ordered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var totalItems = await q.CountAsync(ct);
+            var rows = await q.OrderByDescending(x => x.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
             var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            var items = rows.Select(x => new AdminNotificationHistoryItemDto(
+                x.Id,
+                x.ChannelKey,
+                x.Title,
+                x.Status,
+                x.CreatedAt,
+                DeserializeMetadata(x.MetadataJson))).ToList();
 
             return Results.Ok(new AdminNotificationHistoryResponse(items, page, pageSize, totalItems, totalPages));
         });
+    }
+
+    private static AdminNotificationTemplateDto ToTemplateDto(AdminNotificationTemplate x)
+        => new(x.TemplateId, x.Name, x.Title, x.Body, x.ChannelKey, DeserializeVariables(x.VariablesJson), x.UpdatedAtUtc);
+
+    private static IReadOnlyList<string> DeserializeVariables(string json)
+    {
+        try { return JsonSerializer.Deserialize<List<string>>(json) ?? []; }
+        catch { return []; }
+    }
+
+    private static Dictionary<string, object>? DeserializeMetadata(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            return parsed;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static async Task EnsureSeedChannel(IAppDb db, CancellationToken ct)
+    {
+        if (await db.AdminNotificationChannels.AnyAsync(x => x.Key == "admin_basic", ct)) return;
+        db.AdminNotificationChannels.Add(new AdminNotificationChannel("admin_basic", "Admin Basic", "General admin notifications", "high", true));
+        await db.SaveChangesAsync(ct);
     }
 }

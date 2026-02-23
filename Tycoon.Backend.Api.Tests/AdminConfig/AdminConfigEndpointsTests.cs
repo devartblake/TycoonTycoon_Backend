@@ -31,5 +31,10 @@ public sealed class AdminConfigEndpointsTests : IClassFixture<TycoonApiFactory>
 
         var patchBody = await patchResp.Content.ReadFromJsonAsync<UpdateAdminAppConfigResponse>();
         patchBody.Should().NotBeNull();
+
+        var verifyResp = await _http.GetAsync("/admin/config");
+        verifyResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var verifyCfg = await verifyResp.Content.ReadFromJsonAsync<AdminAppConfigDto>();
+        verifyCfg!.EnableLogging.Should().BeTrue();
     }
 }

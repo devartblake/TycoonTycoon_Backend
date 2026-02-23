@@ -51,6 +51,11 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<SeasonRankSnapshotRow> SeasonRankSnapshots { get; }
         DbSet<User> Users { get; }
         DbSet<RefreshToken> RefreshTokens { get; }
+        DbSet<AdminNotificationChannel> AdminNotificationChannels { get; }
+        DbSet<AdminNotificationSchedule> AdminNotificationSchedules { get; }
+        DbSet<AdminNotificationTemplate> AdminNotificationTemplates { get; }
+        DbSet<AdminNotificationHistory> AdminNotificationHistory { get; }
+        DbSet<AdminAppConfig> AdminAppConfigs { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);

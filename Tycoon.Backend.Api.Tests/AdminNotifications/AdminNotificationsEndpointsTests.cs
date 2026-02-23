@@ -21,6 +21,9 @@ public sealed class AdminNotificationsEndpointsTests : IClassFixture<TycoonApiFa
     {
         var channelsResp = await _http.GetAsync("/admin/notifications/channels");
         channelsResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var channels = await channelsResp.Content.ReadFromJsonAsync<List<AdminNotificationChannelDto>>();
+        channels.Should().NotBeNull();
+        channels!.Should().Contain(c => c.Key == "admin_basic");
 
         var putResp = await _http.PutAsJsonAsync("/admin/notifications/channels/admin_promos",
             new UpsertAdminNotificationChannelRequest("Promos", "Promo channel", "high", true));
