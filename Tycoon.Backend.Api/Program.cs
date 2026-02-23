@@ -22,6 +22,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Tycoon.Backend.Api.Features.AdminAnalytics;
 using Tycoon.Backend.Api.Features.AdminAntiCheat;
+using Tycoon.Backend.Api.Features.AdminAuth;
 using Tycoon.Backend.Api.Features.AdminEconomy;
 using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
@@ -549,6 +550,7 @@ MobileSeasonsEndpoints.Map(mobile);
 
 // Admin endpoints
 var admin = app.MapGroup("/admin").RequireAdminOpsKey();
+AdminAuthEndpoints.Map(admin);
 AdminQuestionsEndpoints.Map(admin);
 AdminMediaEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
