@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Events;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -51,5 +50,13 @@ public static class AdminEventQueueEndpoints
         return Results.Accepted(value: dto);
     }
 
-    private static IResult Validation(string message) => AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", message);
+    private static IResult Validation(string message) => Results.Json(new
+    {
+        error = new
+        {
+            code = "VALIDATION_ERROR",
+            message,
+            details = new { }
+        }
+    }, statusCode: StatusCodes.Status422UnprocessableEntity);
 }

@@ -551,13 +551,8 @@ MobileLeaderboardsEndpoints.Map(mobile);
 MobileSeasonsEndpoints.Map(mobile);
 
 // Admin endpoints
-var adminAuth = app.MapGroup("/admin").RequireAdminOpsKey();
-AdminAuthEndpoints.Map(adminAuth);
-
-var admin = app.MapGroup("/admin")
-    .RequireAdminOpsKey()
-    .RequireAdminRoleClaims();
-
+var admin = app.MapGroup("/admin").RequireAdminOpsKey();
+AdminAuthEndpoints.Map(admin);
 AdminQuestionsEndpoints.Map(admin);
 AdminUsersEndpoints.Map(admin);
 AdminEventQueueEndpoints.Map(admin);
