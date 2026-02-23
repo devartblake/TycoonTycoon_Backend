@@ -71,13 +71,6 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
             g.MapPatch("/{id:guid}", async (Guid id, [FromBody] UpdateQuestionRequest req, IMediator mediator, CancellationToken ct) =>
             {
                 var dto = await mediator.Send(new AdminUpdateQuestion(id, req), ct);
-                return dto is null ? Results.NotFound() : Results.Ok(new { id = dto.Id, updatedAt = DateTime.UtcNow });
-            });
-
-            // Legacy support
-            g.MapPut("/{id:guid}", async (Guid id, [FromBody] UpdateQuestionRequest req, IMediator mediator, CancellationToken ct) =>
-            {
-                var dto = await mediator.Send(new AdminUpdateQuestion(id, req), ct);
                 return dto is null
                     ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
                     : Results.Ok(new { id = dto.Id, updatedAt = DateTime.UtcNow });
@@ -90,6 +83,12 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 return dto is null
                     ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
                     : Results.Ok(dto);
+            });
+
+            g.MapDelete("/{id:guid}", async (Guid id, IMediator mediator, CancellationToken ct) =>
+            {
+                var ok = await mediator.Send(new AdminDeleteQuestion(id), ct);
+                return ok ? Results.NoContent() : AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.");
             });
 
             g.MapPost("/bulk", async ([FromBody] ImportQuestionsRequest req, IMediator mediator, CancellationToken ct) =>
@@ -132,13 +131,6 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 var dto = await mediator.Send(new AdminImportQuestions(req), ct);
                 return Results.Ok(dto);
             });
-        }
-
-        private static string BuildSort(string? sortBy, string? sortOrder)
-        {
-            var by = string.IsNullOrWhiteSpace(sortBy) ? "updated" : sortBy.Trim().ToLowerInvariant();
-            var order = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "asc" : "desc";
-            return $"{by}_{order}";
         }
 
         private static string BuildSort(string? sortBy, string? sortOrder)

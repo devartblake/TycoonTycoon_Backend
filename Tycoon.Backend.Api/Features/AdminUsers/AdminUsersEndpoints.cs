@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Users;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -111,23 +112,7 @@ public static class AdminUsersEndpoints
         return dto is null ? NotFound() : Results.Ok(dto);
     }
 
-    private static IResult NotFound() => Results.Json(new
-    {
-        error = new
-        {
-            code = "NOT_FOUND",
-            message = "Resource not found.",
-            details = new { }
-        }
-    }, statusCode: StatusCodes.Status404NotFound);
+    private static IResult NotFound() => AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.");
 
-    private static IResult Validation(string message) => Results.Json(new
-    {
-        error = new
-        {
-            code = "VALIDATION_ERROR",
-            message,
-            details = new { }
-        }
-    }, statusCode: StatusCodes.Status422UnprocessableEntity);
+    private static IResult Validation(string message) => AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", message);
 }

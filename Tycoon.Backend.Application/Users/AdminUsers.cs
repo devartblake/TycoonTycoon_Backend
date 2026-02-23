@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -97,7 +98,7 @@ public sealed class AdminGetUserHandler(IAppDb db) : IRequestHandler<AdminGetUse
     }
 }
 
-public sealed class AdminCreateUserHandler(IAppDb db) : IRequestHandler<AdminCreateUser, AdminCreateUserResponse>
+public sealed class AdminCreateUserHandler(IAppDb db, ILogger<AdminCreateUserHandler> logger) : IRequestHandler<AdminCreateUser, AdminCreateUserResponse>
 {
     public async Task<AdminCreateUserResponse> Handle(AdminCreateUser r, CancellationToken ct)
     {
@@ -122,11 +123,13 @@ public sealed class AdminCreateUserHandler(IAppDb db) : IRequestHandler<AdminCre
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
 
+        logger.LogInformation("Admin user created: UserId={UserId}, Email={Email}, Username={Username}", user.Id, user.Email, user.Handle);
+
         return new AdminCreateUserResponse(AdminUsersMapper.ToContractId(user.Id), user.CreatedAt);
     }
 }
 
-public sealed class AdminUpdateUserHandler(IAppDb db) : IRequestHandler<AdminUpdateUser, AdminUpdateUserResponse?>
+public sealed class AdminUpdateUserHandler(IAppDb db, ILogger<AdminUpdateUserHandler> logger) : IRequestHandler<AdminUpdateUser, AdminUpdateUserResponse?>
 {
     public async Task<AdminUpdateUserResponse?> Handle(AdminUpdateUser r, CancellationToken ct)
     {
@@ -139,11 +142,12 @@ public sealed class AdminUpdateUserHandler(IAppDb db) : IRequestHandler<AdminUpd
         user.UpdateProfile(r.Request.Username, user.Country);
 
         await db.SaveChangesAsync(ct);
+        logger.LogInformation("Admin user updated: UserId={UserId}, Username={Username}", user.Id, user.Handle);
         return new AdminUpdateUserResponse(AdminUsersMapper.ToContractId(user.Id), DateTimeOffset.UtcNow);
     }
 }
 
-public sealed class AdminBanUserHandler(IAppDb db) : IRequestHandler<AdminBanUser, AdminBanUserResponse?>
+public sealed class AdminBanUserHandler(IAppDb db, ILogger<AdminBanUserHandler> logger) : IRequestHandler<AdminBanUser, AdminBanUserResponse?>
 {
     public async Task<AdminBanUserResponse?> Handle(AdminBanUser r, CancellationToken ct)
     {
@@ -156,11 +160,13 @@ public sealed class AdminBanUserHandler(IAppDb db) : IRequestHandler<AdminBanUse
         user.SetActive(false);
         await db.SaveChangesAsync(ct);
 
+        logger.LogInformation("Admin user banned: UserId={UserId}, Reason={Reason}, Until={Until}", user.Id, r.Request.Reason, r.Request.Until);
+
         return new AdminBanUserResponse(AdminUsersMapper.ToContractId(user.Id), true, r.Request.Until);
     }
 }
 
-public sealed class AdminUnbanUserHandler(IAppDb db) : IRequestHandler<AdminUnbanUser, AdminUnbanUserResponse?>
+public sealed class AdminUnbanUserHandler(IAppDb db, ILogger<AdminUnbanUserHandler> logger) : IRequestHandler<AdminUnbanUser, AdminUnbanUserResponse?>
 {
     public async Task<AdminUnbanUserResponse?> Handle(AdminUnbanUser r, CancellationToken ct)
     {
@@ -173,11 +179,13 @@ public sealed class AdminUnbanUserHandler(IAppDb db) : IRequestHandler<AdminUnba
         user.SetActive(true);
         await db.SaveChangesAsync(ct);
 
+        logger.LogInformation("Admin user unbanned: UserId={UserId}", user.Id);
+
         return new AdminUnbanUserResponse(AdminUsersMapper.ToContractId(user.Id), false);
     }
 }
 
-public sealed class AdminDeleteUserHandler(IAppDb db) : IRequestHandler<AdminDeleteUser, bool>
+public sealed class AdminDeleteUserHandler(IAppDb db, ILogger<AdminDeleteUserHandler> logger) : IRequestHandler<AdminDeleteUser, bool>
 {
     public async Task<bool> Handle(AdminDeleteUser r, CancellationToken ct)
     {
@@ -189,6 +197,7 @@ public sealed class AdminDeleteUserHandler(IAppDb db) : IRequestHandler<AdminDel
 
         db.Users.Remove(user);
         await db.SaveChangesAsync(ct);
+        logger.LogInformation("Admin user deleted: UserId={UserId}, Email={Email}", user.Id, user.Email);
         return true;
     }
 }

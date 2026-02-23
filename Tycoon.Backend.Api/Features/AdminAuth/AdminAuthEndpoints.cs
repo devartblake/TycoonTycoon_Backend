@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Configuration;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Auth;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -37,15 +37,7 @@ public static class AdminAuthEndpoints
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
         {
-            return Results.UnprocessableEntity(new
-            {
-                error = new
-                {
-                    code = "VALIDATION_ERROR",
-                    message = "Email and password are required.",
-                    details = new { }
-                }
-            });
+            return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "Email and password are required.");
         }
 
         try
@@ -54,15 +46,7 @@ public static class AdminAuthEndpoints
 
             if (!IsAdminEmail(request.Email, configuration))
             {
-                return Results.Json(new
-                {
-                    error = new
-                    {
-                        code = "FORBIDDEN",
-                        message = "Authenticated user is not an admin.",
-                        details = new { }
-                    }
-                }, statusCode: StatusCodes.Status403Forbidden);
+                return AdminApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Authenticated user is not an admin.");
             }
 
             var profile = new AdminProfileResponse(
@@ -83,15 +67,7 @@ public static class AdminAuthEndpoints
         }
         catch (UnauthorizedAccessException)
         {
-            return Results.Json(new
-            {
-                error = new
-                {
-                    code = "UNAUTHORIZED",
-                    message = "Invalid credentials.",
-                    details = new { }
-                }
-            }, statusCode: StatusCodes.Status401Unauthorized);
+            return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Invalid credentials.");
         }
     }
 
@@ -104,15 +80,7 @@ public static class AdminAuthEndpoints
         }
         catch (UnauthorizedAccessException)
         {
-            return Results.Json(new
-            {
-                error = new
-                {
-                    code = "UNAUTHORIZED",
-                    message = "Refresh token is invalid or expired.",
-                    details = new { }
-                }
-            }, statusCode: StatusCodes.Status401Unauthorized);
+            return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Refresh token is invalid or expired.");
         }
     }
 
@@ -125,15 +93,7 @@ public static class AdminAuthEndpoints
 
         if (string.IsNullOrWhiteSpace(sub))
         {
-            return Results.Json(new
-            {
-                error = new
-                {
-                    code = "UNAUTHORIZED",
-                    message = "Missing authenticated subject.",
-                    details = new { }
-                }
-            }, statusCode: StatusCodes.Status401Unauthorized);
+            return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Missing authenticated subject.");
         }
 
         return Results.Ok(new AdminProfileResponse(
