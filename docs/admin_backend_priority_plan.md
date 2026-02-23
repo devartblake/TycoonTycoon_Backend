@@ -58,6 +58,15 @@ This priority split is intended to unblock frontend integration first and keep o
    - `GET /admin/config`
    - `PATCH /admin/config`
 
+
+## Current implementation status
+
+- **P0 status:** In progress (not complete yet).
+  - Implemented: `/admin/auth/*`, `/admin/questions*`, `/admin/users*`.
+  - Remaining to close P0: strict shared envelope consistency and centralized permission-scope enforcement on all `/admin/**` routes.
+- **P1 status:** In progress.
+  - Implemented: `/admin/event-queue/upload`, `/admin/event-queue/reprocess` with dedupe + per-event statuses and admin-action logging.
+
 ## Open decisions to finalize before full rollout
 
 - MFA requirement for admin login
