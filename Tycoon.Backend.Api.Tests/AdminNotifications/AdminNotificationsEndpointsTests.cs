@@ -51,10 +51,21 @@ public sealed class AdminNotificationsEndpointsTests : IClassFixture<TycoonApiFa
             new AdminNotificationTemplateRequest("promo_default", "Updated", "Updated body", "admin_promos", new[] { "campaignName", "body" }));
         tplPatch.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var historyResp = await _http.GetAsync("/admin/notifications/history?page=1&pageSize=25");
+        var from = DateTimeOffset.UtcNow.AddMinutes(-5).ToString("O");
+        var to = DateTimeOffset.UtcNow.AddMinutes(5).ToString("O");
+        var historyResp = await _http.GetAsync($"/admin/notifications/history?from={Uri.EscapeDataString(from)}&to={Uri.EscapeDataString(to)}&status=queued&page=1&pageSize=25");
         historyResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var cancelResp = await _http.DeleteAsync($"/admin/notifications/scheduled/{sch!.ScheduleId}");
         cancelResp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Schedule_Unknown_Channel_Returns_NotFound()
+    {
+        var schResp = await _http.PostAsJsonAsync("/admin/notifications/schedule",
+            new AdminNotificationScheduleRequest("Weekend promo", "Body", "missing_channel", DateTimeOffset.UtcNow.AddDays(1), new Dictionary<string, object>{{"type", "none"}}, new Dictionary<string, object>{{"segment", "active_7d"}}));
+
+        schResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

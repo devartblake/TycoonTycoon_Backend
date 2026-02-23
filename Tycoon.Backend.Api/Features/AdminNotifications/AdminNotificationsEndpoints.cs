@@ -56,6 +56,11 @@ public static class AdminNotificationsEndpoints
 
         g.MapPost("/schedule", ([FromBody] AdminNotificationScheduleRequest request) =>
         {
+            if (!Channels.ContainsKey(request.ChannelKey))
+            {
+                return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
+            }
+
             var scheduleId = $"sch_{Guid.NewGuid():N}";
             var dto = new AdminNotificationScheduledItemDto(scheduleId, request.Title, request.ChannelKey, request.ScheduledAt, "scheduled");
             Schedules[scheduleId] = dto;
@@ -86,6 +91,11 @@ public static class AdminNotificationsEndpoints
 
         g.MapPost("/templates", ([FromBody] AdminNotificationTemplateRequest request) =>
         {
+            if (!Channels.ContainsKey(request.ChannelKey))
+            {
+                return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
+            }
+
             var id = $"tpl_{Guid.NewGuid():N}";
             var dto = new AdminNotificationTemplateDto(id, request.Name, request.Title, request.Body, request.ChannelKey, request.Variables, DateTimeOffset.UtcNow);
             Templates[id] = dto;
@@ -97,6 +107,11 @@ public static class AdminNotificationsEndpoints
             if (!Templates.ContainsKey(templateId))
             {
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Template not found.");
+            }
+
+            if (!Channels.ContainsKey(request.ChannelKey))
+            {
+                return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
             var dto = new AdminNotificationTemplateDto(templateId, request.Name, request.Title, request.Body, request.ChannelKey, request.Variables, DateTimeOffset.UtcNow);
@@ -111,12 +126,14 @@ public static class AdminNotificationsEndpoints
                 : AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Template not found.");
         });
 
-        g.MapGet("/history", ([FromQuery] string? channelKey, [FromQuery] string? status, [FromQuery] int page, [FromQuery] int pageSize) =>
+        g.MapGet("/history", ([FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to, [FromQuery] string? channelKey, [FromQuery] string? status, [FromQuery] int page, [FromQuery] int pageSize) =>
         {
             page = page <= 0 ? 1 : page;
             pageSize = pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200);
 
             var all = History.ToList().AsEnumerable();
+            if (from.HasValue) all = all.Where(x => x.CreatedAt >= from.Value);
+            if (to.HasValue) all = all.Where(x => x.CreatedAt <= to.Value);
             if (!string.IsNullOrWhiteSpace(channelKey)) all = all.Where(x => string.Equals(x.ChannelKey, channelKey, StringComparison.OrdinalIgnoreCase));
             if (!string.IsNullOrWhiteSpace(status)) all = all.Where(x => string.Equals(x.Status, status, StringComparison.OrdinalIgnoreCase));
 

@@ -65,8 +65,8 @@ This priority split is intended to unblock frontend integration first and keep o
   - Implemented: `/admin/auth/*`, `/admin/questions*`, `/admin/users*`, standardized admin error envelope usage, and centralized admin route protection (`RequireAdminOpsKey` + authenticated admin-claim gate).
 - **P1 status:** Completed.
   - Implemented: `/admin/event-queue/upload`, `/admin/event-queue/reprocess` with dedupe + per-event statuses and audit logging for event/user/question mutating actions.
-- **P2 status:** In progress.
-  - Implemented: `/admin/config` (`GET`, `PATCH`) and `/admin/notifications/*` endpoints for channels/send/schedule/scheduled/templates/history.
+- **P2 status:** Completed.
+  - Implemented: `/admin/config` (`GET`, `PATCH`) and `/admin/notifications/*` endpoints for channels/send/schedule/scheduled/templates/history, including history filters (`from`, `to`, `channelKey`, `status`).
 
 ## Open decisions to finalize before full rollout
 
@@ -76,3 +76,18 @@ This priority split is intended to unblock frontend integration first and keep o
 - Default bulk question mode (`upsert` vs `replace`)
 - Event dedupe key strategy (`eventId` vs hash)
 - Whether notifications/config stay local-only or server-managed
+
+
+## Next priorities (post P2)
+
+1. Production hardening
+   - Persist notifications/config state in durable storage (replace in-memory endpoint state).
+   - Add background execution for scheduled notifications and delivery retry handling.
+2. Security/compliance hardening
+   - Replace allow-list-only admin claims with explicit role/scope claims in JWT and policy-based authorization.
+   - Add rate limits and abuse controls for admin auth and notification send endpoints.
+3. Observability and operations
+   - Add audit tables/streams for admin actions (beyond logs), with query endpoints for governance.
+   - Add metrics and dashboards for notification send/schedule success/failure.
+4. Contract completeness and QA
+   - Run full .NET test suite in CI with SDK installed and add contract tests for error envelopes on all admin endpoints.
