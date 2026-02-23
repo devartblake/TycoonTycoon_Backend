@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -12,7 +13,7 @@ namespace Tycoon.Backend.Application.Questions
     public sealed record AdminBulkDelete(BulkDeleteQuestionsRequest Req) : IRequest<BulkDeleteResultDto>;
     public sealed record AdminImportQuestions(ImportQuestionsRequest Req) : IRequest<ImportQuestionsResultDto>;
 
-    public sealed class AdminCreateQuestionHandler(IAppDb db) : IRequestHandler<AdminCreateQuestion, QuestionDto>
+    public sealed class AdminCreateQuestionHandler(IAppDb db, ILogger<AdminCreateQuestionHandler> logger) : IRequestHandler<AdminCreateQuestion, QuestionDto>
     {
         public async Task<QuestionDto> Handle(AdminCreateQuestion r, CancellationToken ct)
         {
@@ -26,6 +27,8 @@ namespace Tycoon.Backend.Application.Questions
 
             db.Questions.Add(q);
             await db.SaveChangesAsync(ct);
+
+            logger.LogInformation("Admin question created: QuestionId={QuestionId}, Category={Category}", q.Id, q.Category);
 
             return await dbToDto(db, q.Id, ct);
         }
@@ -44,7 +47,7 @@ namespace Tycoon.Backend.Application.Questions
         }
     }
 
-    public sealed class AdminUpdateQuestionHandler(IAppDb db) : IRequestHandler<AdminUpdateQuestion, QuestionDto?>
+    public sealed class AdminUpdateQuestionHandler(IAppDb db, ILogger<AdminUpdateQuestionHandler> logger) : IRequestHandler<AdminUpdateQuestion, QuestionDto?>
     {
         public async Task<QuestionDto?> Handle(AdminUpdateQuestion r, CancellationToken ct)
         {
@@ -69,11 +72,13 @@ namespace Tycoon.Backend.Application.Questions
 
             await db.SaveChangesAsync(ct);
 
+            logger.LogInformation("Admin question updated: QuestionId={QuestionId}, Category={Category}", q.Id, q.Category);
+
             return await new AdminGetQuestionHandler(db).Handle(new AdminGetQuestion(q.Id), ct);
         }
     }
 
-    public sealed class AdminDeleteQuestionHandler(IAppDb db) : IRequestHandler<AdminDeleteQuestion, bool>
+    public sealed class AdminDeleteQuestionHandler(IAppDb db, ILogger<AdminDeleteQuestionHandler> logger) : IRequestHandler<AdminDeleteQuestion, bool>
     {
         public async Task<bool> Handle(AdminDeleteQuestion r, CancellationToken ct)
         {
@@ -82,11 +87,12 @@ namespace Tycoon.Backend.Application.Questions
 
             db.Questions.Remove(q);
             await db.SaveChangesAsync(ct);
+            logger.LogInformation("Admin question deleted: QuestionId={QuestionId}", q.Id);
             return true;
         }
     }
 
-    public sealed class AdminBulkDeleteHandler(IAppDb db) : IRequestHandler<AdminBulkDelete, BulkDeleteResultDto>
+    public sealed class AdminBulkDeleteHandler(IAppDb db, ILogger<AdminBulkDeleteHandler> logger) : IRequestHandler<AdminBulkDelete, BulkDeleteResultDto>
     {
         public async Task<BulkDeleteResultDto> Handle(AdminBulkDelete r, CancellationToken ct)
         {
@@ -97,11 +103,13 @@ namespace Tycoon.Backend.Application.Questions
             db.Questions.RemoveRange(qs);
             await db.SaveChangesAsync(ct);
 
+            logger.LogInformation("Admin question bulk delete: Requested={Requested}, Deleted={Deleted}", ids.Length, qs.Count);
+
             return new BulkDeleteResultDto(ids.Length, qs.Count);
         }
     }
 
-    public sealed class AdminImportQuestionsHandler(IAppDb db) : IRequestHandler<AdminImportQuestions, ImportQuestionsResultDto>
+    public sealed class AdminImportQuestionsHandler(IAppDb db, ILogger<AdminImportQuestionsHandler> logger) : IRequestHandler<AdminImportQuestions, ImportQuestionsResultDto>
     {
         public async Task<ImportQuestionsResultDto> Handle(AdminImportQuestions r, CancellationToken ct)
         {
@@ -130,6 +138,7 @@ namespace Tycoon.Backend.Application.Questions
             }
 
             await db.SaveChangesAsync(ct);
+            logger.LogInformation("Admin question import: Received={Received}, Created={Created}, Failed={Failed}", received, created, failed);
             return new ImportQuestionsResultDto(received, created, failed);
         }
     }
