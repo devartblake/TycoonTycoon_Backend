@@ -121,9 +121,17 @@ public sealed class MigrationWorker : BackgroundService
                     _log.Information("Detected {MigrationsCount} migrations in assembly {MigrationsAssembly}.",
                         migrationsCount, migrationsAssembly.Assembly.GetName().Name);
 
-                    _log.Information("Applying EF migrations…");
-                    await db.Database.MigrateAsync(stoppingToken);
-                    _log.Information("EF migrations completed successfully");
+                    var recoveredFromSchemaDrift = await TryRecoverFromInitialMigrationSchemaDriftAsync(
+                        db,
+                        autoRepairOnMissingTables,
+                        stoppingToken);
+
+                    if (!recoveredFromSchemaDrift)
+                    {
+                        _log.Information("Applying EF migrations…");
+                        await db.Database.MigrateAsync(stoppingToken);
+                        _log.Information("EF migrations completed successfully");
+                    }
                 }
 
                 await EnsureCriticalTablesReadyAsync(db, autoRepairOnMissingTables, stoppingToken);
@@ -188,6 +196,49 @@ public sealed class MigrationWorker : BackgroundService
         {
             _lifetime.StopApplication();
         }
+    }
+
+    private async Task<bool> TryRecoverFromInitialMigrationSchemaDriftAsync(
+        AppDb db,
+        bool autoRepairOnMissingTables,
+        CancellationToken ct)
+    {
+        var appliedMigrations = await db.Database.GetAppliedMigrationsAsync(ct);
+        if (appliedMigrations.Any())
+            return false;
+
+        // Sentinel check: if key legacy/app tables exist while EF history is empty,
+        // initial migration is likely to fail with "relation already exists".
+        var sentinelTables = new[] { "anti_cheat_flags", "users", "matches" };
+        var existingSentinels = new List<string>();
+
+        foreach (var table in sentinelTables)
+        {
+            if (await TableExistsAsync(db, table, ct))
+                existingSentinels.Add(table);
+        }
+
+        if (existingSentinels.Count == 0)
+            return false;
+
+        _log.Warning(
+            "Detected pre-existing tables ({Tables}) while __EFMigrationsHistory is empty. " +
+            "This indicates schema drift and can cause initial migration conflicts.",
+            string.Join(", ", existingSentinels));
+
+        if (!autoRepairOnMissingTables)
+        {
+            throw new InvalidOperationException(
+                "Database has existing tables but no EF migration history. " +
+                "Enable MigrationService:AutoRepairOnMissingTables=true to auto-repair in dev/CI, " +
+                "or reset the DB volume, then rerun MigrationService.");
+        }
+
+        _log.Warning("AutoRepairOnMissingTables=true. Rebuilding schema before applying migrations (EnsureDeleted + Migrate).");
+        await db.Database.EnsureDeletedAsync(ct);
+        await db.Database.MigrateAsync(ct);
+        _log.Information("Schema drift recovered; EF migrations applied on a clean database.");
+        return true;
     }
 
     private async Task EnsureCriticalTablesReadyAsync(AppDb db, bool autoRepairOnMissingTables, CancellationToken ct)
