@@ -239,8 +239,10 @@ public sealed class MigrationWorker : BackgroundService
 
         if (canBaseline)
         {
-            var allMigrations = await db.Database.GetMigrationsAsync(ct);
-            var lastMigration = allMigrations.LastOrDefault();
+            var migrationsAssembly = db.GetService<IMigrationsAssembly>();
+            var lastMigration = migrationsAssembly.Migrations.Keys
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .LastOrDefault();
 
             if (!string.IsNullOrWhiteSpace(lastMigration))
             {
