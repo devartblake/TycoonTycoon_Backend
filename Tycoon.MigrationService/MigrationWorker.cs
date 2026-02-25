@@ -121,9 +121,17 @@ public sealed class MigrationWorker : BackgroundService
                     _log.Information("Detected {MigrationsCount} migrations in assembly {MigrationsAssembly}.",
                         migrationsCount, migrationsAssembly.Assembly.GetName().Name);
 
-                    _log.Information("Applying EF migrations…");
-                    await db.Database.MigrateAsync(stoppingToken);
-                    _log.Information("EF migrations completed successfully");
+                    var recoveredFromSchemaDrift = await TryBaselineOrRepairFromPreExistingSchemaAsync(
+                        db,
+                        autoRepairOnMissingTables,
+                        stoppingToken);
+
+                    if (!recoveredFromSchemaDrift)
+                    {
+                        _log.Information("Applying EF migrations…");
+                        await db.Database.MigrateAsync(stoppingToken);
+                        _log.Information("EF migrations completed successfully");
+                    }
                 }
 
                 await EnsureCriticalTablesReadyAsync(db, autoRepairOnMissingTables, stoppingToken);
@@ -187,6 +195,148 @@ public sealed class MigrationWorker : BackgroundService
         finally
         {
             _lifetime.StopApplication();
+        }
+    }
+
+    private async Task<bool> TryBaselineOrRepairFromPreExistingSchemaAsync(
+        AppDb db,
+        bool autoRepairOnMissingTables,
+        CancellationToken ct)
+    {
+        var appliedMigrations = await db.Database.GetAppliedMigrationsAsync(ct);
+        if (appliedMigrations.Any())
+            return false;
+
+        // Sentinel check: if key legacy/app tables exist while EF history is empty,
+        // initial migration is likely to fail with "relation already exists".
+        var sentinelTables = new[] { "anti_cheat_flags", "users", "matches", "Missions", "Tiers" };
+        var existingSentinels = new List<string>();
+
+        foreach (var table in sentinelTables)
+        {
+            if (await TableExistsAsync(db, table, ct))
+                existingSentinels.Add(table);
+        }
+
+        if (existingSentinels.Count == 0)
+            return false;
+
+        _log.Warning(
+            "Detected pre-existing tables ({Tables}) while __EFMigrationsHistory is empty. " +
+            "This indicates schema/history drift and can cause initial migration conflicts.",
+            string.Join(", ", existingSentinels));
+
+        var baselineTables = new[] { "anti_cheat_flags", "users", "matches", "Missions", "Tiers" };
+        var canBaseline = true;
+        foreach (var table in baselineTables)
+        {
+            if (!await TableExistsAsync(db, table, ct))
+            {
+                canBaseline = false;
+                break;
+            }
+        }
+
+        if (canBaseline)
+        {
+            var migrationsAssembly = db.GetService<IMigrationsAssembly>();
+            var lastMigration = migrationsAssembly.Migrations.Keys
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .LastOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(lastMigration))
+            {
+                _log.Warning(
+                    "Baselining EF migration history at '{MigrationId}' because schema already exists.",
+                    lastMigration);
+
+                await EnsureHistoryTableExistsAsync(db, ct);
+                await InsertMigrationHistoryRowIfMissingAsync(db, lastMigration!, ct);
+
+                _log.Information("Baseline complete; skipping schema create migration for existing database.");
+                return true;
+            }
+        }
+
+        if (!autoRepairOnMissingTables)
+        {
+            throw new InvalidOperationException(
+                "Database has existing tables but no EF migration history and cannot be safely baselined. " +
+                "Enable MigrationService:AutoRepairOnMissingTables=true to auto-repair in dev/CI, " +
+                "or reset the DB volume, then rerun MigrationService.");
+        }
+
+        _log.Warning("AutoRepairOnMissingTables=true. Rebuilding schema before applying migrations (EnsureDeleted + Migrate).");
+        await db.Database.EnsureDeletedAsync(ct);
+        await db.Database.MigrateAsync(ct);
+        _log.Information("Schema drift recovered; EF migrations applied on a clean database.");
+        return true;
+    }
+
+    private static async Task EnsureHistoryTableExistsAsync(AppDb db, CancellationToken ct)
+    {
+        var conn = db.Database.GetDbConnection();
+        var openedHere = false;
+
+        try
+        {
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                await conn.OpenAsync(ct);
+                openedHere = true;
+            }
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                "CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\" (" +
+                "\"MigrationId\" character varying(150) NOT NULL," +
+                "\"ProductVersion\" character varying(32) NOT NULL," +
+                "CONSTRAINT \"PK___EFMigrationsHistory\" PRIMARY KEY (\"MigrationId\")" +
+                ");";
+
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+        finally
+        {
+            if (openedHere)
+                await conn.CloseAsync();
+        }
+    }
+
+    private static async Task InsertMigrationHistoryRowIfMissingAsync(AppDb db, string migrationId, CancellationToken ct)
+    {
+        var conn = db.Database.GetDbConnection();
+        var openedHere = false;
+
+        try
+        {
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                await conn.OpenAsync(ct);
+                openedHere = true;
+            }
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") " +
+                "VALUES (@migrationId, @productVersion) ON CONFLICT (\"MigrationId\") DO NOTHING;";
+
+            var p1 = cmd.CreateParameter();
+            p1.ParameterName = "@migrationId";
+            p1.Value = migrationId;
+            cmd.Parameters.Add(p1);
+
+            var p2 = cmd.CreateParameter();
+            p2.ParameterName = "@productVersion";
+            p2.Value = "9.0.11";
+            cmd.Parameters.Add(p2);
+
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+        finally
+        {
+            if (openedHere)
+                await conn.CloseAsync();
         }
     }
 

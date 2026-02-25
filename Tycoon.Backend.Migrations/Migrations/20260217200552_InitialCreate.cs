@@ -11,27 +11,23 @@ namespace Tycoon.Backend.Migrations.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "anti_cheat_flags",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MatchId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PlayerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    RuleKey = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    Severity = table.Column<int>(type: "integer", nullable: false),
-                    Action = table.Column<int>(type: "integer", nullable: false),
-                    Message = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    EvidenceJson = table.Column<string>(type: "text", nullable: true),
-                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ReviewedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ReviewedBy = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    ReviewNote = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_anti_cheat_flags", x => x.Id);
-                });
+            migrationBuilder.Sql(@"""
+                CREATE TABLE IF NOT EXISTS anti_cheat_flags (
+                    "Id" uuid NOT NULL,
+                    "MatchId" uuid NOT NULL,
+                    "PlayerId" uuid,
+                    "RuleKey" character varying(64) NOT NULL,
+                    "Severity" integer NOT NULL,
+                    "Action" integer NOT NULL,
+                    "Message" character varying(300) NOT NULL,
+                    "EvidenceJson" text,
+                    "CreatedAtUtc" timestamp with time zone NOT NULL,
+                    "ReviewedAtUtc" timestamp with time zone,
+                    "ReviewedBy" character varying(64),
+                    "ReviewNote" character varying(400),
+                    CONSTRAINT "PK_anti_cheat_flags" PRIMARY KEY ("Id")
+                );
+                """);
 
             migrationBuilder.CreateTable(
                 name: "economy_transactions",
@@ -823,35 +819,35 @@ namespace Tycoon.Backend.Migrations.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_anti_cheat_flags_CreatedAtUtc",
-                table: "anti_cheat_flags",
-                column: "CreatedAtUtc");
+            migrationBuilder.Sql(@"""
+                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_CreatedAtUtc"
+                    ON anti_cheat_flags ("CreatedAtUtc");
+                """);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_anti_cheat_flags_MatchId",
-                table: "anti_cheat_flags",
-                column: "MatchId");
+            migrationBuilder.Sql(@"""
+                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_MatchId"
+                    ON anti_cheat_flags ("MatchId");
+                """);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_anti_cheat_flags_PlayerId",
-                table: "anti_cheat_flags",
-                column: "PlayerId");
+            migrationBuilder.Sql(@"""
+                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_PlayerId"
+                    ON anti_cheat_flags ("PlayerId");
+                """);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_anti_cheat_flags_ReviewedAtUtc",
-                table: "anti_cheat_flags",
-                column: "ReviewedAtUtc");
+            migrationBuilder.Sql(@"""
+                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_ReviewedAtUtc"
+                    ON anti_cheat_flags ("ReviewedAtUtc");
+                """);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_anti_cheat_flags_Severity_CreatedAtUtc",
-                table: "anti_cheat_flags",
-                columns: new[] { "Severity", "CreatedAtUtc" });
+            migrationBuilder.Sql(@"""
+                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_Severity_CreatedAtUtc"
+                    ON anti_cheat_flags ("Severity", "CreatedAtUtc");
+                """);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_anti_cheat_flags_Severity_ReviewedAtUtc_CreatedAtUtc",
-                table: "anti_cheat_flags",
-                columns: new[] { "Severity", "ReviewedAtUtc", "CreatedAtUtc" });
+            migrationBuilder.Sql(@"""
+                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_Severity_ReviewedAtUtc_CreatedAtUtc"
+                    ON anti_cheat_flags ("Severity", "ReviewedAtUtc", "CreatedAtUtc");
+                """);
 
             migrationBuilder.CreateIndex(
                 name: "IX_economy_transaction_lines_EconomyTransactionId",
