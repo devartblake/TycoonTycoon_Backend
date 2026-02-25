@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,14 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!--
-      Guard against stale/conflicted local migration artifacts accidentally copied into Docker context.
-      Only one InitialCreate migration should ever compile. Keep the canonical one explicit.
-    -->
-    <Compile Remove="Migrations/*_InitialCreate.cs" />
-    <Compile Remove="Migrations/*_InitialCreate.Designer.cs" />
+    <!-- Explicit compile list to avoid stale/duplicate InitialCreate artifacts in Docker contexts -->
+    <Compile Include="MigrationAssemblyMarker.cs" />
     <Compile Include="Migrations/20260217200552_InitialCreate.cs" />
     <Compile Include="Migrations/20260217200552_InitialCreate.Designer.cs" />
+    <Compile Include="Migrations/AppDbModelSnapshot.cs" />
   </ItemGroup>
 
 	<ItemGroup>
