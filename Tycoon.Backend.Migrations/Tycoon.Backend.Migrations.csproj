@@ -16,9 +16,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Guard against stale/conflicted local migration artifacts accidentally copied into Docker context -->
-    <Compile Remove="Migrations/20260211002440_InitialCreate.cs" />
-    <Compile Remove="Migrations/20260211002440_InitialCreate.Designer.cs" />
+    <!--
+      Guard against stale/conflicted local migration artifacts accidentally copied into Docker context.
+      Only one InitialCreate migration should ever compile. Keep the canonical one explicit.
+    -->
+    <Compile Remove="Migrations/*_InitialCreate.cs" />
+    <Compile Remove="Migrations/*_InitialCreate.Designer.cs" />
+    <Compile Include="Migrations/20260217200552_InitialCreate.cs" />
+    <Compile Include="Migrations/20260217200552_InitialCreate.Designer.cs" />
   </ItemGroup>
 
 	<ItemGroup>
