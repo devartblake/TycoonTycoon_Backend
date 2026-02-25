@@ -57,7 +57,7 @@ namespace Tycoon.Backend.Domain.Entities
             Action = action;
             Message = message;
             EvidenceJson = evidenceJson;
-            CreatedAtUtc = DateTimeOffset.UtcNow;
+            CreatedAtUtc = createdAtUtc;
         }
         public static AntiCheatFlag LeaderLeftPartyDuringMatch(
             Guid playerId,
@@ -77,7 +77,7 @@ namespace Tycoon.Backend.Domain.Entities
                 severity: AntiCheatSeverity.Warning,
                 action: AntiCheatAction.Warn,
                 message: $"Leader left party {partyId} during active match.",
-                evidenceJson: null,
+                evidenceJson: evidence,
                 createdAtUtc: DateTimeOffset.UtcNow
             );
         }
