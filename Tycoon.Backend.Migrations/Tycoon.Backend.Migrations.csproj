@@ -16,14 +16,6 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Explicit compile list to avoid stale/duplicate InitialCreate artifacts in Docker contexts -->
-    <Compile Include="MigrationAssemblyMarker.cs" />
-    <Compile Include="Migrations/20260217200552_InitialCreate.cs" />
-    <Compile Include="Migrations/20260217200552_InitialCreate.Designer.cs" />
-    <Compile Include="Migrations/AppDbModelSnapshot.cs" />
-  </ItemGroup>
-
 	<ItemGroup>
 		<ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
 	</ItemGroup>
