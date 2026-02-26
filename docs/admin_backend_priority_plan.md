@@ -97,4 +97,5 @@ This priority split is intended to unblock frontend integration first and keep o
 
 - Replaced in-memory admin notifications/config endpoint state with database-backed persistence entities and EF mappings.
 - Added in-memory EF registration for test mode (`Testing:UseInMemoryDb`) so integration tests can execute against `AppDb`.
-- Remaining hardening work is focused on delivery workers/retries, stronger JWT scope policies, and CI test execution.
+- Added GitHub Actions CI for build/test and EF schema drift validation.
+- Remaining hardening work is focused on delivery workers/retries and stronger JWT scope policies.
