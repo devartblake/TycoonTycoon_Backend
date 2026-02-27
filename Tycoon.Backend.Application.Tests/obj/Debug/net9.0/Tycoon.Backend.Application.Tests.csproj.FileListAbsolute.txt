@@ -226,3 +226,11 @@ C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Applicatio
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.pdb
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.genruntimeconfig.cache
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\ref\Tycoon.Backend.Application.Tests.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\.msCoverageSourceRootsMapping_Tycoon.Backend.Application.Tests
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\CoverletSourceRootsMapping_Tycoon.Backend.Application.Tests
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.csproj.AssemblyReference.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.AssemblyInfoInputs.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.AssemblyInfo.cs
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.csproj.CoreCompileInputs.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.sourcelink.json

@@ -406,3 +406,11 @@ C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.pdb
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.genruntimeconfig.cache
 C:\Users\Theoretical\source\repos\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\ref\Tycoon.AppHost.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.csproj.AssemblyReference.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.AssemblyInfoInputs.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.AssemblyInfo.cs
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.csproj.CoreCompileInputs.cache
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Aspire\references\.ProjectMetadata.g.cs
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Aspire\references\_AppHost.ProjectMetadata.g.cs
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.AppHost\obj\Debug\net9.0\Tycoon.AppHost.sourcelink.json
