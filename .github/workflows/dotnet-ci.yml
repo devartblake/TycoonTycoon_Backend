@@ -49,5 +49,8 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      - name: Build
+        run: dotnet build Tycoon.Backend.Api/Tycoon.Backend.Api.csproj --configuration Debug --no-restore
+
       - name: Validate EF schema is in sync
         run: bash scripts/validate-ef-schema.sh
