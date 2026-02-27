@@ -34,7 +34,7 @@ namespace Tycoon.Backend.Application.Auth
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SecretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
@@ -59,7 +59,7 @@ namespace Tycoon.Backend.Application.Auth
         public ClaimsPrincipal? ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_settings.Secret);
+            var key = Encoding.UTF8.GetBytes(_settings.SecretKey);
 
             try
             {

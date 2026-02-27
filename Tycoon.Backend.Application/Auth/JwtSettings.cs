@@ -7,7 +7,7 @@ namespace Tycoon.Backend.Application.Auth
         [Required(AllowEmptyStrings = false,
             ErrorMessage = "Jwt:Secret is required. Minimum 32 characters for HS256.")]
         [MinLength(32, ErrorMessage = "Jwt:Secret must be at least 32 characters for HS256.")]
-        public string Secret { get; set; } = string.Empty;
+        public string SecretKey { get; set; } = string.Empty;
 
         public string Issuer { get; set; } = "TycoonBackend";
 
