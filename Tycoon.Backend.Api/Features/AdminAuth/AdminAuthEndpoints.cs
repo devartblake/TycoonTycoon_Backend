@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Configuration;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Auth;
 using Tycoon.Shared.Contracts.Dtos;
@@ -25,8 +24,8 @@ public static class AdminAuthEndpoints
     {
         var g = admin.MapGroup("/auth").WithTags("Admin/Auth").WithOpenApi();
 
-        g.MapPost("/login", Login);
-        g.MapPost("/refresh", Refresh);
+        g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login");
+        g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh");
         g.MapGet("/me", Me).RequireAuthorization();
     }
 
@@ -43,7 +42,7 @@ public static class AdminAuthEndpoints
 
         try
         {
-            var auth = await authService.LoginAsync(request.Email, request.Password, deviceId: "admin-web");
+            var auth = await authService.AdminLoginAsync(request.Email, request.Password, deviceId: "admin-web");
 
             if (!IsAdminEmail(request.Email, configuration))
             {
@@ -76,7 +75,7 @@ public static class AdminAuthEndpoints
     {
         try
         {
-            var auth = await authService.RefreshAsync(request.RefreshToken);
+            var auth = await authService.AdminRefreshAsync(request.RefreshToken);
             return Results.Ok(new AdminRefreshResponse(auth.AccessToken, auth.ExpiresIn, "Bearer"));
         }
         catch (UnauthorizedAccessException)

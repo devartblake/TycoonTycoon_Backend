@@ -83,7 +83,8 @@ public static class AdminNotificationsEndpoints
             page = page <= 0 ? 1 : page;
             pageSize = pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200);
 
-            var baseQ = db.AdminNotificationSchedules.AsNoTracking().Where(x => x.Status == "scheduled");
+            var baseQ = db.AdminNotificationSchedules.AsNoTracking()
+                .Where(x => x.Status == "scheduled" || x.Status == "retry_pending");
             var totalItems = await baseQ.CountAsync(ct);
             var items = await baseQ.OrderBy(x => x.ScheduledAt)
                 .Skip((page - 1) * pageSize)

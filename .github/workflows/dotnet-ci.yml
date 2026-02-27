@@ -23,9 +23,6 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-      - name: Set JWT secret
-        run: echo "JWT__Secret=your_test_secret_key" >> $GITHUB_ENV
-
       - name: Test
         run: dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --verbosity normal
 
@@ -48,9 +45,6 @@ jobs:
 
       - name: Restore
         run: dotnet restore
-
-      - name: Build
-        run: dotnet build Tycoon.Backend.Api/Tycoon.Backend.Api.csproj --configuration Debug --no-restore
 
       - name: Validate EF schema is in sync
         run: bash scripts/validate-ef-schema.sh

@@ -7,6 +7,8 @@ namespace Tycoon.Backend.Application.Auth
     {
         Task<AuthResult> LoginAsync(string email, string password, string deviceId);
         Task<AuthResult> RefreshAsync(string refreshToken);
+        Task<AuthResult> AdminLoginAsync(string email, string password, string deviceId);
+        Task<AuthResult> AdminRefreshAsync(string refreshToken);
         Task LogoutAsync(string deviceId, Guid userId);
         Task<User> RegisterAsync(string email, string password, string handle, string? country = null);
     }

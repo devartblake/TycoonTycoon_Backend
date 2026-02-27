@@ -8,6 +8,10 @@ public sealed class AdminNotificationSchedule
     public string ChannelKey { get; private set; } = string.Empty;
     public DateTimeOffset ScheduledAt { get; private set; }
     public string Status { get; private set; } = "scheduled";
+    public int RetryCount { get; private set; }
+    public int MaxRetries { get; private set; } = 3;
+    public string? LastError { get; private set; }
+    public DateTimeOffset? ProcessedAtUtc { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; } = DateTimeOffset.UtcNow;
 
     private AdminNotificationSchedule() { }
@@ -20,8 +24,38 @@ public sealed class AdminNotificationSchedule
         ChannelKey = channelKey;
         ScheduledAt = scheduledAt;
         Status = "scheduled";
+        RetryCount = 0;
+        MaxRetries = 3;
         CreatedAtUtc = DateTimeOffset.UtcNow;
     }
 
     public void Cancel() => Status = "cancelled";
+
+    public void Reschedule(DateTimeOffset scheduledAt)
+    {
+        ScheduledAt = scheduledAt;
+    }
+
+    public void MarkSent()
+    {
+        Status = "sent";
+        LastError = null;
+        ProcessedAtUtc = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkRetryOrFail(string reason, DateTimeOffset nextAttemptAt)
+    {
+        RetryCount++;
+        LastError = reason;
+
+        if (RetryCount >= MaxRetries)
+        {
+            Status = "failed";
+            ProcessedAtUtc = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        Status = "retry_pending";
+        ScheduledAt = nextAttemptAt;
+    }
 }

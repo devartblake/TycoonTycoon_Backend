@@ -21,6 +21,10 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(256);
 
+            builder.Property(rt => rt.ClientType)
+                .IsRequired()
+                .HasMaxLength(32);
+
             builder.Property(rt => rt.ExpiresAt)
                 .IsRequired();
 
@@ -35,6 +39,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
                 .IsUnique();
 
             builder.HasIndex(rt => new { rt.UserId, rt.DeviceId, rt.IsRevoked });
+            builder.HasIndex(rt => new { rt.UserId, rt.ClientType, rt.IsRevoked });
 
             builder.HasIndex(rt => rt.ExpiresAt);
         }

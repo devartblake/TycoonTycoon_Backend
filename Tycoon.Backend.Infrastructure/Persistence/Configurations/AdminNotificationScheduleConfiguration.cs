@@ -15,10 +15,15 @@ public sealed class AdminNotificationScheduleConfiguration : IEntityTypeConfigur
         b.Property(x => x.Body).HasMaxLength(2000).IsRequired();
         b.Property(x => x.ChannelKey).HasMaxLength(100).IsRequired();
         b.Property(x => x.Status).HasMaxLength(32).IsRequired();
+        b.Property(x => x.RetryCount).IsRequired();
+        b.Property(x => x.MaxRetries).IsRequired();
+        b.Property(x => x.LastError).HasMaxLength(2000);
+        b.Property(x => x.ProcessedAtUtc);
         b.Property(x => x.CreatedAtUtc).IsRequired();
         b.Property(x => x.ScheduledAt).IsRequired();
 
         b.HasIndex(x => x.ChannelKey);
+        b.HasIndex(x => x.Status);
         b.HasIndex(x => x.ScheduledAt);
     }
 }

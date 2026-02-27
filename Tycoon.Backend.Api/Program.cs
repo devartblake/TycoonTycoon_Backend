@@ -62,6 +62,7 @@ using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Writers;
 using Tycoon.Backend.Application.Auth;
 using Tycoon.Backend.Application.Matchmaking;
+using Tycoon.Backend.Application.Notifications;
 using Tycoon.Backend.Application.Realtime;
 using Tycoon.Backend.Application.Social;
 using Tycoon.Backend.Infrastructure;
@@ -81,6 +82,7 @@ builder.Services
 
 // Register IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<AdminNotificationDispatchJob>();
 
 // Observability + Serilog + OTEL
 builder.AddObservability();
@@ -399,6 +401,13 @@ if (hangfireEnabled)
             job => job.Run(),
             "0 5 * * *"
         );
+
+        RecurringJob.AddOrUpdate<AdminNotificationDispatchJob>(
+            "admin-notification-dispatch",
+            job => job.Run(default),
+            "*/1 * * * *"
+        );
+
         app.Logger.LogInformation("✅ Hangfire recurring jobs configured");
     }
     catch (Exception ex)
