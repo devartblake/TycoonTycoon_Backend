@@ -22,16 +22,42 @@ namespace Tycoon.Backend.Application.Auth
             _jwt = jwtOptions.Value;
         }
 
-        // Convenient aliases — values are validated at startup via ValidateDataAnnotations()
-        private string JwtSigningKey => _jwt.Secret;
-        private string TokenIssuerName => _jwt.Issuer;
-        private int AccessTokenLifetime => _jwt.AccessTokenExpirationMinutes;
-        private int RefreshTokenLifetimeDays => _jwt.RefreshTokenExpirationDays;
+        public Task<AuthResult> LoginAsync(string email, string password, string deviceId)
+            => LoginInternalAsync(email, password, deviceId, clientType: "user");
 
-        public async Task<AuthResult> LoginAsync(string email, string password, string deviceId)
+        public Task<AuthResult> RefreshAsync(string refreshTokenString)
+            => RefreshInternalAsync(refreshTokenString, expectedClientType: "user");
+
+        public Task<AuthResult> AdminLoginAsync(string email, string password, string deviceId)
+            => LoginInternalAsync(email, password, deviceId, clientType: "admin");
+
+        public Task<AuthResult> AdminRefreshAsync(string refreshToken)
+            => RefreshInternalAsync(refreshToken, expectedClientType: "admin");
+
+        private async Task<AuthResult> LoginInternalAsync(string email, string password, string deviceId, string clientType)
+            var jwtToken = CreateJwtToken(authenticatedUser, clientType);
+            var deviceRefreshToken = await CreateRefreshTokenForDevice(authenticatedUser.Id, deviceId, clientType);
+        private async Task<AuthResult> RefreshInternalAsync(string refreshTokenString, string expectedClientType)
+            if (!string.Equals(storedToken.ClientType, expectedClientType, StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException("Token refresh failed");
+
+            var newJwtToken = CreateJwtToken(tokenOwner, expectedClientType);
+            var newDeviceToken = await CreateRefreshTokenForDevice(tokenOwner.Id, storedToken.DeviceId, expectedClientType);
+        private string CreateJwtToken(User user, string clientType)
         {
-            var normalizedEmail = email.ToLowerInvariant();
-            var authenticatedUser = await _database.Users
+            var scopes = clientType.Equals("admin", StringComparison.OrdinalIgnoreCase)
+                ? "users:read users:write questions:read questions:write events:read events:write notifications:write config:write"
+                : "profile:read profile:write gameplay:read gameplay:write";
+
+            var role = clientType.Equals("admin", StringComparison.OrdinalIgnoreCase) ? "admin" : "user";
+            var audience = clientType.Equals("admin", StringComparison.OrdinalIgnoreCase) ? "admin-app" : "mobile-app";
+
+                new("role", role),
+                new("scope", scopes),
+                new("client_type", clientType),
+                new("aud", audience),
+        private async Task<string> CreateRefreshTokenForDevice(Guid userId, string deviceId, string clientType)
+            var deviceToken = new RefreshToken(userId, tokenValue, deviceId, expirationTime, clientType);
                 .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
 
             if (authenticatedUser == null)
