@@ -11,23 +11,108 @@ namespace Tycoon.Backend.Migrations.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql(@"""
-                CREATE TABLE IF NOT EXISTS anti_cheat_flags (
-                    "Id" uuid NOT NULL,
-                    "MatchId" uuid NOT NULL,
-                    "PlayerId" uuid,
-                    "RuleKey" character varying(64) NOT NULL,
-                    "Severity" integer NOT NULL,
-                    "Action" integer NOT NULL,
-                    "Message" character varying(300) NOT NULL,
-                    "EvidenceJson" text,
-                    "CreatedAtUtc" timestamp with time zone NOT NULL,
-                    "ReviewedAtUtc" timestamp with time zone,
-                    "ReviewedBy" character varying(64),
-                    "ReviewNote" character varying(400),
-                    CONSTRAINT "PK_anti_cheat_flags" PRIMARY KEY ("Id")
-                );
-                """);
+            migrationBuilder.CreateTable(
+                name: "admin_app_config",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    ApiBaseUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    EnableLogging = table.Column<bool>(type: "boolean", nullable: false),
+                    FeatureFlagsJson = table.Column<string>(type: "jsonb", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_admin_app_config", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "admin_notification_channels",
+                columns: table => new
+                {
+                    Key = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    Importance = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    Enabled = table.Column<bool>(type: "boolean", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_admin_notification_channels", x => x.Key);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "admin_notification_history",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ChannelKey = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Title = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    Status = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    MetadataJson = table.Column<string>(type: "jsonb", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_admin_notification_history", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "admin_notification_schedules",
+                columns: table => new
+                {
+                    ScheduleId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Title = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    Body = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
+                    ChannelKey = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ScheduledAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_admin_notification_schedules", x => x.ScheduleId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "admin_notification_templates",
+                columns: table => new
+                {
+                    TemplateId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Title = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    Body = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
+                    ChannelKey = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    VariablesJson = table.Column<string>(type: "jsonb", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_admin_notification_templates", x => x.TemplateId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "anti_cheat_flags",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MatchId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PlayerId = table.Column<Guid>(type: "uuid", nullable: true),
+                    RuleKey = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Severity = table.Column<int>(type: "integer", nullable: false),
+                    Action = table.Column<int>(type: "integer", nullable: false),
+                    Message = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    EvidenceJson = table.Column<string>(type: "text", nullable: true),
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    ReviewedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    ReviewedBy = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    ReviewNote = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_anti_cheat_flags", x => x.Id);
+                });
 
             migrationBuilder.CreateTable(
                 name: "economy_transactions",
@@ -819,35 +904,61 @@ namespace Tycoon.Backend.Migrations.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.Sql(@"""
-                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_CreatedAtUtc"
-                    ON anti_cheat_flags ("CreatedAtUtc");
-                """);
+            migrationBuilder.CreateIndex(
+                name: "IX_admin_notification_history_ChannelKey",
+                table: "admin_notification_history",
+                column: "ChannelKey");
 
-            migrationBuilder.Sql(@"""
-                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_MatchId"
-                    ON anti_cheat_flags ("MatchId");
-                """);
+            migrationBuilder.CreateIndex(
+                name: "IX_admin_notification_history_CreatedAt",
+                table: "admin_notification_history",
+                column: "CreatedAt");
 
-            migrationBuilder.Sql(@"""
-                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_PlayerId"
-                    ON anti_cheat_flags ("PlayerId");
-                """);
+            migrationBuilder.CreateIndex(
+                name: "IX_admin_notification_schedules_ChannelKey",
+                table: "admin_notification_schedules",
+                column: "ChannelKey");
 
-            migrationBuilder.Sql(@"""
-                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_ReviewedAtUtc"
-                    ON anti_cheat_flags ("ReviewedAtUtc");
-                """);
+            migrationBuilder.CreateIndex(
+                name: "IX_admin_notification_schedules_ScheduledAt",
+                table: "admin_notification_schedules",
+                column: "ScheduledAt");
 
-            migrationBuilder.Sql(@"""
-                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_Severity_CreatedAtUtc"
-                    ON anti_cheat_flags ("Severity", "CreatedAtUtc");
-                """);
+            migrationBuilder.CreateIndex(
+                name: "IX_admin_notification_templates_Name",
+                table: "admin_notification_templates",
+                column: "Name",
+                unique: true);
 
-            migrationBuilder.Sql(@"""
-                CREATE INDEX IF NOT EXISTS "IX_anti_cheat_flags_Severity_ReviewedAtUtc_CreatedAtUtc"
-                    ON anti_cheat_flags ("Severity", "ReviewedAtUtc", "CreatedAtUtc");
-                """);
+            migrationBuilder.CreateIndex(
+                name: "IX_anti_cheat_flags_CreatedAtUtc",
+                table: "anti_cheat_flags",
+                column: "CreatedAtUtc");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_anti_cheat_flags_MatchId",
+                table: "anti_cheat_flags",
+                column: "MatchId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_anti_cheat_flags_PlayerId",
+                table: "anti_cheat_flags",
+                column: "PlayerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_anti_cheat_flags_ReviewedAtUtc",
+                table: "anti_cheat_flags",
+                column: "ReviewedAtUtc");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_anti_cheat_flags_Severity_CreatedAtUtc",
+                table: "anti_cheat_flags",
+                columns: new[] { "Severity", "CreatedAtUtc" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_anti_cheat_flags_Severity_ReviewedAtUtc_CreatedAtUtc",
+                table: "anti_cheat_flags",
+                columns: new[] { "Severity", "ReviewedAtUtc", "CreatedAtUtc" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_economy_transaction_lines_EconomyTransactionId",
@@ -1329,6 +1440,21 @@ namespace Tycoon.Backend.Migrations.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "admin_app_config");
+
+            migrationBuilder.DropTable(
+                name: "admin_notification_channels");
+
+            migrationBuilder.DropTable(
+                name: "admin_notification_history");
+
+            migrationBuilder.DropTable(
+                name: "admin_notification_schedules");
+
+            migrationBuilder.DropTable(
+                name: "admin_notification_templates");
+
             migrationBuilder.DropTable(
                 name: "anti_cheat_flags");
 
