@@ -130,5 +130,35 @@ namespace Tycoon.Backend.Api.Security
 
             return group;
         }
+
+        public static RouteGroupBuilder RequireAdminRoleClaims(this RouteGroupBuilder group)
+        {
+            group.AddEndpointFilter(async (context, next) =>
+            {
+                var http = context.HttpContext;
+                var cfg = http.RequestServices.GetRequiredService<IConfiguration>();
+                var isTesting = cfg.GetValue("Testing:UseInMemoryDb", false);
+
+                if (!isTesting && http.User?.Identity?.IsAuthenticated != true)
+                    return Results.Unauthorized();
+
+                var allowedEmails = cfg.GetSection("AdminAuth:AllowedEmails").Get<string[]>() ?? [];
+                var email = http.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                            ?? http.User.FindFirst("email")?.Value;
+
+                if (allowedEmails.Length > 0)
+                {
+                    if (string.IsNullOrWhiteSpace(email) || !allowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase))
+                    {
+                        return Results.StatusCode(StatusCodes.Status403Forbidden);
+                    }
+                }
+
+                return await next(context);
+            });
+
+            return group;
+        }
+
     }
 }

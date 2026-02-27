@@ -64,6 +64,11 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<SeasonRankSnapshotRow> SeasonRankSnapshots => Set<SeasonRankSnapshotRow>();
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<AdminNotificationChannel> AdminNotificationChannels => Set<AdminNotificationChannel>();
+        public DbSet<AdminNotificationSchedule> AdminNotificationSchedules => Set<AdminNotificationSchedule>();
+        public DbSet<AdminNotificationTemplate> AdminNotificationTemplates => Set<AdminNotificationTemplate>();
+        public DbSet<AdminNotificationHistory> AdminNotificationHistory => Set<AdminNotificationHistory>();
+        public DbSet<AdminAppConfig> AdminAppConfigs => Set<AdminAppConfig>();
         public DbSet<Tier> Tiers => Set<Tier>();
 
         public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => Set<QuestionAnsweredAnalyticsEvent>();
