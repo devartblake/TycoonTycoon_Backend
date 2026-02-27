@@ -139,19 +139,43 @@ namespace Tycoon.Backend.Api.Security
                 var cfg = http.RequestServices.GetRequiredService<IConfiguration>();
                 var isTesting = cfg.GetValue("Testing:UseInMemoryDb", false);
 
-                if (!isTesting && http.User?.Identity?.IsAuthenticated != true)
+                if (isTesting)
+                {
+                    return await next(context);
+                }
+
+                if (http.User?.Identity?.IsAuthenticated != true)
+                {
                     return Results.Unauthorized();
+                }
+
+                var role = http.User.FindFirst("role")?.Value
+                           ?? http.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                if (!string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                }
+
+                var audience = http.User.FindFirst("aud")?.Value;
+                if (!string.Equals(audience, "admin-app", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                }
+
+                var scope = http.User.FindFirst("scope")?.Value ?? string.Empty;
+                var scopes = scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (!scopes.Contains("users:read", StringComparer.OrdinalIgnoreCase))
+                {
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                }
 
                 var allowedEmails = cfg.GetSection("AdminAuth:AllowedEmails").Get<string[]>() ?? [];
                 var email = http.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                             ?? http.User.FindFirst("email")?.Value;
 
-                if (allowedEmails.Length > 0)
+                if (allowedEmails.Length > 0 && (string.IsNullOrWhiteSpace(email) || !allowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase)))
                 {
-                    if (string.IsNullOrWhiteSpace(email) || !allowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase))
-                    {
-                        return Results.StatusCode(StatusCodes.Status403Forbidden);
-                    }
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
                 }
 
                 return await next(context);

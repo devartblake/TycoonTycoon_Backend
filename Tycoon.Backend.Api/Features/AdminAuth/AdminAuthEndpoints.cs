@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Auth;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -27,7 +28,7 @@ public static class AdminAuthEndpoints
 
         g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login");
         g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh");
-        g.MapGet("/me", Me).RequireAuthorization();
+        g.MapGet("/me", Me).RequireAuthorization(AdminPolicies.AdminOpsPolicy);
     }
 
     private static async Task<IResult> Login(
