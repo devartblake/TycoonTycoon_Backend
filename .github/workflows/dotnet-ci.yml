@@ -23,11 +23,11 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --verbosity normal
-
       - name: Set JWT secret
         run: echo "JWT__Secret=your_test_secret_key" >> $GITHUB_ENV
+
+      - name: Test
+        run: dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --verbosity normal
 
   schema-validation:
     runs-on: ubuntu-latest
