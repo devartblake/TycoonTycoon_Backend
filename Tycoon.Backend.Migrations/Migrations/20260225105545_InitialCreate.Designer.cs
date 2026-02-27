@@ -12,7 +12,7 @@ using Tycoon.Backend.Infrastructure.Persistence;
 namespace Tycoon.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20260217200552_InitialCreate")]
+    [Migration("20260225105545_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -171,6 +171,182 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("QuestionAnsweredPlayerDailyRollups");
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AdminAppConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("ApiBaseUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("EnableLogging")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("FeatureFlagsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("admin_app_config", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AdminNotificationChannel", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Importance")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("admin_notification_channels", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AdminNotificationHistory", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ChannelKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChannelKey");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("admin_notification_history", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AdminNotificationSchedule", b =>
+                {
+                    b.Property<string>("ScheduleId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ChannelKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ScheduledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("ScheduleId");
+
+                    b.HasIndex("ChannelKey");
+
+                    b.HasIndex("ScheduledAt");
+
+                    b.ToTable("admin_notification_schedules", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AdminNotificationTemplate", b =>
+                {
+                    b.Property<string>("TemplateId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ChannelKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VariablesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("TemplateId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("admin_notification_templates", (string)null);
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AntiCheatFlag", b =>
