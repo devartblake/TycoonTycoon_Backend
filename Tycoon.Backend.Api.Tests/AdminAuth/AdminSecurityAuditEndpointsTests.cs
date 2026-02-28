@@ -15,6 +15,33 @@ public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFa
         _http = factory.CreateClient().WithAdminOpsKey();
     }
 
+
+    [Fact]
+    public async Task SecurityAudit_Requires_OpsKey()
+    {
+        using var noKey = new TycoonApiFactory().CreateClient();
+
+        var resp = await noKey.GetAsync("/admin/audit/security?page=1&pageSize=50");
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
+    }
+
+    [Fact]
+    public async Task SecurityAudit_StatusFilter_And_PagingFallbacks_Work()
+    {
+        var loginResp = await _http.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("nouser@example.com", "wrong"));
+        loginResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        var auditResp = await _http.GetAsync("/admin/audit/security?status=unauthorized&page=0&pageSize=0");
+        auditResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var data = await auditResp.Content.ReadFromJsonAsync<AdminNotificationHistoryResponse>();
+        data.Should().NotBeNull();
+        data!.Page.Should().Be(1);
+        data.PageSize.Should().Be(25);
+        data.Items.Should().OnlyContain(x => x.Status == "unauthorized");
+    }
+
     [Fact]
     public async Task SecurityAudit_Contains_AdminAuthLoginUnauthorized_Event()
     {
