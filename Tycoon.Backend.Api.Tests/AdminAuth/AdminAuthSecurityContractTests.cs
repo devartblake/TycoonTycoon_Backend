@@ -32,6 +32,7 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
 
         var resp = await _http.SendAsync(req);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
     [Fact]

@@ -31,6 +31,7 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
 
         var resp = await client.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("x@example.com", "badpass"));
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
     [Fact]

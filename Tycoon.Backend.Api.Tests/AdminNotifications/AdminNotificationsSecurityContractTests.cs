@@ -38,6 +38,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
 
         var resp = await _http.SendAsync(req);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
     [Fact]
@@ -81,6 +82,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
 
         var resp = await _http.SendAsync(req);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
     [Fact]
@@ -101,6 +103,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
 
         var resp = await _http.SendAsync(req);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
     [Fact]
@@ -125,6 +128,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
 
         var resp = await _http.SendAsync(req);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
     [Fact]
@@ -145,6 +149,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
 
         var resp = await _http.SendAsync(req);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
     private async Task<string> SignupAndGetUserTokenAsync()
