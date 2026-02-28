@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -62,7 +63,9 @@ public static class AdminNotificationsEndpoints
 
             await db.SaveChangesAsync(ct);
             return Results.Accepted(value: new AdminNotificationSendResponse(jobId, EstimatedRecipients: 0));
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy)
+        .RequireRateLimiting("admin-notifications-send");
 
         g.MapPost("/schedule", async ([FromBody] AdminNotificationScheduleRequest request, IAppDb db, CancellationToken ct) =>
         {
@@ -76,7 +79,9 @@ public static class AdminNotificationsEndpoints
             await db.SaveChangesAsync(ct);
 
             return Results.Created($"/admin/notifications/scheduled/{scheduleId}", new AdminNotificationScheduleResponse(scheduleId));
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy)
+        .RequireRateLimiting("admin-notifications-send");
 
         g.MapGet("/scheduled", async ([FromQuery] int page, [FromQuery] int pageSize, IAppDb db, CancellationToken ct) =>
         {
