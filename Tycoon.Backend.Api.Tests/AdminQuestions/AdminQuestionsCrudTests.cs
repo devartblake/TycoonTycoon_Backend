@@ -110,6 +110,8 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             // Ensure removed
             var getAfter = await _http.GetAsync($"/admin/questions/{id}");
             getAfter.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+            await getAfter.HasErrorCodeAsync("NOT_FOUND");
         }
     }
 
