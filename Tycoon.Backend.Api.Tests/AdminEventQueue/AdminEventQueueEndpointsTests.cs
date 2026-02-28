@@ -71,8 +71,7 @@ public sealed class AdminEventQueueEndpointsTests : IClassFixture<TycoonApiFacto
         var resp = await _http.PostAsJsonAsync("/admin/event-queue/reprocess", new AdminEventQueueReprocessRequest("failed_only", 0));
         resp.StatusCode.Should().Be((HttpStatusCode)422);
 
-        var json = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-        json.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
+        await resp.HasErrorCodeAsync("VALIDATION_ERROR");
     }
 
     [Fact]
@@ -87,8 +86,7 @@ public sealed class AdminEventQueueEndpointsTests : IClassFixture<TycoonApiFacto
         var resp = await _http.PostAsJsonAsync("/admin/event-queue/upload", req);
         resp.StatusCode.Should().Be((HttpStatusCode)422);
 
-        var json = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-        json.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
+        await resp.HasErrorCodeAsync("VALIDATION_ERROR");
     }
 
     [Fact]

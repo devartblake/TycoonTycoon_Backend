@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
@@ -53,8 +52,7 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
 
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-            var json = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-            json.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("UNAUTHORIZED");
+            await resp.HasErrorCodeAsync("UNAUTHORIZED");
         }
 
         hit.Should().Be(HttpStatusCode.TooManyRequests, "admin auth login should be rate-limited");
@@ -77,8 +75,7 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
 
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-            var json = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-            json.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("UNAUTHORIZED");
+            await resp.HasErrorCodeAsync("UNAUTHORIZED");
         }
 
         hit.Should().Be(HttpStatusCode.TooManyRequests, "admin auth refresh should be rate-limited");

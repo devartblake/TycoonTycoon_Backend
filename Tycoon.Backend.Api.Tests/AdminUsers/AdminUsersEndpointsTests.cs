@@ -71,8 +71,7 @@ public sealed class AdminUsersEndpointsTests : IClassFixture<TycoonApiFactory>
         var missingResp = await _http.GetAsync($"/admin/users/{created.Id}");
         missingResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var missingJson = JsonDocument.Parse(await missingResp.Content.ReadAsStringAsync());
-        missingJson.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("NOT_FOUND");
+        await missingResp.HasErrorCodeAsync("NOT_FOUND");
     }
 
     [Fact]

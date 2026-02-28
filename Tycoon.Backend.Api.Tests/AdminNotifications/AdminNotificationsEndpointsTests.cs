@@ -79,8 +79,7 @@ public sealed class AdminNotificationsEndpointsTests : IClassFixture<TycoonApiFa
 
         schResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var schJson = JsonDocument.Parse(await schResp.Content.ReadAsStringAsync());
-        schJson.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("NOT_FOUND");
+        await schResp.HasErrorCodeAsync("NOT_FOUND");
     }
     [Fact]
     public async Task DeadLetter_List_And_Replay_Work_For_Failed_Schedule()
@@ -135,8 +134,7 @@ public sealed class AdminNotificationsEndpointsTests : IClassFixture<TycoonApiFa
         var replayResp = await _http.PostAsync($"/admin/notifications/dead-letter/{sch!.ScheduleId}/replay", content: null);
         replayResp.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var replayJson = JsonDocument.Parse(await replayResp.Content.ReadAsStringAsync());
-        replayJson.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("CONFLICT");
+        await replayResp.HasErrorCodeAsync("CONFLICT");
     }
 
     [Fact]
@@ -147,8 +145,7 @@ public sealed class AdminNotificationsEndpointsTests : IClassFixture<TycoonApiFa
         var replayResp = await _http.PostAsync($"/admin/notifications/dead-letter/sch_missing/replay", content: null);
         replayResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var replayJson = JsonDocument.Parse(await replayResp.Content.ReadAsStringAsync());
-        replayJson.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("NOT_FOUND");
+        await replayResp.HasErrorCodeAsync("NOT_FOUND");
     }
 
     private async Task EnsureAdminAuthAsync()
