@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -144,29 +145,13 @@ namespace Tycoon.Backend.Api.Security
                     return await next(context);
                 }
 
-                if (http.User?.Identity?.IsAuthenticated != true)
+                var authz = http.RequestServices.GetRequiredService<IAuthorizationService>();
+                var authzResult = await authz.AuthorizeAsync(http.User, null, AdminPolicies.AdminOpsPolicy);
+                if (!authzResult.Succeeded)
                 {
-                    return Results.Unauthorized();
-                }
-
-                var role = http.User.FindFirst("role")?.Value
-                           ?? http.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-                if (!string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase))
-                {
-                    return Results.StatusCode(StatusCodes.Status403Forbidden);
-                }
-
-                var audience = http.User.FindFirst("aud")?.Value;
-                if (!string.Equals(audience, "admin-app", StringComparison.OrdinalIgnoreCase))
-                {
-                    return Results.StatusCode(StatusCodes.Status403Forbidden);
-                }
-
-                var scope = http.User.FindFirst("scope")?.Value ?? string.Empty;
-                var scopes = scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if (!scopes.Contains("users:read", StringComparer.OrdinalIgnoreCase))
-                {
-                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                    return http.User?.Identity?.IsAuthenticated == true
+                        ? Results.StatusCode(StatusCodes.Status403Forbidden)
+                        : Results.Unauthorized();
                 }
 
                 var allowedEmails = cfg.GetSection("AdminAuth:AllowedEmails").Get<string[]>() ?? [];
