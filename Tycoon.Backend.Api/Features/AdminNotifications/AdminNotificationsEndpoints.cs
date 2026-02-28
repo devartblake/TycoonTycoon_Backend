@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -5,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Api.Observability;
+using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -44,10 +47,13 @@ public static class AdminNotificationsEndpoints
             return Results.Ok(new AdminNotificationChannelDto(channel.Key, channel.Name, channel.Description, channel.Importance, channel.Enabled));
         });
 
-        g.MapPost("/send", async ([FromBody] AdminNotificationSendRequest request, IAppDb db, CancellationToken ct) =>
+        g.MapPost("/send", async ([FromBody] AdminNotificationSendRequest request, HttpContext httpContext, IAppDb db, CancellationToken ct) =>
         {
+            var sw = Stopwatch.StartNew();
             if (!await db.AdminNotificationChannels.AnyAsync(x => x.Key == request.ChannelKey, ct))
             {
+                await AdminSecurityAudit.WriteAsync(db, "admin_notifications_send", "not_found", new { channelKey = request.ChannelKey }, ct);
+                AdminSecurityMetrics.RecordNotification("send", "not_found", sw);
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
@@ -61,13 +67,24 @@ public static class AdminNotificationsEndpoints
                 metadataJson: request.Payload is null ? null : JsonSerializer.Serialize(request.Payload)));
 
             await db.SaveChangesAsync(ct);
+            await AdminSecurityAudit.WriteAsync(db, "admin_notifications_send", "accepted", new
+            {
+                channelKey = request.ChannelKey,
+                actor = httpContext.User.FindFirst("sub")?.Value
+            }, ct);
+            AdminSecurityMetrics.RecordNotification("send", "accepted", sw);
             return Results.Accepted(value: new AdminNotificationSendResponse(jobId, EstimatedRecipients: 0));
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy)
+        .RequireRateLimiting("admin-notifications-send");
 
-        g.MapPost("/schedule", async ([FromBody] AdminNotificationScheduleRequest request, IAppDb db, CancellationToken ct) =>
+        g.MapPost("/schedule", async ([FromBody] AdminNotificationScheduleRequest request, HttpContext httpContext, IAppDb db, CancellationToken ct) =>
         {
+            var sw = Stopwatch.StartNew();
             if (!await db.AdminNotificationChannels.AnyAsync(x => x.Key == request.ChannelKey, ct))
             {
+                await AdminSecurityAudit.WriteAsync(db, "admin_notifications_schedule", "not_found", new { channelKey = request.ChannelKey }, ct);
+                AdminSecurityMetrics.RecordNotification("schedule", "not_found", sw);
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
@@ -75,8 +92,18 @@ public static class AdminNotificationsEndpoints
             db.AdminNotificationSchedules.Add(new AdminNotificationSchedule(scheduleId, request.Title, request.Body, request.ChannelKey, request.ScheduledAt));
             await db.SaveChangesAsync(ct);
 
+            await AdminSecurityAudit.WriteAsync(db, "admin_notifications_schedule", "created", new
+            {
+                scheduleId,
+                channelKey = request.ChannelKey,
+                actor = httpContext.User.FindFirst("sub")?.Value
+            }, ct);
+            AdminSecurityMetrics.RecordNotification("schedule", "created", sw);
+
             return Results.Created($"/admin/notifications/scheduled/{scheduleId}", new AdminNotificationScheduleResponse(scheduleId));
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy)
+        .RequireRateLimiting("admin-notifications-send");
 
         g.MapGet("/scheduled", async ([FromQuery] int page, [FromQuery] int pageSize, IAppDb db, CancellationToken ct) =>
         {
@@ -94,6 +121,44 @@ public static class AdminNotificationsEndpoints
             var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
 
             return Results.Ok(new AdminNotificationScheduledListResponse(items, page, pageSize, totalItems, totalPages));
+        });
+
+
+        g.MapGet("/dead-letter", async ([FromQuery] int page, [FromQuery] int pageSize, IAppDb db, CancellationToken ct) =>
+        {
+            page = page <= 0 ? 1 : page;
+            pageSize = pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200);
+
+            var baseQ = db.AdminNotificationSchedules.AsNoTracking()
+                .Where(x => x.Status == "failed");
+            var totalItems = await baseQ.CountAsync(ct);
+            var items = await baseQ.OrderByDescending(x => x.ProcessedAtUtc ?? x.CreatedAtUtc)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new AdminNotificationScheduledItemDto(x.ScheduleId, x.Title, x.ChannelKey, x.ScheduledAt, x.Status))
+                .ToListAsync(ct);
+            var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            return Results.Ok(new AdminNotificationScheduledListResponse(items, page, pageSize, totalItems, totalPages));
+        });
+
+        g.MapPost("/dead-letter/{scheduleId}/replay", async (string scheduleId, IAppDb db, CancellationToken ct) =>
+        {
+            var schedule = await db.AdminNotificationSchedules.FirstOrDefaultAsync(x => x.ScheduleId == scheduleId, ct);
+            if (schedule is null)
+            {
+                return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Schedule not found.");
+            }
+
+            if (!schedule.CanReplay())
+            {
+                return AdminApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", "Only failed schedules can be replayed.");
+            }
+
+            schedule.Replay(DateTimeOffset.UtcNow.AddMinutes(1));
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new AdminNotificationScheduleResponse(schedule.ScheduleId));
         });
 
         g.MapDelete("/scheduled/{scheduleId}", async (string scheduleId, IAppDb db, CancellationToken ct) =>
