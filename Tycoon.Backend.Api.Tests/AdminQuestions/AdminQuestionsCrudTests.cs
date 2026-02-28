@@ -23,6 +23,7 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
 
             var r = await noKey.GetAsync("/admin/questions");
             r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            await r.HasErrorCodeAsync("UNAUTHORIZED");
         }
 
         [Fact]
@@ -110,6 +111,8 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             // Ensure removed
             var getAfter = await _http.GetAsync($"/admin/questions/{id}");
             getAfter.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+            await getAfter.HasErrorCodeAsync("NOT_FOUND");
         }
     }
 

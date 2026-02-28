@@ -69,6 +69,8 @@ public sealed class AdminUsersEndpointsTests : IClassFixture<TycoonApiFactory>
 
         var missingResp = await _http.GetAsync($"/admin/users/{created.Id}");
         missingResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        await missingResp.HasErrorCodeAsync("NOT_FOUND");
     }
 
     [Fact]
@@ -77,5 +79,6 @@ public sealed class AdminUsersEndpointsTests : IClassFixture<TycoonApiFactory>
         using var noKey = new TycoonApiFactory().CreateClient();
         var r = await noKey.GetAsync("/admin/users");
         r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await r.HasErrorCodeAsync("UNAUTHORIZED");
     }
 }
