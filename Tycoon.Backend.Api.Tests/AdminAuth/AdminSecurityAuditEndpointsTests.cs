@@ -43,6 +43,37 @@ public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFa
         data.Items.Should().OnlyContain(x => x.Status == "unauthorized");
     }
 
+
+    [Fact]
+    public async Task SecurityAudit_PageSize_IsClamped_To200()
+    {
+        var loginResp = await _http.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("nouser@example.com", "wrong"));
+        loginResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await loginResp.HasErrorCodeAsync("UNAUTHORIZED");
+
+        var auditResp = await _http.GetAsync("/admin/audit/security?page=1&pageSize=999");
+        auditResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var data = await auditResp.Content.ReadFromJsonAsync<AdminNotificationHistoryResponse>();
+        data.Should().NotBeNull();
+        data!.PageSize.Should().Be(200);
+    }
+
+    [Fact]
+    public async Task SecurityAudit_FutureWindow_ReturnsEmpty()
+    {
+        var from = Uri.EscapeDataString(DateTimeOffset.UtcNow.AddHours(1).ToString("O"));
+        var to = Uri.EscapeDataString(DateTimeOffset.UtcNow.AddHours(2).ToString("O"));
+
+        var auditResp = await _http.GetAsync($"/admin/audit/security?from={from}&to={to}&page=1&pageSize=25");
+        auditResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var data = await auditResp.Content.ReadFromJsonAsync<AdminNotificationHistoryResponse>();
+        data.Should().NotBeNull();
+        data!.Items.Should().BeEmpty();
+        data.TotalItems.Should().Be(0);
+    }
+
     [Fact]
     public async Task SecurityAudit_Contains_AdminAuthLoginUnauthorized_Event()
     {
