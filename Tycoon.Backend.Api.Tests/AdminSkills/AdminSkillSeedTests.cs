@@ -25,6 +25,7 @@ public sealed class AdminSkillSeedTests : IClassFixture<TycoonApiFactory>
             new SkillTreeCatalogDto(Array.Empty<SkillNodeDto>()));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]

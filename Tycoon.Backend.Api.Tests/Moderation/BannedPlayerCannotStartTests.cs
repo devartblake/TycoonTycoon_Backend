@@ -18,6 +18,19 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
         _public = factory.CreateClient();
     }
 
+
+    [Fact]
+    public async Task SetStatus_Requires_OpsKey()
+    {
+        using var noKey = new TycoonApiFactory().CreateClient();
+
+        var resp = await noKey.PostAsJsonAsync("/admin/moderation/set-status",
+            new SetModerationStatusRequest(Guid.NewGuid(), 4, "test", null, null, null));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
+    }
+
     [Fact]
     public async Task StartMatch_Banned_Is403()
     {
