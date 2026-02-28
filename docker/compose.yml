@@ -330,8 +330,10 @@ services:
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
       
       # Auth
-      Auth__JwtKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-chars}"
-      JWT__Secret: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-chars}"
+      JwtSettings__SecretKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
+      # Legacy keys kept for backwards compatibility across services/config readers.
+      Auth__JwtKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
+      JWT__Secret: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
       
       # Observability
       Observability__ServiceName: "Tycoon.Backend.Api"

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;

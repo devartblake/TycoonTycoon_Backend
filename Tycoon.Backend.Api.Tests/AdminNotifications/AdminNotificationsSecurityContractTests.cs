@@ -63,8 +63,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
     }
 
-
-
     [Fact]
     public async Task Channels_WithoutBearer_Returns401()
     {
@@ -105,7 +103,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-
     [Fact]
     public async Task TemplatesCreate_WithoutBearer_Returns401()
     {
@@ -129,7 +126,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         var resp = await _http.SendAsync(req);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
-
 
     [Fact]
     public async Task DeadLetterList_WithoutBearer_Returns401()
