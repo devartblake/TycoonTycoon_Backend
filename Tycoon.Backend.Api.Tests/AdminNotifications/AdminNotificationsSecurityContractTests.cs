@@ -62,6 +62,70 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
     }
 
+
+    [Fact]
+    public async Task DeadLetterReplay_WithoutBearer_Returns401()
+    {
+        var resp = await _http.PostAsync("/admin/notifications/dead-letter/nonexistent/replay", content: null);
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task DeadLetterReplay_WithUserBearer_Returns403()
+    {
+        var userToken = await SignupAndGetUserTokenAsync();
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/admin/notifications/dead-letter/nonexistent/replay");
+        req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userToken);
+
+        var resp = await _http.SendAsync(req);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+
+    [Fact]
+    public async Task TemplatesCreate_WithoutBearer_Returns401()
+    {
+        var resp = await _http.PostAsJsonAsync("/admin/notifications/templates",
+            new AdminNotificationTemplateRequest("promo", "T", "B", "admin_basic", new[] { "v" }));
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task TemplatesCreate_WithUserBearer_Returns403()
+    {
+        var userToken = await SignupAndGetUserTokenAsync();
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/admin/notifications/templates")
+        {
+            Content = JsonContent.Create(new AdminNotificationTemplateRequest("promo", "T", "B", "admin_basic", new[] { "v" }))
+        };
+        req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userToken);
+
+        var resp = await _http.SendAsync(req);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+
+    [Fact]
+    public async Task DeadLetterList_WithoutBearer_Returns401()
+    {
+        var resp = await _http.GetAsync("/admin/notifications/dead-letter?page=1&pageSize=25");
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task DeadLetterList_WithUserBearer_Returns403()
+    {
+        var userToken = await SignupAndGetUserTokenAsync();
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/admin/notifications/dead-letter?page=1&pageSize=25");
+        req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userToken);
+
+        var resp = await _http.SendAsync(req);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     private async Task<string> SignupAndGetUserTokenAsync()
     {
         var email = $"user_{Guid.NewGuid():N}@example.com";
