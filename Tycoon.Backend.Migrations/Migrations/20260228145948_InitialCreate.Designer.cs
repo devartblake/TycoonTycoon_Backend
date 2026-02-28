@@ -12,8 +12,8 @@ using Tycoon.Backend.Infrastructure.Persistence;
 namespace Tycoon.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20260228044847_has-pending-model-changes")]
-    partial class haspendingmodelchanges
+    [Migration("20260228145948_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

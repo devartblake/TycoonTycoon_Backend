@@ -74,6 +74,19 @@ using Tycoon.Shared.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Normalize JWT secret configuration across legacy and current key names.
+var normalizedJwtSecret =
+    builder.Configuration["JwtSettings:SecretKey"]
+    ?? builder.Configuration["Jwt:Secret"]
+    ?? builder.Configuration["Auth:JwtKey"]
+    ?? builder.Configuration["JwtKey"];
+
+if (!string.IsNullOrWhiteSpace(normalizedJwtSecret)
+    && string.IsNullOrWhiteSpace(builder.Configuration["JwtSettings:SecretKey"]))
+{
+    builder.Configuration["JwtSettings:SecretKey"] = normalizedJwtSecret;
+}
+
 builder.Services
     .AddOptions<JwtSettings>()
     .BindConfiguration("JwtSettings")   // binds appsettings "JwtSettings" section
@@ -192,7 +205,7 @@ builder.Services.AddScoped<Tycoon.Backend.Application.Auth.IAuthService, Tycoon.
 var jwtSecret = builder.Configuration["JwtSettings:SecretKey"];
 if (string.IsNullOrWhiteSpace(jwtSecret))
 {
-    throw new InvalidOperationException("JWT:Secret configuration is required but not set. Please configure a secure JWT secret key.");
+    throw new InvalidOperationException("JWT secret configuration is required but not set. Configure JwtSettings:SecretKey (or legacy Jwt:Secret/Auth:JwtKey).");
 }
 if (jwtSecret.Length < 32)
 {
