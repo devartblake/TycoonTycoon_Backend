@@ -174,6 +174,44 @@ public static class AdminNotificationsEndpoints
         .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy)
         .RequireRateLimiting("admin-notifications-send");
 
+
+        g.MapGet("/dead-letter", async ([FromQuery] int page, [FromQuery] int pageSize, IAppDb db, CancellationToken ct) =>
+        {
+            page = page <= 0 ? 1 : page;
+            pageSize = pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200);
+
+            var baseQ = db.AdminNotificationSchedules.AsNoTracking()
+                .Where(x => x.Status == "failed");
+            var totalItems = await baseQ.CountAsync(ct);
+            var items = await baseQ.OrderByDescending(x => x.ProcessedAtUtc ?? x.CreatedAtUtc)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new AdminNotificationScheduledItemDto(x.ScheduleId, x.Title, x.ChannelKey, x.ScheduledAt, x.Status))
+                .ToListAsync(ct);
+            var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            return Results.Ok(new AdminNotificationScheduledListResponse(items, page, pageSize, totalItems, totalPages));
+        });
+
+        g.MapPost("/dead-letter/{scheduleId}/replay", async (string scheduleId, IAppDb db, CancellationToken ct) =>
+        {
+            var schedule = await db.AdminNotificationSchedules.FirstOrDefaultAsync(x => x.ScheduleId == scheduleId, ct);
+            if (schedule is null)
+            {
+                return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Schedule not found.");
+            }
+
+            if (!schedule.CanReplay())
+            {
+                return AdminApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", "Only failed schedules can be replayed.");
+            }
+
+            schedule.Replay(DateTimeOffset.UtcNow.AddMinutes(1));
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new AdminNotificationScheduleResponse(schedule.ScheduleId));
+        });
+
         g.MapDelete("/scheduled/{scheduleId}", async (string scheduleId, IAppDb db, CancellationToken ct) =>
         {
             var schedule = await db.AdminNotificationSchedules.FirstOrDefaultAsync(x => x.ScheduleId == scheduleId, ct);
