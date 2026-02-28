@@ -62,6 +62,24 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
     }
 
+    [Fact]
+    public async Task Channels_WithoutBearer_Returns401()
+    {
+        var resp = await _http.GetAsync("/admin/notifications/channels");
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task History_WithUserBearer_Returns403()
+    {
+        var userToken = await SignupAndGetUserTokenAsync();
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/admin/notifications/history?page=1&pageSize=25");
+        req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userToken);
+
+        var resp = await _http.SendAsync(req);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 
     [Fact]
     public async Task DeadLetterReplay_WithoutBearer_Returns401()

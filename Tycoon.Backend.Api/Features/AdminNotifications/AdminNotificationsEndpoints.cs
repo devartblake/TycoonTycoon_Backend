@@ -28,7 +28,8 @@ public static class AdminNotificationsEndpoints
                 .Select(x => new AdminNotificationChannelDto(x.Key, x.Name, x.Description, x.Importance, x.Enabled))
                 .ToListAsync(ct);
             return Results.Ok(channels);
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminOpsPolicy);
 
         g.MapPut("/channels/{key}", async (string key, [FromBody] UpsertAdminNotificationChannelRequest request, IAppDb db, CancellationToken ct) =>
         {
@@ -124,7 +125,7 @@ public static class AdminNotificationsEndpoints
 
             return Results.Ok(new AdminNotificationScheduledListResponse(items, page, pageSize, totalItems, totalPages));
         })
-        .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy);
+        .RequireAuthorization(AdminPolicies.AdminOpsPolicy);
 
 
         g.MapGet("/dead-letter", async ([FromQuery] int page, [FromQuery] int pageSize, IAppDb db, CancellationToken ct) =>
@@ -144,7 +145,7 @@ public static class AdminNotificationsEndpoints
 
             return Results.Ok(new AdminNotificationScheduledListResponse(items, page, pageSize, totalItems, totalPages));
         })
-        .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy);
+        .RequireAuthorization(AdminPolicies.AdminOpsPolicy);
 
         g.MapPost("/dead-letter/{scheduleId}/replay", async (string scheduleId, HttpContext httpContext, IAppDb db, CancellationToken ct) =>
         {
@@ -174,44 +175,6 @@ public static class AdminNotificationsEndpoints
         .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy)
         .RequireRateLimiting("admin-notifications-send");
 
-
-        g.MapGet("/dead-letter", async ([FromQuery] int page, [FromQuery] int pageSize, IAppDb db, CancellationToken ct) =>
-        {
-            page = page <= 0 ? 1 : page;
-            pageSize = pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200);
-
-            var baseQ = db.AdminNotificationSchedules.AsNoTracking()
-                .Where(x => x.Status == "failed");
-            var totalItems = await baseQ.CountAsync(ct);
-            var items = await baseQ.OrderByDescending(x => x.ProcessedAtUtc ?? x.CreatedAtUtc)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(x => new AdminNotificationScheduledItemDto(x.ScheduleId, x.Title, x.ChannelKey, x.ScheduledAt, x.Status))
-                .ToListAsync(ct);
-            var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
-
-            return Results.Ok(new AdminNotificationScheduledListResponse(items, page, pageSize, totalItems, totalPages));
-        });
-
-        g.MapPost("/dead-letter/{scheduleId}/replay", async (string scheduleId, IAppDb db, CancellationToken ct) =>
-        {
-            var schedule = await db.AdminNotificationSchedules.FirstOrDefaultAsync(x => x.ScheduleId == scheduleId, ct);
-            if (schedule is null)
-            {
-                return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Schedule not found.");
-            }
-
-            if (!schedule.CanReplay())
-            {
-                return AdminApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", "Only failed schedules can be replayed.");
-            }
-
-            schedule.Replay(DateTimeOffset.UtcNow.AddMinutes(1));
-            await db.SaveChangesAsync(ct);
-
-            return Results.Ok(new AdminNotificationScheduleResponse(schedule.ScheduleId));
-        });
-
         g.MapDelete("/scheduled/{scheduleId}", async (string scheduleId, IAppDb db, CancellationToken ct) =>
         {
             var schedule = await db.AdminNotificationSchedules.FirstOrDefaultAsync(x => x.ScheduleId == scheduleId, ct);
@@ -234,7 +197,8 @@ public static class AdminNotificationsEndpoints
                 .ToListAsync(ct);
             var dtos = templates.Select(ToTemplateDto).ToList();
             return Results.Ok(dtos);
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminOpsPolicy);
 
         g.MapPost("/templates", async ([FromBody] AdminNotificationTemplateRequest request, IAppDb db, CancellationToken ct) =>
         {
@@ -322,7 +286,8 @@ public static class AdminNotificationsEndpoints
                 DeserializeMetadata(x.MetadataJson))).ToList();
 
             return Results.Ok(new AdminNotificationHistoryResponse(items, page, pageSize, totalItems, totalPages));
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminOpsPolicy);
     }
 
     private static AdminNotificationTemplateDto ToTemplateDto(AdminNotificationTemplate x)
