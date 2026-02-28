@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -44,10 +45,11 @@ public static class AdminNotificationsEndpoints
             return Results.Ok(new AdminNotificationChannelDto(channel.Key, channel.Name, channel.Description, channel.Importance, channel.Enabled));
         });
 
-        g.MapPost("/send", async ([FromBody] AdminNotificationSendRequest request, IAppDb db, CancellationToken ct) =>
+        g.MapPost("/send", async ([FromBody] AdminNotificationSendRequest request, HttpContext httpContext, IAppDb db, CancellationToken ct) =>
         {
             if (!await db.AdminNotificationChannels.AnyAsync(x => x.Key == request.ChannelKey, ct))
             {
+                await AdminSecurityAudit.WriteAsync(db, "admin_notifications_send", "not_found", new { channelKey = request.ChannelKey }, ct);
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
@@ -61,13 +63,21 @@ public static class AdminNotificationsEndpoints
                 metadataJson: request.Payload is null ? null : JsonSerializer.Serialize(request.Payload)));
 
             await db.SaveChangesAsync(ct);
+            await AdminSecurityAudit.WriteAsync(db, "admin_notifications_send", "accepted", new
+            {
+                channelKey = request.ChannelKey,
+                actor = httpContext.User.FindFirst("sub")?.Value
+            }, ct);
             return Results.Accepted(value: new AdminNotificationSendResponse(jobId, EstimatedRecipients: 0));
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy)
+        .RequireRateLimiting("admin-notifications-send");
 
-        g.MapPost("/schedule", async ([FromBody] AdminNotificationScheduleRequest request, IAppDb db, CancellationToken ct) =>
+        g.MapPost("/schedule", async ([FromBody] AdminNotificationScheduleRequest request, HttpContext httpContext, IAppDb db, CancellationToken ct) =>
         {
             if (!await db.AdminNotificationChannels.AnyAsync(x => x.Key == request.ChannelKey, ct))
             {
+                await AdminSecurityAudit.WriteAsync(db, "admin_notifications_schedule", "not_found", new { channelKey = request.ChannelKey }, ct);
                 return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Channel not found.");
             }
 
@@ -75,8 +85,17 @@ public static class AdminNotificationsEndpoints
             db.AdminNotificationSchedules.Add(new AdminNotificationSchedule(scheduleId, request.Title, request.Body, request.ChannelKey, request.ScheduledAt));
             await db.SaveChangesAsync(ct);
 
+            await AdminSecurityAudit.WriteAsync(db, "admin_notifications_schedule", "created", new
+            {
+                scheduleId,
+                channelKey = request.ChannelKey,
+                actor = httpContext.User.FindFirst("sub")?.Value
+            }, ct);
+
             return Results.Created($"/admin/notifications/scheduled/{scheduleId}", new AdminNotificationScheduleResponse(scheduleId));
-        });
+        })
+        .RequireAuthorization(AdminPolicies.AdminNotificationsWritePolicy)
+        .RequireRateLimiting("admin-notifications-send");
 
         g.MapGet("/scheduled", async ([FromQuery] int page, [FromQuery] int pageSize, IAppDb db, CancellationToken ct) =>
         {

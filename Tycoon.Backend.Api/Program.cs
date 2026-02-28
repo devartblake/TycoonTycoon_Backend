@@ -76,7 +76,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddOptions<JwtSettings>()
-    .BindConfiguration("Jwt")           // binds appsettings "Jwt" section
+    .BindConfiguration("JwtSettings")   // binds appsettings "JwtSettings" section
     .ValidateDataAnnotations()          // enforces [Required], [MinLength], [Range]
     .ValidateOnStart();                 // fails at startup, not first request
 
@@ -254,10 +254,10 @@ if (hangfireEnabled)
 }
 
 // JWT Authentication
-var jwtKey = builder.Configuration["Auth:JwtKey"];
-if (string.IsNullOrWhiteSpace(jwtKey))
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
+if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
 {
-    jwtKey = "dev-only-change-me-dev-only-change-me-dev-only-change-me";
+    jwtSettings.SecretKey = "dev-only-change-me-dev-only-change-me-dev-only-change-me";
     Console.WriteLine("⚠️ Using default JWT key for development!");
 }
 
@@ -269,13 +269,16 @@ builder.Services
         o.SaveToken = true;
         o.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,
-            ValidateAudience = false,
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudiences = new[] { "mobile-app", "admin-app", jwtSettings.Audience },
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(2),
-            NameClaimType = "sub"
+            NameClaimType = "sub",
+            RoleClaimType = "role"
         };
 
         o.Events = new JwtBearerEvents
@@ -326,6 +329,48 @@ builder.Services.AddRateLimiter(options =>
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.AddPolicy("admin-auth-login", httpContext =>
+    {
+        var key = $"admin-auth-login:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: key,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.AddPolicy("admin-auth-refresh", httpContext =>
+    {
+        var key = $"admin-auth-refresh:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: key,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.AddPolicy("admin-notifications-send", httpContext =>
+    {
+        var subject = httpContext.User.FindFirstValue("sub")
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+        var key = $"admin-notifications-send:{subject}";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: key,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             });
@@ -576,6 +621,7 @@ AdminNotificationsEndpoints.Map(admin);
 AdminConfigEndpoints.Map(admin);
 AdminMediaEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
+AdminAuditEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);
 AdminPowerupsEndpoints.Map(admin);
 AdminSkillsEndpoints.Map(admin);
