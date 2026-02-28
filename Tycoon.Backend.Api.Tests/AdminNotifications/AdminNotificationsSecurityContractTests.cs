@@ -62,8 +62,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
     }
 
-
-
     [Fact]
     public async Task Channels_WithoutBearer_Returns401()
     {
