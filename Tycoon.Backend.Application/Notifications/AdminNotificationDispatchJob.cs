@@ -50,7 +50,7 @@ public sealed class AdminNotificationDispatchJob(IAppDb db, ILogger<AdminNotific
                 {
                     schedule.MarkRetryOrFail(
                         reason: channel is null ? "Channel not found." : "Channel disabled.",
-                        nextAttemptAt: now.AddMinutes(5));
+                        nextAttemptAt: NextRetryAt(schedule, now));
 
                     db.AdminNotificationHistory.Add(new AdminNotificationHistory(
                         id: $"push_job_{Guid.NewGuid():N}",
@@ -63,7 +63,8 @@ public sealed class AdminNotificationDispatchJob(IAppDb db, ILogger<AdminNotific
                             scheduleId = schedule.ScheduleId,
                             reason = schedule.LastError,
                             retryCount = schedule.RetryCount,
-                            maxRetries = schedule.MaxRetries
+                            maxRetries = schedule.MaxRetries,
+                            deadLetter = schedule.Status == "failed"
                         })));
 
                     continue;
@@ -85,7 +86,7 @@ public sealed class AdminNotificationDispatchJob(IAppDb db, ILogger<AdminNotific
             }
             catch (Exception ex)
             {
-                schedule.MarkRetryOrFail(ex.Message, now.AddMinutes(5));
+                schedule.MarkRetryOrFail(ex.Message, NextRetryAt(schedule, now));
 
                 db.AdminNotificationHistory.Add(new AdminNotificationHistory(
                     id: $"push_job_{Guid.NewGuid():N}",
@@ -98,7 +99,8 @@ public sealed class AdminNotificationDispatchJob(IAppDb db, ILogger<AdminNotific
                         scheduleId = schedule.ScheduleId,
                         reason = ex.Message,
                         retryCount = schedule.RetryCount,
-                        maxRetries = schedule.MaxRetries
+                        maxRetries = schedule.MaxRetries,
+                        deadLetter = schedule.Status == "failed"
                     })));
             }
         }
@@ -107,4 +109,15 @@ public sealed class AdminNotificationDispatchJob(IAppDb db, ILogger<AdminNotific
 
         logger.LogInformation("AdminNotificationDispatchJob processed {Count} schedules.", dueSchedules.Count);
     }
+
+    private static DateTimeOffset NextRetryAt(AdminNotificationSchedule schedule, DateTimeOffset now)
+    {
+        // Exponential backoff with bounded jitter.
+        // Attempt number is current retry count + 1 because MarkRetryOrFail increments internally.
+        var attempt = schedule.RetryCount + 1;
+        var backoffMinutes = Math.Min(30, Math.Pow(2, Math.Min(attempt, 5))); // 2,4,8,16,30,30...
+        var jitterSeconds = Random.Shared.Next(0, 30);
+        return now.AddMinutes(backoffMinutes).AddSeconds(jitterSeconds);
+    }
+
 }

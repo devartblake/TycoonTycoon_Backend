@@ -55,6 +55,7 @@ using Tycoon.Backend.Api.Features.Seasons;
 using Tycoon.Backend.Api.Features.Skills;
 using Tycoon.Backend.Api.Features.Users;
 using Tycoon.Backend.Api.Middleware;
+using Tycoon.Backend.Api.Observability;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application;
@@ -317,6 +318,13 @@ builder.Services
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = (context, _) =>
+    {
+        var path = context.HttpContext.Request.Path.Value ?? "unknown";
+        AdminSecurityMetrics.RecordRateLimitReject(path);
+        return ValueTask.CompletedTask;
+    };
 
     options.AddPolicy("matches-submit", httpContext =>
     {

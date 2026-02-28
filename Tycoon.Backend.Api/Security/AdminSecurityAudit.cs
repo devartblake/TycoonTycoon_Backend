@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Tycoon.Backend.Api.Observability;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 
@@ -24,5 +25,6 @@ public static class AdminSecurityAudit
             metadataJson: JsonSerializer.Serialize(metadata)));
 
         await db.SaveChangesAsync(ct);
+        AdminSecurityMetrics.RecordAuditWrite(title);
     }
 }
