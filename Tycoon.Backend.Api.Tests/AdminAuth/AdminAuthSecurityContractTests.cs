@@ -20,6 +20,7 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
     {
         var resp = await _http.GetAsync("/admin/auth/me");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]

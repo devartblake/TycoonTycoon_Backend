@@ -95,5 +95,6 @@ public sealed class AdminEventQueueEndpointsTests : IClassFixture<TycoonApiFacto
         using var noKey = new TycoonApiFactory().CreateClient();
         var r = await noKey.PostAsJsonAsync("/admin/event-queue/reprocess", new AdminEventQueueReprocessRequest("failed_only", 10));
         r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await r.HasErrorCodeAsync("UNAUTHORIZED");
     }
 }

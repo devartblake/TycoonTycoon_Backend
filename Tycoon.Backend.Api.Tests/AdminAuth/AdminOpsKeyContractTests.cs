@@ -22,6 +22,7 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
 
         var resp = await client.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("x@example.com", "badpass"));
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
@@ -42,6 +43,7 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
 
         var resp = await client.GetAsync("/admin/auth/me");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
@@ -54,5 +56,6 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
             new AdminNotificationSendRequest("Title", "Body", "admin_basic", new Dictionary<string, object> { ["segment"] = "all" }, null));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 }

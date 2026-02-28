@@ -80,5 +80,6 @@ public sealed class AdminUsersEndpointsTests : IClassFixture<TycoonApiFactory>
         using var noKey = new TycoonApiFactory().CreateClient();
         var r = await noKey.GetAsync("/admin/users");
         r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await r.HasErrorCodeAsync("UNAUTHORIZED");
     }
 }
