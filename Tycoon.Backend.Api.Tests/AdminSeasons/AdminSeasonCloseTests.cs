@@ -17,6 +17,15 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
 
     public AdminSeasonCloseTests(TycoonApiFactory factory) => _factory = factory;
 
+    [Fact]
+    public async Task CloseSeason_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var resp = await wrongKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
 
     [Fact]
     public async Task CloseSeason_Requires_OpsKey()

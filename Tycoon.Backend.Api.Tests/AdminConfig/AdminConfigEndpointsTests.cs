@@ -16,6 +16,20 @@ public sealed class AdminConfigEndpointsTests : IClassFixture<TycoonApiFactory>
         _http = factory.CreateClient().WithAdminOpsKey();
     }
 
+    [Fact]
+    public async Task Config_Routes_Reject_Wrong_OpsKey()
+    {
+        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var getResp = await wrongKey.GetAsync("/admin/config");
+        getResp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await getResp.HasErrorCodeAsync("FORBIDDEN");
+
+        var patchResp = await wrongKey.PatchAsJsonAsync("/admin/config",
+            new UpdateAdminAppConfigRequest(EnableLogging: true, FeatureFlags: new Dictionary<string, bool>{{"adminEventUpload", true}}));
+        patchResp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await patchResp.HasErrorCodeAsync("FORBIDDEN");
+    }
 
     [Fact]
     public async Task Config_Routes_Require_OpsKey()

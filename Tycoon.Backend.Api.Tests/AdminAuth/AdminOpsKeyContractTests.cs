@@ -36,6 +36,26 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
     }
 
     [Fact]
+    public async Task AdminNotificationsChannels_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync("/admin/notifications/channels");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task AdminSecurityAudit_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync("/admin/audit/security?page=1&pageSize=25");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
     public async Task AdminMe_WithMalformedBearer_Returns401()
     {
         var client = _factory.CreateClient().WithAdminOpsKey();
