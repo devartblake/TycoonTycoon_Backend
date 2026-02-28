@@ -182,4 +182,17 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
     }
 
+    [Fact]
+    public async Task PutReview_UnknownFlag_ReturnsNotFoundEnvelope()
+    {
+        var admin = _factory.CreateClient().WithAdminOpsKey();
+
+        var resp = await admin.PutAsJsonAsync(
+            $"/admin/anti-cheat/flags/{Guid.NewGuid()}/review",
+            new ReviewAntiCheatFlagRequestDto("devart", "missing flag"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await resp.HasErrorCodeAsync("NOT_FOUND");
+    }
+
 }
