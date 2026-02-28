@@ -43,6 +43,23 @@ public sealed class AdminNotificationSchedule
         ProcessedAtUtc = DateTimeOffset.UtcNow;
     }
 
+
+    public bool CanReplay() => Status == "failed";
+
+    public void Replay(DateTimeOffset scheduledAt)
+    {
+        if (!CanReplay())
+        {
+            return;
+        }
+
+        Status = "scheduled";
+        RetryCount = 0;
+        LastError = null;
+        ProcessedAtUtc = null;
+        ScheduledAt = scheduledAt;
+    }
+
     public void MarkRetryOrFail(string reason, DateTimeOffset nextAttemptAt)
     {
         RetryCount++;

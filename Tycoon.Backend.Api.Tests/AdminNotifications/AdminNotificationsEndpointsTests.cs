@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Tycoon.Backend.Api.Tests.TestHost;
+using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Shared.Contracts.Dtos;
 using Xunit;
 
@@ -10,9 +12,11 @@ namespace Tycoon.Backend.Api.Tests.AdminNotifications;
 public sealed class AdminNotificationsEndpointsTests : IClassFixture<TycoonApiFactory>
 {
     private readonly HttpClient _http;
+    private readonly TycoonApiFactory _factory;
 
     public AdminNotificationsEndpointsTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();
     }
 
@@ -71,4 +75,56 @@ public sealed class AdminNotificationsEndpointsTests : IClassFixture<TycoonApiFa
 
         schResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+    [Fact]
+    public async Task DeadLetter_List_And_Replay_Work_For_Failed_Schedule()
+    {
+        string scheduleId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IAppDb>();
+            var schedule = new Tycoon.Backend.Domain.Entities.AdminNotificationSchedule(
+                $"sch_{Guid.NewGuid():N}", "Failed", "Body", "missing", DateTimeOffset.UtcNow.AddMinutes(-1));
+            schedule.MarkRetryOrFail("missing", DateTimeOffset.UtcNow.AddMinutes(-1));
+            schedule.MarkRetryOrFail("missing", DateTimeOffset.UtcNow.AddMinutes(-1));
+            schedule.MarkRetryOrFail("missing", DateTimeOffset.UtcNow.AddMinutes(-1));
+            db.AdminNotificationSchedules.Add(schedule);
+            await db.SaveChangesAsync();
+            scheduleId = schedule.ScheduleId;
+        }
+
+        var deadResp = await _http.GetAsync("/admin/notifications/dead-letter?page=1&pageSize=25");
+        deadResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dead = await deadResp.Content.ReadFromJsonAsync<AdminNotificationScheduledListResponse>();
+        dead.Should().NotBeNull();
+        dead!.Items.Should().Contain(x => x.ScheduleId == scheduleId && x.Status == "failed");
+
+        var replayResp = await _http.PostAsync($"/admin/notifications/dead-letter/{scheduleId}/replay", content: null);
+        replayResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var scheduledResp = await _http.GetAsync("/admin/notifications/scheduled?page=1&pageSize=50");
+        scheduledResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var scheduled = await scheduledResp.Content.ReadFromJsonAsync<AdminNotificationScheduledListResponse>();
+        scheduled.Should().NotBeNull();
+        scheduled!.Items.Should().Contain(x => x.ScheduleId == scheduleId && x.Status == "scheduled");
+    }
+
+
+    [Fact]
+    public async Task DeadLetter_Replay_NonFailed_Schedule_Returns_Conflict()
+    {
+        var channelsResp = await _http.GetAsync("/admin/notifications/channels");
+        channelsResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var schResp = await _http.PostAsJsonAsync("/admin/notifications/schedule",
+            new AdminNotificationScheduleRequest("Soon", "Body", "admin_basic", DateTimeOffset.UtcNow.AddMinutes(10),
+                new Dictionary<string, object>{{"type", "none"}}, new Dictionary<string, object>{{"segment", "all"}}));
+        schResp.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var sch = await schResp.Content.ReadFromJsonAsync<AdminNotificationScheduleResponse>();
+        sch.Should().NotBeNull();
+
+        var replayResp = await _http.PostAsync($"/admin/notifications/dead-letter/{sch!.ScheduleId}/replay", content: null);
+        replayResp.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
 }
