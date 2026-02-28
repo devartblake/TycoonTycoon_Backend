@@ -69,6 +69,8 @@ public sealed class AdminUsersEndpointsTests : IClassFixture<TycoonApiFactory>
 
         var missingResp = await _http.GetAsync($"/admin/users/{created.Id}");
         missingResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        await missingResp.HasErrorCodeAsync("NOT_FOUND");
     }
 
     [Fact]
