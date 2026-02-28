@@ -189,7 +189,7 @@ builder.Services.AddInfrastructure(builder.Configuration)
 builder.Services.AddScoped<Tycoon.Backend.Application.Auth.IAuthService, Tycoon.Backend.Application.Auth.AuthService>();
 
 // Validate JWT configuration at startup
-var jwtSecret = builder.Configuration["Jwt:Secret"];
+var jwtSecret = builder.Configuration["JwtSettings:SecretKey"];
 if (string.IsNullOrWhiteSpace(jwtSecret))
 {
     throw new InvalidOperationException("JWT:Secret configuration is required but not set. Please configure a secure JWT secret key.");
