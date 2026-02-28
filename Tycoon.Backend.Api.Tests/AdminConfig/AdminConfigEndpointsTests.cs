@@ -16,8 +16,6 @@ public sealed class AdminConfigEndpointsTests : IClassFixture<TycoonApiFactory>
         _http = factory.CreateClient().WithAdminOpsKey();
     }
 
-
-
     [Fact]
     public async Task Config_Routes_Reject_Wrong_OpsKey()
     {

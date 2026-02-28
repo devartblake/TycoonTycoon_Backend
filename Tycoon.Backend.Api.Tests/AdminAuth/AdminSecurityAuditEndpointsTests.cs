@@ -43,7 +43,6 @@ public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFa
         data.Items.Should().OnlyContain(x => x.Status == "unauthorized");
     }
 
-
     [Fact]
     public async Task SecurityAudit_PageSize_IsClamped_To200()
     {

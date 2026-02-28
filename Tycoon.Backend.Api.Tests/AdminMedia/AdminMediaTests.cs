@@ -16,8 +16,6 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
             _http = factory.CreateClient().WithAdminOpsKey();
         }
 
-
-
         [Fact]
         public async Task Media_Intent_Rejects_Wrong_OpsKey()
         {

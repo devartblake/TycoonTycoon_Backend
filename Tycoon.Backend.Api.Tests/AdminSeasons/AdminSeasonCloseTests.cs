@@ -17,8 +17,6 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
 
     public AdminSeasonCloseTests(TycoonApiFactory factory) => _factory = factory;
 
-
-
     [Fact]
     public async Task CloseSeason_Rejects_Wrong_OpsKey()
     {
