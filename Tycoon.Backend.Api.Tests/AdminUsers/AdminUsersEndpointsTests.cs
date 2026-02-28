@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
@@ -69,6 +70,9 @@ public sealed class AdminUsersEndpointsTests : IClassFixture<TycoonApiFactory>
 
         var missingResp = await _http.GetAsync($"/admin/users/{created.Id}");
         missingResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var missingJson = JsonDocument.Parse(await missingResp.Content.ReadAsStringAsync());
+        missingJson.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("NOT_FOUND");
     }
 
     [Fact]

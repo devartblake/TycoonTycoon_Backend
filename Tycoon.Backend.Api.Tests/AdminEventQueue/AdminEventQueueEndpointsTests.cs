@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
@@ -61,6 +62,33 @@ public sealed class AdminEventQueueEndpointsTests : IClassFixture<TycoonApiFacto
         body.Should().NotBeNull();
         body!.JobId.Should().StartWith("job_");
         body.Status.Should().Be("queued");
+    }
+
+
+    [Fact]
+    public async Task Reprocess_InvalidLimit_ReturnsValidationEnvelope()
+    {
+        var resp = await _http.PostAsJsonAsync("/admin/event-queue/reprocess", new AdminEventQueueReprocessRequest("failed_only", 0));
+        resp.StatusCode.Should().Be((HttpStatusCode)422);
+
+        var json = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+        json.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
+    }
+
+    [Fact]
+    public async Task Upload_EmptyEvents_ReturnsValidationEnvelope()
+    {
+        var req = new AdminEventQueueUploadRequest(
+            Source: "mobile_admin",
+            ExportedAt: DateTimeOffset.UtcNow,
+            PlayerId: Guid.NewGuid().ToString(),
+            Events: new List<AdminEventQueueItemRequest>());
+
+        var resp = await _http.PostAsJsonAsync("/admin/event-queue/upload", req);
+        resp.StatusCode.Should().Be((HttpStatusCode)422);
+
+        var json = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+        json.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
     }
 
     [Fact]
