@@ -634,6 +634,7 @@ AdminNotificationsEndpoints.Map(admin);
 AdminConfigEndpoints.Map(admin);
 AdminMediaEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
+AdminAuditEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);
 AdminPowerupsEndpoints.Map(admin);
 AdminSkillsEndpoints.Map(admin);
