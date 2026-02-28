@@ -5,23 +5,65 @@
     {
       "title": "Admin Auth Outcomes",
       "metric": "admin_auth_events_total",
-      "groupBy": ["action", "outcome"]
+      "groupBy": [
+        "action",
+        "outcome"
+      ]
     },
     {
       "title": "Admin Notification Outcomes",
       "metric": "admin_notification_events_total",
-      "groupBy": ["action", "outcome"]
+      "groupBy": [
+        "action",
+        "outcome"
+      ]
     },
     {
       "title": "Rate Limit Rejects",
       "metric": "admin_rate_limit_rejected_total",
-      "groupBy": ["path"]
+      "groupBy": [
+        "path"
+      ]
     },
     {
       "title": "Admin Request Latency (p95)",
       "metric": "admin_request_latency_ms",
       "stat": "p95",
-      "groupBy": ["area", "action"]
+      "groupBy": [
+        "area",
+        "action"
+      ]
+    }
+  ],
+  "runbook": "ops/runbooks/admin-security-incidents.md",
+  "alerts": [
+    {
+      "name": "Admin Auth Unauthorized Spike",
+      "metric": "admin_auth_events_total",
+      "filter": {
+        "outcome": "unauthorized"
+      },
+      "threshold": ">=20/min for 10m (5m rolling)"
+    },
+    {
+      "name": "Admin Rate Limit Reject Spike",
+      "metric": "admin_rate_limit_rejected_total",
+      "filter": {
+        "path": [
+          "/admin/auth/login",
+          "/admin/auth/refresh",
+          "/admin/notifications/send"
+        ]
+      },
+      "threshold": ">=10/min for 5m"
+    },
+    {
+      "name": "Admin Notification NotFound Drift",
+      "metric": "admin_notification_events_total",
+      "filter": {
+        "outcome": "not_found"
+      },
+      "threshold": ">=5/min for 15m"
     }
   ]
 }

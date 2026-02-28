@@ -22,6 +22,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
             new AdminNotificationSendRequest("Title", "Body", "admin_basic", new Dictionary<string, object>{{"segment", "all"}}, null));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
@@ -67,6 +68,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     {
         var resp = await _http.GetAsync("/admin/notifications/channels");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
@@ -86,6 +88,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     {
         var resp = await _http.PostAsync("/admin/notifications/dead-letter/nonexistent/replay", content: null);
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
@@ -100,13 +103,13 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-
     [Fact]
     public async Task TemplatesCreate_WithoutBearer_Returns401()
     {
         var resp = await _http.PostAsJsonAsync("/admin/notifications/templates",
             new AdminNotificationTemplateRequest("promo", "T", "B", "admin_basic", new[] { "v" }));
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
@@ -124,12 +127,12 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-
     [Fact]
     public async Task DeadLetterList_WithoutBearer_Returns401()
     {
         var resp = await _http.GetAsync("/admin/notifications/dead-letter?page=1&pageSize=25");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
