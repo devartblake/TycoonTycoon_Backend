@@ -6447,6 +6447,7 @@
           "MediatR": "14.0.0",
           "MediatR.Extensions.Microsoft.DependencyInjection": "11.0.0",
           "Microsoft.EntityFrameworkCore": "9.0.11",
+          "Npgsql": "10.0.0",
           "System.IdentityModel.Tokens.Jwt": "8.15.0",
           "Tycoon.Backend.Domain": "1.0.0",
           "Tycoon.Shared.Contracts": "1.0.0"
@@ -17259,6 +17260,7 @@
           "NBomber.Http": "5.11.0",
           "NCrontab": "3.3.3",
           "Newtonsoft.Json": "13.0.4",
+          "Npgsql": "10.0.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
           "Npgsql.OpenTelemetry": "10.0.0",
           "OpenTelemetry": "1.14.0",
@@ -17595,6 +17597,10 @@
       "Newtonsoft.Json": {
         "include": "Runtime, Compile, Native, BuildTransitive",
         "version": "[13.0.4, )"
+      },
+      "Npgsql": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[10.0.0, )"
       },
       "Npgsql.EntityFrameworkCore.PostgreSQL": {
         "include": "Runtime, Compile, Native, BuildTransitive",
