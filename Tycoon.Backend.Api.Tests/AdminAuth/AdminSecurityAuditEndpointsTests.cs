@@ -15,8 +15,6 @@ public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFa
         _http = factory.CreateClient().WithAdminOpsKey();
     }
 
-
-
     [Fact]
     public async Task SecurityAudit_Rejects_Wrong_OpsKey()
     {
@@ -53,7 +51,6 @@ public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFa
         data.PageSize.Should().Be(25);
         data.Items.Should().OnlyContain(x => x.Status == "unauthorized");
     }
-
 
     [Fact]
     public async Task SecurityAudit_PageSize_IsClamped_To200()
