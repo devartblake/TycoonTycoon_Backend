@@ -17,6 +17,16 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
         }
 
         [Fact]
+        public async Task AdminRoutes_Reject_Wrong_OpsKey()
+        {
+            using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+            var r = await wrongKey.GetAsync("/admin/questions");
+            r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            await r.HasErrorCodeAsync("FORBIDDEN");
+        }
+
+        [Fact]
         public async Task AdminRoutes_Require_OpsKey()
         {
             using var noKey = new TycoonApiFactory().CreateClient(); // new client with no header
