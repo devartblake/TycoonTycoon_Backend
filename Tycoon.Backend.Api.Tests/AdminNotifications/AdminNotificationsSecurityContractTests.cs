@@ -95,6 +95,16 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     }
 
     [Fact]
+    public async Task History_WithWrongOpsKey_Returns403()
+    {
+        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.GetAsync("/admin/notifications/history?page=1&pageSize=25");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
     public async Task History_WithUserBearer_Returns403()
     {
         var userToken = await SignupAndGetUserTokenAsync();
@@ -144,6 +154,17 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userToken);
 
         var resp = await _http.SendAsync(req);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task TemplatesCreate_WithWrongOpsKey_Returns403()
+    {
+        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PostAsJsonAsync("/admin/notifications/templates",
+            new AdminNotificationTemplateRequest("promo", "T", "B", "admin_basic", new[] { "v" }));
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
