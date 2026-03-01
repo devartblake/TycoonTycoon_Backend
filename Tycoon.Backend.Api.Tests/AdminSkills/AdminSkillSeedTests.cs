@@ -17,6 +17,18 @@ public sealed class AdminSkillSeedTests : IClassFixture<TycoonApiFactory>
     }
 
     [Fact]
+    public async Task SeedSkills_Rejects_Wrong_AdminOpsKey()
+    {
+        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PostAsJsonAsync("/admin/skills/seed",
+            new SkillTreeCatalogDto(Array.Empty<SkillNodeDto>()));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
     public async Task SeedSkills_Requires_AdminOpsKey()
     {
         var noKey = new TycoonApiFactory().CreateClient();
