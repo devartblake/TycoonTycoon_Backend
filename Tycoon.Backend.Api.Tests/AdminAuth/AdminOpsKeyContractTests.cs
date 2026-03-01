@@ -35,7 +35,6 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
-
     [Fact]
     public async Task AdminNotificationsChannels_WithWrongOpsKey_Returns403()
     {
@@ -55,7 +54,6 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
-
 
     [Fact]
     public async Task AdminNotificationsSend_WithWrongOpsKey_Returns403()
