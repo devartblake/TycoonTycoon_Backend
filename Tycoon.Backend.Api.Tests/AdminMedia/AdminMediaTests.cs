@@ -39,6 +39,26 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
         }
 
         [Fact]
+        public async Task Media_Intent_Rejects_Wrong_OpsKey()
+        {
+            using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+            var resp = await wrongKey.PostAsJsonAsync("/admin/media/intent", new CreateUploadIntentRequest("image.png", "image/png", 12345));
+            resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            await resp.HasErrorCodeAsync("FORBIDDEN");
+        }
+
+        [Fact]
+        public async Task Media_Intent_Requires_OpsKey()
+        {
+            using var noKey = new TycoonApiFactory().CreateClient();
+
+            var resp = await noKey.PostAsJsonAsync("/admin/media/intent", new CreateUploadIntentRequest("image.png", "image/png", 12345));
+            resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            await resp.HasErrorCodeAsync("UNAUTHORIZED");
+        }
+
+        [Fact]
         public async Task CreateUploadIntent_Returns_AssetKey_And_UploadUrl()
         {
             var req = new CreateUploadIntentRequest("image.png", "image/png", 12345);
