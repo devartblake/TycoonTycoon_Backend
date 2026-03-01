@@ -110,6 +110,27 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
+
+    [Fact]
+    public async Task DeadLetterList_WithWrongOpsKey_Returns403()
+    {
+        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.GetAsync("/admin/notifications/dead-letter?page=1&pageSize=25");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task DeadLetterReplay_WithWrongOpsKey_Returns403()
+    {
+        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PostAsync("/admin/notifications/dead-letter/nonexistent/replay", content: null);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
     [Fact]
     public async Task DeadLetterReplay_WithoutBearer_Returns401()
     {
