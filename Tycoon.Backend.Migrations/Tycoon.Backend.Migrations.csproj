@@ -9,9 +9,6 @@
 
   <ItemGroup>
     <Compile Include="MigrationAssemblyMarker.cs" />
-    <Compile Include="Migrations\20260225105545_InitialCreate.cs" />
-    <Compile Include="Migrations\20260225105545_InitialCreate.Designer.cs" />
-    <Compile Include="Migrations\AppDbModelSnapshot.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,5 +22,9 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Migrations\" />
 	</ItemGroup>
 </Project>
