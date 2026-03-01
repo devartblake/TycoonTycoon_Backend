@@ -69,6 +69,17 @@ public sealed class AdminUsersEndpointsTests : IClassFixture<TycoonApiFactory>
 
         var missingResp = await _http.GetAsync($"/admin/users/{created.Id}");
         missingResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        await missingResp.HasErrorCodeAsync("NOT_FOUND");
+    }
+
+    [Fact]
+    public async Task AdminRoutes_Reject_Wrong_OpsKey()
+    {
+        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var r = await wrongKey.GetAsync("/admin/users");
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await r.HasErrorCodeAsync("FORBIDDEN");
     }
 
     [Fact]
@@ -77,5 +88,6 @@ public sealed class AdminUsersEndpointsTests : IClassFixture<TycoonApiFactory>
         using var noKey = new TycoonApiFactory().CreateClient();
         var r = await noKey.GetAsync("/admin/users");
         r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await r.HasErrorCodeAsync("UNAUTHORIZED");
     }
 }
