@@ -56,6 +56,39 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
+    [Fact]
+    public async Task AdminMatches_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync("/admin/matches?page=1&pageSize=10");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task AdminPowerupsGrant_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.PostAsJsonAsync(
+            "/admin/powerups/grant",
+            new GrantPowerupRequest(Guid.NewGuid(), Guid.NewGuid(), PowerupType.Skip, 1, "contract-test"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task AdminAntiCheatAnalyticsSummary_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync("/admin/anti-cheat/analytics/summary?windowHours=24");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
 
     [Fact]
     public async Task AdminNotificationsSend_WithWrongOpsKey_Returns403()
