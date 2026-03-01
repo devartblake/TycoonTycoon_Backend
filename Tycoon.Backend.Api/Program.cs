@@ -323,7 +323,19 @@ builder.Services.AddRateLimiter(options =>
     {
         var path = context.HttpContext.Request.Path.Value ?? "unknown";
         AdminSecurityMetrics.RecordRateLimitReject(path);
-        return ValueTask.CompletedTask;
+
+        var response = context.HttpContext.Response;
+        response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+        return new ValueTask(response.WriteAsJsonAsync(new
+        {
+            error = new
+            {
+                code = "RATE_LIMITED",
+                message = "Rate limit exceeded.",
+                details = new { path }
+            }
+        }));
     };
 
     options.AddPolicy("matches-submit", httpContext =>

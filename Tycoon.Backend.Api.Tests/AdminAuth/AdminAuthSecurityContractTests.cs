@@ -39,7 +39,7 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
     [Fact]
     public async Task AdminLogin_InvalidCredentials_Eventually429()
     {
-        HttpStatusCode? hit = null;
+        HttpResponseMessage? hit = null;
 
         for (var i = 0; i < 20; i++)
         {
@@ -48,22 +48,23 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
 
             if (resp.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                hit = resp.StatusCode;
+                hit = resp;
                 break;
             }
 
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-
             await resp.HasErrorCodeAsync("UNAUTHORIZED");
         }
 
-        hit.Should().Be(HttpStatusCode.TooManyRequests, "admin auth login should be rate-limited");
+        hit.Should().NotBeNull("admin auth login should be rate-limited");
+        hit!.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        await hit.HasErrorCodeAsync("RATE_LIMITED");
     }
 
     [Fact]
     public async Task AdminRefresh_InvalidToken_Eventually429()
     {
-        HttpStatusCode? hit = null;
+        HttpResponseMessage? hit = null;
 
         for (var i = 0; i < 30; i++)
         {
@@ -71,16 +72,17 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
 
             if (resp.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                hit = resp.StatusCode;
+                hit = resp;
                 break;
             }
 
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-
             await resp.HasErrorCodeAsync("UNAUTHORIZED");
         }
 
-        hit.Should().Be(HttpStatusCode.TooManyRequests, "admin auth refresh should be rate-limited");
+        hit.Should().NotBeNull("admin auth refresh should be rate-limited");
+        hit!.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        await hit.HasErrorCodeAsync("RATE_LIMITED");
     }
 
     private async Task<string> SignupAndGetUserTokenAsync()
