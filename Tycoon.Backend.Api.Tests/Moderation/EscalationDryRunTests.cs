@@ -16,6 +16,31 @@ public sealed class EscalationDryRunTests : IClassFixture<TycoonApiFactory>
         _admin = factory.CreateClient().WithAdminOpsKey();
     }
 
+
+    [Fact]
+    public async Task Escalation_Run_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PostAsJsonAsync("/admin/moderation/escalation/run",
+            new RunEscalationRequest(WindowHours: 24, MaxPlayers: 500, DryRun: true));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task Escalation_Run_Requires_OpsKey()
+    {
+        using var noKey = new TycoonApiFactory().CreateClient();
+
+        var resp = await noKey.PostAsJsonAsync("/admin/moderation/escalation/run",
+            new RunEscalationRequest(WindowHours: 24, MaxPlayers: 500, DryRun: true));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
+    }
+
     [Fact]
     public async Task Escalation_Run_Rejects_Wrong_OpsKey()
     {
