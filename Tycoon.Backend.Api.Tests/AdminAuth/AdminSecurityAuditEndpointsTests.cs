@@ -8,17 +8,21 @@ namespace Tycoon.Backend.Api.Tests.AdminAuth;
 
 public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
 
     public AdminSecurityAuditEndpointsTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();
     }
+
+
 
     [Fact]
     public async Task SecurityAudit_Rejects_Wrong_OpsKey()
     {
-        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
 
         var resp = await wrongKey.GetAsync("/admin/audit/security?page=1&pageSize=50");
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -28,7 +32,7 @@ public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFa
     [Fact]
     public async Task SecurityAudit_Requires_OpsKey()
     {
-        using var noKey = new TycoonApiFactory().CreateClient();
+        using var noKey = _factory.CreateClient();
 
         var resp = await noKey.GetAsync("/admin/audit/security?page=1&pageSize=50");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);

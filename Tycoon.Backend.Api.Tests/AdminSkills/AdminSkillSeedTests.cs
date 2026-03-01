@@ -9,17 +9,19 @@ namespace Tycoon.Backend.Api.Tests.AdminSkills;
 
 public sealed class AdminSkillSeedTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _admin;
 
     public AdminSkillSeedTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();
     }
 
     [Fact]
     public async Task SeedSkills_Rejects_Wrong_AdminOpsKey()
     {
-        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
 
         var resp = await wrongKey.PostAsJsonAsync("/admin/skills/seed",
             new SkillTreeCatalogDto(Array.Empty<SkillNodeDto>()));
@@ -31,7 +33,7 @@ public sealed class AdminSkillSeedTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task SeedSkills_Requires_AdminOpsKey()
     {
-        var noKey = new TycoonApiFactory().CreateClient();
+        var noKey = _factory.CreateClient();
 
         var resp = await noKey.PostAsJsonAsync("/admin/skills/seed",
             new SkillTreeCatalogDto(Array.Empty<SkillNodeDto>()));

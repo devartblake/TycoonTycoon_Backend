@@ -9,10 +9,12 @@ namespace Tycoon.Backend.Api.Tests.AdminConfig;
 
 public sealed class AdminConfigEndpointsTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
 
     public AdminConfigEndpointsTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();
     }
 
@@ -21,7 +23,7 @@ public sealed class AdminConfigEndpointsTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task Config_Routes_Reject_Wrong_OpsKey()
     {
-        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
 
         var getResp = await wrongKey.GetAsync("/admin/config");
         getResp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -36,7 +38,7 @@ public sealed class AdminConfigEndpointsTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task Config_Routes_Require_OpsKey()
     {
-        using var noKey = new TycoonApiFactory().CreateClient();
+        using var noKey = _factory.CreateClient();
 
         var getResp = await noKey.GetAsync("/admin/config");
         getResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);

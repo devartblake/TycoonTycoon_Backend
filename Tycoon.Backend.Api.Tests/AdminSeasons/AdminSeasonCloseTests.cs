@@ -22,7 +22,7 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task CloseSeason_Rejects_Wrong_OpsKey()
     {
-        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
         var resp = await wrongKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -32,7 +32,7 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task CloseSeason_Requires_OpsKey()
     {
-        using var noKey = new TycoonApiFactory().CreateClient();
+        using var noKey = _factory.CreateClient();
         var resp = await noKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);

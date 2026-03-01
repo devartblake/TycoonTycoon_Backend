@@ -9,10 +9,12 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
 {
     public sealed class AdminMediaTests : IClassFixture<TycoonApiFactory>
     {
-        private readonly HttpClient _http;
+        private readonly TycoonApiFactory _factory;
+    private readonly HttpClient _http;
 
         public AdminMediaTests(TycoonApiFactory factory)
         {
+            _factory = factory;
             _http = factory.CreateClient().WithAdminOpsKey();
         }
 
@@ -21,7 +23,7 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
         [Fact]
         public async Task Media_Intent_Rejects_Wrong_OpsKey()
         {
-            using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+            using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
 
             var resp = await wrongKey.PostAsJsonAsync("/admin/media/intent", new CreateUploadIntentRequest("image.png", "image/png", 12345));
             resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -31,7 +33,7 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
         [Fact]
         public async Task Media_Intent_Requires_OpsKey()
         {
-            using var noKey = new TycoonApiFactory().CreateClient();
+            using var noKey = _factory.CreateClient();
 
             var resp = await noKey.PostAsJsonAsync("/admin/media/intent", new CreateUploadIntentRequest("image.png", "image/png", 12345));
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);

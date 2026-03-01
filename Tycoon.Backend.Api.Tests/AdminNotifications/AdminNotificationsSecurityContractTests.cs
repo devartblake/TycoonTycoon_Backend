@@ -8,17 +8,20 @@ namespace Tycoon.Backend.Api.Tests.AdminNotifications;
 
 public sealed class AdminNotificationsSecurityContractTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
 
     public AdminNotificationsSecurityContractTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();
     }
+
 
     [Fact]
     public async Task Send_WithWrongOpsKey_Returns403()
     {
-        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var wrongKey = CreateWrongKeyClient();
 
         var resp = await wrongKey.PostAsJsonAsync("/admin/notifications/send",
             new AdminNotificationSendRequest("Title", "Body", "admin_basic", new Dictionary<string, object>{{"segment", "all"}}, null));
@@ -30,7 +33,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     [Fact]
     public async Task Channels_WithWrongOpsKey_Returns403()
     {
-        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var wrongKey = CreateWrongKeyClient();
 
         var resp = await wrongKey.GetAsync("/admin/notifications/channels");
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -97,7 +100,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     [Fact]
     public async Task History_WithWrongOpsKey_Returns403()
     {
-        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var wrongKey = CreateWrongKeyClient();
 
         var resp = await wrongKey.GetAsync("/admin/notifications/history?page=1&pageSize=25");
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -120,7 +123,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     [Fact]
     public async Task DeadLetterList_WithWrongOpsKey_Returns403()
     {
-        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var wrongKey = CreateWrongKeyClient();
 
         var resp = await wrongKey.GetAsync("/admin/notifications/dead-letter?page=1&pageSize=25");
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -130,7 +133,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     [Fact]
     public async Task DeadLetterReplay_WithWrongOpsKey_Returns403()
     {
-        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var wrongKey = CreateWrongKeyClient();
 
         var resp = await wrongKey.PostAsync("/admin/notifications/dead-letter/nonexistent/replay", content: null);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -161,7 +164,7 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     [Fact]
     public async Task TemplatesCreate_WithWrongOpsKey_Returns403()
     {
-        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var wrongKey = CreateWrongKeyClient();
 
         var resp = await wrongKey.PostAsJsonAsync("/admin/notifications/templates",
             new AdminNotificationTemplateRequest("promo", "T", "B", "admin_basic", new[] { "v" }));
@@ -214,6 +217,50 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
+
+    [Fact]
+    public async Task Send_WithAdminBearer_Eventually429_AndEnvelope()
+    {
+        var adminToken = await SignupAndGetAdminTokenAsync();
+
+        using (var seedReq = new HttpRequestMessage(HttpMethod.Get, "/admin/notifications/channels"))
+        {
+            seedReq.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
+            var seedResp = await _http.SendAsync(seedReq);
+            seedResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        HttpResponseMessage? hit = null;
+
+        for (var i = 0; i < 40; i++)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, "/admin/notifications/send")
+            {
+                Content = JsonContent.Create(new AdminNotificationSendRequest(
+                    $"Title-{i}",
+                    "Body",
+                    "admin_basic",
+                    new Dictionary<string, object> { {"segment", "all"} },
+                    null))
+            };
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
+
+            var resp = await _http.SendAsync(req);
+            if (resp.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                hit = resp;
+                break;
+            }
+
+            resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        }
+
+        hit.Should().NotBeNull("notification send should be rate-limited for admin flow");
+        hit!.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        await hit.HasErrorCodeAsync("RATE_LIMITED");
+    }
+
+    private HttpClient CreateWrongKeyClient() => _factory.CreateClient().WithAdminOpsKey("wrong-key");
 
     private async Task<string> SignupAndGetUserTokenAsync()
     {

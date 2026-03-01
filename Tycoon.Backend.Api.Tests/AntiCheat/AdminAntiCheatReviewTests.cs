@@ -185,7 +185,7 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task AntiCheat_Flags_Rejects_Wrong_OpsKey()
     {
-        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
 
         var resp = await wrongKey.GetAsync("/admin/anti-cheat/flags?page=1&pageSize=25");
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -195,7 +195,7 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task PutReview_Rejects_Wrong_OpsKey()
     {
-        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
 
         var resp = await wrongKey.PutAsJsonAsync(
             $"/admin/anti-cheat/flags/{Guid.NewGuid()}/review",
