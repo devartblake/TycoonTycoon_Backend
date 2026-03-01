@@ -75,7 +75,7 @@ public sealed class AdminSeasonRewardsDistributionTests : IClassFixture<TycoonAp
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key");
+        admin.WithAdminOpsKey();
 
         // Act: close season (should trigger rewards)
         var resp = await admin.PostAsync($"/admin/seasons/{seasonId}/close", content: null);

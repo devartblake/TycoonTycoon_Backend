@@ -77,7 +77,7 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key");
+        admin.WithAdminOpsKey();
 
         // Act: close season (1st call)
         var first = await admin.PostAsync($"/admin/seasons/{seasonId}/close", content: null);

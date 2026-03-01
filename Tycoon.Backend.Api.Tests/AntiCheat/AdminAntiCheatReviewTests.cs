@@ -52,7 +52,7 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key"); // align to your factory config
+        admin.WithAdminOpsKey();
 
         // Act: review
         var put = await admin.PutAsJsonAsync(
@@ -113,7 +113,7 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key");
+        admin.WithAdminOpsKey();
 
         var first = await admin.PutAsJsonAsync(
             $"/admin/anti-cheat/flags/{flagId}/review",
@@ -163,7 +163,7 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key");
+        admin.WithAdminOpsKey();
 
         var put = await admin.PutAsJsonAsync(
             $"/admin/anti-cheat/party/flags/{flagId}/review",
