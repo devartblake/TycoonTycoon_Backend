@@ -4,7 +4,7 @@ namespace Tycoon.Backend.Api.Tests.TestHost
 {
     public static class HttpClientAdminExtensions
     {
-        public static HttpClient WithAdminOpsKey(this HttpClient client, string key = "test-ops-key")
+        public static HttpClient WithAdminOpsKey(this HttpClient client, string key = TycoonApiFactory.TestAdminKey)
         {
             client.DefaultRequestHeaders.Remove("X-Admin-Ops-Key");
             client.DefaultRequestHeaders.Add("X-Admin-Ops-Key", key);
