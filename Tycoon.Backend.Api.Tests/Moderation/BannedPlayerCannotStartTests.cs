@@ -9,13 +9,40 @@ namespace Tycoon.Backend.Api.Tests.Moderation;
 
 public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _admin;
     private readonly HttpClient _public;
 
     public BannedPlayerCannotStartTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();
         _public = factory.CreateClient();
+    }
+
+
+    [Fact]
+    public async Task SetStatus_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PostAsJsonAsync("/admin/moderation/set-status",
+            new SetModerationStatusRequest(Guid.NewGuid(), 4, "test", null, null, null));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task SetStatus_Requires_OpsKey()
+    {
+        using var noKey = _factory.CreateClient();
+
+        var resp = await noKey.PostAsJsonAsync("/admin/moderation/set-status",
+            new SetModerationStatusRequest(Guid.NewGuid(), 4, "test", null, null, null));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
