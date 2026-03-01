@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 
@@ -16,11 +17,20 @@ public sealed class AdminNotificationDispatchJob(IAppDb db, ILogger<AdminNotific
     {
         var now = DateTimeOffset.UtcNow;
 
-        var dueSchedules = await db.AdminNotificationSchedules
-            .Where(x => (x.Status == "scheduled" || x.Status == "retry_pending") && x.ScheduledAt <= now)
-            .OrderBy(x => x.ScheduledAt)
-            .Take(200)
-            .ToListAsync(ct);
+        List<AdminNotificationSchedule> dueSchedules;
+        try
+        {
+            dueSchedules = await db.AdminNotificationSchedules
+                .Where(x => (x.Status == "scheduled" || x.Status == "retry_pending") && x.ScheduledAt <= now)
+                .OrderBy(x => x.ScheduledAt)
+                .Take(200)
+                .ToListAsync(ct);
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedTable)
+        {
+            logger.LogWarning("AdminNotificationDispatchJob skipped because notification tables are not available yet. Ensure migrations were applied. SQLSTATE={SqlState}", ex.SqlState);
+            return;
+        }
 
         if (dueSchedules.Count == 0)
         {

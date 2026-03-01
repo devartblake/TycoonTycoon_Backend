@@ -16,7 +16,6 @@ public sealed class EscalationDryRunTests : IClassFixture<TycoonApiFactory>
         _admin = factory.CreateClient().WithAdminOpsKey();
     }
 
-
     [Fact]
     public async Task Escalation_Run_Rejects_Wrong_OpsKey()
     {

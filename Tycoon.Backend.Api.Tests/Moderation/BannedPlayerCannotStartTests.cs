@@ -18,7 +18,6 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
         _public = factory.CreateClient();
     }
 
-
     [Fact]
     public async Task SetStatus_Rejects_Wrong_OpsKey()
     {
