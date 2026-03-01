@@ -2,8 +2,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Api.Observability;
+using Tycoon.Backend.Api.Security;
+using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Auth;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -27,17 +31,22 @@ public static class AdminAuthEndpoints
 
         g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login");
         g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh");
-        g.MapGet("/me", Me).RequireAuthorization();
+        g.MapGet("/me", Me).RequireAuthorization(AdminPolicies.AdminOpsPolicy);
     }
 
     private static async Task<IResult> Login(
         [FromBody] AdminLoginRequest request,
         IAuthService authService,
         IConfiguration configuration,
+        IAppDb db,
         CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
+
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
         {
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "validation_error", new { reason = "missing_email_or_password" }, ct);
+            AdminSecurityMetrics.RecordAuth("login", "validation_error", sw);
             return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "Email and password are required.");
         }
 
@@ -47,6 +56,8 @@ public static class AdminAuthEndpoints
 
             if (!IsAdminEmail(request.Email, configuration))
             {
+                await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "forbidden", new { email = request.Email, reason = "email_not_allowlisted" }, ct);
+                AdminSecurityMetrics.RecordAuth("login", "forbidden", sw);
                 return AdminApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Authenticated user is not an admin.");
             }
 
@@ -58,6 +69,9 @@ public static class AdminAuthEndpoints
                 Permissions: DefaultPermissions
             );
 
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "success", new { email = request.Email }, ct);
+            AdminSecurityMetrics.RecordAuth("login", "success", sw);
+
             return Results.Ok(new AdminLoginResponse(
                 AccessToken: auth.AccessToken,
                 RefreshToken: auth.RefreshToken,
@@ -68,25 +82,35 @@ public static class AdminAuthEndpoints
         }
         catch (UnauthorizedAccessException)
         {
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "unauthorized", new { email = request.Email }, ct);
+            AdminSecurityMetrics.RecordAuth("login", "unauthorized", sw);
             return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Invalid credentials.");
         }
     }
 
-    private static async Task<IResult> Refresh([FromBody] RefreshRequest request, IAuthService authService)
+    private static async Task<IResult> Refresh([FromBody] RefreshRequest request, IAuthService authService, IAppDb db, CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
+
         try
         {
             var auth = await authService.AdminRefreshAsync(request.RefreshToken);
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_refresh", "success", new { }, ct);
+            AdminSecurityMetrics.RecordAuth("refresh", "success", sw);
             return Results.Ok(new AdminRefreshResponse(auth.AccessToken, auth.ExpiresIn, "Bearer"));
         }
         catch (UnauthorizedAccessException)
         {
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_refresh", "unauthorized", new { }, ct);
+            AdminSecurityMetrics.RecordAuth("refresh", "unauthorized", sw);
             return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Refresh token is invalid or expired.");
         }
     }
 
-    private static IResult Me(HttpContext httpContext)
+    private static async Task<IResult> Me(HttpContext httpContext, IAppDb db, CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
+
         var sub = httpContext.User.FindFirst("sub")?.Value
                   ?? httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         var email = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? string.Empty;
@@ -94,8 +118,13 @@ public static class AdminAuthEndpoints
 
         if (string.IsNullOrWhiteSpace(sub))
         {
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_me", "unauthorized", new { reason = "missing_sub" }, ct);
+            AdminSecurityMetrics.RecordAuth("me", "unauthorized", sw);
             return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Missing authenticated subject.");
         }
+
+        await AdminSecurityAudit.WriteAsync(db, "admin_auth_me", "success", new { sub }, ct);
+        AdminSecurityMetrics.RecordAuth("me", "success", sw);
 
         return Results.Ok(new AdminProfileResponse(
             Id: $"adm_{sub}",
