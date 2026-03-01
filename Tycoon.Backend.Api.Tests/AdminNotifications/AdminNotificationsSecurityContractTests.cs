@@ -16,6 +16,28 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
     }
 
     [Fact]
+    public async Task Send_WithWrongOpsKey_Returns403()
+    {
+        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PostAsJsonAsync("/admin/notifications/send",
+            new AdminNotificationSendRequest("Title", "Body", "admin_basic", new Dictionary<string, object>{{"segment", "all"}}, null));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task Channels_WithWrongOpsKey_Returns403()
+    {
+        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.GetAsync("/admin/notifications/channels");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
     public async Task Send_WithoutBearer_Returns401()
     {
         var resp = await _http.PostAsJsonAsync("/admin/notifications/send",
@@ -81,6 +103,26 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", userToken);
 
         var resp = await _http.SendAsync(req);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task DeadLetterList_WithWrongOpsKey_Returns403()
+    {
+        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.GetAsync("/admin/notifications/dead-letter?page=1&pageSize=25");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task DeadLetterReplay_WithWrongOpsKey_Returns403()
+    {
+        var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PostAsync("/admin/notifications/dead-letter/nonexistent/replay", content: null);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }

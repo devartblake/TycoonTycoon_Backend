@@ -15,6 +15,15 @@ public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFa
         _http = factory.CreateClient().WithAdminOpsKey();
     }
 
+    [Fact]
+    public async Task SecurityAudit_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.GetAsync("/admin/audit/security?page=1&pageSize=50");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
 
     [Fact]
     public async Task SecurityAudit_Requires_OpsKey()

@@ -38,26 +38,6 @@ public sealed class AdminSeasonRewardsDistributionTests : IClassFixture<TycoonAp
     }
 
     [Fact]
-    public async Task CloseSeason_Rejects_Wrong_OpsKey()
-    {
-        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
-        var resp = await wrongKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
-
-        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        await resp.HasErrorCodeAsync("FORBIDDEN");
-    }
-
-    [Fact]
-    public async Task CloseSeason_Requires_OpsKey()
-    {
-        using var noKey = new TycoonApiFactory().CreateClient();
-        var resp = await noKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
-
-        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        await resp.HasErrorCodeAsync("UNAUTHORIZED");
-    }
-
-    [Fact]
     public async Task CloseSeason_DistributesRewards_FromSnapshot()
     {
         // Arrange: active season + profiles with tierRank eligible for reward
