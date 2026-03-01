@@ -68,6 +68,10 @@ namespace Tycoon.Backend.Migrations.Migrations
                     ChannelKey = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     ScheduledAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    RetryCount = table.Column<int>(type: "integer", nullable: false),
+                    MaxRetries = table.Column<int>(type: "integer", nullable: false),
+                    LastError = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    ProcessedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -659,6 +663,7 @@ namespace Tycoon.Backend.Migrations.Migrations
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Token = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     DeviceId = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    ClientType = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     IsRevoked = table.Column<bool>(type: "boolean", nullable: false),
@@ -923,6 +928,11 @@ namespace Tycoon.Backend.Migrations.Migrations
                 name: "IX_admin_notification_schedules_ScheduledAt",
                 table: "admin_notification_schedules",
                 column: "ScheduledAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_admin_notification_schedules_Status",
+                table: "admin_notification_schedules",
+                column: "Status");
 
             migrationBuilder.CreateIndex(
                 name: "IX_admin_notification_templates_Name",
@@ -1332,6 +1342,11 @@ namespace Tycoon.Backend.Migrations.Migrations
                 table: "RefreshTokens",
                 column: "Token",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_UserId_ClientType_IsRevoked",
+                table: "RefreshTokens",
+                columns: new[] { "UserId", "ClientType", "IsRevoked" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_UserId_DeviceId_IsRevoked",
