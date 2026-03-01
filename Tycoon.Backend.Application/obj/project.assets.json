@@ -560,6 +560,22 @@
           }
         }
       },
+      "Npgsql/10.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "9.0.0"
+        },
+        "compile": {
+          "lib/net9.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net9.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.Diagnostics.DiagnosticSource/10.0.0": {
         "type": "package",
         "compile": {
@@ -1502,6 +1518,25 @@
         "packageIcon.png"
       ]
     },
+    "Npgsql/10.0.0": {
+      "sha512": "xZAYhPOU2rUIFpV48xsqhCx9vXs6Y+0jX2LCoSEfDFYMw9jtAOUk3iQsCnDLrFIv9NT3JGMihn7nnuZsPKqJmA==",
+      "type": "package",
+      "path": "npgsql/10.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net10.0/Npgsql.dll",
+        "lib/net10.0/Npgsql.xml",
+        "lib/net8.0/Npgsql.dll",
+        "lib/net8.0/Npgsql.xml",
+        "lib/net9.0/Npgsql.dll",
+        "lib/net9.0/Npgsql.xml",
+        "npgsql.10.0.0.nupkg.sha512",
+        "npgsql.nuspec",
+        "postgresql.png"
+      ]
+    },
     "System.Diagnostics.DiagnosticSource/10.0.0": {
       "sha512": "0KdBK+h7G13PuOSC2R/DalAoFMvdYMznvGRuICtkdcUMXgl/gYXsG6z4yUvTxHSMACorWgHCU1Faq0KUHU6yAQ==",
       "type": "package",
@@ -1576,6 +1611,7 @@
       "MediatR >= 14.0.0",
       "MediatR.Extensions.Microsoft.DependencyInjection >= 11.0.0",
       "Microsoft.EntityFrameworkCore >= 9.0.11",
+      "Npgsql >= 10.0.0",
       "System.IdentityModel.Tokens.Jwt >= 8.15.0",
       "Tycoon.Backend.Domain >= 1.0.0",
       "Tycoon.Shared.Contracts >= 1.0.0"
@@ -1673,6 +1709,11 @@
           "Microsoft.EntityFrameworkCore": {
             "target": "Package",
             "version": "[9.0.11, )",
+            "versionCentrallyManaged": true
+          },
+          "Npgsql": {
+            "target": "Package",
+            "version": "[10.0.0, )",
             "versionCentrallyManaged": true
           },
           "System.IdentityModel.Tokens.Jwt": {
@@ -1776,6 +1817,7 @@
           "NBomber.Http": "5.11.0",
           "NCrontab": "3.3.3",
           "Newtonsoft.Json": "13.0.4",
+          "Npgsql": "10.0.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
           "Npgsql.OpenTelemetry": "10.0.0",
           "OpenTelemetry": "1.14.0",
