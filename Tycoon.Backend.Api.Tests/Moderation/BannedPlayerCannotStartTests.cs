@@ -59,5 +59,6 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
             new StartMatchRequest(playerId, "duel"));
 
         start.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await start.HasErrorCodeAsync("FORBIDDEN");
     }
 }
