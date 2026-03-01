@@ -88,6 +88,57 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
+    [Fact]
+    public async Task AdminPowerupsState_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync($"/admin/powerups/state/{Guid.NewGuid()}");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task AdminAntiCheatAnalyticsPlayers_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync("/admin/anti-cheat/analytics/players?page=1&pageSize=10&windowHours=24");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task AdminPartyAntiCheatFlags_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync("/admin/anti-cheat/party/flags?page=1&pageSize=25");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task AdminSeasonRewardClaims_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync("/admin/seasons/rewards/claims?page=1&pageSize=10");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task AdminSeasonRewardsRecompute_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.PostAsync($"/admin/seasons/rewards/recompute/{Guid.NewGuid()}", content: null);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+
 
     [Fact]
     public async Task AdminNotificationsSend_WithWrongOpsKey_Returns403()
