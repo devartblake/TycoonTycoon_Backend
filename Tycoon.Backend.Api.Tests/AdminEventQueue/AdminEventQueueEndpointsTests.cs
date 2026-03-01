@@ -63,11 +63,46 @@ public sealed class AdminEventQueueEndpointsTests : IClassFixture<TycoonApiFacto
         body.Status.Should().Be("queued");
     }
 
+
+    [Fact]
+    public async Task Reprocess_InvalidLimit_ReturnsValidationEnvelope()
+    {
+        var resp = await _http.PostAsJsonAsync("/admin/event-queue/reprocess", new AdminEventQueueReprocessRequest("failed_only", 0));
+        resp.StatusCode.Should().Be((HttpStatusCode)422);
+
+        await resp.HasErrorCodeAsync("VALIDATION_ERROR");
+    }
+
+    [Fact]
+    public async Task Upload_EmptyEvents_ReturnsValidationEnvelope()
+    {
+        var req = new AdminEventQueueUploadRequest(
+            Source: "mobile_admin",
+            ExportedAt: DateTimeOffset.UtcNow,
+            PlayerId: Guid.NewGuid().ToString(),
+            Events: new List<AdminEventQueueItemRequest>());
+
+        var resp = await _http.PostAsJsonAsync("/admin/event-queue/upload", req);
+        resp.StatusCode.Should().Be((HttpStatusCode)422);
+
+        await resp.HasErrorCodeAsync("VALIDATION_ERROR");
+    }
+
+    [Fact]
+    public async Task AdminRoutes_Reject_Wrong_OpsKey()
+    {
+        using var wrongKey = new TycoonApiFactory().CreateClient().WithAdminOpsKey("wrong-key");
+        var r = await wrongKey.PostAsJsonAsync("/admin/event-queue/reprocess", new AdminEventQueueReprocessRequest("failed_only", 10));
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await r.HasErrorCodeAsync("FORBIDDEN");
+    }
+
     [Fact]
     public async Task AdminRoutes_Require_OpsKey()
     {
         using var noKey = new TycoonApiFactory().CreateClient();
         var r = await noKey.PostAsJsonAsync("/admin/event-queue/reprocess", new AdminEventQueueReprocessRequest("failed_only", 10));
         r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await r.HasErrorCodeAsync("UNAUTHORIZED");
     }
 }
