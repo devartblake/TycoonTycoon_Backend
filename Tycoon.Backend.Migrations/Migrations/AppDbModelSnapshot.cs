@@ -283,6 +283,19 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("MaxRetries")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("ProcessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset>("ScheduledAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -301,6 +314,8 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.HasIndex("ChannelKey");
 
                     b.HasIndex("ScheduledAt");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("admin_notification_schedules", (string)null);
                 });
@@ -1565,6 +1580,11 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ClientType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1596,6 +1616,8 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.HasIndex("Token")
                         .IsUnique();
+
+                    b.HasIndex("UserId", "ClientType", "IsRevoked");
 
                     b.HasIndex("UserId", "DeviceId", "IsRevoked");
 
