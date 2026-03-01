@@ -17,6 +17,28 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
 
     public AdminSeasonCloseTests(TycoonApiFactory factory) => _factory = factory;
 
+
+
+    [Fact]
+    public async Task CloseSeason_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+        var resp = await wrongKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task CloseSeason_Requires_OpsKey()
+    {
+        using var noKey = _factory.CreateClient();
+        var resp = await noKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
+    }
+
     [Fact]
     public async Task CloseSeason_CreatesSnapshot_ClosesSeason_IsIdempotent()
     {
@@ -55,7 +77,7 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key");
+        admin.WithAdminOpsKey();
 
         // Act: close season (1st call)
         var first = await admin.PostAsync($"/admin/seasons/{seasonId}/close", content: null);
