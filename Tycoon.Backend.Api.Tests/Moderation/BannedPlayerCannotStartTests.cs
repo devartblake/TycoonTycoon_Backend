@@ -60,6 +60,22 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
     }
 
     [Fact]
+    public async Task MobileStartMatch_Banned_Is403Envelope()
+    {
+        var playerId = Guid.NewGuid();
+
+        var set = await _admin.PostAsJsonAsync("/admin/moderation/set-status",
+            new SetModerationStatusRequest(playerId, 4, "test", null, null, null));
+        set.EnsureSuccessStatusCode();
+
+        var start = await _public.PostAsJsonAsync("/mobile/matches/start",
+            new StartMatchRequest(playerId, "duel"));
+
+        start.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await start.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
     public async Task StartMatch_Banned_Is403()
     {
         var playerId = Guid.NewGuid();
