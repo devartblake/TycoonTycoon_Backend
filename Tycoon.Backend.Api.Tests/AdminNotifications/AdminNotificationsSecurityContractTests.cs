@@ -89,8 +89,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
     }
 
-
-
     [Fact]
     public async Task Channels_WithoutBearer_Returns401()
     {
@@ -98,7 +96,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
-
 
     [Fact]
     public async Task History_WithWrongOpsKey_Returns403()
@@ -122,7 +119,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
-
 
     [Fact]
     public async Task DeadLetterList_WithWrongOpsKey_Returns403()
@@ -165,8 +161,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
-
-
     [Fact]
     public async Task TemplatesCreate_WithWrongOpsKey_Returns403()
     {
@@ -203,7 +197,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
-
     [Fact]
     public async Task DeadLetterList_WithoutBearer_Returns401()
     {
@@ -224,7 +217,6 @@ public sealed class AdminNotificationsSecurityContractTests : IClassFixture<Tyco
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
-
 
     [Fact]
     public async Task Send_WithAdminBearer_Eventually429_AndEnvelope()
