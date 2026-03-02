@@ -99,4 +99,8 @@
     // Media hooks (presign abstraction)
     public sealed record CreateUploadIntentRequest(string FileName, string ContentType, long SizeBytes);
     public sealed record UploadIntentDto(string AssetKey, string UploadUrl, DateTimeOffset ExpiresAtUtc);
+
+    // JSON upload endpoint
+    public sealed record UploadQuestionRequest(string QuestionTitle, string QuestionDetails);
+    public sealed record UploadQuestionResponseDto(string Message, string QuestionTitle, string QuestionDetails);
 }

@@ -45,7 +45,6 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
         await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
-
     [Fact]
     public async Task MatchmakingEnqueue_Banned_Is403Envelope()
     {
@@ -59,7 +58,6 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
         enqueue.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await enqueue.HasErrorCodeAsync("FORBIDDEN");
     }
-
 
     [Fact]
     public async Task MobileStartMatch_Banned_Is403Envelope()
