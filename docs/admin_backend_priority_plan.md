@@ -68,6 +68,12 @@ This priority split is intended to unblock frontend integration first and keep o
 - **P2 status:** Completed.
   - Implemented: `/admin/config` (`GET`, `PATCH`) and `/admin/notifications/*` endpoints for channels/send/schedule/scheduled/templates/history, including history filters (`from`, `to`, `channelKey`, `status`).
 
+
+## Frontend rollout companion
+
+- For the frontend implementation path aligned to completed backend hardening, see:
+  - [`docs/frontend_admin_security_rollout_plan.md`](./frontend_admin_security_rollout_plan.md)
+
 ## Open decisions to finalize before full rollout
 
 - MFA requirement for admin login
