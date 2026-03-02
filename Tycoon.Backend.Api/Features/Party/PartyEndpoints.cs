@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Social;
 
 namespace Tycoon.Backend.Api.Features.Party
@@ -143,7 +144,7 @@ namespace Tycoon.Backend.Api.Features.Party
                     var res = await mm.EnqueuePartyAsync(partyId, body.LeaderPlayerId, body.Mode, body.Tier, ct);
 
                     if (res.Status == "Forbidden")
-                        return Results.StatusCode(StatusCodes.Status403Forbidden);
+                        return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Party is not allowed to enter matchmaking.");
 
                     return res.Status == "Queued"
                         ? Results.Accepted(value: res)

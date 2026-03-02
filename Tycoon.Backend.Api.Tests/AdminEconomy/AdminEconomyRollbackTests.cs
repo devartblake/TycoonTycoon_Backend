@@ -60,6 +60,8 @@ public sealed class AdminEconomyRollbackTests : IClassFixture<TycoonApiFactory>
             new AdminRollbackEconomyRequest(originalEventId, "duplicate"));
 
         resp2.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        await resp2.HasErrorCodeAsync("CONFLICT");
     }
 
     [Fact]
@@ -69,5 +71,7 @@ public sealed class AdminEconomyRollbackTests : IClassFixture<TycoonApiFactory>
             new AdminRollbackEconomyRequest(Guid.NewGuid(), "no such txn"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        await resp.HasErrorCodeAsync("NOT_FOUND");
     }
 }
