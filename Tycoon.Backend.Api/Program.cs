@@ -50,6 +50,7 @@ using Tycoon.Backend.Api.Features.Party;
 using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
+using Tycoon.Backend.Api.Features.Questions;
 using Tycoon.Backend.Api.Features.Referrals;
 using Tycoon.Backend.Api.Features.Seasons;
 using Tycoon.Backend.Api.Features.Skills;
@@ -631,6 +632,7 @@ FriendsEndpoints.Map(app);
 PartyEndpoints.Map(app);
 RankedLeaderboardsEndpoints.Map(app);
 SeasonRewardsEndpoints.Map(app);
+QuestionsUploadEndpoints.Map(app);
 
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
 var mobile = app.MapGroup("/mobile").WithTags("Mobile").WithOpenApi();
