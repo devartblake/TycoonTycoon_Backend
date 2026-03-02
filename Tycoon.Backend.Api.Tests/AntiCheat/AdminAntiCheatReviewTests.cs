@@ -52,7 +52,7 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key"); // align to your factory config
+        admin.WithAdminOpsKey();
 
         // Act: review
         var put = await admin.PutAsJsonAsync(
@@ -113,7 +113,7 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key");
+        admin.WithAdminOpsKey();
 
         var first = await admin.PutAsJsonAsync(
             $"/admin/anti-cheat/flags/{flagId}/review",
@@ -163,7 +163,7 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key");
+        admin.WithAdminOpsKey();
 
         var put = await admin.PutAsJsonAsync(
             $"/admin/anti-cheat/party/flags/{flagId}/review",
@@ -180,6 +180,57 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
             saved.ReviewNote.Should().Be("ok");
             saved.ReviewedAtUtc.Should().NotBeNull();
         }
+    }
+
+
+
+    [Fact]
+    public async Task AntiCheat_Flags_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.GetAsync("/admin/anti-cheat/flags?page=1&pageSize=25");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task PutReview_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PutAsJsonAsync(
+            $"/admin/anti-cheat/flags/{Guid.NewGuid()}/review",
+            new ReviewAntiCheatFlagRequestDto("devart", "wrong key"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task PutReview_PartyAlias_UnknownFlag_ReturnsNotFoundEnvelope()
+    {
+        var admin = _factory.CreateClient().WithAdminOpsKey();
+
+        var resp = await admin.PutAsJsonAsync(
+            $"/admin/anti-cheat/party/flags/{Guid.NewGuid()}/review",
+            new ReviewAntiCheatFlagRequestDto("devart", "missing flag"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await resp.HasErrorCodeAsync("NOT_FOUND");
+    }
+
+    [Fact]
+    public async Task PutReview_UnknownFlag_ReturnsNotFoundEnvelope()
+    {
+        var admin = _factory.CreateClient().WithAdminOpsKey();
+
+        var resp = await admin.PutAsJsonAsync(
+            $"/admin/anti-cheat/flags/{Guid.NewGuid()}/review",
+            new ReviewAntiCheatFlagRequestDto("devart", "missing flag"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await resp.HasErrorCodeAsync("NOT_FOUND");
     }
 
 }
