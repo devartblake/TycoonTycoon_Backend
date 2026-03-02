@@ -9,6 +9,9 @@ It focuses only on **non-test backend changes** that alter frontend behavior, co
 ## 1) Backend changes completed (frontend-relevant)
 
 ## 1.1 Standardized error envelope for secured/admin-sensitive flows
+
+See also: [`docs/security_error_envelope_contract.md`](./security_error_envelope_contract.md) for a code-by-code handling matrix.
+
 Backend now returns a structured envelope for hardened failures:
 
 ```json
