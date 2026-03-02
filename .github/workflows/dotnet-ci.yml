@@ -52,6 +52,7 @@ jobs:
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~AdminOpsKeyContractTests"
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~MatchSubmitRateLimitTests"
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~BannedPlayerCannotStartTests"
+          dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~PartyMatchmakingIntegrationTests"
 
   schema-validation:
     runs-on: ubuntu-latest
