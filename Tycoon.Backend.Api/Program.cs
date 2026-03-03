@@ -50,6 +50,7 @@ using Tycoon.Backend.Api.Features.Party;
 using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
+using Tycoon.Backend.Api.Features.Questions;
 using Tycoon.Backend.Api.Features.Referrals;
 using Tycoon.Backend.Api.Features.Seasons;
 using Tycoon.Backend.Api.Features.Skills;
@@ -74,6 +75,19 @@ using Tycoon.Shared.Contracts.Dtos;
 using Tycoon.Shared.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Normalize JWT secret configuration across legacy and current key names.
+var normalizedJwtSecret =
+    builder.Configuration["JwtSettings:SecretKey"]
+    ?? builder.Configuration["Jwt:Secret"]
+    ?? builder.Configuration["Auth:JwtKey"]
+    ?? builder.Configuration["JwtKey"];
+
+if (!string.IsNullOrWhiteSpace(normalizedJwtSecret)
+    && string.IsNullOrWhiteSpace(builder.Configuration["JwtSettings:SecretKey"]))
+{
+    builder.Configuration["JwtSettings:SecretKey"] = normalizedJwtSecret;
+}
 
 builder.Services
     .AddOptions<JwtSettings>()
@@ -190,10 +204,10 @@ builder.Services.AddInfrastructure(builder.Configuration)
 builder.Services.AddScoped<Tycoon.Backend.Application.Auth.IAuthService, Tycoon.Backend.Application.Auth.AuthService>();
 
 // Validate JWT configuration at startup
-var jwtSecret = builder.Configuration["Jwt:Secret"];
+var jwtSecret = builder.Configuration["JwtSettings:SecretKey"];
 if (string.IsNullOrWhiteSpace(jwtSecret))
 {
-    throw new InvalidOperationException("JWT:Secret configuration is required but not set. Please configure a secure JWT secret key.");
+    throw new InvalidOperationException("JWT secret configuration is required but not set. Configure JwtSettings:SecretKey (or legacy Jwt:Secret/Auth:JwtKey).");
 }
 if (jwtSecret.Length < 32)
 {
@@ -618,6 +632,7 @@ FriendsEndpoints.Map(app);
 PartyEndpoints.Map(app);
 RankedLeaderboardsEndpoints.Map(app);
 SeasonRewardsEndpoints.Map(app);
+QuestionsUploadEndpoints.Map(app);
 
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
 var mobile = app.MapGroup("/mobile").WithTags("Mobile").WithOpenApi();

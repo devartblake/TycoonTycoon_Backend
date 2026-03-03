@@ -1,33 +1,27 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj": {}
+    "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj": {}
   },
   "projects": {
-    "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj": {
+    "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj",
+        "projectUniqueName": "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj",
         "projectName": "Tycoon.ServiceDefaults",
-        "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\Tycoon.ServiceDefaults.csproj",
-        "packagesPath": "C:\\Users\\lmxbl\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.ServiceDefaults\\obj\\",
+        "projectPath": "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj",
+        "packagesPath": "/tmp/codeql-scratch-441640716470a803/dbs/csharp/working/packages",
+        "outputPath": "/home/runner/work/TycoonTycoon_Backend/TycoonTycoon_Backend/Tycoon.ServiceDefaults/obj/",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
         "CentralPackageTransitivePinningEnabled": true,
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\lmxbl\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/home/runner/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -44,9 +38,9 @@
         "restoreAuditProperties": {
           "enableAudit": "true",
           "auditLevel": "low",
-          "auditMode": "direct"
+          "auditMode": "all"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -183,6 +177,7 @@
             "NBomber.Http": "5.11.0",
             "NCrontab": "3.3.3",
             "Newtonsoft.Json": "13.0.4",
+            "Npgsql": "10.0.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
             "Npgsql.OpenTelemetry": "10.0.0",
             "OpenTelemetry": "1.14.0",
@@ -249,12 +244,22 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.0, 9.0.0]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.0, 9.0.0]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/tmp/codeql-scratch-441640716470a803/dbs/csharp/working/.dotnet/sdk/9.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
