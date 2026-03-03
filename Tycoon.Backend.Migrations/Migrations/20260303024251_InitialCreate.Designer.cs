@@ -12,7 +12,7 @@ using Tycoon.Backend.Infrastructure.Persistence;
 namespace Tycoon.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20260228145948_InitialCreate")]
+    [Migration("20260303024251_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

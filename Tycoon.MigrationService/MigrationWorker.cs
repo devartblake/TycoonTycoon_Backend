@@ -209,7 +209,12 @@ public sealed class MigrationWorker : BackgroundService
 
         // Sentinel check: if key legacy/app tables exist while EF history is empty,
         // initial migration is likely to fail with "relation already exists".
-        var sentinelTables = new[] { "anti_cheat_flags", "users", "matches", "Missions", "Tiers" };
+        //
+        // BUG FIX: Table names must exactly match what EF migrations created. PostgreSQL's
+        // information_schema.tables uses case-sensitive string comparison, so "users" never
+        // matches the "Users" table and "matches" never matches "matches" (which IS lowercase).
+        // Verify casing against the migration's CreateTable calls before changing these.
+        var sentinelTables = new[] { "anti_cheat_flags", "Users", "matches", "Missions", "Tiers" };
         var existingSentinels = new List<string>();
 
         foreach (var table in sentinelTables)
@@ -226,7 +231,9 @@ public sealed class MigrationWorker : BackgroundService
             "This indicates schema/history drift and can cause initial migration conflicts.",
             string.Join(", ", existingSentinels));
 
-        var baselineTables = new[] { "anti_cheat_flags", "users", "matches", "Missions", "Tiers" };
+        // BUG FIX: Same case-sensitivity issue as sentinelTables above.
+        // "users" must be "Users" to match the EF-created table name.
+        var baselineTables = new[] { "anti_cheat_flags", "Users", "matches", "Missions", "Tiers" };
         var canBaseline = true;
         foreach (var table in baselineTables)
         {
