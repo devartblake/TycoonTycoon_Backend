@@ -55,6 +55,7 @@ jobs:
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~MatchmakingEnqueueModerationContractTests"
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~PartyEnqueueModerationContractTests"
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~PartyEnqueueConflictContractTests"
+          dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~PartyInvitesValidationContractTests"
 
   schema-validation:
     runs-on: ubuntu-latest
