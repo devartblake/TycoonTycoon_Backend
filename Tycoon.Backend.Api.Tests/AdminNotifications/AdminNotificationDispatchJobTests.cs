@@ -49,6 +49,8 @@ public sealed class AdminNotificationDispatchJobTests : IClassFixture<TycoonApiF
 
         await job.Run();
         schedule.Status.Should().Be("retry_pending");
+        schedule.ScheduledAt.Should().BeAfter(DateTimeOffset.UtcNow.AddMinutes(1));
+        schedule.ScheduledAt.Should().BeBefore(DateTimeOffset.UtcNow.AddMinutes(31));
 
         schedule = db.AdminNotificationSchedules.First(x => x.ScheduleId == schedule.ScheduleId);
         // force due immediately for next attempts
@@ -63,5 +65,12 @@ public sealed class AdminNotificationDispatchJobTests : IClassFixture<TycoonApiF
 
         schedule.Status.Should().Be("failed");
         schedule.RetryCount.Should().BeGreaterOrEqualTo(3);
+
+        var latestFailureHistory = db.AdminNotificationHistory
+            .Where(x => x.Id.StartsWith("push_job_") && x.Status == "failed")
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefault();
+        latestFailureHistory.Should().NotBeNull();
+        latestFailureHistory!.MetadataJson.Should().Contain("\"deadLetter\":true");
     }
 }

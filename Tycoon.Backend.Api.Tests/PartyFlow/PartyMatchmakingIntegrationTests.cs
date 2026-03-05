@@ -13,11 +13,13 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
 {
     private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
+    private readonly HttpClient _admin;
 
     public PartyMatchmakingIntegrationTests(TycoonApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();
+        _admin = factory.CreateClient().WithAdminOpsKey();
     }
 
     [Fact]
@@ -102,6 +104,27 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
 
         // Preferably same ticket id; acceptable if implementation returns the same queued ticket.
         q2.TicketId.Should().Be(q1.TicketId);
+    }
+
+
+    [Fact]
+    public async Task PartyEnqueue_BannedLeader_ReturnsForbiddenEnvelope()
+    {
+        var leader = Guid.NewGuid();
+        var mate = Guid.NewGuid();
+
+        await MakeFriendsAsync(leader, mate);
+        var party = await CreatePartyWithMemberAsync(leader, mate);
+
+        var set = await _admin.PostAsJsonAsync("/admin/moderation/set-status",
+            new SetModerationStatusRequest(leader, 4, "test", null, null, null));
+        set.EnsureSuccessStatusCode();
+
+        var resp = await _http.PostAsJsonAsync($"/party/{party.PartyId}/enqueue",
+            new PartyEnqueueBody(leader, "ranked", 1));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
     // ---------------------------------------------------------------------
