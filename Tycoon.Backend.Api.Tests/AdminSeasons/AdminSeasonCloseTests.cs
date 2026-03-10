@@ -40,6 +40,46 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
     }
 
     [Fact]
+    public async Task CloseSeason_UnknownSeason_ReturnsNotFoundEnvelope()
+    {
+        var admin = _factory.CreateClient();
+        admin.WithAdminOpsKey();
+
+        var resp = await admin.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await resp.HasErrorCodeAsync("NOT_FOUND");
+    }
+
+    [Fact]
+    public async Task CloseSeason_NonActiveSeason_ReturnsConflictEnvelope()
+    {
+        var seasonId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+            var season = new Season(
+                seasonNumber: 100,
+                name: "Scheduled Season",
+                startsAtUtc: now.AddDays(1),
+                endsAtUtc: now.AddDays(8));
+            typeof(Season).GetProperty("Id")!.SetValue(season, seasonId);
+            db.Seasons.Add(season);
+            await db.SaveChangesAsync();
+        }
+
+        var admin = _factory.CreateClient();
+        admin.WithAdminOpsKey();
+
+        var resp = await admin.PostAsync($"/admin/seasons/{seasonId}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        await resp.HasErrorCodeAsync("CONFLICT");
+    }
+
+    [Fact]
     public async Task CloseSeason_CreatesSnapshot_ClosesSeason_IsIdempotent()
     {
         // Arrange: create active season + a few profiles

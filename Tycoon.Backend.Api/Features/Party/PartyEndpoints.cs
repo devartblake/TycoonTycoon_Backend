@@ -46,9 +46,11 @@ namespace Tycoon.Backend.Api.Features.Party
                 try
                 {
                     var roster = await party.GetRosterAsync(partyId, ct);
-                    return roster is null ? Results.NotFound() : Results.Ok(roster);
+                    return roster is null
+                        ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Party not found.")
+                        : Results.Ok(roster);
                 }
-                catch (ArgumentException ex) { return Results.BadRequest(ex.Message); }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
             });
 
             // POST /party/{partyId}/invite
@@ -77,7 +79,9 @@ namespace Tycoon.Backend.Api.Features.Party
                 try
                 {
                     var invite = await party.AcceptInviteAsync(inviteId, body.PlayerId, ct);
-                    return invite is null ? Results.NotFound() : Results.Ok(invite);
+                    return invite is null
+                        ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Invite not found.")
+                        : Results.Ok(invite);
                 }
                 catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
                 catch (InvalidOperationException ex) { return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message); }
@@ -93,7 +97,9 @@ namespace Tycoon.Backend.Api.Features.Party
                 try
                 {
                     var invite = await party.DeclineInviteAsync(inviteId, body.PlayerId, ct);
-                    return invite is null ? Results.NotFound() : Results.Ok(invite);
+                    return invite is null
+                        ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Invite not found.")
+                        : Results.Ok(invite);
                 }
                 catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
                 catch (InvalidOperationException ex) { return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message); }
@@ -129,7 +135,7 @@ namespace Tycoon.Backend.Api.Features.Party
                     var res = await party.ListInvitesAsync(playerId, box ?? "incoming", page, pageSize, ct);
                     return Results.Ok(res);
                 }
-                catch (ArgumentException ex) { return Results.BadRequest(ex.Message); }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
             });
 
             // POST /party/{partyId}/enqueue

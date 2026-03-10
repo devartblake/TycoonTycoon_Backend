@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
@@ -33,6 +34,25 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         var resp = await client.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("x@example.com", "badpass"));
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task AdminLogin_WithMissingConfiguredOpsKey_Returns503Envelope()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, cfg) =>
+                cfg.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AdminOps:Enabled"] = "true",
+                    ["AdminOps:Header"] = "X-Admin-Ops-Key",
+                    ["AdminOps:Key"] = ""
+                })));
+
+        var client = factory.CreateClient().WithAdminOpsKey();
+
+        var resp = await client.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("x@example.com", "badpass"));
+        resp.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+        await resp.HasErrorCodeAsync("SERVICE_UNAVAILABLE");
     }
 
     [Fact]
