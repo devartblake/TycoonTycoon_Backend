@@ -70,10 +70,14 @@ public sealed class SchemaStartupGate
 
     private static async Task<bool> ExistsAsync(AppDb db, string schema, string table, CancellationToken ct)
     {
-        // Postgres: to_regclass('schema.table') returns NULL if missing.
-        var qualified = $"{schema}.{table}";
+        // BUG FIX: to_regclass('schema.Table') silently lowercases unquoted identifiers in Postgres,
+        // so 'public.Users' resolves as 'public.users' and returns NULL even when "Users" exists.
+        // Using format('%I.%I', schema, table) produces a properly double-quoted identifier
+        // (e.g. "public"."Users") that preserves the original casing used by EF migrations.
         return await db.Database
-            .SqlQueryRaw<bool>("SELECT to_regclass(@p0) IS NOT NULL", qualified)
+            .SqlQueryRaw<bool>(
+                "SELECT to_regclass(format('%I.%I', @p0::text, @p1::text)) IS NOT NULL",
+                schema, table)
             .SingleAsync(ct);
     }
 
