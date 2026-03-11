@@ -1041,6 +1041,7 @@
           "NBomber.Http": "5.11.0",
           "NCrontab": "3.3.3",
           "Newtonsoft.Json": "13.0.4",
+          "Npgsql": "10.0.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
           "Npgsql.OpenTelemetry": "10.0.0",
           "OpenTelemetry": "1.14.0",
