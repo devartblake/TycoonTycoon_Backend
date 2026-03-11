@@ -15,13 +15,46 @@ TARGETS=(
 
 PATTERN='Results\.(NotFound|BadRequest|Conflict|Unauthorized|Forbid|Problem|StatusCode)\('
 
-matches="$(rg -n "$PATTERN" "${TARGETS[@]}" || true)"
-# Ignore commented examples and intentionally commented legacy snippets.
-matches="$(printf '%s\n' "$matches" | rg -v '^\s*//' || true)"
+set +e
+raw_matches="$(rg -n "$PATTERN" "${TARGETS[@]}" 2>&1)"
+rg_status=$?
+set -e
 
-if [[ -n "${matches// }" ]]; then
+if [[ $rg_status -eq 2 ]]; then
+  echo "Failed to scan hardened surfaces:"
+  echo "$raw_matches"
+  exit 2
+fi
+
+# rg exit status:
+#   0 => matches, 1 => no matches
+if [[ $rg_status -eq 1 ]]; then
+  echo "OK: Hardened surfaces use structured error envelopes for targeted error branches."
+  exit 0
+fi
+
+violations=""
+while IFS= read -r line; do
+  [[ -z "$line" ]] && continue
+
+  # format: file:line:content
+  content="${line#*:*:}"
+  content_trimmed="${content#${content%%[![:space:]]*}}"
+
+  # ignore commented lines and explicit inline suppressions
+  if [[ "$content_trimmed" =~ ^// ]]; then
+    continue
+  fi
+  if [[ "$content" == *"HARDENING-IGNORE"* ]]; then
+    continue
+  fi
+
+  violations+="$line"$'\n'
+done <<< "$raw_matches"
+
+if [[ -n "$violations" ]]; then
   echo "Found status-only error responses in hardened surfaces:"
-  echo "$matches"
+  printf '%s' "$violations"
   exit 1
 fi
 
