@@ -9,11 +9,45 @@ namespace Tycoon.Backend.Api.Tests.AdminConfig;
 
 public sealed class AdminConfigEndpointsTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
 
     public AdminConfigEndpointsTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();
+    }
+
+
+
+    [Fact]
+    public async Task Config_Routes_Reject_Wrong_OpsKey()
+    {
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var getResp = await wrongKey.GetAsync("/admin/config");
+        getResp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await getResp.HasErrorCodeAsync("FORBIDDEN");
+
+        var patchResp = await wrongKey.PatchAsJsonAsync("/admin/config",
+            new UpdateAdminAppConfigRequest(EnableLogging: true, FeatureFlags: new Dictionary<string, bool>{{"adminEventUpload", true}}));
+        patchResp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await patchResp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task Config_Routes_Require_OpsKey()
+    {
+        using var noKey = _factory.CreateClient();
+
+        var getResp = await noKey.GetAsync("/admin/config");
+        getResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await getResp.HasErrorCodeAsync("UNAUTHORIZED");
+
+        var patchResp = await noKey.PatchAsJsonAsync("/admin/config",
+            new UpdateAdminAppConfigRequest(EnableLogging: true, FeatureFlags: new Dictionary<string, bool>{{"adminEventUpload", true}}));
+        patchResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await patchResp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
