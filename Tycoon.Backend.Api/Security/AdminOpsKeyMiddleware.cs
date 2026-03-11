@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Tycoon.Backend.Api.Contracts;
 
 namespace Tycoon.Backend.Api.Security
 {
@@ -42,12 +44,8 @@ namespace Tycoon.Backend.Api.Security
                 return;
             }
 
-            // Enforce ops-key if:
-            // 1) request is under the admin analytics prefix (legacy default), OR
-            // 2) endpoint metadata explicitly requests it.
             var endpoint = ctx.GetEndpoint();
             var metaEnforced = endpoint?.Metadata.GetMetadata<RequireAdminOpsKeyAttribute>() is not null;
-
             var pathEnforced = ctx.Request.Path.StartsWithSegments("/admin/analytics");
 
             if (!pathEnforced && !metaEnforced)
@@ -56,48 +54,40 @@ namespace Tycoon.Backend.Api.Security
                 return;
             }
 
-            var headerName = _cfg["AdminOps:Header"];
-            if (string.IsNullOrWhiteSpace(headerName))
-                headerName = "X-Admin-Ops-Key";
-
-            var expectedKey = _cfg["AdminOps:Key"] ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(expectedKey))
+            var validation = ValidateOpsKey(ctx, _cfg);
+            if (validation is not null)
             {
-                ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-                await ctx.Response.WriteAsync("AdminOps key not configured.");
-                return;
-            }
-
-            if (!ctx.Request.Headers.TryGetValue(headerName, out var provided) ||
-                string.IsNullOrWhiteSpace(provided))
-            {
-                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await ctx.Response.WriteAsync("Missing admin ops key.");
-                return;
-            }
-
-            if (!string.Equals(provided.ToString(), expectedKey, StringComparison.Ordinal))
-            {
-                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-                await ctx.Response.WriteAsync("Invalid admin ops key.");
+                await validation.ExecuteAsync(ctx);
                 return;
             }
 
             await _next(ctx);
         }
+
+        internal static IResult? ValidateOpsKey(HttpContext ctx, IConfiguration cfg)
+        {
+            var headerName = cfg["AdminOps:Header"];
+            if (string.IsNullOrWhiteSpace(headerName))
+                headerName = "X-Admin-Ops-Key";
+
+            var expectedKey = cfg["AdminOps:Key"] ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(expectedKey))
+                return ApiResponses.Error(StatusCodes.Status503ServiceUnavailable, "SERVICE_UNAVAILABLE", "AdminOps key not configured.");
+
+            if (!ctx.Request.Headers.TryGetValue(headerName, out var provided) ||
+                string.IsNullOrWhiteSpace(provided))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Missing admin ops key.");
+
+            if (!string.Equals(provided.ToString(), expectedKey, StringComparison.Ordinal))
+                return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Invalid admin ops key.");
+
+            return null;
+        }
     }
 
-    /// <summary>
-    /// Optional endpoint metadata flag. If used, AdminOpsKeyMiddleware will enforce ops-key
-    /// even if the route is not under /admin/analytics.
-    /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
     public sealed class RequireAdminOpsKeyAttribute : Attribute { }
 
-    /// <summary>
-    /// Minimal API group wrapper. Prefer this for /admin/* route groups.
-    /// This uses an endpoint filter so it scopes neatly to the group and does not require global middleware.
-    /// </summary>
     public static class AdminOpsKeyRouteGroupExtensions
     {
         public static RouteGroupBuilder RequireAdminOpsKey(this RouteGroupBuilder group)
@@ -110,20 +100,9 @@ namespace Tycoon.Backend.Api.Security
                 var enabled = cfg.GetValue("AdminOps:Enabled", true);
                 if (!enabled) return await next(context);
 
-                var headerName = cfg["AdminOps:Header"];
-                if (string.IsNullOrWhiteSpace(headerName))
-                    headerName = "X-Admin-Ops-Key";
-
-                var expectedKey = cfg["AdminOps:Key"] ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(expectedKey))
-                    return Results.Problem("AdminOps key not configured.", statusCode: 503);
-
-                if (!http.Request.Headers.TryGetValue(headerName, out var provided) ||
-                    string.IsNullOrWhiteSpace(provided))
-                    return Results.Unauthorized();
-
-                if (!string.Equals(provided.ToString(), expectedKey, StringComparison.Ordinal))
-                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                var validation = AdminOpsKeyMiddleware.ValidateOpsKey(http, cfg);
+                if (validation is not null)
+                    return validation;
 
                 return await next(context);
             });
@@ -139,19 +118,27 @@ namespace Tycoon.Backend.Api.Security
                 var cfg = http.RequestServices.GetRequiredService<IConfiguration>();
                 var isTesting = cfg.GetValue("Testing:UseInMemoryDb", false);
 
-                if (!isTesting && http.User?.Identity?.IsAuthenticated != true)
-                    return Results.Unauthorized();
+                if (isTesting)
+                {
+                    return await next(context);
+                }
+
+                var authz = http.RequestServices.GetRequiredService<IAuthorizationService>();
+                var authzResult = await authz.AuthorizeAsync(http.User, null, AdminPolicies.AdminOpsPolicy);
+                if (!authzResult.Succeeded)
+                {
+                    return http.User?.Identity?.IsAuthenticated == true
+                        ? ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin policy requirements not satisfied.")
+                        : ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+                }
 
                 var allowedEmails = cfg.GetSection("AdminAuth:AllowedEmails").Get<string[]>() ?? [];
                 var email = http.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                             ?? http.User.FindFirst("email")?.Value;
 
-                if (allowedEmails.Length > 0)
+                if (allowedEmails.Length > 0 && (string.IsNullOrWhiteSpace(email) || !allowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase)))
                 {
-                    if (string.IsNullOrWhiteSpace(email) || !allowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase))
-                    {
-                        return Results.StatusCode(StatusCodes.Status403Forbidden);
-                    }
+                    return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is not allowlisted.");
                 }
 
                 return await next(context);
@@ -159,6 +146,5 @@ namespace Tycoon.Backend.Api.Security
 
             return group;
         }
-
     }
 }
