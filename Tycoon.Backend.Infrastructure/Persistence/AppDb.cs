@@ -70,22 +70,18 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<AdminNotificationHistory> AdminNotificationHistory => Set<AdminNotificationHistory>();
         public DbSet<AdminAppConfig> AdminAppConfigs => Set<AdminAppConfig>();
         public DbSet<Tier> Tiers => Set<Tier>();
-
         public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => Set<QuestionAnsweredAnalyticsEvent>();
-
         public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => Set<QuestionAnsweredDailyRollup>();
-
         public DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups => Set<QuestionAnsweredPlayerDailyRollup>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.ApplyConfiguration(new SeasonRewardClaimConfiguration());
-            modelBuilder.ApplyConfiguration(new SeasonRankSnapshotRowConfiguration());
-
-            // Ensure we pick up all IEntityTypeConfiguration<> classes.
-            // All entity configurations are in the Infrastructure assembly.
+            // Applies all IEntityTypeConfiguration<> classes in the Infrastructure assembly,
+            // including SeasonRewardClaimConfiguration and SeasonRankSnapshotRowConfiguration.
+            // Do NOT manually call ApplyConfiguration for types already in this assembly —
+            // doing so causes them to be applied twice, which can produce duplicate constraints.
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDb).Assembly);
 
             // Hard guardrail: fail fast with an actionable error if any entity type is discovered

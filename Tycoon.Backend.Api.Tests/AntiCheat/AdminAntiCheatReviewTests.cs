@@ -182,8 +182,6 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
     }
 
-
-
     [Fact]
     public async Task AntiCheat_Flags_Rejects_Wrong_OpsKey()
     {
