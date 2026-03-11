@@ -24,7 +24,6 @@ This document defines the operational metrics introduced for admin hardening.
 - High `admin_rate_limit_rejected_total` sustained for admin auth routes.
 - Increased `admin_notification_events_total{outcome="not_found"}` indicating config drift.
 
-
 ## Alert thresholds (starting points)
 - `admin_auth_events_total{outcome="unauthorized"}`: alert at `>= 20/min` over 5m for 10m.
 - `admin_rate_limit_rejected_total{path="/admin/auth/login|/admin/auth/refresh|/admin/notifications/send"}`: alert at `>= 10/min` over 5m.

@@ -36,12 +36,20 @@ public static class SchemaGateServiceCollectionExtensions
 
                 if (!hasSection)
                 {
-                    // Default policy:
-                    // - Production: enabled
-                    // - Non-production: disabled
-                    opt.Enabled = environment.IsProduction();
-                    opt.StartupGateEnabled = opt.Enabled;
-                    opt.HealthCheckEnabled = opt.Enabled;
+                    // BUG FIX: Previously the gate was fully disabled for non-Production when
+                    // no "SchemaGate:" config section was present. This caused the API to start
+                    // immediately in Docker/dev before MigrationService had applied any migrations,
+                    // resulting in 42P01 "relation does not exist" errors on the first request.
+                    //
+                    // New default policy: schema validation is ALWAYS enabled in every environment.
+                    // Only the failure mode varies — Production hard-crashes, non-Production logs
+                    // the error and allows the host to continue (so devs aren't blocked by a missing
+                    // config section, but the gate still runs and warns loudly).
+                    opt.Enabled = true;
+                    opt.StartupGateEnabled = true;
+                    opt.HealthCheckEnabled = true;
+                    opt.FailStartupIfInvalid = environment.IsProduction();
+                    opt.LogOnly = !environment.IsProduction();
                 }
 
                 if (opt.TimeoutSeconds <= 0) opt.TimeoutSeconds = 30;

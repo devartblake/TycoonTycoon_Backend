@@ -53,9 +53,14 @@ public sealed class SchemaHealthCheck : IHealthCheck
 
     private async Task<bool> ExistsAsync(string tableName, CancellationToken ct)
     {
-        var qualified = $"{_opt.Schema}.{tableName}";
+        // BUG FIX: to_regclass('schema.Table') silently lowercases unquoted identifiers in Postgres,
+        // so 'public.Users' resolves as 'public.users' and returns NULL even when "Users" exists.
+        // Using format('%I.%I', schema, table) produces a properly double-quoted identifier
+        // (e.g. "public"."Users") that preserves the original casing used by EF migrations.
         return await _db.Database
-            .SqlQueryRaw<bool>("SELECT to_regclass(@p0) IS NOT NULL", qualified)
+            .SqlQueryRaw<bool>(
+                "SELECT to_regclass(format('%I.%I', @p0::text, @p1::text)) IS NOT NULL",
+                _opt.Schema, tableName)
             .SingleAsync(ct);
     }
 }

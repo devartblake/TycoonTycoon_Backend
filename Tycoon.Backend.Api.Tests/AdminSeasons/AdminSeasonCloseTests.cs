@@ -39,7 +39,6 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
         await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
-
     [Fact]
     public async Task CloseSeason_UnknownSeason_ReturnsNotFoundEnvelope()
     {
