@@ -11,6 +11,7 @@ TARGETS=(
   "Tycoon.Backend.Api/Features/Matches"
   "Tycoon.Backend.Api/Features/Matchmaking"
   "Tycoon.Backend.Api/Features/Mobile/Matches"
+  "Tycoon.Backend.Api/Features/Users"
 )
 
 PATTERN='Results\.(NotFound|BadRequest|Conflict|Unauthorized|Forbid|Problem|StatusCode)\('
