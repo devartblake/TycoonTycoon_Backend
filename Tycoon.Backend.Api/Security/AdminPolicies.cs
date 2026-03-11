@@ -7,37 +7,51 @@ namespace Tycoon.Backend.Api.Security
     {
         public const string AdminOnly = "AdminOnly";
         public const string AdminOpsPolicy = "AdminOps";
+        public const string AdminNotificationsWritePolicy = "AdminNotificationsWrite";
 
         public static void AddAdminPolicies(this AuthorizationOptions options)
         {
             options.AddPolicy(AdminOnly, p =>
             {
-                // Require authenticated + admin role claim
                 p.RequireAuthenticatedUser();
                 p.RequireRole("Admin");
+            });
+
+            options.AddPolicy(AdminOpsPolicy, p =>
+            {
+                p.RequireAuthenticatedUser();
+                p.RequireRole("admin");
+                p.RequireClaim("aud", "admin-app");
+                p.RequireAssertion(ctx => HasScope(ctx.User, "users:read"));
+            });
+
+            options.AddPolicy(AdminNotificationsWritePolicy, p =>
+            {
+                p.RequireAuthenticatedUser();
+                p.RequireRole("admin");
+                p.RequireClaim("aud", "admin-app");
+                p.RequireAssertion(ctx => HasScope(ctx.User, "notifications:write"));
             });
         }
 
         public static IServiceCollection AddAdminPolicies(this IServiceCollection services)
         {
-            services.AddAuthorization(o =>
-            {
-                o.AddPolicy(AdminOpsPolicy, p =>
-                {
-                    // Minimal, adaptable:
-                    // - if you use JWT: require role/claim
-                    // - if you use internal auth: swap to your scheme
-                    p.RequireAuthenticatedUser();
-
-                    // Example: role-based
-                    p.RequireRole("admin");
-
-                    // Example alternative:
-                    // p.RequireClaim("scope", "admin:ops");
-                });
-            });
+            services.AddAuthorization(o => o.AddAdminPolicies());
 
             return services;
+        }
+
+        private static bool HasScope(System.Security.Claims.ClaimsPrincipal user, string requiredScope)
+        {
+            var scopeClaim = user.FindFirst("scope")?.Value;
+            if (string.IsNullOrWhiteSpace(scopeClaim))
+            {
+                return false;
+            }
+
+            return scopeClaim
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Contains(requiredScope, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

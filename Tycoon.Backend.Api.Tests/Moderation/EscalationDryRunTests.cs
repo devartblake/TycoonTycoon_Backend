@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
@@ -8,11 +9,38 @@ namespace Tycoon.Backend.Api.Tests.Moderation;
 
 public sealed class EscalationDryRunTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _admin;
 
     public EscalationDryRunTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();
+    }
+
+
+    [Fact]
+    public async Task Escalation_Run_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await wrongKey.PostAsJsonAsync("/admin/moderation/escalation/run",
+            new RunEscalationRequest(WindowHours: 24, MaxPlayers: 500, DryRun: true));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task Escalation_Run_Requires_OpsKey()
+    {
+        using var noKey = _factory.CreateClient();
+
+        var resp = await noKey.PostAsJsonAsync("/admin/moderation/escalation/run",
+            new RunEscalationRequest(WindowHours: 24, MaxPlayers: 500, DryRun: true));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
 
     [Fact]
