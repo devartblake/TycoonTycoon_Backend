@@ -51,10 +51,10 @@ namespace Tycoon.Backend.Api.Features.Matches
             {
                 // Query: match + result + participants (grid-friendly and stable for UI)
                 var match = await db.Matches.AsNoTracking().FirstOrDefaultAsync(x => x.Id == matchId, ct);
-                if (match is null) return Results.NotFound();
+                if (match is null) return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Match not found.");
 
                 var result = await db.MatchResults.AsNoTracking().FirstOrDefaultAsync(x => x.MatchId == matchId, ct);
-                if (result is null) return Results.NotFound();
+                if (result is null) return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Match result not found.");
 
                 var parts = await db.MatchParticipantResults.AsNoTracking()
                     .Where(x => x.MatchResultId == result.Id)
