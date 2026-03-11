@@ -68,6 +68,7 @@ jobs:
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~AdminSeasonsNotFoundContractTests"
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~MatchQueryNotFoundContractTests"
           dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~UserProfileSecurityContractTests"
+          dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~FriendsErrorEnvelopeContractTests"
 
   schema-validation:
     runs-on: ubuntu-latest
