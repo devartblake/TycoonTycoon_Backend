@@ -9,8 +9,8 @@
 
   <ItemGroup>
     <Compile Include="MigrationAssemblyMarker.cs" />
-    <Compile Include="Migrations\20260225105545_InitialCreate.cs" />
-    <Compile Include="Migrations\20260225105545_InitialCreate.Designer.cs" />
+    <Compile Include="Migrations\20260303024251_InitialCreate.cs" />
+    <Compile Include="Migrations\20260303024251_InitialCreate.Designer.cs" />
     <Compile Include="Migrations\AppDbModelSnapshot.cs" />
   </ItemGroup>
 
