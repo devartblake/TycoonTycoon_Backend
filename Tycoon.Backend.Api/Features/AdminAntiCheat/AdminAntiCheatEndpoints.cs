@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -68,7 +69,7 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
         {
             var flag = await db.AntiCheatFlags.FirstOrDefaultAsync(x => x.Id == id, ct);
             if (flag is null)
-                return Results.NotFound();
+                return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Anti-cheat flag not found.");
 
             flag.MarkReviewed(body.ReviewedBy, body.Note);
             await db.SaveChangesAsync(ct);

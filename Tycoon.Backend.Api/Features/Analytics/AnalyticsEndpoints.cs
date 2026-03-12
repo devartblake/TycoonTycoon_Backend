@@ -68,6 +68,20 @@ namespace Tycoon.Backend.Api.Features.Analytics
                     message = "Analytics event ingestion accepted."
                 });
             }).AllowAnonymous();
+
+            // Frontend compatibility endpoint. Some clients post app startup telemetry to
+            // /analytics/startup_event. We accept and no-op so clients don't fail noisily.
+            group.MapPost("/startup_event", (
+                [FromBody] JsonElement body,
+                CancellationToken ct) =>
+            {
+                return Results.Accepted(value: new
+                {
+                    accepted = 1,
+                    skipped = 0,
+                    message = "Startup analytics event accepted."
+                });
+            }).AllowAnonymous();
         }
 
         private static bool TryMapQuestionAnsweredEvent(JsonElement src, out QuestionAnsweredAnalyticsEvent evt)

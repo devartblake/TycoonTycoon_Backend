@@ -17,6 +17,69 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
 
     public AdminSeasonCloseTests(TycoonApiFactory factory) => _factory = factory;
 
+
+
+    [Fact]
+    public async Task CloseSeason_Rejects_Wrong_OpsKey()
+    {
+        using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+        var resp = await wrongKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task CloseSeason_Requires_OpsKey()
+    {
+        using var noKey = _factory.CreateClient();
+        var resp = await noKey.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
+    }
+
+
+    [Fact]
+    public async Task CloseSeason_UnknownSeason_ReturnsNotFoundEnvelope()
+    {
+        var admin = _factory.CreateClient();
+        admin.WithAdminOpsKey();
+
+        var resp = await admin.PostAsync($"/admin/seasons/{Guid.NewGuid()}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await resp.HasErrorCodeAsync("NOT_FOUND");
+    }
+
+    [Fact]
+    public async Task CloseSeason_NonActiveSeason_ReturnsConflictEnvelope()
+    {
+        var seasonId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+            var season = new Season(
+                seasonNumber: 100,
+                name: "Scheduled Season",
+                startsAtUtc: now.AddDays(1),
+                endsAtUtc: now.AddDays(8));
+            typeof(Season).GetProperty("Id")!.SetValue(season, seasonId);
+            db.Seasons.Add(season);
+            await db.SaveChangesAsync();
+        }
+
+        var admin = _factory.CreateClient();
+        admin.WithAdminOpsKey();
+
+        var resp = await admin.PostAsync($"/admin/seasons/{seasonId}/close", content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        await resp.HasErrorCodeAsync("CONFLICT");
+    }
+
     [Fact]
     public async Task CloseSeason_CreatesSnapshot_ClosesSeason_IsIdempotent()
     {
@@ -55,7 +118,7 @@ public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key");
+        admin.WithAdminOpsKey();
 
         // Act: close season (1st call)
         var first = await admin.PostAsync($"/admin/seasons/{seasonId}/close", content: null);

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Realtime.Clients;
 using Tycoon.Backend.Application.Missions;
@@ -75,8 +76,8 @@ namespace Tycoon.Backend.Api.Features.Missions
 
                 return result.Status switch
                 {
-                    ClaimMissionStatus.NotFound => Results.NotFound(new { message = "Mission claim not found." }),
-                    ClaimMissionStatus.NotCompleted => Results.BadRequest(new { message = "Mission is not completed yet." }),
+                    ClaimMissionStatus.NotFound => ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Mission claim not found."),
+                    ClaimMissionStatus.NotCompleted => ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", "Mission is not completed yet."),
                     ClaimMissionStatus.AlreadyClaimed => Results.Ok(result),
                     ClaimMissionStatus.Claimed => Results.Ok(result),
                     _ => Results.Ok(result)

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -25,29 +26,30 @@ namespace Tycoon.Backend.Api.Features.Users
             CancellationToken cancellation)
         {
             var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            
-            if (userIdClaim?.Value == null) 
-                return Results.Unauthorized();
+            if (string.IsNullOrWhiteSpace(userIdClaim?.Value))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
 
-            var parsedUserId = Guid.Parse(userIdClaim.Value);
+            if (!Guid.TryParse(userIdClaim.Value, out var parsedUserId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Invalid authenticated user identifier.");
+
             var currentUser = await database.Users
                 .FirstOrDefaultAsync(u => u.Id == parsedUserId, cancellation);
-            
-            if (currentUser == null) 
-                return Results.NotFound();
+
+            if (currentUser is null)
+                return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "User not found.");
 
             currentUser.UpdateProfile(request.Handle, request.Country);
             await database.SaveChangesAsync(cancellation);
 
             var updatedProfile = new UserDto(
-                currentUser.Id, 
-                currentUser.Handle, 
-                currentUser.Email, 
-                currentUser.Country, 
-                currentUser.Tier, 
+                currentUser.Id,
+                currentUser.Handle,
+                currentUser.Email,
+                currentUser.Country,
+                currentUser.Tier,
                 currentUser.Mmr
             );
-            
+
             return Results.Ok(updatedProfile);
         }
     }

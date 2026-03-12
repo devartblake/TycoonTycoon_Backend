@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Seasons;
 using Tycoon.Shared.Contracts.Dtos;
@@ -30,13 +31,16 @@ namespace Tycoon.Backend.Api.Features.AdminSeasons
             g.MapPost("/activate", async ([FromBody] ActivateSeasonRequest req, SeasonService svc, CancellationToken ct) =>
             {
                 var activated = await svc.ActivateAsync(req, ct);
-                return activated is null ? Results.NotFound() : Results.Ok(activated);
+                return activated is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Season not found.")
+                    : Results.Ok(activated);
             });
 
             g.MapPost("/close", async ([FromBody] CloseSeasonRequest req, SeasonService svc, CancellationToken ct) =>
             {
                 var (closed, next) = await svc.CloseAsync(req, ct);
-                if (closed is null) return Results.NotFound();
+                if (closed is null)
+                    return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Season not found.");
                 return Results.Ok(new { closed, next });
             });
 
