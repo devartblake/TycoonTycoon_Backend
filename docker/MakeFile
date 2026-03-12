@@ -1,4 +1,4 @@
-.PHONY: help up up-dev up-prod down restart logs ps clean health migrate shell-postgres shell-mongo shell-redis api-logs migration-logs
+.PHONY: help up up-dev up-prod down restart logs ps clean health migrate shell-postgres shell-mongo shell-redis shell-minio api-logs migration-logs
 
 # Docker Compose file paths
 COMPOSE = docker compose -f docker/compose.yml
@@ -22,6 +22,7 @@ help:
 	@echo "  make shell-postgres     Open PostgreSQL shell"
 	@echo "  make shell-mongo        Open MongoDB shell"
 	@echo "  make shell-redis        Open Redis CLI"
+	@echo "  make shell-minio        Open MinIO shell"
 	@echo ""
 	@echo "Monitoring:"
 	@echo "  make health             Check health of all services"
@@ -84,6 +85,9 @@ shell-mongo:
 shell-redis:
 	@$(COMPOSE) exec redis redis-cli -a "$${REDIS_PASSWORD:-tycoon_redis_password_123}"
 
+shell-minio:
+	@$(COMPOSE) exec minio sh
+
 # ===================================
 # Monitoring Commands
 # ===================================
@@ -102,6 +106,9 @@ health:
 	@echo ""
 	@echo "Elasticsearch:"
 	@curl -fsS -u elastic:$${ELASTIC_PASSWORD:-tycoon_elastic_password_123} http://localhost:$${ELASTICSEARCH_PORT:-9200}/_cluster/health?pretty 2>/dev/null | grep -q '"status"' && echo "  ✅ Healthy" || echo "  ❌ Not ready"
+	@echo ""
+	@echo "MinIO:"
+	@curl -fsS http://localhost:$${MINIO_PORT:-9000}/minio/health/live 2>/dev/null && echo "  ✅ Healthy" || echo "  ❌ Not ready"
 	@echo ""
 	@echo "Backend API:"
 	@curl -fsS http://localhost:$${BACKEND_HTTP_PORT:-5000}/healthz 2>/dev/null && echo "  ✅ Healthy" || echo "  ❌ Not ready"
