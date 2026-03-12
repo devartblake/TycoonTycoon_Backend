@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Seasons;
 
 namespace Tycoon.Backend.Api.Features.AdminSeasons;
@@ -22,9 +23,9 @@ public static class AdminSeasonLifecycleEndpoints
             {
                 "Closed" => Results.Ok(new { status }),
                 "AlreadyClosed" => Results.Ok(new { status }),
-                "NotActive" => Results.Conflict(new { status }),
-                "NotFound" => Results.NotFound(),
-                _ => Results.Problem("Unexpected status: " + status)
+                "NotActive" => ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", "Season is not active."),
+                "NotFound" => ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Season not found."),
+                _ => ApiResponses.Error(StatusCodes.Status500InternalServerError, "INTERNAL_ERROR", $"Unexpected status: {status}")
             };
         });
     }

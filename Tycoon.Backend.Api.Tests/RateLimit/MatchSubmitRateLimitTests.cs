@@ -42,7 +42,10 @@ public sealed class MatchSubmitRateLimitTests : IClassFixture<TycoonApiFactory>
             var resp = await _http.PostAsJsonAsync("/matches/submit", submit);
 
             if (resp.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                await resp.HasErrorCodeAsync("RATE_LIMITED");
                 return;
+            }
         }
 
         Assert.True(false, "Expected at least one 429 TooManyRequests response.");

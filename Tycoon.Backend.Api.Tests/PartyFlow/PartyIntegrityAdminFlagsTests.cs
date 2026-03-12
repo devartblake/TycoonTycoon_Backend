@@ -98,7 +98,7 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
         }
 
         var admin = _factory.CreateClient();
-        admin.DefaultRequestHeaders.Add("X-Admin-Ops-Key", "test-admin-ops-key"); // align to your factory config
+        admin.WithAdminOpsKey();
 
         var r = await admin.GetAsync("/admin/anti-cheat/party/flags?page=1&pageSize=50&sinceUtc=" +
                                      Uri.EscapeDataString(DateTimeOffset.UtcNow.AddDays(-1).ToString("O")));

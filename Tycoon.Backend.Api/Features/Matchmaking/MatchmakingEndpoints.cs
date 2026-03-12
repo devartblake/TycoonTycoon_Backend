@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Matchmaking;
 
 namespace Tycoon.Backend.Api.Features.Matchmaking
@@ -22,7 +23,7 @@ namespace Tycoon.Backend.Api.Features.Matchmaking
                 var res = await mm.EnqueueAsync(req.PlayerId, req.Mode, req.Tier, ct);
 
                 if (res.Status == "Forbidden")
-                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                    return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Player is not allowed to enter matchmaking.");
 
                 // Optional semantic improvement: return 200 OK with the result
                 return res.Status == "Queued"

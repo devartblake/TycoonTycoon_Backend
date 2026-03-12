@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Enforcement;
 using Tycoon.Backend.Application.Matches;
@@ -27,11 +28,11 @@ namespace Tycoon.Backend.Api.Features.Matches
             {
                 var decision = await enforcement.EvaluateAsync(req.HostPlayerId, ct);
                 if (!decision.CanStartMatch)
-                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                    return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Player is not allowed to start matches.");
 
                 var status = await moderation.GetEffectiveStatusAsync(req.HostPlayerId, ct);
                 if (status == ModerationStatus.Banned)
-                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                    return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Player is not allowed to start matches.");
 
                 var res = await mediator.Send(new StartMatch(req.HostPlayerId, req.Mode), ct);
                 return Results.Ok(res);
@@ -50,10 +51,10 @@ namespace Tycoon.Backend.Api.Features.Matches
             {
                 // Query: match + result + participants (grid-friendly and stable for UI)
                 var match = await db.Matches.AsNoTracking().FirstOrDefaultAsync(x => x.Id == matchId, ct);
-                if (match is null) return Results.NotFound();
+                if (match is null) return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Match not found.");
 
                 var result = await db.MatchResults.AsNoTracking().FirstOrDefaultAsync(x => x.MatchId == matchId, ct);
-                if (result is null) return Results.NotFound();
+                if (result is null) return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Match result not found.");
 
                 var parts = await db.MatchParticipantResults.AsNoTracking()
                     .Where(x => x.MatchResultId == result.Id)
