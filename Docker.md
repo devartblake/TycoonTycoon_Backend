@@ -45,6 +45,8 @@ The Docker stack provides **infrastructure only**:
 | MongoDB                       | Eventing, analytics, document data              |
 | Redis                         | Caching, SignalR backplane                      |
 | Elasticsearch                 | Search, analytics                               |
+| RabbitMQ                      | Message broker, background jobs                 |
+| MinIO                         | S3-compatible object storage                    |
 | Kibana *(dev profile)*        | Elasticsearch UI                                |
 | pgAdmin *(dev profile)*       | PostgreSQL UI                                   |
 | Mongo Express *(dev profile)* | MongoDB UI                                      |
@@ -165,6 +167,9 @@ localhost:6379,password=...
 
 Elasticsearch:
 http://localhost:9200
+
+MinIO (S3-compatible):
+Endpoint=localhost:9000;AccessKey=tycoon_minio_user;SecretKey=...;UseSSL=false
 ```
 
 ---
@@ -217,13 +222,14 @@ dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
 
 ## 7. Dev Tooling URLs (Option A or B)
 
-| Tool          | URL                                                              |
-| ------------- | ---------------------------------------------------------------- |
-| Swagger       | [http://localhost:5000/swagger](http://localhost:5000/swagger)   |
-| pgAdmin       | [http://localhost:5050](http://localhost:5050)                   |
-| Mongo Express | [http://localhost:8081](http://localhost:8081)                   |
-| Kibana        | [http://localhost:5601](http://localhost:5601)                   |
-| Hangfire      | [http://localhost:5000/hangfire](http://localhost:5000/hangfire) |
+| Tool           | URL                                                              |
+| -------------- | ---------------------------------------------------------------- |
+| Swagger        | [http://localhost:5000/swagger](http://localhost:5000/swagger)   |
+| pgAdmin        | [http://localhost:5050](http://localhost:5050)                   |
+| Mongo Express  | [http://localhost:8081](http://localhost:8081)                   |
+| Kibana         | [http://localhost:5601](http://localhost:5601)                   |
+| Hangfire       | [http://localhost:5000/hangfire](http://localhost:5000/hangfire) |
+| MinIO Console  | [http://localhost:9001](http://localhost:9001)                   |
 
 ---
 
@@ -536,6 +542,11 @@ docker compose -f docker/compose.yml exec rabbitmq \
   rabbitmq-diagnostics ping
 ```
 
+**MinIO**
+```bash
+curl -f http://localhost:9000/minio/health/live
+```
+
 **Backend API** (when running)
 ```bash
 curl http://localhost:5000/healthz
@@ -548,6 +559,7 @@ curl http://localhost:5000/healthz
 - Redis: "PONG"
 - Elasticsearch: status "yellow" or "green"
 - RabbitMQ: "pong"
+- MinIO: HTTP 200 OK
 - API: HTTP 200 OK
 
 ---
