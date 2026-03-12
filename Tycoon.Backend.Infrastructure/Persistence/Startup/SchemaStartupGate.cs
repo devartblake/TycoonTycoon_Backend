@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -70,15 +71,32 @@ public sealed class SchemaStartupGate
 
     private static async Task<bool> ExistsAsync(AppDb db, string schema, string table, CancellationToken ct)
     {
-        // BUG FIX: to_regclass('schema.Table') silently lowercases unquoted identifiers in Postgres,
-        // so 'public.Users' resolves as 'public.users' and returns NULL even when "Users" exists.
-        // Using format('%I.%I', schema, table) produces a properly double-quoted identifier
-        // (e.g. "public"."Users") that preserves the original casing used by EF migrations.
-        return await db.Database
-            .SqlQueryRaw<bool>(
-                "SELECT to_regclass(format('%I.%I', @p0::text, @p1::text)) IS NOT NULL",
-                schema, table)
-            .SingleAsync(ct);
+        // Postgres: to_regclass('schema.table') returns NULL if missing.
+        var qualified = $"{schema}.{table}";
+
+        var connection = db.Database.GetDbConnection();
+        var shouldClose = connection.State != ConnectionState.Open;
+        if (shouldClose)
+            await connection.OpenAsync(ct);
+
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT to_regclass(@qualified) IS NOT NULL";
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "qualified";
+            parameter.Value = qualified;
+            command.Parameters.Add(parameter);
+
+            var scalar = await command.ExecuteScalarAsync(ct);
+            return scalar is bool exists && exists;
+        }
+        finally
+        {
+            if (shouldClose)
+                await connection.CloseAsync();
+        }
     }
 
     private void Fail(string message)
