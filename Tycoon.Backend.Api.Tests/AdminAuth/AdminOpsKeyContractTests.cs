@@ -36,8 +36,6 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
-
-
     [Fact]
     public async Task AdminLogin_WithMissingConfiguredOpsKey_Returns503Envelope()
     {
@@ -109,7 +107,6 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
-
 
     [Fact]
     public async Task AdminPowerupsState_WithWrongOpsKey_Returns403()
