@@ -9,20 +9,33 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
 {
     public sealed class AdminQuestionsCrudTests : IClassFixture<TycoonApiFactory>
     {
-        private readonly HttpClient _http;
+        private readonly TycoonApiFactory _factory;
+    private readonly HttpClient _http;
 
         public AdminQuestionsCrudTests(TycoonApiFactory factory)
         {
+            _factory = factory;
             _http = factory.CreateClient().WithAdminOpsKey();
+        }
+
+        [Fact]
+        public async Task AdminRoutes_Reject_Wrong_OpsKey()
+        {
+            using var wrongKey = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+            var r = await wrongKey.GetAsync("/admin/questions");
+            r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            await r.HasErrorCodeAsync("FORBIDDEN");
         }
 
         [Fact]
         public async Task AdminRoutes_Require_OpsKey()
         {
-            using var noKey = new TycoonApiFactory().CreateClient(); // new client with no header
+            using var noKey = _factory.CreateClient(); // new client with no header
 
             var r = await noKey.GetAsync("/admin/questions");
             r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            await r.HasErrorCodeAsync("UNAUTHORIZED");
         }
 
         [Fact]
@@ -110,6 +123,8 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             // Ensure removed
             var getAfter = await _http.GetAsync($"/admin/questions/{id}");
             getAfter.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+            await getAfter.HasErrorCodeAsync("NOT_FOUND");
         }
     }
 

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Social;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -28,8 +29,8 @@ namespace Tycoon.Backend.Api.Features.Friends
                     var dto = await friends.SendRequestAsync(req.FromPlayerId, req.ToPlayerId, ct);
                     return Results.Ok(dto);
                 }
-                catch (ArgumentException ex) { return Results.BadRequest(ex.Message); }
-                catch (InvalidOperationException ex) { return Results.Conflict(ex.Message); }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
+                catch (InvalidOperationException ex) { return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message); }
             });
 
             // POST /friends/request/{requestId}/accept
@@ -42,10 +43,12 @@ namespace Tycoon.Backend.Api.Features.Friends
                 try
                 {
                     var dto = await friends.AcceptRequestAsync(requestId, req.PlayerId, ct);
-                    return dto is null ? Results.NotFound() : Results.Ok(dto);
+                    return dto is null
+                        ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Friend request not found.")
+                        : Results.Ok(dto);
                 }
-                catch (ArgumentException ex) { return Results.BadRequest(ex.Message); }
-                catch (InvalidOperationException ex) { return Results.Conflict(ex.Message); }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
+                catch (InvalidOperationException ex) { return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message); }
             });
 
             // POST /friends/request/{requestId}/decline
@@ -58,10 +61,12 @@ namespace Tycoon.Backend.Api.Features.Friends
                 try
                 {
                     var dto = await friends.DeclineRequestAsync(requestId, req.PlayerId, ct);
-                    return dto is null ? Results.NotFound() : Results.Ok(dto);
+                    return dto is null
+                        ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Friend request not found.")
+                        : Results.Ok(dto);
                 }
-                catch (ArgumentException ex) { return Results.BadRequest(ex.Message); }
-                catch (InvalidOperationException ex) { return Results.Conflict(ex.Message); }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
+                catch (InvalidOperationException ex) { return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message); }
             });
 
             // GET /friends?playerId=...&page=1&pageSize=50
@@ -77,7 +82,7 @@ namespace Tycoon.Backend.Api.Features.Friends
                     var res = await friends.ListFriendsAsync(playerId, page, pageSize, ct);
                     return Results.Ok(res);
                 }
-                catch (ArgumentException ex) { return Results.BadRequest(ex.Message); }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
             });
 
             // GET /friends/requests?playerId=...&box=incoming|outgoing|all&page=1&pageSize=50
@@ -94,7 +99,7 @@ namespace Tycoon.Backend.Api.Features.Friends
                     var res = await friends.ListRequestsAsync(playerId, box ?? "all", page, pageSize, ct);
                     return Results.Ok(res);
                 }
-                catch (ArgumentException ex) { return Results.BadRequest(ex.Message); }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
             });
         }
     }

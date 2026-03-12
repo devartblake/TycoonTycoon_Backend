@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -72,9 +73,30 @@ public sealed class SchemaStartupGate
     {
         // Postgres: to_regclass('schema.table') returns NULL if missing.
         var qualified = $"{schema}.{table}";
-        return await db.Database
-            .SqlQueryRaw<bool>("SELECT to_regclass(@p0) IS NOT NULL", qualified)
-            .SingleAsync(ct);
+
+        var connection = db.Database.GetDbConnection();
+        var shouldClose = connection.State != ConnectionState.Open;
+        if (shouldClose)
+            await connection.OpenAsync(ct);
+
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT to_regclass(@qualified) IS NOT NULL";
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "qualified";
+            parameter.Value = qualified;
+            command.Parameters.Add(parameter);
+
+            var scalar = await command.ExecuteScalarAsync(ct);
+            return scalar is bool exists && exists;
+        }
+        finally
+        {
+            if (shouldClose)
+                await connection.CloseAsync();
+        }
     }
 
     private void Fail(string message)
