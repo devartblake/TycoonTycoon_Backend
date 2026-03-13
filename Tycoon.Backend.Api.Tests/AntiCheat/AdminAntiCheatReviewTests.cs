@@ -182,11 +182,6 @@ public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
         }
     }
 
-<<<<<<< codex/implement-post-p2-operational-hardening-ayrrli
-
-
-=======
->>>>>>> main
     [Fact]
     public async Task AntiCheat_Flags_Rejects_Wrong_OpsKey()
     {

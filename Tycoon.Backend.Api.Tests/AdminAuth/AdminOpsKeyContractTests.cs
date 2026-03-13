@@ -36,11 +36,6 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
-<<<<<<< codex/implement-post-p2-operational-hardening-ayrrli
-
-
-=======
->>>>>>> main
     [Fact]
     public async Task AdminLogin_WithMissingConfiguredOpsKey_Returns503Envelope()
     {
@@ -113,10 +108,6 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
         await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 
-<<<<<<< codex/implement-post-p2-operational-hardening-ayrrli
-
-=======
->>>>>>> main
     [Fact]
     public async Task AdminPowerupsState_WithWrongOpsKey_Returns403()
     {
