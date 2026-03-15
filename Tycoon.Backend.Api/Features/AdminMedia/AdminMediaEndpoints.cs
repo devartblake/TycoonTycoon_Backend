@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Media;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -19,18 +20,11 @@ namespace Tycoon.Backend.Api.Features.AdminMedia
                 return Results.Ok(dto);
             });
 
-            // Local upload endpoint (simple dev default). Replace with object storage later.
-            g.MapPost("/upload/{*assetKey}", async ([FromRoute] string assetKey, IFormFile file) =>
+            g.MapPost("/upload/{*assetKey}", async ([FromRoute] string assetKey, IFormFile file, IObjectStorage storage, CancellationToken ct) =>
             {
-                var root = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-                var fullPath = Path.Combine(root, assetKey.Replace('/', Path.DirectorySeparatorChar));
-
-                Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-
-                await using var fs = File.Create(fullPath);
-                await file.CopyToAsync(fs);
-
-                return Results.Ok(new { assetKey, url = $"/{assetKey}" });
+                await using var stream = file.OpenReadStream();
+                await storage.PutAsync(assetKey, stream, file.ContentType, file.Length, ct);
+                return Results.Ok(new { assetKey, url = storage.GetPublicUrl(assetKey) });
             });
         }
     }

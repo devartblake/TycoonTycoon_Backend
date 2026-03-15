@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Minio;
 using System.Diagnostics;
 using System.Reflection;
 using Tycoon.Backend.Application.Abstractions;
@@ -18,6 +19,7 @@ using Tycoon.Backend.Infrastructure.Analytics.Mongo;
 using Tycoon.Backend.Infrastructure.Events;
 using Tycoon.Backend.Infrastructure.Persistence;
 using Tycoon.Backend.Infrastructure.Services;
+using Tycoon.Backend.Infrastructure.Storage;
 
 namespace Tycoon.Backend.Infrastructure
 {
@@ -50,6 +52,7 @@ namespace Tycoon.Backend.Infrastructure
 
                 services.AddSingleton<IClock, SystemClock>();
                 services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+                services.AddSingleton<IObjectStorage>(_ => new LocalObjectStorage());
                 return services;
             }
 
@@ -199,6 +202,30 @@ namespace Tycoon.Backend.Infrastructure
                 services.AddSingleton<ElasticIndexBootstrapper>();
                 services.AddSingleton<IRollupIndexer, ElasticRollupIndexer>();
                 services.AddSingleton<IRollupRebuilder, ElasticRollupRebuilder>();
+            }
+
+            // ---------------------------
+            // Object Storage
+            // ---------------------------
+            var minioEndpoint = cfg["MinIO:Endpoint"];
+
+            if (!string.IsNullOrWhiteSpace(minioEndpoint))
+            {
+                var minioOptions = new MinioOptions();
+                cfg.GetSection("MinIO").Bind(minioOptions);
+                services.AddSingleton(minioOptions);
+
+                services.AddMinio(client => client
+                    .WithEndpoint(minioOptions.Endpoint)
+                    .WithCredentials(minioOptions.AccessKey, minioOptions.SecretKey)
+                    .WithSSL(minioOptions.UseSSL)
+                    .Build());
+
+                services.AddSingleton<IObjectStorage, MinioObjectStorage>();
+            }
+            else
+            {
+                services.AddSingleton<IObjectStorage>(_ => new LocalObjectStorage());
             }
 
             // Common
