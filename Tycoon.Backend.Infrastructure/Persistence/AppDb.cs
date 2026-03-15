@@ -62,6 +62,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<PartyMatchMember> PartyMatchMembers => Set<PartyMatchMember>();
         public DbSet<SeasonRewardClaim> SeasonRewardClaims => Set<SeasonRewardClaim>();
         public DbSet<SeasonRankSnapshotRow> SeasonRankSnapshots => Set<SeasonRankSnapshotRow>();
+        public DbSet<Vote> Votes => Set<Vote>();
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<AdminNotificationChannel> AdminNotificationChannels => Set<AdminNotificationChannel>();
