@@ -22,6 +22,11 @@ namespace Tycoon.Backend.Api.Realtime
         /// Explicit join method for authenticated or late-bound clients.
         /// Recommended for production clients.
         /// </summary>
-        public Task JoinPlayer(Guid playerId) => Groups.AddToGroupAsync(Context.ConnectionId, $"player:{playerId}");        
+        public Task JoinPlayer(Guid playerId) => Groups.AddToGroupAsync(Context.ConnectionId, $"player:{playerId}");
+
+        /// <summary>
+        /// Subscribe to real-time vote updates for a given topic.
+        /// </summary>
+        public Task JoinTopic(string topic) => Groups.AddToGroupAsync(Context.ConnectionId, $"topic:{topic}");
     }
 }
