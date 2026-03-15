@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Application.Votes
     public static class VoteOptions
     {
         public static readonly IReadOnlySet<string> Valid =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "!A", "!B", "!C" };
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "!A", "!B", "!C", "!D", "!True", "!False" };
     }
 
     public record CastVote(Guid PlayerId, string Option, string Topic) : IRequest<CastVoteResult>;
