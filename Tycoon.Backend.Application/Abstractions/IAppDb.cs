@@ -57,6 +57,13 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<AdminNotificationTemplate> AdminNotificationTemplates { get; }
         DbSet<AdminNotificationHistory> AdminNotificationHistory { get; }
         DbSet<AdminAppConfig> AdminAppConfigs { get; }
+        DbSet<GameEvent> GameEvents { get; }
+        DbSet<GameEventParticipant> GameEventParticipants { get; }
+        DbSet<GameEventPrizeClaim> GameEventPrizeClaims { get; }
+        DbSet<TierGuardian> TierGuardians { get; }
+        DbSet<GuardianChallenge> GuardianChallenges { get; }
+        DbSet<TerritoryTile> TerritoryTiles { get; }
+        DbSet<TerritoryDuel> TerritoryDuels { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);

@@ -9,7 +9,9 @@ using Tycoon.Backend.Application.Economy;
 using Tycoon.Backend.Application.Enforcement;
 using Tycoon.Backend.Application.Moderation;
 using Tycoon.Backend.Application.Seasons;
+using Tycoon.Backend.Application.Guardians;
 using Tycoon.Backend.Application.Social;
+using Tycoon.Backend.Application.Territory;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -29,6 +31,7 @@ namespace Tycoon.Backend.Application.Matches
         PartyIntegrityService partyIntegrity,
         PartyLifecycleService partLifecycle,
         IOptions<RankedSeasonOptions> rankedOptions,
+        IMediator mediator,
         ILogger<SubmitMatchHandler> logger)
         : IRequestHandler<SubmitMatch, SubmitMatchResponse>
     {
@@ -171,6 +174,49 @@ namespace Tycoon.Backend.Application.Matches
             if (!blockRewards)
             {
                 awards = await AwardAsync(req, match, econ, ct);
+
+                // Apply territory XP multiplier bonus for territory_duel mode
+                if (req.Mode.Equals("territory_duel", StringComparison.OrdinalIgnoreCase)
+                    && req.Status == MatchStatus.Completed)
+                {
+                    try
+                    {
+                        var duel = await db.TerritoryDuels.AsNoTracking()
+                            .FirstOrDefaultAsync(x => x.MatchId == req.MatchId, ct);
+
+                        if (duel is not null)
+                        {
+                            foreach (var p in req.Participants)
+                            {
+                                var multiplierBps = await mediator.Send(
+                                    new GetPlayerTileMultiplier(duel.SeasonId, duel.TierNumber, p.PlayerId), ct);
+
+                                if (multiplierBps > 0)
+                                {
+                                    var bonusXp = (Math.Max(0, p.Correct) * 10 * multiplierBps) / 10000;
+                                    if (bonusXp > 0)
+                                    {
+                                        var bonusEventId = DeterministicGuid(
+                                            DeterministicGuid(req.EventId, p.PlayerId),
+                                            new Guid("00000000-0000-0000-0000-000000000001"));
+
+                                        await econ.ApplyAsync(new CreateEconomyTxnRequest(
+                                            EventId: bonusEventId,
+                                            PlayerId: p.PlayerId,
+                                            Kind: "territory-xp-bonus",
+                                            Lines: new[] { new EconomyLineDto(CurrencyType.Xp, bonusXp) },
+                                            Note: $"territory-duel:{req.MatchId}"
+                                        ), ct);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Territory XP multiplier bonus failed for match {MatchId}", req.MatchId);
+                    }
+                }
             }
 
             // Apply season points only when allowed
@@ -200,6 +246,31 @@ namespace Tycoon.Backend.Application.Matches
                     _logger.LogWarning(ex,
                         "Party closure failed for match {MatchId} — match result was still applied.",
                         req.MatchId);
+                }
+            }
+
+            // Resolve guardian challenges and territory duels linked to this match
+            if (req.Mode.Equals("guardian_duel", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    await mediator.Send(new ResolveGuardianChallenge(req.MatchId), ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Guardian challenge resolution failed for match {MatchId}", req.MatchId);
+                }
+            }
+
+            if (req.Mode.Equals("territory_duel", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    await mediator.Send(new ResolveTerritoryDuel(req.MatchId), ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Territory duel resolution failed for match {MatchId}", req.MatchId);
                 }
             }
 

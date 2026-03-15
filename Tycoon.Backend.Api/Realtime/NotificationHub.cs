@@ -28,5 +28,14 @@ namespace Tycoon.Backend.Api.Realtime
         /// Subscribe to real-time vote updates for a given topic.
         /// </summary>
         public Task JoinTopic(string topic) => Groups.AddToGroupAsync(Context.ConnectionId, $"topic:{topic}");
+
+        public Task JoinGameEvent(Guid gameEventId)
+            => Groups.AddToGroupAsync(Context.ConnectionId, $"game-event:{gameEventId}");
+
+        public Task JoinGuardianWatch(Guid seasonId, int tierNumber)
+            => Groups.AddToGroupAsync(Context.ConnectionId, $"guardian:{seasonId}:{tierNumber}");
+
+        public Task JoinTerritory(Guid seasonId, int tierNumber)
+            => Groups.AddToGroupAsync(Context.ConnectionId, $"territory:{seasonId}:{tierNumber}");
     }
 }

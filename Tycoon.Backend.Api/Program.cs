@@ -52,6 +52,9 @@ using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.Questions;
 using Tycoon.Backend.Api.Features.Referrals;
+using Tycoon.Backend.Api.Features.GameEvents;
+using Tycoon.Backend.Api.Features.Guardians;
+using Tycoon.Backend.Api.Features.Territory;
 using Tycoon.Backend.Api.Features.Votes;
 using Tycoon.Backend.Api.Features.Seasons;
 using Tycoon.Backend.Api.Features.Skills;
@@ -64,9 +67,12 @@ using Tycoon.Backend.Application;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Writers;
 using Tycoon.Backend.Application.Auth;
+using Tycoon.Backend.Application.GameEvents;
+using Tycoon.Backend.Application.Guardians;
 using Tycoon.Backend.Application.Matchmaking;
 using Tycoon.Backend.Application.Notifications;
 using Tycoon.Backend.Application.Realtime;
+using Tycoon.Backend.Application.Territory;
 using Tycoon.Backend.Application.Social;
 using Tycoon.Backend.Infrastructure;
 using Tycoon.Backend.Infrastructure.Persistence.Extensions;
@@ -416,6 +422,9 @@ builder.Services.AddSingleton<IMatchmakingNotifier, SignalRMatchmakingNotifier>(
 builder.Services.AddSingleton<IPartyMatchmakingNotifier, SignalRPartyMatchmakingNotifier>();
 builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
+builder.Services.AddSingleton<IGameEventNotifier, SignalRGameEventNotifier>();
+builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
+builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
 
 builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 
@@ -486,6 +495,18 @@ if (hangfireEnabled)
             "admin-notification-dispatch",
             job => job.Run(default),
             "*/1 * * * *"
+        );
+
+        RecurringJob.AddOrUpdate<GameEventSchedulerJob>(
+            "game-event-scheduler",
+            job => job.RunAsync(CancellationToken.None),
+            "*/1 * * * *"
+        );
+
+        RecurringJob.AddOrUpdate<GuardianAssignmentJob>(
+            "guardian-assignment",
+            job => job.RunAsync(CancellationToken.None),
+            "0 2 * * *"
         );
 
         app.Logger.LogInformation("✅ Hangfire recurring jobs configured");
@@ -635,6 +656,10 @@ RankedLeaderboardsEndpoints.Map(app);
 SeasonRewardsEndpoints.Map(app);
 QuestionsUploadEndpoints.Map(app);
 VoteEndpoints.Map(app);
+GameEventsEndpoints.Map(app);
+GuardiansEndpoints.Map(app);
+TerritoryEndpoints.Map(app);
+AdminGameEventsEndpoints.Map(app);
 
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
 var mobile = app.MapGroup("/mobile").WithTags("Mobile").WithOpenApi();

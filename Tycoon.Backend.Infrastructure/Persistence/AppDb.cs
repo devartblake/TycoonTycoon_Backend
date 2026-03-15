@@ -74,6 +74,13 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => Set<QuestionAnsweredAnalyticsEvent>();
         public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => Set<QuestionAnsweredDailyRollup>();
         public DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups => Set<QuestionAnsweredPlayerDailyRollup>();
+        public DbSet<GameEvent> GameEvents => Set<GameEvent>();
+        public DbSet<GameEventParticipant> GameEventParticipants => Set<GameEventParticipant>();
+        public DbSet<GameEventPrizeClaim> GameEventPrizeClaims => Set<GameEventPrizeClaim>();
+        public DbSet<TierGuardian> TierGuardians => Set<TierGuardian>();
+        public DbSet<GuardianChallenge> GuardianChallenges => Set<GuardianChallenge>();
+        public DbSet<TerritoryTile> TerritoryTiles => Set<TerritoryTile>();
+        public DbSet<TerritoryDuel> TerritoryDuels => Set<TerritoryDuel>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

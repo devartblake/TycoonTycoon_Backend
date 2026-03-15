@@ -4,9 +4,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
+using Tycoon.Backend.Application.GameEvents;
+using Tycoon.Backend.Application.Guardians;
 using Tycoon.Backend.Application.Leaderboards;
 using Tycoon.Backend.Application.Realtime;
 using Tycoon.Backend.Application.Seasons;
+using Tycoon.Backend.Application.Territory;
 
 namespace Tycoon.Backend.Application
 {
@@ -76,6 +79,19 @@ namespace Tycoon.Backend.Application
 
             // Realtime
             services.TryAddSingleton<IPresenceReader, NullPresenceReader>();
+
+            // Game Events
+            services.AddScoped<GameEventSchedulerJob>();
+            services.AddScoped<CloseGameEventWorker>();
+            services.TryAddSingleton<IGameEventNotifier, NullGameEventNotifier>();
+
+            // Guardians
+            services.Configure<GuardianOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<GuardianAssignmentJob>();
+            services.TryAddSingleton<IGuardianNotifier, NullGuardianNotifier>();
+
+            // Territory
+            services.TryAddSingleton<ITerritoryNotifier, NullTerritoryNotifier>();
 
             // Seasonal Ranks
             services.Configure<RankedSeasonOptions>(cfg => { /* defaults ok */ });
