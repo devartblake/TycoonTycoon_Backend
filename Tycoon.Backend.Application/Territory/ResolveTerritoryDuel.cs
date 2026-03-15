@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.EventStats;
+using Tycoon.Backend.Application.Seasons;
 using Tycoon.Shared.Contracts.Dtos;
 using Tycoon.Shared.Contracts.Realtime.Territory;
 
@@ -12,7 +14,9 @@ namespace Tycoon.Backend.Application.Territory
     public sealed class ResolveTerritoryDuelHandler(
         IAppDb db,
         EconomyService econ,
-        ITerritoryNotifier notifier)
+        ITerritoryNotifier notifier,
+        SeasonService seasonSvc,
+        PlayerEventStatsService eventStats)
         : IRequestHandler<ResolveTerritoryDuel>
     {
         private const int BaseMultiplierBps = 200;
@@ -87,6 +91,18 @@ namespace Tycoon.Backend.Application.Territory
                     Lines: new[] { new EconomyLineDto(CurrencyType.Xp, TerritoryCaptureBonusXp) },
                     Note: $"territory:{tile.Id}"
                 ), ct);
+
+                // Update event stats for challenger
+                var activeSeason = await seasonSvc.GetActiveAsync(ct);
+                if (activeSeason is not null)
+                {
+                    var stats = await eventStats.GetOrCreateAsync(activeSeason.Id, duel.ChallengerId, ct);
+                    stats.TilesEverCaptured++;
+                    stats.CurrentTilesOwned = totalOwned;
+                    if (newMultiplierBps > stats.PeakXpMultiplierBps)
+                        stats.PeakXpMultiplierBps = newMultiplierBps;
+                    stats.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                }
 
                 await db.SaveChangesAsync(ct);
 

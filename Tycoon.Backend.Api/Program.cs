@@ -657,6 +657,8 @@ SeasonRewardsEndpoints.Map(app);
 QuestionsUploadEndpoints.Map(app);
 VoteEndpoints.Map(app);
 GameEventsEndpoints.Map(app);
+GameEventStatsEndpoints.Map(app);
+GameEventStatsEndpoints.MapTerritory(app);
 GuardiansEndpoints.Map(app);
 TerritoryEndpoints.Map(app);
 AdminGameEventsEndpoints.Map(app);

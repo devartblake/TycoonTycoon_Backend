@@ -81,6 +81,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<GuardianChallenge> GuardianChallenges => Set<GuardianChallenge>();
         public DbSet<TerritoryTile> TerritoryTiles => Set<TerritoryTile>();
         public DbSet<TerritoryDuel> TerritoryDuels => Set<TerritoryDuel>();
+        public DbSet<PlayerEventStats> PlayerEventStats => Set<PlayerEventStats>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

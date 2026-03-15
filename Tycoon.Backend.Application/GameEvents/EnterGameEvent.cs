@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.EventStats;
+using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -9,7 +11,7 @@ namespace Tycoon.Backend.Application.GameEvents
 {
     public sealed record EnterGameEvent(Guid EventId, Guid GameEventId, Guid PlayerId) : IRequest<EnterGameEventResponse>;
 
-    public sealed class EnterGameEventHandler(IAppDb db, EconomyService econ) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
+    public sealed class EnterGameEventHandler(IAppDb db, EconomyService econ, SeasonService seasonSvc, PlayerEventStatsService eventStats) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
     {
         private const int ChampionBattleEliminationIncrement = 50;
 
@@ -46,6 +48,14 @@ namespace Tycoon.Backend.Application.GameEvents
 
             var participant = new GameEventParticipant(r.GameEventId, r.PlayerId, r.EventId);
             db.GameEventParticipants.Add(participant);
+
+            var activeSeason = await seasonSvc.GetActiveAsync(ct);
+            if (activeSeason is not null)
+            {
+                var stats = await eventStats.GetOrCreateAsync(activeSeason.Id, r.PlayerId, ct);
+                stats.EventsEntered++;
+                stats.UpdatedAtUtc = DateTimeOffset.UtcNow;
+            }
 
             try
             {

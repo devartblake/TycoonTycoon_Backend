@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.EventStats;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -12,7 +13,8 @@ namespace Tycoon.Backend.Application.Guardians
         IAppDb db,
         EconomyService econ,
         IOptions<GuardianOptions> opts,
-        ILogger<GuardianAssignmentJob> logger)
+        ILogger<GuardianAssignmentJob> logger,
+        PlayerEventStatsService eventStats)
     {
         public async Task RunAsync(CancellationToken ct)
         {
@@ -111,6 +113,14 @@ namespace Tycoon.Backend.Application.Guardians
                 {
                     guardian.PassiveCoins += opts.Value.PassiveCoins;
                     guardian.PassiveXp += opts.Value.PassiveXp;
+                }
+
+                // Increment guardian day counter (idempotent: only runs when economy txn is newly applied)
+                if (result.Status == EconomyTxnStatus.Applied)
+                {
+                    var stats = await eventStats.GetOrCreateAsync(activeSeason.Id, guardian.PlayerId, ct);
+                    stats.GuardianDaysTotal++;
+                    stats.UpdatedAtUtc = DateTimeOffset.UtcNow;
                 }
             }
 

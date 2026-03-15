@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.EventStats;
+using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 using Tycoon.Shared.Contracts.Realtime.Guardians;
@@ -15,7 +17,9 @@ namespace Tycoon.Backend.Application.Guardians
         IAppDb db,
         EconomyService econ,
         IGuardianNotifier notifier,
-        IOptions<GuardianOptions> opts)
+        IOptions<GuardianOptions> opts,
+        SeasonService seasonSvc,
+        PlayerEventStatsService eventStats)
         : IRequestHandler<ResolveGuardianChallenge>
     {
         public async Task Handle(ResolveGuardianChallenge r, CancellationToken ct)
@@ -77,6 +81,22 @@ namespace Tycoon.Backend.Application.Guardians
                     Note: $"guardian-challenge:{challenge.Id}"
                 ), ct);
 
+                // Update event stats: challenger promoted, previous guardian lost a defence
+                var activeSeason = await seasonSvc.GetActiveAsync(ct);
+                if (activeSeason is not null)
+                {
+                    var challengerStats = await eventStats.GetOrCreateAsync(activeSeason.Id, challenge.ChallengerId, ct);
+                    challengerStats.GuardianPromotions++;
+                    challengerStats.UpdatedAtUtc = DateTimeOffset.UtcNow;
+
+                    if (previousGuardianId.HasValue)
+                    {
+                        var guardianStats = await eventStats.GetOrCreateAsync(activeSeason.Id, previousGuardianId.Value, ct);
+                        guardianStats.GuardianDefencesLost++;
+                        guardianStats.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                    }
+                }
+
                 await db.SaveChangesAsync(ct);
 
                 await notifier.NotifyGuardianChangedAsync(new GuardianChangedMessage(
@@ -92,6 +112,15 @@ namespace Tycoon.Backend.Application.Guardians
 
                 if (guardian is not null)
                     guardian.DefencesWon++;
+
+                // Update event stats: guardian won a defence
+                var activeSeason = await seasonSvc.GetActiveAsync(ct);
+                if (activeSeason is not null)
+                {
+                    var guardianStats = await eventStats.GetOrCreateAsync(activeSeason.Id, challenge.GuardianId, ct);
+                    guardianStats.GuardianDefencesWon++;
+                    guardianStats.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                }
 
                 await db.SaveChangesAsync(ct);
             }

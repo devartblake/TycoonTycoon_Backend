@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.EventStats;
+using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 using Tycoon.Shared.Contracts.Realtime.GameEvents;
@@ -13,7 +15,9 @@ namespace Tycoon.Backend.Application.GameEvents
     public sealed class CloseGameEventAndDistributePrizesHandler(
         IAppDb db,
         EconomyService econ,
-        IGameEventNotifier notifier)
+        IGameEventNotifier notifier,
+        SeasonService seasonSvc,
+        PlayerEventStatsService eventStats)
         : IRequestHandler<CloseGameEventAndDistributePrizes, CloseGameEventResponse>
     {
         private const int Top20BonusXp = 200;
@@ -77,6 +81,26 @@ namespace Tycoon.Backend.Application.GameEvents
 
                 db.GameEventPrizeClaims.Add(new GameEventPrizeClaim(
                     ev.Id, p.PlayerId, prizeEventId, xp, coins, p.FinalRank!.Value));
+            }
+
+            // Update per-player event stats for top-20 winners
+            var activeSeason = await seasonSvc.GetActiveAsync(ct);
+            if (activeSeason is not null)
+            {
+                foreach (var p in ranked.Take(20))
+                {
+                    int xp = p.FinalRank == 1 ? WinnerBonusXp : Top20BonusXp;
+                    int coins = p.FinalRank == 1 ? WinnerBonusCoins : Top20BonusCoins;
+                    if (p.FinalRank == 1 && ev.Kind == "champion_battle")
+                        coins += ev.JackpotPool;
+
+                    var stats = await eventStats.GetOrCreateAsync(activeSeason.Id, p.PlayerId, ct);
+                    stats.EventsTop20++;
+                    if (p.FinalRank == 1) stats.EventsWon++;
+                    stats.TotalEventXpEarned += xp;
+                    stats.TotalEventCoinsEarned += coins;
+                    stats.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                }
             }
 
             ev.Close(DateTimeOffset.UtcNow, participants.Count);
