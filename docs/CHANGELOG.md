@@ -4,6 +4,64 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-16] Game Event Tracking System
+
+Adds a separate event analytics layer covering the GameEvent, Guardian, and Territory game modes. Deliberately **not** mixed with the ranked-ladder (`PlayerSeasonProfile` / `LeaderboardEntry`) so tier assignment is never distorted.
+
+### New Entity: `PlayerEventStats`
+- **File:** `Tycoon.Backend.Domain/Entities/PlayerEventStats.cs`
+- One row per player-season; updated incrementally (no batch recompute job needed)
+- Fields:
+  - **GameEvent** — `EventsEntered`, `EventsTop20`, `EventsWon`, `TotalEventXpEarned`, `TotalEventCoinsEarned`, `ChampionBattleEliminations`
+  - **Guardian** — `GuardianPromotions`, `GuardianDefencesWon`, `GuardianDefencesLost`, `GuardianDaysTotal`
+  - **Territory** — `TilesEverCaptured`, `CurrentTilesOwned`, `PeakXpMultiplierBps`
+
+### EF Infrastructure
+- **`PlayerEventStatsConfiguration`** — `player_event_stats` table; unique index on `(SeasonId, PlayerId)`; composite indexes on `(SeasonId, EventsWon)`, `(SeasonId, GuardianDefencesWon)`, `(SeasonId, CurrentTilesOwned)`
+- **`IAppDb` / `AppDb`** — `DbSet<PlayerEventStats> PlayerEventStats`
+- **Migration `20260315000000_AddPlayerEventStats`** — `CREATE TABLE player_event_stats` with all columns and indexes
+
+### New Service: `PlayerEventStatsService`
+- **File:** `Tycoon.Backend.Application/EventStats/PlayerEventStatsService.cs`
+- `GetOrCreateAsync(seasonId, playerId, ct)` — upsert helper used by all hooks
+
+### New Query Handlers (`Application/EventStats/`)
+| Handler | What it answers |
+|---|---|
+| `GetGameEventLeaderboard(GameEventId, Page, PageSize)` | Ranked participant list for a closed event, ordered by `FinalRank`, with prize amounts |
+| `GetPlayerEventHistory(PlayerId, SeasonId?, Page, PageSize)` | All game events a player entered (optionally filtered to a season), with rank and prize outcomes |
+| `GetEventSeasonLeaderboard(SeasonId, SortBy, Page, PageSize)` | Season-wide event standings; `SortBy` = `event_wins` (default), `events_entered`, `guardian_defences`, `tiles_owned` |
+| `GetTerritoryDominanceLeaderboard(SeasonId, TierNumber, Top)` | Live top-N tile owners in a tier, aggregated from `TerritoryTile` (no extra table) |
+
+### New DTOs (`Tycoon.Shared.Contracts/Dtos/EventStatsDtos.cs`)
+- `EventLeaderboardEntryDto(PlayerId, FinalRank, AwardedXp, AwardedCoins, EliminatedAt?)`
+- `PlayerEventHistoryDto(GameEventId, Kind, FinalRank?, AwardedXp, AwardedCoins, EnteredAt)`
+- `EventSeasonLeaderboardEntryDto(PlayerId, EventsWon, EventsTop20, EventsEntered, GuardianDefencesWon, GuardianDaysTotal, CurrentTilesOwned, PeakXpMultiplierBps)`
+- `TerritoryDominanceDto(PlayerId, TilesOwned, TotalXpMultiplierBps)`
+
+### New API Endpoints (`GameEventStatsEndpoints`)
+```
+GET /game-events/{gameEventId}/leaderboard?page&pageSize
+GET /game-events/players/{playerId}/event-history?seasonId&page&pageSize   [Authorized]
+GET /game-events/season-leaderboard?seasonId&sortBy&page&pageSize
+GET /territory/{seasonId}/{tierNumber}/dominance?top
+```
+
+### Incremental Hooks Added to Existing Handlers
+| Handler | Stats updated |
+|---|---|
+| `EnterGameEvent` | `EventsEntered++` |
+| `CloseGameEventAndDistributePrizes` | `EventsTop20++`, `EventsWon++` (rank 1), `TotalEventXpEarned +=`, `TotalEventCoinsEarned +=` |
+| `ResolveGuardianChallenge` (challenger wins) | `GuardianPromotions++` (challenger), `GuardianDefencesLost++` (deposed guardian) |
+| `ResolveGuardianChallenge` (guardian wins) | `GuardianDefencesWon++` |
+| `ResolveTerritoryDuel` (challenger wins) | `TilesEverCaptured++`, `CurrentTilesOwned` refresh, `PeakXpMultiplierBps` high-water mark |
+| `GuardianAssignmentJob` (daily) | `GuardianDaysTotal++` per active guardian (idempotent — only increments when economy txn is newly applied) |
+
+### DI Registration
+- `PlayerEventStatsService` registered as `AddScoped` in `Application/DependencyInjection.cs`
+
+---
+
 ## [2026-03-15] MinIO Backend Integration
 
 ### `IObjectStorage` Abstraction
