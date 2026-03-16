@@ -561,6 +561,7 @@ Connect to the `topic:{topic}` SignalR group to receive live `VoteCast` push eve
 // Response 200
 { "eventId": "<client-uuid>", "status": "Entered" }
 // status: "Entered" | "Duplicate" | "InsufficientFunds" | "NotFound" | "InvalidStatus"
+// HTTP 503 returned with code "FEATURE_DISABLED" when game_events_enabled=false
 ```
 
 #### `POST /game-events/revive`
@@ -605,6 +606,7 @@ Connect to the `topic:{topic}` SignalR group to receive live `VoteCast` push eve
 // Response 200
 { "eventId": "<client-uuid>", "status": "Challenged", "matchId": "<uuid>" }
 // status: "Challenged" | "AlreadyPending" | "NotFound"
+// HTTP 503 returned with code "FEATURE_DISABLED" when guardian_enabled=false
 ```
 
 Play the match via the MatchHub (`/ws/match`) then submit via `/mobile/matches/submit`. The backend auto-resolves the challenge outcome. A `GuardianChanged` push event fires if the challenger wins.
@@ -644,8 +646,14 @@ Play the match via the MatchHub (`/ws/match`) then submit via `/mobile/matches/s
   "challengerId": "<uuid>"
 }
 
-// Response 200
+// Response 200 — tile challenged, match spawned
 { "matchId": "<uuid>", "tileOwnerId": "<uuid-or-null>" }
+
+// Response 200 — challenger already owns this tile
+{ "status": "AlreadyOwner", "matchId": "00000000-0000-0000-0000-000000000000", "tileOwnerId": "<uuid>" }
+
+// HTTP 503 — territory_enabled=false
+{ "code": "FEATURE_DISABLED", "message": "Territory feature is currently disabled." }
 ```
 
 After the match, submit it normally. The backend resolves tile ownership automatically. A `TerritoryCapture` push event fires if the challenger wins.
@@ -955,6 +963,7 @@ Admin controls (not needed in Flutter client):
 | `409` | Conflict | Duplicate submission (check `status` field) |
 | `429` | Rate limited | Back off and retry after `Retry-After` header |
 | `500` | Server error | Show generic error, log to crash reporter |
+| `503` | Feature disabled | Show "feature unavailable" message; check `code: "FEATURE_DISABLED"` in body |
 
 ### Domain status strings
 
@@ -971,6 +980,9 @@ Many endpoints return `{ "status": "<string>" }` instead of HTTP error codes. Ma
 | `"SelfRedeemNotAllowed"` | Player tried to redeem their own referral code |
 | `"Cooldown"` | Powerup on cooldown |
 | `"MissingPrereq"` | Skill prerequisite not met |
+| `"AlreadyOwner"` | Player already owns this territory tile (no match spawned) |
+
+> **Feature flags**: When an operator disables a feature (`game_events_enabled`, `guardian_enabled`, `territory_enabled`), the affected endpoints return HTTP **503** with body `{"code":"FEATURE_DISABLED","message":"..."}`. Show a friendly "feature unavailable" state rather than an error. The flag state is controlled by the backend; the Flutter client should not cache it.
 
 ### Recommended Dart error model
 
