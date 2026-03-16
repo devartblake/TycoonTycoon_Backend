@@ -38,7 +38,10 @@ public static class AdminConfigEndpoints
 
         var created = new AdminAppConfig("https://api.example.com", false, JsonSerializer.Serialize(new Dictionary<string, bool>
         {
-            ["adminEventUpload"] = true
+            ["adminEventUpload"]  = true,
+            ["game_events_enabled"] = true,
+            ["guardian_enabled"]    = true,
+            ["territory_enabled"]   = true
         }));
 
         db.AdminAppConfigs.Add(created);

@@ -3,14 +3,21 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.GameEvents
 {
-    public sealed class GameEventSchedulerJob(IAppDb db, IMediator mediator, ILogger<GameEventSchedulerJob> logger)
+    public sealed class GameEventSchedulerJob(IAppDb db, IMediator mediator, ILogger<GameEventSchedulerJob> logger, FeatureFlagService flags)
     {
         public async Task RunAsync(CancellationToken ct)
         {
+            if (!await flags.IsEnabledAsync(FeatureFlagService.GameEventsEnabled, ct))
+            {
+                logger.LogInformation("GameEventSchedulerJob: game_events_enabled=false, skipping.");
+                return;
+            }
+
             var now = DateTimeOffset.UtcNow;
 
             // Open scheduled events whose open window has arrived

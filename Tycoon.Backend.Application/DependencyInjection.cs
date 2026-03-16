@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.EventStats;
 using Tycoon.Backend.Application.GameEvents;
 using Tycoon.Backend.Application.Guardians;
@@ -80,6 +81,9 @@ namespace Tycoon.Backend.Application
 
             // Realtime
             services.TryAddSingleton<IPresenceReader, NullPresenceReader>();
+
+            // Feature Flags
+            services.AddScoped<FeatureFlagService>();
 
             // Event Stats
             services.AddScoped<PlayerEventStatsService>();

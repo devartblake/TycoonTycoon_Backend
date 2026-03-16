@@ -22,6 +22,7 @@ namespace Tycoon.Backend.Api.Features.GameEvents
                 var res = await mediator.Send(new EnterGameEvent(req.EventId, req.GameEventId, req.PlayerId), ct);
                 return res.Status switch
                 {
+                    "FeatureDisabled" => ApiResponses.Error(StatusCodes.Status503ServiceUnavailable, "FEATURE_DISABLED", "Game events feature is currently disabled."),
                     "InvalidStatus" => ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_STATUS", "Game event is not open for entry."),
                     "InsufficientFunds" => ApiResponses.Error(StatusCodes.Status402PaymentRequired, "INSUFFICIENT_FUNDS", "Not enough coins to enter."),
                     "NotFound" => ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Game event not found."),

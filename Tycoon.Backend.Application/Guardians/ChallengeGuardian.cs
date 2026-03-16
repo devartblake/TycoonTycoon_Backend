@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -14,11 +15,14 @@ namespace Tycoon.Backend.Application.Guardians
         Guid ChallengerId,
         Guid GuardianId) : IRequest<ChallengeGuardianResponse>;
 
-    public sealed class ChallengeGuardianHandler(IAppDb db, IMediator mediator)
+    public sealed class ChallengeGuardianHandler(IAppDb db, IMediator mediator, FeatureFlagService flags)
         : IRequestHandler<ChallengeGuardian, ChallengeGuardianResponse>
     {
         public async Task<ChallengeGuardianResponse> Handle(ChallengeGuardian r, CancellationToken ct)
         {
+            if (!await flags.IsEnabledAsync(FeatureFlagService.GuardianEnabled, ct))
+                return new ChallengeGuardianResponse(r.EventId, "FeatureDisabled", Guid.Empty);
+
             var now = DateTimeOffset.UtcNow;
 
             // Verify guardian is active

@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Territory;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -31,10 +32,12 @@ namespace Tycoon.Backend.Api.Features.Territory
                 var res = await mediator.Send(
                     new StartTerritoryDuel(req.EventId, req.SeasonId, req.TierNumber, req.Category, req.ChallengerId), ct);
 
-                if (res.MatchId == Guid.Empty)
-                    return Results.Ok(new { status = "AlreadyOwner", matchId = Guid.Empty, tileOwnerId = res.TileOwnerId });
-
-                return Results.Ok(res);
+                return res.Status switch
+                {
+                    "FeatureDisabled" => ApiResponses.Error(StatusCodes.Status503ServiceUnavailable, "FEATURE_DISABLED", "Territory feature is currently disabled."),
+                    _ when res.MatchId == Guid.Empty => Results.Ok(new { status = "AlreadyOwner", matchId = Guid.Empty, tileOwnerId = res.TileOwnerId }),
+                    _ => Results.Ok(res)
+                };
             }).RequireAuthorization();
 
             g.MapGet("/multiplier/{seasonId:guid}/{tierNumber:int}/{playerId:guid}", async (

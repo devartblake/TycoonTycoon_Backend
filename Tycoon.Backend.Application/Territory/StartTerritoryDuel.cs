@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -15,11 +16,13 @@ namespace Tycoon.Backend.Application.Territory
         Guid ChallengerId,
         Guid? GameEventId = null) : IRequest<StartTerritoryDuelResponse>;
 
-    public sealed class StartTerritoryDuelHandler(IAppDb db, IMediator mediator)
+    public sealed class StartTerritoryDuelHandler(IAppDb db, IMediator mediator, FeatureFlagService flags)
         : IRequestHandler<StartTerritoryDuel, StartTerritoryDuelResponse>
     {
         public async Task<StartTerritoryDuelResponse> Handle(StartTerritoryDuel r, CancellationToken ct)
         {
+            if (!await flags.IsEnabledAsync(FeatureFlagService.TerritoryEnabled, ct))
+                return new StartTerritoryDuelResponse(Guid.Empty, null, "FeatureDisabled");
             // Load or create tile
             var tile = await db.TerritoryTiles
                 .FirstOrDefaultAsync(x => x.SeasonId == r.SeasonId

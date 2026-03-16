@@ -4,6 +4,43 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-16] Feature Flag Activation Controls (Part A)
+
+Adds runtime on/off toggles for the three game modes (Game Events, Guardians, Territory) without requiring Hangfire dashboard access or redeployment.
+
+### New Service: `FeatureFlagService`
+- **File:** `Tycoon.Backend.Application/Config/FeatureFlagService.cs`
+- Scoped per-request; lazy-loads `AdminAppConfig.FeatureFlagsJson` once per scope
+- Missing keys default to `true` (safe for zero-downtime rollouts)
+- Constants: `GameEventsEnabled = "game_events_enabled"`, `GuardianEnabled = "guardian_enabled"`, `TerritoryEnabled = "territory_enabled"`
+
+### Guards Added
+| Component | Flag checked | Early-return status |
+|---|---|---|
+| `GameEventSchedulerJob` (Hangfire) | `game_events_enabled` | Skips entire job |
+| `EnterGameEvent` handler | `game_events_enabled` | `"FeatureDisabled"` → HTTP 503 |
+| `ChallengeGuardian` handler | `guardian_enabled` | `"FeatureDisabled"` → HTTP 503 |
+| `GuardianAssignmentJob` (Hangfire) | `guardian_enabled` | Skips entire job |
+| `StartTerritoryDuel` handler | `territory_enabled` | `"FeatureDisabled"` → HTTP 503 |
+
+### API Layer Changes
+- `GameEventsEndpoints` — `"FeatureDisabled"` mapped to HTTP 503
+- `GuardiansEndpoints` — `"FeatureDisabled"` mapped to HTTP 503
+- `TerritoryEndpoints` — `"FeatureDisabled"` mapped to HTTP 503
+
+### Admin Config Defaults
+- `AdminConfigEndpoints.GetOrCreate()` now seeds `game_events_enabled=true`, `guardian_enabled=true`, `territory_enabled=true` on first startup
+
+### How to toggle
+```http
+PATCH /admin/config
+Content-Type: application/json
+
+{ "featureFlags": { "game_events_enabled": false } }
+```
+
+---
+
 ## [2026-03-16] Flutter Frontend Integration Guide
 
 - Created `docs/FLUTTER_INTEGRATION.md` — authoritative Flutter client reference covering:

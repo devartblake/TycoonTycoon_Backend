@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.Economy;
 using Tycoon.Backend.Application.EventStats;
 using Tycoon.Backend.Domain.Entities;
@@ -14,10 +15,17 @@ namespace Tycoon.Backend.Application.Guardians
         EconomyService econ,
         IOptions<GuardianOptions> opts,
         ILogger<GuardianAssignmentJob> logger,
-        PlayerEventStatsService eventStats)
+        PlayerEventStatsService eventStats,
+        FeatureFlagService featureFlags)
     {
         public async Task RunAsync(CancellationToken ct)
         {
+            if (!await featureFlags.IsEnabledAsync(FeatureFlagService.GuardianEnabled, ct))
+            {
+                logger.LogInformation("GuardianAssignmentJob: guardian_enabled=false, skipping.");
+                return;
+            }
+
             var activeSeason = await db.Seasons
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Status == SeasonStatus.Active, ct);

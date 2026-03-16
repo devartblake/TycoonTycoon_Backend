@@ -29,6 +29,7 @@ namespace Tycoon.Shared.Contracts.Dtos
 
     public sealed record StartTerritoryDuelResponse(
         Guid MatchId,
-        Guid? TileOwnerId
+        Guid? TileOwnerId,
+        string? Status = null
     );
 }

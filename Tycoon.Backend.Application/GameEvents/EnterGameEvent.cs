@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.EventStats;
 using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Domain.Entities;
@@ -11,12 +12,15 @@ namespace Tycoon.Backend.Application.GameEvents
 {
     public sealed record EnterGameEvent(Guid EventId, Guid GameEventId, Guid PlayerId) : IRequest<EnterGameEventResponse>;
 
-    public sealed class EnterGameEventHandler(IAppDb db, EconomyService econ, SeasonService seasonSvc, PlayerEventStatsService eventStats) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
+    public sealed class EnterGameEventHandler(IAppDb db, EconomyService econ, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
     {
         private const int ChampionBattleEliminationIncrement = 50;
 
         public async Task<EnterGameEventResponse> Handle(EnterGameEvent r, CancellationToken ct)
         {
+            if (!await flags.IsEnabledAsync(FeatureFlagService.GameEventsEnabled, ct))
+                return new EnterGameEventResponse(r.EventId, "FeatureDisabled");
+
             var ev = await db.GameEvents.FirstOrDefaultAsync(x => x.Id == r.GameEventId, ct);
             if (ev is null)
                 return new EnterGameEventResponse(r.EventId, "NotFound");
