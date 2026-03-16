@@ -4,6 +4,20 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-16] Flutter Frontend Integration Guide
+
+- Created `docs/FLUTTER_INTEGRATION.md` — authoritative Flutter client reference covering:
+  - Project setup (recommended packages: `dio`, `signalr_netcore`, `flutter_secure_storage`)
+  - Full authentication flow: signup, login, token refresh, secure storage, Dio interceptor
+  - Complete REST API reference for all non-admin endpoints grouped by feature
+  - Real-time (SignalR) hub setup, group subscriptions, and all 6 server-push event payloads with payload shapes
+  - End-to-end feature flows: Game Event battle royale, Guardian Challenge, Territory Capture, Ranked Match
+  - Event system activation controls (how seasons and game events are turned on/off, including the gap: no global toggle)
+  - Error handling patterns: HTTP codes, domain status strings, recommended Dart error model
+  - Rate limit reference table
+
+---
+
 ## [2026-03-16] Game Event Tracking System
 
 Adds a separate event analytics layer covering the GameEvent, Guardian, and Territory game modes. Deliberately **not** mixed with the ranked-ladder (`PlayerSeasonProfile` / `LeaderboardEntry`) so tier assignment is never distorted.
