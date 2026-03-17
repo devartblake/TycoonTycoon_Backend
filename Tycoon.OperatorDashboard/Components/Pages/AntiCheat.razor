@@ -1,0 +1,232 @@
+@page "/anti-cheat"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Anti-Cheat</h1>
+
+<div class="tabs">
+    @foreach (var tab in new[] { "Flags", "Analytics", "Party Flags" })
+    {
+        <button class="tab @(_tab == tab ? "active" : "")" @onclick="() => SwitchTab(tab)">@tab</button>
+    }
+</div>
+
+@if (_tab == "Flags")
+{
+    <div class="filters">
+        <select @bind="_severity">
+            <option value="">All severities</option>
+            <option value="severe">Severe</option>
+            <option value="warning">Warning</option>
+            <option value="info">Info</option>
+        </select>
+        <label style="flex-direction:row;align-items:center;gap:.4rem;color:#475569;font-size:.875rem">
+            <input type="checkbox" @bind="_unreviewedOnly" /> Unreviewed only
+        </label>
+        <button @onclick="LoadFlagsAsync">Refresh</button>
+    </div>
+
+    <table>
+        <thead><tr><th>Player</th><th>Rule</th><th>Severity</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody>
+            @if (_flags is not null)
+            {
+                @foreach (var el in _flags.RootElement.GetProperty("items").EnumerateArray())
+                {
+                    var id       = el.TryGetProperty("id",         out var i) ? i.GetGuid() : Guid.Empty;
+                    var player   = el.TryGetProperty("playerId",   out var p) ? p.GetString() ?? "—" : "—";
+                    var rule     = el.TryGetProperty("ruleKey",    out var r) ? r.GetString() ?? "—" : "—";
+                    var sev      = el.TryGetProperty("severity",   out var s) ? s.GetString() ?? "—" : "—";
+                    var created  = el.TryGetProperty("flaggedAt",  out var c) ? c.GetString() ?? "—" : "—";
+                    var reviewed = el.TryGetProperty("isReviewed", out var rv) && rv.GetBoolean();
+                    <tr>
+                        <td><code>@player[..Math.Min(8, player.Length)]…</code></td>
+                        <td><code>@rule</code></td>
+                        <td><span class="badge @SeverityClass(sev)">@sev</span></td>
+                        <td>@created</td>
+                        <td>
+                            @if (!reviewed)
+                            {
+                                @if (_reviewingId == id)
+                                {
+                                    <input @bind="_reviewNote" placeholder="Note..." style="padding:.3rem;border:1px solid #cbd5e1;border-radius:4px;font-size:.8rem;width:160px" />
+                                    <button @onclick="() => SubmitReviewAsync(id)" style="margin-left:.4rem">Submit</button>
+                                    <button @onclick="() => _reviewingId = Guid.Empty" style="background:#64748b;margin-left:.4rem">Cancel</button>
+                                }
+                                else
+                                {
+                                    <button @onclick="() => StartReview(id)">Review</button>
+                                }
+                            }
+                            else { <span style="color:#64748b;font-size:.8rem">Reviewed</span> }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    @if (!string.IsNullOrEmpty(_message)) { <p class="message">@_message</p> }
+}
+
+@if (_tab == "Analytics")
+{
+    <div class="filters">
+        <select @bind="_windowHours">
+            <option value="1">Last 1 hour</option>
+            <option value="6">Last 6 hours</option>
+            <option value="24" selected>Last 24 hours</option>
+            <option value="72">Last 72 hours</option>
+            <option value="168">Last 7 days</option>
+        </select>
+        <button @onclick="LoadSummaryAsync">Refresh</button>
+    </div>
+
+    @if (_summary is not null)
+    {
+        var root = _summary.RootElement;
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem">
+            @foreach (var (label, key, cls) in new[] { ("Total", "total", ""), ("Severe", "severe", "badge off"), ("Warning", "warning", "badge"), ("Info", "info", "badge on") })
+            {
+                var val = root.TryGetProperty(key, out var v) ? v.GetInt32() : 0;
+                <div class="card" style="text-align:center">
+                    <div style="font-size:2rem;font-weight:700;color:#1e293b">@val</div>
+                    <div style="font-size:.875rem;color:#64748b">@label</div>
+                </div>
+            }
+        </div>
+        @if (root.TryGetProperty("topRules", out var topRules))
+        {
+            <h2>Top Rules</h2>
+            <table>
+                <thead><tr><th>Rule</th><th>Count</th></tr></thead>
+                <tbody>
+                    @foreach (var rule in topRules.EnumerateArray())
+                    {
+                        var rkey   = rule.TryGetProperty("ruleKey", out var rk) ? rk.GetString() ?? "—" : "—";
+                        var rcount = rule.TryGetProperty("count",   out var rc) ? rc.GetInt32() : 0;
+                        <tr><td><code>@rkey</code></td><td>@rcount</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+    else { <p>Loading...</p> }
+}
+
+@if (_tab == "Party Flags")
+{
+    <div class="filters">
+        <label style="flex-direction:row;align-items:center;gap:.4rem;color:#475569;font-size:.875rem">
+            <input type="checkbox" @bind="_partyUnreviewed" /> Unreviewed only
+        </label>
+        <button @onclick="LoadPartyFlagsAsync">Refresh</button>
+    </div>
+
+    <table>
+        <thead><tr><th>Party</th><th>Player</th><th>Rule</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody>
+            @if (_partyFlags is not null)
+            {
+                @foreach (var el in _partyFlags.RootElement.GetProperty("items").EnumerateArray())
+                {
+                    var id      = el.TryGetProperty("id",         out var i) ? i.GetGuid() : Guid.Empty;
+                    var party   = el.TryGetProperty("partyId",    out var pa) ? pa.GetString() ?? "—" : "—";
+                    var player  = el.TryGetProperty("playerId",   out var p) ? p.GetString() ?? "—" : "—";
+                    var rule    = el.TryGetProperty("ruleKey",    out var r) ? r.GetString() ?? "—" : "—";
+                    var created = el.TryGetProperty("flaggedAt",  out var c) ? c.GetString() ?? "—" : "—";
+                    var reviewed = el.TryGetProperty("isReviewed", out var rv) && rv.GetBoolean();
+                    <tr>
+                        <td><code>@party[..Math.Min(8, party.Length)]…</code></td>
+                        <td><code>@player[..Math.Min(8, player.Length)]…</code></td>
+                        <td><code>@rule</code></td>
+                        <td>@created</td>
+                        <td>
+                            @if (!reviewed)
+                            {
+                                @if (_partyReviewingId == id)
+                                {
+                                    <input @bind="_partyReviewNote" placeholder="Note..." style="padding:.3rem;border:1px solid #cbd5e1;border-radius:4px;font-size:.8rem;width:140px" />
+                                    <button @onclick="() => SubmitPartyReviewAsync(id)" style="margin-left:.4rem">Submit</button>
+                                    <button @onclick="() => _partyReviewingId = Guid.Empty" style="background:#64748b;margin-left:.4rem">Cancel</button>
+                                }
+                                else { <button @onclick="() => { _partyReviewingId = id; _partyReviewNote = string.Empty; }">Review</button> }
+                            }
+                            else { <span style="color:#64748b;font-size:.8rem">Reviewed</span> }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string _tab = "Flags";
+    private JsonDocument? _flags, _summary, _partyFlags;
+
+    private string _severity = string.Empty;
+    private bool _unreviewedOnly = true;
+    private Guid _reviewingId;
+    private string _reviewNote = string.Empty;
+    private string _message = string.Empty;
+
+    private int _windowHours = 24;
+
+    private bool _partyUnreviewed = true;
+    private Guid _partyReviewingId;
+    private string _partyReviewNote = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        await LoadFlagsAsync();
+    }
+
+    private async Task SwitchTab(string tab)
+    {
+        _tab = tab;
+        switch (tab)
+        {
+            case "Flags":       await LoadFlagsAsync(); break;
+            case "Analytics":   await LoadSummaryAsync(); break;
+            case "Party Flags": await LoadPartyFlagsAsync(); break;
+        }
+    }
+
+    private async Task LoadFlagsAsync() => _flags = await Api.ListAnticheatFlagsAsync(_unreviewedOnly, string.IsNullOrEmpty(_severity) ? null : _severity);
+    private async Task LoadSummaryAsync() => _summary = await Api.GetAnticheatSummaryAsync(_windowHours);
+    private async Task LoadPartyFlagsAsync() => _partyFlags = await Api.ListPartyFlagsAsync(_partyUnreviewed);
+
+    private void StartReview(Guid id) { _reviewingId = id; _reviewNote = string.Empty; _message = string.Empty; }
+
+    private async Task SubmitReviewAsync(Guid id)
+    {
+        _message = string.Empty;
+        var ok = await Api.ReviewAnticheatFlagAsync(id, "operator", _reviewNote);
+        _message = ok ? "Flag reviewed." : "Review failed.";
+        _reviewingId = Guid.Empty;
+        await LoadFlagsAsync();
+    }
+
+    private async Task SubmitPartyReviewAsync(Guid id)
+    {
+        var ok = await Api.ReviewPartyFlagAsync(id, "operator", _partyReviewNote);
+        _partyReviewingId = Guid.Empty;
+        await LoadPartyFlagsAsync();
+    }
+
+    private static string SeverityClass(string sev) => sev switch
+    {
+        "severe"  => "off",
+        "warning" => "",
+        _         => "on"
+    };
+}
+
+<style>
+    .tabs { display:flex; gap:.5rem; margin-bottom:1.25rem; }
+    .tab { background:#e2e8f0; color:#475569; }
+    .tab.active { background:#3b82f6; color:#fff; }
+</style>

@@ -142,6 +142,236 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
+    // ── Questions ──────────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> ListQuestionsAsync(string? q, string? category, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var qs = $"page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(q)) qs += $"&q={Uri.EscapeDataString(q)}";
+        if (!string.IsNullOrWhiteSpace(category)) qs += $"&category={Uri.EscapeDataString(category)}";
+        var resp = await http.GetAsync($"/admin/questions?{qs}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> CreateQuestionAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/questions", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> UpdateQuestionAsync(Guid id, object body, CancellationToken ct = default)
+    {
+        var resp = await http.PatchAsync($"/admin/questions/{id}", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> DeleteQuestionAsync(Guid id, CancellationToken ct = default)
+    {
+        var resp = await http.DeleteAsync($"/admin/questions/{id}", ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> BulkImportQuestionsAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/questions/bulk", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    // ── Notifications ──────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> ListChannelsAsync(CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync("/admin/notifications/channels", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> SendNotificationAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/notifications/send", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> ScheduleNotificationAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/notifications/schedule", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<JsonDocument?> ListScheduledAsync(int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/admin/notifications/scheduled?page={page}&pageSize={pageSize}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> CancelScheduledAsync(Guid scheduleId, CancellationToken ct = default)
+    {
+        var resp = await http.DeleteAsync($"/admin/notifications/scheduled/{scheduleId}", ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<JsonDocument?> GetDeadLetterAsync(int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/admin/notifications/dead-letter?page={page}&pageSize={pageSize}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> ReplayDeadLetterAsync(Guid scheduleId, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync($"/admin/notifications/dead-letter/{scheduleId}/replay", null, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<JsonDocument?> ListTemplatesAsync(CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync("/admin/notifications/templates", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> CreateTemplateAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/notifications/templates", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> DeleteTemplateAsync(Guid id, CancellationToken ct = default)
+    {
+        var resp = await http.DeleteAsync($"/admin/notifications/templates/{id}", ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<JsonDocument?> GetNotificationHistoryAsync(string? channelKey, string? status, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var qs = $"page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(channelKey)) qs += $"&channelKey={channelKey}";
+        if (!string.IsNullOrWhiteSpace(status)) qs += $"&status={status}";
+        var resp = await http.GetAsync($"/admin/notifications/history?{qs}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    // ── Anti-Cheat ─────────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> ListAnticheatFlagsAsync(bool unreviewedOnly = true, string? severity = null, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var qs = $"page={page}&pageSize={pageSize}&unreviewedOnly={unreviewedOnly}";
+        if (!string.IsNullOrWhiteSpace(severity)) qs += $"&severity={severity}";
+        var resp = await http.GetAsync($"/admin/anti-cheat/flags?{qs}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> ReviewAnticheatFlagAsync(Guid id, string reviewedBy, string note, CancellationToken ct = default)
+    {
+        var body = JsonContent.Create(new { reviewedBy, note });
+        var resp = await http.PutAsync($"/admin/anti-cheat/flags/{id}/review", body, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<JsonDocument?> GetAnticheatSummaryAsync(int windowHours = 24, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/admin/anti-cheat/analytics/summary?windowHours={windowHours}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<JsonDocument?> ListPartyFlagsAsync(bool unreviewedOnly = true, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/admin/anti-cheat/party/flags?page={page}&pageSize={pageSize}&unreviewedOnly={unreviewedOnly}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> ReviewPartyFlagAsync(Guid id, string reviewedBy, string note, CancellationToken ct = default)
+    {
+        var body = JsonContent.Create(new { reviewedBy, note });
+        var resp = await http.PutAsync($"/admin/anti-cheat/party/flags/{id}/review", body, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    // ── Moderation (enhanced) ──────────────────────────────────────────────
+
+    public async Task<JsonDocument?> GetModerationProfileAsync(Guid playerId, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/admin/moderation/profile/{playerId}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> SetModerationStatusAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/moderation/set-status", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<JsonDocument?> GetModerationLogsAsync(Guid? playerId, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var qs = $"page={page}&pageSize={pageSize}";
+        if (playerId.HasValue) qs += $"&playerId={playerId.Value}";
+        var resp = await http.GetAsync($"/admin/moderation/logs?{qs}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    // ── Economy (enhanced) ─────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> GetPlayerEconomyHistoryAsync(Guid playerId, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/admin/economy/history/{playerId}?page={page}&pageSize={pageSize}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> CreateTransactionAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/economy/transactions", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    // ── Security Audit ─────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> GetSecurityAuditAsync(DateTimeOffset? from, DateTimeOffset? to, string? status, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var qs = $"page={page}&pageSize={pageSize}";
+        if (from.HasValue) qs += $"&from={Uri.EscapeDataString(from.Value.ToString("o"))}";
+        if (to.HasValue) qs += $"&to={Uri.EscapeDataString(to.Value.ToString("o"))}";
+        if (!string.IsNullOrWhiteSpace(status)) qs += $"&status={status}";
+        var resp = await http.GetAsync($"/admin/audit/security?{qs}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    // ── Matches ────────────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> ListMatchesAsync(int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/admin/matches?page={page}&pageSize={pageSize}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    // ── Season Rewards ─────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> GetRewardClaimsAsync(Guid? seasonId, Guid? playerId, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var qs = $"page={page}&pageSize={pageSize}";
+        if (seasonId.HasValue) qs += $"&seasonId={seasonId.Value}";
+        if (playerId.HasValue) qs += $"&playerId={playerId.Value}";
+        var resp = await http.GetAsync($"/admin/seasons/rewards/claims?{qs}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> ForceRecomputeAsync(Guid seasonId, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync($"/admin/seasons/rewards/recompute/{seasonId}", null, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
     // ── Token attachment ───────────────────────────────────────────────────
 
     public void SetToken(string accessToken)
