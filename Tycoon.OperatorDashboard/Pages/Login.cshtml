@@ -1,0 +1,29 @@
+@page
+@model Tycoon.OperatorDashboard.Pages.LoginModel
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Operator Login — Tycoon</title>
+    <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body class="login-page">
+    <div class="login-box">
+        <h1>Tycoon Ops</h1>
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <label>Email
+                <input type="email" name="Email" value="@Model.Email" autofocus required />
+            </label>
+            <label>Password
+                <input type="password" name="Password" required />
+            </label>
+            @if (!string.IsNullOrEmpty(Model.Error))
+            {
+                <p class="error">@Model.Error</p>
+            }
+            <button type="submit">Sign in</button>
+        </form>
+    </div>
+</body>
+</html>

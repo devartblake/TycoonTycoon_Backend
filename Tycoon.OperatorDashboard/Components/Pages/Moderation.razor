@@ -1,0 +1,60 @@
+@page "/moderation"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Moderation Escalations</h1>
+
+<div class="filters">
+    <select @bind="_statusFilter">
+        <option value="">All</option>
+        <option value="Open">Open</option>
+        <option value="Resolved">Resolved</option>
+    </select>
+    <button @onclick="LoadAsync">Refresh</button>
+</div>
+
+@if (_doc is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>ID</th><th>Type</th><th>Status</th><th>Reporter</th><th>Created</th></tr></thead>
+        <tbody>
+            @foreach (var el in _doc.RootElement.GetProperty("items").EnumerateArray())
+            {
+                var id      = el.TryGetProperty("id", out var i) ? i.GetString() ?? "—" : "—";
+                var type    = el.TryGetProperty("type", out var t) ? t.GetString() ?? "—" : "—";
+                var status  = el.TryGetProperty("status", out var s) ? s.GetString() ?? "—" : "—";
+                var reporter = el.TryGetProperty("reporterPlayerId", out var r) ? r.GetString() ?? "—" : "—";
+                var created = el.TryGetProperty("createdAtUtc", out var c) ? c.GetString() ?? "—" : "—";
+                <tr>
+                    <td><code>@id[..Math.Min(8, id.Length)]…</code></td>
+                    <td>@type</td>
+                    <td>@status</td>
+                    <td><code>@reporter[..Math.Min(8, reporter.Length)]…</code></td>
+                    <td>@created</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private JsonDocument? _doc;
+    private string _statusFilter = "Open";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _doc = await Api.ListEscalationsAsync(string.IsNullOrEmpty(_statusFilter) ? null : _statusFilter);
+    }
+}

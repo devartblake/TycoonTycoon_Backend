@@ -9,6 +9,7 @@
   <Folder Name="/Hosting/">
     <Project Path="Tycoon.AppHost/Tycoon.AppHost.csproj" />
     <Project Path="Tycoon.Hosting.Elasticsearch/Tycoon.Hosting.Elasticsearch.csproj" />
+    <Project Path="Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj" />
   </Folder>
   <Folder Name="/Shared/">
     <Project Path="Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj" />

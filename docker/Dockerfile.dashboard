@@ -1,0 +1,26 @@
+ARG BUILD_CONFIGURATION=Release
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY ["Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj", "Tycoon.OperatorDashboard/"]
+COPY ["Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj", "Tycoon.ServiceDefaults/"]
+COPY ["Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj", "Tycoon.Shared.Contracts/"]
+COPY ["Tycoon.Shared/Tycoon.Shared.csproj", "Tycoon.Shared/"]
+
+RUN dotnet restore "Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj"
+
+COPY . .
+
+RUN dotnet build "Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj" \
+    -c "${BUILD_CONFIGURATION}" -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj" \
+    -c "${BUILD_CONFIGURATION}" -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+EXPOSE 8200
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Tycoon.OperatorDashboard.dll"]

@@ -4,6 +4,33 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-17] Operator Dashboard + FastAPI Sidecar
+
+Adds two new services to the solution:
+
+### `Tycoon.OperatorDashboard` — Blazor Server operator control panel
+- Browser UI for the ops team — no more Swagger/Postman for day-to-day operations
+- **Pages:** Dashboard, Seasons (activate/close), Game Events (open/close), Feature Flags (toggle on/off), Users (ban/unban), Moderation (escalation list), Economy (overview)
+- Authenticates against `/admin/auth/login`; JWT stored server-side (`TokenStore`) — never sent to the browser
+- Typed `AdminApiClient` wraps all admin REST endpoints; attaches `Authorization: Bearer` + `X-Admin-Ops-Key` header
+- Registered in `Tycoon.AppHost` with Aspire service discovery (`WithReference(api)`)
+- Docker: `docker/Dockerfile.dashboard`, exposed on port `8200`
+
+### `Tycoon.Sidecar` — FastAPI Python service
+- `/ml` — match quality scoring, churn risk prediction, question difficulty estimation
+- `/analytics` — season KPIs, event funnel, D1/D7/D30 retention (wire up Motor/Elasticsearch)
+- `/webhooks` — Stripe payments, generic signed webhooks, push notification proxy
+- `/utilities` — season snapshot to MongoDB, bulk question import, backend health probe
+- Registered in `Tycoon.AppHost` via `AddExecutable("tycoon-sidecar", "uvicorn", ...)` on port `8100`
+- Docker: `docker/Dockerfile.sidecar`, exposed on port `8100`
+
+### Infrastructure changes
+- `Tycoon.AppHost/Program.cs` — registers `tycoon-dashboard` and `tycoon-sidecar`
+- `docker/compose.yml` — adds `sidecar` and `operator-dashboard` services
+- `TycoonTycoon_Backend.slnx` — `Tycoon.OperatorDashboard` added under `/Hosting/`
+
+---
+
 ## [2026-03-16] Feature Flag Activation Controls (Part A)
 
 Adds runtime on/off toggles for the three game modes (Game Events, Guardians, Territory) without requiring Hangfire dashboard access or redeployment.

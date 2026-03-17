@@ -1,0 +1,76 @@
+@page "/seasons"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+
+<h1>Seasons</h1>
+
+@if (_seasons is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Start</th><th>End</th><th>Actions</th></tr></thead>
+        <tbody>
+            @foreach (var s in _seasons.Items)
+            {
+                <tr>
+                    <td><code>@s.Id.ToString()[..8]…</code></td>
+                    <td>@s.Name</td>
+                    <td>@s.Status</td>
+                    <td>@s.StartsAt.ToString("yyyy-MM-dd")</td>
+                    <td>@(s.EndsAt?.ToString("yyyy-MM-dd") ?? "—")</td>
+                    <td>
+                        @if (s.Status == "Draft" || s.Status == "Inactive")
+                        {
+                            <button @onclick="() => ActivateAsync(s.Id)">Activate</button>
+                        }
+                        @if (s.Status == "Active")
+                        {
+                            <button class="danger" @onclick="() => CloseAsync(s.Id)">Close</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <p class="message">@_message</p>
+    }
+}
+
+@code {
+    private Services.PagedResult<Tycoon.Shared.Contracts.Dtos.SeasonDto>? _seasons;
+    private string _message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _seasons = await Api.ListSeasonsAsync();
+    }
+
+    private async Task ActivateAsync(Guid id)
+    {
+        _message = string.Empty;
+        var res = await Api.ActivateSeasonAsync(id);
+        _message = res is not null ? "Season activated." : "Activation failed.";
+        await LoadAsync();
+    }
+
+    private async Task CloseAsync(Guid id)
+    {
+        _message = string.Empty;
+        var ok = await Api.CloseSeasonAsync(id);
+        _message = ok ? "Season closed." : "Close failed.";
+        await LoadAsync();
+    }
+}

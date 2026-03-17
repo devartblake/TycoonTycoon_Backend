@@ -1,0 +1,40 @@
+@page "/"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+
+<h1>Dashboard</h1>
+
+@if (_config is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <section class="card">
+        <h2>Feature Flags</h2>
+        <table>
+            <thead><tr><th>Flag</th><th>State</th></tr></thead>
+            <tbody>
+                @foreach (var (key, val) in _config.FeatureFlags)
+                {
+                    <tr>
+                        <td>@key</td>
+                        <td><span class="badge @(val ? "on" : "off")">@(val ? "ON" : "OFF")</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <a href="/flags">Manage flags →</a>
+    </section>
+}
+
+@code {
+    private Tycoon.Shared.Contracts.Dtos.AdminAppConfigDto? _config;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        _config = await Api.GetConfigAsync();
+    }
+}

@@ -1,0 +1,26 @@
+@page "/economy"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Economy</h1>
+
+@if (_doc is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <pre>@_doc.RootElement.GetRawText()</pre>
+}
+
+@code {
+    private JsonDocument? _doc;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        _doc = await Api.GetEconomyOverviewAsync();
+    }
+}

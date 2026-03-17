@@ -1,0 +1,23 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+
+<div class="layout">
+    <nav class="sidebar">
+        <div class="brand">Tycoon Ops</div>
+        <ul>
+            <li><a href="/">Dashboard</a></li>
+            <li><a href="/seasons">Seasons</a></li>
+            <li><a href="/events">Game Events</a></li>
+            <li><a href="/flags">Feature Flags</a></li>
+            <li><a href="/users">Users</a></li>
+            <li><a href="/moderation">Moderation</a></li>
+            <li><a href="/economy">Economy</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/logout">Sign out</a>
+        </div>
+    </nav>
+    <main class="content">
+        @Body
+    </main>
+</div>
