@@ -9,6 +9,7 @@ body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #1a1a1a; 
 .sidebar ul { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
 .sidebar ul a { display: block; padding: 0.5rem 0.75rem; border-radius: 6px; color: #94a3b8; text-decoration: none; }
 .sidebar ul a:hover { background: #334155; color: #fff; }
+.sidebar ul a.active { background: #334155; color: #fff; font-weight: 600; }
 .nav-group { padding: 0.75rem 0.75rem 0.2rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; pointer-events: none; }
 .sidebar-footer a { color: #64748b; font-size: 0.875rem; }
 .content { flex: 1; padding: 2rem; overflow-y: auto; }
@@ -38,7 +39,8 @@ button.danger:hover { background: #dc2626; }
 .filters input, .filters select { padding: 0.4rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem; }
 
 /* Messages */
-.message { margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: #f0fdf4; border-left: 3px solid #22c55e; font-size: 0.875rem; }
+.message { margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: #f0fdf4; border-left: 3px solid #22c55e; font-size: 0.875rem; animation: fadeOut 4s forwards; }
+@keyframes fadeOut { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 
 /* Login */
 .login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #0f172a; }

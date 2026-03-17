@@ -36,7 +36,16 @@
                             }
                             @if (s.Status == "Active")
                             {
-                                <button class="danger" @onclick="() => CloseAsync(s.Id)" style="margin-left:.4rem">Close</button>
+                                @if (_confirmCloseId == s.Id)
+                                {
+                                    <span style="font-size:.8rem;color:#dc2626;margin-right:.4rem">Close season?</span>
+                                    <button class="danger" @onclick="() => ConfirmCloseAsync(s.Id)">Yes, close</button>
+                                    <button @onclick="() => _confirmCloseId = null" style="margin-left:.25rem;background:#94a3b8">Cancel</button>
+                                }
+                                else
+                                {
+                                    <button class="danger" @onclick="() => _confirmCloseId = s.Id" style="margin-left:.4rem">Close</button>
+                                }
                                 <button @onclick="() => RecomputeAsync(s.Id)" style="margin-left:.4rem;background:#7c3aed">Recompute Tiers</button>
                             }
                         </td>
@@ -89,6 +98,7 @@
     private JsonDocument? _claims;
     private string _message = string.Empty;
     private string _rewardSeasonId = string.Empty, _rewardPlayerId = string.Empty;
+    private Guid? _confirmCloseId;
 
     protected override async Task OnInitializedAsync() { Auth.TryAttachToken(); await LoadAsync(); }
 
@@ -108,8 +118,9 @@
         await LoadAsync();
     }
 
-    private async Task CloseAsync(Guid id)
+    private async Task ConfirmCloseAsync(Guid id)
     {
+        _confirmCloseId = null;
         _message = string.Empty;
         var ok = await Api.CloseSeasonAsync(id);
         _message = ok ? "Season closed." : "Close failed.";

@@ -4,6 +4,75 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-17] Operator Dashboard — Full Feature Expansion
+
+Expanded `Tycoon.OperatorDashboard` from 7 foundation pages to a complete ops control panel with 12 pages, 46 AdminApiClient methods, and grouped navigation.
+
+### New Pages
+
+#### `Questions.razor`
+- Full question bank management: list with search + category filter, paginated results
+- Create/edit question form (body, option A–D, correct answer, category, difficulty)
+- Delete individual questions, bulk JSON import via textarea paste
+- `AdminApiClient`: `ListQuestionsAsync`, `CreateQuestionAsync`, `UpdateQuestionAsync`, `DeleteQuestionAsync`, `BulkImportQuestionsAsync`
+
+#### `Notifications.razor`
+- Tabbed interface: **Send**, **Scheduled**, **Dead-Letter Queue**, **Templates**, **History**
+- Send immediate notification to any channel with title/body/metadata JSON
+- Schedule future notifications with ISO-8601 send-at time, cancel scheduled items
+- Replay failed dead-letter deliveries
+- Template CRUD (create with key/title/body, delete)
+- History search by channel key and delivery status
+- `AdminApiClient`: `ListChannelsAsync`, `SendNotificationAsync`, `ScheduleNotificationAsync`, `ListScheduledAsync`, `CancelScheduledAsync`, `GetDeadLetterAsync`, `ReplayDeadLetterAsync`, `ListTemplatesAsync`, `CreateTemplateAsync`, `DeleteTemplateAsync`, `GetNotificationHistoryAsync`
+
+#### `AntiCheat.razor`
+- Tabbed interface: **Player Flags**, **Party Flags**, **Analytics**
+- Review queue with severity filter; reviewer name + note fields; mark flags reviewed
+- Party exploit flags with same review workflow
+- Analytics summary for configurable window (6 / 12 / 24 / 48 h)
+- `AdminApiClient`: `ListAnticheatFlagsAsync`, `ReviewAnticheatFlagAsync`, `GetAnticheatSummaryAsync`, `ListPartyFlagsAsync`, `ReviewPartyFlagAsync`
+
+#### `AuditLog.razor`
+- Security audit log with date-range + status filters
+- Paginated results: timestamp, admin, action, IP, status
+- `AdminApiClient`: `GetSecurityAuditAsync`
+
+#### `Matches.razor`
+- Paginated list of recent matches: ID, mode, host, status, player count, timestamps
+- `AdminApiClient`: `ListMatchesAsync`
+
+### Enhanced Pages
+
+#### `Moderation.razor` — expanded
+- Added **Player Profile** tab: look up by UUID, display current status/reason/expiry
+- Added **Set Status** form: Mute / Warning / Suspended / Banned + reason + notes + optional expiry timestamp
+- Added **Action Logs** tab: search historical moderation actions by player ID
+- `AdminApiClient`: `GetModerationProfileAsync`, `SetModerationStatusAsync`, `GetModerationLogsAsync`
+
+#### `Economy.razor` — expanded
+- Added **Player Wallet** tab: look up wallet balances by player ID
+- Added **Grant** tab: grant coins / XP / premium currency to any player
+- Added **Transaction History** tab: paginated ledger lookup by player ID
+- `AdminApiClient`: `GetPlayerEconomyHistoryAsync`, `CreateTransactionAsync`
+
+#### `Seasons.razor` — expanded
+- Added **Reward Claims** tab: search reward claims by season ID and/or player ID
+- Added **Recompute Tiers** button on active seasons (purple accent)
+- `AdminApiClient`: `GetRewardClaimsAsync`, `ForceRecomputeAsync`
+
+### Navigation Overhaul (`MainLayout.razor`)
+Grouped sidebar navigation with four sections:
+- **Content** — Questions, Notifications
+- **Operations** — Seasons, Game Events, Feature Flags
+- **Players** — Users, Moderation, Economy, Anti-Cheat
+- **Audit** — Matches, Security Log
+
+### AdminApiClient Completion
+All 46 typed methods now implemented. Full coverage of every admin API domain:
+Auth (2), Config (2), Seasons (3+2 rewards), Event Queue (3), Users (3), Moderation (4), Economy (3), Questions (5), Notifications (11), Anti-Cheat (5), Matches (1), Security Audit (1).
+
+---
+
 ## [2026-03-17] Operator Dashboard + FastAPI Sidecar
 
 Adds two new services to the solution:
@@ -283,5 +352,5 @@ MINIO_CONSOLE_PORT (default 9001)
 
 ## Pending
 
-- EF migration for the `votes` table
-- MinIO service needs to be added to the `docker-compose.yml` or Aspire AppHost if using Aspire orchestration
+- EF migration for the `votes` table (schema ready; run `dotnet ef migrations add AddVotes --startup-project ../Tycoon.Backend.Api`)
+- Operator Dashboard Priority 4 pages: Media upload, Powerups, Skills seeding (planned)

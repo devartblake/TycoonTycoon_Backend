@@ -35,7 +35,16 @@ else
                     <td>
                         @if (!banned)
                         {
-                            <button class="danger" @onclick="() => BanAsync(userId)">Ban</button>
+                            @if (_confirmBanId == userId)
+                            {
+                                <span style="font-size:.8rem;color:#dc2626;margin-right:.4rem">Ban user?</span>
+                                <button class="danger" @onclick="() => ConfirmBanAsync(userId)">Yes, ban</button>
+                                <button @onclick="() => _confirmBanId = null" style="margin-left:.25rem;background:#94a3b8">Cancel</button>
+                            }
+                            else
+                            {
+                                <button class="danger" @onclick="() => _confirmBanId = userId">Ban</button>
+                            }
                         }
                         else
                         {
@@ -58,6 +67,7 @@ else
     private string _query = string.Empty;
     private bool _bannedOnly;
     private string _message = string.Empty;
+    private string? _confirmBanId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,8 +80,9 @@ else
         _doc = await Api.ListUsersAsync(_query, _bannedOnly ? true : null);
     }
 
-    private async Task BanAsync(string userId)
+    private async Task ConfirmBanAsync(string userId)
     {
+        _confirmBanId = null;
         _message = string.Empty;
         var ok = await Api.BanUserAsync(userId, "Banned via operator dashboard");
         _message = ok ? "User banned." : "Ban failed.";

@@ -84,7 +84,18 @@
         <label>Reason<input @bind="_setReason" /></label>
         <label>Notes<input @bind="_setNotes" /></label>
         <label>Expires at (optional)<input type="datetime-local" @bind="_setExpiry" /></label>
-        <button @onclick="SetStatusAsync" style="margin-top:.5rem">Apply</button>
+        @if (_confirmSetStatus)
+        {
+            <div style="margin-top:.5rem;padding:.6rem;background:#fef2f2;border-radius:6px;font-size:.875rem;color:#991b1b">
+                Set status to <strong>@_setStatus</strong> for this player?
+                <button class="danger" @onclick="ConfirmSetStatusAsync" style="margin-left:.75rem">Yes, apply</button>
+                <button @onclick="() => _confirmSetStatus = false" style="margin-left:.25rem;background:#94a3b8">Cancel</button>
+            </div>
+        }
+        else
+        {
+            <button @onclick="RequestSetStatusAsync" style="margin-top:.5rem">Apply</button>
+        }
         @if (!string.IsNullOrEmpty(_profileMsg)) { <p class="message">@_profileMsg</p> }
     </div>
 }
@@ -133,6 +144,7 @@
     private string _setStatus = "Active", _setReason = string.Empty, _setNotes = string.Empty;
     private DateTime? _setExpiry;
     private string _profileMsg = string.Empty;
+    private bool _confirmSetStatus;
 
     // logs
     private string _logPlayerId = string.Empty;
@@ -159,6 +171,23 @@
         if (!Guid.TryParse(_lookupId, out var id)) { _profileMsg = "Invalid player ID."; return; }
         _profile = await Api.GetModerationProfileAsync(id);
         if (_profile is null) _profileMsg = "Player not found.";
+    }
+
+    private void RequestSetStatusAsync()
+    {
+        _profileMsg = string.Empty;
+        if (!Guid.TryParse(_lookupId, out _)) { _profileMsg = "Look up a player first."; return; }
+        // Require confirmation for destructive statuses
+        if (_setStatus is "Suspended" or "Banned")
+            _confirmSetStatus = true;
+        else
+            _ = SetStatusAsync();
+    }
+
+    private async Task ConfirmSetStatusAsync()
+    {
+        _confirmSetStatus = false;
+        await SetStatusAsync();
     }
 
     private async Task SetStatusAsync()

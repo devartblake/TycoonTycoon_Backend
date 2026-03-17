@@ -372,6 +372,50 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         return resp.IsSuccessStatusCode;
     }
 
+    // ── Media ──────────────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> GetMediaIntentAsync(CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync("/admin/media/intent", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<JsonDocument?> UploadMediaAsync(string assetKey, Stream content, string contentType, CancellationToken ct = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var streamContent = new StreamContent(content);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        form.Add(streamContent, "file", assetKey);
+        var resp = await http.PostAsync($"/admin/media/upload/{Uri.EscapeDataString(assetKey)}", form, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    // ── Powerups ───────────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> GetPlayerPowerupsAsync(Guid playerId, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/admin/players/{playerId}/powerups", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> GrantPowerupAsync(Guid playerId, object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync($"/admin/players/{playerId}/powerups", JsonContent.Create(body), ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    // ── Skills ─────────────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> SeedSkillsAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/skills/seed", JsonContent.Create(body), ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
     // ── Token attachment ───────────────────────────────────────────────────
 
     public void SetToken(string accessToken)
