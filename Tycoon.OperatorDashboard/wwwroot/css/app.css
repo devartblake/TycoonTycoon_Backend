@@ -619,3 +619,104 @@ code {
     .login-brand { display: none; }
     .login-form-panel { padding: 2rem 1.25rem; }
 }
+
+/* ════════════════════════════════════════════════════════
+   KPI CARDS
+   ════════════════════════════════════════════════════════ */
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+@media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .kpi-grid { grid-template-columns: 1fr; } }
+
+.kpi-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 1.25rem 1.25rem 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    border: 1px solid transparent;
+    transition: box-shadow 0.15s;
+}
+
+.kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+.kpi-card-alert {
+    border-color: #fca5a5;
+    background: #fff5f5;
+}
+
+.kpi-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.kpi-icon-blue   { background: #eff6ff; color: #3b82f6; }
+.kpi-icon-purple { background: #f5f3ff; color: #7c3aed; }
+.kpi-icon-amber  { background: #fffbeb; color: #d97706; }
+.kpi-icon-red    { background: #fef2f2; color: #ef4444; }
+.kpi-icon-green  { background: #f0fdf4; color: #22c55e; }
+
+.kpi-body { flex: 1; min-width: 0; }
+
+.kpi-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.3rem;
+}
+
+.kpi-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 0.3rem;
+}
+
+.kpi-value-sm    { font-size: 1.2rem; letter-spacing: -0.01em; }
+.kpi-value-muted { color: #94a3b8; }
+.kpi-value-alert { color: #ef4444; }
+
+.kpi-sub {
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+.kpi-sub a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.kpi-sub a:hover { text-decoration: underline; }
+
+.kpi-skeleton {
+    height: 2rem;
+    width: 60%;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    animation: shimmer 1.4s infinite;
+    margin-bottom: 0.3rem;
+}
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}

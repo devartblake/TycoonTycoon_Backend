@@ -15,7 +15,8 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     // ── Auth ──────────────────────────────────────────────────────────────
