@@ -5,6 +5,16 @@
 
 <h1>Economy</h1>
 
+@if (_authFailed)
+{
+    <div class="auth-alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Session expired.</strong> <a href="/login">Sign in again</a> to continue.</span>
+    </div>
+}
+else
+{
+
 <div class="tabs">
     @foreach (var tab in new[] { "Player Wallet", "Grant Currency", "Transaction History" })
     {
@@ -84,8 +94,11 @@
     }
 }
 
+} @* close auth-failed else *@
+
 @code {
     private string _tab = "Player Wallet";
+    private bool _authFailed;
     private string _playerId = string.Empty;
     private JsonDocument? _history;
 
@@ -93,7 +106,10 @@
     private long _grantAmount = 100;
     private string _grantReason = string.Empty, _grantMsg = string.Empty;
 
-    protected override async Task OnInitializedAsync() => await Auth.TryAttachTokenAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; }
+    }
 
     private async Task LookupAsync()
     {

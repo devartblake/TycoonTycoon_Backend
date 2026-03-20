@@ -5,6 +5,16 @@
 
 <h1>Anti-Cheat</h1>
 
+@if (_authFailed)
+{
+    <div class="auth-alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Session expired.</strong> <a href="/login">Sign in again</a> to continue.</span>
+    </div>
+}
+else
+{
+
 <div class="tabs">
     @foreach (var tab in new[] { "Flags", "Analytics", "Party Flags" })
     {
@@ -161,8 +171,11 @@
     </table>
 }
 
+} @* close auth-failed else *@
+
 @code {
     private string _tab = "Flags";
+    private bool _authFailed;
     private JsonDocument? _flags, _summary, _partyFlags;
 
     private string _severity = string.Empty;
@@ -179,7 +192,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Auth.TryAttachTokenAsync();
+        if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; return; }
         await LoadFlagsAsync();
     }
 

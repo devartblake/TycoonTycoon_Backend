@@ -3,9 +3,33 @@
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
 
-<h1>Dashboard</h1>
+<h1>
+    Dashboard
+    @if (_apiConnected == true)
+    {
+        <span class="api-status connected"><span class="dot"></span> API Connected</span>
+    }
+    else if (_apiConnected == false)
+    {
+        <span class="api-status unreachable"><span class="dot"></span> API Unreachable</span>
+    }
+</h1>
 
-@if (_config is null)
+@if (_authFailed)
+{
+    <div class="auth-alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Session expired.</strong> <a href="/login">Sign in again</a> to continue.</span>
+    </div>
+}
+else if (_apiConnected == false)
+{
+    <div class="api-banner">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>API unreachable.</strong> Verify the <code>tycoon-api</code> container is running and healthy, then refresh this page.</span>
+    </div>
+}
+else if (_config is null)
 {
     <p>Loading...</p>
 }
@@ -19,22 +43,25 @@ else
                 @foreach (var (key, val) in _config.FeatureFlags)
                 {
                     <tr>
-                        <td>@key</td>
+                        <td><code>@key</code></td>
                         <td><span class="badge @(val ? "on" : "off")">@(val ? "ON" : "OFF")</span></td>
                     </tr>
                 }
             </tbody>
         </table>
-        <a href="/flags">Manage flags →</a>
+        <p style="margin-top:1rem;font-size:.875rem;color:#64748b"><a href="/flags">Manage feature flags →</a></p>
     </section>
 }
 
 @code {
     private Tycoon.Shared.Contracts.Dtos.AdminAppConfigDto? _config;
+    private bool _authFailed;
+    private bool? _apiConnected;
 
     protected override async Task OnInitializedAsync()
     {
-        await Auth.TryAttachTokenAsync();
+        if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; return; }
         _config = await Api.GetConfigAsync();
+        _apiConnected = _config is not null;
     }
 }

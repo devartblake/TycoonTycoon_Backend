@@ -5,7 +5,14 @@
 
 <h1>Matches</h1>
 
-@if (_doc is null) { <p>Loading...</p> }
+@if (_authFailed)
+{
+    <div class="auth-alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Session expired.</strong> <a href="/login">Sign in again</a> to continue.</span>
+    </div>
+}
+else if (_doc is null) { <p>Loading...</p> }
 else if (_doc.RootElement.TryGetProperty("items", out var items))
 {
     <table>
@@ -40,9 +47,14 @@ else if (_doc.RootElement.TryGetProperty("items", out var items))
 
 @code {
     private JsonDocument? _doc;
+    private bool _authFailed;
     private int _page = 1;
 
-    protected override async Task OnInitializedAsync() { await Auth.TryAttachTokenAsync(); await LoadAsync(); }
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; return; }
+        await LoadAsync();
+    }
     private async Task LoadAsync() => _doc = await Api.ListMatchesAsync(_page);
     private async Task PrevPage() { if (_page > 1) { _page--; await LoadAsync(); } }
     private async Task NextPage() { _page++; await LoadAsync(); }
