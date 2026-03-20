@@ -29,10 +29,13 @@ else
     <input @bind="_query" placeholder="Search text..." />
     <input @bind="_category" placeholder="Category..." />
     <button @onclick="LoadAsync">Search</button>
-    <button @onclick="() => _showCreate = !_showCreate">+ New Question</button>
-    @if (_selectedIds.Count > 0)
+    @if (CanWrite)
     {
-        <button class="danger" @onclick="BulkDeleteSelectedAsync">Delete Selected (@_selectedIds.Count)</button>
+        <button @onclick="() => _showCreate = !_showCreate">+ New Question</button>
+        @if (_selectedIds.Count > 0)
+        {
+            <button class="danger" @onclick="BulkDeleteSelectedAsync">Delete Selected (@_selectedIds.Count)</button>
+        }
     }
 </div>
 
@@ -97,8 +100,11 @@ else
                     <td><span class="badge @DiffClass(diff)">@diff</span></td>
                     <td><small>@tags</small></td>
                     <td style="white-space:nowrap">
-                        <button @onclick="() => StartEdit(id, el)">Edit</button>
-                        <button class="danger" @onclick="() => DeleteAsync(id)">Delete</button>
+                        @if (CanWrite)
+                        {
+                            <button @onclick="() => StartEdit(id, el)">Edit</button>
+                            <button class="danger" @onclick="() => DeleteAsync(id)">Delete</button>
+                        }
                     </td>
                 </tr>
                 @if (_editingId == id)
@@ -193,6 +199,9 @@ else
 } @* close auth-failed else *@
 
 @code {
+    [CascadingParameter(Name = "Perms")] private HashSet<string> Perms { get; set; } = [];
+    private bool CanWrite => Perms.Contains("questions:write");
+
     private string _tab = "Questions";
     private JsonDocument? _questions;
     private string _query = string.Empty, _category = string.Empty;

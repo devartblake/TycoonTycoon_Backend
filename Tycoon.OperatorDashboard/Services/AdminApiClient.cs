@@ -21,12 +21,12 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     // ── Auth ──────────────────────────────────────────────────────────────
 
-    public async Task<AdminLoginResult?> LoginAsync(string email, string password, CancellationToken ct = default)
+    public async Task<AdminLoginResponse?> LoginAsync(string email, string password, CancellationToken ct = default)
     {
         var body = JsonContent.Create(new { email, password });
         var resp = await http.PostAsync("/admin/auth/login", body, ct);
         if (!resp.IsSuccessStatusCode) return null;
-        return await resp.Content.ReadFromJsonAsync<AdminLoginResult>(Json, ct);
+        return await resp.Content.ReadFromJsonAsync<AdminLoginResponse>(Json, ct);
     }
 
     public async Task<AdminRefreshResult?> RefreshAsync(string refreshToken, CancellationToken ct = default)
@@ -443,12 +443,6 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 }
 
 // ── Local response types ──────────────────────────────────────────────────────
-
-public sealed record AdminLoginResult(
-    string AccessToken,
-    string RefreshToken,
-    int ExpiresIn,
-    string TokenType);
 
 public sealed record AdminRefreshResult(
     string AccessToken,

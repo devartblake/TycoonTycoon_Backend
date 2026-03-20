@@ -93,17 +93,24 @@ else
         <label>Reason<input @bind="_setReason" /></label>
         <label>Notes<input @bind="_setNotes" /></label>
         <label>Expires at (optional)<input type="datetime-local" @bind="_setExpiry" /></label>
-        @if (_confirmSetStatus)
+        @if (CanWrite)
         {
-            <div style="margin-top:.5rem;padding:.6rem;background:#fef2f2;border-radius:6px;font-size:.875rem;color:#991b1b">
-                Set status to <strong>@_setStatus</strong> for this player?
-                <button class="danger" @onclick="ConfirmSetStatusAsync" style="margin-left:.75rem">Yes, apply</button>
-                <button @onclick="() => _confirmSetStatus = false" style="margin-left:.25rem;background:#94a3b8">Cancel</button>
-            </div>
+            @if (_confirmSetStatus)
+            {
+                <div style="margin-top:.5rem;padding:.6rem;background:#fef2f2;border-radius:6px;font-size:.875rem;color:#991b1b">
+                    Set status to <strong>@_setStatus</strong> for this player?
+                    <button class="danger" @onclick="ConfirmSetStatusAsync" style="margin-left:.75rem">Yes, apply</button>
+                    <button @onclick="() => _confirmSetStatus = false" style="margin-left:.25rem;background:#94a3b8">Cancel</button>
+                </div>
+            }
+            else
+            {
+                <button @onclick="RequestSetStatusAsync" style="margin-top:.5rem">Apply</button>
+            }
         }
         else
         {
-            <button @onclick="RequestSetStatusAsync" style="margin-top:.5rem">Apply</button>
+            <p style="font-size:.8rem;color:#94a3b8;margin-top:.5rem">Read-only — you do not have <code>users:write</code> permission.</p>
         }
         @if (!string.IsNullOrEmpty(_profileMsg)) { <p class="message">@_profileMsg</p> }
     </div>
@@ -145,6 +152,9 @@ else
 } @* close auth-failed else *@
 
 @code {
+    [CascadingParameter(Name = "Perms")] private HashSet<string> Perms { get; set; } = [];
+    private bool CanWrite => Perms.Contains("users:write");
+
     private string _tab = "Escalations";
     private bool _authFailed;
     private JsonDocument? _escalations, _profile, _logs;

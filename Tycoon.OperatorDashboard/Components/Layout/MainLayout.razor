@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
+@inject AuthenticationStateProvider AuthState
 @implements IAsyncDisposable
 
 <div class="layout">
@@ -81,7 +82,9 @@
         </div>
     </nav>
     <main class="content">
-        @Body
+        <CascadingValue Value="_permissions" Name="Perms">
+            @Body
+        </CascadingValue>
     </main>
 </div>
 
@@ -128,6 +131,9 @@
         return path.StartsWith(target, StringComparison.OrdinalIgnoreCase) ? "active" : "";
     }
 
+    // ── Permissions ───────────────────────────────────────────────────────────
+    private HashSet<string> _permissions = [];
+
     // ── Toast types ───────────────────────────────────────────────────────────
     private sealed record ToastEntry(Guid Id, string Title, string Type, DateTimeOffset When);
 
@@ -138,6 +144,12 @@
     // ── Lifecycle ─────────────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        _permissions = authState.User.Claims
+            .Where(c => c.Type == "permission")
+            .Select(c => c.Value)
+            .ToHashSet();
+
         if (!await Auth.TryAttachTokenAsync()) return;
         _cts = new CancellationTokenSource();
         _ = PollAuditAsync(_cts.Token);
