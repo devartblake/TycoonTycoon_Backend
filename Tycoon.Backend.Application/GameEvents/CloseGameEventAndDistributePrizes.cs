@@ -94,7 +94,7 @@ namespace Tycoon.Backend.Application.GameEvents
                     if (p.FinalRank == 1 && ev.Kind == "champion_battle")
                         coins += ev.JackpotPool;
 
-                    var stats = await eventStats.GetOrCreateAsync(activeSeason.Id, p.PlayerId, ct);
+                    var stats = await eventStats.GetOrCreateAsync(activeSeason.SeasonId, p.PlayerId, ct);
                     stats.EventsTop20++;
                     if (p.FinalRank == 1) stats.EventsWon++;
                     stats.TotalEventXpEarned += xp;

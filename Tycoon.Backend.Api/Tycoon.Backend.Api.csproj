@@ -35,6 +35,7 @@
     <ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
     <ProjectReference Include="..\Tycoon.Shared.Contracts\Tycoon.Shared.Contracts.csproj" />
     <ProjectReference Include="..\Tycoon.Shared.Observability\Tycoon.Shared.Observability.csproj" />
+    <ProjectReference Include="..\Tycoon.Shared\Tycoon.Shared.csproj" />
   </ItemGroup>
 
 </Project>

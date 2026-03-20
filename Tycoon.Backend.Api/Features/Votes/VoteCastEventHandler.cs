@@ -5,7 +5,7 @@ using Tycoon.Backend.Api.Realtime.Clients;
 using Tycoon.Backend.Domain.Events;
 using Tycoon.Shared.Contracts.Realtime.Votes;
 
-namespace Tycoon.Backend.Api.Features.Votes
+namespace Tycoon.Backend.Domain.Events
 {
     public sealed class VoteCastEventHandler(IHubContext<NotificationHub, INotificationClient> hub)
         : INotificationHandler<VoteCastEvent>

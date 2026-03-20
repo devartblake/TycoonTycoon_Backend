@@ -56,7 +56,7 @@ namespace Tycoon.Backend.Application.GameEvents
             var activeSeason = await seasonSvc.GetActiveAsync(ct);
             if (activeSeason is not null)
             {
-                var stats = await eventStats.GetOrCreateAsync(activeSeason.Id, r.PlayerId, ct);
+                var stats = await eventStats.GetOrCreateAsync(activeSeason.SeasonId, r.PlayerId, ct);
                 stats.EventsEntered++;
                 stats.UpdatedAtUtc = DateTimeOffset.UtcNow;
             }
