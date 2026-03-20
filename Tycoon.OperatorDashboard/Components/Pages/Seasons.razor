@@ -99,7 +99,7 @@
     private string _rewardSeasonId = string.Empty, _rewardPlayerId = string.Empty;
     private Guid? _confirmCloseId;
 
-    protected override async Task OnInitializedAsync() { Auth.TryAttachToken(); await LoadAsync(); }
+    protected override async Task OnInitializedAsync() { await Auth.TryAttachTokenAsync(); await LoadAsync(); }
 
     private async Task SwitchTab(string tab)
     {

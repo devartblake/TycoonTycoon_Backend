@@ -63,7 +63,7 @@
     private JsonDocument? _intent;
     private string _intentJson = string.Empty;
 
-    protected override void OnInitialized() => Auth.TryAttachToken();
+    protected override async Task OnInitializedAsync() => await Auth.TryAttachTokenAsync();
 
     private void OnFileChanged(InputFileChangeEventArgs e)
     {

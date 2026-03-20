@@ -103,7 +103,7 @@
     private string _grantMsg = string.Empty;
     private bool _grantError;
 
-    protected override void OnInitialized() => Auth.TryAttachToken();
+    protected override async Task OnInitializedAsync() => await Auth.TryAttachTokenAsync();
 
     private async Task LookupAsync()
     {

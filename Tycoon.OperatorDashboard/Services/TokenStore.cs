@@ -18,7 +18,15 @@ public sealed class TokenStore
     public TokenEntry? Get(string userId)
     {
         lock (_lock)
-            return _tokens.GetValueOrDefault(userId);
+        {
+            if (!_tokens.TryGetValue(userId, out var entry)) return null;
+            if (entry.ExpiresAt <= DateTimeOffset.UtcNow)
+            {
+                _tokens.Remove(userId);
+                return null;
+            }
+            return entry;
+        }
     }
 
     public void Remove(string userId)

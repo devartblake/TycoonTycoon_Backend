@@ -58,7 +58,7 @@ else if (_doc.RootElement.TryGetProperty("items", out var items))
     private string _status = string.Empty;
     private int _page = 1;
 
-    protected override async Task OnInitializedAsync() { Auth.TryAttachToken(); await LoadAsync(); }
+    protected override async Task OnInitializedAsync() { await Auth.TryAttachTokenAsync(); await LoadAsync(); }
 
     private async Task LoadAsync()
     {

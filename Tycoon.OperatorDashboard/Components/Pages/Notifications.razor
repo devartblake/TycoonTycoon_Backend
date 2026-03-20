@@ -178,7 +178,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Auth.TryAttachToken();
+        await Auth.TryAttachTokenAsync();
         _channels = await Api.ListChannelsAsync();
     }
 

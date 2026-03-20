@@ -93,7 +93,7 @@
     private long _grantAmount = 100;
     private string _grantReason = string.Empty, _grantMsg = string.Empty;
 
-    protected override void OnInitialized() => Auth.TryAttachToken();
+    protected override async Task OnInitializedAsync() => await Auth.TryAttachTokenAsync();
 
     private async Task LookupAsync()
     {

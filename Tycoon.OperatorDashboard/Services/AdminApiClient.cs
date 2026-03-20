@@ -425,6 +425,11 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         if (!string.IsNullOrEmpty(opsKey))
             http.DefaultRequestHeaders.TryAddWithoutValidation("X-Admin-Ops-Key", opsKey);
     }
+
+    public void ClearToken()
+    {
+        http.DefaultRequestHeaders.Authorization = null;
+    }
 }
 
 // ── Local response types ──────────────────────────────────────────────────────
