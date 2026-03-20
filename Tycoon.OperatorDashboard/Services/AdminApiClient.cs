@@ -15,17 +15,18 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     // ── Auth ──────────────────────────────────────────────────────────────
 
-    public async Task<AdminLoginResult?> LoginAsync(string email, string password, CancellationToken ct = default)
+    public async Task<AdminLoginResponse?> LoginAsync(string email, string password, CancellationToken ct = default)
     {
         var body = JsonContent.Create(new { email, password });
         var resp = await http.PostAsync("/admin/auth/login", body, ct);
         if (!resp.IsSuccessStatusCode) return null;
-        return await resp.Content.ReadFromJsonAsync<AdminLoginResult>(Json, ct);
+        return await resp.Content.ReadFromJsonAsync<AdminLoginResponse>(Json, ct);
     }
 
     public async Task<AdminRefreshResult?> RefreshAsync(string refreshToken, CancellationToken ct = default)
@@ -172,10 +173,19 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         return resp.IsSuccessStatusCode;
     }
 
-    public async Task<bool> BulkImportQuestionsAsync(object body, CancellationToken ct = default)
+    public async Task<JsonDocument?> BulkImportQuestionsAsync(object body, CancellationToken ct = default)
     {
         var resp = await http.PostAsync("/admin/questions/bulk", JsonContent.Create(body), ct);
-        return resp.IsSuccessStatusCode;
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<JsonDocument?> BulkDeleteQuestionsAsync(IEnumerable<Guid> ids, CancellationToken ct = default)
+    {
+        var body = JsonContent.Create(new { ids });
+        var resp = await http.PostAsync("/admin/questions/bulk-delete", body, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
     // ── Notifications ──────────────────────────────────────────────────────
@@ -433,12 +443,6 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 }
 
 // ── Local response types ──────────────────────────────────────────────────────
-
-public sealed record AdminLoginResult(
-    string AccessToken,
-    string RefreshToken,
-    int ExpiresIn,
-    string TokenType);
 
 public sealed record AdminRefreshResult(
     string AccessToken,

@@ -15,24 +15,55 @@
 else
 {
 
+<div class="tabs">
+    @foreach (var tab in new[] { "Questions", "Bulk Import" })
+    {
+        <button class="tab @(_tab == tab ? "active" : "")" @onclick="() => _tab = tab">@tab</button>
+    }
+</div>
+
+@if (_tab == "Questions")
+{
+
 <div class="filters">
     <input @bind="_query" placeholder="Search text..." />
     <input @bind="_category" placeholder="Category..." />
     <button @onclick="LoadAsync">Search</button>
-    <button @onclick="() => _showCreate = !_showCreate">+ New Question</button>
+    @if (CanWrite)
+    {
+        <button @onclick="() => _showCreate = !_showCreate">+ New Question</button>
+        @if (_selectedIds.Count > 0)
+        {
+            <button class="danger" @onclick="BulkDeleteSelectedAsync">Delete Selected (@_selectedIds.Count)</button>
+        }
+    }
 </div>
 
 @if (_showCreate)
 {
     <div class="card" style="margin-bottom:1.25rem">
         <h2>Create Question</h2>
-        <label>Question text<textarea @bind="_createText" rows="2" style="width:100%;padding:.4rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem"></textarea></label>
-        <label>Correct answer<input @bind="_createCorrect" /></label>
-        <label>Distractors (comma-separated)<input @bind="_createDistractors" /></label>
+        <label>Question text
+            <textarea @bind="_createText" rows="2" style="width:100%;padding:.4rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem"></textarea>
+        </label>
         <label>Category<input @bind="_createCategory" /></label>
+        <label>Difficulty
+            <select @bind="_createDifficulty">
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+                <option value="Expert">Expert</option>
+            </select>
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+            <label>Option A (correct)<input @bind="_createOptA" placeholder="Correct answer" /></label>
+            <label>Option B<input @bind="_createOptB" placeholder="Distractor" /></label>
+            <label>Option C<input @bind="_createOptC" placeholder="Distractor" /></label>
+            <label>Option D<input @bind="_createOptD" placeholder="Distractor (optional)" /></label>
+        </div>
         <label>Tags (comma-separated)<input @bind="_createTags" /></label>
         <button @onclick="CreateAsync" style="margin-top:.75rem">Save</button>
-        @if (!string.IsNullOrEmpty(_createMsg)) { <p class="message">@_createMsg</p> }
+        @if (!string.IsNullOrEmpty(_createMsg)) { <p class="message @(_createIsError ? "error-msg" : "")">@_createMsg</p> }
     </div>
 }
 
@@ -43,29 +74,55 @@ else
 else
 {
     <table>
-        <thead><tr><th>Text</th><th>Category</th><th>Tags</th><th>Actions</th></tr></thead>
+        <thead>
+            <tr>
+                <th style="width:2rem">
+                    <input type="checkbox" @onchange="ToggleSelectAll"
+                           checked="@(_selectedIds.Count > 0 && _selectedIds.Count == _currentPageIds.Count)" />
+                </th>
+                <th>Text</th><th>Category</th><th>Difficulty</th><th>Tags</th><th>Actions</th>
+            </tr>
+        </thead>
         <tbody>
             @foreach (var el in _questions.RootElement.GetProperty("items").EnumerateArray())
             {
-                var id       = el.TryGetProperty("id", out var i) ? i.GetGuid() : Guid.Empty;
-                var text     = el.TryGetProperty("text", out var t) ? t.GetString() ?? "" : "";
-                var cat      = el.TryGetProperty("category", out var c) ? c.GetString() ?? "—" : "—";
-                var tags     = el.TryGetProperty("tags", out var tg) ? string.Join(", ", tg.EnumerateArray().Select(x => x.GetString())) : "";
+                var id    = el.TryGetProperty("id", out var i) ? i.GetGuid() : Guid.Empty;
+                var text  = el.TryGetProperty("text",       out var t) ? t.GetString() ?? "" : "";
+                var cat   = el.TryGetProperty("category",   out var c) ? c.GetString() ?? "—" : "—";
+                var diff  = el.TryGetProperty("difficulty", out var d) ? d.GetString() ?? "—" : "—";
+                var tags  = el.TryGetProperty("tags",       out var tg) ? string.Join(", ", tg.EnumerateArray().Select(x => x.GetString())) : "";
+                var opts  = el.TryGetProperty("options",    out var op) ? op : default;
+                var corrId = el.TryGetProperty("correctOptionId", out var cid) ? cid.GetString() ?? "" : "";
                 <tr>
-                    <td style="max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@text</td>
+                    <td><input type="checkbox" checked="@_selectedIds.Contains(id)" @onchange="e => ToggleSelect(id, (bool)e.Value!)" /></td>
+                    <td style="max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@text</td>
                     <td>@cat</td>
+                    <td><span class="badge @DiffClass(diff)">@diff</span></td>
                     <td><small>@tags</small></td>
-                    <td>
-                        <button @onclick="() => StartEdit(id, text, cat, tags)">Edit</button>
-                        <button class="danger" @onclick="() => DeleteAsync(id)">Delete</button>
+                    <td style="white-space:nowrap">
+                        @if (CanWrite)
+                        {
+                            <button @onclick="() => StartEdit(id, el)">Edit</button>
+                            <button class="danger" @onclick="() => DeleteAsync(id)">Delete</button>
+                        }
                     </td>
                 </tr>
                 @if (_editingId == id)
                 {
-                    <tr><td colspan="4" style="background:#f8fafc;padding:.75rem 1rem">
+                    <tr><td colspan="6" style="background:#f8fafc;padding:.75rem 1rem">
                         <label>Text<textarea @bind="_editText" rows="2" style="width:100%;padding:.4rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem"></textarea></label>
-                        <label>Category<input @bind="_editCategory" /></label>
-                        <label>Tags<input @bind="_editTags" /></label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+                            <label>Category<input @bind="_editCategory" /></label>
+                            <label>Difficulty
+                                <select @bind="_editDifficulty">
+                                    <option value="Easy">Easy</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Hard">Hard</option>
+                                    <option value="Expert">Expert</option>
+                                </select>
+                            </label>
+                        </div>
+                        <label>Tags (comma-separated)<input @bind="_editTags" /></label>
                         <button @onclick="SaveEditAsync" style="margin-top:.5rem">Save</button>
                         <button @onclick="() => _editingId = Guid.Empty" style="margin-left:.5rem;background:#64748b">Cancel</button>
                         @if (!string.IsNullOrEmpty(_editMsg)) { <p class="message">@_editMsg</p> }
@@ -81,26 +138,104 @@ else
         <button @onclick="NextPage">Next →</button>
     </div>
 
-    @if (!string.IsNullOrEmpty(_message)) { <p class="message">@_message</p> }
+    @if (!string.IsNullOrEmpty(_message)) { <p class="message @(_isError ? "error-msg" : "")">@_message</p> }
 }
 
+} @* end Questions tab *@
+
+@if (_tab == "Bulk Import")
+{
+    <div class="card">
+        <h2>CSV Bulk Import</h2>
+        <p style="font-size:.875rem;color:#64748b;margin-bottom:1rem">
+            Upload a CSV file to create multiple questions at once. Each row is one question.
+        </p>
+
+        <div class="card" style="background:#f8fafc;margin-bottom:1rem;padding:1rem">
+            <p style="font-size:.8rem;font-weight:600;color:#475569;margin-bottom:.5rem">Expected CSV columns (with header row):</p>
+            <code style="font-size:.75rem;display:block;white-space:pre-wrap;color:#1e293b">text,category,difficulty,option_a,option_b,option_c,option_d,correct,tags
+"What is 2+2?",Math,Easy,4,3,5,6,a,"math,arithmetic"
+"Capital of France?",Geography,Medium,Paris,London,Berlin,Rome,a,"geography"</code>
+            <p style="font-size:.75rem;color:#64748b;margin-top:.5rem">
+                <strong>correct</strong>: letter of the correct option (<code>a</code>–<code>d</code>). Option A is always placed as the first choice.
+                Difficulty: <code>Easy</code> | <code>Medium</code> | <code>Hard</code> | <code>Expert</code>
+            </p>
+        </div>
+
+        <label style="margin-bottom:.75rem">
+            CSV File
+            <InputFile OnChange="OnCsvFileChanged" accept=".csv,text/csv" />
+        </label>
+
+        @if (_csvPreviewRows.Count > 0)
+        {
+            <p style="font-size:.875rem;color:#475569;margin-bottom:.5rem"><strong>@_csvPreviewRows.Count</strong> question(s) parsed and ready to import.</p>
+        }
+
+        <button @onclick="ImportAsync"
+                disabled="@(_importing || _csvPreviewRows.Count == 0)"
+                style="margin-top:.25rem">
+            @(_importing ? "Importing…" : $"Import {_csvPreviewRows.Count} Question(s)")
+        </button>
+
+        @if (_importResult is not null)
+        {
+            var received = _importResult.RootElement.TryGetProperty("received", out var rv) ? rv.GetInt32() : 0;
+            var created  = _importResult.RootElement.TryGetProperty("created",  out var cr) ? cr.GetInt32() : 0;
+            var failed   = _importResult.RootElement.TryGetProperty("failed",   out var fl) ? fl.GetInt32() : 0;
+            <div style="margin-top:1rem;padding:.75rem;background:#f0fdf4;border-radius:8px;font-size:.875rem;border:1px solid #bbf7d0">
+                <strong>Import complete</strong> — Received: @received &nbsp;|&nbsp; Created: @created &nbsp;|&nbsp;
+                <span style="@(failed > 0 ? "color:#ef4444;font-weight:600" : "")">Failed: @failed</span>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_importMsg))
+        {
+            <p class="message error-msg">@_importMsg</p>
+        }
+    </div>
+} @* end Bulk Import tab *@
+
+} @* close auth-failed else *@
+
 @code {
+    [CascadingParameter(Name = "Perms")] private HashSet<string> Perms { get; set; } = [];
+    private bool CanWrite => Perms.Contains("questions:write");
+
+    private string _tab = "Questions";
     private JsonDocument? _questions;
     private string _query = string.Empty, _category = string.Empty;
     private int _page = 1;
     private bool _showCreate;
     private string _message = string.Empty;
+    private bool _isError;
+    private bool _authFailed;
+
+    // bulk select
+    private readonly HashSet<Guid> _selectedIds = [];
+    private List<Guid> _currentPageIds = [];
 
     // create form
-    private string _createText = string.Empty, _createCorrect = string.Empty;
-    private string _createDistractors = string.Empty, _createCategory = string.Empty, _createTags = string.Empty;
+    private string _createText = string.Empty, _createCategory = string.Empty;
+    private string _createDifficulty = "Medium";
+    private string _createOptA = string.Empty, _createOptB = string.Empty;
+    private string _createOptC = string.Empty, _createOptD = string.Empty;
+    private string _createTags = string.Empty;
     private string _createMsg = string.Empty;
+    private bool _createIsError;
 
-    // edit inline
+    // inline edit
     private Guid _editingId;
-    private string _editText = string.Empty, _editCategory = string.Empty, _editTags = string.Empty;
+    private string _editText = string.Empty, _editCategory = string.Empty;
+    private string _editDifficulty = "Medium", _editTags = string.Empty;
     private string _editMsg = string.Empty;
-    private bool _authFailed;
+
+    // bulk import
+    private IBrowserFile? _csvFile;
+    private readonly List<object> _csvPreviewRows = [];
+    private bool _importing;
+    private JsonDocument? _importResult;
+    private string _importMsg = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -111,42 +246,260 @@ else
     private async Task LoadAsync()
     {
         _questions = await Api.ListQuestionsAsync(_query, _category, _page);
+        _currentPageIds = _questions?.RootElement.TryGetProperty("items", out var items) == true
+            ? items.EnumerateArray().Select(e => e.TryGetProperty("id", out var id) ? id.GetGuid() : Guid.Empty).Where(g => g != Guid.Empty).ToList()
+            : [];
     }
+
+    // ── Create ────────────────────────────────────────────────────────────────
 
     private async Task CreateAsync()
     {
         _createMsg = string.Empty;
-        var distractors = _createDistractors.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
-        var tags = _createTags.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
-        var ok = await Api.CreateQuestionAsync(new { text = _createText, correctAnswer = _createCorrect, distractors, category = _createCategory, tags });
-        _createMsg = ok ? "Created." : "Failed.";
-        if (ok) { _createText = _createCorrect = _createDistractors = _createCategory = _createTags = string.Empty; _showCreate = false; }
+        _createIsError = false;
+        if (string.IsNullOrWhiteSpace(_createOptA) || string.IsNullOrWhiteSpace(_createOptB))
+        {
+            _createMsg = "At least two options (A and B) are required.";
+            _createIsError = true;
+            return;
+        }
+        var options = BuildOptions(_createOptA, _createOptB, _createOptC, _createOptD);
+        var tags = ParseTags(_createTags);
+        var ok = await Api.CreateQuestionAsync(new
+        {
+            text = _createText,
+            category = _createCategory,
+            difficulty = _createDifficulty,
+            options,
+            correctOptionId = "a",
+            tags,
+            mediaKey = (string?)null
+        });
+        _createMsg = ok ? "Created." : "Failed to create question.";
+        _createIsError = !ok;
+        if (ok)
+        {
+            _createText = _createCategory = _createOptA = _createOptB = _createOptC = _createOptD = _createTags = string.Empty;
+            _createDifficulty = "Medium";
+            _showCreate = false;
+        }
         await LoadAsync();
     }
 
-    private void StartEdit(Guid id, string text, string cat, string tags)
+    // ── Edit ──────────────────────────────────────────────────────────────────
+
+    private void StartEdit(Guid id, System.Text.Json.JsonElement el)
     {
-        _editingId = id; _editText = text; _editCategory = cat; _editTags = tags; _editMsg = string.Empty;
+        _editingId = id;
+        _editText = el.TryGetProperty("text", out var t) ? t.GetString() ?? "" : "";
+        _editCategory = el.TryGetProperty("category", out var c) ? c.GetString() ?? "" : "";
+        _editDifficulty = el.TryGetProperty("difficulty", out var d) ? d.GetString() ?? "Medium" : "Medium";
+        _editTags = el.TryGetProperty("tags", out var tg)
+            ? string.Join(", ", tg.EnumerateArray().Select(x => x.GetString()))
+            : "";
+
+        // Preserve existing options so we don't lose them on edit
+        _editOptions = el.TryGetProperty("options", out var op)
+            ? op.EnumerateArray()
+                .Select(o => new { id = o.TryGetProperty("id", out var oid) ? oid.GetString() ?? "" : "", text = o.TryGetProperty("text", out var otxt) ? otxt.GetString() ?? "" : "" })
+                .Cast<object>()
+                .ToList()
+            : [];
+        _editCorrectId = el.TryGetProperty("correctOptionId", out var cid) ? cid.GetString() ?? "a" : "a";
+        _editMsg = string.Empty;
     }
+
+    private List<object> _editOptions = [];
+    private string _editCorrectId = "a";
 
     private async Task SaveEditAsync()
     {
         _editMsg = string.Empty;
-        var tags = _editTags.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
-        var ok = await Api.UpdateQuestionAsync(_editingId, new { text = _editText, category = _editCategory, tags });
-        _editMsg = ok ? "Saved." : "Failed.";
+        var tags = ParseTags(_editTags);
+        var ok = await Api.UpdateQuestionAsync(_editingId, new
+        {
+            text = _editText,
+            category = _editCategory,
+            difficulty = _editDifficulty,
+            options = _editOptions,
+            correctOptionId = _editCorrectId,
+            tags,
+            mediaKey = (string?)null
+        });
+        _editMsg = ok ? "Saved." : "Update failed.";
         if (ok) _editingId = Guid.Empty;
         await LoadAsync();
     }
 
+    // ── Delete ────────────────────────────────────────────────────────────────
+
     private async Task DeleteAsync(Guid id)
     {
         _message = string.Empty;
+        _isError = false;
         var ok = await Api.DeleteQuestionAsync(id);
         _message = ok ? "Deleted." : "Delete failed.";
+        _isError = !ok;
+        _selectedIds.Remove(id);
         await LoadAsync();
     }
 
+    private async Task BulkDeleteSelectedAsync()
+    {
+        _message = string.Empty;
+        _isError = false;
+        var result = await Api.BulkDeleteQuestionsAsync(_selectedIds.ToList());
+        if (result is null)
+        {
+            _message = "Bulk delete failed.";
+            _isError = true;
+        }
+        else
+        {
+            var deleted = result.RootElement.TryGetProperty("deleted", out var d) ? d.GetInt32() : _selectedIds.Count;
+            _message = $"Deleted {deleted} question(s).";
+        }
+        _selectedIds.Clear();
+        await LoadAsync();
+    }
+
+    // ── Bulk select ───────────────────────────────────────────────────────────
+
+    private void ToggleSelect(Guid id, bool selected)
+    {
+        if (selected) _selectedIds.Add(id);
+        else _selectedIds.Remove(id);
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        var check = (bool)e.Value!;
+        if (check) foreach (var id in _currentPageIds) _selectedIds.Add(id);
+        else foreach (var id in _currentPageIds) _selectedIds.Remove(id);
+    }
+
+    // ── CSV Bulk Import ───────────────────────────────────────────────────────
+
+    private async Task OnCsvFileChanged(InputFileChangeEventArgs e)
+    {
+        _csvFile = e.File;
+        _csvPreviewRows.Clear();
+        _importResult = null;
+        _importMsg = string.Empty;
+
+        try
+        {
+            await using var stream = _csvFile.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            using var reader = new System.IO.StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            _csvPreviewRows.AddRange(ParseCsvToQuestions(content));
+        }
+        catch (Exception ex)
+        {
+            _importMsg = $"Could not read file: {ex.Message}";
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        if (_csvPreviewRows.Count == 0) return;
+        _importing = true;
+        _importResult = null;
+        _importMsg = string.Empty;
+
+        try
+        {
+            _importResult = await Api.BulkImportQuestionsAsync(new { questions = _csvPreviewRows });
+            if (_importResult is null) _importMsg = "Import failed — check API logs.";
+            else { _csvPreviewRows.Clear(); await LoadAsync(); }
+        }
+        catch (Exception ex)
+        {
+            _importMsg = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _importing = false;
+        }
+    }
+
+    private static List<object> ParseCsvToQuestions(string csv)
+    {
+        var result = new List<object>();
+        var lines = csv.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        // skip header
+        for (int i = 1; i < lines.Length; i++)
+        {
+            var fields = SplitCsvLine(lines[i].TrimEnd('\r'));
+            if (fields.Length < 5) continue;
+
+            var text    = fields[0];
+            var cat     = fields.Length > 1 ? fields[1] : "General";
+            var diff    = fields.Length > 2 ? Normalise(fields[2], "Medium", new[]{"Easy","Medium","Hard","Expert"}) : "Medium";
+            var optA    = fields.Length > 3 ? fields[3] : "";
+            var optB    = fields.Length > 4 ? fields[4] : "";
+            var optC    = fields.Length > 5 ? fields[5] : "";
+            var optD    = fields.Length > 6 ? fields[6] : "";
+            var correct = fields.Length > 7 ? fields[7].Trim().ToLowerInvariant() : "a";
+            var tagsStr = fields.Length > 8 ? fields[8] : "";
+
+            if (string.IsNullOrWhiteSpace(text) || string.IsNullOrWhiteSpace(optA) || string.IsNullOrWhiteSpace(optB)) continue;
+
+            var options = BuildOptions(optA, optB, optC, optD);
+            var correctId = new[] { "a", "b", "c", "d" }.Contains(correct) ? correct : "a";
+            var tags = ParseTags(tagsStr);
+
+            result.Add(new { text, category = cat, difficulty = diff, options, correctOptionId = correctId, tags, mediaKey = (string?)null });
+        }
+        return result;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static List<object> BuildOptions(string a, string b, string c, string d)
+    {
+        var opts = new List<object> { new { id = "a", text = a }, new { id = "b", text = b } };
+        if (!string.IsNullOrWhiteSpace(c)) opts.Add(new { id = "c", text = c });
+        if (!string.IsNullOrWhiteSpace(d)) opts.Add(new { id = "d", text = d });
+        return opts;
+    }
+
+    private static List<string> ParseTags(string s) =>
+        s.Split(',').Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
+
+    private static string Normalise(string val, string fallback, string[] allowed) =>
+        allowed.FirstOrDefault(a => a.Equals(val.Trim(), StringComparison.OrdinalIgnoreCase)) ?? fallback;
+
+    // Minimal CSV line splitter (handles double-quoted fields)
+    private static string[] SplitCsvLine(string line)
+    {
+        var fields = new List<string>();
+        var current = new System.Text.StringBuilder();
+        bool inQuotes = false;
+        for (int i = 0; i < line.Length; i++)
+        {
+            char ch = line[i];
+            if (ch == '"')
+            {
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"') { current.Append('"'); i++; }
+                else inQuotes = !inQuotes;
+            }
+            else if (ch == ',' && !inQuotes) { fields.Add(current.ToString()); current.Clear(); }
+            else current.Append(ch);
+        }
+        fields.Add(current.ToString());
+        return fields.ToArray();
+    }
+
+    private static string DiffClass(string d) => d?.ToLowerInvariant() switch
+    {
+        "easy"   => "on",
+        "hard"   => "off",
+        "expert" => "off",
+        _        => ""
+    };
+
+    // ── Pagination ────────────────────────────────────────────────────────────
     private async Task PrevPage() { if (_page > 1) { _page--; await LoadAsync(); } }
     private async Task NextPage() { _page++; await LoadAsync(); }
 }
@@ -154,7 +507,11 @@ else
 } @* close auth-failed else *@
 
 <style>
-    .pager { display:flex; gap:.75rem; align-items:center; margin-top:1rem; }
+    .tabs { display:flex; gap:.5rem; margin-bottom:1.25rem; }
+    .tab { background:#e2e8f0; color:#475569; }
+    .tab.active { background:#3b82f6; color:#fff; }
     label { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; color:#475569; margin-bottom:.6rem; }
-    label input, label textarea { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
+    label input, label select, label textarea { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
+    .error-msg { background:#fef2f2; border-left-color:#ef4444; color:#991b1b; }
+    input[type=checkbox] { width:auto; cursor:pointer; }
 </style>

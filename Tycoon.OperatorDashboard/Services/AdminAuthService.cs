@@ -28,6 +28,10 @@ public sealed class AdminAuthService(
             new(ClaimTypes.Role, "admin")
         };
 
+        // Store per-admin permissions as cookie claims so Blazor components can gate write actions
+        foreach (var perm in result.Admin?.Permissions ?? [])
+            claims.Add(new Claim("permission", perm));
+
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
 

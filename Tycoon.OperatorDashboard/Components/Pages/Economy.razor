@@ -18,7 +18,10 @@ else
 <div class="tabs">
     @foreach (var tab in new[] { "Player Wallet", "Grant Currency", "Transaction History" })
     {
-        <button class="tab @(_tab == tab ? "active" : "")" @onclick="() => _tab = tab">@tab</button>
+        @if (tab != "Grant Currency" || CanWrite)
+        {
+            <button class="tab @(_tab == tab ? "active" : "")" @onclick="() => _tab = tab">@tab</button>
+        }
     }
 </div>
 
@@ -51,7 +54,7 @@ else
     }
 }
 
-@if (_tab == "Grant Currency")
+@if (_tab == "Grant Currency" && CanWrite)
 {
     <div class="card">
         <h2>Grant Currency</h2>
@@ -97,6 +100,9 @@ else
 } @* close auth-failed else *@
 
 @code {
+    [CascadingParameter(Name = "Perms")] private HashSet<string> Perms { get; set; } = [];
+    private bool CanWrite => Perms.Contains("users:write");
+
     private string _tab = "Player Wallet";
     private bool _authFailed;
     private string _playerId = string.Empty;
