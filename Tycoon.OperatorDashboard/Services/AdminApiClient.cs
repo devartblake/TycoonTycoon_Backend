@@ -384,20 +384,21 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     // ── Media ──────────────────────────────────────────────────────────────
 
-    public async Task<JsonDocument?> GetMediaIntentAsync(CancellationToken ct = default)
+    public async Task<JsonDocument?> GetMediaIntentAsync(string fileName, string contentType, long sizeBytes, CancellationToken ct = default)
     {
-        var resp = await http.GetAsync("/admin/media/intent", ct);
+        var body = JsonContent.Create(new { fileName, contentType, sizeBytes });
+        var resp = await http.PostAsync("/admin/media/intent", body, ct);
         if (!resp.IsSuccessStatusCode) return null;
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
-    public async Task<JsonDocument?> UploadMediaAsync(string assetKey, Stream content, string contentType, CancellationToken ct = default)
+    public async Task<JsonDocument?> UploadMediaAsync(string uploadUrl, Stream content, string contentType, string fileName, CancellationToken ct = default)
     {
         using var form = new MultipartFormDataContent();
         var streamContent = new StreamContent(content);
         streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-        form.Add(streamContent, "file", assetKey);
-        var resp = await http.PostAsync($"/admin/media/upload/{Uri.EscapeDataString(assetKey)}", form, ct);
+        form.Add(streamContent, "file", fileName);
+        var resp = await http.PostAsync(uploadUrl, form, ct);
         if (!resp.IsSuccessStatusCode) return null;
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }

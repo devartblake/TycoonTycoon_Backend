@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Tycoon.Backend.Api\Tycoon.Backend.Api.csproj" />
     <ProjectReference Include="..\Tycoon.Hosting.Elasticsearch\Tycoon.Hosting.Elasticsearch.csproj" />
+    <ProjectReference Include="..\Tycoon.Hosting.Minio\Tycoon.Hosting.Minio.csproj" />
     <ProjectReference Include="..\Tycoon.MigrationService\Tycoon.MigrationService.csproj" />
   </ItemGroup>
 

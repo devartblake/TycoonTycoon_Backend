@@ -1,4 +1,5 @@
 ﻿using Tycoon.Hosting.Elasticsearch;
+using Tycoon.Hosting.Minio;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -6,6 +7,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 var postgresAdmin = builder.AddParameter("postgres-admin");
 var admin = builder.AddParameter("admin");
 var password = builder.AddParameter("admin-password", secret: true);
+var minioUser = builder.AddParameter("minio-user");
+var minioPassword = builder.AddParameter("minio-password", secret: true);
 
 // Infra
 var redis = builder.AddRedis("cache");
@@ -34,6 +37,11 @@ var search = builder
     .AddElasticsearch("search", password: password, port: 9200)
     .WithDataVolume();
 
+// MinIO = S3-compatible object storage for media assets
+var minio = builder
+    .AddMinio("minio", rootUser: minioUser, rootPassword: minioPassword, apiPort: 9000, consolePort: 9001)
+    .WithDataVolume();
+
 // Your API project
 var api = builder
     .AddProject("tycoon-api", "../Tycoon.Backend.Api/Tycoon.Backend.Api.csproj")
@@ -41,7 +49,8 @@ var api = builder
     .WithReference(analyticsDb)
     .WithReference(search)
     .WithReference(redis)
-    .WithReference(messaging);
+    .WithReference(messaging)
+    .WithMinioConnection(minio);
 
 // Optional: migrator/indexer project
 var migrator = builder

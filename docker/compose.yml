@@ -366,6 +366,14 @@ services:
       Auth__JwtKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
       JWT__Secret: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
       
+      # Object storage (MinIO)
+      MinIO__Endpoint: "minio:9000"
+      MinIO__AccessKey: "${MINIO_ROOT_USER:-tycoon_minio_user}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD:-tycoon_minio_password_123}"
+      MinIO__Bucket: "${MINIO_BUCKET:-tycoon-assets}"
+      MinIO__UseSSL: "false"
+      MinIO__PublicEndpoint: "${MINIO_PUBLIC_ENDPOINT:-localhost:9000}"
+
       # Observability
       Observability__ServiceName: "Tycoon.Backend.Api"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
@@ -380,6 +388,8 @@ services:
       elasticsearch:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      minio:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
