@@ -48,6 +48,6 @@ public sealed class MatchSubmitRateLimitTests : IClassFixture<TycoonApiFactory>
             }
         }
 
-        Assert.True(false, "Expected at least one 429 TooManyRequests response.");
+        Assert.Fail("Expected at least one 429 TooManyRequests response.");
     }
 }
