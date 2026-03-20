@@ -34,11 +34,13 @@ builder.Services.AddSingleton<TokenStore>();
 builder.Services.AddScoped<AdminAuthService>();
 
 // Typed HttpClient that forwards the admin JWT + ops key to tycoon-api.
-// Use the logical Aspire service name so service discovery resolves it via
-// the services__tycoon-api__http__0 env var (set in docker/compose.yml).
+// Aspire service discovery resolves "http://tycoon-api" via services__tycoon-api__http__0.
+// When running standalone (no Aspire/compose), set ApiBaseUrl in appsettings or the
+// environment to point directly at the running API (e.g. "http://localhost:5100").
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://tycoon-api";
 builder.Services.AddHttpClient<AdminApiClient>(client =>
 {
-    client.BaseAddress = new Uri("http://tycoon-api");
+    client.BaseAddress = new Uri(apiBaseUrl);
 
     // Attach the ops key as a default header so every request — including the
     // initial login — passes the AdminOpsKeyMiddleware / endpoint filter gate.
