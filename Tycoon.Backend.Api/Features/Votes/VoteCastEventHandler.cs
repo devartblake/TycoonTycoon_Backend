@@ -1,14 +1,14 @@
+using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Realtime.Clients;
 using Tycoon.Backend.Domain.Events;
-using Tycoon.Shared.Abstractions.Core.Domain.Events;
 using Tycoon.Shared.Contracts.Realtime.Votes;
 
 namespace Tycoon.Backend.Api.Features.Votes
 {
     public sealed class VoteCastEventHandler(IHubContext<NotificationHub, INotificationClient> hub)
-        : IDomainEventHandler<VoteCastEvent>
+        : INotificationHandler<VoteCastEvent>
     {
         public Task Handle(VoteCastEvent evt, CancellationToken ct)
         {
