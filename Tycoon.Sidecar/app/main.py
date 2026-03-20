@@ -7,7 +7,17 @@ from fastapi import FastAPI
 from app.config import settings
 from app.routers import analytics, ml, utilities, webhooks
 
-logging.basicConfig(level=settings.log_level.upper())
+# Normalize .NET-style log level names (Information, Warning, Critical) to Python equivalents
+_DOTNET_TO_PYTHON_LEVEL: dict[str, str] = {
+    "verbose": "DEBUG",
+    "information": "INFO",
+    "warning": "WARNING",
+    "critical": "CRITICAL",
+    "fatal": "CRITICAL",
+}
+_raw_level = settings.log_level.lower()
+_py_level = _DOTNET_TO_PYTHON_LEVEL.get(_raw_level, _raw_level.upper())
+logging.basicConfig(level=_py_level)
 logger = logging.getLogger(__name__)
 
 
