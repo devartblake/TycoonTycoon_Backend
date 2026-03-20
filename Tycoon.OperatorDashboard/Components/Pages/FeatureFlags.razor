@@ -1,0 +1,61 @@
+@page "/flags"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+
+<h1>Feature Flags</h1>
+
+@if (_flags is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Flag</th><th>Enabled</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var (key, val) in _flags)
+            {
+                <tr>
+                    <td><code>@key</code></td>
+                    <td><span class="badge @(val ? "on" : "off")">@(val ? "ON" : "OFF")</span></td>
+                    <td>
+                        <button @onclick="() => ToggleAsync(key, val)">
+                            @(val ? "Disable" : "Enable")
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <p class="message">@_message</p>
+    }
+}
+
+@code {
+    private Dictionary<string, bool>? _flags;
+    private string _message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var config = await Api.GetConfigAsync();
+        _flags = config?.FeatureFlags ?? [];
+    }
+
+    private async Task ToggleAsync(string key, bool current)
+    {
+        _message = string.Empty;
+        var ok = await Api.PatchFlagsAsync(new Dictionary<string, bool> { [key] = !current });
+        _message = ok ? $"{key} set to {!current}" : "Update failed.";
+        await LoadAsync();
+    }
+}

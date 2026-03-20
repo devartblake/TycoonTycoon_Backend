@@ -44,14 +44,17 @@ The solution follows Clean Architecture principles with the following structure:
 
 ```
 TycoonTycoon_Backend/
-├── Tycoon.Backend.Api/              # Web API project (Controllers, SignalR Hubs)
-├── Tycoon.Backend.Application/      # Application logic (Services, Use Cases)
+├── Tycoon.Backend.Api/              # Web API project (Minimal API, SignalR Hubs)
+├── Tycoon.Backend.Application/      # Application logic (Services, Use Cases, Handlers)
 ├── Tycoon.Backend.Domain/           # Domain entities and business logic
-├── Tycoon.Backend.Infrastructure/   # Data access, external services
+├── Tycoon.Backend.Infrastructure/   # Data access, external services, EF Core
 ├── Tycoon.Backend.Migrations/       # EF Core migrations
 ├── Tycoon.MigrationService/         # Database migration runner service
-├── Tycoon.Shared/                   # Shared utilities and helpers
-├── Tycoon.ServiceDefaults/          # Common service configurations
+├── Tycoon.OperatorDashboard/        # Blazor Server operator control panel (port 8200)
+├── Tycoon.Sidecar/                  # FastAPI Python sidecar — ML, analytics, webhooks (port 8100)
+├── Tycoon.AppHost/                  # .NET Aspire orchestration host
+├── Tycoon.Shared/                   # Shared contracts, DTOs, utilities
+├── Tycoon.ServiceDefaults/          # Common Aspire service configurations
 ├── docker/                          # Docker infrastructure configuration
 └── scripts/                         # Development automation scripts
 ```
@@ -59,14 +62,18 @@ TycoonTycoon_Backend/
 ### Technology Stack
 
 - **Runtime**: .NET 9
-- **Web Framework**: ASP.NET Core 9.0
+- **Web Framework**: ASP.NET Core 9.0 (Minimal API)
+- **Operator Dashboard**: Blazor Server (.NET 9)
 - **ORM**: Entity Framework Core 9.0
 - **Databases**: PostgreSQL 16, MongoDB 7.0
 - **Cache**: Redis 7
 - **Search**: Elasticsearch 8.11
 - **Message Queue**: RabbitMQ 3.13
+- **Object Storage**: MinIO (S3-compatible)
 - **Background Jobs**: Hangfire
 - **Real-time Communication**: SignalR
+- **Orchestration**: .NET Aspire
+- **Sidecar**: Python 3.12, FastAPI, uvicorn
 
 ---
 
@@ -357,20 +364,24 @@ Configure via `MigrationService__Mode` in appsettings or environment variable:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| PostgreSQL | 5432 | Primary database |
-| MongoDB | 27017 | Analytics & events |
-| Redis | 6379 | Caching & SignalR |
-| Elasticsearch | 9200 | Search & logs |
-| RabbitMQ | 5672 | Message queue |
-| RabbitMQ Management | 15672 | Admin UI |
+| PostgreSQL | 5432 | Primary relational database |
+| MongoDB | 27017 | Analytics, events, document data |
+| Redis | 6379 | Caching & SignalR backplane |
+| Elasticsearch | 9200 | Search & log aggregation |
+| RabbitMQ | 5672 | Message broker |
+| RabbitMQ Management | 15672 | RabbitMQ admin UI |
+| MinIO | 9000 | S3-compatible object storage |
+| MinIO Console | 9001 | MinIO admin UI |
 
 ### Application Services
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Backend API | 5000 | Main REST API |
-| Swagger UI | 5000/swagger | API documentation |
-| Hangfire Dashboard | 5000/hangfire | Job monitoring |
+| Backend API | 5000 | Main REST API + SignalR |
+| Swagger UI | 5000/swagger | Interactive API docs |
+| Hangfire Dashboard | 5000/hangfire | Background job monitoring |
+| Operator Dashboard | 8200 | Blazor Server ops control panel |
+| FastAPI Sidecar | 8100 | ML inference, analytics, webhooks |
 
 ### Development Tools (dev profile only)
 
@@ -381,6 +392,7 @@ Configure via `MigrationService__Mode` in appsettings or environment variable:
 | Kibana | 5601 | elastic / tycoon_elastic_password_123 |
 | Prometheus | 9090 | (no auth) |
 | Grafana | 3000 | admin / admin_password_123 |
+| DBGate | 3001 | (no auth) — multi-DB browser |
 
 ---
 
@@ -521,8 +533,13 @@ dotnet run --project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj
 ## 📚 Documentation
 
 - **[Docker.md](Docker.md)** - Detailed Docker setup and infrastructure guide
+- **[docs/CHANGELOG.md](docs/CHANGELOG.md)** - Branch changelog — all changes on `claude/add-minio-docker-QBFUx`
+- **[docs/FLUTTER_INTEGRATION.md](docs/FLUTTER_INTEGRATION.md)** - Authoritative Flutter client integration guide (auth, REST API, SignalR, error handling)
+- **[docs/minio-setup.md](docs/minio-setup.md)** - MinIO bucket setup (console, mc CLI, AWS CLI, .NET SDK examples)
+- **[docs/BACKEND_DECISIONS.md](docs/BACKEND_DECISIONS.md)** - Frozen architectural decisions (auth, enums, event dedupe, MFA)
 - **[API Documentation](http://localhost:5000/swagger)** - Interactive API documentation (when API is running)
 - **Hangfire Dashboard** - Background job monitoring at http://localhost:5000/hangfire
+- **Operator Dashboard** - Ops control panel at http://localhost:8200
 
 ---
 
@@ -578,6 +595,8 @@ Built with:
 - [Elasticsearch](https://www.elastic.co/) - Powerful search engine
 - [RabbitMQ](https://www.rabbitmq.com/) - Reliable message broker
 - [Hangfire](https://www.hangfire.io/) - Background job processor
+- [MinIO](https://min.io/) - S3-compatible object storage
+- [FastAPI](https://fastapi.tiangolo.com/) - Python web framework for sidecar services
 
 ---
 

@@ -15,20 +15,25 @@ All Docker assets live under the `docker/` directory.
 
 ```text
 TycoonTycoon_Backend/
-├─ Docker.md                # ← this document
+├─ Docker.md                 # ← this document
 ├─ docker/
-│  ├─ compose.yml           # main docker-compose stack
-│  ├─ compose.dev.yml       # dev-only overrides
-│  ├─ .env.example          # environment template
-│  ├─ Makefile              # convenience commands
-│  ├─ Dockerfile.api        # API container (Option B)
+│  ├─ compose.yml            # main docker-compose stack
+│  ├─ compose.prod.yml       # production overrides (hides ports)
+│  ├─ .env.example           # environment template
+│  ├─ Makefile               # convenience commands
+│  ├─ Dockerfile.api         # Backend API container
+│  ├─ Dockerfile.migrate     # Migration runner (runs once)
+│  ├─ Dockerfile.sidecar     # FastAPI Python sidecar
+│  ├─ Dockerfile.dashboard   # Blazor Server operator dashboard
 │  └─ init/
 │     ├─ postgres/
 │     │  └─ 01-init.sh
 │     └─ mongo/
 │        └─ 01-init.js
-└─ Tycoon.Backend.Api/
-└─ Tycoon.MigrationService/
+├─ Tycoon.Backend.Api/
+├─ Tycoon.MigrationService/
+├─ Tycoon.OperatorDashboard/
+└─ Tycoon.Sidecar/
 ```
 
 This keeps Docker concerns isolated and avoids polluting the solution root.
@@ -39,17 +44,30 @@ This keeps Docker concerns isolated and avoids polluting the solution root.
 
 The Docker stack provides **infrastructure only**:
 
-| Service                       | Purpose                                         |
-| ----------------------------- | ----------------------------------------------- |
-| PostgreSQL                    | Primary relational database (EF Core, Hangfire) |
-| MongoDB                       | Eventing, analytics, document data              |
-| Redis                         | Caching, SignalR backplane                      |
-| Elasticsearch                 | Search, analytics                               |
-| RabbitMQ                      | Message broker, background jobs                 |
-| MinIO                         | S3-compatible object storage                    |
-| Kibana *(dev profile)*        | Elasticsearch UI                                |
-| pgAdmin *(dev profile)*       | PostgreSQL UI                                   |
-| Mongo Express *(dev profile)* | MongoDB UI                                      |
+| Service                       | Port(s)       | Purpose                                         |
+| ----------------------------- | ------------- | ----------------------------------------------- |
+| PostgreSQL                    | 5432          | Primary relational database (EF Core, Hangfire) |
+| MongoDB                       | 27017         | Eventing, analytics, document data              |
+| Redis                         | 6379          | Caching, SignalR backplane                      |
+| Elasticsearch                 | 9200          | Search, analytics                               |
+| RabbitMQ                      | 5672 / 15672  | Message broker, background jobs                 |
+| MinIO                         | 9000          | S3-compatible object storage                    |
+| MinIO Console *(dev profile)* | 9001          | MinIO browser UI                                |
+| Kibana *(dev profile)*        | 5601          | Elasticsearch UI                                |
+| pgAdmin *(dev profile)*       | 5050          | PostgreSQL UI                                   |
+| Mongo Express *(dev profile)* | 8081          | MongoDB UI                                      |
+| Prometheus *(dev profile)*    | 9090          | Metrics scraper                                 |
+| Grafana *(dev profile)*       | 3000          | Metrics dashboards                              |
+| DBGate *(dev profile)*        | 3001          | Multi-database browser UI                       |
+
+**Application services** (Option B — fully Dockerized):
+
+| Service              | Port | Dockerfile              | Description                      |
+| -------------------- | ---- | ----------------------- | -------------------------------- |
+| `migration`          | —    | `Dockerfile.migrate`    | Runs migrations once then exits  |
+| `backend-api`        | 5000 | `Dockerfile.api`        | Main REST API + SignalR          |
+| `sidecar`            | 8100 | `Dockerfile.sidecar`    | FastAPI ML/analytics/webhooks    |
+| `operator-dashboard` | 8200 | `Dockerfile.dashboard`  | Blazor Server ops control panel  |
 
 > **Important:**
 > Schema creation, migrations, and seeding are **NOT** done by the API.
@@ -222,14 +240,19 @@ dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
 
 ## 7. Dev Tooling URLs (Option A or B)
 
-| Tool           | URL                                                              |
-| -------------- | ---------------------------------------------------------------- |
-| Swagger        | [http://localhost:5000/swagger](http://localhost:5000/swagger)   |
-| pgAdmin        | [http://localhost:5050](http://localhost:5050)                   |
-| Mongo Express  | [http://localhost:8081](http://localhost:8081)                   |
-| Kibana         | [http://localhost:5601](http://localhost:5601)                   |
-| Hangfire       | [http://localhost:5000/hangfire](http://localhost:5000/hangfire) |
-| MinIO Console  | [http://localhost:9001](http://localhost:9001)                   |
+| Tool                | URL                                                              |
+| ------------------- | ---------------------------------------------------------------- |
+| Swagger             | [http://localhost:5000/swagger](http://localhost:5000/swagger)   |
+| Hangfire            | [http://localhost:5000/hangfire](http://localhost:5000/hangfire) |
+| Operator Dashboard  | [http://localhost:8200](http://localhost:8200)                   |
+| FastAPI Sidecar     | [http://localhost:8100/docs](http://localhost:8100/docs)         |
+| MinIO Console       | [http://localhost:9001](http://localhost:9001)                   |
+| pgAdmin             | [http://localhost:5050](http://localhost:5050)                   |
+| Mongo Express       | [http://localhost:8081](http://localhost:8081)                   |
+| Kibana              | [http://localhost:5601](http://localhost:5601)                   |
+| Prometheus          | [http://localhost:9090](http://localhost:9090)                   |
+| Grafana             | [http://localhost:3000](http://localhost:3000)                   |
+| DBGate              | [http://localhost:3001](http://localhost:3001)                   |
 
 ---
 

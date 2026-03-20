@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Application.Tests.Domain;

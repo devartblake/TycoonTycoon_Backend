@@ -57,6 +57,50 @@ namespace Tycoon.Backend.Application.Missions
             await _db.SaveChangesAsync(ct);
         }
 
+        public async Task ApplyGameEventCompletedAsync(
+            Guid playerId,
+            string eventKind,
+            int rank,
+            int survivorsEliminated,
+            bool becameGuardian,
+            bool defendedGuardian,
+            bool capturedTerritory,
+            int ownedTileCount,
+            CancellationToken ct)
+        {
+            var missions = await _db.Missions.AsNoTracking()
+                .Where(m => m.Active)
+                .ToListAsync(ct);
+
+            var claims = await _db.MissionClaims
+                .Where(c => c.PlayerId == playerId)
+                .ToListAsync(ct);
+
+            foreach (var m in missions)
+            {
+                if (m.Key == "event_enter_1")
+                    await AddProgressSafeAsync(playerId, m, claims, 1, ct);
+                else if (m.Key == "event_top20_1" && rank > 0 && rank <= 20)
+                    await AddProgressSafeAsync(playerId, m, claims, 1, ct);
+                else if (m.Key == "event_win_1" && rank == 1)
+                    await AddProgressSafeAsync(playerId, m, claims, 1, ct);
+                else if (m.Key == "event_survive_50" && survivorsEliminated > 0)
+                    await AddProgressSafeAsync(playerId, m, claims, survivorsEliminated, ct);
+                else if (m.Key == "guardian_become_1" && becameGuardian)
+                    await AddProgressSafeAsync(playerId, m, claims, 1, ct);
+                else if (m.Key == "guardian_defend_3" && defendedGuardian)
+                    await AddProgressSafeAsync(playerId, m, claims, 1, ct);
+                else if (m.Key == "territory_capture_1" && capturedTerritory)
+                    await AddProgressSafeAsync(playerId, m, claims, 1, ct);
+                else if (m.Key == "territory_own_5" && ownedTileCount >= 5)
+                    await AddProgressSafeAsync(playerId, m, claims, 1, ct);
+                else if (m.Key == "champion_eliminate_10" && eventKind == "champion_battle" && survivorsEliminated > 0)
+                    await AddProgressSafeAsync(playerId, m, claims, survivorsEliminated, ct);
+            }
+
+            await _db.SaveChangesAsync(ct);
+        }
+
         public async Task ApplyRoundCompletedAsync(
             Guid playerId,
             bool perfectRound,

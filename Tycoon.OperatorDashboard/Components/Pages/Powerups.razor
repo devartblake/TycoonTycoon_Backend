@@ -1,0 +1,143 @@
+@page "/powerups"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Powerups</h1>
+
+<div class="tabs">
+    @foreach (var tab in new[] { "Lookup", "Grant" })
+    {
+        <button class="tab @(_tab == tab ? "active" : "")" @onclick="() => _tab = tab">@tab</button>
+    }
+</div>
+
+@if (_tab == "Lookup")
+{
+    <div class="card">
+        <h2>Player Powerup Inventory</h2>
+        <div class="filters">
+            <input @bind="_lookupPlayerId" placeholder="Player ID (UUID)..." style="width:340px" />
+            <button @onclick="LookupAsync">Search</button>
+        </div>
+
+        @if (_inventory is not null)
+        {
+            @if (_inventory.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                @if (!_inventory.RootElement.EnumerateArray().Any())
+                {
+                    <p style="color:#64748b;font-size:.875rem">No powerups found for this player.</p>
+                }
+                else
+                {
+                    <table>
+                        <thead><tr><th>Type</th><th>Amount</th><th>Expires</th><th>Granted At</th></tr></thead>
+                        <tbody>
+                            @foreach (var el in _inventory.RootElement.EnumerateArray())
+                            {
+                                var type    = el.TryGetProperty("type",       out var t) ? t.GetString() ?? "—" : "—";
+                                var amount  = el.TryGetProperty("amount",     out var a) ? a.ToString() : "—";
+                                var expires = el.TryGetProperty("expiresAt",  out var e) ? e.GetString() ?? "never" : "never";
+                                var granted = el.TryGetProperty("grantedAt",  out var g) ? g.GetString() ?? "—" : "—";
+                                <tr>
+                                    <td>@type</td>
+                                    <td>@amount</td>
+                                    <td>@expires</td>
+                                    <td>@granted</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
+            else
+            {
+                <pre style="padding:.75rem;background:#f8fafc;border-radius:6px;font-size:.8rem;overflow-x:auto">@_inventoryJson</pre>
+            }
+        }
+
+        @if (!string.IsNullOrEmpty(_lookupMsg))
+        {
+            <p class="message @(_lookupError ? "error-msg" : "")">@_lookupMsg</p>
+        }
+    </div>
+}
+
+@if (_tab == "Grant")
+{
+    <div class="card">
+        <h2>Grant Powerup</h2>
+        <label>Player ID<input @bind="_grantPlayerId" placeholder="UUID..." /></label>
+        <label>Powerup Type
+            <select @bind="_grantType">
+                <option value="DoubleXp">Double XP</option>
+                <option value="CoinBoost">Coin Boost</option>
+                <option value="Shield">Shield</option>
+                <option value="ExtraLife">Extra Life</option>
+                <option value="AnswerReveal">Answer Reveal</option>
+            </select>
+        </label>
+        <label>Amount<input type="number" @bind="_grantAmount" min="1" max="100" /></label>
+        <label>Duration (hours, optional)<input type="number" @bind="_grantDurationHours" min="0" /></label>
+        <button @onclick="GrantAsync" style="margin-top:.5rem">Grant</button>
+        @if (!string.IsNullOrEmpty(_grantMsg))
+        {
+            <p class="message @(_grantError ? "error-msg" : "")">@_grantMsg</p>
+        }
+    </div>
+}
+
+@code {
+    private string _tab = "Lookup";
+    private string _lookupPlayerId = string.Empty;
+    private JsonDocument? _inventory;
+    private string _inventoryJson = string.Empty;
+    private string _lookupMsg = string.Empty;
+    private bool _lookupError;
+
+    private string _grantPlayerId = string.Empty;
+    private string _grantType = "DoubleXp";
+    private int _grantAmount = 1;
+    private int? _grantDurationHours;
+    private string _grantMsg = string.Empty;
+    private bool _grantError;
+
+    protected override void OnInitialized() => Auth.TryAttachToken();
+
+    private async Task LookupAsync()
+    {
+        _lookupMsg = string.Empty;
+        _lookupError = false;
+        _inventory = null;
+        if (!Guid.TryParse(_lookupPlayerId, out var id)) { _lookupMsg = "Invalid player ID."; _lookupError = true; return; }
+        _inventory = await Api.GetPlayerPowerupsAsync(id);
+        if (_inventory is null) { _lookupMsg = "Player not found or API error."; _lookupError = true; return; }
+        _inventoryJson = System.Text.Json.JsonSerializer.Serialize(_inventory.RootElement, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private async Task GrantAsync()
+    {
+        _grantMsg = string.Empty;
+        _grantError = false;
+        if (!Guid.TryParse(_grantPlayerId, out var id)) { _grantMsg = "Invalid player ID."; _grantError = true; return; }
+        var ok = await Api.GrantPowerupAsync(id, new
+        {
+            type = _grantType,
+            amount = _grantAmount,
+            durationHours = _grantDurationHours
+        });
+        _grantMsg = ok ? "Powerup granted." : "Grant failed — check API logs.";
+        _grantError = !ok;
+    }
+}
+
+<style>
+    .tabs { display:flex; gap:.5rem; margin-bottom:1.25rem; }
+    .tab { background:#e2e8f0; color:#475569; }
+    .tab.active { background:#3b82f6; color:#fff; }
+    label { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; color:#475569; margin-bottom:.6rem; }
+    label input, label select { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
+    .error-msg { background:#fef2f2; border-left-color:#ef4444; color:#991b1b; }
+</style>

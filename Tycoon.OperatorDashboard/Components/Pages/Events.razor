@@ -1,0 +1,80 @@
+@page "/events"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Game Events</h1>
+
+@if (_doc is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>ID</th><th>Kind</th><th>Status</th><th>Open At</th><th>Actions</th></tr></thead>
+        <tbody>
+            @foreach (var el in _doc.RootElement.GetProperty("items").EnumerateArray())
+            {
+                var id    = el.GetProperty("id").GetGuid();
+                var kind  = el.GetProperty("kind").GetString() ?? "—";
+                var status = el.GetProperty("status").GetString() ?? "—";
+                var openAt = el.TryGetProperty("openAtUtc", out var oa) ? oa.GetString() : null;
+                <tr>
+                    <td><code>@id.ToString()[..8]…</code></td>
+                    <td>@kind</td>
+                    <td>@status</td>
+                    <td>@(openAt ?? "—")</td>
+                    <td>
+                        @if (status == "Scheduled")
+                        {
+                            <button @onclick="() => OpenAsync(id)">Open</button>
+                        }
+                        @if (status == "Open" || status == "Live")
+                        {
+                            <button class="danger" @onclick="() => CloseAsync(id)">Close</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <p class="message">@_message</p>
+    }
+}
+
+@code {
+    private JsonDocument? _doc;
+    private string _message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _doc = await Api.ListEventQueueAsync();
+    }
+
+    private async Task OpenAsync(Guid id)
+    {
+        _message = string.Empty;
+        var ok = await Api.OpenEventAsync(id);
+        _message = ok ? "Event opened." : "Open failed.";
+        await LoadAsync();
+    }
+
+    private async Task CloseAsync(Guid id)
+    {
+        _message = string.Empty;
+        var ok = await Api.CloseEventAsync(id);
+        _message = ok ? "Event closed." : "Close failed.";
+        await LoadAsync();
+    }
+}

@@ -1340,6 +1340,87 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.ToTable("player_wallets", (string)null);
                 });
 
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerEventStats", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ChampionBattleEliminations")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("CurrentTilesOwned")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("EventsEntered")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("EventsTop20")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("EventsWon")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("GuardianDaysTotal")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("GuardianDefencesLost")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("GuardianDefencesWon")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("GuardianPromotions")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("PeakXpMultiplierBps")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TilesEverCaptured")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("TotalEventCoinsEarned")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("TotalEventXpEarned")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonId", "CurrentTilesOwned");
+
+                    b.HasIndex("SeasonId", "EventsWon");
+
+                    b.HasIndex("SeasonId", "GuardianDefencesWon");
+
+                    b.HasIndex("SeasonId", "PlayerId")
+                        .IsUnique();
+
+                    b.ToTable("player_event_stats", (string)null);
+                });
+
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.ProcessedGameplayEvent", b =>
                 {
                     b.Property<Guid>("Id")

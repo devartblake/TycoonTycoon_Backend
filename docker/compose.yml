@@ -383,6 +383,70 @@ services:
       retries: 3
       start_period: 40s
 
+  # ================================
+  # Sidecar (FastAPI)
+  # ================================
+  sidecar:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.sidecar
+    container_name: tycoon_sidecar
+    restart: unless-stopped
+    ports:
+      - "${SIDECAR_PORT:-8100}:8100"
+    environment:
+      BACKEND_BASE_URL: "http://backend-api:5000"
+      MONGO_URL: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
+      MONGO_DB: "${MONGO_APP_DB:-tycoon_analytics}"
+      ELASTICSEARCH_URL: "http://elasticsearch:9200"
+      ELASTICSEARCH_USER: "elastic"
+      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD:-tycoon_elastic_password_123}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+    depends_on:
+      backend-api:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ================================
+  # Operator Dashboard (Blazor Server)
+  # ================================
+  operator-dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+      args:
+        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
+    container_name: tycoon_operator_dashboard
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT:-8200}:8200"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      ASPNETCORE_URLS: "http://+:8200"
+      # Point to tycoon-api via Docker service name
+      services__tycoon-api__http__0: "http://backend-api:5000"
+      AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+    depends_on:
+      backend-api:
+        condition: service_healthy
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 # ================================
 # Networks
 # ================================

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
@@ -52,6 +53,30 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
             dto.Should().NotBeNull();
             dto!.AssetKey.Should().Contain("uploads/");
             dto.UploadUrl.Should().Contain("/admin/media/upload/");
+        }
+
+        [Fact]
+        public async Task Upload_Stores_File_And_Returns_AssetKey_And_Url()
+        {
+            // First get a valid assetKey from the intent endpoint.
+            var intentResp = await _http.PostAsJsonAsync("/admin/media/intent", new CreateUploadIntentRequest("test.png", "image/png", 4));
+            intentResp.IsSuccessStatusCode.Should().BeTrue();
+            var intent = await intentResp.Content.ReadFromJsonAsync<UploadIntentDto>();
+
+            // Build a minimal multipart upload using the assetKey from the intent.
+            using var form = new MultipartFormDataContent();
+            using var fileBytes = new ByteArrayContent([0x89, 0x50, 0x4E, 0x47]); // PNG magic bytes
+            fileBytes.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+            form.Add(fileBytes, "file", "test.png");
+
+            var uploadUrl = intent!.UploadUrl;
+            var resp = await _http.PostAsync(uploadUrl, form);
+
+            resp.IsSuccessStatusCode.Should().BeTrue();
+
+            var result = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            result.GetProperty("assetKey").GetString().Should().Be(intent.AssetKey);
+            result.GetProperty("url").GetString().Should().NotBeNullOrWhiteSpace();
         }
     }
 }

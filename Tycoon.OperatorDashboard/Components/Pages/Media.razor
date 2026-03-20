@@ -1,0 +1,126 @@
+@page "/media"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+
+<h1>Media Upload</h1>
+
+<div class="card">
+    <h2>Upload Asset</h2>
+    <p style="font-size:.875rem;color:#64748b;margin-bottom:1rem">
+        Files are stored in MinIO and a public URL is returned. Use the asset key as a stable identifier.
+    </p>
+
+    <label>
+        Asset Key
+        <input @bind="_assetKey" placeholder="e.g. avatars/player-123.png" />
+    </label>
+
+    <label style="margin-top:.75rem">
+        File
+        <InputFile OnChange="OnFileChanged" accept="image/*,video/*,application/octet-stream" />
+    </label>
+
+    <button @onclick="UploadAsync" disabled="@(_uploading || _file is null || string.IsNullOrWhiteSpace(_assetKey))"
+            style="margin-top:1rem">
+        @(_uploading ? "Uploading…" : "Upload")
+    </button>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <p class="message @(_isError ? "error-msg" : "")">@_message</p>
+    }
+
+    @if (!string.IsNullOrEmpty(_resultUrl))
+    {
+        <div style="margin-top:1rem;padding:.75rem;background:#f0fdf4;border-radius:6px;font-size:.875rem">
+            <strong>Public URL:</strong><br />
+            <a href="@_resultUrl" target="_blank" style="word-break:break-all;color:#3b82f6">@_resultUrl</a>
+        </div>
+    }
+</div>
+
+<div class="card" style="margin-top:1.5rem">
+    <h2>Get Upload Intent</h2>
+    <p style="font-size:.875rem;color:#64748b;margin-bottom:.75rem">
+        Request a pre-signed asset key from the API before uploading.
+    </p>
+    <button @onclick="GetIntentAsync">Get Intent</button>
+
+    @if (_intent is not null)
+    {
+        <pre style="margin-top:.75rem;padding:.75rem;background:#f8fafc;border-radius:6px;font-size:.8rem;overflow-x:auto">@_intentJson</pre>
+    }
+</div>
+
+@code {
+    private IBrowserFile? _file;
+    private string _assetKey = string.Empty;
+    private string _message = string.Empty;
+    private string _resultUrl = string.Empty;
+    private bool _uploading;
+    private bool _isError;
+    private JsonDocument? _intent;
+    private string _intentJson = string.Empty;
+
+    protected override void OnInitialized() => Auth.TryAttachToken();
+
+    private void OnFileChanged(InputFileChangeEventArgs e)
+    {
+        _file = e.File;
+        if (string.IsNullOrWhiteSpace(_assetKey))
+            _assetKey = _file.Name;
+    }
+
+    private async Task UploadAsync()
+    {
+        if (_file is null || string.IsNullOrWhiteSpace(_assetKey)) return;
+        _uploading = true;
+        _message = string.Empty;
+        _resultUrl = string.Empty;
+        _isError = false;
+
+        try
+        {
+            await using var stream = _file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+            var result = await Api.UploadMediaAsync(_assetKey, stream, _file.ContentType, CancellationToken.None);
+            if (result is null)
+            {
+                _message = "Upload failed — check API logs.";
+                _isError = true;
+            }
+            else
+            {
+                if (result.RootElement.TryGetProperty("url", out var urlProp))
+                    _resultUrl = urlProp.GetString() ?? string.Empty;
+                _message = "Upload successful.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = $"Error: {ex.Message}";
+            _isError = true;
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    private async Task GetIntentAsync()
+    {
+        _intent = await Api.GetMediaIntentAsync();
+        _intentJson = _intent is not null
+            ? System.Text.Json.JsonSerializer.Serialize(_intent.RootElement, new JsonSerializerOptions { WriteIndented = true })
+            : "No response.";
+    }
+}
+
+<style>
+    label { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; color:#475569; margin-bottom:.25rem; }
+    label input { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
+    .error-msg { background:#fef2f2; border-left-color:#ef4444; color:#991b1b; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+</style>

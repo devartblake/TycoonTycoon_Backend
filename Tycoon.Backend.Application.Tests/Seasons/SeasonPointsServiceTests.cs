@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Domain.Entities;

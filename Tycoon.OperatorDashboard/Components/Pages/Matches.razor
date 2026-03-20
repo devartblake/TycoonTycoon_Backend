@@ -1,0 +1,52 @@
+@page "/matches"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Matches</h1>
+
+@if (_doc is null) { <p>Loading...</p> }
+else if (_doc.RootElement.TryGetProperty("items", out var items))
+{
+    <table>
+        <thead><tr><th>ID</th><th>Mode</th><th>Category</th><th>Questions</th><th>Status</th><th>Ended At</th></tr></thead>
+        <tbody>
+            @foreach (var el in items.EnumerateArray())
+            {
+                var id      = el.TryGetProperty("id",            out var i) ? i.GetString() ?? "—" : "—";
+                var mode    = el.TryGetProperty("mode",          out var m) ? m.GetString() ?? "—" : "—";
+                var cat     = el.TryGetProperty("category",      out var c) ? c.GetString() ?? "—" : "—";
+                var qcount  = el.TryGetProperty("questionCount", out var q) ? q.GetInt32() : 0;
+                var status  = el.TryGetProperty("status",        out var s) ? s.GetString() ?? "—" : "—";
+                var endedAt = el.TryGetProperty("endedAt",       out var e) ? e.GetString() ?? "—" : "—";
+                <tr>
+                    <td><code>@id[..Math.Min(8, id.Length)]…</code></td>
+                    <td>@mode</td>
+                    <td>@cat</td>
+                    <td>@qcount</td>
+                    <td>@status</td>
+                    <td>@endedAt</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="pager">
+        <button @onclick="PrevPage" disabled="@(_page <= 1)">← Prev</button>
+        <span>Page @_page</span>
+        <button @onclick="NextPage">Next →</button>
+    </div>
+}
+
+@code {
+    private JsonDocument? _doc;
+    private int _page = 1;
+
+    protected override async Task OnInitializedAsync() { Auth.TryAttachToken(); await LoadAsync(); }
+    private async Task LoadAsync() => _doc = await Api.ListMatchesAsync(_page);
+    private async Task PrevPage() { if (_page > 1) { _page--; await LoadAsync(); } }
+    private async Task NextPage() { _page++; await LoadAsync(); }
+}
+
+<style>.pager { display:flex; gap:.75rem; align-items:center; margin-top:1rem; }</style>

@@ -1,0 +1,85 @@
+@page "/audit"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Security Audit Log</h1>
+
+<div class="filters">
+    <label style="flex-direction:row;align-items:center;gap:.4rem;font-size:.875rem;color:#475569">
+        From <input type="date" @bind="_from" />
+    </label>
+    <label style="flex-direction:row;align-items:center;gap:.4rem;font-size:.875rem;color:#475569">
+        To <input type="date" @bind="_to" />
+    </label>
+    <select @bind="_status">
+        <option value="">All statuses</option>
+        <option value="success">Success</option>
+        <option value="error">Error</option>
+        <option value="forbidden">Forbidden</option>
+    </select>
+    <button @onclick="LoadAsync">Search</button>
+</div>
+
+@if (_doc is null) { <p>Loading...</p> }
+else if (_doc.RootElement.TryGetProperty("items", out var items))
+{
+    <table>
+        <thead><tr><th>Timestamp</th><th>Admin</th><th>Operation</th><th>Status</th><th>IP</th></tr></thead>
+        <tbody>
+            @foreach (var el in items.EnumerateArray())
+            {
+                var ts      = el.TryGetProperty("timestamp",  out var t) ? t.GetString() ?? "—" : "—";
+                var admin   = el.TryGetProperty("adminEmail", out var a) ? a.GetString() ?? "—" : "—";
+                var op      = el.TryGetProperty("operation",  out var o) ? o.GetString() ?? "—" : "—";
+                var stat    = el.TryGetProperty("status",     out var s) ? s.GetString() ?? "—" : "—";
+                var ip      = el.TryGetProperty("ipAddress",  out var i) ? i.GetString() ?? "—" : "—";
+                <tr>
+                    <td>@ts</td>
+                    <td>@admin</td>
+                    <td><code>@op</code></td>
+                    <td><span class="badge @StatusClass(stat)">@stat</span></td>
+                    <td>@ip</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="pager">
+        <button @onclick="PrevPage" disabled="@(_page <= 1)">← Prev</button>
+        <span>Page @_page</span>
+        <button @onclick="NextPage">Next →</button>
+    </div>
+}
+
+@code {
+    private JsonDocument? _doc;
+    private DateTime? _from, _to;
+    private string _status = string.Empty;
+    private int _page = 1;
+
+    protected override async Task OnInitializedAsync() { Auth.TryAttachToken(); await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        DateTimeOffset? from = _from.HasValue ? new DateTimeOffset(_from.Value, TimeSpan.Zero) : null;
+        DateTimeOffset? to   = _to.HasValue   ? new DateTimeOffset(_to.Value,   TimeSpan.Zero) : null;
+        _doc = await Api.GetSecurityAuditAsync(from, to, string.IsNullOrEmpty(_status) ? null : _status, _page);
+    }
+
+    private async Task PrevPage() { if (_page > 1) { _page--; await LoadAsync(); } }
+    private async Task NextPage() { _page++; await LoadAsync(); }
+
+    private static string StatusClass(string s) => s switch
+    {
+        "success"   => "on",
+        "forbidden" => "off",
+        _           => ""
+    };
+}
+
+<style>
+    .pager { display:flex; gap:.75rem; align-items:center; margin-top:1rem; }
+    label { display:flex; gap:.4rem; align-items:center; font-size:.875rem; color:#475569; }
+</style>

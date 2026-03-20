@@ -1,0 +1,99 @@
+@page "/users"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Users</h1>
+
+<div class="filters">
+    <input @bind="_query" placeholder="Search by name or email" />
+    <label><input type="checkbox" @bind="_bannedOnly" /> Banned only</label>
+    <button @onclick="LoadAsync">Search</button>
+</div>
+
+@if (_doc is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>ID</th><th>Handle</th><th>Email</th><th>Banned</th><th>Actions</th></tr></thead>
+        <tbody>
+            @foreach (var el in _doc.RootElement.GetProperty("items").EnumerateArray())
+            {
+                var userId  = el.GetProperty("id").GetString() ?? "";
+                var handle  = el.TryGetProperty("handle", out var h) ? h.GetString() ?? "—" : "—";
+                var email   = el.TryGetProperty("email", out var em) ? em.GetString() ?? "—" : "—";
+                var banned  = el.TryGetProperty("isBanned", out var b) && b.GetBoolean();
+                <tr>
+                    <td><code>@userId[..Math.Min(8, userId.Length)]…</code></td>
+                    <td>@handle</td>
+                    <td>@email</td>
+                    <td>@(banned ? "Yes" : "No")</td>
+                    <td>
+                        @if (!banned)
+                        {
+                            @if (_confirmBanId == userId)
+                            {
+                                <span style="font-size:.8rem;color:#dc2626;margin-right:.4rem">Ban user?</span>
+                                <button class="danger" @onclick="() => ConfirmBanAsync(userId)">Yes, ban</button>
+                                <button @onclick="() => _confirmBanId = null" style="margin-left:.25rem;background:#94a3b8">Cancel</button>
+                            }
+                            else
+                            {
+                                <button class="danger" @onclick="() => _confirmBanId = userId">Ban</button>
+                            }
+                        }
+                        else
+                        {
+                            <button @onclick="() => UnbanAsync(userId)">Unban</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <p class="message">@_message</p>
+    }
+}
+
+@code {
+    private JsonDocument? _doc;
+    private string _query = string.Empty;
+    private bool _bannedOnly;
+    private string _message = string.Empty;
+    private string? _confirmBanId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _doc = await Api.ListUsersAsync(_query, _bannedOnly ? true : null);
+    }
+
+    private async Task ConfirmBanAsync(string userId)
+    {
+        _confirmBanId = null;
+        _message = string.Empty;
+        var ok = await Api.BanUserAsync(userId, "Banned via operator dashboard");
+        _message = ok ? "User banned." : "Ban failed.";
+        await LoadAsync();
+    }
+
+    private async Task UnbanAsync(string userId)
+    {
+        _message = string.Empty;
+        var ok = await Api.UnbanUserAsync(userId);
+        _message = ok ? "User unbanned." : "Unban failed.";
+        await LoadAsync();
+    }
+}

@@ -53,4 +53,23 @@ var migrator = builder
 
 api.WaitFor(migrator);
 
+// Operator dashboard — Blazor Server UI for the ops/admin team
+var dashboard = builder
+    .AddProject("tycoon-dashboard", "../Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj")
+    .WithReference(api)
+    .WithExternalHttpEndpoints();
+
+dashboard.WaitFor(api);
+
+// FastAPI sidecar — ML inference, analytics pipelines, webhooks, utilities
+var sidecar = builder
+    .AddExecutable("tycoon-sidecar", "uvicorn", "../Tycoon.Sidecar",
+        "app.main:app", "--host", "0.0.0.0", "--port", "8100")
+    .WithHttpEndpoint(port: 8100, name: "http")
+    .WithReference(analyticsDb)
+    .WithReference(search);
+
+// Allow tycoon-api to call the sidecar by service name
+api.WithReference(sidecar);
+
 builder.Build().Run();

@@ -1,0 +1,56 @@
+/* Tycoon Operator Dashboard — minimal base styles */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #1a1a1a; }
+
+/* Layout */
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: #1e293b; color: #cbd5e1; display: flex; flex-direction: column; padding: 1.5rem 1rem; gap: 1rem; flex-shrink: 0; }
+.sidebar .brand { font-size: 1.2rem; font-weight: 700; color: #fff; padding-bottom: 1rem; border-bottom: 1px solid #334155; }
+.sidebar ul { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
+.sidebar ul a { display: block; padding: 0.5rem 0.75rem; border-radius: 6px; color: #94a3b8; text-decoration: none; }
+.sidebar ul a:hover { background: #334155; color: #fff; }
+.sidebar ul a.active { background: #334155; color: #fff; font-weight: 600; }
+.nav-group { padding: 0.75rem 0.75rem 0.2rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; pointer-events: none; }
+.sidebar-footer a { color: #64748b; font-size: 0.875rem; }
+.content { flex: 1; padding: 2rem; overflow-y: auto; }
+
+/* Cards */
+.card { background: #fff; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+thead { background: #f8fafc; }
+th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 0.875rem; }
+th { font-weight: 600; color: #475569; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+
+/* Badges */
+.badge { display: inline-block; padding: 0.2em 0.6em; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.badge.on  { background: #dcfce7; color: #166534; }
+.badge.off { background: #fee2e2; color: #991b1b; }
+
+/* Buttons */
+button { padding: 0.4rem 0.9rem; border: none; border-radius: 6px; background: #3b82f6; color: #fff; cursor: pointer; font-size: 0.875rem; }
+button:hover { background: #2563eb; }
+button.danger { background: #ef4444; }
+button.danger:hover { background: #dc2626; }
+
+/* Filters */
+.filters { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.25rem; }
+.filters input, .filters select { padding: 0.4rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem; }
+
+/* Messages */
+.message { margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: #f0fdf4; border-left: 3px solid #22c55e; font-size: 0.875rem; animation: fadeOut 4s forwards; }
+@keyframes fadeOut { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Login */
+.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #0f172a; }
+.login-box { background: #1e293b; padding: 2.5rem; border-radius: 12px; width: 360px; }
+.login-box h1 { color: #fff; margin-bottom: 1.5rem; text-align: center; }
+.login-box label { display: flex; flex-direction: column; gap: 0.35rem; color: #94a3b8; font-size: 0.875rem; margin-bottom: 1rem; }
+.login-box input { padding: 0.6rem 0.75rem; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: #fff; font-size: 1rem; }
+.login-box button { width: 100%; padding: 0.7rem; font-size: 1rem; margin-top: 0.5rem; }
+.error { color: #f87171; font-size: 0.875rem; margin-bottom: 0.75rem; }
+
+code { font-family: monospace; font-size: 0.8em; background: #f1f5f9; padding: 0.1em 0.4em; border-radius: 3px; }
+h1 { font-size: 1.5rem; margin-bottom: 1.25rem; color: #0f172a; }
+h2 { font-size: 1.125rem; margin-bottom: 1rem; color: #1e293b; }

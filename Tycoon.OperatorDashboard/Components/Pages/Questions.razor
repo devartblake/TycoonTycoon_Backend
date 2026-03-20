@@ -1,0 +1,144 @@
+@page "/questions"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Questions</h1>
+
+<div class="filters">
+    <input @bind="_query" placeholder="Search text..." />
+    <input @bind="_category" placeholder="Category..." />
+    <button @onclick="LoadAsync">Search</button>
+    <button @onclick="() => _showCreate = !_showCreate">+ New Question</button>
+</div>
+
+@if (_showCreate)
+{
+    <div class="card" style="margin-bottom:1.25rem">
+        <h2>Create Question</h2>
+        <label>Question text<textarea @bind="_createText" rows="2" style="width:100%;padding:.4rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem"></textarea></label>
+        <label>Correct answer<input @bind="_createCorrect" /></label>
+        <label>Distractors (comma-separated)<input @bind="_createDistractors" /></label>
+        <label>Category<input @bind="_createCategory" /></label>
+        <label>Tags (comma-separated)<input @bind="_createTags" /></label>
+        <button @onclick="CreateAsync" style="margin-top:.75rem">Save</button>
+        @if (!string.IsNullOrEmpty(_createMsg)) { <p class="message">@_createMsg</p> }
+    </div>
+}
+
+@if (_questions is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Text</th><th>Category</th><th>Tags</th><th>Actions</th></tr></thead>
+        <tbody>
+            @foreach (var el in _questions.RootElement.GetProperty("items").EnumerateArray())
+            {
+                var id       = el.TryGetProperty("id", out var i) ? i.GetGuid() : Guid.Empty;
+                var text     = el.TryGetProperty("text", out var t) ? t.GetString() ?? "" : "";
+                var cat      = el.TryGetProperty("category", out var c) ? c.GetString() ?? "—" : "—";
+                var tags     = el.TryGetProperty("tags", out var tg) ? string.Join(", ", tg.EnumerateArray().Select(x => x.GetString())) : "";
+                <tr>
+                    <td style="max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@text</td>
+                    <td>@cat</td>
+                    <td><small>@tags</small></td>
+                    <td>
+                        <button @onclick="() => StartEdit(id, text, cat, tags)">Edit</button>
+                        <button class="danger" @onclick="() => DeleteAsync(id)">Delete</button>
+                    </td>
+                </tr>
+                @if (_editingId == id)
+                {
+                    <tr><td colspan="4" style="background:#f8fafc;padding:.75rem 1rem">
+                        <label>Text<textarea @bind="_editText" rows="2" style="width:100%;padding:.4rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem"></textarea></label>
+                        <label>Category<input @bind="_editCategory" /></label>
+                        <label>Tags<input @bind="_editTags" /></label>
+                        <button @onclick="SaveEditAsync" style="margin-top:.5rem">Save</button>
+                        <button @onclick="() => _editingId = Guid.Empty" style="margin-left:.5rem;background:#64748b">Cancel</button>
+                        @if (!string.IsNullOrEmpty(_editMsg)) { <p class="message">@_editMsg</p> }
+                    </td></tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <div class="pager">
+        <button @onclick="PrevPage" disabled="@(_page <= 1)">← Prev</button>
+        <span>Page @_page</span>
+        <button @onclick="NextPage">Next →</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_message)) { <p class="message">@_message</p> }
+}
+
+@code {
+    private JsonDocument? _questions;
+    private string _query = string.Empty, _category = string.Empty;
+    private int _page = 1;
+    private bool _showCreate;
+    private string _message = string.Empty;
+
+    // create form
+    private string _createText = string.Empty, _createCorrect = string.Empty;
+    private string _createDistractors = string.Empty, _createCategory = string.Empty, _createTags = string.Empty;
+    private string _createMsg = string.Empty;
+
+    // edit inline
+    private Guid _editingId;
+    private string _editText = string.Empty, _editCategory = string.Empty, _editTags = string.Empty;
+    private string _editMsg = string.Empty;
+
+    protected override async Task OnInitializedAsync() { Auth.TryAttachToken(); await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        _questions = await Api.ListQuestionsAsync(_query, _category, _page);
+    }
+
+    private async Task CreateAsync()
+    {
+        _createMsg = string.Empty;
+        var distractors = _createDistractors.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
+        var tags = _createTags.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
+        var ok = await Api.CreateQuestionAsync(new { text = _createText, correctAnswer = _createCorrect, distractors, category = _createCategory, tags });
+        _createMsg = ok ? "Created." : "Failed.";
+        if (ok) { _createText = _createCorrect = _createDistractors = _createCategory = _createTags = string.Empty; _showCreate = false; }
+        await LoadAsync();
+    }
+
+    private void StartEdit(Guid id, string text, string cat, string tags)
+    {
+        _editingId = id; _editText = text; _editCategory = cat; _editTags = tags; _editMsg = string.Empty;
+    }
+
+    private async Task SaveEditAsync()
+    {
+        _editMsg = string.Empty;
+        var tags = _editTags.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
+        var ok = await Api.UpdateQuestionAsync(_editingId, new { text = _editText, category = _editCategory, tags });
+        _editMsg = ok ? "Saved." : "Failed.";
+        if (ok) _editingId = Guid.Empty;
+        await LoadAsync();
+    }
+
+    private async Task DeleteAsync(Guid id)
+    {
+        _message = string.Empty;
+        var ok = await Api.DeleteQuestionAsync(id);
+        _message = ok ? "Deleted." : "Delete failed.";
+        await LoadAsync();
+    }
+
+    private async Task PrevPage() { if (_page > 1) { _page--; await LoadAsync(); } }
+    private async Task NextPage() { _page++; await LoadAsync(); }
+}
+
+<style>
+    .pager { display:flex; gap:.75rem; align-items:center; margin-top:1rem; }
+    label { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; color:#475569; margin-bottom:.6rem; }
+    label input, label textarea { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
+</style>

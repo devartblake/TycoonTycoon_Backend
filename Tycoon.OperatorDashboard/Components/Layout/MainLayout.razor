@@ -1,0 +1,47 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+
+<div class="layout">
+    <nav class="sidebar">
+        <div class="brand">Tycoon Ops</div>
+        <ul>
+            <li><a href="/" class="@NavClass("/", exact: true)">Dashboard</a></li>
+            <li class="nav-group">Content</li>
+            <li><a href="/questions" class="@NavClass("/questions")">Questions</a></li>
+            <li><a href="/notifications" class="@NavClass("/notifications")">Notifications</a></li>
+            <li><a href="/media" class="@NavClass("/media")">Media</a></li>
+            <li><a href="/skills" class="@NavClass("/skills")">Skills</a></li>
+            <li class="nav-group">Operations</li>
+            <li><a href="/seasons" class="@NavClass("/seasons")">Seasons</a></li>
+            <li><a href="/events" class="@NavClass("/events")">Game Events</a></li>
+            <li><a href="/flags" class="@NavClass("/flags")">Feature Flags</a></li>
+            <li class="nav-group">Players</li>
+            <li><a href="/users" class="@NavClass("/users")">Users</a></li>
+            <li><a href="/moderation" class="@NavClass("/moderation")">Moderation</a></li>
+            <li><a href="/economy" class="@NavClass("/economy")">Economy</a></li>
+            <li><a href="/powerups" class="@NavClass("/powerups")">Powerups</a></li>
+            <li><a href="/anti-cheat" class="@NavClass("/anti-cheat")">Anti-Cheat</a></li>
+            <li class="nav-group">Audit</li>
+            <li><a href="/matches" class="@NavClass("/matches")">Matches</a></li>
+            <li><a href="/audit" class="@NavClass("/audit")">Security Log</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/logout">Sign out</a>
+        </div>
+    </nav>
+    <main class="content">
+        @Body
+    </main>
+</div>
+
+@code {
+    private string NavClass(string href, bool exact = false)
+    {
+        var uri = Nav.Uri;
+        var path = new Uri(uri).AbsolutePath.TrimEnd('/');
+        var target = href.TrimEnd('/');
+        if (exact)
+            return path == target || path == "" && target == "" ? "active" : "";
+        return path.StartsWith(target, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+}

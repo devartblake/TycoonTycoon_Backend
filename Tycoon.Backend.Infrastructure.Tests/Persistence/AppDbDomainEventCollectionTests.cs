@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Domain.Events;

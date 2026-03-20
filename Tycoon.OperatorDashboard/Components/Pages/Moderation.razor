@@ -1,0 +1,222 @@
+@page "/moderation"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Moderation</h1>
+
+<div class="tabs">
+    @foreach (var tab in new[] { "Escalations", "Player Profile", "Action Logs" })
+    {
+        <button class="tab @(_tab == tab ? "active" : "")" @onclick="() => SwitchTab(tab)">@tab</button>
+    }
+</div>
+
+@if (_tab == "Escalations")
+{
+    <div class="filters">
+        <select @bind="_statusFilter">
+            <option value="">All</option>
+            <option value="Open">Open</option>
+            <option value="Resolved">Resolved</option>
+        </select>
+        <button @onclick="LoadEscalationsAsync">Refresh</button>
+    </div>
+
+    @if (_escalations is null) { <p>Loading...</p> }
+    else
+    {
+        <table>
+            <thead><tr><th>ID</th><th>Type</th><th>Status</th><th>Reporter</th><th>Created</th></tr></thead>
+            <tbody>
+                @foreach (var el in _escalations.RootElement.GetProperty("items").EnumerateArray())
+                {
+                    var id       = el.TryGetProperty("id",               out var i) ? i.GetString() ?? "—" : "—";
+                    var type     = el.TryGetProperty("type",             out var t) ? t.GetString() ?? "—" : "—";
+                    var status   = el.TryGetProperty("status",           out var s) ? s.GetString() ?? "—" : "—";
+                    var reporter = el.TryGetProperty("reporterPlayerId", out var r) ? r.GetString() ?? "—" : "—";
+                    var created  = el.TryGetProperty("createdAtUtc",     out var c) ? c.GetString() ?? "—" : "—";
+                    <tr>
+                        <td><code>@id[..Math.Min(8, id.Length)]…</code></td>
+                        <td>@type</td>
+                        <td>@status</td>
+                        <td><code>@reporter[..Math.Min(8, reporter.Length)]…</code></td>
+                        <td>@created</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@if (_tab == "Player Profile")
+{
+    <div class="card">
+        <h2>Look Up Player</h2>
+        <div class="filters">
+            <input @bind="_lookupId" placeholder="Player ID (UUID)..." style="width:340px" />
+            <button @onclick="LookupProfileAsync">Lookup</button>
+        </div>
+
+        @if (_profile is not null)
+        {
+            var root   = _profile.RootElement;
+            var status = root.TryGetProperty("status",     out var s) ? s.GetString() ?? "—" : "—";
+            var reason = root.TryGetProperty("reason",     out var r) ? r.GetString() ?? "—" : "—";
+            var expiry = root.TryGetProperty("expiresAtUtc", out var e) ? e.GetString() : null;
+            <div style="margin:1rem 0;padding:.75rem;background:#f8fafc;border-radius:6px;font-size:.875rem">
+                <strong>Status:</strong> @status &nbsp;|&nbsp;
+                <strong>Reason:</strong> @reason &nbsp;|&nbsp;
+                <strong>Expires:</strong> @(expiry ?? "never")
+            </div>
+        }
+
+        <h2 style="margin-top:1.25rem">Set Status</h2>
+        <label>Status
+            <select @bind="_setStatus">
+                <option value="Active">Active</option>
+                <option value="Warning">Warning</option>
+                <option value="Suspended">Suspended</option>
+                <option value="Banned">Banned</option>
+            </select>
+        </label>
+        <label>Reason<input @bind="_setReason" /></label>
+        <label>Notes<input @bind="_setNotes" /></label>
+        <label>Expires at (optional)<input type="datetime-local" @bind="_setExpiry" /></label>
+        @if (_confirmSetStatus)
+        {
+            <div style="margin-top:.5rem;padding:.6rem;background:#fef2f2;border-radius:6px;font-size:.875rem;color:#991b1b">
+                Set status to <strong>@_setStatus</strong> for this player?
+                <button class="danger" @onclick="ConfirmSetStatusAsync" style="margin-left:.75rem">Yes, apply</button>
+                <button @onclick="() => _confirmSetStatus = false" style="margin-left:.25rem;background:#94a3b8">Cancel</button>
+            </div>
+        }
+        else
+        {
+            <button @onclick="RequestSetStatusAsync" style="margin-top:.5rem">Apply</button>
+        }
+        @if (!string.IsNullOrEmpty(_profileMsg)) { <p class="message">@_profileMsg</p> }
+    </div>
+}
+
+@if (_tab == "Action Logs")
+{
+    <div class="filters">
+        <input @bind="_logPlayerId" placeholder="Player ID (optional)..." />
+        <button @onclick="LoadLogsAsync">Search</button>
+    </div>
+
+    @if (_logs is null) { <p>Loading...</p> }
+    else if (_logs.RootElement.TryGetProperty("items", out var logItems))
+    {
+        <table>
+            <thead><tr><th>Admin</th><th>Player</th><th>Action</th><th>Reason</th><th>At</th></tr></thead>
+            <tbody>
+                @foreach (var el in logItems.EnumerateArray())
+                {
+                    var admin  = el.TryGetProperty("setByAdmin",  out var a) ? a.GetString() ?? "—" : "—";
+                    var player = el.TryGetProperty("playerId",    out var p) ? p.GetString() ?? "—" : "—";
+                    var action = el.TryGetProperty("action",      out var ac) ? ac.GetString() ?? "—" : "—";
+                    var reason = el.TryGetProperty("reason",      out var r) ? r.GetString() ?? "—" : "—";
+                    var at     = el.TryGetProperty("setAtUtc",    out var t) ? t.GetString() ?? "—" : "—";
+                    <tr>
+                        <td>@admin</td>
+                        <td><code>@player[..Math.Min(8, player.Length)]…</code></td>
+                        <td>@action</td>
+                        <td>@reason</td>
+                        <td>@at</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private string _tab = "Escalations";
+    private JsonDocument? _escalations, _profile, _logs;
+
+    private string _statusFilter = "Open";
+
+    // profile lookup & set-status
+    private string _lookupId = string.Empty;
+    private string _setStatus = "Active", _setReason = string.Empty, _setNotes = string.Empty;
+    private DateTime? _setExpiry;
+    private string _profileMsg = string.Empty;
+    private bool _confirmSetStatus;
+
+    // logs
+    private string _logPlayerId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.TryAttachToken();
+        await LoadEscalationsAsync();
+    }
+
+    private async Task SwitchTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "Escalations") await LoadEscalationsAsync();
+        if (tab == "Action Logs") await LoadLogsAsync();
+    }
+
+    private async Task LoadEscalationsAsync() =>
+        _escalations = await Api.ListEscalationsAsync(string.IsNullOrEmpty(_statusFilter) ? null : _statusFilter);
+
+    private async Task LookupProfileAsync()
+    {
+        _profileMsg = string.Empty;
+        if (!Guid.TryParse(_lookupId, out var id)) { _profileMsg = "Invalid player ID."; return; }
+        _profile = await Api.GetModerationProfileAsync(id);
+        if (_profile is null) _profileMsg = "Player not found.";
+    }
+
+    private void RequestSetStatusAsync()
+    {
+        _profileMsg = string.Empty;
+        if (!Guid.TryParse(_lookupId, out _)) { _profileMsg = "Look up a player first."; return; }
+        // Require confirmation for destructive statuses
+        if (_setStatus is "Suspended" or "Banned")
+            _confirmSetStatus = true;
+        else
+            _ = SetStatusAsync();
+    }
+
+    private async Task ConfirmSetStatusAsync()
+    {
+        _confirmSetStatus = false;
+        await SetStatusAsync();
+    }
+
+    private async Task SetStatusAsync()
+    {
+        _profileMsg = string.Empty;
+        if (!Guid.TryParse(_lookupId, out var id)) { _profileMsg = "Look up a player first."; return; }
+        var ok = await Api.SetModerationStatusAsync(new
+        {
+            playerId = id,
+            status = _setStatus,
+            reason = _setReason,
+            notes = _setNotes,
+            expiresAtUtc = _setExpiry
+        });
+        _profileMsg = ok ? "Status updated." : "Update failed.";
+        if (ok) await LookupProfileAsync();
+    }
+
+    private async Task LoadLogsAsync()
+    {
+        Guid? pid = Guid.TryParse(_logPlayerId, out var g) ? g : null;
+        _logs = await Api.GetModerationLogsAsync(pid);
+    }
+}
+
+<style>
+    .tabs { display:flex; gap:.5rem; margin-bottom:1.25rem; }
+    .tab { background:#e2e8f0; color:#475569; }
+    .tab.active { background:#3b82f6; color:#fff; }
+    label { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; color:#475569; margin-bottom:.6rem; }
+    label input, label select { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
+</style>

@@ -1,0 +1,149 @@
+@page "/seasons"
+@attribute [Authorize]
+@inject AdminApiClient Api
+@inject AdminAuthService Auth
+@using System.Text.Json
+
+<h1>Seasons</h1>
+
+<div class="tabs">
+    @foreach (var tab in new[] { "Seasons", "Reward Claims" })
+    {
+        <button class="tab @(_tab == tab ? "active" : "")" @onclick="() => SwitchTab(tab)">@tab</button>
+    }
+</div>
+
+@if (_tab == "Seasons")
+{
+    @if (_seasons is null) { <p>Loading...</p> }
+    else
+    {
+        <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Start</th><th>End</th><th>Actions</th></tr></thead>
+            <tbody>
+                @foreach (var s in _seasons.Items)
+                {
+                    <tr>
+                        <td><code>@s.Id.ToString()[..8]…</code></td>
+                        <td>@s.Name</td>
+                        <td>@s.Status</td>
+                        <td>@s.StartsAt.ToString("yyyy-MM-dd")</td>
+                        <td>@(s.EndsAt?.ToString("yyyy-MM-dd") ?? "—")</td>
+                        <td>
+                            @if (s.Status is "Draft" or "Inactive")
+                            {
+                                <button @onclick="() => ActivateAsync(s.Id)">Activate</button>
+                            }
+                            @if (s.Status == "Active")
+                            {
+                                @if (_confirmCloseId == s.Id)
+                                {
+                                    <span style="font-size:.8rem;color:#dc2626;margin-right:.4rem">Close season?</span>
+                                    <button class="danger" @onclick="() => ConfirmCloseAsync(s.Id)">Yes, close</button>
+                                    <button @onclick="() => _confirmCloseId = null" style="margin-left:.25rem;background:#94a3b8">Cancel</button>
+                                }
+                                else
+                                {
+                                    <button class="danger" @onclick="() => _confirmCloseId = s.Id" style="margin-left:.4rem">Close</button>
+                                }
+                                <button @onclick="() => RecomputeAsync(s.Id)" style="margin-left:.4rem;background:#7c3aed">Recompute Tiers</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!string.IsNullOrEmpty(_message)) { <p class="message">@_message</p> }
+    }
+}
+
+@if (_tab == "Reward Claims")
+{
+    <div class="filters">
+        <input @bind="_rewardSeasonId" placeholder="Season ID (optional)..." />
+        <input @bind="_rewardPlayerId" placeholder="Player ID (optional)..." />
+        <button @onclick="LoadClaimsAsync">Search</button>
+    </div>
+
+    @if (_claims is null) { <p>Enter a season or player ID and search.</p> }
+    else if (_claims.RootElement.TryGetProperty("items", out var claimItems))
+    {
+        <table>
+            <thead><tr><th>Player</th><th>Season</th><th>Tier</th><th>Reward</th><th>Claimed At</th></tr></thead>
+            <tbody>
+                @foreach (var el in claimItems.EnumerateArray())
+                {
+                    var player  = el.TryGetProperty("playerId",   out var p) ? p.GetString() ?? "—" : "—";
+                    var season  = el.TryGetProperty("seasonId",   out var s) ? s.GetString() ?? "—" : "—";
+                    var tier    = el.TryGetProperty("tier",       out var t) ? t.GetInt32() : 0;
+                    var reward  = el.TryGetProperty("rewardType", out var r) ? r.GetString() ?? "—" : "—";
+                    var at      = el.TryGetProperty("claimedAt",  out var a) ? a.GetString() ?? "—" : "—";
+                    <tr>
+                        <td><code>@player[..Math.Min(8, player.Length)]…</code></td>
+                        <td><code>@season[..Math.Min(8, season.Length)]…</code></td>
+                        <td>@tier</td>
+                        <td>@reward</td>
+                        <td>@at</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private string _tab = "Seasons";
+    private Services.PagedResult<Tycoon.Shared.Contracts.Dtos.SeasonDto>? _seasons;
+    private JsonDocument? _claims;
+    private string _message = string.Empty;
+    private string _rewardSeasonId = string.Empty, _rewardPlayerId = string.Empty;
+    private Guid? _confirmCloseId;
+
+    protected override async Task OnInitializedAsync() { Auth.TryAttachToken(); await LoadAsync(); }
+
+    private async Task SwitchTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "Seasons") await LoadAsync();
+    }
+
+    private async Task LoadAsync() => _seasons = await Api.ListSeasonsAsync();
+
+    private async Task ActivateAsync(Guid id)
+    {
+        _message = string.Empty;
+        var res = await Api.ActivateSeasonAsync(id);
+        _message = res is not null ? "Season activated." : "Activation failed.";
+        await LoadAsync();
+    }
+
+    private async Task ConfirmCloseAsync(Guid id)
+    {
+        _confirmCloseId = null;
+        _message = string.Empty;
+        var ok = await Api.CloseSeasonAsync(id);
+        _message = ok ? "Season closed." : "Close failed.";
+        await LoadAsync();
+    }
+
+    private async Task RecomputeAsync(Guid id)
+    {
+        _message = string.Empty;
+        var ok = await Api.ForceRecomputeAsync(id);
+        _message = ok ? "Tier recompute triggered." : "Recompute failed.";
+    }
+
+    private async Task LoadClaimsAsync()
+    {
+        Guid? sid = Guid.TryParse(_rewardSeasonId, out var sg) ? sg : null;
+        Guid? pid = Guid.TryParse(_rewardPlayerId, out var pg) ? pg : null;
+        _claims = await Api.GetRewardClaimsAsync(sid, pid);
+    }
+}
+
+<style>
+    .tabs { display:flex; gap:.5rem; margin-bottom:1.25rem; }
+    .tab { background:#e2e8f0; color:#475569; }
+    .tab.active { background:#3b82f6; color:#fff; }
+</style>
