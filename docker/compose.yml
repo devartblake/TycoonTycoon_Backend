@@ -444,6 +444,10 @@ services:
       # Point to tycoon-api via Docker service name
       services__tycoon-api__http__0: "http://backend-api:5000"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+      # Persist Data Protection keys across restarts (fixes antiforgery / cookie decryption errors)
+      DataProtection__KeysPath: "/app/dp-keys"
+    volumes:
+      - dashboard_dp_keys:/app/dp-keys
     depends_on:
       backend-api:
         condition: service_healthy
@@ -476,3 +480,4 @@ volumes:
   pgadmin_data:
   prometheus_data:
   grafana_data:
+  dashboard_dp_keys:
