@@ -36,7 +36,7 @@ namespace Tycoon.Backend.Application.Guardians
                 return;
             }
 
-            var tiers = await db.Tiers.AsNoTracking().OrderBy(x => x.TierNumber).ToListAsync(ct);
+            var tiers = await db.Tiers.AsNoTracking().OrderBy(x => x.Order).ToListAsync(ct);
             var tomorrow = DateTimeOffset.UtcNow.Date.AddDays(1).AddHours(2);
             var expiresAt = new DateTimeOffset(tomorrow, TimeSpan.Zero);
             var now = DateTimeOffset.UtcNow;
@@ -74,7 +74,7 @@ namespace Tycoon.Backend.Application.Guardians
                     {
                         var newGuardian = new TierGuardian(activeSeason.Id, tierNum, profile.PlayerId, expiresAt);
                         db.TierGuardians.Add(newGuardian);
-                        logger.LogInformation("Assigned guardian for player {PlayerId} in tier {Tier}", profile.PlayerId, tier.TierNumber);
+                        logger.LogInformation("Assigned guardian for player {PlayerId} in tier {Tier}", profile.PlayerId, tier.Order);
                     }
                     else
                     {
