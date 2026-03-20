@@ -173,10 +173,19 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         return resp.IsSuccessStatusCode;
     }
 
-    public async Task<bool> BulkImportQuestionsAsync(object body, CancellationToken ct = default)
+    public async Task<JsonDocument?> BulkImportQuestionsAsync(object body, CancellationToken ct = default)
     {
         var resp = await http.PostAsync("/admin/questions/bulk", JsonContent.Create(body), ct);
-        return resp.IsSuccessStatusCode;
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<JsonDocument?> BulkDeleteQuestionsAsync(IEnumerable<Guid> ids, CancellationToken ct = default)
+    {
+        var body = JsonContent.Create(new { ids });
+        var resp = await http.PostAsync("/admin/questions/bulk-delete", body, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
     // ── Notifications ──────────────────────────────────────────────────────
