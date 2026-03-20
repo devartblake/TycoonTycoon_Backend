@@ -1,18 +1,26 @@
-using Tycoon.Backend.Domain.Primitives;
+using MediatR;
+using Microsoft.AspNetCore.SignalR;
+using Tycoon.Backend.Api.Realtime;
+using Tycoon.Backend.Api.Realtime.Clients;
+using Tycoon.Backend.Domain.Events;
+using Tycoon.Shared.Contracts.Realtime.Votes;
 
 namespace Tycoon.Backend.Domain.Events
 {
-    /// <summary>
-    /// Raised when a player casts a vote. Useful for real-time vote tallies and analytics.
-    /// </summary>
-    public sealed record VoteCastEvent(
-        Guid VoteId,
-        Guid PlayerId,
-        string Option,
-        string Topic,
-        DateTime CastAtUtc
-    ) : DomainEvent;
-    // No explicit IDomainEvent here — DomainEvent base now carries both
-    // Tycoon.Shared.Abstractions.Core.Domain.Events.IDomainEvent
-    // and Mediator.INotification, satisfying all handler constraints.
+    public sealed class VoteCastEventHandler(IHubContext<NotificationHub, INotificationClient> hub)
+        : INotificationHandler<VoteCastEvent>
+    {
+        public async Task Handle(VoteCastEvent evt, CancellationToken ct)
+        {
+            var message = new VoteCastMessage(
+                evt.VoteId,
+                evt.PlayerId,
+                evt.Option,
+                evt.Topic,
+                evt.CastAtUtc
+            );
+
+            await hub.Clients.Group($"topic:{evt.Topic}").VoteCast(message);
+        }
+    }
 }

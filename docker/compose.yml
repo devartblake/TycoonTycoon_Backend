@@ -286,6 +286,11 @@ services:
       # MongoDB
       MongoSettings__Database: "tycoon_analytics"
       
+      # Super admin seed (idempotent — only creates the account if it doesn't exist)
+      SuperAdmin__Email: "${SUPER_ADMIN_EMAIL:-}"
+      SuperAdmin__Password: "${SUPER_ADMIN_PASSWORD:-}"
+      SuperAdmin__Handle: "${SUPER_ADMIN_HANDLE:-superadmin}"
+
       # Migration settings
       MigrationService__Mode: "${MIGRATION_MODE:-MigrateAndSeed}"
       MigrationService__AllowEnsureCreated: "${MIGRATION_ALLOW_ENSURE_CREATED:-false}"
@@ -351,6 +356,9 @@ services:
       AdminOps__Enabled: "${ADMIN_OPS_ENABLED:-true}"
       AdminOps__Header: "X-Admin-Ops-Key"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+
+      # Admin allowlist — email(s) permitted to access the operator dashboard
+      AdminAuth__AllowedEmails__0: "${SUPER_ADMIN_EMAIL:-}"
       
       # Auth
       JwtSettings__SecretKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
