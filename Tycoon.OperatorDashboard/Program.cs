@@ -40,6 +40,12 @@ builder.Services.AddHttpClient<AdminApiClient>(client =>
                   ?? builder.Configuration["services:tycoon-api:http:0"]
                   ?? "http://localhost:5000";
     client.BaseAddress = new Uri(backendUrl);
+
+    // Attach the ops key as a default header so every request — including the
+    // initial login — passes the AdminOpsKeyMiddleware / endpoint filter gate.
+    var opsKey = builder.Configuration["AdminOps:Key"] ?? string.Empty;
+    if (!string.IsNullOrEmpty(opsKey))
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Admin-Ops-Key", opsKey);
 });
 
 var app = builder.Build();
