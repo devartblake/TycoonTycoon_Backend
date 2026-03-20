@@ -1,13 +1,15 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace Tycoon.OperatorDashboard.Services;
 
 public sealed class AdminAuthService(
     AdminApiClient api,
     TokenStore tokens,
-    IHttpContextAccessor httpCtx)
+    IHttpContextAccessor httpCtx,
+    AuthenticationStateProvider authStateProvider)
 {
     public async Task<bool> LoginAsync(string email, string password, CancellationToken ct = default)
     {
@@ -48,11 +50,28 @@ public sealed class AdminAuthService(
     /// <summary>
     /// Attaches the stored token to the AdminApiClient for the current user.
     /// Proactively refreshes the access token if it expires within 5 minutes.
-    /// Call this at the top of every Blazor component that makes API calls.
+    /// Uses AuthenticationStateProvider as fallback when IHttpContextAccessor.HttpContext
+    /// is null (Blazor Server SignalR circuit context).
     /// </summary>
     public async Task<bool> TryAttachTokenAsync(CancellationToken ct = default)
     {
-        var userId = httpCtx.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // IHttpContextAccessor.HttpContext is null on the Blazor SignalR circuit.
+        // Use it when available (Razor Pages / SSR), fall back to AuthenticationStateProvider
+        // which is circuit-aware and always has the correct ClaimsPrincipal.
+        var httpContextUser = httpCtx.HttpContext?.User;
+        ClaimsPrincipal user;
+
+        if (httpContextUser?.Identity?.IsAuthenticated == true)
+        {
+            user = httpContextUser;
+        }
+        else
+        {
+            var authState = await authStateProvider.GetAuthenticationStateAsync();
+            user = authState.User;
+        }
+
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId is null) return false;
 
         var entry = tokens.Get(userId);
