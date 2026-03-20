@@ -41,20 +41,36 @@ public sealed class AdminAuthService(
     {
         var userId = httpCtx.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId is not null) tokens.Remove(userId);
+        api.ClearToken();
         await httpCtx.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     }
 
     /// <summary>
     /// Attaches the stored token to the AdminApiClient for the current user.
-    /// Call this at the top of any Blazor component that makes API calls.
+    /// Proactively refreshes the access token if it expires within 5 minutes.
+    /// Call this at the top of every Blazor component that makes API calls.
     /// </summary>
-    public bool TryAttachToken()
+    public async Task<bool> TryAttachTokenAsync(CancellationToken ct = default)
     {
         var userId = httpCtx.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId is null) return false;
 
         var entry = tokens.Get(userId);
         if (entry is null) return false;
+
+        // Proactively refresh when the access token expires within 5 minutes.
+        if (entry.ExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(5))
+        {
+            var refreshed = await api.RefreshAsync(entry.RefreshToken, ct);
+            if (refreshed is null)
+            {
+                tokens.Remove(userId);
+                return false;
+            }
+            var newExpiry = DateTimeOffset.UtcNow.AddSeconds(refreshed.ExpiresIn);
+            tokens.Set(userId, refreshed.AccessToken, entry.RefreshToken, newExpiry);
+            entry = new TokenStore.TokenEntry(refreshed.AccessToken, entry.RefreshToken, newExpiry);
+        }
 
         api.SetToken(entry.AccessToken);
         return true;

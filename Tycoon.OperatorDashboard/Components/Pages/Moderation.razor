@@ -150,7 +150,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Auth.TryAttachToken();
+        await Auth.TryAttachTokenAsync();
         await LoadEscalationsAsync();
     }
 

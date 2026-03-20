@@ -91,7 +91,7 @@ else
     private string _editText = string.Empty, _editCategory = string.Empty, _editTags = string.Empty;
     private string _editMsg = string.Empty;
 
-    protected override async Task OnInitializedAsync() { Auth.TryAttachToken(); await LoadAsync(); }
+    protected override async Task OnInitializedAsync() { await Auth.TryAttachTokenAsync(); await LoadAsync(); }
 
     private async Task LoadAsync()
     {
