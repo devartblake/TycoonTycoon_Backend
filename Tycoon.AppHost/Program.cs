@@ -69,7 +69,9 @@ var sidecar = builder
     .WithReference(analyticsDb)
     .WithReference(search);
 
-// Allow tycoon-api to call the sidecar by service name
-api.WithReference(sidecar);
+// FIX: ExecutableResource does not implement IResourceWithConnectionString, so
+// WithReference(sidecar) fails with CS1503. Pass the named endpoint instead —
+// Aspire injects it as an environment variable (services__tycoon-sidecar__http__0).
+api.WithReference(sidecar.GetEndpoint("http"));
 
 builder.Build().Run();

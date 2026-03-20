@@ -96,7 +96,7 @@ namespace Tycoon.Backend.Application.Territory
                 var activeSeason = await seasonSvc.GetActiveAsync(ct);
                 if (activeSeason is not null)
                 {
-                    var stats = await eventStats.GetOrCreateAsync(activeSeason.Id, duel.ChallengerId, ct);
+                    var stats = await eventStats.GetOrCreateAsync(activeSeason.SeasonId, duel.ChallengerId, ct);
                     stats.TilesEverCaptured++;
                     stats.CurrentTilesOwned = totalOwned;
                     if (newMultiplierBps > stats.PeakXpMultiplierBps)

@@ -701,6 +701,19 @@
           }
         }
       },
+      "CommunityToolkit.HighPerformance/8.4.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/CommunityToolkit.HighPerformance.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/CommunityToolkit.HighPerformance.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
       "Confluent.Kafka/2.12.0": {
         "type": "package",
         "dependencies": {
@@ -3218,6 +3231,26 @@
           }
         }
       },
+      "Minio/6.0.5": {
+        "type": "package",
+        "dependencies": {
+          "CommunityToolkit.HighPerformance": "8.4.0",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.4",
+          "Microsoft.Extensions.Logging": "9.0.4",
+          "System.IO.Hashing": "9.0.4",
+          "System.Reactive": "6.0.1"
+        },
+        "compile": {
+          "lib/net8.0/Minio.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Minio.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
       "MongoDB.Bson/3.5.2": {
         "type": "package",
         "dependencies": {
@@ -5515,6 +5548,22 @@
           "ref/netstandard/_._": {}
         }
       },
+      "System.Reactive/6.0.1": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/System.Reactive.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/System.Reactive.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "buildTransitive/net6.0/_._": {}
+        }
+      },
       "System.Reflection/4.3.0": {
         "type": "package",
         "dependencies": {
@@ -6426,6 +6475,7 @@
           "Swashbuckle.AspNetCore": "9.0.6",
           "Tycoon.Backend.Application": "1.0.0",
           "Tycoon.Backend.Infrastructure": "1.0.0",
+          "Tycoon.Shared": "1.0.0",
           "Tycoon.Shared.Contracts": "1.0.0",
           "Tycoon.Shared.Observability": "1.0.0"
         },
@@ -6492,6 +6542,7 @@
           "Microsoft.Extensions.Configuration.FileExtensions": "9.0.11",
           "Microsoft.Extensions.Configuration.Json": "9.0.11",
           "Microsoft.Extensions.Options.ConfigurationExtensions": "9.0.11",
+          "Minio": "6.0.5",
           "MongoDB.Driver": "3.5.2",
           "Newtonsoft.Json": "13.0.4",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.4",
@@ -7290,6 +7341,32 @@
         "lib/net452/Cassandra.xml",
         "lib/netstandard2.0/Cassandra.dll",
         "lib/netstandard2.0/Cassandra.xml"
+      ]
+    },
+    "CommunityToolkit.HighPerformance/8.4.0": {
+      "sha512": "flxspiBs0G/0GMp7IK2J2ijV9bTG6hEwFc/z6ekHqB6nwRJ4Ry2yLdx+TkbCUYFCl4XhABkAwomeKbT6zM2Zlg==",
+      "type": "package",
+      "path": "communitytoolkit.highperformance/8.4.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "License.md",
+        "ThirdPartyNotices.txt",
+        "communitytoolkit.highperformance.8.4.0.nupkg.sha512",
+        "communitytoolkit.highperformance.nuspec",
+        "lib/net7.0/CommunityToolkit.HighPerformance.dll",
+        "lib/net7.0/CommunityToolkit.HighPerformance.pdb",
+        "lib/net7.0/CommunityToolkit.HighPerformance.xml",
+        "lib/net8.0/CommunityToolkit.HighPerformance.dll",
+        "lib/net8.0/CommunityToolkit.HighPerformance.pdb",
+        "lib/net8.0/CommunityToolkit.HighPerformance.xml",
+        "lib/netstandard2.0/CommunityToolkit.HighPerformance.dll",
+        "lib/netstandard2.0/CommunityToolkit.HighPerformance.pdb",
+        "lib/netstandard2.0/CommunityToolkit.HighPerformance.xml",
+        "lib/netstandard2.1/CommunityToolkit.HighPerformance.dll",
+        "lib/netstandard2.1/CommunityToolkit.HighPerformance.pdb",
+        "lib/netstandard2.1/CommunityToolkit.HighPerformance.xml"
       ]
     },
     "Confluent.Kafka/2.12.0": {
@@ -10836,6 +10913,26 @@
         "runtimes/win/lib/netcoreapp3.0/Microsoft.Win32.SystemEvents.xml",
         "useSharedDesignerContext.txt",
         "version.txt"
+      ]
+    },
+    "Minio/6.0.5": {
+      "sha512": "AK3JIDZnFZg2Hpkqo6vlzyiEC4OifG+jQbuqpAtXePnIo49G4pNn27THh3DI8s4o84b/MMBQF+n1DEwBNenxsg==",
+      "type": "package",
+      "path": "minio/6.0.5",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "icon.png",
+        "lib/net8.0/Minio.dll",
+        "lib/net8.0/Minio.pdb",
+        "lib/net8.0/Minio.xml",
+        "lib/netstandard2.0/Minio.dll",
+        "lib/netstandard2.0/Minio.pdb",
+        "lib/netstandard2.0/Minio.xml",
+        "minio.6.0.5.nupkg.sha512",
+        "minio.nuspec",
+        "readme.md"
       ]
     },
     "MongoDB.Bson/3.5.2": {
@@ -14666,6 +14763,34 @@
         "system.private.uri.nuspec"
       ]
     },
+    "System.Reactive/6.0.1": {
+      "sha512": "rHaWtKDwCi9qJ3ObKo8LHPMuuwv33YbmQi7TcUK1C264V3MFnOr5Im7QgCTdLniztP3GJyeiSg5x8NqYJFqRmg==",
+      "type": "package",
+      "path": "system.reactive/6.0.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "build/net6.0-windows10.0.19041/_._",
+        "build/net6.0/_._",
+        "buildTransitive/net6.0-windows10.0.19041/_._",
+        "buildTransitive/net6.0/_._",
+        "icon.png",
+        "lib/net472/System.Reactive.dll",
+        "lib/net472/System.Reactive.xml",
+        "lib/net6.0-windows10.0.19041/System.Reactive.dll",
+        "lib/net6.0-windows10.0.19041/System.Reactive.xml",
+        "lib/net6.0/System.Reactive.dll",
+        "lib/net6.0/System.Reactive.xml",
+        "lib/netstandard2.0/System.Reactive.dll",
+        "lib/netstandard2.0/System.Reactive.xml",
+        "lib/uap10.0.18362/System.Reactive.dll",
+        "lib/uap10.0.18362/System.Reactive.pri",
+        "lib/uap10.0.18362/System.Reactive.xml",
+        "readme.md",
+        "system.reactive.6.0.1.nupkg.sha512",
+        "system.reactive.nuspec"
+      ]
+    },
     "System.Reflection/4.3.0": {
       "sha512": "KMiAFoW7MfJGa9nDFNcfu+FpEdiHpWgTcS2HdMpDvt9saK3y/G4GwprPyzqjFH9NTaGPQeWNHU+iDlDILj96aQ==",
       "type": "package",
@@ -17222,6 +17347,7 @@
           "MediatR": "14.0.0",
           "MediatR.Extensions.Microsoft.DependencyInjection": "11.0.0",
           "MessagePack": "3.1.4",
+          "Microsoft.AspNetCore.Authentication.Cookies": "2.3.9",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.11",
           "Microsoft.AspNetCore.HeaderPropagation": "9.0.11",
           "Microsoft.AspNetCore.Mvc.Testing": "9.0.11",
@@ -17255,6 +17381,7 @@
           "Microsoft.FeatureManagement": "4.0.0",
           "Microsoft.FeatureManagement.AspNetCore": "4.0.0",
           "Microsoft.NET.Test.Sdk": "17.12.0",
+          "Minio": "6.0.5",
           "MongoDB.Driver": "3.5.2",
           "NBomber": "5.11.0",
           "NBomber.Http": "5.11.0",
@@ -17589,6 +17716,10 @@
       "Microsoft.Extensions.ServiceDiscovery": {
         "include": "Runtime, Compile, Native, BuildTransitive",
         "version": "[9.5.2, )"
+      },
+      "Minio": {
+        "include": "Runtime, Compile, Native, BuildTransitive",
+        "version": "[6.0.5, )"
       },
       "MongoDB.Driver": {
         "include": "Runtime, Compile, Native, BuildTransitive",

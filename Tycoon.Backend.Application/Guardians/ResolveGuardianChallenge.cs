@@ -85,13 +85,13 @@ namespace Tycoon.Backend.Application.Guardians
                 var activeSeason = await seasonSvc.GetActiveAsync(ct);
                 if (activeSeason is not null)
                 {
-                    var challengerStats = await eventStats.GetOrCreateAsync(activeSeason.Id, challenge.ChallengerId, ct);
+                    var challengerStats = await eventStats.GetOrCreateAsync(activeSeason.SeasonId, challenge.ChallengerId, ct);
                     challengerStats.GuardianPromotions++;
                     challengerStats.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
                     if (previousGuardianId.HasValue)
                     {
-                        var guardianStats = await eventStats.GetOrCreateAsync(activeSeason.Id, previousGuardianId.Value, ct);
+                        var guardianStats = await eventStats.GetOrCreateAsync(activeSeason.SeasonId, previousGuardianId.Value, ct);
                         guardianStats.GuardianDefencesLost++;
                         guardianStats.UpdatedAtUtc = DateTimeOffset.UtcNow;
                     }
@@ -117,7 +117,7 @@ namespace Tycoon.Backend.Application.Guardians
                 var activeSeason = await seasonSvc.GetActiveAsync(ct);
                 if (activeSeason is not null)
                 {
-                    var guardianStats = await eventStats.GetOrCreateAsync(activeSeason.Id, challenge.GuardianId, ct);
+                    var guardianStats = await eventStats.GetOrCreateAsync(activeSeason.SeasonId, challenge.GuardianId, ct);
                     guardianStats.GuardianDefencesWon++;
                     guardianStats.UpdatedAtUtc = DateTimeOffset.UtcNow;
                 }
