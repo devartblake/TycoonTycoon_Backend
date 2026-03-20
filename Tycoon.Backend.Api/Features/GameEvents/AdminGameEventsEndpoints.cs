@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,9 +13,9 @@ namespace Tycoon.Backend.Api.Features.GameEvents
 {
     public static class AdminGameEventsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(RouteGroupBuilder admin)
         {
-            var g = app.MapGroup("/admin/game-events").WithTags("Admin").WithOpenApi();
+            var g = admin.MapGroup("/game-events").WithTags("Admin/GameEvents").WithOpenApi();
 
             g.MapPost("/", async (
                 [FromBody] CreateGameEventRequest req,
