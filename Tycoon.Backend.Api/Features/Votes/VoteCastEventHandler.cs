@@ -10,7 +10,7 @@ namespace Tycoon.Backend.Api.Features.Votes
     public sealed class VoteCastEventHandler(IHubContext<NotificationHub, INotificationClient> hub)
         : INotificationHandler<VoteCastEvent>
     {
-        public Task Handle(VoteCastEvent evt, CancellationToken ct)
+        public async Task Handle(VoteCastEvent evt, CancellationToken ct)
         {
             var message = new VoteCastMessage(
                 evt.VoteId,
@@ -20,7 +20,7 @@ namespace Tycoon.Backend.Api.Features.Votes
                 evt.CastAtUtc
             );
 
-            return hub.Clients.Group($"topic:{evt.Topic}").VoteCast(message);
+            await hub.Clients.Group($"topic:{evt.Topic}").VoteCast(message);
         }
     }
 }
