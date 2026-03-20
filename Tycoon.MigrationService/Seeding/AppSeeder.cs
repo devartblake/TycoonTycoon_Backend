@@ -1,5 +1,6 @@
 ﻿using Serilog;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Infrastructure.Persistence;
 
@@ -8,9 +9,11 @@ namespace Tycoon.MigrationService.Seeding;
 public sealed class AppSeeder
 {
     private readonly Serilog.ILogger _log;
+    private readonly IConfiguration _cfg;
 
-    public AppSeeder()
+    public AppSeeder(IConfiguration cfg)
     {
+        _cfg = cfg;
         _log = Log.ForContext<AppSeeder>();
     }
 
@@ -25,6 +28,7 @@ public sealed class AppSeeder
 
             await SeedTiersAsync(db, ct);
             await SeedMissionsAsync(db, ct);
+            await SeedSuperAdminAsync(db, ct);
 
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -73,5 +77,32 @@ public sealed class AppSeeder
         };
 
         db.Missions.AddRange(missions);
+    }
+
+    private async Task SeedSuperAdminAsync(AppDb db, CancellationToken ct)
+    {
+        var email = _cfg["SuperAdmin:Email"];
+        var password = _cfg["SuperAdmin:Password"];
+        var handle = _cfg["SuperAdmin:Handle"] ?? "superadmin";
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            _log.Information("SuperAdmin:Email or SuperAdmin:Password not configured — skipping super admin seed.");
+            return;
+        }
+
+        var normalizedEmail = email.ToLowerInvariant();
+        var exists = await db.Users.AsNoTracking().AnyAsync(u => u.Email == normalizedEmail, ct);
+        if (exists)
+        {
+            _log.Information("Super admin account {Email} already exists — skipping.", normalizedEmail);
+            return;
+        }
+
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+        var admin = new User(normalizedEmail, handle, passwordHash);
+        db.Users.Add(admin);
+
+        _log.Information("Seeded super admin account: {Email} (handle: {Handle})", normalizedEmail, handle);
     }
 }
