@@ -5,6 +5,16 @@
 
 <h1>Media Upload</h1>
 
+@if (_authFailed)
+{
+    <div class="auth-alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Session expired.</strong> <a href="/login">Sign in again</a> to continue.</span>
+    </div>
+}
+else
+{
+
 <div class="card">
     <h2>Upload Asset</h2>
     <p style="font-size:.875rem;color:#64748b;margin-bottom:1rem">
@@ -53,6 +63,8 @@
     }
 </div>
 
+} @* close auth-failed else *@
+
 @code {
     private IBrowserFile? _file;
     private string _assetKey = string.Empty;
@@ -60,10 +72,14 @@
     private string _resultUrl = string.Empty;
     private bool _uploading;
     private bool _isError;
+    private bool _authFailed;
     private JsonDocument? _intent;
     private string _intentJson = string.Empty;
 
-    protected override async Task OnInitializedAsync() => await Auth.TryAttachTokenAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; }
+    }
 
     private void OnFileChanged(InputFileChangeEventArgs e)
     {
