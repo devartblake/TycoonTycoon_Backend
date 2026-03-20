@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Tycoon.OperatorDashboard.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +8,12 @@ builder.AddServiceDefaults();
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+
+// Persist Data Protection keys so antiforgery tokens and auth cookies survive container restarts.
+var dpKeysPath = builder.Configuration["DataProtection:KeysPath"] ?? "/app/dp-keys";
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
