@@ -1,4 +1,5 @@
 using Grpc.Core;
+using Microsoft.Extensions.Logging;
 using Tycoon.Backend.Api.Grpc;
 
 namespace Tycoon.Backend.Api.Grpc;

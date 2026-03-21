@@ -333,6 +333,18 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Grpc.AspNetCore": {
+              "target": "Package",
+              "version": "[2.76.0, )",
+              "versionCentrallyManaged": true
+            },
+            "Grpc.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.76.0, )",
+              "versionCentrallyManaged": true
+            },
             "Hangfire.AspNetCore": {
               "target": "Package",
               "version": "[1.8.22, )",

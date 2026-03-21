@@ -83,6 +83,7 @@ using Tycoon.Shared.Contracts.Dtos;
 using Tycoon.Shared.Observability;
 using Tycoon.Backend.Api.Grpc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 

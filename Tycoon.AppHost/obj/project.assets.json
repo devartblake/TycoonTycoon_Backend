@@ -6461,6 +6461,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
+          "Grpc.AspNetCore": "2.76.0",
           "Hangfire.AspNetCore": "1.8.22",
           "Hangfire.Core": "1.8.22",
           "Hangfire.PostgreSql": "1.20.0",
