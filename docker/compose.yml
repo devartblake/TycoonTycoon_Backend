@@ -451,7 +451,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       ASPNETCORE_URLS: "http://+:8200"
-      # Point to tycoon-api via Docker service name
+      # Override appsettings.Development.json (which points to localhost:5100 for standalone dev).
+      # In Docker, "localhost" resolves to the container itself — use the service name instead.
+      ApiBaseUrl: "http://backend-api:5000"
+      # Also set the Aspire service-discovery key so both resolution paths work.
       services__tycoon-api__http__0: "http://backend-api:5000"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
       # Persist Data Protection keys across restarts (fixes antiforgery / cookie decryption errors)

@@ -1,3 +1,4 @@
+using System.Linq;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -16,6 +17,35 @@ namespace Tycoon.Backend.Api.Features.GameEvents
         public static void Map(RouteGroupBuilder admin)
         {
             var g = admin.MapGroup("/game-events").WithTags("Admin/GameEvents").WithOpenApi();
+
+            g.MapGet("/", async (
+                [FromQuery] int page,
+                [FromQuery] int pageSize,
+                [FromQuery] string? status,
+                IAppDb db,
+                CancellationToken ct) =>
+            {
+                page = Math.Max(1, page);
+                pageSize = Math.Clamp(pageSize == 0 ? 20 : pageSize, 1, 100);
+
+                var query = db.GameEvents.AsNoTracking();
+
+                if (!string.IsNullOrWhiteSpace(status) &&
+                    Enum.TryParse<GameEventStatus>(status, ignoreCase: true, out var statusEnum))
+                {
+                    query = query.Where(e => e.Status == statusEnum);
+                }
+
+                var total = await query.CountAsync(ct);
+                var items = await query
+                    .OrderByDescending(e => e.ScheduledAtUtc)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(e => new GameEventSummaryDto(e.Id, e.Kind, e.TierId, e.Status, e.ScheduledAtUtc, e.EntryFeeCoins, e.MaxParticipants))
+                    .ToListAsync(ct);
+
+                return Results.Ok(new { page, pageSize, total, items });
+            });
 
             g.MapPost("/", async (
                 [FromBody] CreateGameEventRequest req,

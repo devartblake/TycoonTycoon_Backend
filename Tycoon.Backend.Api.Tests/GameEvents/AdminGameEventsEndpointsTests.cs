@@ -144,6 +144,60 @@ public sealed class AdminGameEventsEndpointsTests : IClassFixture<TycoonApiFacto
         await resp.HasErrorCodeAsync("NOT_FOUND");
     }
 
+    // ── List endpoint ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task List_Requires_OpsKey()
+    {
+        using var noKey = _factory.CreateClient();
+        var resp = await noKey.GetAsync("/admin/game-events");
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
+    }
+
+    [Fact]
+    public async Task List_Returns_Paged_Response()
+    {
+        var resp = await _http.GetAsync("/admin/game-events?page=1&pageSize=10");
+
+        resp.IsSuccessStatusCode.Should().BeTrue();
+
+        var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        body.GetProperty("page").GetInt32().Should().Be(1);
+        body.GetProperty("pageSize").GetInt32().Should().Be(10);
+        body.GetProperty("total").GetInt32().Should().BeGreaterThanOrEqualTo(0);
+        body.GetProperty("items").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+    }
+
+    [Fact]
+    public async Task List_Created_Event_Appears_In_Results()
+    {
+        await CreateEventAsync();
+
+        var resp = await _http.GetAsync("/admin/game-events?pageSize=100");
+        resp.IsSuccessStatusCode.Should().BeTrue();
+
+        var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        body.GetProperty("total").GetInt32().Should().BeGreaterThanOrEqualTo(1);
+        body.GetProperty("items").GetArrayLength().Should().BeGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public async Task List_Filters_By_Status()
+    {
+        var eventId = await CreateEventAsync();
+        await _http.PostAsync($"/admin/game-events/{eventId}/open", null);
+
+        var resp = await _http.GetAsync("/admin/game-events?status=Open&pageSize=100");
+        resp.IsSuccessStatusCode.Should().BeTrue();
+
+        var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        foreach (var item in body.GetProperty("items").EnumerateArray())
+        {
+            item.GetProperty("status").GetString().Should().Be("Open");
+        }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private static CreateGameEventRequest BuildCreateRequest() => new(
