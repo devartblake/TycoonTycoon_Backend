@@ -167,6 +167,27 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
+    public async Task<GameBalanceConfigDto?> GetGameBalanceConfigAsync(CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync("/admin/economy/balance", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+    }
+
+    public async Task<GameBalanceConfigDto?> PatchGameBalanceConfigAsync(UpdateGameBalanceConfigRequest req, CancellationToken ct = default)
+    {
+        var resp = await http.PatchAsync("/admin/economy/balance", JsonContent.Create(req), ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+    }
+
+    public async Task<EconomySimulationResponse?> SimulateEconomyAsync(EconomySimulationRequest req, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/economy/simulate", JsonContent.Create(req), ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<EconomySimulationResponse>(Json, ct);
+    }
+
     // ── Questions ──────────────────────────────────────────────────────────
 
     public async Task<JsonDocument?> ListQuestionsAsync(string? q, string? category, int page = 1, int pageSize = 50, CancellationToken ct = default)

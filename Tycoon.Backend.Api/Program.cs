@@ -46,6 +46,7 @@ using Tycoon.Backend.Api.Features.Mobile.Matches;
 using Tycoon.Backend.Api.Features.Mobile.Seasons;
 using Tycoon.Backend.Api.Features.Mobile.Players;
 using Tycoon.Backend.Api.Features.Mobile.Leaderboards;
+using Tycoon.Backend.Api.Features.Mobile.Economy;
 using Tycoon.Backend.Api.Features.Party;
 using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
@@ -671,6 +672,7 @@ MobileMatchesEndpoints.Map(mobile);
 MobilePlayersEndpoints.Map(mobile);
 MobileLeaderboardsEndpoints.Map(mobile);
 MobileSeasonsEndpoints.Map(mobile);
+MobileEconomyEndpoints.Map(mobile);
 
 // Admin endpoints
 var adminAuth = app.MapGroup("/admin").RequireAdminOpsKey();

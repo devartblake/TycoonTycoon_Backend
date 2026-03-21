@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Infrastructure.Persistence;
 
@@ -19,7 +20,7 @@ public sealed class StartMatchHandlerTests
     public async Task Handle_Creates_NewMatch_ForHost()
     {
         await using var db = NewDb();
-        var handler = new StartMatchHandler(db);
+        var handler = new StartMatchHandler(db, new GameBalancePolicyService(db));
         var hostId = Guid.NewGuid();
 
         var result = await handler.Handle(new StartMatch(hostId, "solo"), CancellationToken.None);
@@ -32,7 +33,7 @@ public sealed class StartMatchHandlerTests
     public async Task Handle_Persists_Match_ToDatabase()
     {
         await using var db = NewDb();
-        var handler = new StartMatchHandler(db);
+        var handler = new StartMatchHandler(db, new GameBalancePolicyService(db));
         var hostId = Guid.NewGuid();
 
         var result = await handler.Handle(new StartMatch(hostId, "ranked"), CancellationToken.None);
@@ -47,7 +48,7 @@ public sealed class StartMatchHandlerTests
     public async Task Handle_DefaultsMode_ToSolo_WhenEmpty()
     {
         await using var db = NewDb();
-        var handler = new StartMatchHandler(db);
+        var handler = new StartMatchHandler(db, new GameBalancePolicyService(db));
 
         var result = await handler.Handle(new StartMatch(Guid.NewGuid(), ""), CancellationToken.None);
 
@@ -59,7 +60,7 @@ public sealed class StartMatchHandlerTests
     public async Task Handle_DefaultsMode_ToSolo_WhenWhitespace()
     {
         await using var db = NewDb();
-        var handler = new StartMatchHandler(db);
+        var handler = new StartMatchHandler(db, new GameBalancePolicyService(db));
 
         var result = await handler.Handle(new StartMatch(Guid.NewGuid(), "   "), CancellationToken.None);
 
@@ -71,12 +72,27 @@ public sealed class StartMatchHandlerTests
     public async Task Handle_DifferentHosts_GetSeparateMatches()
     {
         await using var db = NewDb();
-        var handler = new StartMatchHandler(db);
+        var handler = new StartMatchHandler(db, new GameBalancePolicyService(db));
 
         var r1 = await handler.Handle(new StartMatch(Guid.NewGuid(), "solo"), CancellationToken.None);
         var r2 = await handler.Handle(new StartMatch(Guid.NewGuid(), "solo"), CancellationToken.None);
 
         r1.MatchId.Should().NotBe(r2.MatchId);
         (await db.Matches.CountAsync()).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Handle_Blocks_When_Mode_Entry_Is_Not_Allowed()
+    {
+        await using var db = NewDb();
+        var handler = new StartMatchHandler(db, new GameBalancePolicyService(db));
+        var host = Guid.NewGuid();
+
+        for (var i = 0; i < 4; i++)
+            await handler.Handle(new StartMatch(host, "guardian"), CancellationToken.None);
+
+        var act = () => handler.Handle(new StartMatch(host, "guardian"), CancellationToken.None);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Not enough energy*");
     }
 }
