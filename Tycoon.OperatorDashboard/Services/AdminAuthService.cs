@@ -8,6 +8,7 @@ namespace Tycoon.OperatorDashboard.Services;
 public sealed class AdminAuthService(
     AdminApiClient api,
     TokenStore tokens,
+    BearerTokenStore bearerTokenStore,
     IHttpContextAccessor httpCtx,
     AuthenticationStateProvider authStateProvider)
 {
@@ -48,6 +49,7 @@ public sealed class AdminAuthService(
         var userId = httpCtx.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userId is not null) tokens.Remove(userId);
         api.ClearToken();
+        bearerTokenStore.AccessToken = null;
         await httpCtx.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     }
 
@@ -96,6 +98,7 @@ public sealed class AdminAuthService(
         }
 
         api.SetToken(entry.AccessToken);
+        bearerTokenStore.AccessToken = entry.AccessToken;
         return true;
     }
 }

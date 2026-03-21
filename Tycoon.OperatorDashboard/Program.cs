@@ -31,7 +31,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton<TokenStore>();
+// BearerTokenStore is scoped per Blazor circuit so every AdminApiClient instance
+// in the same circuit shares the same token (fixes the transient-instance token bug).
+builder.Services.AddScoped<BearerTokenStore>();
 builder.Services.AddScoped<AdminAuthService>();
+// Transient handler — DI creates one per HttpClient request; reads from scoped BearerTokenStore.
+builder.Services.AddTransient<BearerTokenHandler>();
 
 // Typed HttpClient that forwards the admin JWT + ops key to tycoon-api.
 // Aspire service discovery resolves "http://tycoon-api" via services__tycoon-api__http__0.
@@ -47,7 +52,8 @@ builder.Services.AddHttpClient<AdminApiClient>(client =>
     var opsKey = builder.Configuration["AdminOps:Key"] ?? string.Empty;
     if (!string.IsNullOrEmpty(opsKey))
         client.DefaultRequestHeaders.TryAddWithoutValidation("X-Admin-Ops-Key", opsKey);
-});
+})
+.AddHttpMessageHandler<BearerTokenHandler>();
 
 var app = builder.Build();
 
