@@ -431,14 +431,14 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     public async Task<JsonDocument?> GetPlayerPowerupsAsync(Guid playerId, CancellationToken ct = default)
     {
-        var resp = await http.GetAsync($"/admin/players/{playerId}/powerups", ct);
+        var resp = await http.GetAsync($"/admin/powerups/state/{playerId}", ct);
         if (!resp.IsSuccessStatusCode) return null;
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
-    public async Task<bool> GrantPowerupAsync(Guid playerId, object body, CancellationToken ct = default)
+    public async Task<bool> GrantPowerupAsync(object body, CancellationToken ct = default)
     {
-        var resp = await http.PostAsync($"/admin/players/{playerId}/powerups", JsonContent.Create(body), ct);
+        var resp = await http.PostAsync("/admin/powerups/grant", JsonContent.Create(body), ct);
         return resp.IsSuccessStatusCode;
     }
 
