@@ -347,9 +347,10 @@ services:
     restart: unless-stopped
     ports:
       - "${BACKEND_HTTP_PORT:-5000}:5000"
+      - "${BACKEND_GRPC_PORT:-5001}:5001"   # gRPC / HTTP2 — sidecar only
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
-      ASPNETCORE_URLS: "http://+:5000"
+      ASPNETCORE_URLS: ""   # Kestrel dual-port config in Program.cs overrides this
       
       # Database connections
       ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
@@ -449,6 +450,7 @@ services:
       - "${SIDECAR_PORT:-8100}:8100"
     environment:
       BACKEND_BASE_URL: "http://backend-api:5000"
+      BACKEND_GRPC_URL: "backend-api:5001"
       MONGO_URL: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
       MONGO_DB: "${MONGO_APP_DB:-tycoon_analytics}"
       ELASTICSEARCH_URL: "http://elasticsearch:9200"
