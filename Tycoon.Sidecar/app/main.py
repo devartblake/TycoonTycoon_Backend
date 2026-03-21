@@ -5,6 +5,7 @@ import httpx
 from fastapi import FastAPI
 
 from app.config import settings
+from app.grpc_client import GrpcClientManager
 from app.routers import analytics, ml, utilities, webhooks
 
 # Normalize .NET-style log level names (Information, Warning, Critical) to Python equivalents
@@ -23,14 +24,18 @@ logger = logging.getLogger(__name__)
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Shared async HTTP client for calls to tycoon-api
+    # Shared async HTTP client for REST calls to tycoon-api
     app.state.backend = httpx.AsyncClient(
         base_url=settings.backend_base_url,
         timeout=10.0,
     )
-    logger.info("Sidecar started. Backend: %s", settings.backend_base_url)
+    # Shared gRPC channel for high-throughput internal calls (port 5001)
+    app.state.grpc = GrpcClientManager()
+    await app.state.grpc.connect()
+    logger.info("Sidecar started. Backend: %s  gRPC: %s", settings.backend_base_url, settings.backend_grpc_url)
     yield
     await app.state.backend.aclose()
+    await app.state.grpc.close()
 
 
 app = FastAPI(
