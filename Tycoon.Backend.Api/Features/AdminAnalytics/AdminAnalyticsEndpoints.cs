@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 
 namespace Tycoon.Backend.Api.Features.AdminAnalytics
@@ -11,10 +10,8 @@ namespace Tycoon.Backend.Api.Features.AdminAnalytics
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/admin/analytics")
-                .WithTags("Analytics")
-                .RequireAuthorization(AdminPolicies.AdminOnly)
-                .WithMetadata(new RequireAdminOpsKeyAttribute())
+            var g = admin.MapGroup("/analytics")
+                .WithTags("Admin/Analytics")
                 .WithOpenApi();
 
             // POST /admin/analytics/rebuild-elastic-rollups?from=2025-01-01&to=2025-01-31
