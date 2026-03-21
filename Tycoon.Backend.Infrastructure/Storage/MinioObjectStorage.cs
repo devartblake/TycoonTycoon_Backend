@@ -4,7 +4,7 @@ using Tycoon.Backend.Application.Abstractions;
 
 namespace Tycoon.Backend.Infrastructure.Storage
 {
-    public sealed class MinioObjectStorage : IObjectStorage
+    public sealed class MinioObjectStorage : IObjectStorage, IPresignedStorage
     {
         private readonly IMinioClient _client;
         private readonly MinioOptions _options;
@@ -34,6 +34,32 @@ namespace Tycoon.Backend.Infrastructure.Storage
             var host = _options.PublicEndpoint ?? _options.Endpoint;
             var scheme = _options.UseSSL ? "https" : "http";
             return $"{scheme}://{host}/{_options.Bucket}/{key}";
+        }
+
+        public async Task<string> GetPresignedPutUrlAsync(string key, string contentType, TimeSpan expiry, CancellationToken ct = default)
+        {
+            await EnsureBucketExistsAsync(ct);
+
+            var args = new PresignedPutObjectArgs()
+                .WithBucket(_options.Bucket)
+                .WithObject(key)
+                .WithExpiry((int)expiry.TotalSeconds);
+
+            var internalUrl = await _client.PresignedPutObjectAsync(args);
+
+            // Rewrite the internal host (minio:9000) to the public-facing host when
+            // PublicEndpoint is configured — the browser calling the URL needs a host
+            // it can reach, not the internal container hostname.
+            if (!string.IsNullOrWhiteSpace(_options.PublicEndpoint) &&
+                Uri.TryCreate(internalUrl, UriKind.Absolute, out var parsed))
+            {
+                var publicScheme = _options.UseSSL ? "https" : "http";
+                internalUrl = internalUrl.Replace(
+                    $"{parsed.Scheme}://{parsed.Host}:{parsed.Port}",
+                    $"{publicScheme}://{_options.PublicEndpoint}");
+            }
+
+            return internalUrl;
         }
 
         private async Task EnsureBucketExistsAsync(CancellationToken ct)

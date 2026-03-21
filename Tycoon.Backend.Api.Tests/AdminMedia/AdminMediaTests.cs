@@ -11,15 +11,13 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
     public sealed class AdminMediaTests : IClassFixture<TycoonApiFactory>
     {
         private readonly TycoonApiFactory _factory;
-    private readonly HttpClient _http;
+        private readonly HttpClient _http;
 
         public AdminMediaTests(TycoonApiFactory factory)
         {
             _factory = factory;
             _http = factory.CreateClient().WithAdminOpsKey();
         }
-
-
 
         [Fact]
         public async Task Media_Intent_Rejects_Wrong_OpsKey()
@@ -52,7 +50,9 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
             var dto = await resp.Content.ReadFromJsonAsync<UploadIntentDto>();
             dto.Should().NotBeNull();
             dto!.AssetKey.Should().Contain("uploads/");
+            // In test env (no MinIO), MediaService falls back to the API-proxied upload path.
             dto.UploadUrl.Should().Contain("/admin/media/upload/");
+            dto.ExpiresAtUtc.Should().BeAfter(DateTimeOffset.UtcNow);
         }
 
         [Fact]
