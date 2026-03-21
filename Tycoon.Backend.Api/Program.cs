@@ -446,10 +446,13 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 app.UseCors(c => c.AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials()
-                  .SetIsOriginAllowed(_ => true));
+                  .SetIsOriginAllowedToAllowWildcardSubdomains()
+                  .WithOrigins(allowedOrigins));
 app.UseWebSockets();
 app.UseRateLimiter();
 app.UseMiddleware<AdminOpsKeyMiddleware>();
