@@ -34,8 +34,15 @@ namespace Tycoon.Backend.Api.Features.Matches
                 if (status == ModerationStatus.Banned)
                     return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Player is not allowed to start matches.");
 
-                var res = await mediator.Send(new StartMatch(req.HostPlayerId, req.Mode), ct);
-                return Results.Ok(res);
+                try
+                {
+                    var res = await mediator.Send(new StartMatch(req.HostPlayerId, req.Mode), ct);
+                    return Results.Ok(res);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message);
+                }
             });
 
             g.MapPost("/submit", async (

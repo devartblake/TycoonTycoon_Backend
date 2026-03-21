@@ -16,7 +16,7 @@ else
 {
 
 <div class="tabs">
-    @foreach (var tab in new[] { "Player Wallet", "Grant Currency", "Transaction History" })
+    @foreach (var tab in new[] { "Player Wallet", "Grant Currency", "Transaction History", "Balance Config" })
     {
         @if (tab != "Grant Currency" || CanWrite)
         {
@@ -30,6 +30,43 @@ else
     <div class="filters">
         <input @bind="_playerId" placeholder="Player ID (UUID)..." style="width:340px" />
         <button @onclick="LookupAsync">Lookup</button>
+    </div>
+}
+
+@if (_tab == "Balance Config")
+{
+    <div class="card">
+        <h2>Game Balance Configuration</h2>
+        <div class="grid2">
+            <label>Max Energy<input type="number" @bind="_cfgMaxEnergy" /></label>
+            <label>Start Energy<input type="number" @bind="_cfgStartEnergy" /></label>
+            <label>Regen Minutes / Energy<input type="number" @bind="_cfgRegenMinutes" /></label>
+            <label>Daily Free Energy<input type="number" @bind="_cfgDailyFreeEnergy" /></label>
+            <label>Revive Base Gem Cost<input type="number" @bind="_cfgReviveCost" /></label>
+            <label>Almost Win Discount %<input type="number" @bind="_cfgReviveDiscount" /></label>
+        </div>
+        <div style="display:flex; gap:.5rem; margin-top:.75rem;">
+            <button @onclick="LoadBalanceAsync">Reload</button>
+            @if (CanWrite)
+            {
+                <button @onclick="SaveBalanceAsync">Save</button>
+            }
+            <button @onclick="RunSimulationAsync">Run Simulation</button>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_balanceMsg))
+        {
+            <p class="message">@_balanceMsg</p>
+        }
+        @if (_simResult is not null)
+        {
+            <div class="card" style="margin-top:.75rem;">
+                <h3>Simulation Result</h3>
+                <p>Starting Energy: @_simResult.StartingEnergy</p>
+                <p>Spent: @_simResult.EnergySpent</p>
+                <p>Regenerated: @_simResult.EnergyRegenerated</p>
+                <p>Ending Energy: @_simResult.EndingEnergy</p>
+            </div>
+        }
     </div>
 }
 
@@ -111,10 +148,19 @@ else
     private string _grantType = "coins";
     private long _grantAmount = 100;
     private string _grantReason = string.Empty, _grantMsg = string.Empty;
+    private string _balanceMsg = string.Empty;
+    private EconomySimulationResponse? _simResult;
+    private int _cfgMaxEnergy = 20;
+    private int _cfgStartEnergy = 20;
+    private int _cfgRegenMinutes = 10;
+    private int _cfgDailyFreeEnergy = 5;
+    private int _cfgReviveCost = 5;
+    private int _cfgReviveDiscount = 20;
 
     protected override async Task OnInitializedAsync()
     {
         if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; }
+        if (!_authFailed) await LoadBalanceAsync();
     }
 
     private async Task LookupAsync()
@@ -137,12 +183,65 @@ else
         _grantMsg = ok ? "Granted." : "Failed.";
         if (ok) await LookupAsync();
     }
+
+    private async Task LoadBalanceAsync()
+    {
+        var cfg = await Api.GetGameBalanceConfigAsync();
+        if (cfg is null) { _balanceMsg = "Failed to load balance config."; return; }
+        _cfgMaxEnergy = cfg.MaxEnergy;
+        _cfgStartEnergy = cfg.StartEnergy;
+        _cfgRegenMinutes = cfg.RegenMinutesPerEnergy;
+        _cfgDailyFreeEnergy = cfg.DailyFreeEnergy;
+        _cfgReviveCost = cfg.Safeguards.ReviveBaseGemCost;
+        _cfgReviveDiscount = cfg.Safeguards.AlmostWinReviveDiscountPercent;
+        _balanceMsg = "Loaded.";
+    }
+
+    private async Task SaveBalanceAsync()
+    {
+        var req = new UpdateGameBalanceConfigRequest(
+            MaxEnergy: _cfgMaxEnergy,
+            StartEnergy: _cfgStartEnergy,
+            RegenMinutesPerEnergy: _cfgRegenMinutes,
+            DailyFreeEnergy: _cfgDailyFreeEnergy,
+            AdEnergyMin: null,
+            AdEnergyMax: null,
+            LevelUpFullRefill: null,
+            PremiumEnergyCapBonus: null,
+            PremiumRegenMultiplier: null,
+            Modes: null,
+            Safeguards: new SafeguardConfigDto(
+                FirstSessionsReducedCostCount: 3,
+                FirstSessionsEnergyDiscount: 1,
+                DailyFreeJackpotTickets: 1,
+                ReviveBaseGemCost: _cfgReviveCost,
+                AlmostWinReviveDiscountPercent: _cfgReviveDiscount,
+                PityLossThreshold: 3,
+                PityDifficultyReductionPercent: 0.10m
+            )
+        );
+        var updated = await Api.PatchGameBalanceConfigAsync(req);
+        _balanceMsg = updated is null ? "Save failed." : "Saved.";
+    }
+
+    private async Task RunSimulationAsync()
+    {
+        _simResult = await Api.SimulateEconomyAsync(new EconomySimulationRequest(
+            SessionMinutes: 25,
+            SessionNumber: 1,
+            CasualMatches: 2,
+            RankedMatches: 2,
+            GuardianMatches: 1
+        ));
+        _balanceMsg = _simResult is null ? "Simulation failed." : "Simulation complete.";
+    }
 }
 
 <style>
     .tabs { display:flex; gap:.5rem; margin-bottom:1.25rem; }
     .tab { background:#e2e8f0; color:#475569; }
     .tab.active { background:#3b82f6; color:#fff; }
+    .grid2 { display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)); gap:.75rem; }
     label { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; color:#475569; margin-bottom:.6rem; }
     label input, label select { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
 </style>
