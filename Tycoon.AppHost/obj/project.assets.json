@@ -6587,6 +6587,19 @@
           "bin/placeholder/Tycoon.Hosting.Elasticsearch.dll": {}
         }
       },
+      "Tycoon.Hosting.Minio/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "Aspire.Hosting": "13.1.0"
+        },
+        "compile": {
+          "bin/placeholder/Tycoon.Hosting.Minio.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Tycoon.Hosting.Minio.dll": {}
+        }
+      },
       "Tycoon.MigrationService/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
@@ -17158,6 +17171,11 @@
       "path": "../Tycoon.Hosting.Elasticsearch/Tycoon.Hosting.Elasticsearch.csproj",
       "msbuildProject": "../Tycoon.Hosting.Elasticsearch/Tycoon.Hosting.Elasticsearch.csproj"
     },
+    "Tycoon.Hosting.Minio/1.0.0": {
+      "type": "project",
+      "path": "../Tycoon.Hosting.Minio/Tycoon.Hosting.Minio.csproj",
+      "msbuildProject": "../Tycoon.Hosting.Minio/Tycoon.Hosting.Minio.csproj"
+    },
     "Tycoon.MigrationService/1.0.0": {
       "type": "project",
       "path": "../Tycoon.MigrationService/Tycoon.MigrationService.csproj",
@@ -17194,6 +17212,7 @@
       "Humanizer.Core >= 3.0.1",
       "Tycoon.Backend.Api >= 1.0.0",
       "Tycoon.Hosting.Elasticsearch >= 1.0.0",
+      "Tycoon.Hosting.Minio >= 1.0.0",
       "Tycoon.MigrationService >= 1.0.0"
     ]
   },
@@ -17236,6 +17255,9 @@
             },
             "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj": {
               "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Elasticsearch\\Tycoon.Hosting.Elasticsearch.csproj"
+            },
+            "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Minio\\Tycoon.Hosting.Minio.csproj": {
+              "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.Hosting.Minio\\Tycoon.Hosting.Minio.csproj"
             },
             "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj": {
               "projectPath": "C:\\Users\\lmxbl\\Documents\\TycoonTycoon_Backend\\Tycoon.MigrationService\\Tycoon.MigrationService.csproj"

@@ -97,8 +97,8 @@ public sealed class AdminAuthService(
             entry = new TokenStore.TokenEntry(refreshed.AccessToken, entry.RefreshToken, newExpiry);
         }
 
-        api.SetToken(entry.AccessToken);
         bearerTokenStore.AccessToken = entry.AccessToken;
+        api.SetToken(entry.AccessToken);
         return true;
     }
 }
