@@ -537,6 +537,7 @@ dotnet run --project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj
 - **[docs/FLUTTER_INTEGRATION.md](docs/FLUTTER_INTEGRATION.md)** - Authoritative Flutter client integration guide (auth, REST API, SignalR, error handling)
 - **[docs/minio-setup.md](docs/minio-setup.md)** - MinIO bucket setup (console, mc CLI, AWS CLI, .NET SDK examples)
 - **[docs/BACKEND_DECISIONS.md](docs/BACKEND_DECISIONS.md)** - Frozen architectural decisions (auth, enums, event dedupe, MFA)
+- **[docs/GAME_BALANCE_AUTOMATION_PLAN.md](docs/GAME_BALANCE_AUTOMATION_PLAN.md)** - Energy/lives mode balancing and Sidecar automation implementation plan
 - **[API Documentation](http://localhost:5000/swagger)** - Interactive API documentation (when API is running)
 - **Hangfire Dashboard** - Background job monitoring at http://localhost:5000/hangfire
 - **Operator Dashboard** - Ops control panel at http://localhost:8200
@@ -601,3 +602,4 @@ Built with:
 ---
 
 **Happy coding! 🚀**
+
