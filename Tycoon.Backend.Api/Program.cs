@@ -661,7 +661,6 @@ GameEventStatsEndpoints.Map(app);
 GameEventStatsEndpoints.MapTerritory(app);
 GuardiansEndpoints.Map(app);
 TerritoryEndpoints.Map(app);
-AdminGameEventsEndpoints.Map(admin);
 
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
 var mobile = app.MapGroup("/mobile").WithTags("Mobile").WithOpenApi();
@@ -678,6 +677,7 @@ var admin = app.MapGroup("/admin")
     .RequireAdminOpsKey()
     .RequireAdminRoleClaims();
 
+AdminGameEventsEndpoints.Map(admin);
 AdminQuestionsEndpoints.Map(admin);
 AdminUsersEndpoints.Map(admin);
 AdminEventQueueEndpoints.Map(admin);
