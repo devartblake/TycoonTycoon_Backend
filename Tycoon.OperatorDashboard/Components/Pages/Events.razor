@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
+@using System.Text.Json
 
 <h1>Game Events</h1>
 
@@ -12,51 +13,145 @@
         <span><strong>Session expired.</strong> <a href="/login">Sign in again</a> to continue.</span>
     </div>
 }
-else if (_doc is null)
-{
-    <p>Loading...</p>
-}
 else
 {
-    <table>
-        <thead><tr><th>ID</th><th>Kind</th><th>Status</th><th>Open At</th><th>Actions</th></tr></thead>
-        <tbody>
-            @foreach (var el in _doc.RootElement.GetProperty("items").EnumerateArray())
-            {
-                var id    = el.GetProperty("id").GetGuid();
-                var kind  = el.GetProperty("kind").GetString() ?? "—";
-                var status = el.GetProperty("status").GetString() ?? "—";
-                var openAt = el.TryGetProperty("openAtUtc", out var oa) ? oa.GetString() : null;
-                <tr>
-                    <td><code>@id.ToString()[..8]…</code></td>
-                    <td>@kind</td>
-                    <td>@status</td>
-                    <td>@(openAt ?? "—")</td>
-                    <td>
-                        @if (status == "Scheduled")
-                        {
-                            <button @onclick="() => OpenAsync(id)">Open</button>
-                        }
-                        @if (status == "Open" || status == "Live")
-                        {
-                            <button class="danger" @onclick="() => CloseAsync(id)">Close</button>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card">
+        <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+            <h2 style="margin:0">Events</h2>
+            <select @onchange="OnStatusFilterChanged" style="padding:.35rem .6rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem">
+                <option value="">All statuses</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Open">Open</option>
+                <option value="Live">Live</option>
+                <option value="Closed">Closed</option>
+            </select>
+            <button @onclick="() => _creating = !_creating" style="margin-left:auto">
+                @(_creating ? "Cancel" : "+ Create")
+            </button>
+        </div>
 
-    @if (!string.IsNullOrEmpty(_message))
-    {
-        <p class="message">@_message</p>
-    }
+        @if (_creating)
+        {
+            <div class="create-form">
+                <h3>New Game Event</h3>
+                <div class="form-row">
+                    <label>Kind<input @bind="_newKind" placeholder="battle-royale" /></label>
+                    <label>Tier<input type="number" @bind="_newTierId" min="1" /></label>
+                    <label>Max Participants<input type="number" @bind="_newMaxParticipants" min="2" /></label>
+                </div>
+                <div class="form-row">
+                    <label>Scheduled At (UTC)<input type="datetime-local" @bind="_newScheduledAt" /></label>
+                    <label>Entry Fee (coins)<input type="number" @bind="_newEntryFee" min="0" /></label>
+                    <label>Revive Cost (gems)<input type="number" @bind="_newReviveCost" min="0" /></label>
+                </div>
+                <button @onclick="CreateAsync">Create Event</button>
+                @if (!string.IsNullOrEmpty(_createMessage))
+                {
+                    <p class="message @(_createError ? "error-msg" : "success-msg")">@_createMessage</p>
+                }
+            </div>
+        }
+
+        @if (_doc is null)
+        {
+            <p style="margin-top:1rem">Loading…</p>
+        }
+        else
+        {
+            var items = _doc.RootElement.GetProperty("items");
+            var total = _doc.RootElement.TryGetProperty("total", out var t) ? t.GetInt32() : 0;
+
+            @if (items.GetArrayLength() == 0)
+            {
+                <p style="margin-top:1rem;color:#64748b">No events found.</p>
+            }
+            else
+            {
+                <table style="margin-top:.75rem">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Kind</th>
+                            <th>Tier</th>
+                            <th>Status</th>
+                            <th>Scheduled At</th>
+                            <th>Entry Fee</th>
+                            <th>Max</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var el in items.EnumerateArray())
+                        {
+                            var id        = el.GetProperty("id").GetGuid();
+                            var kind      = el.TryGetProperty("kind",            out var k)  ? k.GetString()  ?? "—" : "—";
+                            var tierId    = el.TryGetProperty("tierId",          out var tr) ? tr.GetInt32()         : 0;
+                            var status    = el.TryGetProperty("status",          out var s)  ? s.GetString()  ?? "—" : "—";
+                            var scheduled = el.TryGetProperty("scheduledAtUtc",  out var sc) ? sc.GetString() ?? "—" : "—";
+                            var entryFee  = el.TryGetProperty("entryFeeCoins",   out var ef) ? ef.GetInt32()         : 0;
+                            var maxPart   = el.TryGetProperty("maxParticipants", out var mp) ? mp.GetInt32()         : 0;
+
+                            <tr>
+                                <td><code title="@id">@id.ToString()[..8]…</code></td>
+                                <td>@kind</td>
+                                <td>@tierId</td>
+                                <td><span class="badge status-@status.ToLower()">@status</span></td>
+                                <td>@FormatDate(scheduled)</td>
+                                <td>@entryFee</td>
+                                <td>@maxPart</td>
+                                <td class="actions">
+                                    @if (status == "Scheduled")
+                                    {
+                                        <button @onclick="() => LifecycleAsync(id, \"open\")">Open</button>
+                                    }
+                                    @if (status == "Open")
+                                    {
+                                        <button @onclick="() => LifecycleAsync(id, \"start\")">Start</button>
+                                    }
+                                    @if (status is "Open" or "Live")
+                                    {
+                                        <button class="danger" @onclick="() => LifecycleAsync(id, \"close\")">Close</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="pager">
+                    <button @onclick="PrevPage" disabled="@(_page <= 1)">← Prev</button>
+                    <span>Page @_page · @total total</span>
+                    <button @onclick="NextPage" disabled="@(_page * _pageSize >= total)">Next →</button>
+                </div>
+            }
+        }
+
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <p class="message @(_isError ? "error-msg" : "success-msg")">@_message</p>
+        }
+    </div>
 }
 
 @code {
     private JsonDocument? _doc;
     private bool _authFailed;
     private string _message = string.Empty;
+    private bool _isError;
+    private string? _statusFilter;
+    private int _page = 1;
+    private const int _pageSize = 20;
+
+    // Create form
+    private bool _creating;
+    private string _newKind = "battle-royale";
+    private int _newTierId = 1;
+    private int _newMaxParticipants = 50;
+    private DateTime _newScheduledAt = DateTime.UtcNow.AddHours(1);
+    private int _newEntryFee = 100;
+    private int _newReviveCost = 10;
+    private string _createMessage = string.Empty;
+    private bool _createError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,22 +161,93 @@ else
 
     private async Task LoadAsync()
     {
-        _doc = await Api.ListEventQueueAsync();
+        _doc = await Api.ListGameEventsAsync(_statusFilter, _page, _pageSize);
     }
 
-    private async Task OpenAsync(Guid id)
+    private async Task OnStatusFilterChanged(ChangeEventArgs e)
     {
-        _message = string.Empty;
-        var ok = await Api.OpenEventAsync(id);
-        _message = ok ? "Event opened." : "Open failed.";
+        _statusFilter = e.Value?.ToString();
+        _page = 1;
         await LoadAsync();
     }
 
-    private async Task CloseAsync(Guid id)
+    private async Task LifecycleAsync(Guid id, string action)
     {
         _message = string.Empty;
-        var ok = await Api.CloseEventAsync(id);
-        _message = ok ? "Event closed." : "Close failed.";
+        _isError = false;
+
+        var ok = action switch
+        {
+            "open"  => await Api.OpenGameEventAsync(id),
+            "start" => await Api.StartGameEventAsync(id),
+            "close" => await Api.CloseGameEventAsync(id),
+            _       => false
+        };
+
+        _message = ok ? $"Event {action}ed." : $"{char.ToUpper(action[0])}{action[1..]} failed.";
+        _isError = !ok;
         await LoadAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        _createMessage = string.Empty;
+        _createError = false;
+
+        if (string.IsNullOrWhiteSpace(_newKind)) { _createMessage = "Kind is required."; _createError = true; return; }
+        if (_newMaxParticipants < 2) { _createMessage = "Max participants must be at least 2."; _createError = true; return; }
+
+        var body = new
+        {
+            kind = _newKind,
+            tierId = _newTierId,
+            scheduledAtUtc = new DateTimeOffset(_newScheduledAt, TimeSpan.Zero),
+            openAtUtc = (DateTimeOffset?)null,
+            entryFeeCoins = _newEntryFee,
+            reviveCostGems = _newReviveCost,
+            maxParticipants = _newMaxParticipants
+        };
+
+        var result = await Api.CreateGameEventAsync(body);
+        if (result is null)
+        {
+            _createMessage = "Create failed — check API logs.";
+            _createError = true;
+            return;
+        }
+
+        _createMessage = "Event created.";
+        _creating = false;
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task PrevPage() { if (_page > 1) { _page--; await LoadAsync(); } }
+    private async Task NextPage() { _page++; await LoadAsync(); }
+
+    private static string FormatDate(string? iso)
+    {
+        if (DateTimeOffset.TryParse(iso, out var dto))
+            return dto.UtcDateTime.ToString("yyyy-MM-dd HH:mm");
+        return iso ?? "—";
     }
 }
+
+<style>
+    .form-row { display:flex; gap:.75rem; flex-wrap:wrap; margin:.5rem 0; }
+    .form-row label { display:flex; flex-direction:column; gap:.2rem; font-size:.875rem; color:#475569; flex:1; min-width:140px; }
+    .form-row label input { padding:.35rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
+    .create-form { margin-top:1rem; padding:1rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; }
+    .create-form h3 { margin:0 0 .75rem; font-size:1rem; }
+    .pager { display:flex; gap:.75rem; align-items:center; margin-top:1rem; }
+    .actions { display:flex; gap:.4rem; }
+    .actions button { padding:.25rem .6rem; font-size:.8rem; }
+    .badge { padding:.15rem .5rem; border-radius:4px; font-size:.75rem; font-weight:600; }
+    .status-scheduled { background:#fef9c3; color:#854d0e; }
+    .status-open      { background:#dcfce7; color:#166534; }
+    .status-live      { background:#dbeafe; color:#1e40af; }
+    .status-closed    { background:#f1f5f9; color:#475569; }
+    .error-msg { background:#fef2f2; border-left:3px solid #ef4444; color:#991b1b; padding:.5rem .75rem; border-radius:4px; }
+    .success-msg { background:#f0fdf4; border-left:3px solid #22c55e; color:#166534; padding:.5rem .75rem; border-radius:4px; }
+    .message { margin-top:.75rem; }
+</style>

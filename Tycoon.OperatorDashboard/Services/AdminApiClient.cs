@@ -77,25 +77,49 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         return resp.IsSuccessStatusCode;
     }
 
-    // ── Game Event Queue ───────────────────────────────────────────────────
+    // ── Game Events ────────────────────────────────────────────────────────
+
+    public async Task<JsonDocument?> ListGameEventsAsync(string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default)
+    {
+        var qs = $"page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(status)) qs += $"&status={status}";
+        var resp = await http.GetAsync($"/admin/game-events?{qs}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<JsonDocument?> CreateGameEventAsync(object body, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/game-events/", JsonContent.Create(body), ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<bool> OpenGameEventAsync(Guid eventId, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync($"/admin/game-events/{eventId}/open", null, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> StartGameEventAsync(Guid eventId, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync($"/admin/game-events/{eventId}/start", null, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> CloseGameEventAsync(Guid eventId, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync($"/admin/game-events/{eventId}/close", null, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
+    // ── Game Event Queue (dead-letter upload/reprocess) ────────────────────
 
     public async Task<JsonDocument?> ListEventQueueAsync(int page = 1, int pageSize = 50, CancellationToken ct = default)
     {
         var resp = await http.GetAsync($"/admin/event-queue?page={page}&pageSize={pageSize}", ct);
         if (!resp.IsSuccessStatusCode) return null;
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-    }
-
-    public async Task<bool> OpenEventAsync(Guid eventId, CancellationToken ct = default)
-    {
-        var resp = await http.PostAsync($"/admin/event-queue/{eventId}/open", null, ct);
-        return resp.IsSuccessStatusCode;
-    }
-
-    public async Task<bool> CloseEventAsync(Guid eventId, CancellationToken ct = default)
-    {
-        var resp = await http.PostAsync($"/admin/event-queue/{eventId}/close", null, ct);
-        return resp.IsSuccessStatusCode;
     }
 
     // ── Users ──────────────────────────────────────────────────────────────
