@@ -290,6 +290,7 @@ builder.Services
     {
         o.RequireHttpsMetadata = false;
         o.SaveToken = true;
+        o.MapInboundClaims = false;
         o.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
