@@ -16,7 +16,7 @@ else
 {
 
 <div class="tabs">
-    @foreach (var tab in new[] { "Player Wallet", "Grant Currency", "Transaction History" })
+    @foreach (var tab in new[] { "Player Wallet", "Grant Currency", "Transaction History", "Balance Config" })
     {
         @if (tab != "Grant Currency" || CanWrite)
         {
@@ -30,6 +30,262 @@ else
     <div class="filters">
         <input @bind="_playerId" placeholder="Player ID (UUID)..." style="width:340px" />
         <button @onclick="LookupAsync">Lookup</button>
+    </div>
+}
+
+@if (_tab == "Balance Config")
+{
+    <div class="card">
+        <h2>Game Balance Configuration</h2>
+        <div class="grid2">
+            <label>Max Energy<input type="number" @bind="_cfgMaxEnergy" /></label>
+            <label>Start Energy<input type="number" @bind="_cfgStartEnergy" /></label>
+            <label>Regen Minutes / Energy<input type="number" @bind="_cfgRegenMinutes" /></label>
+            <label>Daily Free Energy<input type="number" @bind="_cfgDailyFreeEnergy" /></label>
+            <label>Revive Base Gem Cost<input type="number" @bind="_cfgReviveCost" /></label>
+            <label>Almost Win Discount %<input type="number" @bind="_cfgReviveDiscount" /></label>
+        </div>
+        <div style="display:flex; gap:.5rem; margin-top:.75rem;">
+            <button @onclick="LoadBalanceAsync">Reload</button>
+            @if (CanWrite)
+            {
+                <button @onclick="SaveBalanceAsync">Save</button>
+            }
+            <button @onclick="RunSimulationAsync">Run Simulation</button>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_balanceMsg))
+        {
+            <p class="message">@_balanceMsg</p>
+        }
+        @if (_balanceErrors.Count > 0)
+        {
+            <ul class="validation-errors">
+                @foreach (var err in _balanceErrors)
+                {
+                    <li>@err</li>
+                }
+            </ul>
+        }
+        @if (_simResult is not null)
+        {
+            <div class="card" style="margin-top:.75rem;">
+                <h3>Simulation Result</h3>
+                <p>Starting Energy: @_simResult.StartingEnergy</p>
+                <p>Spent: @_simResult.EnergySpent</p>
+                <p>Regenerated: @_simResult.EnergyRegenerated</p>
+                <p>Ending Energy: @_simResult.EndingEnergy</p>
+            </div>
+        }
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Audit</h3>
+                <button @onclick="LoadRebalanceAuditAsync">Reload Audit</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceAuditMsg))
+            {
+                <p class="message">@_rebalanceAuditMsg</p>
+            }
+            @if (_rebalanceAuditItems.Count > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>At (UTC)</th>
+                            <th>Status</th>
+                            <th>Approved By</th>
+                            <th>Reason</th>
+                            <th>Backend Status</th>
+                            <th>Audit ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in _rebalanceAuditItems)
+                    {
+                        <tr>
+                            <td>@(item.CreatedAtUtc?.ToString("u") ?? "—")</td>
+                            <td>@(item.Status ?? "—")</td>
+                            <td>@(item.ApprovedBy ?? "—")</td>
+                            <td>@(item.Reason ?? "—")</td>
+                            <td>@(item.BackendStatus?.ToString() ?? "—")</td>
+                            <td style="font-family:monospace;">@(item.AuditId ?? "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Recommendation (Dry-Run)</h3>
+                <button @onclick="LoadRebalanceRecommendationAsync">Reload Recommendation</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceRecommendationMsg))
+            {
+                <p class="message">@_rebalanceRecommendationMsg</p>
+            }
+            @if (_rebalanceRecommendation is not null)
+            {
+                <div class="grid2">
+                    <label>Recommended Max Energy<input type="number" value="@(_rebalanceRecommendation.MaxEnergy ?? 0)" readonly /></label>
+                    <label>Regen Minutes / Energy<input type="number" value="@(_rebalanceRecommendation.RegenMinutesPerEnergy ?? 0)" readonly /></label>
+                    <label>Daily Free Energy<input type="number" value="@(_rebalanceRecommendation.DailyFreeEnergy ?? 0)" readonly /></label>
+                </div>
+
+                @if (_rebalanceRecommendation.Modes.Count > 0)
+                {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mode</th>
+                                <th>Energy Cost</th>
+                                <th>Lives</th>
+                                <th>Requires Ticket</th>
+                                <th>Tier Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var mode in _rebalanceRecommendation.Modes)
+                        {
+                            <tr>
+                                <td>@mode.Mode</td>
+                                <td>@mode.EnergyCost</td>
+                                <td>@(mode.Lives?.ToString() ?? "—")</td>
+                                <td>@(mode.RequiresTicket ? "Yes" : "No")</td>
+                                <td>@mode.TierPointsWeight</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            }
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Metrics</h3>
+                <button @onclick="LoadRebalanceMetricsAsync">Reload Metrics</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceMetricsMsg))
+            {
+                <p class="message">@_rebalanceMetricsMsg</p>
+            }
+            @if (_rebalanceMetrics is not null)
+            {
+                <div style="display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:.75rem;margin:.5rem 0;">
+                    <div class="card"><strong>Total Attempts</strong><div>@_rebalanceMetrics.TotalApplyAttempts</div></div>
+                    <div class="card"><strong>Blocked</strong><div>@_rebalanceMetrics.BlockedCount</div></div>
+                    <div class="card"><strong>Success</strong><div>@_rebalanceMetrics.SuccessCount</div></div>
+                    <div class="card"><strong>Error</strong><div>@_rebalanceMetrics.ErrorCount</div></div>
+                </div>
+                <p>Last Attempt: @(_rebalanceMetrics.LastAttemptAtUtc?.ToString("u") ?? "—")</p>
+                <p>Last Success: @(_rebalanceMetrics.LastSuccessAtUtc?.ToString("u") ?? "—")</p>
+                <p>Last Error: @(_rebalanceMetrics.LastErrorAtUtc?.ToString("u") ?? "—")</p>
+            }
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Alerts</h3>
+                <button @onclick="LoadRebalanceAlertsAsync">Reload Alerts</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceAlertsMsg))
+            {
+                <p class="message">@_rebalanceAlertsMsg</p>
+            }
+            @if (_rebalanceAlerts.Count > 0)
+            {
+                <ul class="validation-errors">
+                    @foreach (var alert in _rebalanceAlerts)
+                    {
+                        <li><strong>@alert.Severity.ToUpperInvariant()</strong> (@alert.Code): @alert.Message</li>
+                    }
+                </ul>
+            }
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Metrics History</h3>
+                <button @onclick="LoadRebalanceMetricsHistoryAsync">Reload History</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceMetricsHistoryMsg))
+            {
+                <p class="message">@_rebalanceMetricsHistoryMsg</p>
+            }
+            @if (_rebalanceMetricsHistory.Count > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Captured At (UTC)</th>
+                            <th>Total</th>
+                            <th>Blocked</th>
+                            <th>Success</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var snap in _rebalanceMetricsHistory)
+                    {
+                        <tr>
+                            <td>@(snap.CapturedAtUtc?.ToString("u") ?? "—")</td>
+                            <td>@snap.TotalApplyAttempts</td>
+                            <td>@snap.BlockedCount</td>
+                            <td>@snap.SuccessCount</td>
+                            <td>@snap.ErrorCount</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rollout Validation</h3>
+                <button @onclick="LoadRolloutValidationAsync">Reload Validation</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rolloutValidationMsg))
+            {
+                <p class="message">@_rolloutValidationMsg</p>
+            }
+            @if (_rolloutValidation is not null)
+            {
+                <p>
+                    <strong>Status:</strong>
+                    <span style="color:@(_rolloutValidation.Passed ? "#166534" : "#991b1b")">
+                        @(_rolloutValidation.Passed ? "PASSED" : "FAILED")
+                    </span>
+                </p>
+                <p><strong>Generated:</strong> @(_rolloutValidation.GeneratedAtUtc?.ToString("u") ?? "—")</p>
+                <p><strong>Runbook:</strong> @(_rolloutValidation.Runbook ?? "—")</p>
+
+                @if (_rolloutValidation.Checks.Count > 0)
+                {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Check</th>
+                                <th>Result</th>
+                                <th>Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var check in _rolloutValidation.Checks)
+                        {
+                            <tr>
+                                <td>@check.Name</td>
+                                <td style="font-weight:600; color:@(check.Ok ? "#166534" : "#991b1b")">@((check.Ok ? "PASS" : "FAIL"))</td>
+                                <td>@(check.Detail ?? "—")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            }
+        </div>
     </div>
 }
 
@@ -111,10 +367,32 @@ else
     private string _grantType = "coins";
     private long _grantAmount = 100;
     private string _grantReason = string.Empty, _grantMsg = string.Empty;
+    private string _balanceMsg = string.Empty;
+    private List<string> _balanceErrors = [];
+    private EconomySimulationResponse? _simResult;
+    private int _cfgMaxEnergy = 20;
+    private int _cfgStartEnergy = 20;
+    private int _cfgRegenMinutes = 10;
+    private int _cfgDailyFreeEnergy = 5;
+    private int _cfgReviveCost = 5;
+    private int _cfgReviveDiscount = 20;
+    private string _rebalanceAuditMsg = string.Empty;
+    private List<AdminApiClient.SidecarRebalanceAuditItem> _rebalanceAuditItems = [];
+    private string _rebalanceRecommendationMsg = string.Empty;
+    private AdminApiClient.SidecarRebalanceRecommendation? _rebalanceRecommendation;
+    private string _rebalanceMetricsMsg = string.Empty;
+    private AdminApiClient.SidecarRebalanceMetrics? _rebalanceMetrics;
+    private string _rebalanceAlertsMsg = string.Empty;
+    private List<AdminApiClient.SidecarRebalanceAlert> _rebalanceAlerts = [];
+    private string _rebalanceMetricsHistoryMsg = string.Empty;
+    private List<AdminApiClient.SidecarRebalanceMetricsSnapshot> _rebalanceMetricsHistory = [];
+    private string _rolloutValidationMsg = string.Empty;
+    private AdminApiClient.SidecarRolloutValidationReport? _rolloutValidation;
 
     protected override async Task OnInitializedAsync()
     {
         if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; }
+        if (!_authFailed) await LoadBalanceAsync();
     }
 
     private async Task LookupAsync()
@@ -137,12 +415,185 @@ else
         _grantMsg = ok ? "Granted." : "Failed.";
         if (ok) await LookupAsync();
     }
+
+    private async Task LoadBalanceAsync()
+    {
+        _balanceErrors.Clear();
+        var result = await Api.GetGameBalanceConfigDetailedAsync();
+        if (!result.Success)
+        {
+            _balanceMsg = result.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Forbidden => "Access denied (403). Check Admin Ops key and admin permissions.",
+                System.Net.HttpStatusCode.Unauthorized => "Unauthorized (401). Sign in again and verify Admin Ops key.",
+                _ => string.IsNullOrWhiteSpace(result.ErrorMessage) ? "Failed to load balance config." : result.ErrorMessage!
+            };
+            return;
+        }
+        var cfg = result.Value!;
+        _cfgMaxEnergy = cfg.MaxEnergy;
+        _cfgStartEnergy = cfg.StartEnergy;
+        _cfgRegenMinutes = cfg.RegenMinutesPerEnergy;
+        _cfgDailyFreeEnergy = cfg.DailyFreeEnergy;
+        _cfgReviveCost = cfg.Safeguards.ReviveBaseGemCost;
+        _cfgReviveDiscount = cfg.Safeguards.AlmostWinReviveDiscountPercent;
+        await LoadRebalanceAuditAsync();
+        await LoadRebalanceRecommendationAsync();
+        await LoadRebalanceMetricsAsync();
+        await LoadRebalanceAlertsAsync();
+        await LoadRebalanceMetricsHistoryAsync();
+        await LoadRolloutValidationAsync();
+        _balanceMsg = "Loaded.";
+    }
+
+    private async Task SaveBalanceAsync()
+    {
+        _balanceErrors.Clear();
+        var req = new UpdateGameBalanceConfigRequest(
+            MaxEnergy: _cfgMaxEnergy,
+            StartEnergy: _cfgStartEnergy,
+            RegenMinutesPerEnergy: _cfgRegenMinutes,
+            DailyFreeEnergy: _cfgDailyFreeEnergy,
+            AdEnergyMin: null,
+            AdEnergyMax: null,
+            LevelUpFullRefill: null,
+            PremiumEnergyCapBonus: null,
+            PremiumRegenMultiplier: null,
+            Modes: null,
+            Safeguards: new SafeguardConfigDto(
+                FirstSessionsReducedCostCount: 3,
+                FirstSessionsEnergyDiscount: 1,
+                DailyFreeJackpotTickets: 1,
+                ReviveBaseGemCost: _cfgReviveCost,
+                AlmostWinReviveDiscountPercent: _cfgReviveDiscount,
+                PityLossThreshold: 3,
+                PityDifficultyReductionPercent: 0.10m
+            )
+        );
+        var result = await Api.PatchGameBalanceConfigDetailedAsync(req);
+        if (result.Success)
+        {
+            _balanceMsg = "Saved.";
+            _balanceErrors.Clear();
+            return;
+        }
+
+        _balanceMsg = string.IsNullOrWhiteSpace(result.Message) ? "Save failed." : result.Message;
+        _balanceErrors = result.Errors.ToList();
+    }
+
+    private async Task RunSimulationAsync()
+    {
+        _balanceErrors.Clear();
+        _simResult = await Api.SimulateEconomyAsync(new EconomySimulationRequest(
+            SessionMinutes: 25,
+            SessionNumber: 1,
+            CasualMatches: 2,
+            RankedMatches: 2,
+            GuardianMatches: 1
+        ));
+        _balanceMsg = _simResult is null ? "Simulation failed." : "Simulation complete.";
+    }
+
+    private async Task LoadRebalanceAuditAsync()
+    {
+        var items = await Api.GetSidecarRebalanceAuditHistoryAsync(limit: 25);
+        if (items is null)
+        {
+            _rebalanceAuditItems = [];
+            _rebalanceAuditMsg = "Sidecar audit unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rebalanceAuditItems = [.. items];
+        _rebalanceAuditMsg = _rebalanceAuditItems.Count == 0
+            ? "No rebalance audit records yet."
+            : $"Loaded {_rebalanceAuditItems.Count} audit records.";
+    }
+
+    private async Task LoadRebalanceRecommendationAsync()
+    {
+        var rec = await Api.GetSidecarRebalanceRecommendationAsync();
+        if (rec is null)
+        {
+            _rebalanceRecommendation = null;
+            _rebalanceRecommendationMsg = "Sidecar recommendation unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rebalanceRecommendation = rec;
+        _rebalanceRecommendationMsg = "Loaded current dry-run recommendation.";
+    }
+
+    private async Task LoadRebalanceMetricsAsync()
+    {
+        var metrics = await Api.GetSidecarRebalanceMetricsAsync();
+        if (metrics is null)
+        {
+            _rebalanceMetrics = null;
+            _rebalanceMetricsMsg = "Sidecar metrics unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rebalanceMetrics = metrics;
+        _rebalanceMetricsMsg = "Loaded rebalance metrics.";
+    }
+
+    private async Task LoadRebalanceAlertsAsync()
+    {
+        var alerts = await Api.GetSidecarRebalanceAlertsAsync();
+        if (alerts is null)
+        {
+            _rebalanceAlerts = [];
+            _rebalanceAlertsMsg = "Sidecar alerts unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rebalanceAlerts = [.. alerts];
+        _rebalanceAlertsMsg = _rebalanceAlerts.Count == 0
+            ? "No active rebalance alerts."
+            : $"Loaded {_rebalanceAlerts.Count} active rebalance alert(s).";
+    }
+
+    private async Task LoadRebalanceMetricsHistoryAsync()
+    {
+        var history = await Api.GetSidecarRebalanceMetricsHistoryAsync(limit: 50);
+        if (history is null)
+        {
+            _rebalanceMetricsHistory = [];
+            _rebalanceMetricsHistoryMsg = "Metrics history unavailable (check Sidecar:BaseUrl and Elasticsearch sink).";
+            return;
+        }
+
+        _rebalanceMetricsHistory = [.. history];
+        _rebalanceMetricsHistoryMsg = _rebalanceMetricsHistory.Count == 0
+            ? "No published metrics history found yet."
+            : $"Loaded {_rebalanceMetricsHistory.Count} metrics snapshots.";
+    }
+
+    private async Task LoadRolloutValidationAsync()
+    {
+        var report = await Api.GetSidecarRolloutValidationReportAsync();
+        if (report is null)
+        {
+            _rolloutValidation = null;
+            _rolloutValidationMsg = "Rollout validation unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rolloutValidation = report;
+        _rolloutValidationMsg = report.Passed
+            ? "Rollout validation checks passed."
+            : "Rollout validation checks failed. Resolve failed checks before rollout.";
+    }
 }
 
 <style>
     .tabs { display:flex; gap:.5rem; margin-bottom:1.25rem; }
     .tab { background:#e2e8f0; color:#475569; }
     .tab.active { background:#3b82f6; color:#fff; }
+    .validation-errors { margin:.5rem 0 0; padding-left:1.2rem; color:#991b1b; }
+    .grid2 { display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)); gap:.75rem; }
     label { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; color:#475569; margin-bottom:.6rem; }
     label input, label select { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
 </style>

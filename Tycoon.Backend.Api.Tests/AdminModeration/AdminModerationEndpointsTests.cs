@@ -183,4 +183,45 @@ public sealed class AdminModerationEndpointsTests : IClassFixture<TycoonApiFacto
         profile!.ExpiresAtUtc.Should().NotBeNull();
         profile.ExpiresAtUtc!.Value.Should().BeCloseTo(expiresAt, TimeSpan.FromSeconds(5));
     }
+
+    [Fact]
+    public async Task GetLogs_Can_Filter_By_Status()
+    {
+        var bannedPlayer = Guid.NewGuid();
+        var restrictedPlayer = Guid.NewGuid();
+
+        var banReq = new SetModerationStatusRequest(
+            PlayerId: bannedPlayer,
+            Status: 2,   // Banned
+            Reason: "banned for test",
+            Notes: null,
+            ExpiresAtUtc: null,
+            RelatedFlagId: null
+        );
+        var restrictedReq = new SetModerationStatusRequest(
+            PlayerId: restrictedPlayer,
+            Status: 1,   // Restricted
+            Reason: "restricted for test",
+            Notes: null,
+            ExpiresAtUtc: null,
+            RelatedFlagId: null
+        );
+
+        (await _http.PostAsJsonAsync("/admin/moderation/set-status", banReq)).IsSuccessStatusCode.Should().BeTrue();
+        (await _http.PostAsJsonAsync("/admin/moderation/set-status", restrictedReq)).IsSuccessStatusCode.Should().BeTrue();
+
+        var logsResp = await _http.GetAsync("/admin/moderation/logs?page=1&pageSize=100&status=2");
+        logsResp.IsSuccessStatusCode.Should().BeTrue();
+        var logs = await logsResp.Content.ReadFromJsonAsync<ModerationLogListResponseDto>();
+        logs.Should().NotBeNull();
+        logs!.Items.Should().OnlyContain(i => i.NewStatus == 2);
+    }
+
+    [Fact]
+    public async Task GetLogs_Invalid_Status_Filter_Returns_BadRequest()
+    {
+        var resp = await _http.GetAsync("/admin/moderation/logs?page=1&pageSize=25&status=not-a-valid-status");
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await resp.HasErrorCodeAsync("VALIDATION_ERROR");
+    }
 }

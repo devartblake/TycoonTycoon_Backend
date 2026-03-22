@@ -60,4 +60,10 @@ public sealed class SchemaGateOptions
     /// Useful in dev.
     /// </summary>
     public bool LogOnly { get; set; } = false;
+
+    /// <summary>
+    /// If true, startup gate attempts to apply EF migrations once when schema checks fail.
+    /// Intended for local/dev scenarios where MigrationService may not have run yet.
+    /// </summary>
+    public bool AutoMigrateIfMissing { get; set; } = false;
 }
