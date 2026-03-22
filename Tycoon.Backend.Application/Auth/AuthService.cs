@@ -93,7 +93,17 @@ namespace Tycoon.Backend.Application.Auth
 
             authenticatedUser.RecordLogin();
 
-            var jwtToken = CreateJwtToken(authenticatedUser, clientType);
+            // Look up ACL role for admin logins to grant elevated scopes
+            AdminRole? aclRole = null;
+            if (clientType.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                var normalizedEmail = authenticatedUser.Email.ToLowerInvariant();
+                var aclEntry = await _database.AdminEmailAcls.AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail && e.ListType == AdminAclListType.Allow);
+                aclRole = aclEntry?.Role;
+            }
+
+            var jwtToken = CreateJwtToken(authenticatedUser, clientType, aclRole);
             var deviceRefreshToken = await CreateRefreshTokenForDevice(
                 authenticatedUser.Id, deviceId, clientType);
 
@@ -123,7 +133,16 @@ namespace Tycoon.Backend.Application.Auth
 
             storedToken.Revoke();
 
-            var newJwtToken = CreateJwtToken(tokenOwner, expectedClientType);
+            AdminRole? aclRole = null;
+            if (expectedClientType.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                var normalizedEmail = tokenOwner.Email.ToLowerInvariant();
+                var aclEntry = await _database.AdminEmailAcls.AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail && e.ListType == AdminAclListType.Allow);
+                aclRole = aclEntry?.Role;
+            }
+
+            var newJwtToken = CreateJwtToken(tokenOwner, expectedClientType, aclRole);
             var newDeviceToken = await CreateRefreshTokenForDevice(
                 tokenOwner.Id, storedToken.DeviceId, expectedClientType);
 
@@ -134,13 +153,17 @@ namespace Tycoon.Backend.Application.Auth
 
         // ── Token helpers ─────────────────────────────────────────────────────
 
-        private string CreateJwtToken(User user, string clientType)
+        private string CreateJwtToken(User user, string clientType, AdminRole? aclRole = null)
         {
             var isAdmin = clientType.Equals("admin", StringComparison.OrdinalIgnoreCase);
 
             var scopes = isAdmin
                 ? "users:read users:write questions:read questions:write events:read events:write notifications:write config:write"
                 : "profile:read profile:write gameplay:read gameplay:write";
+
+            // Super admins get ACL management scope
+            if (isAdmin && aclRole == AdminRole.SuperAdmin)
+                scopes += " acl:write";
 
             var role = isAdmin ? "admin" : "user";
             var audience = isAdmin ? "admin-app" : "mobile-app";

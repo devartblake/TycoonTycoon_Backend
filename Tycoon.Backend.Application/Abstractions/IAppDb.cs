@@ -67,6 +67,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<TerritoryTile> TerritoryTiles { get; }
         DbSet<TerritoryDuel> TerritoryDuels { get; }
         DbSet<PlayerEventStats> PlayerEventStats { get; }
+        DbSet<AdminEmailAcl> AdminEmailAcls { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);

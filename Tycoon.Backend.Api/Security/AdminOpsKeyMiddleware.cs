@@ -4,8 +4,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Api.Security
 {
@@ -182,24 +185,37 @@ namespace Tycoon.Backend.Api.Security
                         : ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
                 }
 
-                // Filter blank entries: compose.yml uses "${SUPER_ADMIN_EMAIL:-}" which
-                // injects an empty string when the env var is unset, turning a "no allowlist"
-                // config into a single-empty-string allowlist that blocks every admin.
-                var allowedEmails = (cfg.GetSection("AdminAuth:AllowedEmails").Get<string[]>() ?? [])
-                    .Where(e => !string.IsNullOrWhiteSpace(e))
-                    .ToArray();
                 var email = http.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                             ?? http.User.FindFirst("email")?.Value;
+                var normalizedEmail = email?.Trim().ToLowerInvariant();
 
-                if (allowedEmails.Length > 0 && (string.IsNullOrWhiteSpace(email) || !allowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase)))
+                // Check DB-backed email ACL. Blocklist takes precedence.
+                var db = http.RequestServices.GetRequiredService<IAppDb>();
+                var aclEntry = string.IsNullOrWhiteSpace(normalizedEmail)
+                    ? null
+                    : await db.AdminEmailAcls.AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail, http.RequestAborted);
+
+                if (aclEntry is not null && aclEntry.ListType == AdminAclListType.Block)
                 {
-                    logger.LogWarning("AdminRoleClaims email allowlist FAILED for {Method} {Path}: email={Email}, allowlistCount={Count}",
-                        http.Request.Method, http.Request.Path, email ?? "(no email claim)", allowedEmails.Length);
+                    logger.LogWarning("AdminRoleClaims email BLOCKED for {Method} {Path}: email={Email}",
+                        http.Request.Method, http.Request.Path, normalizedEmail);
+                    return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is blocked.");
+                }
+
+                // If ACL entries exist, require the email to be on the allowlist
+                var hasAclEntries = await db.AdminEmailAcls.AsNoTracking()
+                    .AnyAsync(e => e.ListType == AdminAclListType.Allow, http.RequestAborted);
+
+                if (hasAclEntries && (aclEntry is null || aclEntry.ListType != AdminAclListType.Allow))
+                {
+                    logger.LogWarning("AdminRoleClaims email allowlist FAILED for {Method} {Path}: email={Email}",
+                        http.Request.Method, http.Request.Path, normalizedEmail ?? "(no email claim)");
                     return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is not allowlisted.");
                 }
 
-                logger.LogDebug("AdminRoleClaims PASSED for {Method} {Path}, email={Email}",
-                    http.Request.Method, http.Request.Path, email ?? "(none)");
+                logger.LogDebug("AdminRoleClaims PASSED for {Method} {Path}, email={Email}, role={AclRole}",
+                    http.Request.Method, http.Request.Path, normalizedEmail ?? "(none)", aclEntry?.Role.ToString() ?? "default");
 
                 return await next(context);
             });

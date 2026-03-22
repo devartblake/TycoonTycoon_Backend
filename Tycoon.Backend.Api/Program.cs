@@ -30,6 +30,7 @@ using Tycoon.Backend.Api.Features.AdminMedia;
 using Tycoon.Backend.Api.Features.AdminModeration;
 using Tycoon.Backend.Api.Features.AdminNotifications;
 using Tycoon.Backend.Api.Features.AdminConfig;
+using Tycoon.Backend.Api.Features.AdminEmailAcl;
 using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminSeasons;
@@ -726,6 +727,7 @@ AdminAntiCheatAnalyticsEndpoints.Map(admin);
 AdminPartyAntiCheatEndpoints.Map(admin);
 AdminSeasonRewardsEndpoints.Map(admin);
 AdminSeasonLifecycleEndpoints.Map(admin);
+AdminEmailAclEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Tycoon Backend API starting...");
