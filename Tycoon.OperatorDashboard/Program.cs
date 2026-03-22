@@ -44,9 +44,18 @@ builder.Services.AddHttpClient<AdminApiClient>(client =>
 
     // Attach the ops key as a default header so every request — including the
     // initial login — passes the AdminOpsKeyMiddleware / endpoint filter gate.
-    var opsKey = builder.Configuration["AdminOps:Key"] ?? string.Empty;
-    if (!string.IsNullOrEmpty(opsKey))
-        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Admin-Ops-Key", opsKey);
+    var headerName = builder.Configuration["AdminOps:Header"]
+        ?? builder.Configuration["ADMIN_OPS_HEADER"]
+        ?? "X-Admin-Ops-Key";
+    var opsKey = builder.Configuration["AdminOps:Key"]
+        ?? builder.Configuration["AdminOps__Key"]
+        ?? builder.Configuration["ADMIN_OPS_KEY"]
+        ?? string.Empty;
+    if (!string.IsNullOrWhiteSpace(opsKey))
+    {
+        client.DefaultRequestHeaders.Remove(headerName);
+        client.DefaultRequestHeaders.TryAddWithoutValidation(headerName, opsKey);
+    }
 });
 
 var app = builder.Build();

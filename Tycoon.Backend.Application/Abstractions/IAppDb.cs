@@ -57,6 +57,8 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<AdminNotificationTemplate> AdminNotificationTemplates { get; }
         DbSet<AdminNotificationHistory> AdminNotificationHistory { get; }
         DbSet<AdminAppConfig> AdminAppConfigs { get; }
+        DbSet<GameBalanceConfig> GameBalanceConfigs { get; }
+        DbSet<PlayerEconomySafeguardState> PlayerEconomySafeguardStates { get; }
         DbSet<GameEvent> GameEvents { get; }
         DbSet<GameEventParticipant> GameEventParticipants { get; }
         DbSet<GameEventPrizeClaim> GameEventPrizeClaims { get; }
