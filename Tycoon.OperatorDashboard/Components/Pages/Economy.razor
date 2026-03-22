@@ -241,6 +241,51 @@ else
                 </table>
             }
         </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rollout Validation</h3>
+                <button @onclick="LoadRolloutValidationAsync">Reload Validation</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rolloutValidationMsg))
+            {
+                <p class="message">@_rolloutValidationMsg</p>
+            }
+            @if (_rolloutValidation is not null)
+            {
+                <p>
+                    <strong>Status:</strong>
+                    <span style="color:@(_rolloutValidation.Passed ? "#166534" : "#991b1b")">
+                        @(_rolloutValidation.Passed ? "PASSED" : "FAILED")
+                    </span>
+                </p>
+                <p><strong>Generated:</strong> @(_rolloutValidation.GeneratedAtUtc?.ToString("u") ?? "—")</p>
+                <p><strong>Runbook:</strong> @(_rolloutValidation.Runbook ?? "—")</p>
+
+                @if (_rolloutValidation.Checks.Count > 0)
+                {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Check</th>
+                                <th>Result</th>
+                                <th>Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var check in _rolloutValidation.Checks)
+                        {
+                            <tr>
+                                <td>@check.Name</td>
+                                <td style="font-weight:600; color:@(check.Ok ? "#166534" : "#991b1b")">@((check.Ok ? "PASS" : "FAIL"))</td>
+                                <td>@(check.Detail ?? "—")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            }
+        </div>
     </div>
 }
 
@@ -341,6 +386,8 @@ else
     private List<AdminApiClient.SidecarRebalanceAlert> _rebalanceAlerts = [];
     private string _rebalanceMetricsHistoryMsg = string.Empty;
     private List<AdminApiClient.SidecarRebalanceMetricsSnapshot> _rebalanceMetricsHistory = [];
+    private string _rolloutValidationMsg = string.Empty;
+    private AdminApiClient.SidecarRolloutValidationReport? _rolloutValidation;
 
     protected override async Task OnInitializedAsync()
     {
@@ -395,6 +442,7 @@ else
         await LoadRebalanceMetricsAsync();
         await LoadRebalanceAlertsAsync();
         await LoadRebalanceMetricsHistoryAsync();
+        await LoadRolloutValidationAsync();
         _balanceMsg = "Loaded.";
     }
 
@@ -521,6 +569,22 @@ else
         _rebalanceMetricsHistoryMsg = _rebalanceMetricsHistory.Count == 0
             ? "No published metrics history found yet."
             : $"Loaded {_rebalanceMetricsHistory.Count} metrics snapshots.";
+    }
+
+    private async Task LoadRolloutValidationAsync()
+    {
+        var report = await Api.GetSidecarRolloutValidationReportAsync();
+        if (report is null)
+        {
+            _rolloutValidation = null;
+            _rolloutValidationMsg = "Rollout validation unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rolloutValidation = report;
+        _rolloutValidationMsg = report.Passed
+            ? "Rollout validation checks passed."
+            : "Rollout validation checks failed. Resolve failed checks before rollout.";
     }
 }
 

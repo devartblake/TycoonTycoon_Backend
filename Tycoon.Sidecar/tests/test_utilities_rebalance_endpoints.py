@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from datetime import datetime, timedelta, timezone
 
 from app.routers import utilities
+from app.config import settings
 
 
 class _FakeResponse:
@@ -92,6 +94,11 @@ def _make_client():
         "lastAttemptAtUtc": None,
         "lastSuccessAtUtc": None,
         "lastErrorAtUtc": None,
+    })
+    utilities._last_alert_delivery.update({  # noqa: SLF001
+        "lastAttemptAtUtc": None,
+        "lastStatus": "never",
+        "lastDetail": None,
     })
     app = FastAPI()
     app.include_router(utilities.router, prefix="/utilities")
@@ -314,3 +321,190 @@ def test_rebalance_metrics_history_reads_from_external_sink():
     assert body["count"] == 2
     assert body["items"][0]["totalApplyAttempts"] == 2
     assert body["items"][1]["totalApplyAttempts"] == 1
+
+
+def test_rebalance_alerts_from_sink_uses_latest_snapshot():
+    client, app = _make_client()
+    app.state.elasticsearch.docs.append({
+        "index": "tycoon_rebalance_metrics",
+        "document": {
+            "capturedAtUtc": "2026-03-22T11:00:00Z",
+            "totalApplyAttempts": 10,
+            "blockedCount": 7,
+            "successCount": 2,
+            "errorCount": 1,
+        },
+    })
+
+    resp = client.get("/utilities/economy/rebalance/alerts/sink")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    alerts = body["alerts"]
+    assert any(a["code"] == "SINK_REBALANCE_BLOCKED_RATE_HIGH" for a in alerts)
+
+
+def test_dispatch_rebalance_alerts_sends_when_webhook_configured():
+    client, app = _make_client()
+    app.state.elasticsearch.docs.append({
+        "index": "tycoon_rebalance_metrics",
+        "document": {
+            "capturedAtUtc": "2026-03-22T12:00:00Z",
+            "totalApplyAttempts": 10,
+            "blockedCount": 7,
+            "successCount": 2,
+            "errorCount": 1,
+        },
+    })
+
+    sent_payloads: list[dict] = []
+
+    async def _fake_dispatch(url: str, payload: dict):
+        sent_payloads.append({"url": url, "payload": payload})
+        return {"status_code": 200, "ok": True}
+
+    old = settings.rebalance_alert_webhook_url
+    settings.rebalance_alert_webhook_url = "https://alerts.example.test/hook"
+    app.state.alert_dispatcher = _fake_dispatch
+    try:
+        resp = client.post("/utilities/economy/rebalance/alerts/dispatch")
+    finally:
+        settings.rebalance_alert_webhook_url = old
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["dispatched"] == 1
+    assert len(sent_payloads) == 1
+    assert sent_payloads[0]["url"] == "https://alerts.example.test/hook"
+
+
+def test_alert_delivery_health_reflects_configuration_and_last_dispatch():
+    client, app = _make_client()
+    app.state.elasticsearch.docs.append({
+        "index": "tycoon_rebalance_metrics",
+        "document": {
+            "capturedAtUtc": "2026-03-22T12:00:00Z",
+            "totalApplyAttempts": 10,
+            "blockedCount": 7,
+            "successCount": 2,
+            "errorCount": 1,
+        },
+    })
+
+    async def _fake_dispatch(_url: str, _payload: dict):
+        return {"status_code": 200, "ok": True}
+
+    old = settings.rebalance_alert_webhook_url
+    settings.rebalance_alert_webhook_url = "https://alerts.example.test/hook"
+    app.state.alert_dispatcher = _fake_dispatch
+    try:
+        client.post("/utilities/economy/rebalance/alerts/dispatch")
+        health = client.get("/utilities/economy/rebalance/alerts/delivery-health")
+    finally:
+        settings.rebalance_alert_webhook_url = old
+
+    assert health.status_code == 200
+    body = health.json()
+    assert body["status"] == "ok"
+    assert body["configured"] is True
+    assert body["webhookHost"] == "alerts.example.test"
+    assert body["lastDelivery"]["lastStatus"] == "ok"
+    assert body["lastDelivery"]["lastAttemptAtUtc"] is not None
+
+
+def test_rollout_readiness_reports_missing_requirements():
+    client, _ = _make_client()
+
+    resp = client.get("/utilities/economy/rebalance/rollout-readiness")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["ready"] is False
+    checks = {c["name"]: c for c in body["checks"]}
+    assert checks["elastic_client_configured"]["ok"] is True
+    assert checks["alert_webhook_configured"]["ok"] is False
+    assert checks["sink_metrics_available"]["ok"] is False
+
+
+def test_rollout_validation_report_passes_with_recent_signals():
+    client, app = _make_client()
+    now = datetime.now(timezone.utc)
+    app.state.elasticsearch.docs.append({
+        "index": "tycoon_rebalance_metrics",
+        "document": {
+            "capturedAtUtc": now.isoformat(),
+            "totalApplyAttempts": 10,
+            "blockedCount": 0,
+            "successCount": 10,
+            "errorCount": 0,
+        },
+    })
+    utilities._last_dry_run_report = {  # noqa: SLF001
+        "status": "dry_run",
+        "generatedAtUtc": now.isoformat(),
+    }
+    utilities._last_alert_delivery.update({  # noqa: SLF001
+        "lastAttemptAtUtc": now.isoformat(),
+        "lastStatus": "ok",
+        "lastDetail": {"status_code": 200, "ok": True},
+    })
+
+    old_webhook = settings.rebalance_alert_webhook_url
+    settings.rebalance_alert_webhook_url = "https://alerts.example.test/hook"
+    try:
+        resp = client.get("/utilities/economy/rebalance/rollout-validation-report")
+    finally:
+        settings.rebalance_alert_webhook_url = old_webhook
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["passed"] is True
+    checks = {c["name"]: c for c in body["checks"]}
+    assert checks["readiness_checks_passed"]["ok"] is True
+    assert checks["metrics_snapshot_fresh"]["ok"] is True
+    assert checks["dry_run_report_recent"]["ok"] is True
+    assert checks["no_active_rebalance_alerts"]["ok"] is True
+    assert checks["alert_delivery_healthy"]["ok"] is True
+
+
+def test_rollout_validation_report_fails_for_stale_or_missing_signals():
+    client, app = _make_client()
+    stale = datetime.now(timezone.utc) - timedelta(hours=12)
+    app.state.elasticsearch.docs.append({
+        "index": "tycoon_rebalance_metrics",
+        "document": {
+            "capturedAtUtc": stale.isoformat(),
+            "totalApplyAttempts": 10,
+            "blockedCount": 9,
+            "successCount": 1,
+            "errorCount": 0,
+        },
+    })
+    utilities._last_dry_run_report = {  # noqa: SLF001
+        "status": "dry_run",
+        "generatedAtUtc": stale.isoformat(),
+    }
+    utilities._last_alert_delivery.update({  # noqa: SLF001
+        "lastAttemptAtUtc": stale.isoformat(),
+        "lastStatus": "error",
+        "lastDetail": {"status_code": 500, "ok": False},
+    })
+
+    old_webhook = settings.rebalance_alert_webhook_url
+    settings.rebalance_alert_webhook_url = "https://alerts.example.test/hook"
+    try:
+        resp = client.get("/utilities/economy/rebalance/rollout-validation-report")
+    finally:
+        settings.rebalance_alert_webhook_url = old_webhook
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["passed"] is False
+    checks = {c["name"]: c for c in body["checks"]}
+    assert checks["metrics_snapshot_fresh"]["ok"] is False
+    assert checks["dry_run_report_recent"]["ok"] is False
+    assert checks["no_active_rebalance_alerts"]["ok"] is False
+    assert checks["alert_delivery_healthy"]["ok"] is False

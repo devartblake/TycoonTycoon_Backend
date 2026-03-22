@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     rebalance_alert_error_rate_threshold: float = 0.3
     rebalance_alert_blocked_rate_threshold: float = 0.6
     rebalance_metrics_index: str = "tycoon_rebalance_metrics"
+    rebalance_alert_webhook_url: str = ""
+    rebalance_rollout_max_metrics_age_minutes: int = 120
+    rebalance_rollout_max_dry_run_age_minutes: int = 180
+    rebalance_rollout_max_delivery_age_minutes: int = 180
 
 
 settings = Settings()

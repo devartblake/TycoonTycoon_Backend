@@ -13,9 +13,10 @@ Routes:
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, Request, UploadFile, File, Response
 from app.config import settings
 
@@ -30,6 +31,11 @@ _rebalance_metrics: dict[str, Any] = {
     "lastAttemptAtUtc": None,
     "lastSuccessAtUtc": None,
     "lastErrorAtUtc": None,
+}
+_last_alert_delivery: dict[str, Any] = {
+    "lastAttemptAtUtc": None,
+    "lastStatus": "never",
+    "lastDetail": None,
 }
 
 
@@ -51,6 +57,192 @@ async def _publish_rebalance_metrics_snapshot(app) -> dict[str, Any]:
 
     await elastic.index(index=settings.rebalance_metrics_index, document=payload, refresh=False)
     return {"status": "ok", "index": settings.rebalance_metrics_index, "document": payload}
+
+
+async def _load_rebalance_metrics_history(app, limit: int) -> list[dict[str, Any]]:
+    elastic = getattr(app.state, "elasticsearch", None)
+    if elastic is None:
+        return []
+
+    size = max(1, min(limit, 500))
+    query = {
+        "size": size,
+        "sort": [{"capturedAtUtc": {"order": "desc"}}],
+        "query": {"match_all": {}},
+    }
+    resp = await elastic.search(index=settings.rebalance_metrics_index, body=query)
+    hits = resp.get("hits", {}).get("hits", [])
+    return [h.get("_source", {}) for h in hits if isinstance(h, dict)]
+
+
+def _build_sink_alerts_from_snapshot(latest: dict[str, Any]) -> list[dict[str, Any]]:
+    total = int(latest.get("totalApplyAttempts", 0))
+    blocked = int(latest.get("blockedCount", 0))
+    error = int(latest.get("errorCount", 0))
+    error_rate = (error / total) if total > 0 else 0.0
+    blocked_rate = (blocked / total) if total > 0 else 0.0
+
+    alerts: list[dict[str, Any]] = []
+    if total >= settings.rebalance_alert_min_attempts and error_rate >= settings.rebalance_alert_error_rate_threshold:
+        alerts.append({
+            "severity": "high",
+            "code": "SINK_REBALANCE_ERROR_RATE_HIGH",
+            "message": f"Sink snapshot error rate is {error_rate:.1%} ({error}/{total}).",
+        })
+    if total >= settings.rebalance_alert_min_attempts and blocked_rate >= settings.rebalance_alert_blocked_rate_threshold:
+        alerts.append({
+            "severity": "medium",
+            "code": "SINK_REBALANCE_BLOCKED_RATE_HIGH",
+            "message": f"Sink snapshot blocked rate is {blocked_rate:.1%} ({blocked}/{total}).",
+        })
+    return alerts
+
+
+async def _dispatch_alert_webhook(url: str, payload: dict[str, Any], dispatcher=None) -> dict[str, Any]:
+    if dispatcher is not None:
+        return await dispatcher(url, payload)
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(url, json=payload)
+        return {"status_code": resp.status_code, "ok": resp.status_code < 300}
+
+
+async def _build_rollout_readiness(app) -> dict[str, Any]:
+    checks: list[dict[str, Any]] = []
+
+    elastic_available = getattr(app.state, "elasticsearch", None) is not None
+    checks.append({
+        "name": "elastic_client_configured",
+        "ok": elastic_available,
+        "detail": "Elasticsearch client is available." if elastic_available else "Elasticsearch client is not configured.",
+    })
+
+    webhook_configured = bool(settings.rebalance_alert_webhook_url.strip())
+    checks.append({
+        "name": "alert_webhook_configured",
+        "ok": webhook_configured,
+        "detail": "rebalance_alert_webhook_url is configured." if webhook_configured else "rebalance_alert_webhook_url is empty.",
+    })
+
+    history_items = await _load_rebalance_metrics_history(app, 1) if elastic_available else []
+    checks.append({
+        "name": "sink_metrics_available",
+        "ok": len(history_items) > 0,
+        "detail": "At least one metrics snapshot exists in sink." if history_items else "No metrics snapshots found in sink yet.",
+    })
+
+    ready = all(c["ok"] for c in checks)
+    return {"ready": ready, "checks": checks}
+
+
+def _parse_utc_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _is_recent_enough(value: Any, max_age_minutes: int, now_utc: datetime) -> tuple[bool, str]:
+    parsed = _parse_utc_timestamp(value)
+    if parsed is None:
+        return False, "timestamp missing or invalid"
+    cutoff = now_utc - timedelta(minutes=max_age_minutes)
+    if parsed < cutoff:
+        return False, f"timestamp too old (older than {max_age_minutes} minutes)"
+    return True, "timestamp within allowed freshness window"
+
+
+async def _build_rollout_validation_report(app) -> dict[str, Any]:
+    now_utc = datetime.now(timezone.utc)
+    readiness = await _build_rollout_readiness(app)
+    latest_history = await _load_rebalance_metrics_history(app, 1)
+    latest_snapshot = latest_history[0] if latest_history else {}
+    sink_alerts = _build_sink_alerts_from_snapshot(latest_snapshot) if latest_snapshot else []
+    local_alerts = (await get_rebalance_alerts()).get("alerts", [])
+
+    checks: list[dict[str, Any]] = []
+    checks.append({
+        "name": "readiness_checks_passed",
+        "ok": readiness["ready"],
+        "detail": "All rollout readiness checks passed." if readiness["ready"] else "One or more rollout readiness checks failed.",
+    })
+
+    metrics_ok, metrics_detail = _is_recent_enough(
+        latest_snapshot.get("capturedAtUtc"),
+        settings.rebalance_rollout_max_metrics_age_minutes,
+        now_utc,
+    )
+    checks.append({
+        "name": "metrics_snapshot_fresh",
+        "ok": metrics_ok,
+        "detail": metrics_detail,
+        "capturedAtUtc": latest_snapshot.get("capturedAtUtc"),
+    })
+
+    dry_run_timestamp = (_last_dry_run_report or {}).get("generatedAtUtc")
+    dry_run_ok, dry_run_detail = _is_recent_enough(
+        dry_run_timestamp,
+        settings.rebalance_rollout_max_dry_run_age_minutes,
+        now_utc,
+    )
+    checks.append({
+        "name": "dry_run_report_recent",
+        "ok": dry_run_ok,
+        "detail": dry_run_detail,
+        "generatedAtUtc": dry_run_timestamp,
+    })
+
+    checks.append({
+        "name": "no_active_rebalance_alerts",
+        "ok": len(local_alerts) == 0 and len(sink_alerts) == 0,
+        "detail": "No local or sink-derived alerts are active." if len(local_alerts) == 0 and len(sink_alerts) == 0 else "Local or sink-derived alerts are active.",
+        "localAlertCount": len(local_alerts),
+        "sinkAlertCount": len(sink_alerts),
+    })
+
+    webhook_configured = bool(settings.rebalance_alert_webhook_url.strip())
+    if webhook_configured:
+        delivery = _last_alert_delivery
+        delivery_ok = delivery.get("lastStatus") == "ok"
+        recency_ok, recency_detail = _is_recent_enough(
+            delivery.get("lastAttemptAtUtc"),
+            settings.rebalance_rollout_max_delivery_age_minutes,
+            now_utc,
+        )
+        checks.append({
+            "name": "alert_delivery_healthy",
+            "ok": bool(delivery_ok and recency_ok),
+            "detail": "last delivery is successful and recent." if delivery_ok and recency_ok else f"delivery unhealthy: status={delivery.get('lastStatus')}; {recency_detail}",
+            "lastDelivery": delivery,
+        })
+    else:
+        checks.append({
+            "name": "alert_delivery_healthy",
+            "ok": False,
+            "detail": "rebalance_alert_webhook_url is empty; cannot verify production alert delivery.",
+            "lastDelivery": _last_alert_delivery,
+        })
+
+    passed = all(c["ok"] for c in checks)
+    return {
+        "status": "ok",
+        "passed": passed,
+        "generatedAtUtc": now_utc.isoformat(),
+        "checks": checks,
+        "readiness": readiness,
+        "latestMetricsSnapshot": latest_snapshot if latest_snapshot else None,
+        "activeAlerts": {
+            "local": local_alerts,
+            "sink": sink_alerts,
+        },
+        "runbook": "docs/REBALANCE_OPERATIONS_RUNBOOK.md",
+    }
 
 
 def _validate_rebalance_delta(current: dict[str, Any], proposed: dict[str, Any]) -> tuple[bool, list[str]]:
@@ -420,17 +612,81 @@ async def get_rebalance_metrics_history(request: Request, limit: int = 50):
     elastic = getattr(request.app.state, "elasticsearch", None)
     if elastic is None:
         return {"status": "skipped", "detail": "elasticsearch client unavailable", "items": []}
-
-    size = max(1, min(limit, 500))
-    query = {
-        "size": size,
-        "sort": [{"capturedAtUtc": {"order": "desc"}}],
-        "query": {"match_all": {}},
-    }
-    resp = await elastic.search(index=settings.rebalance_metrics_index, body=query)
-    hits = resp.get("hits", {}).get("hits", [])
-    items = [h.get("_source", {}) for h in hits if isinstance(h, dict)]
+    items = await _load_rebalance_metrics_history(request.app, limit)
     return {"status": "ok", "items": items, "count": len(items)}
+
+
+@router.get("/economy/rebalance/alerts/sink")
+async def get_rebalance_alerts_from_sink(request: Request):
+    items = await _load_rebalance_metrics_history(request.app, 1)
+    if not items:
+        return {"status": "empty", "detail": "No metrics snapshots available in sink.", "alerts": []}
+
+    latest = items[0]
+    alerts = _build_sink_alerts_from_snapshot(latest)
+
+    return {
+        "status": "ok",
+        "capturedAtUtc": latest.get("capturedAtUtc"),
+        "alerts": alerts,
+    }
+
+
+@router.post("/economy/rebalance/alerts/dispatch")
+async def dispatch_rebalance_alerts(request: Request):
+    items = await _load_rebalance_metrics_history(request.app, 1)
+    if not items:
+        return {"status": "empty", "detail": "No metrics snapshots available in sink.", "dispatched": 0}
+
+    latest = items[0]
+    alerts = _build_sink_alerts_from_snapshot(latest)
+    if not alerts:
+        return {"status": "ok", "detail": "No active alerts to dispatch.", "dispatched": 0}
+
+    webhook = settings.rebalance_alert_webhook_url.strip()
+    if not webhook:
+        return {"status": "skipped", "detail": "rebalance_alert_webhook_url is not configured.", "dispatched": 0}
+
+    payload = {
+        "source": "tycoon-sidecar",
+        "event": "rebalance_alerts",
+        "capturedAtUtc": latest.get("capturedAtUtc"),
+        "alerts": alerts,
+    }
+    dispatcher = getattr(request.app.state, "alert_dispatcher", None)
+    _last_alert_delivery["lastAttemptAtUtc"] = datetime.now(timezone.utc).isoformat()
+    result = await _dispatch_alert_webhook(webhook, payload, dispatcher)
+    dispatched = len(alerts) if result.get("ok") else 0
+    _last_alert_delivery["lastStatus"] = "ok" if result.get("ok") else "error"
+    _last_alert_delivery["lastDetail"] = result
+    return {"status": "ok" if result.get("ok") else "error", "dispatched": dispatched, "delivery": result}
+
+
+@router.get("/economy/rebalance/alerts/delivery-health")
+async def get_rebalance_alert_delivery_health():
+    webhook = settings.rebalance_alert_webhook_url.strip()
+    return {
+        "status": "ok",
+        "configured": bool(webhook),
+        "webhookHost": webhook.split("/")[2] if webhook.startswith("http") and "/" in webhook else None,
+        "lastDelivery": _last_alert_delivery,
+    }
+
+
+@router.get("/economy/rebalance/rollout-readiness")
+async def get_rebalance_rollout_readiness(request: Request):
+    readiness = await _build_rollout_readiness(request.app)
+    return {
+        "status": "ok",
+        "ready": readiness["ready"],
+        "checks": readiness["checks"],
+        "runbook": "docs/REBALANCE_OPERATIONS_RUNBOOK.md",
+    }
+
+
+@router.get("/economy/rebalance/rollout-validation-report")
+async def get_rebalance_rollout_validation_report(request: Request):
+    return await _build_rollout_validation_report(request.app)
 
 
 async def run_scheduled_dry_run(app) -> dict:
@@ -443,4 +699,25 @@ async def run_scheduled_dry_run(app) -> dict:
         await _publish_rebalance_metrics_snapshot(app)
     except Exception:
         logger.exception("Failed to publish rebalance metrics snapshot to external sink")
+
+    try:
+        webhook = settings.rebalance_alert_webhook_url.strip()
+        if webhook:
+            items = await _load_rebalance_metrics_history(app, 1)
+            if items:
+                alerts = _build_sink_alerts_from_snapshot(items[0])
+                if alerts:
+                    payload = {
+                        "source": "tycoon-sidecar",
+                        "event": "rebalance_alerts",
+                        "capturedAtUtc": items[0].get("capturedAtUtc"),
+                        "alerts": alerts,
+                    }
+                    dispatcher = getattr(app.state, "alert_dispatcher", None)
+                    _last_alert_delivery["lastAttemptAtUtc"] = datetime.now(timezone.utc).isoformat()
+                    result = await _dispatch_alert_webhook(webhook, payload, dispatcher)
+                    _last_alert_delivery["lastStatus"] = "ok" if result.get("ok") else "error"
+                    _last_alert_delivery["lastDetail"] = result
+    except Exception:
+        logger.exception("Failed to dispatch rebalance alerts")
     return _last_dry_run_report

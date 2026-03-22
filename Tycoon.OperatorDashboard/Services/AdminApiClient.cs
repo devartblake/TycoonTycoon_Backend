@@ -288,13 +288,31 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         int BlockedCount,
         int SuccessCount,
         int ErrorCount);
+    public sealed record SidecarRolloutValidationCheck(
+        string Name,
+        bool Ok,
+        string? Detail,
+        string? CapturedAtUtc,
+        string? GeneratedAtUtc,
+        int? LocalAlertCount,
+        int? SinkAlertCount);
+    public sealed record SidecarRolloutValidationReport(
+        bool Passed,
+        DateTimeOffset? GeneratedAtUtc,
+        string? Runbook,
+        IReadOnlyList<SidecarRolloutValidationCheck> Checks);
 
-    public async Task<IReadOnlyList<SidecarRebalanceAuditItem>?> GetSidecarRebalanceAuditHistoryAsync(int limit = 25, CancellationToken ct = default)
+    private string? BuildSidecarUrl(string relativePathAndQuery)
     {
         var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
         if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
+        return $"{sidecarBaseUrl.TrimEnd('/')}{relativePathAndQuery}";
+    }
 
-        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/audit?limit={Math.Clamp(limit, 1, 200)}";
+    public async Task<IReadOnlyList<SidecarRebalanceAuditItem>?> GetSidecarRebalanceAuditHistoryAsync(int limit = 25, CancellationToken ct = default)
+    {
+        var url = BuildSidecarUrl($"/utilities/economy/rebalance/audit?limit={Math.Clamp(limit, 1, 200)}");
+        if (url is null) return null;
         var resp = await http.GetAsync(url, ct);
         if (!resp.IsSuccessStatusCode) return null;
 
@@ -334,10 +352,8 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     public async Task<SidecarRebalanceRecommendation?> GetSidecarRebalanceRecommendationAsync(CancellationToken ct = default)
     {
-        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
-        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
-
-        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/recommend";
+        var url = BuildSidecarUrl("/utilities/economy/rebalance/recommend");
+        if (url is null) return null;
         var resp = await http.GetAsync(url, ct);
         if (!resp.IsSuccessStatusCode) return null;
 
@@ -375,10 +391,8 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     public async Task<SidecarRebalanceMetrics?> GetSidecarRebalanceMetricsAsync(CancellationToken ct = default)
     {
-        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
-        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
-
-        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/metrics";
+        var url = BuildSidecarUrl("/utilities/economy/rebalance/metrics");
+        if (url is null) return null;
         var resp = await http.GetAsync(url, ct);
         if (!resp.IsSuccessStatusCode) return null;
 
@@ -412,10 +426,8 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     public async Task<IReadOnlyList<SidecarRebalanceAlert>?> GetSidecarRebalanceAlertsAsync(CancellationToken ct = default)
     {
-        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
-        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
-
-        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/alerts";
+        var url = BuildSidecarUrl("/utilities/economy/rebalance/alerts");
+        if (url is null) return null;
         var resp = await http.GetAsync(url, ct);
         if (!resp.IsSuccessStatusCode) return null;
 
@@ -443,10 +455,8 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     public async Task<IReadOnlyList<SidecarRebalanceMetricsSnapshot>?> GetSidecarRebalanceMetricsHistoryAsync(int limit = 50, CancellationToken ct = default)
     {
-        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
-        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
-
-        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/metrics/history?limit={Math.Clamp(limit, 1, 500)}";
+        var url = BuildSidecarUrl($"/utilities/economy/rebalance/metrics/history?limit={Math.Clamp(limit, 1, 500)}");
+        if (url is null) return null;
         var resp = await http.GetAsync(url, ct);
         if (!resp.IsSuccessStatusCode) return null;
 
@@ -473,6 +483,54 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
             }
 
             return items;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<SidecarRolloutValidationReport?> GetSidecarRolloutValidationReportAsync(CancellationToken ct = default)
+    {
+        var url = BuildSidecarUrl("/utilities/economy/rebalance/rollout-validation-report");
+        if (url is null) return null;
+
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            var root = json.RootElement;
+            if (!root.TryGetProperty("checks", out var checksEl) || checksEl.ValueKind != JsonValueKind.Array)
+                return null;
+
+            DateTimeOffset? generatedAt = null;
+            if (root.TryGetProperty("generatedAtUtc", out var generatedEl)
+                && generatedEl.ValueKind == JsonValueKind.String
+                && DateTimeOffset.TryParse(generatedEl.GetString(), out var parsedGenerated))
+            {
+                generatedAt = parsedGenerated;
+            }
+
+            var checks = new List<SidecarRolloutValidationCheck>();
+            foreach (var c in checksEl.EnumerateArray())
+            {
+                checks.Add(new SidecarRolloutValidationCheck(
+                    Name: c.TryGetProperty("name", out var name) ? name.GetString() ?? "unknown" : "unknown",
+                    Ok: c.TryGetProperty("ok", out var ok) && ok.ValueKind == JsonValueKind.True,
+                    Detail: c.TryGetProperty("detail", out var detail) ? detail.GetString() : null,
+                    CapturedAtUtc: c.TryGetProperty("capturedAtUtc", out var captured) ? captured.GetString() : null,
+                    GeneratedAtUtc: c.TryGetProperty("generatedAtUtc", out var generated) ? generated.GetString() : null,
+                    LocalAlertCount: c.TryGetProperty("localAlertCount", out var local) && local.ValueKind == JsonValueKind.Number ? local.GetInt32() : null,
+                    SinkAlertCount: c.TryGetProperty("sinkAlertCount", out var sink) && sink.ValueKind == JsonValueKind.Number ? sink.GetInt32() : null));
+            }
+
+            return new SidecarRolloutValidationReport(
+                Passed: root.TryGetProperty("passed", out var passed) && passed.ValueKind == JsonValueKind.True,
+                GeneratedAtUtc: generatedAt,
+                Runbook: root.TryGetProperty("runbook", out var runbook) ? runbook.GetString() : null,
+                Checks: checks);
         }
         catch
         {
