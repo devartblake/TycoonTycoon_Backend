@@ -258,6 +258,57 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         return await resp.Content.ReadFromJsonAsync<EconomySimulationResponse>(Json, ct);
     }
 
+    public sealed record SidecarRebalanceAuditItem(
+        string? AuditId,
+        string? Status,
+        string? ApprovedBy,
+        string? Reason,
+        DateTimeOffset? CreatedAtUtc,
+        int? BackendStatus);
+
+    public async Task<IReadOnlyList<SidecarRebalanceAuditItem>?> GetSidecarRebalanceAuditHistoryAsync(int limit = 25, CancellationToken ct = default)
+    {
+        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
+        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
+
+        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/audit?limit={Math.Clamp(limit, 1, 200)}";
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("items", out var itemsEl) || itemsEl.ValueKind != JsonValueKind.Array)
+                return [];
+
+            var items = new List<SidecarRebalanceAuditItem>();
+            foreach (var item in itemsEl.EnumerateArray())
+            {
+                var createdAt = item.TryGetProperty("createdAtUtc", out var c) && c.ValueKind == JsonValueKind.String
+                    && DateTimeOffset.TryParse(c.GetString(), out var parsed)
+                    ? parsed
+                    : (DateTimeOffset?)null;
+                var backendStatus = item.TryGetProperty("backendStatus", out var bs) && bs.ValueKind == JsonValueKind.Number
+                    ? bs.GetInt32()
+                    : (int?)null;
+
+                items.Add(new SidecarRebalanceAuditItem(
+                    AuditId: item.TryGetProperty("auditId", out var aid) ? aid.GetString() : null,
+                    Status: item.TryGetProperty("status", out var s) ? s.GetString() : null,
+                    ApprovedBy: item.TryGetProperty("approvedBy", out var ab) ? ab.GetString() : null,
+                    Reason: item.TryGetProperty("reason", out var r) ? r.GetString() : null,
+                    CreatedAtUtc: createdAt,
+                    BackendStatus: backendStatus));
+            }
+
+            return items;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     // ── Questions ──────────────────────────────────────────────────────────
 
     public async Task<JsonDocument?> ListQuestionsAsync(string? q, string? category, int page = 1, int pageSize = 50, CancellationToken ct = default)

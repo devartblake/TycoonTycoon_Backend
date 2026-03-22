@@ -76,6 +76,45 @@ else
                 <p>Ending Energy: @_simResult.EndingEnergy</p>
             </div>
         }
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Audit</h3>
+                <button @onclick="LoadRebalanceAuditAsync">Reload Audit</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceAuditMsg))
+            {
+                <p class="message">@_rebalanceAuditMsg</p>
+            }
+            @if (_rebalanceAuditItems.Count > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>At (UTC)</th>
+                            <th>Status</th>
+                            <th>Approved By</th>
+                            <th>Reason</th>
+                            <th>Backend Status</th>
+                            <th>Audit ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in _rebalanceAuditItems)
+                    {
+                        <tr>
+                            <td>@(item.CreatedAtUtc?.ToString("u") ?? "—")</td>
+                            <td>@(item.Status ?? "—")</td>
+                            <td>@(item.ApprovedBy ?? "—")</td>
+                            <td>@(item.Reason ?? "—")</td>
+                            <td>@(item.BackendStatus?.ToString() ?? "—")</td>
+                            <td style="font-family:monospace;">@(item.AuditId ?? "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
     </div>
 }
 
@@ -166,6 +205,8 @@ else
     private int _cfgDailyFreeEnergy = 5;
     private int _cfgReviveCost = 5;
     private int _cfgReviveDiscount = 20;
+    private string _rebalanceAuditMsg = string.Empty;
+    private List<AdminApiClient.SidecarRebalanceAuditItem> _rebalanceAuditItems = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -215,6 +256,7 @@ else
         _cfgDailyFreeEnergy = cfg.DailyFreeEnergy;
         _cfgReviveCost = cfg.Safeguards.ReviveBaseGemCost;
         _cfgReviveDiscount = cfg.Safeguards.AlmostWinReviveDiscountPercent;
+        await LoadRebalanceAuditAsync();
         _balanceMsg = "Loaded.";
     }
 
@@ -265,6 +307,22 @@ else
             GuardianMatches: 1
         ));
         _balanceMsg = _simResult is null ? "Simulation failed." : "Simulation complete.";
+    }
+
+    private async Task LoadRebalanceAuditAsync()
+    {
+        var items = await Api.GetSidecarRebalanceAuditHistoryAsync(limit: 25);
+        if (items is null)
+        {
+            _rebalanceAuditItems = [];
+            _rebalanceAuditMsg = "Sidecar audit unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rebalanceAuditItems = [.. items];
+        _rebalanceAuditMsg = _rebalanceAuditItems.Count == 0
+            ? "No rebalance audit records yet."
+            : $"Loaded {_rebalanceAuditItems.Count} audit records.";
     }
 }
 

@@ -228,6 +228,12 @@ Operational readiness:
    - apply success/failure rate,
    - pity activation distribution and revive discount usage.
 
+### Remaining Work Progress Notes
+
+- ✅ Sidecar guardrail and endpoint contract tests now cover success and failure paths for rebalance apply plus audit history pagination/ordering contracts.
+- ✅ Operator Dashboard economy page now surfaces Sidecar rebalance audit history (latest 25 entries) when `Sidecar:BaseUrl` is configured.
+- ⏳ Still pending: dashboard dry-run recommendation visualization and metrics/alerts wiring.
+
 ## 9) Risks & Mitigations
 
 - **Risk:** over-tuning can hurt fairness.

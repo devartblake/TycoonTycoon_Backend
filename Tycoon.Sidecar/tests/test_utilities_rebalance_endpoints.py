@@ -17,10 +17,12 @@ class _FakeResponse:
 class _FakeBackend:
     def __init__(self):
         self.patch_payloads: list[dict] = []
+        self.balance_status_code = 200
+        self.patch_status_code = 200
 
     async def get(self, path: str, **kwargs):  # noqa: ARG002
         if path == "/admin/economy/balance":
-            return _FakeResponse(200, {
+            return _FakeResponse(self.balance_status_code, {
                 "maxEnergy": 20,
                 "regenMinutesPerEnergy": 10,
                 "modes": [{"mode": "casual", "energyCost": 3}],
@@ -29,7 +31,7 @@ class _FakeBackend:
 
     async def patch(self, path: str, json: dict):
         self.patch_payloads.append({"path": path, "json": json})
-        return _FakeResponse(200, {"updated": True})
+        return _FakeResponse(self.patch_status_code, {"updated": self.patch_status_code < 300})
 
 
 class _FakeCursor:
@@ -122,3 +124,60 @@ def test_apply_rebalance_success_writes_audit_and_patches_backend():
     assert len(app.state.backend.patch_payloads) == 1
     assert app.state.backend.patch_payloads[0]["path"] == "/admin/economy/balance"
     assert app.state.mongo_db.economy_rebalance_audit.docs[0]["status"] == "ok"
+
+
+def test_apply_rebalance_returns_error_when_balance_fetch_fails():
+    client, app = _make_client()
+    app.state.backend.balance_status_code = 503
+
+    resp = client.post("/utilities/economy/rebalance/apply", json={
+        "approved": True,
+        "approvedBy": "operator-3",
+        "reason": "attempt while backend down",
+        "payload": {"maxEnergy": 21},
+    })
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "error"
+    assert body["backend_status"] == 503
+    assert len(app.state.mongo_db.economy_rebalance_audit.docs) == 0
+
+
+def test_apply_rebalance_patch_failure_persists_error_audit():
+    client, app = _make_client()
+    app.state.backend.patch_status_code = 500
+
+    resp = client.post("/utilities/economy/rebalance/apply", json={
+        "approved": True,
+        "approvedBy": "operator-4",
+        "reason": "test backend patch failure",
+        "payload": {"maxEnergy": 21},
+    })
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "error"
+    assert body["backend_status"] == 500
+    assert "auditId" in body
+    assert len(app.state.mongo_db.economy_rebalance_audit.docs) == 1
+    assert app.state.mongo_db.economy_rebalance_audit.docs[0]["status"] == "error"
+
+
+def test_get_rebalance_audit_history_respects_limit_and_order():
+    client, app = _make_client()
+
+    for i in range(4):
+        app.state.mongo_db.economy_rebalance_audit.docs.append({
+            "auditId": f"a-{i}",
+            "status": "ok",
+            "createdAtUtc": f"2026-03-2{i}T00:00:00Z",
+        })
+
+    resp = client.get("/utilities/economy/rebalance/audit?limit=2")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["count"] == 2
+    assert [x["auditId"] for x in body["items"]] == ["a-3", "a-2"]
