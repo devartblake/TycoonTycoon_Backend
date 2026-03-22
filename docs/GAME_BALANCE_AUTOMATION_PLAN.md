@@ -236,6 +236,7 @@ Operational readiness:
 - ✅ Sidecar exposes rebalance metrics at `/utilities/economy/rebalance/metrics` (attempts, blocked/success/error counts, last-at timestamps).
 - ✅ Sidecar exposes Prometheus scrape-friendly counters at `/utilities/economy/rebalance/metrics/prometheus`.
 - ✅ Operator Dashboard economy page now surfaces Sidecar rebalance metrics counters/timestamps for operator visibility.
+- ✅ Non-production schema startup gate now supports one-shot `AutoMigrateIfMissing` fallback to reduce startup race failures when MigrationService lags.
 - ⏳ Still pending: production metrics backend/dashboard wiring, alert rules, and runbook completion.
 
 ## 9) Risks & Mitigations
