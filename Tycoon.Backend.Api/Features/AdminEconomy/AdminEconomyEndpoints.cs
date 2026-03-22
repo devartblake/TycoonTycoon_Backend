@@ -56,7 +56,11 @@ namespace Tycoon.Backend.Api.Features.AdminEconomy
                 }
                 catch (InvalidOperationException ex)
                 {
-                    return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", ex.Message);
+                    return AdminApiResponses.Error(
+                        StatusCodes.Status400BadRequest,
+                        "VALIDATION_ERROR",
+                        ex.Message,
+                        new { errors = new[] { ex.Message } });
                 }
             });
 

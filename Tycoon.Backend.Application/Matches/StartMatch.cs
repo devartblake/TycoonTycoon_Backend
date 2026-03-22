@@ -38,9 +38,9 @@ namespace Tycoon.Backend.Application.Matches
                 return new StartMatchResponse(existing.Id, existing.StartedAt);
             }
 
-            var decision = await policy.TryEnterModeAsync(r.HostPlayerId, r.Mode, ct);
-            if (!decision.Allowed)
-                throw new ModeEntryDeniedException(decision.ReasonCode, decision.Message);
+            var modeDecision = await policy.TryEnterModeAsync(r.HostPlayerId, r.Mode, ct);
+            if (!modeDecision.Allowed)
+                throw new ModeEntryDeniedException(modeDecision.ReasonCode, modeDecision.Message);
 
             var match = new Match(
                 r.HostPlayerId,

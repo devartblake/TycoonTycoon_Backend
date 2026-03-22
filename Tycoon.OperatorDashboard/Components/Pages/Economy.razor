@@ -57,6 +57,15 @@ else
         {
             <p class="message">@_balanceMsg</p>
         }
+        @if (_balanceErrors.Count > 0)
+        {
+            <ul class="validation-errors">
+                @foreach (var err in _balanceErrors)
+                {
+                    <li>@err</li>
+                }
+            </ul>
+        }
         @if (_simResult is not null)
         {
             <div class="card" style="margin-top:.75rem;">
@@ -149,6 +158,7 @@ else
     private long _grantAmount = 100;
     private string _grantReason = string.Empty, _grantMsg = string.Empty;
     private string _balanceMsg = string.Empty;
+    private List<string> _balanceErrors = [];
     private EconomySimulationResponse? _simResult;
     private int _cfgMaxEnergy = 20;
     private int _cfgStartEnergy = 20;
@@ -186,6 +196,7 @@ else
 
     private async Task LoadBalanceAsync()
     {
+        _balanceErrors.Clear();
         var cfg = await Api.GetGameBalanceConfigAsync();
         if (cfg is null) { _balanceMsg = "Failed to load balance config."; return; }
         _cfgMaxEnergy = cfg.MaxEnergy;
@@ -199,6 +210,7 @@ else
 
     private async Task SaveBalanceAsync()
     {
+        _balanceErrors.Clear();
         var req = new UpdateGameBalanceConfigRequest(
             MaxEnergy: _cfgMaxEnergy,
             StartEnergy: _cfgStartEnergy,
@@ -220,12 +232,21 @@ else
                 PityDifficultyReductionPercent: 0.10m
             )
         );
-        var updated = await Api.PatchGameBalanceConfigAsync(req);
-        _balanceMsg = updated is null ? "Save failed." : "Saved.";
+        var result = await Api.PatchGameBalanceConfigDetailedAsync(req);
+        if (result.Success)
+        {
+            _balanceMsg = "Saved.";
+            _balanceErrors.Clear();
+            return;
+        }
+
+        _balanceMsg = string.IsNullOrWhiteSpace(result.Message) ? "Save failed." : result.Message;
+        _balanceErrors = result.Errors.ToList();
     }
 
     private async Task RunSimulationAsync()
     {
+        _balanceErrors.Clear();
         _simResult = await Api.SimulateEconomyAsync(new EconomySimulationRequest(
             SessionMinutes: 25,
             SessionNumber: 1,
@@ -241,6 +262,7 @@ else
     .tabs { display:flex; gap:.5rem; margin-bottom:1.25rem; }
     .tab { background:#e2e8f0; color:#475569; }
     .tab.active { background:#3b82f6; color:#fff; }
+    .validation-errors { margin:.5rem 0 0; padding-left:1.2rem; color:#991b1b; }
     .grid2 { display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)); gap:.75rem; }
     label { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; color:#475569; margin-bottom:.6rem; }
     label input, label select { padding:.4rem .6rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
