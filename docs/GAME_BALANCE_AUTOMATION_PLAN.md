@@ -237,7 +237,11 @@ Operational readiness:
 - ✅ Sidecar exposes Prometheus scrape-friendly counters at `/utilities/economy/rebalance/metrics/prometheus`.
 - ✅ Operator Dashboard economy page now surfaces Sidecar rebalance metrics counters/timestamps for operator visibility.
 - ✅ Non-production schema startup gate now supports one-shot `AutoMigrateIfMissing` fallback to reduce startup race failures when MigrationService lags.
-- ⏳ Still pending: production metrics backend/dashboard wiring, alert rules, and runbook completion.
+- ✅ Sidecar exposes `/utilities/economy/rebalance/alerts` with threshold-based blocked/error-rate signals; Operator Dashboard renders active alerts.
+- ✅ Sidecar can publish rebalance metrics snapshots to external Elasticsearch index via `/utilities/economy/rebalance/metrics/publish` (also attempted in scheduled dry-run loop).
+- ✅ Production rebalance operations runbook now documented (`docs/REBALANCE_OPERATIONS_RUNBOOK.md`) with apply/rollback/escalation procedures.
+- ✅ Operator Dashboard now reads Sidecar metrics history (`/utilities/economy/rebalance/metrics/history`) from the external sink.
+- ⏳ Still pending: production alert-rule wiring against the external metrics sink.
 
 ## 9) Risks & Mitigations
 

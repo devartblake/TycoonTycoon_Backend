@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Request, UploadFile, File, Response
+from app.config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -30,6 +31,26 @@ _rebalance_metrics: dict[str, Any] = {
     "lastSuccessAtUtc": None,
     "lastErrorAtUtc": None,
 }
+
+
+async def _publish_rebalance_metrics_snapshot(app) -> dict[str, Any]:
+    elastic = getattr(app.state, "elasticsearch", None)
+    if elastic is None:
+        return {"status": "skipped", "detail": "elasticsearch client unavailable"}
+
+    payload = {
+        "capturedAtUtc": datetime.now(timezone.utc).isoformat(),
+        "totalApplyAttempts": int(_rebalance_metrics["totalApplyAttempts"]),
+        "blockedCount": int(_rebalance_metrics["blockedCount"]),
+        "successCount": int(_rebalance_metrics["successCount"]),
+        "errorCount": int(_rebalance_metrics["errorCount"]),
+        "lastAttemptAtUtc": _rebalance_metrics["lastAttemptAtUtc"],
+        "lastSuccessAtUtc": _rebalance_metrics["lastSuccessAtUtc"],
+        "lastErrorAtUtc": _rebalance_metrics["lastErrorAtUtc"],
+    }
+
+    await elastic.index(index=settings.rebalance_metrics_index, document=payload, refresh=False)
+    return {"status": "ok", "index": settings.rebalance_metrics_index, "document": payload}
 
 
 def _validate_rebalance_delta(current: dict[str, Any], proposed: dict[str, Any]) -> tuple[bool, list[str]]:
@@ -344,10 +365,82 @@ async def get_rebalance_metrics_prometheus():
     return Response(content="\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 
 
+@router.get("/economy/rebalance/alerts")
+async def get_rebalance_alerts():
+    total = int(_rebalance_metrics["totalApplyAttempts"])
+    blocked = int(_rebalance_metrics["blockedCount"])
+    success = int(_rebalance_metrics["successCount"])
+    error = int(_rebalance_metrics["errorCount"])
+
+    error_rate = (error / total) if total > 0 else 0.0
+    blocked_rate = (blocked / total) if total > 0 else 0.0
+
+    alerts: list[dict[str, Any]] = []
+    if total >= settings.rebalance_alert_min_attempts and error_rate >= settings.rebalance_alert_error_rate_threshold:
+        alerts.append({
+            "severity": "high",
+            "code": "REBALANCE_ERROR_RATE_HIGH",
+            "message": f"Rebalance apply error rate is {error_rate:.1%} ({error}/{total}).",
+        })
+
+    if total >= settings.rebalance_alert_min_attempts and blocked_rate >= settings.rebalance_alert_blocked_rate_threshold:
+        alerts.append({
+            "severity": "medium",
+            "code": "REBALANCE_BLOCKED_RATE_HIGH",
+            "message": f"Rebalance apply blocked rate is {blocked_rate:.1%} ({blocked}/{total}).",
+        })
+
+    return {
+        "status": "ok",
+        "summary": {
+            "totalApplyAttempts": total,
+            "blockedCount": blocked,
+            "successCount": success,
+            "errorCount": error,
+            "errorRate": error_rate,
+            "blockedRate": blocked_rate,
+        },
+        "thresholds": {
+            "minAttempts": settings.rebalance_alert_min_attempts,
+            "errorRateThreshold": settings.rebalance_alert_error_rate_threshold,
+            "blockedRateThreshold": settings.rebalance_alert_blocked_rate_threshold,
+        },
+        "alerts": alerts,
+    }
+
+
+@router.post("/economy/rebalance/metrics/publish")
+async def publish_rebalance_metrics(request: Request):
+    result = await _publish_rebalance_metrics_snapshot(request.app)
+    return result
+
+
+@router.get("/economy/rebalance/metrics/history")
+async def get_rebalance_metrics_history(request: Request, limit: int = 50):
+    elastic = getattr(request.app.state, "elasticsearch", None)
+    if elastic is None:
+        return {"status": "skipped", "detail": "elasticsearch client unavailable", "items": []}
+
+    size = max(1, min(limit, 500))
+    query = {
+        "size": size,
+        "sort": [{"capturedAtUtc": {"order": "desc"}}],
+        "query": {"match_all": {}},
+    }
+    resp = await elastic.search(index=settings.rebalance_metrics_index, body=query)
+    hits = resp.get("hits", {}).get("hits", [])
+    items = [h.get("_source", {}) for h in hits if isinstance(h, dict)]
+    return {"status": "ok", "items": items, "count": len(items)}
+
+
 async def run_scheduled_dry_run(app) -> dict:
     """
     Used by sidecar background scheduler in main lifespan.
     """
     global _last_dry_run_report
     _last_dry_run_report = await _generate_dry_run_report(app)
+    try:
+        await _publish_rebalance_metrics_snapshot(app)
+    except Exception:
+        logger.exception("Failed to publish rebalance metrics snapshot to external sink")
     return _last_dry_run_report

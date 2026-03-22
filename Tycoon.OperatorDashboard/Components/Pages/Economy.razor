@@ -184,6 +184,63 @@ else
                 <p>Last Error: @(_rebalanceMetrics.LastErrorAtUtc?.ToString("u") ?? "—")</p>
             }
         </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Alerts</h3>
+                <button @onclick="LoadRebalanceAlertsAsync">Reload Alerts</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceAlertsMsg))
+            {
+                <p class="message">@_rebalanceAlertsMsg</p>
+            }
+            @if (_rebalanceAlerts.Count > 0)
+            {
+                <ul class="validation-errors">
+                    @foreach (var alert in _rebalanceAlerts)
+                    {
+                        <li><strong>@alert.Severity.ToUpperInvariant()</strong> (@alert.Code): @alert.Message</li>
+                    }
+                </ul>
+            }
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Metrics History</h3>
+                <button @onclick="LoadRebalanceMetricsHistoryAsync">Reload History</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceMetricsHistoryMsg))
+            {
+                <p class="message">@_rebalanceMetricsHistoryMsg</p>
+            }
+            @if (_rebalanceMetricsHistory.Count > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Captured At (UTC)</th>
+                            <th>Total</th>
+                            <th>Blocked</th>
+                            <th>Success</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var snap in _rebalanceMetricsHistory)
+                    {
+                        <tr>
+                            <td>@(snap.CapturedAtUtc?.ToString("u") ?? "—")</td>
+                            <td>@snap.TotalApplyAttempts</td>
+                            <td>@snap.BlockedCount</td>
+                            <td>@snap.SuccessCount</td>
+                            <td>@snap.ErrorCount</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
     </div>
 }
 
@@ -280,6 +337,10 @@ else
     private AdminApiClient.SidecarRebalanceRecommendation? _rebalanceRecommendation;
     private string _rebalanceMetricsMsg = string.Empty;
     private AdminApiClient.SidecarRebalanceMetrics? _rebalanceMetrics;
+    private string _rebalanceAlertsMsg = string.Empty;
+    private List<AdminApiClient.SidecarRebalanceAlert> _rebalanceAlerts = [];
+    private string _rebalanceMetricsHistoryMsg = string.Empty;
+    private List<AdminApiClient.SidecarRebalanceMetricsSnapshot> _rebalanceMetricsHistory = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -332,6 +393,8 @@ else
         await LoadRebalanceAuditAsync();
         await LoadRebalanceRecommendationAsync();
         await LoadRebalanceMetricsAsync();
+        await LoadRebalanceAlertsAsync();
+        await LoadRebalanceMetricsHistoryAsync();
         _balanceMsg = "Loaded.";
     }
 
@@ -426,6 +489,38 @@ else
 
         _rebalanceMetrics = metrics;
         _rebalanceMetricsMsg = "Loaded rebalance metrics.";
+    }
+
+    private async Task LoadRebalanceAlertsAsync()
+    {
+        var alerts = await Api.GetSidecarRebalanceAlertsAsync();
+        if (alerts is null)
+        {
+            _rebalanceAlerts = [];
+            _rebalanceAlertsMsg = "Sidecar alerts unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rebalanceAlerts = [.. alerts];
+        _rebalanceAlertsMsg = _rebalanceAlerts.Count == 0
+            ? "No active rebalance alerts."
+            : $"Loaded {_rebalanceAlerts.Count} active rebalance alert(s).";
+    }
+
+    private async Task LoadRebalanceMetricsHistoryAsync()
+    {
+        var history = await Api.GetSidecarRebalanceMetricsHistoryAsync(limit: 50);
+        if (history is null)
+        {
+            _rebalanceMetricsHistory = [];
+            _rebalanceMetricsHistoryMsg = "Metrics history unavailable (check Sidecar:BaseUrl and Elasticsearch sink).";
+            return;
+        }
+
+        _rebalanceMetricsHistory = [.. history];
+        _rebalanceMetricsHistoryMsg = _rebalanceMetricsHistory.Count == 0
+            ? "No published metrics history found yet."
+            : $"Loaded {_rebalanceMetricsHistory.Count} metrics snapshots.";
     }
 }
 

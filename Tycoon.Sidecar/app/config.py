@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     log_level: str = "info"
     dry_run_job_interval_seconds: int = 3600
     stripe_webhook_secret: str = ""
+    rebalance_alert_min_attempts: int = 5
+    rebalance_alert_error_rate_threshold: float = 0.3
+    rebalance_alert_blocked_rate_threshold: float = 0.6
+    rebalance_metrics_index: str = "tycoon_rebalance_metrics"
 
 
 settings = Settings()
