@@ -216,4 +216,12 @@ public sealed class AdminModerationEndpointsTests : IClassFixture<TycoonApiFacto
         logs.Should().NotBeNull();
         logs!.Items.Should().OnlyContain(i => i.NewStatus == 2);
     }
+
+    [Fact]
+    public async Task GetLogs_Invalid_Status_Filter_Returns_BadRequest()
+    {
+        var resp = await _http.GetAsync("/admin/moderation/logs?page=1&pageSize=25&status=not-a-valid-status");
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await resp.HasErrorCodeAsync("VALIDATION_ERROR");
+    }
 }

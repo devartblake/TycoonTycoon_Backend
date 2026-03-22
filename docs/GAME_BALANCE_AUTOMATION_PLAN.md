@@ -206,12 +206,27 @@ Operational readiness:
 - ✅ Added behavior segmentation endpoint in Sidecar (`/analytics/behavior-segmentation`) for adaptive rule suggestions.
 - ✅ Added manual dry-run job endpoints in Sidecar for rebalance reporting without auto-apply.
 - ✅ Added sidecar background dry-run scheduler loop with configurable interval.
+- ✅ Added guarded rebalance apply audit trail in Sidecar (`/utilities/economy/rebalance/audit`) with required approver/reason metadata and persisted apply/block outcomes.
 
 ### Sprint B Progress (initial)
 
 - ✅ Added initial Operator Dashboard controls for viewing/updating core balance values and running simulation from Economy page.
 - ✅ Added API-level contract coverage for admin and mobile economy endpoints.
 - ✅ Added match-entry policy API tests (legacy mode allowance + jackpot no-ticket conflict).
+
+## 10) Remaining Work Snapshot (Post-Latest Implementation)
+
+1. Apply and verify `AddGameBalancePolicyPersistence` migration in each runtime environment (dev/stage/prod) with rollback playbook validation.
+2. Add Sidecar automated tests for rebalance guardrails/audit endpoints and scheduler behavior.
+3. Add dashboard UI surfacing for Sidecar rebalance audit history and dry-run recommendations.
+4. Add production operator runbook covering:
+   - required approval metadata for rebalance apply,
+   - guardrail override procedure,
+   - incident response for failed applies.
+5. Add observability wiring (metrics + alerts) for:
+   - blocked rebalance attempts,
+   - apply success/failure rate,
+   - pity activation distribution and revive discount usage.
 
 ## 9) Risks & Mitigations
 
