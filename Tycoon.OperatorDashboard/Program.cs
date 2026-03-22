@@ -41,6 +41,10 @@ var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://tycoon-api";
 builder.Services.AddHttpClient("tycoon-api", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
+    var opsKey = builder.Configuration["AdminOps:Key"] ?? string.Empty;
+    if (!string.IsNullOrEmpty(opsKey))
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Admin-Ops-Key", opsKey);
+});
 
 // AdminApiClient is scoped — one shared instance per Blazor Server circuit.
 // This is the critical fix: AddHttpClient<T> registers T as transient, meaning
