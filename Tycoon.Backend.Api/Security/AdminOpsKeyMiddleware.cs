@@ -132,7 +132,12 @@ namespace Tycoon.Backend.Api.Security
                         : ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
                 }
 
-                var allowedEmails = cfg.GetSection("AdminAuth:AllowedEmails").Get<string[]>() ?? [];
+                // Filter blank entries: compose.yml uses "${SUPER_ADMIN_EMAIL:-}" which
+                // injects an empty string when the env var is unset, turning a "no allowlist"
+                // config into a single-empty-string allowlist that blocks every admin.
+                var allowedEmails = (cfg.GetSection("AdminAuth:AllowedEmails").Get<string[]>() ?? [])
+                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                    .ToArray();
                 var email = http.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                             ?? http.User.FindFirst("email")?.Value;
 

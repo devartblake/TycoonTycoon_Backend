@@ -20,7 +20,6 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 _last_dry_run_report: dict | None = None
 
-
 def _validate_rebalance_delta(current: dict, proposed: dict) -> tuple[bool, list[str]]:
     """
     Guardrails:
