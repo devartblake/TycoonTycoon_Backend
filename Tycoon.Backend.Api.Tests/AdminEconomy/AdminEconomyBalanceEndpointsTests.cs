@@ -261,4 +261,46 @@ public sealed class AdminEconomyBalanceEndpointsTests : IClassFixture<TycoonApiF
         await resp.HasErrorDetailArrayContainingAsync("errors", "Ad energy range is invalid.");
         await resp.HasErrorDetailArrayContainingAsync("errors", "Mode energyCost cannot be negative.");
     }
+
+    [Fact]
+    public async Task Simulate_Returns_Validation_Error_When_Required_Modes_Missing()
+    {
+        var original = await GetCurrentBalanceAsync();
+        try
+        {
+            var patched = new UpdateGameBalanceConfigRequest(
+                MaxEnergy: null,
+                StartEnergy: null,
+                RegenMinutesPerEnergy: null,
+                DailyFreeEnergy: null,
+                AdEnergyMin: null,
+                AdEnergyMax: null,
+                LevelUpFullRefill: null,
+                PremiumEnergyCapBonus: null,
+                PremiumRegenMultiplier: null,
+                Modes:
+                [
+                    new ModeBalanceRuleDto("casual", 3, null, false, 0)
+                ],
+                Safeguards: null
+            );
+            var patchResp = await _admin.PatchAsJsonAsync("/admin/economy/balance", patched);
+            patchResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var simResp = await _admin.PostAsJsonAsync("/admin/economy/simulate", new EconomySimulationRequest(
+                SessionMinutes: 10,
+                SessionNumber: 1,
+                CasualMatches: 1,
+                RankedMatches: 1,
+                GuardianMatches: 1
+            ));
+            simResp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            await simResp.HasErrorCodeAsync("VALIDATION_ERROR");
+            await simResp.HasErrorDetailArrayContainingAsync("errors", "Simulation requires casual, ranked, and guardian mode rules.");
+        }
+        finally
+        {
+            await RestoreBalanceAsync(original);
+        }
+    }
 }
