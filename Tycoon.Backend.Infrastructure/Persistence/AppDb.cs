@@ -70,6 +70,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<AdminNotificationTemplate> AdminNotificationTemplates => Set<AdminNotificationTemplate>();
         public DbSet<AdminNotificationHistory> AdminNotificationHistory => Set<AdminNotificationHistory>();
         public DbSet<AdminAppConfig> AdminAppConfigs => Set<AdminAppConfig>();
+        public DbSet<GameBalanceConfig> GameBalanceConfigs => Set<GameBalanceConfig>();
+        public DbSet<PlayerEconomySafeguardState> PlayerEconomySafeguardStates => Set<PlayerEconomySafeguardState>();
         public DbSet<Tier> Tiers => Set<Tier>();
         public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => Set<QuestionAnsweredAnalyticsEvent>();
         public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => Set<QuestionAnsweredDailyRollup>();
