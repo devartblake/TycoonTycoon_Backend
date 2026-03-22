@@ -197,8 +197,18 @@ else
     private async Task LoadBalanceAsync()
     {
         _balanceErrors.Clear();
-        var cfg = await Api.GetGameBalanceConfigAsync();
-        if (cfg is null) { _balanceMsg = "Failed to load balance config."; return; }
+        var result = await Api.GetGameBalanceConfigDetailedAsync();
+        if (!result.Success)
+        {
+            _balanceMsg = result.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Forbidden => "Access denied (403). Check Admin Ops key and admin permissions.",
+                System.Net.HttpStatusCode.Unauthorized => "Unauthorized (401). Sign in again and verify Admin Ops key.",
+                _ => string.IsNullOrWhiteSpace(result.ErrorMessage) ? "Failed to load balance config." : result.ErrorMessage!
+            };
+            return;
+        }
+        var cfg = result.Value!;
         _cfgMaxEnergy = cfg.MaxEnergy;
         _cfgStartEnergy = cfg.StartEnergy;
         _cfgRegenMinutes = cfg.RegenMinutesPerEnergy;

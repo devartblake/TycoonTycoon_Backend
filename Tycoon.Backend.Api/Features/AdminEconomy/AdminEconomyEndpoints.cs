@@ -72,9 +72,28 @@ namespace Tycoon.Backend.Api.Features.AdminEconomy
                     ? cfg.Safeguards.FirstSessionsEnergyDiscount
                     : 0;
 
-                var casualCost = Math.Max(0, cfg.Modes.First(m => m.Mode == "casual").EnergyCost - earlyDiscount);
-                var rankedCost = Math.Max(0, cfg.Modes.First(m => m.Mode == "ranked").EnergyCost - earlyDiscount);
-                var guardianCost = Math.Max(0, cfg.Modes.First(m => m.Mode == "guardian").EnergyCost - earlyDiscount);
+                static bool TryModeCost(GameBalanceConfigDto cfg, string mode, int discount, out int cost)
+                {
+                    var rule = cfg.Modes.FirstOrDefault(m => m.Mode.Equals(mode, StringComparison.OrdinalIgnoreCase));
+                    if (rule is null)
+                    {
+                        cost = 0;
+                        return false;
+                    }
+                    cost = Math.Max(0, rule.EnergyCost - discount);
+                    return true;
+                }
+
+                if (!TryModeCost(cfg, "casual", earlyDiscount, out var casualCost)
+                    || !TryModeCost(cfg, "ranked", earlyDiscount, out var rankedCost)
+                    || !TryModeCost(cfg, "guardian", earlyDiscount, out var guardianCost))
+                {
+                    return AdminApiResponses.Error(
+                        StatusCodes.Status400BadRequest,
+                        "VALIDATION_ERROR",
+                        "Simulation requires casual, ranked, and guardian mode rules.",
+                        new { errors = new[] { "Simulation requires casual, ranked, and guardian mode rules." } });
+                }
 
                 var spend = (req.CasualMatches ?? 0) * casualCost
                     + (req.RankedMatches ?? 0) * rankedCost

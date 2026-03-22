@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -151,9 +152,10 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     public async Task<JsonDocument?> ListEscalationsAsync(string? status, int page = 1, int pageSize = 50, CancellationToken ct = default)
     {
+        // Backend currently exposes /admin/moderation/logs (not /escalations).
         var qs = $"page={page}&pageSize={pageSize}";
-        if (!string.IsNullOrWhiteSpace(status)) qs += $"&status={status}";
-        var resp = await http.GetAsync($"/admin/moderation/escalations?{qs}", ct);
+        if (!string.IsNullOrWhiteSpace(status)) qs += $"&status={Uri.EscapeDataString(status)}";
+        var resp = await http.GetAsync($"/admin/moderation/logs?{qs}", ct);
         if (!resp.IsSuccessStatusCode) return null;
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
@@ -172,6 +174,34 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         var resp = await http.GetAsync("/admin/economy/balance", ct);
         if (!resp.IsSuccessStatusCode) return null;
         return await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+    }
+
+    public sealed record ApiCallResult<T>(T? Value, HttpStatusCode StatusCode, string? ErrorCode, string? ErrorMessage)
+    {
+        public bool Success => Value is not null;
+    }
+
+    public async Task<ApiCallResult<GameBalanceConfigDto>> GetGameBalanceConfigDetailedAsync(CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync("/admin/economy/balance", ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var cfg = await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+            return new ApiCallResult<GameBalanceConfigDto>(cfg, resp.StatusCode, null, null);
+        }
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            var error = json.RootElement.GetProperty("error");
+            var code = error.TryGetProperty("code", out var c) ? c.GetString() : null;
+            var message = error.TryGetProperty("message", out var m) ? m.GetString() : null;
+            return new ApiCallResult<GameBalanceConfigDto>(null, resp.StatusCode, code, message);
+        }
+        catch
+        {
+            return new ApiCallResult<GameBalanceConfigDto>(null, resp.StatusCode, null, null);
+        }
     }
 
     public async Task<GameBalanceConfigDto?> PatchGameBalanceConfigAsync(UpdateGameBalanceConfigRequest req, CancellationToken ct = default)
@@ -517,9 +547,13 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
     public void SetToken(string accessToken)
     {
         http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        var opsKey = config["AdminOps:Key"] ?? config["ADMIN_OPS_KEY"] ?? string.Empty;
-        if (!string.IsNullOrEmpty(opsKey))
-            http.DefaultRequestHeaders.TryAddWithoutValidation("X-Admin-Ops-Key", opsKey);
+        var headerName = config["AdminOps:Header"] ?? config["ADMIN_OPS_HEADER"] ?? "X-Admin-Ops-Key";
+        var opsKey = config["AdminOps:Key"] ?? config["AdminOps__Key"] ?? config["ADMIN_OPS_KEY"] ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(opsKey))
+        {
+            http.DefaultRequestHeaders.Remove(headerName);
+            http.DefaultRequestHeaders.TryAddWithoutValidation(headerName, opsKey);
+        }
     }
 
     public void ClearToken()
