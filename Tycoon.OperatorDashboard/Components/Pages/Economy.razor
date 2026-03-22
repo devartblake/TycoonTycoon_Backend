@@ -115,6 +115,75 @@ else
                 </table>
             }
         </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Recommendation (Dry-Run)</h3>
+                <button @onclick="LoadRebalanceRecommendationAsync">Reload Recommendation</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceRecommendationMsg))
+            {
+                <p class="message">@_rebalanceRecommendationMsg</p>
+            }
+            @if (_rebalanceRecommendation is not null)
+            {
+                <div class="grid2">
+                    <label>Recommended Max Energy<input type="number" value="@(_rebalanceRecommendation.MaxEnergy ?? 0)" readonly /></label>
+                    <label>Regen Minutes / Energy<input type="number" value="@(_rebalanceRecommendation.RegenMinutesPerEnergy ?? 0)" readonly /></label>
+                    <label>Daily Free Energy<input type="number" value="@(_rebalanceRecommendation.DailyFreeEnergy ?? 0)" readonly /></label>
+                </div>
+
+                @if (_rebalanceRecommendation.Modes.Count > 0)
+                {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mode</th>
+                                <th>Energy Cost</th>
+                                <th>Lives</th>
+                                <th>Requires Ticket</th>
+                                <th>Tier Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var mode in _rebalanceRecommendation.Modes)
+                        {
+                            <tr>
+                                <td>@mode.Mode</td>
+                                <td>@mode.EnergyCost</td>
+                                <td>@(mode.Lives?.ToString() ?? "—")</td>
+                                <td>@(mode.RequiresTicket ? "Yes" : "No")</td>
+                                <td>@mode.TierPointsWeight</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            }
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem;">
+                <h3 style="margin:0;">Sidecar Rebalance Metrics</h3>
+                <button @onclick="LoadRebalanceMetricsAsync">Reload Metrics</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_rebalanceMetricsMsg))
+            {
+                <p class="message">@_rebalanceMetricsMsg</p>
+            }
+            @if (_rebalanceMetrics is not null)
+            {
+                <div style="display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:.75rem;margin:.5rem 0;">
+                    <div class="card"><strong>Total Attempts</strong><div>@_rebalanceMetrics.TotalApplyAttempts</div></div>
+                    <div class="card"><strong>Blocked</strong><div>@_rebalanceMetrics.BlockedCount</div></div>
+                    <div class="card"><strong>Success</strong><div>@_rebalanceMetrics.SuccessCount</div></div>
+                    <div class="card"><strong>Error</strong><div>@_rebalanceMetrics.ErrorCount</div></div>
+                </div>
+                <p>Last Attempt: @(_rebalanceMetrics.LastAttemptAtUtc?.ToString("u") ?? "—")</p>
+                <p>Last Success: @(_rebalanceMetrics.LastSuccessAtUtc?.ToString("u") ?? "—")</p>
+                <p>Last Error: @(_rebalanceMetrics.LastErrorAtUtc?.ToString("u") ?? "—")</p>
+            }
+        </div>
     </div>
 }
 
@@ -207,6 +276,10 @@ else
     private int _cfgReviveDiscount = 20;
     private string _rebalanceAuditMsg = string.Empty;
     private List<AdminApiClient.SidecarRebalanceAuditItem> _rebalanceAuditItems = [];
+    private string _rebalanceRecommendationMsg = string.Empty;
+    private AdminApiClient.SidecarRebalanceRecommendation? _rebalanceRecommendation;
+    private string _rebalanceMetricsMsg = string.Empty;
+    private AdminApiClient.SidecarRebalanceMetrics? _rebalanceMetrics;
 
     protected override async Task OnInitializedAsync()
     {
@@ -257,6 +330,8 @@ else
         _cfgReviveCost = cfg.Safeguards.ReviveBaseGemCost;
         _cfgReviveDiscount = cfg.Safeguards.AlmostWinReviveDiscountPercent;
         await LoadRebalanceAuditAsync();
+        await LoadRebalanceRecommendationAsync();
+        await LoadRebalanceMetricsAsync();
         _balanceMsg = "Loaded.";
     }
 
@@ -323,6 +398,34 @@ else
         _rebalanceAuditMsg = _rebalanceAuditItems.Count == 0
             ? "No rebalance audit records yet."
             : $"Loaded {_rebalanceAuditItems.Count} audit records.";
+    }
+
+    private async Task LoadRebalanceRecommendationAsync()
+    {
+        var rec = await Api.GetSidecarRebalanceRecommendationAsync();
+        if (rec is null)
+        {
+            _rebalanceRecommendation = null;
+            _rebalanceRecommendationMsg = "Sidecar recommendation unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rebalanceRecommendation = rec;
+        _rebalanceRecommendationMsg = "Loaded current dry-run recommendation.";
+    }
+
+    private async Task LoadRebalanceMetricsAsync()
+    {
+        var metrics = await Api.GetSidecarRebalanceMetricsAsync();
+        if (metrics is null)
+        {
+            _rebalanceMetrics = null;
+            _rebalanceMetricsMsg = "Sidecar metrics unavailable (check Sidecar:BaseUrl and sidecar health).";
+            return;
+        }
+
+        _rebalanceMetrics = metrics;
+        _rebalanceMetricsMsg = "Loaded rebalance metrics.";
     }
 }
 

@@ -16,11 +16,20 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Request, UploadFile, File
+from fastapi import APIRouter, Request, UploadFile, File, Response
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 _last_dry_run_report: dict | None = None
+_rebalance_metrics: dict[str, Any] = {
+    "totalApplyAttempts": 0,
+    "blockedCount": 0,
+    "successCount": 0,
+    "errorCount": 0,
+    "lastAttemptAtUtc": None,
+    "lastSuccessAtUtc": None,
+    "lastErrorAtUtc": None,
+}
 
 
 def _validate_rebalance_delta(current: dict[str, Any], proposed: dict[str, Any]) -> tuple[bool, list[str]]:
@@ -217,28 +226,39 @@ async def apply_rebalance(request: Request):
 
     if not isinstance(body, dict):
         return {"status": "blocked", "detail": "Body must be a JSON object."}
+
+    _rebalance_metrics["totalApplyAttempts"] = int(_rebalance_metrics["totalApplyAttempts"]) + 1
+    _rebalance_metrics["lastAttemptAtUtc"] = datetime.now(timezone.utc).isoformat()
+
     if not body.get("approved"):
+        _rebalance_metrics["blockedCount"] = int(_rebalance_metrics["blockedCount"]) + 1
         return {"status": "blocked", "detail": "Approval required. Set approved=true to apply."}
 
     payload = body.get("payload", {})
     if not isinstance(payload, dict) or not payload:
+        _rebalance_metrics["blockedCount"] = int(_rebalance_metrics["blockedCount"]) + 1
         return {"status": "blocked", "detail": "payload is required and must be a non-empty object."}
 
     approved_by = body.get("approvedBy")
     reason = body.get("reason")
     if not isinstance(approved_by, str) or not approved_by.strip():
+        _rebalance_metrics["blockedCount"] = int(_rebalance_metrics["blockedCount"]) + 1
         return {"status": "blocked", "detail": "approvedBy is required for auditability."}
     if not isinstance(reason, str) or not reason.strip():
+        _rebalance_metrics["blockedCount"] = int(_rebalance_metrics["blockedCount"]) + 1
         return {"status": "blocked", "detail": "reason is required for auditability."}
 
     baseline_resp = await request.app.state.backend.get("/admin/economy/balance")
     if baseline_resp.status_code >= 300:
+        _rebalance_metrics["errorCount"] = int(_rebalance_metrics["errorCount"]) + 1
+        _rebalance_metrics["lastErrorAtUtc"] = datetime.now(timezone.utc).isoformat()
         return {"status": "error", "detail": "Unable to fetch current balance config", "backend_status": baseline_resp.status_code}
     baseline = baseline_resp.json()
     delta_summary = _extract_delta_summary(baseline, payload)
 
     ok, errors = _validate_rebalance_delta(baseline, payload if isinstance(payload, dict) else {})
     if not ok:
+        _rebalance_metrics["blockedCount"] = int(_rebalance_metrics["blockedCount"]) + 1
         audit_id = await _write_rebalance_audit(request.app, {
             "status": "blocked",
             "approvedBy": approved_by.strip(),
@@ -254,6 +274,13 @@ async def apply_rebalance(request: Request):
     resp = await backend.patch("/admin/economy/balance", json=payload)
     status = "ok" if resp.status_code < 300 else "error"
     result = resp.json() if resp.content else None
+    if status == "ok":
+        _rebalance_metrics["successCount"] = int(_rebalance_metrics["successCount"]) + 1
+        _rebalance_metrics["lastSuccessAtUtc"] = datetime.now(timezone.utc).isoformat()
+    else:
+        _rebalance_metrics["errorCount"] = int(_rebalance_metrics["errorCount"]) + 1
+        _rebalance_metrics["lastErrorAtUtc"] = datetime.now(timezone.utc).isoformat()
+
     audit_id = await _write_rebalance_audit(request.app, {
         "status": status,
         "approvedBy": approved_by.strip(),
@@ -291,6 +318,30 @@ async def get_rebalance_audit_history(request: Request, limit: int = 25):
     cursor = request.app.state.mongo_db.economy_rebalance_audit.find({}, {"_id": 0}).sort("createdAtUtc", -1).limit(size)
     items = await cursor.to_list(length=size)
     return {"status": "ok", "items": items, "count": len(items)}
+
+
+@router.get("/economy/rebalance/metrics")
+async def get_rebalance_metrics():
+    return {"status": "ok", "metrics": _rebalance_metrics}
+
+
+@router.get("/economy/rebalance/metrics/prometheus")
+async def get_rebalance_metrics_prometheus():
+    lines = [
+        "# HELP tycoon_rebalance_apply_attempts_total Total number of rebalance apply attempts.",
+        "# TYPE tycoon_rebalance_apply_attempts_total counter",
+        f"tycoon_rebalance_apply_attempts_total {int(_rebalance_metrics['totalApplyAttempts'])}",
+        "# HELP tycoon_rebalance_apply_blocked_total Number of blocked rebalance apply attempts.",
+        "# TYPE tycoon_rebalance_apply_blocked_total counter",
+        f"tycoon_rebalance_apply_blocked_total {int(_rebalance_metrics['blockedCount'])}",
+        "# HELP tycoon_rebalance_apply_success_total Number of successful rebalance apply attempts.",
+        "# TYPE tycoon_rebalance_apply_success_total counter",
+        f"tycoon_rebalance_apply_success_total {int(_rebalance_metrics['successCount'])}",
+        "# HELP tycoon_rebalance_apply_error_total Number of errored rebalance apply attempts.",
+        "# TYPE tycoon_rebalance_apply_error_total counter",
+        f"tycoon_rebalance_apply_error_total {int(_rebalance_metrics['errorCount'])}",
+    ]
+    return Response(content="\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 
 
 async def run_scheduled_dry_run(app) -> dict:

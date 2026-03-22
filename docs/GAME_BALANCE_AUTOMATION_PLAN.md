@@ -232,7 +232,11 @@ Operational readiness:
 
 - ✅ Sidecar guardrail and endpoint contract tests now cover success and failure paths for rebalance apply plus audit history pagination/ordering contracts.
 - ✅ Operator Dashboard economy page now surfaces Sidecar rebalance audit history (latest 25 entries) when `Sidecar:BaseUrl` is configured.
-- ⏳ Still pending: dashboard dry-run recommendation visualization and metrics/alerts wiring.
+- ✅ Operator Dashboard economy page now surfaces Sidecar dry-run rebalance recommendation payload (core fields + per-mode table).
+- ✅ Sidecar exposes rebalance metrics at `/utilities/economy/rebalance/metrics` (attempts, blocked/success/error counts, last-at timestamps).
+- ✅ Sidecar exposes Prometheus scrape-friendly counters at `/utilities/economy/rebalance/metrics/prometheus`.
+- ✅ Operator Dashboard economy page now surfaces Sidecar rebalance metrics counters/timestamps for operator visibility.
+- ⏳ Still pending: production metrics backend/dashboard wiring, alert rules, and runbook completion.
 
 ## 9) Risks & Mitigations
 

@@ -68,6 +68,15 @@ class _FakeMongoDb:
 
 
 def _make_client():
+    utilities._rebalance_metrics.update({  # noqa: SLF001
+        "totalApplyAttempts": 0,
+        "blockedCount": 0,
+        "successCount": 0,
+        "errorCount": 0,
+        "lastAttemptAtUtc": None,
+        "lastSuccessAtUtc": None,
+        "lastErrorAtUtc": None,
+    })
     app = FastAPI()
     app.include_router(utilities.router, prefix="/utilities")
     app.state.backend = _FakeBackend()
@@ -181,3 +190,56 @@ def test_get_rebalance_audit_history_respects_limit_and_order():
     assert body["status"] == "ok"
     assert body["count"] == 2
     assert [x["auditId"] for x in body["items"]] == ["a-3", "a-2"]
+
+
+def test_rebalance_metrics_reflect_apply_attempt_outcomes():
+    client, app = _make_client()
+
+    # Blocked (no approved flag)
+    client.post("/utilities/economy/rebalance/apply", json={"payload": {"maxEnergy": 21}})
+    # Successful apply
+    client.post("/utilities/economy/rebalance/apply", json={
+        "approved": True,
+        "approvedBy": "operator-ok",
+        "reason": "small update",
+        "payload": {"maxEnergy": 21},
+    })
+    # Error apply (backend patch failure)
+    app.state.backend.patch_status_code = 500
+    client.post("/utilities/economy/rebalance/apply", json={
+        "approved": True,
+        "approvedBy": "operator-error",
+        "reason": "force patch failure",
+        "payload": {"maxEnergy": 21},
+    })
+
+    metrics_resp = client.get("/utilities/economy/rebalance/metrics")
+    assert metrics_resp.status_code == 200
+    metrics_body = metrics_resp.json()
+    assert metrics_body["status"] == "ok"
+    metrics = metrics_body["metrics"]
+    assert metrics["totalApplyAttempts"] == 3
+    assert metrics["blockedCount"] == 1
+    assert metrics["successCount"] == 1
+    assert metrics["errorCount"] == 1
+    assert metrics["lastAttemptAtUtc"] is not None
+    assert metrics["lastSuccessAtUtc"] is not None
+    assert metrics["lastErrorAtUtc"] is not None
+
+
+def test_rebalance_metrics_prometheus_endpoint_exposes_counters():
+    client, _ = _make_client()
+    client.post("/utilities/economy/rebalance/apply", json={
+        "approved": True,
+        "approvedBy": "operator-ok",
+        "reason": "small update",
+        "payload": {"maxEnergy": 21},
+    })
+
+    resp = client.get("/utilities/economy/rebalance/metrics/prometheus")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/plain")
+    body = resp.text
+    assert "tycoon_rebalance_apply_attempts_total 1" in body
+    assert "tycoon_rebalance_apply_success_total 1" in body
+    assert "tycoon_rebalance_apply_error_total 0" in body
