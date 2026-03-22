@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Tycoon.Backend.Api.Contracts;
 
 namespace Tycoon.Backend.Api.Security
@@ -28,11 +29,13 @@ namespace Tycoon.Backend.Api.Security
     {
         private readonly RequestDelegate _next;
         private readonly IConfiguration _cfg;
+        private readonly ILogger<AdminOpsKeyMiddleware> _logger;
 
-        public AdminOpsKeyMiddleware(RequestDelegate next, IConfiguration cfg)
+        public AdminOpsKeyMiddleware(RequestDelegate next, IConfiguration cfg, ILogger<AdminOpsKeyMiddleware> logger)
         {
             _next = next;
             _cfg = cfg;
+            _logger = logger;
         }
 
         public async Task Invoke(HttpContext ctx)
@@ -54,7 +57,7 @@ namespace Tycoon.Backend.Api.Security
                 return;
             }
 
-            var validation = ValidateOpsKey(ctx, _cfg);
+            var validation = ValidateOpsKey(ctx, _cfg, _logger);
             if (validation is not null)
             {
                 await validation.ExecuteAsync(ctx);
@@ -64,7 +67,7 @@ namespace Tycoon.Backend.Api.Security
             await _next(ctx);
         }
 
-        internal static IResult? ValidateOpsKey(HttpContext ctx, IConfiguration cfg)
+        internal static IResult? ValidateOpsKey(HttpContext ctx, IConfiguration cfg, ILogger? logger = null)
         {
             var headerName = cfg["AdminOps:Header"];
             if (string.IsNullOrWhiteSpace(headerName))
@@ -72,15 +75,29 @@ namespace Tycoon.Backend.Api.Security
 
             var expectedKey = cfg["AdminOps:Key"] ?? string.Empty;
             if (string.IsNullOrWhiteSpace(expectedKey))
+            {
+                logger?.LogWarning("AdminOpsKey: AdminOps:Key is not configured in settings");
                 return ApiResponses.Error(StatusCodes.Status503ServiceUnavailable, "SERVICE_UNAVAILABLE", "AdminOps key not configured.");
+            }
 
             if (!ctx.Request.Headers.TryGetValue(headerName, out var provided) ||
                 string.IsNullOrWhiteSpace(provided))
+            {
+                logger?.LogWarning("AdminOpsKey: {HeaderName} header missing or empty on {Method} {Path}",
+                    headerName, ctx.Request.Method, ctx.Request.Path);
                 return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Missing admin ops key.");
+            }
 
             if (!string.Equals(provided.ToString(), expectedKey, StringComparison.Ordinal))
+            {
+                var providedStr = provided.ToString();
+                var suffix = providedStr.Length >= 4 ? providedStr[^4..] : "****";
+                logger?.LogWarning("AdminOpsKey: provided key does not match expected key on {Method} {Path} (provided ends with ...{KeySuffix})",
+                    ctx.Request.Method, ctx.Request.Path, suffix);
                 return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Invalid admin ops key.");
+            }
 
+            logger?.LogDebug("AdminOpsKey: validated successfully for {Method} {Path}", ctx.Request.Method, ctx.Request.Path);
             return null;
         }
     }
@@ -100,7 +117,9 @@ namespace Tycoon.Backend.Api.Security
                 var enabled = cfg.GetValue("AdminOps:Enabled", true);
                 if (!enabled) return await next(context);
 
-                var validation = AdminOpsKeyMiddleware.ValidateOpsKey(http, cfg);
+                var logger = http.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("AdminOpsKeyFilter");
+                var validation = AdminOpsKeyMiddleware.ValidateOpsKey(http, cfg, logger);
                 if (validation is not null)
                     return validation;
 
@@ -123,11 +142,42 @@ namespace Tycoon.Backend.Api.Security
                     return await next(context);
                 }
 
+                var logger = http.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("AdminRoleClaims");
+
+                var user = http.User;
+                var isAuthenticated = user?.Identity?.IsAuthenticated == true;
+                var roles = user?.FindAll(System.Security.Claims.ClaimTypes.Role)
+                    .Concat(user.FindAll("role"))
+                    .Select(c => c.Value)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList() ?? [];
+                var hasAdminRole = roles.Contains("admin", StringComparer.OrdinalIgnoreCase);
+                var audClaims = user?.FindAll("aud").Select(c => c.Value).ToList() ?? [];
+                var hasAdminAud = audClaims.Contains("admin-app", StringComparer.Ordinal);
+                var scopeClaim = user?.FindFirst("scope")?.Value;
+                var hasUsersReadScope = scopeClaim?.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Contains("users:read", StringComparer.OrdinalIgnoreCase) == true;
+
+                logger.LogDebug(
+                    "AdminRoleClaims check for {Method} {Path}: Authenticated={IsAuthenticated}, Roles=[{Roles}], HasAdminRole={HasAdminRole}, Aud=[{Aud}], HasAdminAppAud={HasAdminAud}, Scope={Scope}, HasUsersReadScope={HasUsersReadScope}",
+                    http.Request.Method, http.Request.Path, isAuthenticated, string.Join(",", roles), hasAdminRole,
+                    string.Join(",", audClaims), hasAdminAud, scopeClaim ?? "(none)", hasUsersReadScope);
+
                 var authz = http.RequestServices.GetRequiredService<IAuthorizationService>();
                 var authzResult = await authz.AuthorizeAsync(http.User, null, AdminPolicies.AdminOpsPolicy);
                 if (!authzResult.Succeeded)
                 {
-                    return http.User?.Identity?.IsAuthenticated == true
+                    var reason = !isAuthenticated ? "user is not authenticated"
+                        : !hasAdminRole ? $"JWT missing role=admin (found roles: [{string.Join(",", roles)}])"
+                        : !hasAdminAud ? $"JWT missing aud=admin-app (found aud: [{string.Join(",", audClaims)}])"
+                        : !hasUsersReadScope ? $"JWT missing scope users:read (found scope: {scopeClaim ?? "(none)"})"
+                        : "unknown policy failure (check AuthorizationFailure.FailureReasons)";
+
+                    logger.LogWarning("AdminRoleClaims FAILED for {Method} {Path}: {Reason}",
+                        http.Request.Method, http.Request.Path, reason);
+
+                    return isAuthenticated
                         ? ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin policy requirements not satisfied.")
                         : ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
                 }
@@ -143,8 +193,13 @@ namespace Tycoon.Backend.Api.Security
 
                 if (allowedEmails.Length > 0 && (string.IsNullOrWhiteSpace(email) || !allowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase)))
                 {
+                    logger.LogWarning("AdminRoleClaims email allowlist FAILED for {Method} {Path}: email={Email}, allowlistCount={Count}",
+                        http.Request.Method, http.Request.Path, email ?? "(no email claim)", allowedEmails.Length);
                     return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is not allowlisted.");
                 }
+
+                logger.LogDebug("AdminRoleClaims PASSED for {Method} {Path}, email={Email}",
+                    http.Request.Method, http.Request.Path, email ?? "(none)");
 
                 return await next(context);
             });
