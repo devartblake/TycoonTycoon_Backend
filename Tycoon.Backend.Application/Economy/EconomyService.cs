@@ -102,6 +102,46 @@ namespace Tycoon.Backend.Application.Economy
             return new EconomyHistoryDto(playerId, page, pageSize, total, txns);
         }
 
+        public async Task<EconomyTxnResultDto> RollbackByEventIdAsync(Guid eventId, string reason, CancellationToken ct)
+        {
+            var original = await _db.EconomyTransactions
+                .Include(x => x.Lines)
+                .FirstOrDefaultAsync(x => x.EventId == eventId, ct);
+
+            if (original is null)
+                throw new InvalidOperationException("Original transaction not found.");
+
+            var existingRollback = await _db.EconomyTransactions
+                .AsNoTracking()
+                .AnyAsync(x => x.ReversalOfTransactionId == original.Id, ct);
+
+            if (existingRollback)
+                throw new InvalidOperationException("Original transaction already rolled back.");
+
+            var rollbackEventId = Guid.NewGuid();
+            var rollbackLines = (original.Lines ?? [])
+                .Select(l => new EconomyLineDto(l.Currency, -l.Delta))
+                .ToArray();
+
+            var result = await ApplyAsync(new CreateEconomyTxnRequest(
+                EventId: rollbackEventId,
+                PlayerId: original.PlayerId,
+                Kind: $"rollback:{original.Kind}",
+                Lines: rollbackLines,
+                Note: reason
+            ), ct);
+
+            if (result.Status != EconomyTxnStatus.Applied)
+                throw new InvalidOperationException($"Rollback failed with status '{result.Status}'.");
+
+            var rollbackTxn = await _db.EconomyTransactions
+                .FirstAsync(x => x.EventId == rollbackEventId, ct);
+            rollbackTxn.MarkAsReversalOf(original.Id);
+            await _db.SaveChangesAsync(ct);
+
+            return result;
+        }
+
         private async Task<PlayerWallet> EnsureWalletAsync(Guid playerId, CancellationToken ct)
         {
             var w = await _db.PlayerWallets.AsNoTracking().FirstOrDefaultAsync(x => x.PlayerId == playerId, ct);

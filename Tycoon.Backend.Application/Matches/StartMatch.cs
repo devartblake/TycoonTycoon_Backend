@@ -1,14 +1,20 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Matches
 {
+    public sealed class ModeEntryDeniedException(string reasonCode, string message) : InvalidOperationException(message)
+    {
+        public string ReasonCode { get; } = reasonCode;
+    }
+
     public record StartMatch(Guid HostPlayerId, string Mode) : IRequest<StartMatchResponse>;
 
-    public sealed class StartMatchHandler(IAppDb db)
+    public sealed class StartMatchHandler(IAppDb db, IGameBalancePolicyService policy)
         : IRequestHandler<StartMatch, StartMatchResponse>
     {
         public async Task<StartMatchResponse> Handle(StartMatch r, CancellationToken ct)
@@ -27,6 +33,10 @@ namespace Tycoon.Backend.Application.Matches
                 // Return existing match instead of creating a new one.
                 return new StartMatchResponse(existing.Id, existing.StartedAt);
             }
+
+            var modeDecision = await policy.TryEnterModeAsync(r.HostPlayerId, r.Mode, ct);
+            if (!modeDecision.Allowed)
+                throw new ModeEntryDeniedException(modeDecision.ReasonCode, modeDecision.Message);
 
             var match = new Match(
                 r.HostPlayerId,

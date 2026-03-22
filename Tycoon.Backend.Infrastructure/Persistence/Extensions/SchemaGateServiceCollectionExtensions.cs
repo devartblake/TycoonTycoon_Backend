@@ -50,6 +50,7 @@ public static class SchemaGateServiceCollectionExtensions
                     opt.HealthCheckEnabled = true;
                     opt.FailStartupIfInvalid = environment.IsProduction();
                     opt.LogOnly = !environment.IsProduction();
+                    opt.AutoMigrateIfMissing = !environment.IsProduction();
                 }
 
                 if (opt.TimeoutSeconds <= 0) opt.TimeoutSeconds = 30;
