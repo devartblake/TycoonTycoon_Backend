@@ -18,6 +18,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <Protobuf Include="../protos/sidecar.proto" GrpcServices="Server" />
+    <Protobuf Include="../protos/mobile.proto"  GrpcServices="Server" />
   </ItemGroup>
 
   <ItemGroup>
