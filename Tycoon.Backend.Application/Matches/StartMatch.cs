@@ -19,6 +19,10 @@ namespace Tycoon.Backend.Application.Matches
     {
         public async Task<StartMatchResponse> Handle(StartMatch r, CancellationToken ct)
         {
+            var decision = await policy.TryEnterModeAsync(r.HostPlayerId, r.Mode, ct);
+            if (!decision.Allowed)
+                throw new InvalidOperationException(decision.Message);
+
             // Prevent duplicate active matches for the same host.
             // "Active" == FinishedAt is null in your domain model.
             var existing = await db.Matches

@@ -161,6 +161,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        var authenticated = await Auth.TryAttachTokenAsync();
         if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; return; }
 
         // Fire all requests in parallel
