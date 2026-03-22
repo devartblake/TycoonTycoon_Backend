@@ -42,20 +42,17 @@ builder.Services.AddHttpClient("tycoon-api", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
 
-    // Attach the ops key as a default header so every request — including the
-    // initial login — passes the AdminOpsKeyMiddleware / endpoint filter gate.
-    var headerName = builder.Configuration["AdminOps:Header"]
-        ?? builder.Configuration["ADMIN_OPS_HEADER"]
-        ?? "X-Admin-Ops-Key";
-    var opsKey = builder.Configuration["AdminOps:Key"]
-        ?? builder.Configuration["AdminOps__Key"]
-        ?? builder.Configuration["ADMIN_OPS_KEY"]
-        ?? string.Empty;
-    if (!string.IsNullOrWhiteSpace(opsKey))
-    {
-        client.DefaultRequestHeaders.Remove(headerName);
-        client.DefaultRequestHeaders.TryAddWithoutValidation(headerName, opsKey);
-    }
+// AdminApiClient is scoped — one shared instance per Blazor Server circuit.
+// This is the critical fix: AddHttpClient<T> registers T as transient, meaning
+// Dashboard.razor and AdminAuthService receive different instances. SetToken() on
+// AdminAuthService's instance never affected Dashboard.razor's instance → 401s.
+// With a scoped registration, both resolve the same object from the circuit scope,
+// so SetToken() and all subsequent Api.* calls use the same HttpClient headers.
+builder.Services.AddScoped<AdminApiClient>(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    var config  = sp.GetRequiredService<IConfiguration>();
+    return new AdminApiClient(factory.CreateClient("tycoon-api"), config);
 });
 
 var app = builder.Build();
