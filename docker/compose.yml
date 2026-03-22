@@ -398,6 +398,13 @@ services:
       MinIO__UseSSL: "false"
       MinIO__PublicEndpoint: "${MINIO_PUBLIC_ENDPOINT:-localhost:9000}"
 
+      # Schema startup gate — block API until migrations have completed
+      SchemaGate__Enabled: "true"
+      SchemaGate__StartupGateEnabled: "true"
+      SchemaGate__FailStartupIfInvalid: "true"
+      SchemaGate__LogOnly: "false"
+      SchemaGate__TimeoutSeconds: "60"
+
       # Observability
       Observability__ServiceName: "Tycoon.Backend.Api"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"

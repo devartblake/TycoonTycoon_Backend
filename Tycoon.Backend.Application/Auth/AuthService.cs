@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Tycoon.Backend.Application.Abstractions;
@@ -15,11 +16,13 @@ namespace Tycoon.Backend.Application.Auth
     {
         private readonly IAppDb _database;
         private readonly JwtSettings _jwt;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IAppDb database, IOptions<JwtSettings> jwtOptions)
+        public AuthService(IAppDb database, IOptions<JwtSettings> jwtOptions, ILogger<AuthService> logger)
         {
             _database = database;
             _jwt = jwtOptions.Value;
+            _logger = logger;
         }
 
         // ── Public surface ────────────────────────────────────────────────────
@@ -97,9 +100,16 @@ namespace Tycoon.Backend.Application.Auth
             AdminRole? aclRole = null;
             if (clientType.Equals("admin", StringComparison.OrdinalIgnoreCase))
             {
-                var aclEntry = await _database.AdminEmailAcls.AsNoTracking()
-                    .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail && e.ListType == AdminAclListType.Allow);
-                aclRole = aclEntry?.Role;
+                try
+                {
+                    var aclEntry = await _database.AdminEmailAcls.AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail && e.ListType == AdminAclListType.Allow);
+                    aclRole = aclEntry?.Role;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "AdminEmailAcls query failed (table may not exist yet). Proceeding without ACL role for {Email}.", normalizedEmail);
+                }
             }
 
             var jwtToken = CreateJwtToken(authenticatedUser, clientType, aclRole);
@@ -135,10 +145,17 @@ namespace Tycoon.Backend.Application.Auth
             AdminRole? aclRole = null;
             if (expectedClientType.Equals("admin", StringComparison.OrdinalIgnoreCase))
             {
-                var normalizedEmail = tokenOwner.Email.ToLowerInvariant();
-                var aclEntry = await _database.AdminEmailAcls.AsNoTracking()
-                    .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail && e.ListType == AdminAclListType.Allow);
-                aclRole = aclEntry?.Role;
+                try
+                {
+                    var normalizedEmail = tokenOwner.Email.ToLowerInvariant();
+                    var aclEntry = await _database.AdminEmailAcls.AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail && e.ListType == AdminAclListType.Allow);
+                    aclRole = aclEntry?.Role;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "AdminEmailAcls query failed during token refresh (table may not exist yet). Proceeding without ACL role.");
+                }
             }
 
             var newJwtToken = CreateJwtToken(tokenOwner, expectedClientType, aclRole);
