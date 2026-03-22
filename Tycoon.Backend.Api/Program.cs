@@ -660,6 +660,8 @@ app.MapHub<NotificationHub>("/ws/notify");
 
 // gRPC — sidecar service (internal; port 5001 via Kestrel dual-port config)
 app.MapGrpcService<SidecarGrpcService>();
+// gRPC — mobile match service (Flutter clients; port 5001)
+app.MapGrpcService<MobileMatchGrpcService>();
 
 // Feature endpoints
 AnalyticsEndpoints.Map(app);
