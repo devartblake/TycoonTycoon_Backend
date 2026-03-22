@@ -403,7 +403,7 @@ services:
       SchemaGate__StartupGateEnabled: "true"
       SchemaGate__FailStartupIfInvalid: "true"
       SchemaGate__LogOnly: "false"
-      SchemaGate__TimeoutSeconds: "60"
+      SchemaGate__TimeoutSeconds: "120"
 
       # Observability
       Observability__ServiceName: "Tycoon.Backend.Api"
