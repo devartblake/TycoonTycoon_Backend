@@ -6,6 +6,8 @@ class Settings(BaseSettings):
 
     # Connectivity to tycoon-api (injected by Aspire service discovery or Docker)
     backend_base_url: str = "http://localhost:5000"
+    # gRPC endpoint for the backend-api (HTTP/2, port 5001)
+    backend_grpc_url: str = "localhost:5001"
 
     # MongoDB (analytics DB)
     mongo_url: str = "mongodb://tycoon_app_user:tycoon_app_password_123@localhost:27017/tycoon_db?authSource=tycoon_db"

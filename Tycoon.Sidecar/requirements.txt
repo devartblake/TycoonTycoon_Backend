@@ -7,3 +7,6 @@ elasticsearch[async]>=8.0
 pandas>=2.0
 scikit-learn>=1.4
 python-multipart>=0.0.9
+grpcio>=1.66.0
+grpcio-tools>=1.66.0
+googleapis-common-protos>=1.63.0

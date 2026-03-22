@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Tycoon.Backend.Application.Abstractions;
@@ -15,11 +16,13 @@ namespace Tycoon.Backend.Application.Auth
     {
         private readonly IAppDb _database;
         private readonly JwtSettings _jwt;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IAppDb database, IOptions<JwtSettings> jwtOptions)
+        public AuthService(IAppDb database, IOptions<JwtSettings> jwtOptions, ILogger<AuthService> logger)
         {
             _database = database;
             _jwt = jwtOptions.Value;
+            _logger = logger;
         }
 
         // ── Public surface ────────────────────────────────────────────────────
@@ -93,7 +96,23 @@ namespace Tycoon.Backend.Application.Auth
 
             authenticatedUser.RecordLogin();
 
-            var jwtToken = CreateJwtToken(authenticatedUser, clientType);
+            // Look up ACL role for admin logins to grant elevated scopes
+            AdminRole? aclRole = null;
+            if (clientType.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var aclEntry = await _database.AdminEmailAcls.AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail && e.ListType == AdminAclListType.Allow);
+                    aclRole = aclEntry?.Role;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "AdminEmailAcls query failed (table may not exist yet). Proceeding without ACL role for {Email}.", normalizedEmail);
+                }
+            }
+
+            var jwtToken = CreateJwtToken(authenticatedUser, clientType, aclRole);
             var deviceRefreshToken = await CreateRefreshTokenForDevice(
                 authenticatedUser.Id, deviceId, clientType);
 
@@ -123,7 +142,23 @@ namespace Tycoon.Backend.Application.Auth
 
             storedToken.Revoke();
 
-            var newJwtToken = CreateJwtToken(tokenOwner, expectedClientType);
+            AdminRole? aclRole = null;
+            if (expectedClientType.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var normalizedEmail = tokenOwner.Email.ToLowerInvariant();
+                    var aclEntry = await _database.AdminEmailAcls.AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail && e.ListType == AdminAclListType.Allow);
+                    aclRole = aclEntry?.Role;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "AdminEmailAcls query failed during token refresh (table may not exist yet). Proceeding without ACL role.");
+                }
+            }
+
+            var newJwtToken = CreateJwtToken(tokenOwner, expectedClientType, aclRole);
             var newDeviceToken = await CreateRefreshTokenForDevice(
                 tokenOwner.Id, storedToken.DeviceId, expectedClientType);
 
@@ -134,13 +169,17 @@ namespace Tycoon.Backend.Application.Auth
 
         // ── Token helpers ─────────────────────────────────────────────────────
 
-        private string CreateJwtToken(User user, string clientType)
+        private string CreateJwtToken(User user, string clientType, AdminRole? aclRole = null)
         {
             var isAdmin = clientType.Equals("admin", StringComparison.OrdinalIgnoreCase);
 
             var scopes = isAdmin
                 ? "users:read users:write questions:read questions:write events:read events:write notifications:write config:write"
                 : "profile:read profile:write gameplay:read gameplay:write";
+
+            // Super admins get ACL management scope
+            if (isAdmin && aclRole == AdminRole.SuperAdmin)
+                scopes += " acl:write";
 
             var role = isAdmin ? "admin" : "user";
             var audience = isAdmin ? "admin-app" : "mobile-app";
