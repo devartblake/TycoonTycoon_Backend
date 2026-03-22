@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Tycoon.Backend.Api.Tests.TestHost
 {
-    public sealed class TycoonApiFactory : WebApplicationFactory<Program>
+    public class TycoonApiFactory : WebApplicationFactory<Program>
     {
         public const string TestAdminKey = "test-admin-ops-key";
 
