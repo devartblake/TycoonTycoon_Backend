@@ -55,4 +55,77 @@
         Guid EventId,
         string Reason
     );
+
+    public sealed record ModeBalanceRuleDto(
+        string Mode,
+        int EnergyCost,
+        int? Lives,
+        bool RequiresTicket,
+        int TierPointsWeight
+    );
+
+    public sealed record GameBalanceConfigDto(
+        int MaxEnergy,
+        int StartEnergy,
+        int RegenMinutesPerEnergy,
+        int DailyFreeEnergy,
+        int AdEnergyMin,
+        int AdEnergyMax,
+        bool LevelUpFullRefill,
+        int? PremiumEnergyCapBonus,
+        decimal? PremiumRegenMultiplier,
+        IReadOnlyList<ModeBalanceRuleDto> Modes,
+        SafeguardConfigDto Safeguards,
+        DateTimeOffset UpdatedAtUtc
+    );
+
+    public sealed record UpdateGameBalanceConfigRequest(
+        int? MaxEnergy,
+        int? StartEnergy,
+        int? RegenMinutesPerEnergy,
+        int? DailyFreeEnergy,
+        int? AdEnergyMin,
+        int? AdEnergyMax,
+        bool? LevelUpFullRefill,
+        int? PremiumEnergyCapBonus,
+        decimal? PremiumRegenMultiplier,
+        IReadOnlyList<ModeBalanceRuleDto>? Modes,
+        SafeguardConfigDto? Safeguards
+    );
+
+    public sealed record EconomySimulationRequest(
+        int SessionMinutes,
+        int? SessionNumber,
+        int? CasualMatches,
+        int? RankedMatches,
+        int? GuardianMatches
+    );
+
+    public sealed record EconomySimulationResponse(
+        int StartingEnergy,
+        int EnergySpent,
+        int EnergyRegenerated,
+        int EndingEnergy,
+        int EstimatedMatchesByMode,
+        int EstimatedSessionMinutes
+    );
+
+    public sealed record SafeguardConfigDto(
+        int FirstSessionsReducedCostCount,
+        int FirstSessionsEnergyDiscount,
+        int DailyFreeJackpotTickets,
+        int ReviveBaseGemCost,
+        int AlmostWinReviveDiscountPercent,
+        int PityLossThreshold,
+        decimal PityDifficultyReductionPercent
+    );
+
+    public sealed record ModeEntryDecisionDto(
+        bool Allowed,
+        string ReasonCode,
+        string Message,
+        int EnergyCostApplied,
+        bool TicketConsumed,
+        int CurrentEnergy
+    );
 }
