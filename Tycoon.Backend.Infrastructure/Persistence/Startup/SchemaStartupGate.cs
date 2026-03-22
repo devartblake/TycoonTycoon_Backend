@@ -32,41 +32,80 @@ public sealed class SchemaStartupGate
             return;
         }
 
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, _opt.TimeoutSeconds)));
+        var timeout = TimeSpan.FromSeconds(Math.Max(1, _opt.TimeoutSeconds));
+        var pollInterval = TimeSpan.FromSeconds(Math.Min(5, _opt.TimeoutSeconds / 2.0));
+        var deadline = DateTimeOffset.UtcNow + timeout;
 
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(timeout);
+
+        _log.Information("SchemaStartupGate waiting up to {Timeout}s for schema readiness (polling every {Poll}s)...",
+            _opt.TimeoutSeconds, pollInterval.TotalSeconds);
+
+        string? lastFailure = null;
+
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            timeoutCts.Token.ThrowIfCancellationRequested();
+
+            lastFailure = await CheckOnceAsync(timeoutCts.Token);
+            if (lastFailure is null)
+            {
+                _log.Information("SchemaStartupGate passed.");
+                return;
+            }
+
+            _log.Warning("SchemaStartupGate: {Failure} — retrying in {Seconds}s...", lastFailure, pollInterval.TotalSeconds);
+
+            try
+            {
+                await Task.Delay(pollInterval, timeoutCts.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Timeout expired during delay — fall through to Fail.
+                break;
+            }
+        }
+
+        Fail(lastFailure ?? "Schema validation timed out.");
+    }
+
+    /// <summary>
+    /// Runs all schema checks once.  Returns null on success, or the failure reason.
+    /// </summary>
+    private async Task<string?> CheckOnceAsync(CancellationToken ct)
+    {
         using var scope = _sp.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-        if (!await db.Database.CanConnectAsync(timeoutCts.Token))
+        try
         {
-            Fail("DB not reachable.");
-            return;
+            if (!await db.Database.CanConnectAsync(ct))
+                return "DB not reachable.";
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return $"DB connection error: {ex.Message}";
         }
 
         if (_opt.RequireMigrationsHistoryTable)
         {
-            var historyExists = await ExistsAsync(db, _opt.Schema, _opt.MigrationsHistoryTable, timeoutCts.Token);
+            var historyExists = await ExistsAsync(db, _opt.Schema, _opt.MigrationsHistoryTable, ct);
             if (!historyExists)
-            {
-                Fail($"Schema missing: '{_opt.Schema}.{_opt.MigrationsHistoryTable}' not found. Run MigrationService first.");
-                return;
-            }
+                return $"Schema missing: '{_opt.Schema}.{_opt.MigrationsHistoryTable}' not found. Run MigrationService first.";
         }
 
         foreach (var table in _opt.RequiredTables ?? Array.Empty<string>())
         {
             if (string.IsNullOrWhiteSpace(table)) continue;
 
-            var exists = await ExistsAsync(db, _opt.Schema, table, timeoutCts.Token);
+            var exists = await ExistsAsync(db, _opt.Schema, table, ct);
             if (!exists)
-            {
-                Fail($"Schema missing: critical table '{_opt.Schema}.{table}' not found. Run MigrationService first.");
-                return;
-            }
+                return $"Schema missing: critical table '{_opt.Schema}.{table}' not found. Run MigrationService first.";
         }
 
-        _log.Information("SchemaStartupGate passed.");
+        return null;
     }
 
     private static async Task<bool> ExistsAsync(AppDb db, string schema, string table, CancellationToken ct)
