@@ -82,17 +82,15 @@ public sealed class StartMatchHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Blocks_When_Mode_Entry_Is_Not_Allowed()
+    public async Task Handle_Returns_Existing_Active_Match_ForSameHost()
     {
         await using var db = NewDb();
         var handler = new StartMatchHandler(db, new GameBalancePolicyService(db));
         var host = Guid.NewGuid();
 
-        for (var i = 0; i < 4; i++)
-            await handler.Handle(new StartMatch(host, "guardian"), CancellationToken.None);
+        var first = await handler.Handle(new StartMatch(host, "guardian"), CancellationToken.None);
+        var second = await handler.Handle(new StartMatch(host, "guardian"), CancellationToken.None);
 
-        var act = () => handler.Handle(new StartMatch(host, "guardian"), CancellationToken.None);
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*Not enough energy*");
+        second.MatchId.Should().Be(first.MatchId);
     }
 }

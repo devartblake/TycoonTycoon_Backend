@@ -205,10 +205,13 @@ Operational readiness:
 
 - ✅ Added behavior segmentation endpoint in Sidecar (`/analytics/behavior-segmentation`) for adaptive rule suggestions.
 - ✅ Added manual dry-run job endpoints in Sidecar for rebalance reporting without auto-apply.
+- ✅ Added sidecar background dry-run scheduler loop with configurable interval.
 
 ### Sprint B Progress (initial)
 
 - ✅ Added initial Operator Dashboard controls for viewing/updating core balance values and running simulation from Economy page.
+- ✅ Added API-level contract coverage for admin and mobile economy endpoints.
+- ✅ Added match-entry policy API tests (legacy mode allowance + jackpot no-ticket conflict).
 
 ## 9) Risks & Mitigations
 

@@ -7,6 +7,12 @@ using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Config;
 
+public sealed class BalanceValidationException(IReadOnlyList<string> errors)
+    : InvalidOperationException(errors.Count == 0 ? "Invalid balance configuration." : string.Join(" ", errors))
+{
+    public IReadOnlyList<string> Errors { get; } = errors;
+}
+
 public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -78,6 +84,7 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
             Safeguards: req.Safeguards ?? current.Safeguards,
             UpdatedAtUtc: DateTimeOffset.UtcNow
         );
+        Validate(next);
 
         var entity = await db.GameBalanceConfigs.FirstOrDefaultAsync(x => x.Id == "default", ct);
         if (entity is null)
@@ -87,6 +94,42 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
 
         await db.SaveChangesAsync(ct);
         return next;
+    }
+
+    private static void Validate(GameBalanceConfigDto cfg)
+    {
+        var errors = new List<string>();
+        if (cfg.MaxEnergy <= 0)
+            errors.Add("MaxEnergy must be greater than zero.");
+        if (cfg.StartEnergy < 0)
+            errors.Add("StartEnergy cannot be negative.");
+        if (cfg.StartEnergy > cfg.MaxEnergy)
+            errors.Add("StartEnergy cannot exceed MaxEnergy.");
+        if (cfg.RegenMinutesPerEnergy <= 0)
+            errors.Add("RegenMinutesPerEnergy must be greater than zero.");
+        if (cfg.AdEnergyMin < 0 || cfg.AdEnergyMax < 0 || cfg.AdEnergyMin > cfg.AdEnergyMax)
+            errors.Add("Ad energy range is invalid.");
+        if (cfg.Modes is null || cfg.Modes.Count == 0)
+            errors.Add("At least one mode rule is required.");
+        if (cfg.Modes.Any(m => string.IsNullOrWhiteSpace(m.Mode)))
+            errors.Add("Mode names cannot be empty.");
+        if (cfg.Modes.Any(m => m.EnergyCost < 0))
+            errors.Add("Mode energyCost cannot be negative.");
+        if (cfg.Safeguards.FirstSessionsReducedCostCount < 0 || cfg.Safeguards.FirstSessionsEnergyDiscount < 0)
+            errors.Add("First-session safeguard values cannot be negative.");
+        if (cfg.Safeguards.DailyFreeJackpotTickets < 0)
+            errors.Add("DailyFreeJackpotTickets cannot be negative.");
+        if (cfg.Safeguards.ReviveBaseGemCost < 0)
+            errors.Add("ReviveBaseGemCost cannot be negative.");
+        if (cfg.Safeguards.AlmostWinReviveDiscountPercent is < 0 or > 100)
+            errors.Add("AlmostWinReviveDiscountPercent must be between 0 and 100.");
+        if (cfg.Safeguards.PityLossThreshold < 0)
+            errors.Add("PityLossThreshold cannot be negative.");
+        if (cfg.Safeguards.PityDifficultyReductionPercent is < 0 or > 1)
+            errors.Add("PityDifficultyReductionPercent must be between 0 and 1.");
+
+        if (errors.Count > 0)
+            throw new BalanceValidationException(errors);
     }
 
     public async Task<(int SessionNumber, int Discount)> StartSessionAsync(Guid playerId, CancellationToken ct)
@@ -133,45 +176,30 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
         var normalizedMode = (mode ?? string.Empty).Trim().ToLowerInvariant();
         if (normalizedMode is "" or "solo")
             normalizedMode = "casual";
-        var rule = cfg.Modes.FirstOrDefault(x => x.Mode.Equals(normalizedMode, StringComparison.OrdinalIgnoreCase));
-        if (rule is null)
+        var rule = cfg.Modes.FirstOrDefault(x => x.Mode.Equals(normalizedMode, StringComparison.OrdinalIgnoreCase))
+                   ?? new ModeBalanceRuleDto(normalizedMode, 0, null, false, 0);
+
+        state.EnsureEnergyInitialized(cfg.StartEnergy);
+        state.RegenerateEnergy(cfg.MaxEnergy, cfg.RegenMinutesPerEnergy);
+
+        var sessionDiscount = state.SessionsStarted <= cfg.Safeguards.FirstSessionsReducedCostCount
+            ? cfg.Safeguards.FirstSessionsEnergyDiscount
+            : 0;
+        var energyCost = Math.Max(0, rule.EnergyCost - sessionDiscount);
+
+        if (rule.RequiresTicket && !state.HasTicketAvailable(cfg.Safeguards.DailyFreeJackpotTickets))
         {
             return new ModeEntryDecisionDto(
                 Allowed: false,
-                ReasonCode: "UNKNOWN_MODE",
-                Message: $"Mode '{mode}' is not configured.",
-                EnergyCostApplied: 0,
+                ReasonCode: "NO_TICKET",
+                Message: "No ticket available for this mode.",
+                EnergyCostApplied: energyCost,
                 TicketConsumed: false,
                 CurrentEnergy: state.CurrentEnergy
             );
         }
 
-        state.EnsureEnergyInitialized(cfg.StartEnergy);
-        state.RegenerateEnergy(cfg.MaxEnergy, cfg.RegenMinutesPerEnergy);
-
-        var sessionDiscount = state.SessionsStarted < cfg.Safeguards.FirstSessionsReducedCostCount
-            ? cfg.Safeguards.FirstSessionsEnergyDiscount
-            : 0;
-        var energyCost = Math.Max(0, rule.EnergyCost - sessionDiscount);
-
-        var ticketConsumed = false;
-        if (rule.RequiresTicket)
-        {
-            if (!state.TryConsumeTicket(cfg.Safeguards.DailyFreeJackpotTickets))
-            {
-                return new ModeEntryDecisionDto(
-                    Allowed: false,
-                    ReasonCode: "NO_TICKET",
-                    Message: "No ticket available for this mode.",
-                    EnergyCostApplied: energyCost,
-                    TicketConsumed: false,
-                    CurrentEnergy: state.CurrentEnergy
-                );
-            }
-            ticketConsumed = true;
-        }
-
-        if (!state.TryConsumeEnergy(energyCost))
+        if (state.CurrentEnergy < energyCost)
         {
             return new ModeEntryDecisionDto(
                 Allowed: false,
@@ -182,6 +210,14 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
                 CurrentEnergy: state.CurrentEnergy
             );
         }
+
+        var ticketConsumed = false;
+        if (rule.RequiresTicket)
+        {
+            _ = state.TryConsumeTicket(cfg.Safeguards.DailyFreeJackpotTickets);
+            ticketConsumed = true;
+        }
+        _ = state.TryConsumeEnergy(energyCost);
 
         await db.SaveChangesAsync(ct);
         return new ModeEntryDecisionDto(

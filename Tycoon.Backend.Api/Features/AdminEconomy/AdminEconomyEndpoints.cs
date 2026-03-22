@@ -41,8 +41,23 @@ namespace Tycoon.Backend.Api.Features.AdminEconomy
 
             g.MapPatch("/balance", async ([FromBody] UpdateGameBalanceConfigRequest req, IGameBalancePolicyService policy, CancellationToken ct) =>
             {
-                var updated = await policy.UpdateConfigAsync(req, ct);
-                return Results.Ok(updated);
+                try
+                {
+                    var updated = await policy.UpdateConfigAsync(req, ct);
+                    return Results.Ok(updated);
+                }
+                catch (BalanceValidationException ex)
+                {
+                    return AdminApiResponses.Error(
+                        StatusCodes.Status400BadRequest,
+                        "VALIDATION_ERROR",
+                        ex.Message,
+                        new { errors = ex.Errors });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", ex.Message);
+                }
             });
 
             g.MapPost("/simulate", async ([FromBody] EconomySimulationRequest req, IGameBalancePolicyService policy, CancellationToken ct) =>

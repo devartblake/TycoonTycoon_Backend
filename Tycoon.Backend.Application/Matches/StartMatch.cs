@@ -7,6 +7,11 @@ using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Matches
 {
+    public sealed class ModeEntryDeniedException(string reasonCode, string message) : InvalidOperationException(message)
+    {
+        public string ReasonCode { get; } = reasonCode;
+    }
+
     public record StartMatch(Guid HostPlayerId, string Mode) : IRequest<StartMatchResponse>;
 
     public sealed class StartMatchHandler(IAppDb db, IGameBalancePolicyService policy)
@@ -32,6 +37,10 @@ namespace Tycoon.Backend.Application.Matches
                 // Return existing match instead of creating a new one.
                 return new StartMatchResponse(existing.Id, existing.StartedAt);
             }
+
+            var decision = await policy.TryEnterModeAsync(r.HostPlayerId, r.Mode, ct);
+            if (!decision.Allowed)
+                throw new ModeEntryDeniedException(decision.ReasonCode, decision.Message);
 
             var match = new Match(
                 r.HostPlayerId,

@@ -48,6 +48,14 @@ namespace Tycoon.Backend.Api.Features.Mobile.Matches
                     var res = await mediator.Send(new StartMatch(req.HostPlayerId, req.Mode), ct);
                     return Results.Ok(res);
                 }
+                catch (ModeEntryDeniedException ex)
+                {
+                    return ApiResponses.Error(
+                        StatusCodes.Status409Conflict,
+                        "MATCH_ENTRY_DENIED",
+                        ex.Message,
+                        new { reasonCode = ex.ReasonCode, mode = req.Mode });
+                }
                 catch (InvalidOperationException ex)
                 {
                     return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message);

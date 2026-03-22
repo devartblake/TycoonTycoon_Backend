@@ -11,6 +11,7 @@ Routes:
 import hashlib
 import hmac
 import logging
+from uuid import uuid4
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
@@ -20,7 +21,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Set via environment / Aspire config
-STRIPE_WEBHOOK_SECRET = ""
+STRIPE_WEBHOOK_SECRET = settings.stripe_webhook_secret
 
 
 @router.post("/stripe")
@@ -40,7 +41,12 @@ async def stripe_webhook(
             payload,
             hashlib.sha256,
         ).hexdigest()
-        if not hmac.compare_digest(expected, stripe_signature.split(",")[-1].split("=")[-1]):
+        provided_sig = ""
+        for part in stripe_signature.split(","):
+            if part.startswith("v1="):
+                provided_sig = part.split("=", 1)[-1]
+                break
+        if not provided_sig or not hmac.compare_digest(expected, provided_sig):
             raise HTTPException(status_code=400, detail="Invalid Stripe signature")
 
     import json
@@ -49,10 +55,34 @@ async def stripe_webhook(
     logger.info("Stripe webhook received: %s", event_type)
 
     if event_type == "checkout.session.completed":
-        # TODO: extract player_id from metadata and call tycoon-api economy endpoint
+        obj = event.get("data", {}).get("object", {})
+        metadata = obj.get("metadata", {}) if isinstance(obj, dict) else {}
+        player_id = metadata.get("playerId")
+        currency = (metadata.get("currency") or "diamonds").lower()
+        amount_raw = metadata.get("amount")
+
+        try:
+            amount = int(amount_raw)
+        except (TypeError, ValueError):
+            amount = 0
+
+        currency_map = {"xp": 1, "coins": 2, "diamonds": 3}
+        if not player_id or amount <= 0 or currency not in currency_map:
+            logger.warning("Ignoring Stripe event due to missing/invalid economy metadata: %s", metadata)
+            return {"received": True, "forwarded": False, "reason": "invalid_metadata"}
+
         backend: "httpx.AsyncClient" = request.app.state.backend
-        _ = backend  # use to POST /mobile/economy/top-up
-        logger.info("Checkout session completed — forward to tycoon-api")
+        event_id = metadata.get("eventId") or str(uuid4())
+        tx_payload = {
+            "eventId": event_id,
+            "playerId": player_id,
+            "kind": "iap-topup",
+            "lines": [{"currency": currency_map[currency], "delta": amount}],
+            "note": f"stripe checkout session {obj.get('id', '')}",
+        }
+        tx_resp = await backend.post("/admin/economy/transactions", json=tx_payload)
+        logger.info("Forwarded Stripe top-up for player %s (%s %+d): status=%s", player_id, currency, amount, tx_resp.status_code)
+        return {"received": True, "forwarded": True, "status": tx_resp.status_code}
 
     return {"received": True}
 

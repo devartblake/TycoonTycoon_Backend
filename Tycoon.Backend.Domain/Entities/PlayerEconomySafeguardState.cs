@@ -28,7 +28,14 @@ public sealed class PlayerEconomySafeguardState
 
     public void EnsureEnergyInitialized(int startEnergy)
     {
-        if (CurrentEnergy > 0) return;
+        var appearsUninitialized =
+            CurrentEnergy <= 0
+            && SessionsStarted == 0
+            && LossStreak == 0
+            && FreeTicketsClaimedToday == 0
+            && LastFreeTicketClaimDate is null;
+
+        if (!appearsUninitialized) return;
         CurrentEnergy = Math.Max(0, startEnergy);
         LastEnergyRegenAtUtc = DateTimeOffset.UtcNow;
         UpdatedAtUtc = DateTimeOffset.UtcNow;
@@ -90,5 +97,12 @@ public sealed class PlayerEconomySafeguardState
     {
         var claim = TryClaimDailyTicket(dailyLimit);
         return claim.Granted;
+    }
+
+    public bool HasTicketAvailable(int dailyLimit)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var claimedToday = LastFreeTicketClaimDate == today ? FreeTicketsClaimedToday : 0;
+        return claimedToday < dailyLimit;
     }
 }

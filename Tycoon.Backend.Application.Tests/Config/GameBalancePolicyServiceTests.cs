@@ -137,4 +137,159 @@ public sealed class GameBalancePolicyServiceTests
         blocked.Allowed.Should().BeFalse();
         blocked.ReasonCode.Should().Be("INSUFFICIENT_ENERGY");
     }
+
+    [Fact]
+    public async Task TryEnterMode_Does_Not_Reset_Energy_After_Depletion()
+    {
+        await using var db = NewDb();
+        var svc = new GameBalancePolicyService(db);
+        var playerId = Guid.NewGuid();
+
+        for (var i = 0; i < 4; i++)
+        {
+            var allowed = await svc.TryEnterModeAsync(playerId, "guardian", CancellationToken.None);
+            allowed.Allowed.Should().BeTrue();
+        }
+
+        var blocked = await svc.TryEnterModeAsync(playerId, "guardian", CancellationToken.None);
+        blocked.Allowed.Should().BeFalse();
+        blocked.CurrentEnergy.Should().Be(0);
+
+        var blockedAgain = await svc.TryEnterModeAsync(playerId, "guardian", CancellationToken.None);
+        blockedAgain.Allowed.Should().BeFalse();
+        blockedAgain.CurrentEnergy.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task TryEnterMode_Applies_FirstSession_Discount_On_Third_Session()
+    {
+        await using var db = NewDb();
+        var svc = new GameBalancePolicyService(db);
+        var playerId = Guid.NewGuid();
+
+        await svc.StartSessionAsync(playerId, CancellationToken.None); // 1
+        await svc.StartSessionAsync(playerId, CancellationToken.None); // 2
+        await svc.StartSessionAsync(playerId, CancellationToken.None); // 3
+
+        var result = await svc.TryEnterModeAsync(playerId, "casual", CancellationToken.None);
+        result.Allowed.Should().BeTrue();
+        result.EnergyCostApplied.Should().Be(2); // base 3 - discount 1
+    }
+
+    [Fact]
+    public async Task TryEnterMode_When_Mode_Requires_Ticket_And_Energy_Insufficient_Does_Not_Consume_Ticket()
+    {
+        await using var db = NewDb();
+        var svc = new GameBalancePolicyService(db);
+        var playerId = Guid.NewGuid();
+
+        await svc.UpdateConfigAsync(new UpdateGameBalanceConfigRequest(
+            MaxEnergy: 5,
+            StartEnergy: 5,
+            RegenMinutesPerEnergy: null,
+            DailyFreeEnergy: null,
+            AdEnergyMin: null,
+            AdEnergyMax: null,
+            LevelUpFullRefill: null,
+            PremiumEnergyCapBonus: null,
+            PremiumRegenMultiplier: null,
+            Modes:
+            [
+                new ModeBalanceRuleDto("ticketed", 6, null, true, 0)
+            ],
+            Safeguards: null
+        ), CancellationToken.None);
+
+        var blocked = await svc.TryEnterModeAsync(playerId, "ticketed", CancellationToken.None);
+        blocked.Allowed.Should().BeFalse();
+        blocked.ReasonCode.Should().Be("INSUFFICIENT_ENERGY");
+
+        var claimAfterBlock = await svc.ClaimDailyTicketAsync(playerId, CancellationToken.None);
+        claimAfterBlock.Granted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateConfig_Rejects_StartEnergy_Above_MaxEnergy()
+    {
+        await using var db = NewDb();
+        var svc = new GameBalancePolicyService(db);
+
+        var act = async () => await svc.UpdateConfigAsync(new UpdateGameBalanceConfigRequest(
+            MaxEnergy: 10,
+            StartEnergy: 20,
+            RegenMinutesPerEnergy: null,
+            DailyFreeEnergy: null,
+            AdEnergyMin: null,
+            AdEnergyMax: null,
+            LevelUpFullRefill: null,
+            PremiumEnergyCapBonus: null,
+            PremiumRegenMultiplier: null,
+            Modes: null,
+            Safeguards: null
+        ), CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*StartEnergy cannot exceed MaxEnergy*");
+    }
+
+    [Fact]
+    public async Task UpdateConfig_Rejects_Negative_Mode_EnergyCost()
+    {
+        await using var db = NewDb();
+        var svc = new GameBalancePolicyService(db);
+
+        var act = async () => await svc.UpdateConfigAsync(new UpdateGameBalanceConfigRequest(
+            MaxEnergy: null,
+            StartEnergy: null,
+            RegenMinutesPerEnergy: null,
+            DailyFreeEnergy: null,
+            AdEnergyMin: null,
+            AdEnergyMax: null,
+            LevelUpFullRefill: null,
+            PremiumEnergyCapBonus: null,
+            PremiumRegenMultiplier: null,
+            Modes:
+            [
+                new ModeBalanceRuleDto("casual", -1, null, false, 0)
+            ],
+            Safeguards: null
+        ), CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Mode energyCost cannot be negative*");
+    }
+
+    [Fact]
+    public async Task UpdateConfig_Rejects_Safeguard_Discount_Percent_Above_100()
+    {
+        await using var db = NewDb();
+        var svc = new GameBalancePolicyService(db);
+
+        var invalidSafeguards = new SafeguardConfigDto(
+            FirstSessionsReducedCostCount: 3,
+            FirstSessionsEnergyDiscount: 1,
+            DailyFreeJackpotTickets: 1,
+            ReviveBaseGemCost: 5,
+            AlmostWinReviveDiscountPercent: 120,
+            PityLossThreshold: 3,
+            PityDifficultyReductionPercent: 0.10m
+        );
+
+        var act = async () => await svc.UpdateConfigAsync(new UpdateGameBalanceConfigRequest(
+            MaxEnergy: null,
+            StartEnergy: null,
+            RegenMinutesPerEnergy: null,
+            DailyFreeEnergy: null,
+            AdEnergyMin: null,
+            AdEnergyMax: null,
+            LevelUpFullRefill: null,
+            PremiumEnergyCapBonus: null,
+            PremiumRegenMultiplier: null,
+            Modes: null,
+            Safeguards: invalidSafeguards
+        ), CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*AlmostWinReviveDiscountPercent must be between 0 and 100*");
+    }
 }
