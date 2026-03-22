@@ -84,6 +84,7 @@ namespace Tycoon.Backend.Application
 
             // Feature Flags
             services.AddScoped<FeatureFlagService>();
+            services.AddScoped<IGameBalancePolicyService, GameBalancePolicyService>();
 
             // Event Stats
             services.AddScoped<PlayerEventStatsService>();

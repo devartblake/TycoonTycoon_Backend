@@ -167,6 +167,67 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
+    public async Task<GameBalanceConfigDto?> GetGameBalanceConfigAsync(CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync("/admin/economy/balance", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+    }
+
+    public async Task<GameBalanceConfigDto?> PatchGameBalanceConfigAsync(UpdateGameBalanceConfigRequest req, CancellationToken ct = default)
+    {
+        var resp = await http.PatchAsync("/admin/economy/balance", JsonContent.Create(req), ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+    }
+
+    public sealed record BalancePatchResult(GameBalanceConfigDto? Config, IReadOnlyList<string> Errors, string? Message)
+    {
+        public bool Success => Config is not null;
+    }
+
+    public async Task<BalancePatchResult> PatchGameBalanceConfigDetailedAsync(UpdateGameBalanceConfigRequest req, CancellationToken ct = default)
+    {
+        var resp = await http.PatchAsync("/admin/economy/balance", JsonContent.Create(req), ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var cfg = await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+            return new BalancePatchResult(cfg, [], null);
+        }
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            var error = json.RootElement.GetProperty("error");
+            var msg = error.TryGetProperty("message", out var m) ? m.GetString() : null;
+            var errors = new List<string>();
+            if (error.TryGetProperty("details", out var details)
+                && details.TryGetProperty("errors", out var detailErrors)
+                && detailErrors.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var entry in detailErrors.EnumerateArray())
+                {
+                    var s = entry.GetString();
+                    if (!string.IsNullOrWhiteSpace(s)) errors.Add(s);
+                }
+            }
+            if (errors.Count == 0 && !string.IsNullOrWhiteSpace(msg))
+                errors.Add(msg);
+            return new BalancePatchResult(null, errors, msg);
+        }
+        catch
+        {
+            return new BalancePatchResult(null, [], null);
+        }
+    }
+
+    public async Task<EconomySimulationResponse?> SimulateEconomyAsync(EconomySimulationRequest req, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/economy/simulate", JsonContent.Create(req), ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<EconomySimulationResponse>(Json, ct);
+    }
+
     // ── Questions ──────────────────────────────────────────────────────────
 
     public async Task<JsonDocument?> ListQuestionsAsync(string? q, string? category, int page = 1, int pageSize = 50, CancellationToken ct = default)

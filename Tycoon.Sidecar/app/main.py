@@ -1,8 +1,11 @@
 import contextlib
 import logging
+import asyncio
 
 import httpx
 from fastapi import FastAPI
+from motor.motor_asyncio import AsyncIOMotorClient
+from elasticsearch import AsyncElasticsearch
 
 from app.config import settings
 from app.routers import analytics, ml, utilities, webhooks
@@ -28,9 +31,36 @@ async def lifespan(app: FastAPI):
         base_url=settings.backend_base_url,
         timeout=10.0,
     )
+    app.state.mongo_client = AsyncIOMotorClient(settings.mongo_url)
+    app.state.mongo_db = app.state.mongo_client[settings.mongo_db]
+    app.state.elasticsearch = AsyncElasticsearch(
+        settings.elasticsearch_url,
+        basic_auth=(settings.elasticsearch_user, settings.elasticsearch_password),
+        verify_certs=False,
+    )
+
+    stop_event = asyncio.Event()
+
+    async def dry_run_scheduler():
+        while not stop_event.is_set():
+            try:
+                await utilities.run_scheduled_dry_run(app)
+            except Exception:  # best-effort background job; keep service healthy
+                logger.exception("Scheduled dry-run job failed")
+
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=max(30, settings.dry_run_job_interval_seconds))
+            except asyncio.TimeoutError:
+                pass
+
+    scheduler_task = asyncio.create_task(dry_run_scheduler())
     logger.info("Sidecar started. Backend: %s", settings.backend_base_url)
     yield
+    stop_event.set()
+    await scheduler_task
     await app.state.backend.aclose()
+    app.state.mongo_client.close()
+    await app.state.elasticsearch.close()
 
 
 app = FastAPI(
