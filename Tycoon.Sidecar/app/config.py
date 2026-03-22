@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     # Service settings
     port: int = 8100
     log_level: str = "info"
+    dry_run_job_interval_seconds: int = 3600
+    stripe_webhook_secret: str = ""
 
 
 settings = Settings()

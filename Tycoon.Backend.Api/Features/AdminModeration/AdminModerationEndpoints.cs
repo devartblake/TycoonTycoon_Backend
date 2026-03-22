@@ -76,6 +76,7 @@ namespace Tycoon.Backend.Api.Features.AdminModeration
                 [FromQuery] int page,
                 [FromQuery] int pageSize,
                 [FromQuery] Guid? playerId,
+                [FromQuery] string? status,
                 IAppDb db,
                 CancellationToken ct) =>
             {
@@ -86,6 +87,18 @@ namespace Tycoon.Backend.Api.Features.AdminModeration
 
                 if (playerId.HasValue)
                     q = q.Where(x => x.PlayerId == playerId.Value);
+
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    var parsed = int.TryParse(status, out var statusNum)
+                        ? (ModerationStatus?)(ModerationStatus)statusNum
+                        : Enum.TryParse<ModerationStatus>(status, true, out var statusEnum) ? statusEnum : null;
+
+                    if (parsed is null || !Enum.IsDefined(typeof(ModerationStatus), parsed.Value))
+                        return Results.BadRequest(new { error = "Invalid moderation status filter." });
+
+                    q = q.Where(x => x.NewStatus == parsed.Value);
+                }
 
                 q = q.OrderByDescending(x => x.CreatedAtUtc);
 
