@@ -110,8 +110,10 @@ public sealed class SchemaStartupGate
 
     private static async Task<bool> ExistsAsync(AppDb db, string schema, string table, CancellationToken ct)
     {
-        // Postgres: to_regclass('schema.table') returns NULL if missing.
-        var qualified = $"{schema}.{table}";
+        // Postgres: to_regclass() parses its argument as an SQL identifier.
+        // Unquoted names are lowercased, so we must double-quote each part to
+        // preserve the original casing (e.g. "__EFMigrationsHistory").
+        var qualified = $"\"{schema}\".\"{table}\"";
 
         var connection = db.Database.GetDbConnection();
         var shouldClose = connection.State != ConnectionState.Open;
