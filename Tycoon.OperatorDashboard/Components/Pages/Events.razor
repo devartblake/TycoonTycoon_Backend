@@ -102,15 +102,15 @@ else
                                 <td class="actions">
                                     @if (status == "Scheduled")
                                     {
-                                        <button @onclick="() => LifecycleAsync(id, \"open\")">Open</button>
+                                        <button @onclick='@(() => LifecycleAsync(id, "open"))'>Open</button>
                                     }
                                     @if (status == "Open")
                                     {
-                                        <button @onclick="() => LifecycleAsync(id, \"start\")">Start</button>
+                                        <button @onclick='@(() => LifecycleAsync(id, "start"))'>Start</button>
                                     }
                                     @if (status is "Open" or "Live")
                                     {
-                                        <button class="danger" @onclick="() => LifecycleAsync(id, \"close\")">Close</button>
+                                        <button class="danger" @onclick='@(() => LifecycleAsync(id, "close"))'>Close</button>
                                     }
                                 </td>
                             </tr>
