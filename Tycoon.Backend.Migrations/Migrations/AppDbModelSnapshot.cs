@@ -196,6 +196,57 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.ToTable("admin_app_config", (string)null);
                 });
 
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AdminEmailAcl", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AddedBy")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ListType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListType");
+
+                    b.HasIndex("NormalizedEmail")
+                        .IsUnique();
+
+                    b.ToTable("admin_email_acls", (string)null);
+                });
+
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AdminNotificationChannel", b =>
                 {
                     b.Property<string>("Key")
@@ -539,6 +590,24 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.HasIndex("ToPlayerId", "Status", "CreatedAtUtc");
 
                     b.ToTable("friend_requests", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.GameBalanceConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("ConfigJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("game_balance_configs", (string)null);
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.GameEvent", b =>
@@ -1314,6 +1383,44 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .IsUnique();
 
                     b.ToTable("players", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerEconomySafeguardState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CurrentEnergy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FreeTicketsClaimedToday")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("LastEnergyRegenAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("LastFreeTicketClaimDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("LossStreak")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SessionsStarted")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId")
+                        .IsUnique();
+
+                    b.ToTable("player_economy_safeguard_states", (string)null);
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerEventStats", b =>

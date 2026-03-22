@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using System.Diagnostics;
-using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Api.Observability;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Auth;
+using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.AdminAuth;
@@ -37,7 +38,6 @@ public static class AdminAuthEndpoints
     private static async Task<IResult> Login(
         [FromBody] AdminLoginRequest request,
         IAuthService authService,
-        IConfiguration configuration,
         IAppDb db,
         CancellationToken ct)
     {
@@ -54,7 +54,7 @@ public static class AdminAuthEndpoints
         {
             var auth = await authService.AdminLoginAsync(request.Email, request.Password, deviceId: "admin-web");
 
-            if (!IsAdminEmail(request.Email, configuration))
+            if (!await IsAdminEmailAsync(request.Email, db, ct))
             {
                 await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "forbidden", new { email = request.Email, reason = "email_not_allowlisted" }, ct);
                 AdminSecurityMetrics.RecordAuth("login", "forbidden", sw);
@@ -135,14 +135,22 @@ public static class AdminAuthEndpoints
         ));
     }
 
-    private static bool IsAdminEmail(string email, IConfiguration configuration)
+    private static async Task<bool> IsAdminEmailAsync(string email, IAppDb db, CancellationToken ct)
     {
-        var allowedEmails = configuration.GetSection("AdminAuth:AllowedEmails").Get<string[]>() ?? [];
-        if (allowedEmails.Length == 0)
-        {
-            return true;
-        }
+        var normalized = email.Trim().ToLowerInvariant();
 
-        return allowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase);
+        // Blocklist always wins
+        var isBlocked = await db.AdminEmailAcls.AsNoTracking()
+            .AnyAsync(e => e.NormalizedEmail == normalized && e.ListType == AdminAclListType.Block, ct);
+        if (isBlocked) return false;
+
+        // If no allowlist entries exist, permit all (open access)
+        var hasAllowEntries = await db.AdminEmailAcls.AsNoTracking()
+            .AnyAsync(e => e.ListType == AdminAclListType.Allow, ct);
+        if (!hasAllowEntries) return true;
+
+        // Email must be on the allowlist
+        return await db.AdminEmailAcls.AsNoTracking()
+            .AnyAsync(e => e.NormalizedEmail == normalized && e.ListType == AdminAclListType.Allow, ct);
     }
 }
