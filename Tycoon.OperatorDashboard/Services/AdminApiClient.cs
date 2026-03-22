@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -151,9 +152,10 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
 
     public async Task<JsonDocument?> ListEscalationsAsync(string? status, int page = 1, int pageSize = 50, CancellationToken ct = default)
     {
+        // Backend currently exposes /admin/moderation/logs (not /escalations).
         var qs = $"page={page}&pageSize={pageSize}";
-        if (!string.IsNullOrWhiteSpace(status)) qs += $"&status={status}";
-        var resp = await http.GetAsync($"/admin/moderation/escalations?{qs}", ct);
+        if (!string.IsNullOrWhiteSpace(status)) qs += $"&status={Uri.EscapeDataString(status)}";
+        var resp = await http.GetAsync($"/admin/moderation/logs?{qs}", ct);
         if (!resp.IsSuccessStatusCode) return null;
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
@@ -165,6 +167,317 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
         var resp = await http.GetAsync("/admin/economy", ct);
         if (!resp.IsSuccessStatusCode) return null;
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    public async Task<GameBalanceConfigDto?> GetGameBalanceConfigAsync(CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync("/admin/economy/balance", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+    }
+
+    public sealed record ApiCallResult<T>(T? Value, HttpStatusCode StatusCode, string? ErrorCode, string? ErrorMessage)
+    {
+        public bool Success => Value is not null;
+    }
+
+    public async Task<ApiCallResult<GameBalanceConfigDto>> GetGameBalanceConfigDetailedAsync(CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync("/admin/economy/balance", ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var cfg = await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+            return new ApiCallResult<GameBalanceConfigDto>(cfg, resp.StatusCode, null, null);
+        }
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            var error = json.RootElement.GetProperty("error");
+            var code = error.TryGetProperty("code", out var c) ? c.GetString() : null;
+            var message = error.TryGetProperty("message", out var m) ? m.GetString() : null;
+            return new ApiCallResult<GameBalanceConfigDto>(null, resp.StatusCode, code, message);
+        }
+        catch
+        {
+            return new ApiCallResult<GameBalanceConfigDto>(null, resp.StatusCode, null, null);
+        }
+    }
+
+    public async Task<GameBalanceConfigDto?> PatchGameBalanceConfigAsync(UpdateGameBalanceConfigRequest req, CancellationToken ct = default)
+    {
+        var resp = await http.PatchAsync("/admin/economy/balance", JsonContent.Create(req), ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+    }
+
+    public sealed record BalancePatchResult(GameBalanceConfigDto? Config, IReadOnlyList<string> Errors, string? Message)
+    {
+        public bool Success => Config is not null;
+    }
+
+    public async Task<BalancePatchResult> PatchGameBalanceConfigDetailedAsync(UpdateGameBalanceConfigRequest req, CancellationToken ct = default)
+    {
+        var resp = await http.PatchAsync("/admin/economy/balance", JsonContent.Create(req), ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var cfg = await resp.Content.ReadFromJsonAsync<GameBalanceConfigDto>(Json, ct);
+            return new BalancePatchResult(cfg, [], null);
+        }
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            var error = json.RootElement.GetProperty("error");
+            var msg = error.TryGetProperty("message", out var m) ? m.GetString() : null;
+            var errors = new List<string>();
+            if (error.TryGetProperty("details", out var details)
+                && details.TryGetProperty("errors", out var detailErrors)
+                && detailErrors.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var entry in detailErrors.EnumerateArray())
+                {
+                    var s = entry.GetString();
+                    if (!string.IsNullOrWhiteSpace(s)) errors.Add(s);
+                }
+            }
+            if (errors.Count == 0 && !string.IsNullOrWhiteSpace(msg))
+                errors.Add(msg);
+            return new BalancePatchResult(null, errors, msg);
+        }
+        catch
+        {
+            return new BalancePatchResult(null, [], null);
+        }
+    }
+
+    public async Task<EconomySimulationResponse?> SimulateEconomyAsync(EconomySimulationRequest req, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync("/admin/economy/simulate", JsonContent.Create(req), ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<EconomySimulationResponse>(Json, ct);
+    }
+
+    public sealed record SidecarRebalanceAuditItem(
+        string? AuditId,
+        string? Status,
+        string? ApprovedBy,
+        string? Reason,
+        DateTimeOffset? CreatedAtUtc,
+        int? BackendStatus);
+
+    public sealed record SidecarRebalanceRecommendation(
+        int? MaxEnergy,
+        int? RegenMinutesPerEnergy,
+        int? DailyFreeEnergy,
+        IReadOnlyList<ModeBalanceRuleDto> Modes);
+
+    public sealed record SidecarRebalanceMetrics(
+        int TotalApplyAttempts,
+        int BlockedCount,
+        int SuccessCount,
+        int ErrorCount,
+        DateTimeOffset? LastAttemptAtUtc,
+        DateTimeOffset? LastSuccessAtUtc,
+        DateTimeOffset? LastErrorAtUtc);
+
+    public sealed record SidecarRebalanceAlert(string Severity, string Code, string Message);
+    public sealed record SidecarRebalanceMetricsSnapshot(
+        DateTimeOffset? CapturedAtUtc,
+        int TotalApplyAttempts,
+        int BlockedCount,
+        int SuccessCount,
+        int ErrorCount);
+
+    public async Task<IReadOnlyList<SidecarRebalanceAuditItem>?> GetSidecarRebalanceAuditHistoryAsync(int limit = 25, CancellationToken ct = default)
+    {
+        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
+        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
+
+        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/audit?limit={Math.Clamp(limit, 1, 200)}";
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("items", out var itemsEl) || itemsEl.ValueKind != JsonValueKind.Array)
+                return [];
+
+            var items = new List<SidecarRebalanceAuditItem>();
+            foreach (var item in itemsEl.EnumerateArray())
+            {
+                var createdAt = item.TryGetProperty("createdAtUtc", out var c) && c.ValueKind == JsonValueKind.String
+                    && DateTimeOffset.TryParse(c.GetString(), out var parsed)
+                    ? parsed
+                    : (DateTimeOffset?)null;
+                var backendStatus = item.TryGetProperty("backendStatus", out var bs) && bs.ValueKind == JsonValueKind.Number
+                    ? bs.GetInt32()
+                    : (int?)null;
+
+                items.Add(new SidecarRebalanceAuditItem(
+                    AuditId: item.TryGetProperty("auditId", out var aid) ? aid.GetString() : null,
+                    Status: item.TryGetProperty("status", out var s) ? s.GetString() : null,
+                    ApprovedBy: item.TryGetProperty("approvedBy", out var ab) ? ab.GetString() : null,
+                    Reason: item.TryGetProperty("reason", out var r) ? r.GetString() : null,
+                    CreatedAtUtc: createdAt,
+                    BackendStatus: backendStatus));
+            }
+
+            return items;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<SidecarRebalanceRecommendation?> GetSidecarRebalanceRecommendationAsync(CancellationToken ct = default)
+    {
+        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
+        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
+
+        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/recommend";
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("recommendation", out var rec) || rec.ValueKind != JsonValueKind.Object)
+                return null;
+
+            var modes = new List<ModeBalanceRuleDto>();
+            if (rec.TryGetProperty("modes", out var modesEl) && modesEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var m in modesEl.EnumerateArray())
+                {
+                    var mode = m.TryGetProperty("mode", out var n) ? n.GetString() ?? string.Empty : string.Empty;
+                    var energyCost = m.TryGetProperty("energyCost", out var ec) && ec.ValueKind == JsonValueKind.Number ? ec.GetInt32() : 0;
+                    int? lives = m.TryGetProperty("lives", out var lv) && lv.ValueKind == JsonValueKind.Number ? lv.GetInt32() : null;
+                    var requiresTicket = m.TryGetProperty("requiresTicket", out var rt) && rt.ValueKind == JsonValueKind.True;
+                    var tierPointsWeight = m.TryGetProperty("tierPointsWeight", out var tp) && tp.ValueKind == JsonValueKind.Number ? tp.GetInt32() : 0;
+                    modes.Add(new ModeBalanceRuleDto(mode, energyCost, lives, requiresTicket, tierPointsWeight));
+                }
+            }
+
+            return new SidecarRebalanceRecommendation(
+                MaxEnergy: rec.TryGetProperty("maxEnergy", out var max) && max.ValueKind == JsonValueKind.Number ? max.GetInt32() : null,
+                RegenMinutesPerEnergy: rec.TryGetProperty("regenMinutesPerEnergy", out var regen) && regen.ValueKind == JsonValueKind.Number ? regen.GetInt32() : null,
+                DailyFreeEnergy: rec.TryGetProperty("dailyFreeEnergy", out var daily) && daily.ValueKind == JsonValueKind.Number ? daily.GetInt32() : null,
+                Modes: modes);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<SidecarRebalanceMetrics?> GetSidecarRebalanceMetricsAsync(CancellationToken ct = default)
+    {
+        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
+        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
+
+        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/metrics";
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("metrics", out var metrics) || metrics.ValueKind != JsonValueKind.Object)
+                return null;
+
+            DateTimeOffset? ParseDate(string key)
+            {
+                if (!metrics.TryGetProperty(key, out var value) || value.ValueKind != JsonValueKind.String)
+                    return null;
+                return DateTimeOffset.TryParse(value.GetString(), out var parsed) ? parsed : null;
+            }
+
+            return new SidecarRebalanceMetrics(
+                TotalApplyAttempts: metrics.TryGetProperty("totalApplyAttempts", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0,
+                BlockedCount: metrics.TryGetProperty("blockedCount", out var b) && b.ValueKind == JsonValueKind.Number ? b.GetInt32() : 0,
+                SuccessCount: metrics.TryGetProperty("successCount", out var s) && s.ValueKind == JsonValueKind.Number ? s.GetInt32() : 0,
+                ErrorCount: metrics.TryGetProperty("errorCount", out var e) && e.ValueKind == JsonValueKind.Number ? e.GetInt32() : 0,
+                LastAttemptAtUtc: ParseDate("lastAttemptAtUtc"),
+                LastSuccessAtUtc: ParseDate("lastSuccessAtUtc"),
+                LastErrorAtUtc: ParseDate("lastErrorAtUtc"));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<IReadOnlyList<SidecarRebalanceAlert>?> GetSidecarRebalanceAlertsAsync(CancellationToken ct = default)
+    {
+        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
+        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
+
+        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/alerts";
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("alerts", out var alertsEl) || alertsEl.ValueKind != JsonValueKind.Array)
+                return [];
+
+            var alerts = new List<SidecarRebalanceAlert>();
+            foreach (var a in alertsEl.EnumerateArray())
+            {
+                alerts.Add(new SidecarRebalanceAlert(
+                    Severity: a.TryGetProperty("severity", out var s) ? s.GetString() ?? "info" : "info",
+                    Code: a.TryGetProperty("code", out var c) ? c.GetString() ?? "UNKNOWN" : "UNKNOWN",
+                    Message: a.TryGetProperty("message", out var m) ? m.GetString() ?? string.Empty : string.Empty));
+            }
+            return alerts;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<IReadOnlyList<SidecarRebalanceMetricsSnapshot>?> GetSidecarRebalanceMetricsHistoryAsync(int limit = 50, CancellationToken ct = default)
+    {
+        var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
+        if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
+
+        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/metrics/history?limit={Math.Clamp(limit, 1, 500)}";
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("items", out var itemsEl) || itemsEl.ValueKind != JsonValueKind.Array)
+                return [];
+
+            var items = new List<SidecarRebalanceMetricsSnapshot>();
+            foreach (var i in itemsEl.EnumerateArray())
+            {
+                DateTimeOffset? captured = null;
+                if (i.TryGetProperty("capturedAtUtc", out var cap) && cap.ValueKind == JsonValueKind.String
+                    && DateTimeOffset.TryParse(cap.GetString(), out var parsed))
+                    captured = parsed;
+
+                items.Add(new SidecarRebalanceMetricsSnapshot(
+                    CapturedAtUtc: captured,
+                    TotalApplyAttempts: i.TryGetProperty("totalApplyAttempts", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0,
+                    BlockedCount: i.TryGetProperty("blockedCount", out var b) && b.ValueKind == JsonValueKind.Number ? b.GetInt32() : 0,
+                    SuccessCount: i.TryGetProperty("successCount", out var s) && s.ValueKind == JsonValueKind.Number ? s.GetInt32() : 0,
+                    ErrorCount: i.TryGetProperty("errorCount", out var e) && e.ValueKind == JsonValueKind.Number ? e.GetInt32() : 0));
+            }
+
+            return items;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     // ── Questions ──────────────────────────────────────────────────────────
@@ -456,9 +769,13 @@ public sealed class AdminApiClient(HttpClient http, IConfiguration config)
     public void SetToken(string accessToken)
     {
         http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        var opsKey = config["AdminOps:Key"] ?? config["ADMIN_OPS_KEY"] ?? string.Empty;
-        if (!string.IsNullOrEmpty(opsKey))
-            http.DefaultRequestHeaders.TryAddWithoutValidation("X-Admin-Ops-Key", opsKey);
+        var headerName = config["AdminOps:Header"] ?? config["ADMIN_OPS_HEADER"] ?? "X-Admin-Ops-Key";
+        var opsKey = config["AdminOps:Key"] ?? config["AdminOps__Key"] ?? config["ADMIN_OPS_KEY"] ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(opsKey))
+        {
+            http.DefaultRequestHeaders.Remove(headerName);
+            http.DefaultRequestHeaders.TryAddWithoutValidation(headerName, opsKey);
+        }
     }
 
     public void ClearToken()
