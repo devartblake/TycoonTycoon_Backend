@@ -30,6 +30,7 @@ using Tycoon.Backend.Api.Features.AdminMedia;
 using Tycoon.Backend.Api.Features.AdminModeration;
 using Tycoon.Backend.Api.Features.AdminNotifications;
 using Tycoon.Backend.Api.Features.AdminConfig;
+using Tycoon.Backend.Api.Features.AdminEmailAcl;
 using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminSeasons;
@@ -81,8 +82,22 @@ using Tycoon.Backend.Infrastructure.Persistence.HealthChecks;
 using Tycoon.Backend.Infrastructure.Persistence.Startup;
 using Tycoon.Shared.Contracts.Dtos;
 using Tycoon.Shared.Observability;
+using Tycoon.Backend.Api.Grpc;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Kestrel — dual port setup
+//   Port 5000 → HTTP/1.1  (REST, SignalR, Swagger)
+//   Port 5001 → HTTP/2    (gRPC — sidecar only, internal network)
+// ─────────────────────────────────────────────────────────────────────────────
+builder.WebHost.ConfigureKestrel(kestrel =>
+{
+    kestrel.ListenAnyIP(5000, o => o.Protocols = HttpProtocols.Http1);
+    kestrel.ListenAnyIP(5001, o => o.Protocols = HttpProtocols.Http2);
+});
 
 // Normalize JWT secret configuration across legacy and current key names.
 var normalizedJwtSecret =
@@ -227,6 +242,9 @@ var redis = builder.Configuration.GetConnectionString("redis")
             ?? builder.Configuration.GetConnectionString("cache")
             ?? builder.Configuration.GetConnectionString("Redis");
 
+// gRPC — sidecar service (port 5001, HTTP/2)
+builder.Services.AddGrpc(o => o.EnableDetailedErrors = builder.Environment.IsDevelopment());
+
 var signalr = builder.Services.AddSignalR();
 if (!string.IsNullOrWhiteSpace(redis))
 {
@@ -290,6 +308,7 @@ builder.Services
     {
         o.RequireHttpsMetadata = false;
         o.SaveToken = true;
+        o.MapInboundClaims = false;
         o.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -447,10 +466,13 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 app.UseCors(c => c.AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials()
-                  .SetIsOriginAllowed(_ => true));
+                  .SetIsOriginAllowedToAllowWildcardSubdomains()
+                  .WithOrigins(allowedOrigins));
 app.UseWebSockets();
 app.UseRateLimiter();
 app.UseMiddleware<AdminOpsKeyMiddleware>();
@@ -637,6 +659,11 @@ app.MapHub<MatchHub>("/ws/match");
 app.MapHub<PresenceHub>("/ws/presence");
 app.MapHub<NotificationHub>("/ws/notify");
 
+// gRPC — sidecar service (internal; port 5001 via Kestrel dual-port config)
+app.MapGrpcService<SidecarGrpcService>();
+// gRPC — mobile match service (Flutter clients; port 5001)
+app.MapGrpcService<MobileMatchGrpcService>();
+
 // Feature endpoints
 AnalyticsEndpoints.Map(app);
 AuthEndpoints.Map(app);
@@ -700,6 +727,7 @@ AdminAntiCheatAnalyticsEndpoints.Map(admin);
 AdminPartyAntiCheatEndpoints.Map(admin);
 AdminSeasonRewardsEndpoints.Map(admin);
 AdminSeasonLifecycleEndpoints.Map(admin);
+AdminEmailAclEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Tycoon Backend API starting...");
