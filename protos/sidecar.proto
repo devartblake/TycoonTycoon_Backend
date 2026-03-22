@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+option csharp_namespace = "Tycoon.Backend.Api.Grpc";
+
+package tycoon.sidecar;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SidecarService — called by the Python FastAPI sidecar to communicate with
+// the .NET Backend API over gRPC (HTTP/2) on port 5001.
+//
+// Design notes
+//   • Unary RPCs (single request / response) for simple analytics events and
+//     ML inference results.
+//   • Client-streaming RPC for bulk analytics ingestion so the sidecar can
+//     batch-send events in a single connection instead of N HTTP calls.
+// ─────────────────────────────────────────────────────────────────────────────
+service SidecarService {
+  // Report a single analytics event (pageview, match-end, mission-claim, …)
+  rpc ReportAnalyticsEvent (AnalyticsEventRequest) returns (AnalyticsEventResponse);
+
+  // Stream a batch of analytics events; server replies once with a summary.
+  rpc StreamAnalyticsEvents (stream AnalyticsEventRequest) returns (StreamSummary);
+
+  // Submit an ML inference result (match-quality score, churn risk, …)
+  rpc SubmitInferenceResult (InferenceResultRequest) returns (InferenceResultResponse);
+
+  // Trigger an internal backend action (e.g. flag a player, update a season stat)
+  rpc TriggerBackendAction (BackendActionRequest) returns (BackendActionResponse);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analytics
+// ─────────────────────────────────────────────────────────────────────────────
+
+message AnalyticsEventRequest {
+  string event_type   = 1;   // e.g. "match_completed", "mission_claimed"
+  string entity_id    = 2;   // primary entity (matchId, userId, …)
+  string payload_json = 3;   // arbitrary JSON blob with event-specific data
+  int64  timestamp_ms = 4;   // Unix epoch milliseconds (0 = use server time)
+}
+
+message AnalyticsEventResponse {
+  bool   accepted    = 1;
+  string event_id    = 2;   // server-assigned ID for idempotency tracking
+  string reject_reason = 3; // populated when accepted = false
+}
+
+message StreamSummary {
+  int32 events_received = 1;
+  int32 events_accepted = 2;
+  int32 events_rejected = 3;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ML inference results
+// ─────────────────────────────────────────────────────────────────────────────
+
+message InferenceResultRequest {
+  string model_name    = 1;   // "match-quality" | "churn-risk" | "question-difficulty"
+  string entity_id     = 2;   // e.g. matchId or playerId the result applies to
+  float  score         = 3;   // primary output value (0.0 – 1.0)
+  string metadata_json = 4;   // optional model-specific metadata
+}
+
+message InferenceResultResponse {
+  bool   stored    = 1;
+  string record_id = 2;   // DB record ID if stored
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Backend actions (sidecar → backend trigger)
+// ─────────────────────────────────────────────────────────────────────────────
+
+message BackendActionRequest {
+  string action      = 1;   // "flag_player" | "update_season_stat" | "send_notification"
+  string target_id   = 2;   // entity the action targets
+  string params_json = 3;   // action-specific parameters as JSON
+}
+
+message BackendActionResponse {
+  bool   executed      = 1;
+  string result_json   = 2;
+  string error_message = 3; // populated when executed = false
+}
