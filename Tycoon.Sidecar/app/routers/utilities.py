@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 _last_dry_run_report: dict | None = None
 
 
-def _validate_rebalance_delta(current: dict, proposed: dict) -> tuple[bool, list[str]]:
+def _validate_rebalance_delta(current: dict[str, Any], proposed: dict[str, Any]) -> tuple[bool, list[str]]:
     """
     Guardrails:
     - maxEnergy delta must be <= 2 per apply
@@ -210,7 +210,13 @@ async def apply_rebalance(request: Request):
     Applies a provided balance patch to backend admin economy endpoint.
     Requires caller payload to include {"approved": true}.
     """
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        return {"status": "blocked", "detail": "Invalid JSON body."}
+
+    if not isinstance(body, dict):
+        return {"status": "blocked", "detail": "Body must be a JSON object."}
     if not body.get("approved"):
         return {"status": "blocked", "detail": "Approval required. Set approved=true to apply."}
 
