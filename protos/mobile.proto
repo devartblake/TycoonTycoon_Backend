@@ -1,0 +1,214 @@
+syntax = "proto3";
+
+option csharp_namespace = "Tycoon.Backend.Api.Grpc";
+
+package tycoon.mobile;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MobileMatchService — consumed by the Flutter mobile client over gRPC
+// (HTTP/2, port 5001).
+//
+// All RPCs require an `authorization: Bearer <jwt>` metadata header
+// (same JWT issued by POST /auth/login).
+//
+// This service runs alongside the existing REST API and SignalR hubs.
+// SignalR continues to serve browser clients; gRPC serves native mobile.
+//
+// Track 2 scope:
+//   StartMatch    — mirrors POST /mobile/matches/start  (unary)
+//   SubmitMatch   — mirrors POST /mobile/matches/submit (unary)
+//   PlayMatch     — bidirectional stream for live match sessions
+//   WatchLeaderboard — server stream for live leaderboard rank updates
+// ─────────────────────────────────────────────────────────────────────────────
+service MobileMatchService {
+  // ── Lifecycle (unary, mirrors existing REST endpoints) ───────────────────
+  rpc StartMatch        (GrpcStartMatchRequest)        returns (GrpcStartMatchResponse);
+  rpc SubmitMatch       (GrpcSubmitMatchRequest)       returns (GrpcSubmitMatchResponse);
+
+  // ── Live match session (bidirectional streaming) ─────────────────────────
+  // Client opens the stream when a match begins and keeps it open until the
+  // match ends.  Client streams PlayerAction messages; server streams
+  // MatchEvent messages (questions, opponent updates, timer ticks, result).
+  rpc PlayMatch         (stream PlayerAction)          returns (stream MatchEvent);
+
+  // ── Live leaderboard (server streaming) ──────────────────────────────────
+  // Client subscribes once; server pushes LeaderboardUpdate whenever the
+  // player's visible rank window changes.  Cancel the stream to unsubscribe.
+  rpc WatchLeaderboard  (LeaderboardWatchRequest)      returns (stream LeaderboardUpdate);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// StartMatch
+// ─────────────────────────────────────────────────────────────────────────────
+
+message GrpcStartMatchRequest {
+  string host_player_id = 1;   // UUID string
+  string mode           = 2;   // "duel" | "ranked" | "practice"
+}
+
+message GrpcStartMatchResponse {
+  string match_id    = 1;   // UUID string
+  int64  started_at  = 2;   // Unix epoch milliseconds
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SubmitMatch
+// ─────────────────────────────────────────────────────────────────────────────
+
+message GrpcSubmitMatchRequest {
+  string event_id         = 1;   // idempotency key (UUID)
+  string match_id         = 2;
+  string mode             = 3;
+  string category         = 4;
+  int32  question_count   = 5;
+  int64  started_at_utc   = 6;   // Unix epoch ms
+  int64  ended_at_utc     = 7;   // Unix epoch ms
+  int32  status           = 8;   // 1 = Completed, 2 = Aborted
+  repeated ParticipantResult participants = 9;
+}
+
+message ParticipantResult {
+  string player_id          = 1;
+  int32  score              = 2;
+  int32  correct            = 3;
+  int32  wrong              = 4;
+  double avg_answer_time_ms = 5;
+}
+
+message GrpcSubmitMatchResponse {
+  string event_id  = 1;
+  string match_id  = 2;
+  string status    = 3;   // "Applied" | "Duplicate"
+  repeated MatchAward awards = 4;
+}
+
+message MatchAward {
+  string player_id    = 1;
+  int32  awarded_xp   = 2;
+  int32  awarded_coins = 3;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PlayMatch — bidirectional streaming
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Messages sent by the client → server
+message PlayerAction {
+  oneof action {
+    JoinMatchAction   join   = 1;
+    SubmitAnswerAction answer = 2;
+    HeartbeatAction   ping   = 3;
+  }
+}
+
+message JoinMatchAction {
+  string match_id   = 1;
+  string player_id  = 2;
+}
+
+message SubmitAnswerAction {
+  string match_id          = 1;
+  string question_id       = 2;
+  string selected_option_id = 3;
+  int64  answered_at_ms    = 4;   // Unix epoch ms; used for server-side timing
+}
+
+message HeartbeatAction {
+  int64 client_timestamp_ms = 1;
+}
+
+// Messages sent by the server → client
+message MatchEvent {
+  oneof event {
+    QuestionEvent       question       = 1;
+    OpponentScoreEvent  opponent_score = 2;
+    TimerEvent          timer          = 3;
+    AnswerResultEvent   answer_result  = 4;
+    MatchEndEvent       match_end      = 5;
+    ErrorEvent          error          = 6;
+  }
+}
+
+message QuestionEvent {
+  string          question_id  = 1;
+  string          text         = 2;
+  string          category     = 3;
+  int32           difficulty   = 4;   // 1=Easy 2=Medium 3=Hard 4=Expert
+  repeated Option options      = 5;
+  string          media_url    = 6;   // empty string if no media
+  int32           time_limit_s = 7;   // seconds allowed to answer
+  int32           question_num = 8;   // 1-based index in the match
+}
+
+message Option {
+  string id   = 1;
+  string text = 2;
+}
+
+message OpponentScoreEvent {
+  string opponent_player_id = 1;
+  int32  score              = 2;
+  int32  correct_count      = 3;
+}
+
+message TimerEvent {
+  string question_id      = 1;
+  int32  remaining_seconds = 2;
+}
+
+message AnswerResultEvent {
+  string question_id        = 1;
+  string selected_option_id = 2;
+  string correct_option_id  = 3;
+  bool   is_correct         = 4;
+  int32  points_awarded     = 5;
+  int32  running_score      = 6;
+}
+
+message MatchEndEvent {
+  string match_id              = 1;
+  string outcome               = 2;   // "win" | "loss" | "draw" | "aborted"
+  int32  final_score           = 3;
+  int32  awarded_xp            = 4;
+  int32  awarded_coins         = 5;
+  repeated FinalParticipant participants = 6;
+}
+
+message FinalParticipant {
+  string player_id    = 1;
+  int32  score        = 2;
+  int32  correct      = 3;
+  int32  wrong        = 4;
+  string outcome      = 5;
+}
+
+message ErrorEvent {
+  string code    = 1;   // "MATCH_NOT_FOUND" | "UNAUTHORIZED" | "MATCH_ENDED" | …
+  string message = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WatchLeaderboard — server streaming
+// ─────────────────────────────────────────────────────────────────────────────
+
+message LeaderboardWatchRequest {
+  string player_id    = 1;   // anchor player — show their rank neighbourhood
+  string mode         = 2;   // "" = global, "ranked", "event:{id}", "season:{id}"
+  int32  window_size  = 3;   // number of entries above + below player (default 5)
+}
+
+message LeaderboardUpdate {
+  string player_id       = 1;   // the watching player
+  int32  player_rank     = 2;
+  int32  player_score    = 3;
+  repeated LeaderboardEntry nearby = 4;
+  int64  snapshot_at_ms  = 5;   // when this snapshot was taken
+}
+
+message LeaderboardEntry {
+  int32  rank       = 1;
+  string player_id  = 2;
+  string handle     = 3;
+  int32  score      = 4;
+  string country    = 5;
+}
