@@ -52,7 +52,7 @@ builder.Services.AddHttpClient("tycoon-api", client =>
 // AdminAuthService's instance never affected Dashboard.razor's instance → 401s.
 // With a scoped registration, both resolve the same object from the circuit scope,
 // so SetToken() and all subsequent Api.* calls use the same HttpClient headers.
-builder.Services.AddScoped(sp =>
+builder.Services.AddScoped<AdminApiClient>(sp =>
 {
     var factory = sp.GetRequiredService<IHttpClientFactory>();
     var config  = sp.GetRequiredService<IConfiguration>();
