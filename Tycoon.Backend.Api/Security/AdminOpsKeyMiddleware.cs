@@ -190,32 +190,39 @@ namespace Tycoon.Backend.Api.Security
                 var normalizedEmail = email?.Trim().ToLowerInvariant();
 
                 // Check DB-backed email ACL. Blocklist takes precedence.
-                var db = http.RequestServices.GetRequiredService<IAppDb>();
-                var aclEntry = string.IsNullOrWhiteSpace(normalizedEmail)
-                    ? null
-                    : await db.AdminEmailAcls.AsNoTracking()
-                        .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail, http.RequestAborted);
-
-                if (aclEntry is not null && aclEntry.ListType == AdminAclListType.Block)
+                try
                 {
-                    logger.LogWarning("AdminRoleClaims email BLOCKED for {Method} {Path}: email={Email}",
-                        http.Request.Method, http.Request.Path, normalizedEmail);
-                    return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is blocked.");
+                    var db = http.RequestServices.GetRequiredService<IAppDb>();
+                    var aclEntry = string.IsNullOrWhiteSpace(normalizedEmail)
+                        ? null
+                        : await db.AdminEmailAcls.AsNoTracking()
+                            .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail, http.RequestAborted);
+
+                    if (aclEntry is not null && aclEntry.ListType == AdminAclListType.Block)
+                    {
+                        logger.LogWarning("AdminRoleClaims email BLOCKED for {Method} {Path}: email={Email}",
+                            http.Request.Method, http.Request.Path, normalizedEmail);
+                        return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is blocked.");
+                    }
+
+                    // If ACL entries exist, require the email to be on the allowlist
+                    var hasAclEntries = await db.AdminEmailAcls.AsNoTracking()
+                        .AnyAsync(e => e.ListType == AdminAclListType.Allow, http.RequestAborted);
+
+                    if (hasAclEntries && (aclEntry is null || aclEntry.ListType != AdminAclListType.Allow))
+                    {
+                        logger.LogWarning("AdminRoleClaims email allowlist FAILED for {Method} {Path}: email={Email}",
+                            http.Request.Method, http.Request.Path, normalizedEmail ?? "(no email claim)");
+                        return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is not allowlisted.");
+                    }
+
+                    logger.LogDebug("AdminRoleClaims PASSED for {Method} {Path}, email={Email}, role={AclRole}",
+                        http.Request.Method, http.Request.Path, normalizedEmail ?? "(none)", aclEntry?.Role.ToString() ?? "default");
                 }
-
-                // If ACL entries exist, require the email to be on the allowlist
-                var hasAclEntries = await db.AdminEmailAcls.AsNoTracking()
-                    .AnyAsync(e => e.ListType == AdminAclListType.Allow, http.RequestAborted);
-
-                if (hasAclEntries && (aclEntry is null || aclEntry.ListType != AdminAclListType.Allow))
+                catch (Exception ex)
                 {
-                    logger.LogWarning("AdminRoleClaims email allowlist FAILED for {Method} {Path}: email={Email}",
-                        http.Request.Method, http.Request.Path, normalizedEmail ?? "(no email claim)");
-                    return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is not allowlisted.");
+                    logger.LogWarning(ex, "AdminEmailAcls query failed in RequireAdminRoleClaims (table may not exist yet). Allowing access by default.");
                 }
-
-                logger.LogDebug("AdminRoleClaims PASSED for {Method} {Path}, email={Email}, role={AclRole}",
-                    http.Request.Method, http.Request.Path, normalizedEmail ?? "(none)", aclEntry?.Role.ToString() ?? "default");
 
                 return await next(context);
             });
