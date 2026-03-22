@@ -20,7 +20,6 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 _last_dry_run_report: dict | None = None
 
-
 def _validate_rebalance_delta(current: dict, proposed: dict) -> tuple[bool, list[str]]:
     """
     Guardrails:
@@ -189,6 +188,23 @@ async def run_dry_run_job(request: Request):
     """
     global _last_dry_run_report
     _last_dry_run_report = await _generate_dry_run_report(request.app)
+    backend = request.app.state.backend
+    current = await backend.get("/admin/economy/balance")
+    if current.status_code >= 300:
+        return {"status": "error", "detail": "Unable to fetch current balance config", "backend_status": current.status_code}
+
+    baseline = current.json()
+    recommendation = {
+        "maxEnergy": baseline.get("maxEnergy", 20),
+        "regenMinutesPerEnergy": baseline.get("regenMinutesPerEnergy", 10),
+        "dailyFreeEnergy": max(5, baseline.get("dailyFreeEnergy", 5)),
+    }
+    _last_dry_run_report = {
+        "generatedAtUtc": datetime.now(timezone.utc).isoformat(),
+        "status": "dry_run",
+        "baseline": baseline,
+        "recommendation": recommendation,
+    }
     return _last_dry_run_report
 
 
@@ -197,7 +213,6 @@ async def get_last_dry_run_report():
     if _last_dry_run_report is None:
         return {"status": "empty", "detail": "No dry-run report has been generated yet."}
     return _last_dry_run_report
-
 
 async def run_scheduled_dry_run(app) -> dict:
     """
