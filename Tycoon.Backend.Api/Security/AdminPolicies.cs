@@ -8,6 +8,7 @@ namespace Tycoon.Backend.Api.Security
         public const string AdminOnly = "AdminOnly";
         public const string AdminOpsPolicy = "AdminOps";
         public const string AdminNotificationsWritePolicy = "AdminNotificationsWrite";
+        public const string SuperAdminPolicy = "SuperAdmin";
 
         public static void AddAdminPolicies(this AuthorizationOptions options)
         {
@@ -31,6 +32,14 @@ namespace Tycoon.Backend.Api.Security
                 p.RequireRole("admin");
                 p.RequireClaim("aud", "admin-app");
                 p.RequireAssertion(ctx => HasScope(ctx.User, "notifications:write"));
+            });
+
+            options.AddPolicy(SuperAdminPolicy, p =>
+            {
+                p.RequireAuthenticatedUser();
+                p.RequireRole("admin");
+                p.RequireClaim("aud", "admin-app");
+                p.RequireAssertion(ctx => HasScope(ctx.User, "acl:write"));
             });
         }
 

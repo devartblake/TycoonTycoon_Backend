@@ -64,10 +64,6 @@
 !.env.example
 secrets/
 **/secrets/
-**/*secret*
-**/*password*
-**/*apikey*
-**/*token*
 
 # =========================
 

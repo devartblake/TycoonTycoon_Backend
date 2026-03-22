@@ -31,14 +31,14 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton<TokenStore>();
+builder.Services.AddScoped<BearerTokenStore>();
 builder.Services.AddScoped<AdminAuthService>();
 
-// Typed HttpClient that forwards the admin JWT + ops key to tycoon-api.
+// Named HttpClient — ops key set once on the factory-managed HttpClient.
 // Aspire service discovery resolves "http://tycoon-api" via services__tycoon-api__http__0.
-// When running standalone (no Aspire/compose), set ApiBaseUrl in appsettings or the
-// environment to point directly at the running API (e.g. "http://localhost:5100").
+// Standalone: set ApiBaseUrl in appsettings or environment (e.g. "http://localhost:5100").
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://tycoon-api";
-builder.Services.AddHttpClient<AdminApiClient>(client =>
+builder.Services.AddHttpClient("tycoon-api", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
 
