@@ -36,9 +36,23 @@ public sealed class SchemaStartupGate
         gateTimeout.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, _opt.TimeoutSeconds)));
         var gateToken = gateTimeout.Token;
 
+        var pollInterval = TimeSpan.FromMilliseconds(Math.Max(100, _opt.PollIntervalMs));
+        string? lastFailure = null;
+
+        while (!gateToken.IsCancellationRequested)
+        {
+            lastFailure = await CheckOnceAsync(gateToken);
+            if (lastFailure is null)
+            {
+                _log.Information("SchemaStartupGate: all schema checks passed.");
+                return;
+            }
+
+            _log.Warning("SchemaStartupGate: schema not ready: {Reason}. Retrying...", lastFailure);
+
             try
             {
-                await Task.Delay(pollInterval, timeoutCts.Token);
+                await Task.Delay(pollInterval, gateToken);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
@@ -58,7 +72,7 @@ public sealed class SchemaStartupGate
         using var scope = _sp.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-        if (!await db.Database.CanConnectAsync(gateToken))
+        try
         {
             if (!await db.Database.CanConnectAsync(ct))
                 return "DB not reachable.";
@@ -70,7 +84,7 @@ public sealed class SchemaStartupGate
 
         if (_opt.RequireMigrationsHistoryTable)
         {
-            var historyExists = await ExistsOrAutoMigrateAsync(db, _opt.Schema, _opt.MigrationsHistoryTable, gateToken);
+            var historyExists = await ExistsOrAutoMigrateAsync(db, _opt.Schema, _opt.MigrationsHistoryTable, ct);
             if (!historyExists)
                 return $"Schema missing: '{_opt.Schema}.{_opt.MigrationsHistoryTable}' not found. Run MigrationService first.";
         }
@@ -79,7 +93,7 @@ public sealed class SchemaStartupGate
         {
             if (string.IsNullOrWhiteSpace(table)) continue;
 
-            var exists = await ExistsOrAutoMigrateAsync(db, _opt.Schema, table, gateToken);
+            var exists = await ExistsOrAutoMigrateAsync(db, _opt.Schema, table, ct);
             if (!exists)
                 return $"Schema missing: critical table '{_opt.Schema}.{table}' not found. Run MigrationService first.";
         }

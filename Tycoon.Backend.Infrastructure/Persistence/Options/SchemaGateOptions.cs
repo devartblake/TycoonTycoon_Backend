@@ -16,6 +16,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Options;
 ///   "CriticalTables": [ "Tiers", "Missions" ],
 ///   "MigrationsHistoryTable": "__EFMigrationsHistory",
 ///   "TimeoutSeconds": 10,
+///   "PollIntervalMs": 500,
 ///   "LogOnly": false
 /// }
 /// </summary>
@@ -35,6 +36,10 @@ public sealed class SchemaGateOptions
     /// <summary>How long startup gate will wait before failing.</summary>
     [Range(1, 600)]
     public int TimeoutSeconds { get; set; } = 30;
+
+    /// <summary>Interval in milliseconds between schema readiness polls during startup gate.</summary>
+    [Range(100, 10000)]
+    public int PollIntervalMs { get; set; } = 500;
 
     /// <summary>Postgres schema name used for table checks.</summary>
     [Required]
