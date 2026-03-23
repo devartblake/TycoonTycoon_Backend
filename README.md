@@ -344,9 +344,26 @@ make -f docker/MakeFile migrate
 ### Creating New Migrations
 
 ```bash
-cd Tycoon.Backend.Infrastructure
-dotnet ef migrations add YourMigrationName --startup-project ../Tycoon.Backend.Api
+dotnet ef migrations add YourMigrationName \
+  --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
+  --startup-project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj \
+  --context AppDb \
+  --output-dir Migrations
 ```
+
+### Resetting Migrations (Start Over)
+
+To wipe `Tycoon.Backend.Migrations/Migrations` and recreate a fresh baseline migration:
+
+```bash
+./scripts/reset-migrations.sh --force --name InitialCreate
+```
+
+Useful options:
+
+- `--skip-add` : clear migration files only (no new migration generated)
+- `--name <Name>` : set the baseline migration name
+- Runs `scripts/validate-ef-schema.sh` after regeneration to catch pending model changes early
 
 ### Migration Modes
 
@@ -603,4 +620,3 @@ Built with:
 ---
 
 **Happy coding! 🚀**
-
