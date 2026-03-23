@@ -12,40 +12,40 @@ namespace Tycoon.Backend.Migrations.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "admin_email_acls",
+                name: "AdminEmailAcls",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    normalized_email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    list_type = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    role = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    added_by = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    created_at_utc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at_utc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    NormalizedEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    ListType = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    Role = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    AddedBy = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_admin_email_acls", x => x.id);
+                    table.PrimaryKey("PK_AdminEmailAcls", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "ix_admin_email_acls_list_type",
-                table: "admin_email_acls",
-                column: "list_type");
+                name: "IX_AdminEmailAcls_ListType",
+                table: "AdminEmailAcls",
+                column: "ListType");
 
             migrationBuilder.CreateIndex(
-                name: "ix_admin_email_acls_normalized_email",
-                table: "admin_email_acls",
-                column: "normalized_email",
+                name: "IX_AdminEmailAcls_NormalizedEmail",
+                table: "AdminEmailAcls",
+                column: "NormalizedEmail",
                 unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(name: "admin_email_acls");
+            migrationBuilder.DropTable(name: "AdminEmailAcls");
         }
     }
 }

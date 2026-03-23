@@ -14,6 +14,8 @@
     <Compile Include="Migrations\20260303024251_InitialCreate.Designer.cs" />
     <Compile Include="Migrations\20260315000000_AddPlayerEventStats.cs" />
     <Compile Include="Migrations\20260315000000_AddPlayerEventStats.Designer.cs" />
+    <Compile Include="Migrations\20260319000000_AddGameEventTables.cs" />
+    <Compile Include="Migrations\20260319000000_AddGameEventTables.Designer.cs" />
     <Compile Include="Migrations\20260321090000_AddGameBalancePolicyPersistence.cs" />
     <Compile Include="Migrations\20260321090000_AddGameBalancePolicyPersistence.Designer.cs" />
     <Compile Include="Migrations\20260322000000_AddAdminEmailAcl.cs" />
