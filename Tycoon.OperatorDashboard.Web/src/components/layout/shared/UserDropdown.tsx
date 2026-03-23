@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 
 // Next Imports
@@ -18,8 +18,11 @@ import ClickAwayListener from '@mui/material/ClickAwayListener'
 import MenuList from '@mui/material/MenuList'
 import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
-import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
+
+// Lib Imports
+import { getAdmin, logout } from '@/lib/auth'
+import type { AdminProfile } from '@/lib/types/admin'
 
 // Styled component for badge content
 const BadgeContentSpan = styled('span')({
@@ -34,6 +37,7 @@ const BadgeContentSpan = styled('span')({
 const UserDropdown = () => {
   // States
   const [open, setOpen] = useState(false)
+  const [admin, setAdmin] = useState<AdminProfile | null>(null)
 
   // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -41,8 +45,12 @@ const UserDropdown = () => {
   // Hooks
   const router = useRouter()
 
+  useEffect(() => {
+    setAdmin(getAdmin())
+  }, [])
+
   const handleDropdownOpen = () => {
-    !open ? setOpen(true) : setOpen(false)
+    setOpen(prev => !prev)
   }
 
   const handleDropdownClose = (event?: MouseEvent<HTMLLIElement> | (MouseEvent | TouchEvent), url?: string) => {
@@ -57,6 +65,21 @@ const UserDropdown = () => {
     setOpen(false)
   }
 
+  const handleLogout = () => {
+    setOpen(false)
+    logout()
+  }
+
+  // Derive initials from display name or email
+
+  const displayName = admin?.displayName ?? admin?.email ?? 'Admin'
+
+  const initials = displayName
+    .split(/[\s@]+/)
+    .slice(0, 2)
+    .map(s => s[0]?.toUpperCase() ?? '')
+    .join('')
+
   return (
     <>
       <Badge
@@ -68,11 +91,13 @@ const UserDropdown = () => {
       >
         <Avatar
           ref={anchorRef}
-          alt='John Doe'
-          src='/images/avatars/1.png'
+          alt={displayName}
           onClick={handleDropdownOpen}
           className='cursor-pointer bs-[38px] is-[38px]'
-        />
+          sx={{ bgcolor: 'primary.main', fontSize: '0.875rem' }}
+        >
+          {initials}
+        </Avatar>
       </Badge>
       <Popper
         open={open}
@@ -93,31 +118,17 @@ const UserDropdown = () => {
               <ClickAwayListener onClickAway={e => handleDropdownClose(e as MouseEvent | TouchEvent)}>
                 <MenuList>
                   <div className='flex items-center plb-2 pli-4 gap-2' tabIndex={-1}>
-                    <Avatar alt='John Doe' src='/images/avatars/1.png' />
+                    <Avatar alt={displayName} sx={{ bgcolor: 'primary.main', fontSize: '0.875rem' }}>
+                      {initials}
+                    </Avatar>
                     <div className='flex items-start flex-col'>
                       <Typography className='font-medium' color='text.primary'>
-                        John Doe
+                        {displayName}
                       </Typography>
-                      <Typography variant='caption'>Admin</Typography>
+                      <Typography variant='caption'>{admin?.roles?.[0] ?? 'Admin'}</Typography>
                     </div>
                   </div>
                   <Divider className='mlb-1' />
-                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='ri-user-3-line' />
-                    <Typography color='text.primary'>My Profile</Typography>
-                  </MenuItem>
-                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='ri-settings-4-line' />
-                    <Typography color='text.primary'>Settings</Typography>
-                  </MenuItem>
-                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='ri-money-dollar-circle-line' />
-                    <Typography color='text.primary'>Pricing</Typography>
-                  </MenuItem>
-                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='ri-question-line' />
-                    <Typography color='text.primary'>FAQ</Typography>
-                  </MenuItem>
                   <div className='flex items-center plb-2 pli-4'>
                     <Button
                       fullWidth
@@ -125,7 +136,7 @@ const UserDropdown = () => {
                       color='error'
                       size='small'
                       endIcon={<i className='ri-logout-box-r-line' />}
-                      onClick={e => handleDropdownClose(e, '/login')}
+                      onClick={handleLogout}
                       sx={{ '& .MuiButton-endIcon': { marginInlineStart: 1.5 } }}
                     >
                       Logout
