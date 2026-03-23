@@ -32,30 +32,9 @@ public sealed class SchemaStartupGate
             return;
         }
 
-        var timeout = TimeSpan.FromSeconds(Math.Max(1, _opt.TimeoutSeconds));
-        var pollInterval = TimeSpan.FromSeconds(Math.Min(5, _opt.TimeoutSeconds / 2.0));
-        var deadline = DateTimeOffset.UtcNow + timeout;
-
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(timeout);
-
-        _log.Information("SchemaStartupGate waiting up to {Timeout}s for schema readiness (polling every {Poll}s)...",
-            _opt.TimeoutSeconds, pollInterval.TotalSeconds);
-
-        string? lastFailure = null;
-
-        while (DateTimeOffset.UtcNow < deadline)
-        {
-            timeoutCts.Token.ThrowIfCancellationRequested();
-
-            lastFailure = await CheckOnceAsync(timeoutCts.Token);
-            if (lastFailure is null)
-            {
-                _log.Information("SchemaStartupGate passed.");
-                return;
-            }
-
-            _log.Warning("SchemaStartupGate: {Failure} — retrying in {Seconds}s...", lastFailure, pollInterval.TotalSeconds);
+        using var gateTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        gateTimeout.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, _opt.TimeoutSeconds)));
+        var gateToken = gateTimeout.Token;
 
             try
             {
@@ -79,7 +58,7 @@ public sealed class SchemaStartupGate
         using var scope = _sp.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-        try
+        if (!await db.Database.CanConnectAsync(gateToken))
         {
             if (!await db.Database.CanConnectAsync(ct))
                 return "DB not reachable.";
@@ -91,7 +70,7 @@ public sealed class SchemaStartupGate
 
         if (_opt.RequireMigrationsHistoryTable)
         {
-            var historyExists = await ExistsAsync(db, _opt.Schema, _opt.MigrationsHistoryTable, ct);
+            var historyExists = await ExistsOrAutoMigrateAsync(db, _opt.Schema, _opt.MigrationsHistoryTable, gateToken);
             if (!historyExists)
                 return $"Schema missing: '{_opt.Schema}.{_opt.MigrationsHistoryTable}' not found. Run MigrationService first.";
         }
@@ -100,7 +79,7 @@ public sealed class SchemaStartupGate
         {
             if (string.IsNullOrWhiteSpace(table)) continue;
 
-            var exists = await ExistsAsync(db, _opt.Schema, table, ct);
+            var exists = await ExistsOrAutoMigrateAsync(db, _opt.Schema, table, gateToken);
             if (!exists)
                 return $"Schema missing: critical table '{_opt.Schema}.{table}' not found. Run MigrationService first.";
         }
@@ -138,6 +117,28 @@ public sealed class SchemaStartupGate
             if (shouldClose)
                 await connection.CloseAsync();
         }
+    }
+
+    private async Task<bool> ExistsOrAutoMigrateAsync(AppDb db, string schema, string table, CancellationToken ct)
+    {
+        if (await ExistsAsync(db, schema, table, ct))
+            return true;
+
+        if (!_opt.AutoMigrateIfMissing)
+            return false;
+
+        _log.Warning("SchemaStartupGate: '{Schema}.{Table}' missing. AutoMigrateIfMissing enabled; attempting Database.MigrateAsync().", schema, table);
+        try
+        {
+            await db.Database.MigrateAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _log.Error(ex, "SchemaStartupGate auto-migration failed.");
+            return false;
+        }
+
+        return await ExistsAsync(db, schema, table, ct);
     }
 
     private void Fail(string message)

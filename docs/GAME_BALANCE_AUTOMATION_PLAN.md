@@ -232,7 +232,22 @@ Operational readiness:
 
 - ✅ Sidecar guardrail and endpoint contract tests now cover success and failure paths for rebalance apply plus audit history pagination/ordering contracts.
 - ✅ Operator Dashboard economy page now surfaces Sidecar rebalance audit history (latest 25 entries) when `Sidecar:BaseUrl` is configured.
-- ⏳ Still pending: dashboard dry-run recommendation visualization and metrics/alerts wiring.
+- ✅ Operator Dashboard economy page now surfaces Sidecar dry-run rebalance recommendation payload (core fields + per-mode table).
+- ✅ Sidecar exposes rebalance metrics at `/utilities/economy/rebalance/metrics` (attempts, blocked/success/error counts, last-at timestamps).
+- ✅ Sidecar exposes Prometheus scrape-friendly counters at `/utilities/economy/rebalance/metrics/prometheus`.
+- ✅ Operator Dashboard economy page now surfaces Sidecar rebalance metrics counters/timestamps for operator visibility.
+- ✅ Non-production schema startup gate now supports one-shot `AutoMigrateIfMissing` fallback to reduce startup race failures when MigrationService lags.
+- ✅ Sidecar exposes `/utilities/economy/rebalance/alerts` with threshold-based blocked/error-rate signals; Operator Dashboard renders active alerts.
+- ✅ Sidecar can publish rebalance metrics snapshots to external Elasticsearch index via `/utilities/economy/rebalance/metrics/publish` (also attempted in scheduled dry-run loop).
+- ✅ Production rebalance operations runbook now documented (`docs/REBALANCE_OPERATIONS_RUNBOOK.md`) with apply/rollback/escalation procedures.
+- ✅ Operator Dashboard now reads Sidecar metrics history (`/utilities/economy/rebalance/metrics/history`) from the external sink.
+- ✅ Sidecar exposes sink-derived alert evaluation endpoint (`/utilities/economy/rebalance/alerts/sink`) so external snapshots can drive alert status.
+- ✅ Sidecar can dispatch sink-derived alerts to configured webhook endpoint (`/utilities/economy/rebalance/alerts/dispatch`) and scheduled loop can dispatch automatically.
+- ✅ Sidecar exposes alert-delivery health endpoint (`/utilities/economy/rebalance/alerts/delivery-health`) for operator diagnostics on webhook configuration and last delivery status.
+- ✅ Sidecar exposes rollout-readiness endpoint (`/utilities/economy/rebalance/rollout-readiness`) that reports configuration/sink prerequisites before production rollout.
+- ✅ Sidecar now exposes rollout validation report endpoint (`/utilities/economy/rebalance/rollout-validation-report`) combining readiness, freshness, alert state, and delivery-health checks for pre-prod verification.
+- ✅ Operator Dashboard economy page now renders Sidecar rollout validation report checks (pass/fail + details) for pre-prod go/no-go review.
+- ⏳ Still pending: execute final environment rollout validation in production-like infra using readiness/validation endpoints and record sign-off evidence.
 
 ## 9) Risks & Mitigations
 

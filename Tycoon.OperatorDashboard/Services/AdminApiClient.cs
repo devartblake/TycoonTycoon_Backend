@@ -275,12 +275,53 @@ public sealed class AdminApiClient
         DateTimeOffset? CreatedAtUtc,
         int? BackendStatus);
 
-    public async Task<IReadOnlyList<SidecarRebalanceAuditItem>?> GetSidecarRebalanceAuditHistoryAsync(int limit = 25, CancellationToken ct = default)
+    public sealed record SidecarRebalanceRecommendation(
+        int? MaxEnergy,
+        int? RegenMinutesPerEnergy,
+        int? DailyFreeEnergy,
+        IReadOnlyList<ModeBalanceRuleDto> Modes);
+
+    public sealed record SidecarRebalanceMetrics(
+        int TotalApplyAttempts,
+        int BlockedCount,
+        int SuccessCount,
+        int ErrorCount,
+        DateTimeOffset? LastAttemptAtUtc,
+        DateTimeOffset? LastSuccessAtUtc,
+        DateTimeOffset? LastErrorAtUtc);
+
+    public sealed record SidecarRebalanceAlert(string Severity, string Code, string Message);
+    public sealed record SidecarRebalanceMetricsSnapshot(
+        DateTimeOffset? CapturedAtUtc,
+        int TotalApplyAttempts,
+        int BlockedCount,
+        int SuccessCount,
+        int ErrorCount);
+    public sealed record SidecarRolloutValidationCheck(
+        string Name,
+        bool Ok,
+        string? Detail,
+        string? CapturedAtUtc,
+        string? GeneratedAtUtc,
+        int? LocalAlertCount,
+        int? SinkAlertCount);
+    public sealed record SidecarRolloutValidationReport(
+        bool Passed,
+        DateTimeOffset? GeneratedAtUtc,
+        string? Runbook,
+        IReadOnlyList<SidecarRolloutValidationCheck> Checks);
+
+    private string? BuildSidecarUrl(string relativePathAndQuery)
     {
         var sidecarBaseUrl = config["Sidecar:BaseUrl"] ?? config["SidecarBaseUrl"];
         if (string.IsNullOrWhiteSpace(sidecarBaseUrl)) return null;
+        return $"{sidecarBaseUrl.TrimEnd('/')}{relativePathAndQuery}";
+    }
 
-        var url = $"{sidecarBaseUrl.TrimEnd('/')}/utilities/economy/rebalance/audit?limit={Math.Clamp(limit, 1, 200)}";
+    public async Task<IReadOnlyList<SidecarRebalanceAuditItem>?> GetSidecarRebalanceAuditHistoryAsync(int limit = 25, CancellationToken ct = default)
+    {
+        var url = BuildSidecarUrl($"/utilities/economy/rebalance/audit?limit={Math.Clamp(limit, 1, 200)}");
+        if (url is null) return null;
         var resp = await http.GetAsync(url, ct);
         if (!resp.IsSuccessStatusCode) return null;
 
@@ -311,6 +352,194 @@ public sealed class AdminApiClient
             }
 
             return items;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<SidecarRebalanceRecommendation?> GetSidecarRebalanceRecommendationAsync(CancellationToken ct = default)
+    {
+        var url = BuildSidecarUrl("/utilities/economy/rebalance/recommend");
+        if (url is null) return null;
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("recommendation", out var rec) || rec.ValueKind != JsonValueKind.Object)
+                return null;
+
+            var modes = new List<ModeBalanceRuleDto>();
+            if (rec.TryGetProperty("modes", out var modesEl) && modesEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var m in modesEl.EnumerateArray())
+                {
+                    var mode = m.TryGetProperty("mode", out var n) ? n.GetString() ?? string.Empty : string.Empty;
+                    var energyCost = m.TryGetProperty("energyCost", out var ec) && ec.ValueKind == JsonValueKind.Number ? ec.GetInt32() : 0;
+                    int? lives = m.TryGetProperty("lives", out var lv) && lv.ValueKind == JsonValueKind.Number ? lv.GetInt32() : null;
+                    var requiresTicket = m.TryGetProperty("requiresTicket", out var rt) && rt.ValueKind == JsonValueKind.True;
+                    var tierPointsWeight = m.TryGetProperty("tierPointsWeight", out var tp) && tp.ValueKind == JsonValueKind.Number ? tp.GetInt32() : 0;
+                    modes.Add(new ModeBalanceRuleDto(mode, energyCost, lives, requiresTicket, tierPointsWeight));
+                }
+            }
+
+            return new SidecarRebalanceRecommendation(
+                MaxEnergy: rec.TryGetProperty("maxEnergy", out var max) && max.ValueKind == JsonValueKind.Number ? max.GetInt32() : null,
+                RegenMinutesPerEnergy: rec.TryGetProperty("regenMinutesPerEnergy", out var regen) && regen.ValueKind == JsonValueKind.Number ? regen.GetInt32() : null,
+                DailyFreeEnergy: rec.TryGetProperty("dailyFreeEnergy", out var daily) && daily.ValueKind == JsonValueKind.Number ? daily.GetInt32() : null,
+                Modes: modes);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<SidecarRebalanceMetrics?> GetSidecarRebalanceMetricsAsync(CancellationToken ct = default)
+    {
+        var url = BuildSidecarUrl("/utilities/economy/rebalance/metrics");
+        if (url is null) return null;
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("metrics", out var metrics) || metrics.ValueKind != JsonValueKind.Object)
+                return null;
+
+            DateTimeOffset? ParseDate(string key)
+            {
+                if (!metrics.TryGetProperty(key, out var value) || value.ValueKind != JsonValueKind.String)
+                    return null;
+                return DateTimeOffset.TryParse(value.GetString(), out var parsed) ? parsed : null;
+            }
+
+            return new SidecarRebalanceMetrics(
+                TotalApplyAttempts: metrics.TryGetProperty("totalApplyAttempts", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0,
+                BlockedCount: metrics.TryGetProperty("blockedCount", out var b) && b.ValueKind == JsonValueKind.Number ? b.GetInt32() : 0,
+                SuccessCount: metrics.TryGetProperty("successCount", out var s) && s.ValueKind == JsonValueKind.Number ? s.GetInt32() : 0,
+                ErrorCount: metrics.TryGetProperty("errorCount", out var e) && e.ValueKind == JsonValueKind.Number ? e.GetInt32() : 0,
+                LastAttemptAtUtc: ParseDate("lastAttemptAtUtc"),
+                LastSuccessAtUtc: ParseDate("lastSuccessAtUtc"),
+                LastErrorAtUtc: ParseDate("lastErrorAtUtc"));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<IReadOnlyList<SidecarRebalanceAlert>?> GetSidecarRebalanceAlertsAsync(CancellationToken ct = default)
+    {
+        var url = BuildSidecarUrl("/utilities/economy/rebalance/alerts");
+        if (url is null) return null;
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("alerts", out var alertsEl) || alertsEl.ValueKind != JsonValueKind.Array)
+                return [];
+
+            var alerts = new List<SidecarRebalanceAlert>();
+            foreach (var a in alertsEl.EnumerateArray())
+            {
+                alerts.Add(new SidecarRebalanceAlert(
+                    Severity: a.TryGetProperty("severity", out var s) ? s.GetString() ?? "info" : "info",
+                    Code: a.TryGetProperty("code", out var c) ? c.GetString() ?? "UNKNOWN" : "UNKNOWN",
+                    Message: a.TryGetProperty("message", out var m) ? m.GetString() ?? string.Empty : string.Empty));
+            }
+            return alerts;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<IReadOnlyList<SidecarRebalanceMetricsSnapshot>?> GetSidecarRebalanceMetricsHistoryAsync(int limit = 50, CancellationToken ct = default)
+    {
+        var url = BuildSidecarUrl($"/utilities/economy/rebalance/metrics/history?limit={Math.Clamp(limit, 1, 500)}");
+        if (url is null) return null;
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (!json.RootElement.TryGetProperty("items", out var itemsEl) || itemsEl.ValueKind != JsonValueKind.Array)
+                return [];
+
+            var items = new List<SidecarRebalanceMetricsSnapshot>();
+            foreach (var i in itemsEl.EnumerateArray())
+            {
+                DateTimeOffset? captured = null;
+                if (i.TryGetProperty("capturedAtUtc", out var cap) && cap.ValueKind == JsonValueKind.String
+                    && DateTimeOffset.TryParse(cap.GetString(), out var parsed))
+                    captured = parsed;
+
+                items.Add(new SidecarRebalanceMetricsSnapshot(
+                    CapturedAtUtc: captured,
+                    TotalApplyAttempts: i.TryGetProperty("totalApplyAttempts", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0,
+                    BlockedCount: i.TryGetProperty("blockedCount", out var b) && b.ValueKind == JsonValueKind.Number ? b.GetInt32() : 0,
+                    SuccessCount: i.TryGetProperty("successCount", out var s) && s.ValueKind == JsonValueKind.Number ? s.GetInt32() : 0,
+                    ErrorCount: i.TryGetProperty("errorCount", out var e) && e.ValueKind == JsonValueKind.Number ? e.GetInt32() : 0));
+            }
+
+            return items;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<SidecarRolloutValidationReport?> GetSidecarRolloutValidationReportAsync(CancellationToken ct = default)
+    {
+        var url = BuildSidecarUrl("/utilities/economy/rebalance/rollout-validation-report");
+        if (url is null) return null;
+
+        var resp = await http.GetAsync(url, ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        try
+        {
+            using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            var root = json.RootElement;
+            if (!root.TryGetProperty("checks", out var checksEl) || checksEl.ValueKind != JsonValueKind.Array)
+                return null;
+
+            DateTimeOffset? generatedAt = null;
+            if (root.TryGetProperty("generatedAtUtc", out var generatedEl)
+                && generatedEl.ValueKind == JsonValueKind.String
+                && DateTimeOffset.TryParse(generatedEl.GetString(), out var parsedGenerated))
+            {
+                generatedAt = parsedGenerated;
+            }
+
+            var checks = new List<SidecarRolloutValidationCheck>();
+            foreach (var c in checksEl.EnumerateArray())
+            {
+                checks.Add(new SidecarRolloutValidationCheck(
+                    Name: c.TryGetProperty("name", out var name) ? name.GetString() ?? "unknown" : "unknown",
+                    Ok: c.TryGetProperty("ok", out var ok) && ok.ValueKind == JsonValueKind.True,
+                    Detail: c.TryGetProperty("detail", out var detail) ? detail.GetString() : null,
+                    CapturedAtUtc: c.TryGetProperty("capturedAtUtc", out var captured) ? captured.GetString() : null,
+                    GeneratedAtUtc: c.TryGetProperty("generatedAtUtc", out var generated) ? generated.GetString() : null,
+                    LocalAlertCount: c.TryGetProperty("localAlertCount", out var local) && local.ValueKind == JsonValueKind.Number ? local.GetInt32() : null,
+                    SinkAlertCount: c.TryGetProperty("sinkAlertCount", out var sink) && sink.ValueKind == JsonValueKind.Number ? sink.GetInt32() : null));
+            }
+
+            return new SidecarRolloutValidationReport(
+                Passed: root.TryGetProperty("passed", out var passed) && passed.ValueKind == JsonValueKind.True,
+                GeneratedAtUtc: generatedAt,
+                Runbook: root.TryGetProperty("runbook", out var runbook) ? runbook.GetString() : null,
+                Checks: checks);
         }
         catch
         {
