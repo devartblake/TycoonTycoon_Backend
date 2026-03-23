@@ -51,17 +51,10 @@ builder.Services.AddHttpClient("tycoon-api", client =>
 });
 
 // AdminApiClient is scoped — one shared instance per Blazor Server circuit.
-// This is the critical fix: AddHttpClient<T> registers T as transient, meaning
-// Dashboard.razor and AdminAuthService receive different instances. SetToken() on
-// AdminAuthService's instance never affected Dashboard.razor's instance → 401s.
-// With a scoped registration, both resolve the same object from the circuit scope,
-// so SetToken() and all subsequent Api.* calls use the same HttpClient headers.
-builder.Services.AddScoped<AdminApiClient>(sp =>
-{
-    var factory = sp.GetRequiredService<IHttpClientFactory>();
-    var config  = sp.GetRequiredService<IConfiguration>();
-    return new AdminApiClient(factory.CreateClient("tycoon-api"), config);
-});
+// It takes IHttpClientFactory in its constructor and creates the named "tycoon-api" client.
+// Scoped ensures Dashboard.razor and AdminAuthService share the same instance per circuit,
+// so SetToken() and all subsequent API calls use the same HttpClient headers.
+builder.Services.AddScoped<AdminApiClient>();
 
 var app = builder.Build();
 
