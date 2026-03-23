@@ -346,7 +346,7 @@ make -f docker/MakeFile migrate
 ```bash
 dotnet ef migrations add YourMigrationName \
   --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
-  --startup-project Tycoon.MigrationService/Tycoon.MigrationService.csproj \
+  --startup-project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj \
   --context AppDb \
   --output-dir Migrations
 ```
@@ -363,6 +363,7 @@ Useful options:
 
 - `--skip-add` : clear migration files only (no new migration generated)
 - `--name <Name>` : set the baseline migration name
+- Runs `scripts/validate-ef-schema.sh` after regeneration to catch pending model changes early
 
 ### Migration Modes
 

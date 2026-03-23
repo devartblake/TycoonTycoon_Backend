@@ -6,7 +6,7 @@ cd "$PROJECT_ROOT"
 
 MIGRATIONS_DIR="Tycoon.Backend.Migrations/Migrations"
 PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
-STARTUP_PROJECT="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+STARTUP_PROJECT="Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
 CONTEXT="AppDb"
 MIGRATION_NAME="InitialCreate"
 SKIP_ADD=false
@@ -96,5 +96,10 @@ dotnet ef migrations add "$MIGRATION_NAME" \
   --startup-project "$STARTUP_PROJECT" \
   --context "$CONTEXT" \
   --output-dir Migrations
+
+if [[ -x "./scripts/validate-ef-schema.sh" ]]; then
+  log "Validating that the new migration set has no pending model changes..."
+  ./scripts/validate-ef-schema.sh
+fi
 
 log "Done. New baseline migration created in '$MIGRATIONS_DIR'."
