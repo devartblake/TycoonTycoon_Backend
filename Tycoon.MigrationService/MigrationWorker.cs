@@ -210,11 +210,9 @@ public sealed class MigrationWorker : BackgroundService
         // Sentinel check: if key legacy/app tables exist while EF history is empty,
         // initial migration is likely to fail with "relation already exists".
         //
-        // BUG FIX: Table names must exactly match what EF migrations created. PostgreSQL's
-        // information_schema.tables uses case-sensitive string comparison, so "users" never
-        // matches the "Users" table and "matches" never matches "matches" (which IS lowercase).
-        // Verify casing against the migration's CreateTable calls before changing these.
-        var sentinelTables = new[] { "anti_cheat_flags", "Users", "matches", "Missions", "Tiers" };
+        // Table names must match what exists in the database after migrations.
+        // After the NormalizeSnakeCaseNaming migration, all tables use snake_case.
+        var sentinelTables = new[] { "anti_cheat_flags", "users", "matches", "missions", "tiers" };
         var existingSentinels = new List<string>();
 
         foreach (var table in sentinelTables)
@@ -231,9 +229,7 @@ public sealed class MigrationWorker : BackgroundService
             "This indicates schema/history drift and can cause initial migration conflicts.",
             string.Join(", ", existingSentinels));
 
-        // BUG FIX: Same case-sensitivity issue as sentinelTables above.
-        // "users" must be "Users" to match the EF-created table name.
-        var baselineTables = new[] { "anti_cheat_flags", "Users", "matches", "Missions", "Tiers" };
+        var baselineTables = new[] { "anti_cheat_flags", "users", "matches", "missions", "tiers" };
         var canBaseline = true;
         foreach (var table in baselineTables)
         {
@@ -349,7 +345,7 @@ public sealed class MigrationWorker : BackgroundService
 
     private async Task EnsureCriticalTablesReadyAsync(AppDb db, bool autoRepairOnMissingTables, CancellationToken ct)
     {
-        var requiredTables = new[] { "Tiers", "Missions" };
+        var requiredTables = new[] { "tiers", "missions" };
 
         var missingTables = new List<string>();
         foreach (var table in requiredTables)
@@ -503,9 +499,8 @@ public sealed class MigrationWorker : BackgroundService
     {
         var requiredTables = new[]
         {
-        "Tiers",
-        "Missions",
-        // add more if your seeding touches them (e.g., MissionClaims, SeasonProfiles, etc.)
+        "tiers",
+        "missions",
         };
 
         var conn = db.Database.GetDbConnection();

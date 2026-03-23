@@ -27,7 +27,8 @@ namespace Tycoon.Backend.Infrastructure.Persistence
                      ?? "Host=localhost;Port=5432;Database=tycoon;Username=postgres;Password=postgres";
 
             var opt = new DbContextOptionsBuilder<AppDb>()
-                .UseNpgsql(cs);
+                .UseNpgsql(cs)
+                .UseSnakeCaseNamingConvention();
 
             return new AppDb(opt.Options);
         }

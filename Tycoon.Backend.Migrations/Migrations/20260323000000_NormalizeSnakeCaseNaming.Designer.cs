@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Tycoon.Backend.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Tycoon.Backend.Infrastructure.Persistence;
 namespace Tycoon.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20260323000000_NormalizeSnakeCaseNaming")]
+    partial class NormalizeSnakeCaseNaming
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,7 +71,7 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.HasIndex("PlayerId", "QuestionId", "AnsweredAtUtc")
                         .IsUnique();
 
-                    b.ToTable("question_answered_analytics_events", (string)null);
+                    b.ToTable("QuestionAnsweredAnalyticsEvents");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Application.Analytics.Models.QuestionAnsweredDailyRollup", b =>
@@ -116,7 +119,7 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("question_answered_daily_rollups", (string)null);
+                    b.ToTable("QuestionAnsweredDailyRollups");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Application.Analytics.Models.QuestionAnsweredPlayerDailyRollup", b =>
@@ -167,7 +170,7 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("question_answered_player_daily_rollups", (string)null);
+                    b.ToTable("QuestionAnsweredPlayerDailyRollups");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.AdminAppConfig", b =>
@@ -801,7 +804,7 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("leaderboard_entries", (string)null);
+                    b.ToTable("LeaderboardEntries");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.Match", b =>
@@ -941,7 +944,7 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.HasIndex("MatchId");
 
-                    b.ToTable("match_rounds", (string)null);
+                    b.ToTable("MatchRounds");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.MatchmakingTicket", b =>
@@ -1036,7 +1039,7 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.HasIndex("Type", "Key")
                         .IsUnique();
 
-                    b.ToTable("missions", (string)null);
+                    b.ToTable("Missions");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.MissionClaim", b =>
@@ -1080,7 +1083,7 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.HasIndex("PlayerId", "MissionId")
                         .IsUnique();
 
-                    b.ToTable("mission_claims", (string)null);
+                    b.ToTable("MissionClaims");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.ModerationActionLog", b =>
@@ -1987,7 +1990,7 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.HasIndex("UserId", "DeviceId", "IsRevoked");
 
-                    b.ToTable("refresh_tokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.Season", b =>
@@ -2324,7 +2327,7 @@ namespace Tycoon.Backend.Migrations.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("tiers", (string)null);
+                    b.ToTable("Tiers");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.TierGuardian", b =>
@@ -2420,7 +2423,7 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.HasIndex("Handle")
                         .IsUnique();
 
-                    b.ToTable("users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.Vote", b =>

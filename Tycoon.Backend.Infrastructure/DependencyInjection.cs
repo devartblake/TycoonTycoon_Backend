@@ -79,7 +79,8 @@ namespace Tycoon.Backend.Infrastructure
                         maxRetryCount: 5,
                         maxRetryDelay: TimeSpan.FromSeconds(10),
                         errorCodesToAdd: null);
-                });
+                })
+                .UseSnakeCaseNamingConvention();
 
                 // Suppress pending model changes warning if configured
                 var suppressWarnings = cfg.GetValue<bool>("MigrationService:SuppressPendingModelWarnings");
