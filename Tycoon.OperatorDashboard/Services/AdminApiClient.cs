@@ -10,9 +10,18 @@ namespace Tycoon.OperatorDashboard.Services;
 /// <summary>
 /// Typed HttpClient wrapping all admin REST endpoints on tycoon-api.
 /// Attach the caller's JWT before each call via SetToken().
+/// Accepts IHttpClientFactory so DI can construct this directly (scoped lifetime).
 /// </summary>
-public sealed class AdminApiClient(HttpClient http, IConfiguration config)
+public sealed class AdminApiClient
 {
+    private readonly HttpClient http;
+    private readonly IConfiguration config;
+
+    public AdminApiClient(IHttpClientFactory httpFactory, IConfiguration config)
+    {
+        this.http = httpFactory.CreateClient("tycoon-api");
+        this.config = config;
+    }
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNameCaseInsensitive = true,
