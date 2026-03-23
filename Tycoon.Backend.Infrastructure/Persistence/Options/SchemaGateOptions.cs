@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Options;
 ///   "FailStartupIfInvalid": true,
 ///   "RequireMigrationsHistoryTable": true,
 ///   "Schema": "public",
-///   "CriticalTables": [ "Tiers", "Missions" ],
+///   "CriticalTables": [ "tiers", "missions" ],
 ///   "MigrationsHistoryTable": "__EFMigrationsHistory",
 ///   "TimeoutSeconds": 10,
 ///   "LogOnly": false
@@ -50,7 +50,7 @@ public sealed class SchemaGateOptions
     public bool FailStartupIfInvalid { get; set; } = true;
 
     /// <summary>Tables that must exist for the app to be considered schema-ready.</summary>
-    public string[] RequiredTables { get; set; } = new[] { "Tiers", "Missions" };
+    public string[] RequiredTables { get; set; } = new[] { "tiers", "missions" };
 
     /// <summary>Name of the EF migrations history table.</summary>
     public string MigrationsHistoryTable { get; set; } = "__EFMigrationsHistory";
