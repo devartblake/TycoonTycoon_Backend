@@ -301,6 +301,68 @@ export interface EconomyHistory {
   items: EconomyTxnListItem[]
 }
 
+// ─── Player Transactions (Aggregate) ────────────────────────────────
+// Mirrors Tycoon.Shared.Contracts/Dtos/PlayerTransactionDtos.cs
+
+export interface PlayerTransactionListItem {
+  id: string
+  eventId: string
+  correlatedEventId: string | null
+  kind: string
+  status: string
+  disputeReason: string | null
+  actorCount: number
+  economyTxnCount: number
+  itemChangeCount: number
+  createdAtUtc: string
+  completedAtUtc: string | null
+}
+
+export interface PlayerTransactionHistory {
+  page: number
+  pageSize: number
+  total: number
+  items: PlayerTransactionListItem[]
+}
+
+export interface PlayerTransactionActorDto {
+  playerId: string
+  role: string
+  allocationPercent: number
+}
+
+export interface PlayerTransactionItemDto {
+  itemType: string
+  quantity: number
+  operation: string
+}
+
+export interface PlayerTransactionDetail {
+  id: string
+  eventId: string
+  correlatedEventId: string | null
+  kind: string
+  status: string
+  receipt: string | null
+  disputeReason: string | null
+  disputeLinkedToTransactionId: string | null
+  createdAtUtc: string
+  completedAtUtc: string | null
+  actors: PlayerTransactionActorDto[]
+  itemChanges: PlayerTransactionItemDto[]
+  economyTransactions: EconomyTxnListItem[]
+}
+
+export interface DisputePlayerTransactionRequest {
+  playerTransactionId: string
+  reason: string
+}
+
+export interface ReversePlayerTransactionRequest {
+  playerTransactionId: string
+  reason: string
+}
+
 // ─── Season Points ──────────────────────────────────────────────────
 // Mirrors Tycoon.Shared.Contracts/Dtos/SeasonDtos.cs (season-point txns)
 
