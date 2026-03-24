@@ -10,9 +10,13 @@ import PageHeader from '@components/admin/PageHeader'
 import StatusBadge from '@components/admin/StatusBadge'
 import DataTable from '@components/admin/DataTable'
 import type { Column } from '@components/admin/DataTable'
+import ApiErrorAlert from '@components/admin/ApiErrorAlert'
 
 // Service Imports
 import { moderationService } from '@/lib/services/moderationService'
+
+// Hook Imports
+import { useApiError } from '@/lib/hooks/useApiError'
 
 // Type Imports
 import type { ModerationLogItem, ModerationStatus } from '@/lib/types/admin'
@@ -52,6 +56,7 @@ const columns: Column<ModerationLogItem>[] = [
 
 const ModerationView = () => {
   const router = useRouter()
+  const { error, handleError, clearError } = useApiError()
 
   // State
   const [rows, setRows] = useState<ModerationLogItem[]>([])
@@ -68,12 +73,12 @@ const ModerationView = () => {
 
       setRows(res.items)
       setTotal(res.totalItems)
-    } catch {
-      // keep current state
+    } catch (err) {
+      handleError(err)
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize])
+  }, [page, pageSize, handleError])
 
   useEffect(() => {
     fetchLogs()
@@ -89,6 +94,7 @@ const ModerationView = () => {
   return (
     <>
       <PageHeader title='Moderation' />
+      <ApiErrorAlert error={error} onClose={clearError} />
       <DataTable
         columns={columns}
         rows={rows}

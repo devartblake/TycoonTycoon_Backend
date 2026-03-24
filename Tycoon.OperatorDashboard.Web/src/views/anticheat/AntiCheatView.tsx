@@ -18,9 +18,13 @@ import SearchFilterBar from '@components/admin/SearchFilterBar'
 import type { FilterDef } from '@components/admin/SearchFilterBar'
 import DataTable from '@components/admin/DataTable'
 import type { Column } from '@components/admin/DataTable'
+import ApiErrorAlert from '@components/admin/ApiErrorAlert'
 
 // Service Imports
 import { antiCheatService } from '@/lib/services/antiCheatService'
+
+// Hook Imports
+import { useApiError } from '@/lib/hooks/useApiError'
 
 // Type Imports
 import type { AntiCheatFlag, AntiCheatSummary } from '@/lib/types/admin'
@@ -99,6 +103,8 @@ const SummaryCard = ({ title, value, color }: SummaryCardProps) => (
 )
 
 const AntiCheatView = () => {
+  const { error, handleError, clearError, isRateLimited } = useApiError()
+
   // Summary state
   const [summary, setSummary] = useState<AntiCheatSummary | null>(null)
 
@@ -117,10 +123,10 @@ const AntiCheatView = () => {
       const res = await antiCheatService.summary()
 
       setSummary(res)
-    } catch {
-      // keep current state
+    } catch (err) {
+      handleError(err)
     }
-  }, [])
+  }, [handleError])
 
   const fetchFlags = useCallback(async () => {
     setLoading(true)
@@ -135,12 +141,12 @@ const AntiCheatView = () => {
 
       setRows(res.items)
       setTotal(res.totalItems)
-    } catch {
-      // keep current state
+    } catch (err) {
+      handleError(err)
     } finally {
       setLoading(false)
     }
-  }, [unreviewedOnly, filterValues, page, pageSize])
+  }, [unreviewedOnly, filterValues, page, pageSize, handleError])
 
   useEffect(() => {
     fetchSummary()
@@ -162,20 +168,23 @@ const AntiCheatView = () => {
 
   const handleReview = useCallback(
     async (flagId: string) => {
+      if (isRateLimited) return
+
       try {
         await antiCheatService.reviewFlag(flagId, { reviewedBy: 'admin' })
         await fetchFlags()
         await fetchSummary()
-      } catch {
-        // keep current state
+      } catch (err) {
+        handleError(err)
       }
     },
-    [fetchFlags, fetchSummary]
+    [fetchFlags, fetchSummary, handleError, isRateLimited]
   )
 
   return (
     <>
       <PageHeader title='Anti-Cheat' />
+      <ApiErrorAlert error={error} onClose={clearError} />
 
       {summary && (
         <Grid container spacing={2} sx={{ mb: 3 }}>

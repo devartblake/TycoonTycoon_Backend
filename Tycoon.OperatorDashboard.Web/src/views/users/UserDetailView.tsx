@@ -17,7 +17,6 @@ import TabContext from '@mui/lab/TabContext'
 import TabList from '@mui/lab/TabList'
 import TabPanel from '@mui/lab/TabPanel'
 import TextField from '@mui/material/TextField'
-import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
 
 // Component Imports
@@ -26,12 +25,16 @@ import StatusBadge from '@components/admin/StatusBadge'
 import ConfirmDialog from '@components/admin/ConfirmDialog'
 import DataTable from '@components/admin/DataTable'
 import type { Column } from '@components/admin/DataTable'
+import ApiErrorAlert from '@components/admin/ApiErrorAlert'
 
 // Service Imports
 import { userService } from '@/lib/services/userService'
 import { moderationService } from '@/lib/services/moderationService'
 import { antiCheatService } from '@/lib/services/antiCheatService'
 import { economyService } from '@/lib/services/economyService'
+
+// Hook Imports
+import { useApiError } from '@/lib/hooks/useApiError'
 
 // Type Imports
 import type {
@@ -147,10 +150,12 @@ interface UserDetailViewProps {
 }
 
 const UserDetailView = ({ userId }: UserDetailViewProps) => {
+  const { error: apiError, handleError, clearError, isRateLimited } = useApiError()
+
   // Core data
   const [user, setUser] = useState<AdminUserDetail | null>(null)
   const [modProfile, setModProfile] = useState<ModerationProfile | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   // Tab state
   const [tab, setTab] = useState('activity')
@@ -196,13 +201,14 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
 
         setUser(u)
         setModProfile(m)
-      } catch {
-        setError('Failed to load user')
+      } catch (err) {
+        setLoadFailed(true)
+        handleError(err)
       }
     }
 
     load()
-  }, [userId])
+  }, [userId, handleError])
 
   // ── Tab data loaders ──
   const loadActivity = useCallback(async () => {
@@ -213,12 +219,12 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
 
       setActivities(res.items)
       setActTotal(res.totalItems)
-    } catch {
-      // silent
+    } catch (err) {
+      handleError(err)
     } finally {
       setActLoading(false)
     }
-  }, [userId, actPage])
+  }, [userId, actPage, handleError])
 
   const loadFlags = useCallback(async () => {
     setFlagLoading(true)
@@ -228,12 +234,12 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
 
       setFlags(res.items)
       setFlagTotal(res.totalItems)
-    } catch {
-      // silent
+    } catch (err) {
+      handleError(err)
     } finally {
       setFlagLoading(false)
     }
-  }, [userId, flagPage])
+  }, [userId, flagPage, handleError])
 
   const loadEconomy = useCallback(async () => {
     setTxnLoading(true)
@@ -243,12 +249,12 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
 
       setTxns(res.items)
       setTxnTotal(res.total)
-    } catch {
-      // silent
+    } catch (err) {
+      handleError(err)
     } finally {
       setTxnLoading(false)
     }
-  }, [userId, txnPage])
+  }, [userId, txnPage, handleError])
 
   const loadModLogs = useCallback(async () => {
     setModLogLoading(true)
@@ -258,12 +264,12 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
 
       setModLogs(res.items)
       setModLogTotal(res.totalItems)
-    } catch {
-      // silent
+    } catch (err) {
+      handleError(err)
     } finally {
       setModLogLoading(false)
     }
-  }, [userId, modLogPage])
+  }, [userId, modLogPage, handleError])
 
   // Load tab data on tab change or pagination
   useEffect(() => {
@@ -285,6 +291,7 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
 
   // ── Actions ──
   const handleBan = async () => {
+    if (isRateLimited) return
     setBanLoading(true)
 
     try {
@@ -295,14 +302,15 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
       setUser(u)
       setBanOpen(false)
       setBanReason('')
-    } catch {
-      // keep dialog open
+    } catch (err) {
+      handleError(err)
     } finally {
       setBanLoading(false)
     }
   }
 
   const handleUnban = async () => {
+    if (isRateLimited) return
     setUnbanLoading(true)
 
     try {
@@ -312,15 +320,15 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
 
       setUser(u)
       setUnbanOpen(false)
-    } catch {
-      // keep dialog open
+    } catch (err) {
+      handleError(err)
     } finally {
       setUnbanLoading(false)
     }
   }
 
-  if (error) {
-    return <Alert severity='error'>{error}</Alert>
+  if (loadFailed && !user) {
+    return <ApiErrorAlert error={apiError} onClose={clearError} />
   }
 
   if (!user) {
@@ -354,6 +362,8 @@ const UserDetailView = ({ userId }: UserDetailViewProps) => {
           </>
         }
       />
+
+      <ApiErrorAlert error={apiError} onClose={clearError} />
 
       <Grid container spacing={6}>
         {/* ── Profile Card ── */}

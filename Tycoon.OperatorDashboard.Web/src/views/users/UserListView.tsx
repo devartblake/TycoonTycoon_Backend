@@ -14,9 +14,13 @@ import SearchFilterBar from '@components/admin/SearchFilterBar'
 import type { FilterDef } from '@components/admin/SearchFilterBar'
 import DataTable from '@components/admin/DataTable'
 import type { Column } from '@components/admin/DataTable'
+import ApiErrorAlert from '@components/admin/ApiErrorAlert'
 
 // Service Imports
 import { userService } from '@/lib/services/userService'
+
+// Hook Imports
+import { useApiError } from '@/lib/hooks/useApiError'
 
 // Type Imports
 import type { AdminUserListItem } from '@/lib/types/admin'
@@ -109,6 +113,7 @@ const columns: Column<AdminUserListItem>[] = [
 
 const UserListView = () => {
   const router = useRouter()
+  const { error, handleError, clearError } = useApiError()
 
   // State
   const [rows, setRows] = useState<AdminUserListItem[]>([])
@@ -137,12 +142,12 @@ const UserListView = () => {
 
       setRows(res.items)
       setTotal(res.totalItems)
-    } catch {
-      // API error — keep current state
+    } catch (err) {
+      handleError(err)
     } finally {
       setLoading(false)
     }
-  }, [search, filterValues, page, pageSize, sortBy, sortOrder])
+  }, [search, filterValues, page, pageSize, sortBy, sortOrder, handleError])
 
   useEffect(() => {
     fetchUsers()
@@ -180,6 +185,7 @@ const UserListView = () => {
   return (
     <>
       <PageHeader title='Users' />
+      <ApiErrorAlert error={error} onClose={clearError} />
       <SearchFilterBar
         searchPlaceholder='Search by username or email...'
         searchValue={search}
