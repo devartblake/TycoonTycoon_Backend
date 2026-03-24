@@ -18,9 +18,13 @@ import PageHeader from '@components/admin/PageHeader'
 import StatusBadge from '@components/admin/StatusBadge'
 import DataTable from '@components/admin/DataTable'
 import type { Column } from '@components/admin/DataTable'
+import ApiErrorAlert from '@components/admin/ApiErrorAlert'
 
 // Service Imports
 import { moderationService } from '@/lib/services/moderationService'
+
+// Hook Imports
+import { useApiError } from '@/lib/hooks/useApiError'
 
 // Type Imports
 import type { EscalationDecision, ModerationStatus, RunEscalationResponse } from '@/lib/types/admin'
@@ -64,6 +68,8 @@ const columns: Column<EscalationDecision>[] = [
 ]
 
 const EscalationView = () => {
+  const { error, handleError, clearError, isRateLimited } = useApiError()
+
   // Form state
   const [windowHours, setWindowHours] = useState(24)
   const [maxPlayers, setMaxPlayers] = useState(500)
@@ -76,6 +82,7 @@ const EscalationView = () => {
   const [pageSize, setPageSize] = useState(25)
 
   const handleRun = useCallback(async () => {
+    if (isRateLimited) return
     setRunning(true)
 
     try {
@@ -87,18 +94,19 @@ const EscalationView = () => {
 
       setResult(res)
       setPage(1)
-    } catch {
-      // keep current state
+    } catch (err) {
+      handleError(err)
     } finally {
       setRunning(false)
     }
-  }, [windowHours, maxPlayers, dryRun])
+  }, [windowHours, maxPlayers, dryRun, handleError, isRateLimited])
 
   const pagedDecisions = result ? result.decisions.slice((page - 1) * pageSize, page * pageSize) : []
 
   return (
     <>
       <PageHeader title='Escalation' />
+      <ApiErrorAlert error={error} onClose={clearError} />
 
       <Card variant='outlined' sx={{ mb: 3 }}>
         <CardContent>
@@ -126,8 +134,8 @@ const EscalationView = () => {
               control={<Switch checked={dryRun} onChange={(_, checked) => setDryRun(checked)} />}
               label='Dry Run'
             />
-            <Button variant='contained' onClick={handleRun} disabled={running}>
-              {running ? 'Running...' : 'Run Escalation'}
+            <Button variant='contained' onClick={handleRun} disabled={running || isRateLimited}>
+              {running ? 'Running...' : isRateLimited ? 'Please wait...' : 'Run Escalation'}
             </Button>
           </Box>
         </CardContent>

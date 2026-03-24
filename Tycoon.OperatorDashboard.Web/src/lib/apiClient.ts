@@ -64,7 +64,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     let message = res.statusText
 
     try {
-      const err = await res.json()
+      const body = await res.json()
+
+      // Backend may return { error: { code, message, details } } or flat { code, message }
+      const err = body.error ?? body
 
       code = err.code ?? code
       message = err.message ?? message

@@ -1,4 +1,5 @@
 import type { AdminLoginResponse, AdminProfile, AdminRefreshResponse } from './types/admin'
+import { ApiError } from './apiClient'
 import { apiBase } from './config'
 
 const API_BASE = apiBase()
@@ -47,17 +48,20 @@ export async function login(email: string, password: string): Promise<AdminProfi
   })
 
   if (!res.ok) {
+    let code = 'UNKNOWN'
     let message = 'Login failed'
 
     try {
-      const err = await res.json()
+      const body = await res.json()
+      const err = body.error ?? body
 
+      code = err.code ?? code
       message = err.message ?? message
     } catch {
       // non-JSON response
     }
 
-    throw new Error(message)
+    throw new ApiError(res.status, code, message)
   }
 
   const data: AdminLoginResponse = await res.json()

@@ -12,25 +12,26 @@ import TextField from '@mui/material/TextField'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import Button from '@mui/material/Button'
-import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 
 import type { Mode } from '@core/types'
 
 import Logo from '@components/layout/shared/Logo'
 import Illustrations from '@components/Illustrations'
+import ApiErrorAlert from '@components/admin/ApiErrorAlert'
 
 import themeConfig from '@configs/themeConfig'
 
 import { useImageVariant } from '@core/hooks/useImageVariant'
 import { login } from '@/lib/auth'
+import { useApiError } from '@/lib/hooks/useApiError'
 
 const Login = ({ mode }: { mode: Mode }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isPasswordShown, setIsPasswordShown] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const { error, handleError, clearError, isRateLimited } = useApiError()
 
   const darkImg = '/images/pages/auth-v1-mask-dark.png'
   const lightImg = '/images/pages/auth-v1-mask-light.png'
@@ -42,14 +43,16 @@ const Login = ({ mode }: { mode: Mode }) => {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError(null)
+    clearError()
+
+    if (isRateLimited) return
     setLoading(true)
 
     try {
       await login(email, password)
       router.push('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      handleError(err)
     } finally {
       setLoading(false)
     }
@@ -67,11 +70,7 @@ const Login = ({ mode }: { mode: Mode }) => {
               <Typography variant='h4'>{`Welcome to ${themeConfig.templateName}`}</Typography>
               <Typography className='mbs-1'>Sign in to the Operator Dashboard</Typography>
             </div>
-            {error && (
-              <Alert severity='error' onClose={() => setError(null)}>
-                {error}
-              </Alert>
-            )}
+            <ApiErrorAlert error={error} onClose={clearError} />
             <form noValidate autoComplete='off' onSubmit={handleSubmit} className='flex flex-col gap-5'>
               <TextField
                 autoFocus
@@ -104,8 +103,8 @@ const Login = ({ mode }: { mode: Mode }) => {
                   )
                 }}
               />
-              <Button fullWidth variant='contained' type='submit' disabled={loading || !email || !password}>
-                {loading ? <CircularProgress size={24} color='inherit' /> : 'Log In'}
+              <Button fullWidth variant='contained' type='submit' disabled={loading || isRateLimited || !email || !password}>
+                {loading ? <CircularProgress size={24} color='inherit' /> : isRateLimited ? 'Please wait...' : 'Log In'}
               </Button>
             </form>
           </div>
