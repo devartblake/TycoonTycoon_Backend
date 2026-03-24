@@ -69,6 +69,9 @@ const VerticalMenu = ({ scrollMenu }: { scrollMenu: (container: any, isPerfectSc
           <MenuItem href='/seasons' icon={<i className='ri-calendar-event-line' />}>
             Seasons
           </MenuItem>
+          <MenuItem href='/season-points' icon={<i className='ri-trophy-line' />}>
+            Season Points
+          </MenuItem>
           <MenuItem href='/events' icon={<i className='ri-gamepad-line' />}>
             Game Events
           </MenuItem>
