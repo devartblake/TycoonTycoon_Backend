@@ -20,7 +20,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY Tycoon.OperatorDashboard.Web/ .
 
 # Run icon build now that source files are available (skipped during deps stage)
-RUN npx tsx src/assets/iconify-icons/bundle-icons-css.ts
+RUN pnpm exec tsx src/assets/iconify-icons/bundle-icons-css.ts
 
 # Build args become env vars at build time
 ARG NEXT_PUBLIC_API_URL
