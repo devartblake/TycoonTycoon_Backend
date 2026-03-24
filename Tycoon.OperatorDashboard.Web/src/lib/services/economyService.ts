@@ -21,14 +21,14 @@ export const economyService = {
   history(playerId: string, params: { page?: number; pageSize?: number } = {}) {
     const qs = toQuery(params as Record<string, unknown>)
 
-    return apiClient.get<EconomyHistory>(`/admin/players/${playerId}/economy-history${qs ? `?${qs}` : ''}`)
+    return apiClient.get<EconomyHistory>(`/admin/economy/history/${playerId}${qs ? `?${qs}` : ''}`)
   },
 
   createTransaction(req: CreateEconomyTxnRequest) {
-    return apiClient.post<EconomyTxnResult>('/admin/players/transactions', req)
+    return apiClient.post<EconomyTxnResult>('/admin/economy/transactions', req)
   },
 
   rollback(eventId: string, reason: string) {
-    return apiClient.post<void>('/admin/economy/rollback', { eventId, reason })
+    return apiClient.post<EconomyTxnResult>('/admin/economy/rollback', { eventId, reason })
   }
 }

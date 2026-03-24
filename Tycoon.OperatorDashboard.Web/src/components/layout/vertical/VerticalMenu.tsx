@@ -124,6 +124,9 @@ const VerticalMenu = ({ scrollMenu }: { scrollMenu: (container: any, isPerfectSc
           <MenuItem href='/media' icon={<i className='ri-image-line' />}>
             Media
           </MenuItem>
+          <MenuItem href='/observability' icon={<i className='ri-pulse-line' />}>
+            Observability
+          </MenuItem>
         </MenuSection>
       </Menu>
     </ScrollWrapper>

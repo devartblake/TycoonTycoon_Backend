@@ -10,12 +10,19 @@ import { useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress'
 import Box from '@mui/material/Box'
 
+// Component Imports
+import PermissionDenied from '@components/admin/PermissionDenied'
+
 // Lib Imports
 import { isAuthenticated, refresh, fetchProfile } from '@/lib/auth'
+import { isApiError } from '@/lib/apiErrors'
+
+type GuardState = 'loading' | 'ready' | 'forbidden'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const [ready, setReady] = useState(false)
+  const [state, setState] = useState<GuardState>('loading')
+  const [forbiddenMessage, setForbiddenMessage] = useState<string | undefined>()
 
   useEffect(() => {
     async function check() {
@@ -35,21 +42,37 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       }
 
       // Validate the token by fetching the profile
-      const profile = await fetchProfile()
+      try {
+        const profile = await fetchProfile()
 
-      if (!profile) {
+        if (!profile) {
+          router.replace('/login')
+
+          return
+        }
+
+        setState('ready')
+      } catch (err) {
+        if (isApiError(err) && (err.code === 'FORBIDDEN' || err.status === 403)) {
+          setForbiddenMessage(err.message)
+          setState('forbidden')
+
+          return
+        }
+
+        // Any other error — treat as unauthenticated
         router.replace('/login')
-
-        return
       }
-
-      setReady(true)
     }
 
     check()
   }, [router])
 
-  if (!ready) {
+  if (state === 'forbidden') {
+    return <PermissionDenied message={forbiddenMessage} />
+  }
+
+  if (state === 'loading') {
     return (
       <Box display='flex' justifyContent='center' alignItems='center' minHeight='100dvh'>
         <CircularProgress />

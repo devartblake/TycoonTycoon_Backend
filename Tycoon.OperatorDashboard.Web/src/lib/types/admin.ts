@@ -331,13 +331,59 @@ export interface AppConfig {
 export interface NotificationChannel {
   key: string
   name: string
+  description: string
+  importance: string
   enabled: boolean
 }
 
 export interface SendNotificationRequest {
-  channelKey: string
   title: string
   body: string
+  channelKey: string
+  audience: Record<string, unknown>
+  payload?: Record<string, unknown>
+}
+
+export interface SendNotificationResponse {
+  jobId: string
+  estimatedRecipients: number
+}
+
+export interface NotificationScheduledItem {
+  scheduleId: string
+  title: string
+  channelKey: string
+  scheduledAt: string
+  status: string
+}
+
+export interface NotificationScheduledListResponse {
+  items: NotificationScheduledItem[]
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+}
+
+export interface NotificationHistoryItem {
+  id: string
+  channelKey: string
+  title: string
+  status: string
+  createdAt: string
+  metadata: Record<string, unknown> | null
+}
+
+export interface NotificationHistoryResponse {
+  items: NotificationHistoryItem[]
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+}
+
+export interface NotificationScheduleResponse {
+  scheduleId: string
 }
 
 // ─── Generic API envelope ───────────────────────────────────────────
