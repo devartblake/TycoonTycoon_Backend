@@ -4,7 +4,13 @@ WORKDIR /app
 RUN corepack enable
 
 COPY Tycoon.OperatorDashboard.Web/package.json Tycoon.OperatorDashboard.Web/pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
+
+# Install deps but skip our postinstall (it needs source files not yet available).
+# Use .npmrc to suppress lifecycle scripts for this package only.
+RUN echo "ignore-scripts=true" > .npmrc \
+    && (pnpm install --frozen-lockfile || pnpm install) \
+    && rm .npmrc \
+    && pnpm rebuild
 
 # ── Stage 2: Build the Next.js app ────────────────────────────────────
 FROM node:22-alpine AS builder
@@ -14,8 +20,8 @@ RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 COPY Tycoon.OperatorDashboard.Web/ .
 
-# Run the postinstall icon build now that source files are available
-RUN npm run build:icons
+# Run icon build now that source files are available (skipped during deps stage)
+RUN npx tsx src/assets/iconify-icons/bundle-icons-css.ts
 
 # Build args become env vars at build time
 ARG NEXT_PUBLIC_API_URL
