@@ -7,11 +7,56 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public code: string,
-    message: string
+    message: string,
+    public endpoint?: string
   ) {
     super(message)
     this.name = 'ApiError'
   }
+}
+
+function parseErrorBody(body: unknown): { code: string; message: string } {
+  if (!body || typeof body !== 'object') return { code: 'UNKNOWN', message: '' }
+
+  const obj = body as Record<string, unknown>
+
+  // Backend may return { error: { code, message, details } } or flat { code, message }
+  const err = (obj.error ?? obj) as Record<string, unknown>
+
+  return {
+    code: typeof err.code === 'string' ? err.code : 'UNKNOWN',
+    message: typeof err.message === 'string' ? err.message : ''
+  }
+}
+
+async function throwApiError(res: Response, path: string): Promise<never> {
+  let code = 'UNKNOWN'
+  let message = res.statusText
+
+  try {
+    const body = await res.json()
+    const parsed = parseErrorBody(body)
+
+    code = parsed.code || code
+    message = parsed.message || message
+  } catch {
+    // response wasn't JSON
+  }
+
+  const error = new ApiError(res.status, code, message, path)
+
+  logApiError(error)
+  throw error
+}
+
+function logApiError(error: ApiError) {
+  const tag = error.code !== 'UNKNOWN' ? error.code : `HTTP_${error.status}`
+
+  console.warn(`[admin-api] ${tag} ${error.endpoint ?? ''}`, {
+    status: error.status,
+    code: error.code,
+    message: error.message
+  })
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -53,29 +98,20 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       if (retry.ok) {
         return retry.status === 204 ? (undefined as T) : retry.json()
       }
+
+      // Retry also failed — parse and throw with proper error code
+      return throwApiError(retry, path)
     }
 
     // Refresh failed — caller should redirect to login
-    throw new ApiError(401, 'UNAUTHORIZED', 'Session expired')
+    const error = new ApiError(401, 'UNAUTHORIZED', 'Session expired', path)
+
+    logApiError(error)
+    throw error
   }
 
   if (!res.ok) {
-    let code = 'UNKNOWN'
-    let message = res.statusText
-
-    try {
-      const body = await res.json()
-
-      // Backend may return { error: { code, message, details } } or flat { code, message }
-      const err = body.error ?? body
-
-      code = err.code ?? code
-      message = err.message ?? message
-    } catch {
-      // response wasn't JSON
-    }
-
-    throw new ApiError(res.status, code, message)
+    return throwApiError(res, path)
   }
 
   if (res.status === 204) {

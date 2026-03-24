@@ -124,21 +124,37 @@ export async function fetchProfile(): Promise<AdminProfile | null> {
 
   if (!token) return null
 
-  try {
-    const res = await fetch(`${API_BASE}/admin/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+  const res = await fetch(`${API_BASE}/admin/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
 
-    if (!res.ok) return null
+  if (!res.ok) {
+    // On 403, throw ApiError so callers can distinguish permission denial
+    if (res.status === 403) {
+      let code = 'FORBIDDEN'
+      let message = 'You do not have permission to access the admin dashboard.'
 
-    const profile: AdminProfile = await res.json()
+      try {
+        const body = await res.json()
+        const err = (body as Record<string, unknown>).error ?? body
 
-    currentAdmin = profile
+        code = (err as Record<string, unknown>).code as string ?? code
+        message = (err as Record<string, unknown>).message as string ?? message
+      } catch {
+        // non-JSON response
+      }
 
-    return profile
-  } catch {
+      throw new ApiError(403, code, message)
+    }
+
     return null
   }
+
+  const profile: AdminProfile = await res.json()
+
+  currentAdmin = profile
+
+  return profile
 }
 
 export function logout() {
