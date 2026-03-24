@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation'
 
 // Component Imports
 import PageHeader from '@components/admin/PageHeader'
+import StatusBadge from '@components/admin/StatusBadge'
 import DataTable from '@components/admin/DataTable'
 import type { Column } from '@components/admin/DataTable'
-import StatusBadge from '@components/admin/StatusBadge'
 
 // Service Imports
 import { moderationService } from '@/lib/services/moderationService'
@@ -27,7 +27,7 @@ const columns: Column<ModerationLogItem>[] = [
   {
     id: 'newStatus',
     label: 'Status',
-    width: 130,
+    width: 140,
     render: row => <StatusBadge status={row.newStatus as ModerationStatus} />
   },
   {
@@ -44,7 +44,7 @@ const columns: Column<ModerationLogItem>[] = [
   {
     id: 'createdAtUtc',
     label: 'Date',
-    width: 120,
+    width: 140,
     sortable: true,
     render: row => new Date(row.createdAtUtc).toLocaleDateString()
   }
@@ -58,23 +58,18 @@ const ModerationView = () => {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
-  const [sortBy, setSortBy] = useState<string | undefined>()
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [loading, setLoading] = useState(true)
 
   const fetchLogs = useCallback(async () => {
     setLoading(true)
 
     try {
-      const res = await moderationService.logs({
-        page,
-        pageSize
-      })
+      const res = await moderationService.logs({ page, pageSize })
 
       setRows(res.items)
       setTotal(res.totalItems)
     } catch {
-      // API error — keep current state
+      // keep current state
     } finally {
       setLoading(false)
     }
@@ -83,18 +78,6 @@ const ModerationView = () => {
   useEffect(() => {
     fetchLogs()
   }, [fetchLogs])
-
-  const handleSortChange = useCallback(
-    (field: string) => {
-      if (sortBy === field) {
-        setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))
-      } else {
-        setSortBy(field)
-        setSortOrder('asc')
-      }
-    },
-    [sortBy]
-  )
 
   const handleRowClick = useCallback(
     (row: ModerationLogItem) => {
@@ -116,9 +99,6 @@ const ModerationView = () => {
         total={total}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSortChange={handleSortChange}
         onRowClick={handleRowClick}
         emptyMessage='No moderation logs found'
       />

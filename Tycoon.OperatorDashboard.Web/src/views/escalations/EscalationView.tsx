@@ -15,9 +15,9 @@ import Typography from '@mui/material/Typography'
 
 // Component Imports
 import PageHeader from '@components/admin/PageHeader'
+import StatusBadge from '@components/admin/StatusBadge'
 import DataTable from '@components/admin/DataTable'
 import type { Column } from '@components/admin/DataTable'
-import StatusBadge from '@components/admin/StatusBadge'
 
 // Service Imports
 import { moderationService } from '@/lib/services/moderationService'
@@ -32,16 +32,15 @@ const columns: Column<EscalationDecision>[] = [
     render: row => row.playerId
   },
   {
-    id: 'currentStatus',
-    label: 'Current',
-    width: 130,
-    render: row => <StatusBadge status={row.currentStatus as ModerationStatus} />
-  },
-  {
-    id: 'proposedStatus',
-    label: 'Proposed',
-    width: 130,
-    render: row => <StatusBadge status={row.proposedStatus as ModerationStatus} />
+    id: 'status',
+    label: 'Status Change',
+    render: row => (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <StatusBadge status={row.currentStatus as ModerationStatus} />
+        <span>→</span>
+        <StatusBadge status={row.proposedStatus as ModerationStatus} />
+      </Box>
+    )
   },
   {
     id: 'severeCount',
@@ -73,6 +72,8 @@ const EscalationView = () => {
 
   // Results state
   const [result, setResult] = useState<RunEscalationResponse | null>(null)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
 
   const handleRun = useCallback(async () => {
     setRunning(true)
@@ -85,12 +86,15 @@ const EscalationView = () => {
       })
 
       setResult(res)
+      setPage(1)
     } catch {
-      // API error — keep current state
+      // keep current state
     } finally {
       setRunning(false)
     }
   }, [windowHours, maxPlayers, dryRun])
+
+  const pagedDecisions = result ? result.decisions.slice((page - 1) * pageSize, page * pageSize) : []
 
   return (
     <>
@@ -103,7 +107,7 @@ const EscalationView = () => {
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField
-              label='Window (hours)'
+              label='Window Hours'
               type='number'
               size='small'
               value={windowHours}
@@ -138,7 +142,7 @@ const EscalationView = () => {
                   <Typography variant='body2' color='text.secondary'>
                     Evaluated Players
                   </Typography>
-                  <Typography variant='h5' sx={{ mt: 0.5 }}>
+                  <Typography variant='h5' sx={{ fontWeight: 600 }}>
                     {result.evaluatedPlayers.toLocaleString()}
                   </Typography>
                 </CardContent>
@@ -150,7 +154,7 @@ const EscalationView = () => {
                   <Typography variant='body2' color='text.secondary'>
                     Changed Players
                   </Typography>
-                  <Typography variant='h5' sx={{ mt: 0.5 }}>
+                  <Typography variant='h5' sx={{ fontWeight: 600, color: 'warning.main' }}>
                     {result.changedPlayers.toLocaleString()}
                   </Typography>
                 </CardContent>
@@ -160,13 +164,14 @@ const EscalationView = () => {
 
           <DataTable
             columns={columns}
-            rows={result.decisions}
+            rows={pagedDecisions}
             rowKey={row => row.playerId}
             loading={false}
-            page={1}
-            pageSize={result.decisions.length || 25}
+            page={page}
+            pageSize={pageSize}
             total={result.decisions.length}
-            onPageChange={() => {}}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
             emptyMessage='No escalation decisions'
           />
         </>
