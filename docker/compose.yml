@@ -480,44 +480,34 @@ services:
       start_period: 20s
 
   # ================================
-  # Operator Dashboard (Blazor Server)
+  # Operator Dashboard (Next.js)
   # ================================
   operator-dashboard:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.dashboard
+      dockerfile: docker/Dockerfile.dashboard-web
       args:
-        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
+        NEXT_PUBLIC_API_URL: "http://backend-api:5000"
+        NEXT_PUBLIC_ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
     container_name: tycoon_operator_dashboard
     restart: unless-stopped
     ports:
-      - "${DASHBOARD_PORT:-8200}:8200"
+      - "${DASHBOARD_PORT:-8200}:3000"
     environment:
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
-      ASPNETCORE_URLS: "http://+:8200"
-      # Override appsettings.Development.json (which points to localhost:5100 for standalone dev).
-      # In Docker, "localhost" resolves to the container itself — use the service name instead.
-      ApiBaseUrl: "http://backend-api:5000"
-      # Also set the Aspire service-discovery key so both resolution paths work.
-      services__tycoon-api__http__0: "http://backend-api:5000"
-      AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
-      # Persist Data Protection keys across restarts (fixes antiforgery / cookie decryption errors)
-      DataProtection__KeysPath: "/app/dp-keys"
-    volumes:
-      - dashboard_dp_keys:/app/dp-keys
+      NEXT_PUBLIC_API_URL: "http://backend-api:5000"
+      NEXT_PUBLIC_ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
     depends_on:
       backend-api:
         condition: service_healthy
     networks: [tycoon-net]
     labels:
       - "traefik.enable=true"
-      # Route everything else to the operator dashboard (lowest priority)
       - "traefik.http.routers.operator-dashboard.rule=PathPrefix(`/`)"
       - "traefik.http.routers.operator-dashboard.entrypoints=web"
       - "traefik.http.routers.operator-dashboard.priority=1"
-      - "traefik.http.services.operator-dashboard.loadbalancer.server.port=8200"
+      - "traefik.http.services.operator-dashboard.loadbalancer.server.port=3000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -544,5 +534,4 @@ volumes:
   pgadmin_data:
   prometheus_data:
   grafana_data:
-  dashboard_dp_keys:
   letsencrypt:
