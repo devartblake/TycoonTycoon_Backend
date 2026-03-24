@@ -1,4 +1,5 @@
 import { getAccessToken, refresh } from './auth'
+import { emit } from './adminAnalytics'
 import { apiBase } from './config'
 
 const API_BASE = apiBase()
@@ -29,7 +30,7 @@ function parseErrorBody(body: unknown): { code: string; message: string } {
   }
 }
 
-async function throwApiError(res: Response, path: string): Promise<never> {
+async function throwApiError(res: Response, path: string, method?: string, startMs?: number): Promise<never> {
   let code = 'UNKNOWN'
   let message = res.statusText
 
@@ -45,6 +46,10 @@ async function throwApiError(res: Response, path: string): Promise<never> {
 
   const error = new ApiError(res.status, code, message, path)
 
+  if (method && startMs) {
+    emitEvent(method, path, res.status, code, startMs, false)
+  }
+
   logApiError(error)
   throw error
 }
@@ -59,7 +64,21 @@ function logApiError(error: ApiError) {
   })
 }
 
+function emitEvent(method: string, path: string, status: number, errorCode: string | null, startMs: number, success: boolean) {
+  emit({
+    timestamp: Date.now(),
+    endpoint: path,
+    method,
+    status,
+    errorCode,
+    latencyMs: Date.now() - startMs,
+    success
+  })
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const startMs = Date.now()
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json'
   }
@@ -96,23 +115,28 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       })
 
       if (retry.ok) {
+        emitEvent(method, path, retry.status, null, startMs, true)
+
         return retry.status === 204 ? (undefined as T) : retry.json()
       }
 
       // Retry also failed — parse and throw with proper error code
-      return throwApiError(retry, path)
+      return throwApiError(retry, path, method, startMs)
     }
 
     // Refresh failed — caller should redirect to login
     const error = new ApiError(401, 'UNAUTHORIZED', 'Session expired', path)
 
+    emitEvent(method, path, 401, 'UNAUTHORIZED', startMs, false)
     logApiError(error)
     throw error
   }
 
   if (!res.ok) {
-    return throwApiError(res, path)
+    return throwApiError(res, path, method, startMs)
   }
+
+  emitEvent(method, path, res.status, null, startMs, true)
 
   if (res.status === 204) {
     return undefined as T
