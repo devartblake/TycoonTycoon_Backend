@@ -10,7 +10,7 @@ COPY Tycoon.OperatorDashboard.Web/package.json Tycoon.OperatorDashboard.Web/pnpm
 RUN echo "ignore-scripts=true" > .npmrc \
     && (pnpm install --frozen-lockfile || pnpm install) \
     && rm .npmrc \
-    && pnpm rebuild
+    && pnpm rebuild --ignore-scripts
 
 # ── Stage 2: Build the Next.js app ────────────────────────────────────
 FROM node:22-alpine AS builder
