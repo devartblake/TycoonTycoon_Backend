@@ -101,6 +101,9 @@ const VerticalMenu = ({ scrollMenu }: { scrollMenu: (container: any, isPerfectSc
           <MenuItem href='/economy' icon={<i className='ri-money-dollar-circle-line' />}>
             Economy
           </MenuItem>
+          <MenuItem href='/player-transactions' icon={<i className='ri-exchange-funds-line' />}>
+            Transactions
+          </MenuItem>
           <MenuItem href='/rewards' icon={<i className='ri-gift-line' />}>
             Rewards
           </MenuItem>
