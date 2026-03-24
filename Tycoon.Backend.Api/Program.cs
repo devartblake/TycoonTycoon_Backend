@@ -727,6 +727,7 @@ AdminAntiCheatAnalyticsEndpoints.Map(admin);
 AdminPartyAntiCheatEndpoints.Map(admin);
 AdminSeasonRewardsEndpoints.Map(admin);
 AdminSeasonLifecycleEndpoints.Map(admin);
+AdminSeasonPointsEndpoints.Map(admin);
 AdminEmailAclEndpoints.Map(admin);
 
 // Startup logging

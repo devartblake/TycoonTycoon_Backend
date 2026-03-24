@@ -301,6 +301,43 @@ export interface EconomyHistory {
   items: EconomyTxnListItem[]
 }
 
+// ─── Season Points ──────────────────────────────────────────────────
+// Mirrors Tycoon.Shared.Contracts/Dtos/SeasonDtos.cs (season-point txns)
+
+export interface ApplySeasonPointsRequest {
+  eventId: string
+  seasonId: string
+  playerId: string
+  kind: string
+  delta: number
+  note?: string
+}
+
+export interface ApplySeasonPointsResult {
+  eventId: string
+  seasonId: string
+  playerId: string
+  status: string // "Applied" | "Duplicate"
+  newRankPoints: number
+}
+
+export interface SeasonPointTxnListItem {
+  eventId: string
+  seasonId: string
+  kind: string
+  delta: number
+  note: string | null
+  createdAtUtc: string
+}
+
+export interface SeasonPointHistory {
+  playerId: string
+  page: number
+  pageSize: number
+  total: number
+  items: SeasonPointTxnListItem[]
+}
+
 // ─── Seasons ────────────────────────────────────────────────────────
 
 export interface SeasonSummary {
