@@ -10,7 +10,7 @@ COPY package.json pnpm-lock.yaml* ./
 RUN echo "ignore-scripts=true" > .npmrc \
     && (pnpm install --frozen-lockfile || pnpm install) \
     && rm .npmrc \
-    && pnpm rebuild
+    && pnpm --config.ignore-scripts=true rebuild
 
 FROM deps AS build
 WORKDIR /app
