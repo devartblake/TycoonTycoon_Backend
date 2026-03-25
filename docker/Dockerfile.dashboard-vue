@@ -3,9 +3,12 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY Tycoon.OperatorDashboard.Vue/package.json Tycoon.OperatorDashboard.Vue/package-lock.json* ./
-RUN npm ci || npm install
+RUN npm ci --ignore-scripts || npm install --ignore-scripts
 
 COPY Tycoon.OperatorDashboard.Vue/ .
+
+# Build icons (postinstall can't run during npm ci because source isn't available yet)
+RUN npm run build:icons
 
 # Build args → env vars at build time
 ARG VITE_API_URL
