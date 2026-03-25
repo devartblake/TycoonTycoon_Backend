@@ -3,11 +3,11 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable
 
-COPY Tycoon.OperatorDashboard.Web/package.json Tycoon.OperatorDashboard.Web/pnpm-lock.yaml* ./
+COPY Tycoon.OperatorDashboard.Web/.npmrc Tycoon.OperatorDashboard.Web/package.json Tycoon.OperatorDashboard.Web/pnpm-lock.yaml* ./
 
 # Install deps but skip our postinstall (it needs source files not yet available).
-# Use .npmrc to suppress lifecycle scripts for this package only.
-RUN echo "ignore-scripts=true" > .npmrc \
+# Append ignore-scripts to the project .npmrc (preserving shamefully-hoist etc.).
+RUN echo "ignore-scripts=true" >> .npmrc \
     && (pnpm install --frozen-lockfile || pnpm install) \
     && rm .npmrc
 
@@ -20,8 +20,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY Tycoon.OperatorDashboard.Web/ .
 
 # Run icon build now that source files are available (skipped during deps stage).
-# Use pnpm exec to resolve tsx from local node_modules/.bin.
-RUN pnpm exec tsx src/assets/iconify-icons/bundle-icons-css.ts
+# Use --require tsx/cjs so require.resolve() and __dirname work (the script uses CJS APIs).
+RUN node --require tsx/cjs src/assets/iconify-icons/bundle-icons-css.ts
 
 # Build args become env vars at build time
 ARG NEXT_PUBLIC_API_URL
