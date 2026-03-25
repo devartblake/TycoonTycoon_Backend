@@ -46,22 +46,25 @@ builder.Services.AddHttpClient("tycoon-api", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
 
-// AdminApiClient is scoped — one shared instance per Blazor Server circuit.
-// It takes IHttpClientFactory in its constructor and creates the named "tycoon-api" client.
-// Scoped ensures Dashboard.razor and AdminAuthService share the same instance per circuit,
-// so SetToken() and all subsequent API calls use the same HttpClient headers.
-builder.Services.AddScoped<AdminApiClient>();
+    // AdminApiClient is scoped — one shared instance per Blazor Server circuit.
+    // It takes IHttpClientFactory in its constructor and creates the named "tycoon-api" client.
+    // Scoped ensures Dashboard.razor and AdminAuthService share the same instance per circuit,
+    // so SetToken() and all subsequent API calls use the same HttpClient headers.
+    builder.Services.AddScoped<AdminApiClient>();
 
-var app = builder.Build();
+    var app = builder.Build();
 
-app.UseStaticFiles();
-app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
+    app.UseStaticFiles();
+    app.UseRouting();
+    app.UseAuthentication();
+    app.UseAuthorization();
 
-app.MapDefaultEndpoints();
-app.MapRazorPages();
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
+    app.MapDefaultEndpoints();
+    app.MapRazorPages();
+    app.MapBlazorHub();
+    app.MapFallbackToPage("/_Host");
 
-app.Run();
+    app.Run();
+
+    }
+);
