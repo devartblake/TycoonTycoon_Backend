@@ -17,6 +17,9 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
       - name: Restore
         run: dotnet restore
 
@@ -40,6 +43,9 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Restore
         run: dotnet restore
@@ -91,6 +97,9 @@ jobs:
 
       - name: Restore
         run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
 
       - name: Validate EF schema is in sync
         run: bash scripts/validate-ef-schema.sh
