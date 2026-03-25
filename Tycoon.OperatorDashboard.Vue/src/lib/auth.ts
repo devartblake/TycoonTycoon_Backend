@@ -4,6 +4,15 @@ import { apiBase } from './config'
 
 const API_BASE = apiBase()
 
+function baseHeaders(): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' }
+  const opsKey = import.meta.env.VITE_ADMIN_OPS_KEY as string | undefined
+
+  if (opsKey) h['X-Admin-Ops-Key'] = opsKey
+
+  return h
+}
+
 let accessToken: string | null = null
 let tokenExpiresAt = 0
 let currentAdmin: AdminProfile | null = null
@@ -42,7 +51,7 @@ function clearTokens() {
 export async function login(email: string, password: string): Promise<AdminProfile> {
   const res = await fetch(`${API_BASE}/admin/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: baseHeaders(),
     body: JSON.stringify({ email, password }),
   })
 
@@ -82,7 +91,7 @@ export async function refresh(): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}/admin/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: baseHeaders(),
       body: JSON.stringify({ refreshToken }),
     })
 
@@ -124,7 +133,7 @@ export async function fetchProfile(): Promise<AdminProfile | null> {
   if (!token) return null
 
   const res = await fetch(`${API_BASE}/admin/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { ...baseHeaders(), Authorization: `Bearer ${token}` },
   })
 
   if (!res.ok) {
