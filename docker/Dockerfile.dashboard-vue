@@ -28,12 +28,16 @@ RUN printf 'server {\n\
   root /usr/share/nginx/html;\n\
   index index.html;\n\
 \n\
+  # Docker embedded DNS\n\
+  resolver 127.0.0.11 valid=30s;\n\
+\n\
   location / {\n\
     try_files $uri $uri/ /index.html;\n\
   }\n\
 \n\
   location /api/backend/ {\n\
-    proxy_pass http://backend:5000/;\n\
+    set $upstream http://backend-api:5000;\n\
+    proxy_pass $upstream/;\n\
     proxy_set_header Host $host;\n\
     proxy_set_header X-Real-IP $remote_addr;\n\
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
