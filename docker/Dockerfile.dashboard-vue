@@ -37,7 +37,8 @@ RUN printf 'server {\n\
 \n\
   location /api/backend/ {\n\
     set $upstream http://backend-api:5000;\n\
-    proxy_pass $upstream/;\n\
+    rewrite ^/api/backend/(.*) /$1 break;\n\
+    proxy_pass $upstream;\n\
     proxy_set_header Host $host;\n\
     proxy_set_header X-Real-IP $remote_addr;\n\
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
