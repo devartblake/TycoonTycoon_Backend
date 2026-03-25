@@ -13,6 +13,10 @@ export const routes = [
         component: () => import('@/pages/users.vue'),
       },
       {
+        path: 'users/:id',
+        component: () => import('@/pages/users/[id].vue'),
+      },
+      {
         path: 'season-points',
         component: () => import('@/pages/season-points.vue'),
       },
@@ -35,6 +39,14 @@ export const routes = [
       {
         path: 'notifications',
         component: () => import('@/pages/notifications.vue'),
+      },
+      {
+        path: 'moderation',
+        component: () => import('@/pages/moderation.vue'),
+      },
+      {
+        path: 'observability',
+        component: () => import('@/pages/observability.vue'),
       },
       {
         path: 'security',

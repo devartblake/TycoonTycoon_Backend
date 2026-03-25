@@ -54,6 +54,13 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/escalations',
     }"
   />
+  <VerticalNavLink
+    :item="{
+      title: 'Moderation Log',
+      icon: 'ri-file-list-line',
+      to: '/moderation',
+    }"
+  />
 
   <!-- Economy -->
   <VerticalNavSectionTitle
@@ -94,6 +101,13 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
   <VerticalNavSectionTitle
     :item="{
       heading: 'System',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Observability',
+      icon: 'ri-pulse-line',
+      to: '/observability',
     }"
   />
   <VerticalNavLink
