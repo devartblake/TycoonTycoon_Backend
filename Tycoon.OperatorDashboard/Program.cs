@@ -42,9 +42,14 @@ builder.Services.AddScoped<AdminAuthService>();
 // Aspire service discovery resolves "http://tycoon-api" via services__tycoon-api__http__0.
 // Standalone: set ApiBaseUrl in appsettings or environment (e.g. "http://localhost:5100").
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://tycoon-api";
+var opsHeaderName = builder.Configuration["AdminOps:Header"] ?? "X-Admin-Ops-Key";
+var opsKey = builder.Configuration["AdminOps:Key"] ?? builder.Configuration["AdminOps__Key"] ?? "";
+
 builder.Services.AddHttpClient("tycoon-api", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
+    if (!string.IsNullOrWhiteSpace(opsKey))
+        client.DefaultRequestHeaders.TryAddWithoutValidation(opsHeaderName, opsKey);
 });
 
 // AdminApiClient is scoped — one shared instance per Blazor Server circuit.
