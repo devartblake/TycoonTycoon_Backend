@@ -67,5 +67,4 @@ builder.Services.AddHttpClient("tycoon-api", client =>
 
     app.Run();
 
-    }
-);
+    
