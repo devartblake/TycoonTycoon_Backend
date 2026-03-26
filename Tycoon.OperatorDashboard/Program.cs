@@ -45,6 +45,7 @@ var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://tycoon-api";
 builder.Services.AddHttpClient("tycoon-api", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
+});
 
 // AdminApiClient is scoped — one shared instance per Blazor Server circuit.
 // It takes IHttpClientFactory in its constructor and creates the named "tycoon-api" client.

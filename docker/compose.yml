@@ -510,6 +510,36 @@ services:
       retries: 3
       start_period: 10s
 
+  # ================================
+  # Operator Dashboard (Blazor Server) — legacy, for comparison
+  # ================================
+  operator-dashboard-blazor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+      args:
+        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
+    container_name: tycoon_operator_dashboard_blazor
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_BLAZOR_PORT:-8201}:8200"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      ASPNETCORE_URLS: "http://+:8200"
+      ApiBaseUrl: "http://backend-api:5000"
+      AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+      DataProtection__KeysPath: "/app/dp-keys"
+    depends_on:
+      backend-api:
+        condition: service_healthy
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
 # ================================
 # Networks
 # ================================
