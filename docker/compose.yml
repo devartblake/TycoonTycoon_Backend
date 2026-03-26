@@ -527,6 +527,8 @@ services:
       ApiBaseUrl: "http://backend-api:5000"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
       DataProtection__KeysPath: "/app/dp-keys"
+    volumes:
+      - blazor_dp_keys:/app/dp-keys
     depends_on:
       backend-api:
         condition: service_healthy
@@ -560,3 +562,4 @@ volumes:
   prometheus_data:
   grafana_data:
   letsencrypt:
+  blazor_dp_keys:
