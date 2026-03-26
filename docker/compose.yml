@@ -517,8 +517,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.dashboard
-      args:
-        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
     container_name: tycoon_operator_dashboard_blazor
     restart: unless-stopped
     ports:
