@@ -19,7 +19,8 @@ TARGETS=(
 PATTERN='Results\.(NotFound|BadRequest|Conflict|Unauthorized|Forbid|Problem|StatusCode)\('
 
 set +e
-raw_matches="$(rg -n "$PATTERN" "${TARGETS[@]}" 2>&1)"
+# Search only C# files to reduce noise
+raw_matches="$(rg -n --hidden -t cs "$PATTERN" "${TARGETS[@]}" 2>&1)"
 rg_status=$?
 set -e
 
@@ -40,12 +41,17 @@ violations=""
 while IFS= read -r line; do
   [[ -z "$line" ]] && continue
 
+  # If line does not contain at least two colons, it's not a file:line:content match (could be an rg error) — ignore
+  if [[ "$(awk -F":" '{print NF-1}' <<< "$line")" -lt 2 ]]; then
+    continue
+  fi
+
   # format: file:line:content
   content="${line#*:*:}"
   content_trimmed="${content#${content%%[![:space:]]*}}"
 
-  # ignore commented lines and explicit inline suppressions
-  if [[ "$content_trimmed" =~ ^// ]]; then
+  # ignore single-line comments, block comment markers, and explicit inline suppressions
+  if [[ "$content_trimmed" =~ ^(//|/\*|\*).* ]]; then
     continue
   fi
   if [[ "$content" == *"HARDENING-IGNORE"* ]]; then
