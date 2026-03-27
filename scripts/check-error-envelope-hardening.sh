@@ -42,7 +42,8 @@ while IFS= read -r line; do
   [[ -z "$line" ]] && continue
 
   # If line does not contain at least two colons, it's not a file:line:content match (could be an rg error) — ignore
-  if [[ "$(awk -F":" '{print NF-1}' <<< "$line")" -lt 2 ]]; then
+  colon_count="${line//[^:]}"
+  if [[ ${#colon_count} -lt 2 ]]; then
     continue
   fi
 
@@ -51,7 +52,7 @@ while IFS= read -r line; do
   content_trimmed="${content#${content%%[![:space:]]*}}"
 
   # ignore single-line comments, block comment markers, and explicit inline suppressions
-  if [[ "$content_trimmed" =~ ^(//|/\*|\*).* ]]; then
+  if [[ "$content_trimmed" =~ ^(//|/\*|\*|\*/).* ]]; then
     continue
   fi
   if [[ "$content" == *"HARDENING-IGNORE"* ]]; then
