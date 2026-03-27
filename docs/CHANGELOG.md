@@ -4,6 +4,26 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-27] Sidecar gRPC Wiring + Dashboard Build Path Clarification
+
+### Sidecar gRPC
+- `SidecarGrpcService` now wires concrete paths for:
+  - `ReportAnalyticsEvent` / `StreamAnalyticsEvents` (supports `question_answered` payload mapping + persistence via `IAnalyticsEventWriter`)
+  - `SubmitInferenceResult` (stores through `ISidecarInferenceStore`)
+  - `TriggerBackendAction` (supports `admin_event_queue_reprocess` via MediatR command dispatch with deterministic errors for unsupported/invalid actions)
+- Added `ISidecarInferenceStore` + `InMemorySidecarInferenceStore` and DI registration in API startup.
+
+### Dashboard build source-of-truth
+- Blazor operator dashboard remains authoritative in compose (`docker/Dockerfile.dashboard`).
+- Alternate Next.js dashboard Dockerfiles are preserved as archived `.txt` artifacts to avoid accidental default build-path drift.
+
+### Docs / planning updates
+- README includes sidecar gRPC “current status” contract notes.
+- `docs/GITHUB_ISSUES_CHECKLIST.md` marks SEQ-1/SEQ-2 complete and SEQ-3 in progress.
+- `docs/GRPC_TECH_DEBT_NEXT_STEPS.md` now tracks Workstream 1 subtasks with completion state.
+
+---
+
 ## [2026-03-17] Operator Dashboard — Full Feature Expansion
 
 Expanded `Tycoon.OperatorDashboard` from 7 foundation pages to a complete ops control panel with 12 pages, 46 AdminApiClient methods, and grouped navigation.
@@ -352,5 +372,5 @@ MINIO_CONSOLE_PORT (default 9001)
 
 ## Pending
 
-- EF migration for the `votes` table (schema ready; run `dotnet ef migrations add AddVotes --startup-project ../Tycoon.Backend.Api`)
+- ✅ Vote schema migration is already present in `20260319000000_AddGameEventTables` (`votes` table + indexes).
 - Operator Dashboard Priority 4 pages: Media upload, Powerups, Skills seeding (planned)
