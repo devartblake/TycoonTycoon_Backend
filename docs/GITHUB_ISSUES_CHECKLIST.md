@@ -69,3 +69,4 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Updated README with Sidecar gRPC current-status matrix and planned follow-up items.
 - [x] Added changelog entry documenting Sidecar gRPC wiring progress and dashboard build source-of-truth decisions.
 - [x] Checked off completed SEQ-3 scope/acceptance items after Sidecar gRPC implementation landed.
+- [x] Added `SidecarGrpcServiceTests` for SEQ-3 behavior coverage (execution pending environment/tool availability).
