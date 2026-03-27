@@ -62,6 +62,9 @@ TycoonTycoon_Backend/
 └── scripts/                         # Development automation scripts
 ```
 
+> Operator dashboard container source of truth: **Blazor (`Tycoon.OperatorDashboard`)**.
+> Alternate Next.js dashboard Dockerfiles are archived as `*.txt` and are not part of default compose builds.
+
 ### Technology Stack
 
 - **Runtime**: .NET 9
@@ -463,6 +466,36 @@ Configure via `MigrationService__Mode` in appsettings or environment variable:
 - `MigrateAndSeed` (default) - Run migrations and seed data
 - `RebuildElastic` - Rebuild Elasticsearch indices only
 - `MigrateSeedAndRebuildElastic` - Do everything
+
+---
+
+## 🔌 Sidecar gRPC Integration (Current Status)
+
+The sidecar talks to backend gRPC endpoints on the dedicated HTTP/2 port.
+
+### Currently wired paths
+
+- `ReportAnalyticsEvent` / `StreamAnalyticsEvents`
+  - Accepts `event_type = "question_answered"` with valid `payload_json`.
+  - Persists via `IAnalyticsEventWriter`.
+  - Unsupported event types are explicitly rejected.
+
+- `SubmitInferenceResult`
+  - Persists via `ISidecarInferenceStore`.
+  - Current default implementation is in-memory (`InMemorySidecarInferenceStore`) and intended as a bridge until persistent storage is finalized.
+
+- `TriggerBackendAction`
+  - Supports `action = "admin_event_queue_reprocess"` with optional `params_json`:
+    - `scope` (string, default `"all"`)
+    - `limit` (int, default `1000`)
+    - `adminUser` (string, optional)
+  - Unknown actions return explicit errors.
+
+### Next planned improvements
+
+- Expand supported analytics event types beyond `question_answered`.
+- Replace in-memory inference store with durable persistence.
+- Continue SEQ-3 / SEQ-4 work in `docs/GITHUB_ISSUES_CHECKLIST.md` and `docs/GRPC_TECH_DEBT_NEXT_STEPS.md`.
 
 ---
 

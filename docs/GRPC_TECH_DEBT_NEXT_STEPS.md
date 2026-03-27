@@ -42,3 +42,8 @@ This document operationalizes the next steps after dashboard-target alignment.
 - TODO comments removed for covered paths.
 - Integration tests added for all gRPC methods touched.
 - Performance sanity check: streaming methods validated with cancellation + bounded resource use.
+
+## Immediate Progress (this branch)
+- ✅ `SidecarGrpcService` now persists supported `question_answered` analytics events through `IAnalyticsEventWriter` instead of placeholder logging-only flow.
+- ✅ `SidecarGrpcService` now stores inference results through `ISidecarInferenceStore` (in-memory implementation) instead of placeholder record IDs.
+- ✅ `SidecarGrpcService` now supports deterministic backend action dispatch for `admin_event_queue_reprocess` via MediatR (`AdminReprocessEventQueue`), with explicit validation for unsupported actions and invalid params payloads.
