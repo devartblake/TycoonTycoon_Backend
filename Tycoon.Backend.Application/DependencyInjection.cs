@@ -47,6 +47,9 @@ namespace Tycoon.Backend.Application
             // Economy
             services.AddScoped<Economy.EconomyService>();
 
+            // Player Transactions (aggregate)
+            services.AddScoped<PlayerTransactions.PlayerTransactionService>();
+
             // Powerups
             services.AddScoped<Powerups.PowerupService>();
 
