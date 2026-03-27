@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Reduce first-time prompts and telemetry noise during CI
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+export DOTNET_ENVIRONMENT=Development
+export ASPNETCORE_ENVIRONMENT=Development
+
 PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
 STARTUP="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
 CONTEXT="AppDb"
