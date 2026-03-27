@@ -8,6 +8,8 @@ A modern, cloud-native backend API built with .NET 9, designed for scalable mult
 
 - [Overview](#overview)
 - [Architecture](#architecture)
+- [Authentication & Login](#authentication--login)
+- [API Feature Areas](#api-feature-areas)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Development Workflows](#development-workflows)
@@ -17,6 +19,7 @@ A modern, cloud-native backend API built with .NET 9, designed for scalable mult
 - [Database Migrations](#database-migrations)
 - [Available Services](#available-services)
 - [Testing](#testing)
+- [CI/CD](#cicd)
 - [Troubleshooting](#troubleshooting)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -77,6 +80,94 @@ TycoonTycoon_Backend/
 - **Real-time Communication**: SignalR
 - **Orchestration**: .NET Aspire
 - **Sidecar**: Python 3.12, FastAPI, uvicorn
+
+---
+
+## Authentication & Login
+
+The backend uses **JWT (JSON Web Tokens)** for all authentication. There is no external OAuth provider — auth is handled entirely by the API.
+
+### Player Auth Endpoints (`/auth`)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/auth/register` | Create a new account (email, handle, password) |
+| POST | `/auth/signup` | Register + immediate login in one call (preferred for mobile) |
+| POST | `/auth/login` | Login with email and password |
+| POST | `/auth/refresh` | Exchange a refresh token for a new access token |
+| POST | `/auth/logout` | Revoke refresh tokens for the current device |
+
+### Admin Auth Endpoints (`/admin/auth`)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/admin/auth/login` | Admin login (email allowlist enforced) |
+| POST | `/admin/auth/refresh` | Admin token refresh |
+| GET | `/admin/auth/me` | Current admin profile (requires authorization) |
+
+Admin routes additionally require the `X-Admin-Ops-Key` header (configured via `AdminOps:Key` in appsettings).
+
+### How It Works
+
+1. **Register** — `POST /auth/signup` with `{ email, password, handle, deviceId }`. Password is hashed with BCrypt. Returns an access token + refresh token immediately.
+2. **Login** — `POST /auth/login` with `{ email, password, deviceId }`. Returns a JWT access token (60 min) and a refresh token (30 days, per-device).
+3. **Authenticated requests** — Include `Authorization: Bearer <access_token>` header.
+4. **Token refresh** — `POST /auth/refresh` with the refresh token before the access token expires.
+5. **WebSocket auth** — SignalR hubs accept the token via `?access_token=` query parameter on `/ws/*` endpoints.
+
+### JWT Configuration (`appsettings.json`)
+
+```json
+{
+  "JwtSettings": {
+    "SecretKey": "YOUR-SUPER-SECRET-KEY-MINIMUM-32-CHARACTERS-LONG",
+    "Issuer": "TycoonBackendApi",
+    "Audience": "TycoonFrontendApp",
+    "AccessTokenExpirationMinutes": 60,
+    "RefreshTokenExpirationDays": 30
+  }
+}
+```
+
+### JWT Claims
+
+| Claim | Description |
+|-------|-------------|
+| `sub` | User ID (GUID) |
+| `email` | User email |
+| `handle` | Username |
+| `role` | `"admin"` or `"user"` |
+| `scope` | Space-separated permissions (e.g. `profile:read gameplay:write`) |
+| `aud` | `"mobile-app"` or `"admin-app"` |
+
+---
+
+## API Feature Areas
+
+The API is organized into feature modules under `Tycoon.Backend.Api/Features/`:
+
+**Player & Auth** — Auth, Users, Players, Profile
+**Gameplay** — Matches, Matchmaking, Party, Territory, Questions, Leaderboards, Seasons
+**Progression & Economy** — Skills, Powerups, Missions, Economy, Referrals, Votes
+**Events** — GameEvents, Guardians
+**Analytics** — Player analytics and event tracking
+**Mobile** — Dedicated mobile endpoints for Matches, Players, Seasons, Leaderboards, Economy
+**Admin** — Full admin panel endpoints for Users, Matches, Economy, Seasons, Moderation, Anti-Cheat, Notifications, Questions, Skills, Powerups, Config, Media, Analytics, Email ACL
+
+### gRPC Services (port 5001)
+
+| Service | Proto | Purpose |
+|---------|-------|---------|
+| SidecarService | `protos/sidecar.proto` | Python sidecar integration (analytics, ML inference) |
+| MobileMatchService | `protos/mobile.proto` | Flutter mobile client (match lifecycle, streaming) |
+
+### SignalR Hubs (port 5000)
+
+| Hub | Path | Purpose |
+|-----|------|---------|
+| Match Hub | `/ws/match` | Real-time match state |
+| Presence Hub | `/ws/presence` | Online presence tracking |
+| Notification Hub | `/ws/notify` | Push notifications |
 
 ---
 
@@ -580,16 +671,49 @@ dotnet run --project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj
 
 ---
 
+## CI/CD
+
+GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs on every PR and push to `main`/`master`:
+
+1. **Build & Test** — Restore, build (Release), run all tests
+2. **Security Contract Tests** — Validates admin auth, rate limiting, moderation, banned player checks, and error envelope hardening
+3. **Schema Validation** — Detects EF Core schema drift using `dotnet-ef`
+
+---
+
 ## 📚 Documentation
 
-- **[Docker.md](Docker.md)** - Detailed Docker setup and infrastructure guide
-- **[docs/CHANGELOG.md](docs/CHANGELOG.md)** - Branch changelog — all changes on `claude/add-minio-docker-QBFUx`
-- **[docs/FLUTTER_INTEGRATION.md](docs/FLUTTER_INTEGRATION.md)** - Authoritative Flutter client integration guide (auth, REST API, SignalR, error handling)
-- **[docs/FLUTTER_GAME_BALANCE_IMPLEMENTATION_PLAN.md](docs/FLUTTER_GAME_BALANCE_IMPLEMENTATION_PLAN.md)** - Flutter implementation plan for economy, safeguards, and mode entry UX
-- **[docs/minio-setup.md](docs/minio-setup.md)** - MinIO bucket setup (console, mc CLI, AWS CLI, .NET SDK examples)
+### Architecture & Decisions
 - **[docs/BACKEND_DECISIONS.md](docs/BACKEND_DECISIONS.md)** - Frozen architectural decisions (auth, enums, event dedupe, MFA)
-- **[docs/GAME_BALANCE_AUTOMATION_PLAN.md](docs/GAME_BALANCE_AUTOMATION_PLAN.md)** - Energy/lives mode balancing and Sidecar automation implementation plan
-- **[API Documentation](http://localhost:5000/swagger)** - Interactive API documentation (when API is running)
+- **[docs/auth_flow_backend_plan.md](docs/auth_flow_backend_plan.md)** - Auth flow design and backend plan
+- **[docs/frontend_backend_auth_analysis.md](docs/frontend_backend_auth_analysis.md)** - Frontend/backend auth integration analysis
+- **[docs/security_error_envelope_contract.md](docs/security_error_envelope_contract.md)** - Error envelope security contract
+
+### Infrastructure & Setup
+- **[Docker.md](Docker.md)** - Detailed Docker setup and infrastructure guide
+- **[docs/minio-setup.md](docs/minio-setup.md)** - MinIO bucket setup (console, mc CLI, AWS CLI, .NET SDK)
+- **[docs/backend-migrations-analysis.md](docs/backend-migrations-analysis.md)** - Migration strategy and analysis
+
+### Game Systems
+- **[docs/PLAYER_TRANSACTIONS.md](docs/PLAYER_TRANSACTIONS.md)** - Economy and season point transaction system reference
+- **[docs/GAME_BALANCE_AUTOMATION_PLAN.md](docs/GAME_BALANCE_AUTOMATION_PLAN.md)** - Energy/lives mode balancing and Sidecar automation
+- **[docs/REBALANCE_OPERATIONS_RUNBOOK.md](docs/REBALANCE_OPERATIONS_RUNBOOK.md)** - Rebalance operations runbook
+
+### Client Integration
+- **[docs/FLUTTER_INTEGRATION.md](docs/FLUTTER_INTEGRATION.md)** - Flutter client integration guide (auth, REST API, SignalR, error handling)
+- **[docs/FLUTTER_GAME_BALANCE_IMPLEMENTATION_PLAN.md](docs/FLUTTER_GAME_BALANCE_IMPLEMENTATION_PLAN.md)** - Flutter economy, safeguards, and mode entry UX
+
+### Admin & Operations
+- **[docs/admin_backend_priority_plan.md](docs/admin_backend_priority_plan.md)** - Admin backend priority plan
+- **[docs/frontend_admin_security_rollout_plan.md](docs/frontend_admin_security_rollout_plan.md)** - Frontend admin security rollout
+- **[docs/FASTAPI_SIDECAR_IMPLEMENTATION_PROCESS.md](docs/FASTAPI_SIDECAR_IMPLEMENTATION_PROCESS.md)** - FastAPI sidecar implementation guide
+
+### Other
+- **[docs/CHANGELOG.md](docs/CHANGELOG.md)** - Branch changelog
+- **[docs/SWAGGER_FIX.md](docs/SWAGGER_FIX.md)** - Swagger configuration fixes
+
+### Live Dashboards (when running)
+- **[API Documentation](http://localhost:5000/swagger)** - Interactive Swagger UI
 - **Hangfire Dashboard** - Background job monitoring at http://localhost:5000/hangfire
 - **Operator Dashboard** - Ops control panel at http://localhost:8200
 

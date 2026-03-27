@@ -6,7 +6,7 @@ cd "$PROJECT_ROOT"
 
 MIGRATIONS_DIR="Tycoon.Backend.Migrations/Migrations"
 PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
-STARTUP_PROJECT="Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+STARTUP_PROJECT="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
 CONTEXT="AppDb"
 MIGRATION_NAME="InitialCreate"
 SKIP_ADD=false
