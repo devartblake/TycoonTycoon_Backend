@@ -352,5 +352,5 @@ MINIO_CONSOLE_PORT (default 9001)
 
 ## Pending
 
-- EF migration for the `votes` table (schema ready; run `dotnet ef migrations add AddVotes --startup-project ../Tycoon.Backend.Api`)
+- ✅ Vote schema migration is already present in `20260319000000_AddGameEventTables` (`votes` table + indexes).
 - Operator Dashboard Priority 4 pages: Media upload, Powerups, Skills seeding (planned)
