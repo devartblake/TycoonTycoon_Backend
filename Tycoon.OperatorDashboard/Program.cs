@@ -71,5 +71,3 @@ builder.Services.AddHttpClient("tycoon-api", client =>
     app.MapFallbackToPage("/_Host");
 
     app.Run();
-
-    

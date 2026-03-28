@@ -7,6 +7,7 @@ using Tycoon.Backend.Application.Leaderboards;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Api.Grpc;
 using Tycoon.Shared.Contracts.Dtos;
+using Tycoon.Backend.Application.Abstractions;
 
 namespace Tycoon.Backend.Api.Grpc;
 
