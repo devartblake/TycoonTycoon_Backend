@@ -24,6 +24,7 @@ using Tycoon.Backend.Api.Features.AdminAnalytics;
 using Tycoon.Backend.Api.Features.AdminAntiCheat;
 using Tycoon.Backend.Api.Features.AdminAuth;
 using Tycoon.Backend.Api.Features.AdminEconomy;
+using Tycoon.Backend.Api.Features.AdminPlayerTransactions;
 using Tycoon.Backend.Api.Features.AdminEventQueue;
 using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
@@ -717,6 +718,7 @@ AdminMediaEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
 AdminAuditEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);
+AdminPlayerTransactionEndpoints.Map(admin);
 AdminPowerupsEndpoints.Map(admin);
 AdminSkillsEndpoints.Map(admin);
 AdminMatchesEndpoints.Map(admin);
@@ -728,6 +730,7 @@ AdminAntiCheatAnalyticsEndpoints.Map(admin);
 AdminPartyAntiCheatEndpoints.Map(admin);
 AdminSeasonRewardsEndpoints.Map(admin);
 AdminSeasonLifecycleEndpoints.Map(admin);
+AdminSeasonPointsEndpoints.Map(admin);
 AdminEmailAclEndpoints.Map(admin);
 
 // Startup logging

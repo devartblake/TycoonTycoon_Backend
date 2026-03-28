@@ -85,6 +85,9 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<TerritoryDuel> TerritoryDuels => Set<TerritoryDuel>();
         public DbSet<PlayerEventStats> PlayerEventStats => Set<PlayerEventStats>();
         public DbSet<AdminEmailAcl> AdminEmailAcls => Set<AdminEmailAcl>();
+        public DbSet<PlayerTransaction> PlayerTransactions => Set<PlayerTransaction>();
+        public DbSet<PlayerTransactionActor> PlayerTransactionActors => Set<PlayerTransactionActor>();
+        public DbSet<PlayerTransactionItem> PlayerTransactionItems => Set<PlayerTransactionItem>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
