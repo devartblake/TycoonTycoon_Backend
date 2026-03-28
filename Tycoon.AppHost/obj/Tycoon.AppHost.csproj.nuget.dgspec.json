@@ -1159,6 +1159,11 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "EFCore.NamingConventions": {
+              "target": "Package",
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
+            },
             "Elastic.Clients.Elasticsearch": {
               "target": "Package",
               "version": "[8.19.0, )",
