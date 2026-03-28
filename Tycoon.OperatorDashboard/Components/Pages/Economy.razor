@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
+@using Tycoon.OperatorDashboard.Components.Common
 
 <h1>Economy</h1>
 
@@ -296,7 +297,7 @@ else
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem">
             @foreach (var (label, key) in new[] { ("Coins", "coins"), ("Diamonds", "diamonds"), ("XP", "xp") })
             {
-                var val = wallet.TryGetProperty(key, out var v) ? v.GetInt64() : 0;
+                var val = JsonSafe.GetLong(wallet, key);
                 <div class="card" style="text-align:center">
                     <div style="font-size:2rem;font-weight:700;color:#1e293b">@val.ToString("N0")</div>
                     <div style="font-size:.875rem;color:#64748b">@label</div>
@@ -330,17 +331,17 @@ else
 
 @if (_tab == "Transaction History" && _history is not null)
 {
-    @if (_history.RootElement.TryGetProperty("items", out var txItems))
+    @if (JsonSafe.EnumerateArrayProperty(_history, "items").Any())
     {
         <table>
             <thead><tr><th>Type</th><th>Amount</th><th>Reason</th><th>At</th></tr></thead>
             <tbody>
-                @foreach (var el in txItems.EnumerateArray())
+                @foreach (var el in JsonSafe.EnumerateArrayProperty(_history, "items"))
                 {
-                    var type   = el.TryGetProperty("type",        out var t) ? t.GetString() ?? "—" : "—";
-                    var amount = el.TryGetProperty("amount",      out var a) ? a.GetInt64() : 0;
-                    var reason = el.TryGetProperty("reason",      out var r) ? r.GetString() ?? "—" : "—";
-                    var at     = el.TryGetProperty("createdAtUtc", out var c) ? c.GetString() ?? "—" : "—";
+                    var type   = JsonSafe.GetText(el, "type");
+                    var amount = JsonSafe.GetLong(el, "amount");
+                    var reason = JsonSafe.GetText(el, "reason");
+                    var at     = JsonSafe.GetText(el, "createdAtUtc");
                     <tr>
                         <td>@type</td>
                         <td style="font-weight:600;color:@(amount >= 0 ? "#166534" : "#991b1b")">@(amount >= 0 ? "+" : "")@amount.ToString("N0")</td>
