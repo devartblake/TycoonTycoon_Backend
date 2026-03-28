@@ -79,19 +79,41 @@ namespace Tycoon.Backend.Application.Questions
 
             var total = await filtered.CountAsync(ct);
 
-            var items = await sorted
+            var pageRows = await sorted
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Text,
+                    x.Category,
+                    x.Difficulty,
+                    x.MediaKey,
+                    x.UpdatedAtUtc
+                })
+                .ToListAsync(ct);
+
+            var pageIds = pageRows.Select(x => x.Id).ToArray();
+            var tagsByQuestionId = await db.QuestionTags.AsNoTracking()
+                .Where(t => pageIds.Contains(t.QuestionId))
+                .OrderBy(t => t.Tag)
+                .GroupBy(t => t.QuestionId)
+                .ToDictionaryAsync(
+                    g => g.Key,
+                    g => g.Select(x => x.Tag).Take(8).ToList(),
+                    ct);
+
+            var items = pageRows
                 .Select(x => new QuestionListItemDto(
                     x.Id,
                     x.Text.Length <= 90 ? x.Text : x.Text.Substring(0, 90) + "…",
                     x.Category,
                     x.Difficulty,
-                    db.QuestionTags.Where(t => t.QuestionId == x.Id).Select(t => t.Tag).Take(8).ToList(),
+                    tagsByQuestionId.TryGetValue(x.Id, out var tagsForQuestion) ? tagsForQuestion : [],
                     x.MediaKey != null,
                     x.UpdatedAtUtc
                 ))
-                .ToListAsync(ct);
+                .ToList();
 
             // Facets (based on current filtered set except the facet dimension itself could be expanded later)
             // For now: compute facets from the filtered result set.
