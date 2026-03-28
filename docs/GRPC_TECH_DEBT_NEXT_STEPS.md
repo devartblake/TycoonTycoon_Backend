@@ -58,3 +58,4 @@ This document operationalizes the next steps after dashboard-target alignment.
 - ✅ Added concurrent participant score-consistency coverage for `MatchSession.ApplyAnswerResult` under parallel updates.
 - ✅ Added `MobileMatchGrpcServiceTests` coverage for streamed answer-result/running-score behavior and live leaderboard update streaming.
 - ✅ Added `PlayMatch` action-cap guard (`MaxActionsPerStream`) and test coverage to ensure long-lived streams remain bounded.
+- ✅ Added configurable + clamped leaderboard polling interval (`MOBILE_MATCH_LEADERBOARD_POLL_SECONDS`, 1-60s) with test coverage for defaults/range handling.

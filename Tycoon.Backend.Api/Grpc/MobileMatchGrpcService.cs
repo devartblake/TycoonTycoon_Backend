@@ -26,6 +26,8 @@ namespace Tycoon.Backend.Api.Grpc;
 public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServiceBase
 {
     internal const int MaxActionsPerStream = 2048;
+    internal static readonly TimeSpan DefaultLeaderboardPollInterval = TimeSpan.FromSeconds(15);
+    private const string LeaderboardPollSecondsEnv = "MOBILE_MATCH_LEADERBOARD_POLL_SECONDS";
 
     // Active bidirectional match streams keyed by matchId.
     // Used to fan-out MatchEvents (opponent score, timer, end) to all
@@ -35,12 +37,15 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
     private readonly IMediator _mediator;
     private readonly IAppDb _db;
     private readonly ILogger<MobileMatchGrpcService> _logger;
+    private readonly TimeSpan _leaderboardPollInterval;
 
     public MobileMatchGrpcService(IMediator mediator, IAppDb db, ILogger<MobileMatchGrpcService> logger)
     {
         _mediator = mediator;
         _db = db;
         _logger   = logger;
+        _leaderboardPollInterval = ResolveLeaderboardPollInterval(
+            Environment.GetEnvironmentVariable(LeaderboardPollSecondsEnv));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -257,7 +262,7 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
 
         var windowSize = request.WindowSize > 0 ? request.WindowSize : 5;
 
-        // Push an initial snapshot immediately, then poll every 15 s.
+        // Push an initial snapshot immediately, then poll on configured interval.
         // Future enhancement: switch to Redis pub/sub once leaderboard change-stream
         // plumbing is promoted to a shared notification channel.
         while (!context.CancellationToken.IsCancellationRequested)
@@ -267,7 +272,7 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
                 var update = await BuildLiveLeaderboardUpdateAsync(request.PlayerId, windowSize, context.CancellationToken);
                 await responseStream.WriteAsync(update, context.CancellationToken);
 
-                await Task.Delay(TimeSpan.FromSeconds(15), context.CancellationToken);
+                await Task.Delay(_leaderboardPollInterval, context.CancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -288,6 +293,15 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
         var auth = context.RequestHeaders.GetValue("authorization");
         if (string.IsNullOrWhiteSpace(auth) || !auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             throw new RpcException(new Status(StatusCode.Unauthenticated, "Bearer token required"));
+    }
+
+    internal static TimeSpan ResolveLeaderboardPollInterval(string? value)
+    {
+        if (!int.TryParse(value, out var seconds))
+            return DefaultLeaderboardPollInterval;
+
+        var clampedSeconds = Math.Clamp(seconds, 1, 60);
+        return TimeSpan.FromSeconds(clampedSeconds);
     }
 
     private async Task<LeaderboardUpdate> BuildLiveLeaderboardUpdateAsync(

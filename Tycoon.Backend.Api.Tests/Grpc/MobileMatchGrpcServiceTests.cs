@@ -12,6 +12,25 @@ namespace Tycoon.Backend.Api.Tests.Grpc;
 public sealed class MobileMatchGrpcServiceTests
 {
     [Fact]
+    public void ResolveLeaderboardPollInterval_Should_Use_Default_For_Invalid_Input()
+    {
+        var interval = MobileMatchGrpcService.ResolveLeaderboardPollInterval("not-a-number");
+        Assert.Equal(MobileMatchGrpcService.DefaultLeaderboardPollInterval, interval);
+    }
+
+    [Fact]
+    public void ResolveLeaderboardPollInterval_Should_Clamp_To_Allowed_Range()
+    {
+        var low = MobileMatchGrpcService.ResolveLeaderboardPollInterval("0");
+        var high = MobileMatchGrpcService.ResolveLeaderboardPollInterval("999");
+        var inRange = MobileMatchGrpcService.ResolveLeaderboardPollInterval("5");
+
+        Assert.Equal(TimeSpan.FromSeconds(1), low);
+        Assert.Equal(TimeSpan.FromSeconds(60), high);
+        Assert.Equal(TimeSpan.FromSeconds(5), inRange);
+    }
+
+    [Fact]
     public async Task PlayMatch_Should_Emit_AnswerResult_With_RunningScore()
     {
         var mediator = new FakeMediator();
