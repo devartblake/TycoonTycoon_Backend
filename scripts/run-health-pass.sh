@@ -22,9 +22,21 @@ run_cmd() {
   local idx="$2"
   local out_file="${TMP_DIR}/cmd_${idx}.log"
   local status notes
+  local runner_cmd="${cmd}"
+
+  # If local dotnet is unavailable but docker is present, run dotnet commands
+  # in the .NET 9 SDK container so health pass can still run on Docker-only hosts.
+  if [[ "${cmd}" == dotnet* ]] && ! command -v dotnet >/dev/null 2>&1 && command -v docker >/dev/null 2>&1; then
+    runner_cmd="docker run --rm -v \"${ROOT_DIR}\":/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:9.0 bash -lc \"${cmd}\""
+  fi
+
+  # Same fallback for EF validation script (which internally shells out to dotnet).
+  if [[ "${cmd}" == "bash scripts/validate-ef-schema.sh" ]] && ! command -v dotnet >/dev/null 2>&1 && command -v docker >/dev/null 2>&1; then
+    runner_cmd="docker run --rm -v \"${ROOT_DIR}\":/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:9.0 bash -lc \"bash scripts/validate-ef-schema.sh\""
+  fi
 
   set +e
-  (cd "${ROOT_DIR}" && bash -lc "${cmd}") >"${out_file}" 2>&1
+  (cd "${ROOT_DIR}" && bash -lc "${runner_cmd}") >"${out_file}" 2>&1
   local exit_code=$?
   set -e
 
