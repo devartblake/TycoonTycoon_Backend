@@ -245,10 +245,23 @@ else
 
     private async Task LoadAsync()
     {
-        _questions = await Api.ListQuestionsAsync(_query, _category, _page);
-        _currentPageIds = _questions?.RootElement.TryGetProperty("items", out var items) == true
-            ? items.EnumerateArray().Select(e => e.TryGetProperty("id", out var id) ? id.GetGuid() : Guid.Empty).Where(g => g != Guid.Empty).ToList()
-            : [];
+        try
+        {
+            _questions = await Api.ListQuestionsAsync(_query, _category, _page);
+            _currentPageIds = _questions?.RootElement.TryGetProperty("items", out var items) == true
+                ? items.EnumerateArray().Select(e => e.TryGetProperty("id", out var id) ? id.GetGuid() : Guid.Empty).Where(g => g != Guid.Empty).ToList()
+                : [];
+
+            _message = string.Empty;
+            _isError = false;
+        }
+        catch (Exception ex)
+        {
+            _questions = null;
+            _currentPageIds = [];
+            _message = $"Failed to load questions: {ex.Message}";
+            _isError = true;
+        }
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
