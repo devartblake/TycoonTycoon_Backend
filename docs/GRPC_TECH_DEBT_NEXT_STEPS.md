@@ -52,6 +52,7 @@ This document operationalizes the next steps after dashboard-target alignment.
 - ✅ Added stream-cap and cancellation coverage for `SidecarGrpcService.StreamAnalyticsEvents`, and wired a bounded per-stream event cap in service logic.
 - ✅ Added in-memory idempotency guard for duplicate inference submissions (same model/entity/score/metadata returns stable record id) with service-level test coverage.
 - ✅ Added file-backed durable inference store (`FileSidecarInferenceStore`) with on-start index reload and tests for duplicate payload idempotency across process restarts.
+- ✅ Added file-store resilience tests for malformed-line reload tolerance and cancellation-token honoring in inference persistence.
 - ✅ `MobileMatchGrpcService` leaderboard stream now uses live MediatR leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
 - ✅ `MobileMatchGrpcService` answer flow now evaluates correctness against persisted question answer keys and emits live running-score/correct-count updates to participants.
 - ✅ Added initial `MatchSession` tests for score progression and fan-out broadcast behavior in streaming sessions.
