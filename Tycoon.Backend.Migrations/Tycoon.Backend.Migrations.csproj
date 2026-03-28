@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Include="MigrationAssemblyMarker.cs" />
+    <Compile Include="AppDbDesignTimeFactory.cs" />
     <Compile Include="Migrations\**\*.cs" />
   </ItemGroup>
 
