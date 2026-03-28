@@ -14,6 +14,9 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
             b.Property(x => x.ReversalOfTransactionId);
             b.HasIndex(x => x.ReversalOfTransactionId);
 
+            b.Property(x => x.PlayerTransactionId);
+            b.HasIndex(x => x.PlayerTransactionId);
+
             b.Property(x => x.EventId).IsRequired();
             b.HasIndex(x => x.EventId).IsUnique(); // idempotency
 
