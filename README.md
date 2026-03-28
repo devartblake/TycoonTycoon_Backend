@@ -482,7 +482,9 @@ The sidecar talks to backend gRPC endpoints on the dedicated HTTP/2 port.
 
 - `SubmitInferenceResult`
   - Persists via `ISidecarInferenceStore`.
-  - Current default implementation is in-memory (`InMemorySidecarInferenceStore`) and intended as a bridge until persistent storage is finalized.
+  - Default implementation is file-backed (`FileSidecarInferenceStore`) with idempotency by `(modelName, entityId, score, metadataJson)`.
+  - Default path: `/tmp/tycoon-sidecar/inference-store.jsonl` (overridable with `SidecarInference:StorePath` or `SIDECAR_INFERENCE_STORE_PATH`).
+  - In Docker Compose, backend mounts `sidecar_inference_data` at `/var/lib/tycoon-sidecar` and sets `SIDECAR_INFERENCE_STORE_PATH=/var/lib/tycoon-sidecar/inference-store.jsonl`.
 
 - `TriggerBackendAction`
   - Supports `action = "admin_event_queue_reprocess"` with optional `params_json`:
@@ -494,7 +496,7 @@ The sidecar talks to backend gRPC endpoints on the dedicated HTTP/2 port.
 ### Next planned improvements
 
 - Expand supported analytics event types beyond `question_answered`.
-- Replace in-memory inference store with durable persistence.
+- Add a relational/warehouse-backed inference store implementation (file-backed store is current durable baseline).
 - Continue SEQ-3 / SEQ-4 work in `docs/GITHUB_ISSUES_CHECKLIST.md` and `docs/GRPC_TECH_DEBT_NEXT_STEPS.md`.
 
 ### Mobile gRPC note

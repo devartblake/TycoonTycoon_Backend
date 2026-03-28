@@ -77,3 +77,5 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Hardened `/admin/questions` list query shape to avoid provider-fragile nested tag projections that were causing repeated dashboard 500 retries.
 - [x] Added `scripts/run-health-pass.sh` to automate SEQ-5 command execution and regenerate `docs/PROJECT_HEALTH_REPORT.md`.
 - [x] Added Docker SDK fallback mode in `scripts/run-health-pass.sh` for dotnet-dependent checks on hosts without a local .NET installation.
+- [x] Added CI workflow job `health-pass-report` to run the health-pass script and publish `docs/PROJECT_HEALTH_REPORT.md` as a build artifact.
+- [x] Wired a persistent compose volume (`sidecar_inference_data`) for file-backed sidecar inference records and documented the runtime path/env wiring.

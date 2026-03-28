@@ -4,10 +4,19 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-28] Durable Sidecar Inference Path in Compose
+
+- Updated `docker/compose.yml` backend service to mount persistent volume `sidecar_inference_data` at `/var/lib/tycoon-sidecar`.
+- Added `SIDECAR_INFERENCE_STORE_PATH=/var/lib/tycoon-sidecar/inference-store.jsonl` so the file-backed inference store persists across backend container restarts.
+- Updated README sidecar gRPC status section to reflect that file-backed inference storage is now the default baseline.
+
+---
+
 ## [2026-03-28] Health Pass Automation Script
 
 - Added `scripts/run-health-pass.sh` to execute the SEQ-5 command checklist and regenerate `docs/PROJECT_HEALTH_REPORT.md` in a consistent format.
 - Added fallback execution mode for dotnet-dependent commands using `mcr.microsoft.com/dotnet/sdk:9.0` when local `dotnet` is unavailable but Docker is installed.
+- Added CI workflow job `health-pass-report` to execute `scripts/run-health-pass.sh` and upload `docs/PROJECT_HEALTH_REPORT.md` as a workflow artifact.
 - Ran the script in this environment:
   - `check-error-envelope-hardening` passed
   - `dotnet`/`docker` dependent checks remained blocked due to missing local tooling

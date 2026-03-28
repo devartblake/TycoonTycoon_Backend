@@ -409,9 +409,13 @@ services:
       Observability__ServiceName: "Tycoon.Backend.Api"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
       DataProtection__KeysPath: "${DATA_PROTECTION_KEYS_PATH:-/tmp/tycoon-dpkeys}"
+      # Durable file-backed sidecar inference store path (mounted volume below).
+      SIDECAR_INFERENCE_STORE_PATH: "/var/lib/tycoon-sidecar/inference-store.jsonl"
       # Comma-separated origins allowed by CORS (e.g. for mobile clients calling the API directly)
       Cors__AllowedOrigins__0: "${CORS_ORIGIN_0:-http://localhost:8200}"
       Cors__AllowedOrigins__1: "${CORS_ORIGIN_1:-}"
+    volumes:
+      - sidecar_inference_data:/var/lib/tycoon-sidecar
     depends_on:
       postgres:
         condition: service_healthy
@@ -574,4 +578,5 @@ volumes:
   # Back-compat alias for older compose service variants that still reference
   # `blazor_dp_keys` (for example `operator-dashboard-blazor`).
   blazor_dp_keys:
+  sidecar_inference_data:
   letsencrypt:
