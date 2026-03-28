@@ -13,6 +13,9 @@ All changes made on this branch relative to `main`.
   - `TriggerBackendAction` (supports `admin_event_queue_reprocess` via MediatR command dispatch with deterministic errors for unsupported/invalid actions)
 - Added `ISidecarInferenceStore` + `InMemorySidecarInferenceStore` and DI registration in API startup.
 
+### Mobile gRPC
+- `MobileMatchGrpcService.WatchLeaderboard` now builds live snapshots via MediatR (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshot generation.
+
 ### Dashboard build source-of-truth
 - Blazor operator dashboard remains authoritative in compose (`docker/Dockerfile.dashboard`).
 - Alternate Next.js dashboard Dockerfiles are preserved as archived `.txt` artifacts to avoid accidental default build-path drift.
