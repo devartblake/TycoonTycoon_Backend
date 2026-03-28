@@ -11,8 +11,8 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: 'Tycoon Operator Dashboard',
-  description: 'Admin dashboard for managing the Tycoon platform'
+  title: 'Synaptix Command',
+  description: 'Admin dashboard for managing the Synaptix platform'
 }
 
 const RootLayout = ({ children }: ChildrenType) => {

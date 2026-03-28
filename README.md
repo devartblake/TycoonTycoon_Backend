@@ -1,6 +1,6 @@
-# TycoonTycoon Backend
+# Synaptix Backend
 
-A modern, cloud-native backend API built with .NET 9, designed for scalable multiplayer trivia tycoon game infrastructure with real-time analytics, robust data persistence, and comprehensive observability.
+A modern, cloud-native backend API built with .NET 9, designed for the scalable Synaptix cognitive competition platform with real-time analytics, robust data persistence, and comprehensive observability.
 
 ---
 

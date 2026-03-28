@@ -1,6 +1,60 @@
-# Changelog — `claude/add-minio-docker-QBFUx`
+# Changelog
 
-All changes made on this branch relative to `main`.
+All notable changes to this project.
+
+---
+
+## [2026-03-28] Synaptix BE Packet A — Audit + Brand Surface Reframe
+
+### BE-A1: Backend Surface Inventory (Phase 0)
+- Created `docs/backend_surface_inventory.md` — complete audit of all product-visible strings, including Swagger config, dashboard titles, code comments, and documentation headings
+- Created risk register documenting items that must NOT be renamed (namespaces, JWT config, DB names, endpoints, DTOs, CI/CD)
+- Created deferred technical rename list for Packet E
+
+### BE-A2: Brand Surface Reframe (Phase 1)
+
+**Swagger/OpenAPI** (`Tycoon.Backend.Api/Program.cs`):
+- Title: "Tycoon Backend API" → "Synaptix API"
+- Description: "Trivia Tycoon Game Backend - Multiplayer Quiz Game API" → "Platform API for Synaptix gameplay, progression, live competition, and player systems."
+- Contact: "Tycoon Development Team" → "Synaptix Development Team"
+- SwaggerUI endpoint label: "Tycoon Trivia Backend API v1" → "Synaptix API v1"
+- DocumentTitle: "Tycoon API Documentation" → "Synaptix API Documentation"
+
+**Blazor Operator Dashboard** (`Tycoon.OperatorDashboard/`):
+- App title: "Tycoon Operator Dashboard" → "Synaptix Command"
+- Sidebar brand: "Tycoon Ops" → "Synaptix Command"
+- Dashboard API-unreachable banner: "tycoon-api" → "synaptix-api"
+
+**Vue Operator Dashboard** (`Tycoon.OperatorDashboard.Vue/`):
+- HTML title: "Materio - Vuetify Vuejs Admin Template" → "Synaptix Command"
+- Nav header: "Tycoon Ops" → "Synaptix Command"
+
+**Web/React Operator Dashboard** (`Tycoon.OperatorDashboard.Web/`):
+- Layout metadata title: "Tycoon Operator Dashboard" → "Synaptix Command"
+- Layout metadata description: "managing the Tycoon platform" → "managing the Synaptix platform"
+- themeConfig templateName: "Tycoon Ops" → "Synaptix Command"
+
+**Backend Code Comments**:
+- `AppDb.cs` XML doc: "Trivia Tycoon" → "Synaptix"
+
+**Documentation**:
+- `README.md` heading: "TycoonTycoon Backend" → "Synaptix Backend"
+- `README.md` description: updated to reference Synaptix platform
+
+### Separated Migration Plans
+- Created `docs/synaptix_frontend_plan.md` — self-contained Flutter app migration plan (FE Packets A–E)
+- Created `docs/synaptix_backend_plan.md` — self-contained backend migration plan (BE Packets A–E)
+
+### What was NOT changed (by design)
+- `Tycoon.Backend.*` / `Tycoon.Shared.*` namespaces
+- Project names and .csproj files
+- Endpoint paths and DTO field names
+- JWT issuer/audience (`TycoonBackendApi` / `TycoonFrontendApp`)
+- Database names, table names, migration identifiers
+- gRPC proto package (`tycoon.sidecar`)
+- Observability service name (`Tycoon.Backend.Api`)
+- CI/CD pipeline names, Docker image names
+- Cookie/persistence keys (`tycoon-ops-dashboard`)
 
 ---
 

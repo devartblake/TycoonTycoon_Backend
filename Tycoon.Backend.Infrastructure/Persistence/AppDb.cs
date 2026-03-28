@@ -11,7 +11,7 @@ using Tycoon.Backend.Infrastructure.Persistence.Configurations;
 namespace Tycoon.Backend.Infrastructure.Persistence
 {
     /// <summary>
-    /// Primary EF Core DbContext for Trivia Tycoon (PostgreSQL source of truth).
+    /// Primary EF Core DbContext for Synaptix (PostgreSQL source of truth).
     /// Treat this as the transactional boundary (no UnitOfWork abstraction).
     /// </summary>
     public sealed class AppDb : DbContext, IAppDb
