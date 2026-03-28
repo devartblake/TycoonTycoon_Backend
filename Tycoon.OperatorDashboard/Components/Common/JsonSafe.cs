@@ -47,4 +47,17 @@ public static class JsonSafe
             _ => fallback
         };
     }
+
+    public static int GetInt(JsonElement source, string propertyName, int fallback = 0)
+    {
+        if (!source.TryGetProperty(propertyName, out var value))
+            return fallback;
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetInt32(out var n) => n,
+            JsonValueKind.String when int.TryParse(value.GetString(), out var n) => n,
+            _ => fallback
+        };
+    }
 }
