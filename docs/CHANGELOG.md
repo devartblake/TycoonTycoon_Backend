@@ -4,6 +4,21 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-28] gRPC Checklist Progress + Health Report Refresh
+
+### gRPC debt-tracking docs
+- Marked SEQ-3 and SEQ-4 issue checklists as complete in `docs/GITHUB_ISSUES_CHECKLIST.md` after adding gRPC coverage for sidecar and mobile streaming behavior.
+- Added explicit progress note for `MobileMatchGrpcServiceTests` covering answer-result/running-score and live leaderboard stream behavior.
+- Updated `docs/GRPC_TECH_DEBT_NEXT_STEPS.md` to reflect expanded test coverage and clarify that execution is pending environment/tool availability.
+
+### Health pass refresh
+- Refreshed `docs/PROJECT_HEALTH_REPORT.md` date and latest run notes.
+- Re-ran shell health checks:
+  - `bash scripts/check-error-envelope-hardening.sh` ✅ pass
+  - `bash scripts/validate-ef-schema.sh` ❌ blocked (`dotnet: command not found`)
+
+---
+
 ## [2026-03-27] Sidecar gRPC Wiring + Dashboard Build Path Clarification
 
 ### Sidecar gRPC
@@ -16,6 +31,7 @@ All changes made on this branch relative to `main`.
 ### Mobile gRPC
 - `MobileMatchGrpcService.WatchLeaderboard` now builds live snapshots via MediatR (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshot generation.
 - `MobileMatchGrpcService.PlayMatch` now evaluates submitted answers against persisted question answer keys and emits live running score / correct-count updates per participant.
+- Added `EvaluateMatchAnswer` MediatR handler in application layer and initial `MatchSession` tests for score progression + stream fan-out behavior.
 
 ### Dashboard build source-of-truth
 - Blazor operator dashboard remains authoritative in compose (`docker/Dockerfile.dashboard`).

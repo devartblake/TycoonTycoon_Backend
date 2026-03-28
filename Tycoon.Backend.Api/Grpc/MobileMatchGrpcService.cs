@@ -3,8 +3,6 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Leaderboards;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Api.Grpc;
@@ -247,8 +245,8 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
         var windowSize = request.WindowSize > 0 ? request.WindowSize : 5;
 
         // Push an initial snapshot immediately, then poll every 15 s.
-        // TODO: replace polling with a Redis pub/sub subscription once
-        // the leaderboard service exposes a change stream.
+        // Future enhancement: switch to Redis pub/sub once leaderboard change-stream
+        // plumbing is promoted to a shared notification channel.
         while (!context.CancellationToken.IsCancellationRequested)
         {
             try
@@ -324,15 +322,8 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
         if (!Guid.TryParse(questionId, out var qid))
             return (string.Empty, false, 0);
 
-        var question = await _db.Questions.AsNoTracking()
-            .FirstOrDefaultAsync(q => q.Id == qid, ct);
-
-        if (question is null || string.IsNullOrWhiteSpace(question.CorrectOptionId))
-            return (string.Empty, false, 0);
-
-        var isCorrect = string.Equals(selectedOptionId, question.CorrectOptionId, StringComparison.OrdinalIgnoreCase);
-        var points = isCorrect ? 100 : 0;
-        return (question.CorrectOptionId, isCorrect, points);
+        var evaluation = await _mediator.Send(new EvaluateMatchAnswer(qid, selectedOptionId), ct);
+        return (evaluation.CorrectOptionId, evaluation.IsCorrect, evaluation.PointsAwarded);
     }
 }
 

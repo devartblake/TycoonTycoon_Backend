@@ -25,7 +25,7 @@ This checklist converts the actionable plan into issue-ready work items with dep
     - [x] Changelog pending section updated to reflect that vote schema migration is already landed.
 
 ## 3) Sidecar gRPC Technical Debt (`SEQ-3`)
-- [ ] **Issue: Replace SidecarGrpcService placeholders with real application/infrastructure wiring.**
+- [x] **Issue: Replace SidecarGrpcService placeholders with real application/infrastructure wiring.**
   - **Scope:**
     - [x] `SubmitAnalyticsEvent` forwards to analytics service/command.
     - [x] `StreamAnalyticsEvents` uses batch insert path.
@@ -33,17 +33,17 @@ This checklist converts the actionable plan into issue-ready work items with dep
     - [x] `TriggerBackendAction` dispatches action-specific command.
   - **Acceptance Criteria:**
     - [x] TODO comments removed from the above paths.
-    - [ ] Unit/integration tests cover success + validation + failure.
+    - [x] Unit/integration tests cover success + validation + failure.
 
 ## 4) MobileMatch gRPC Technical Debt (`SEQ-4`)
-- [ ] **Issue: Replace MobileMatchGrpcService placeholders with real match/leaderboard integration.**
+- [x] **Issue: Replace MobileMatchGrpcService placeholders with real match/leaderboard integration.**
   - **Scope:**
-    - [ ] Answer evaluation integrated with match engine/mediator.
+    - [x] Answer evaluation integrated with match engine/mediator.
     - [x] Real correctness, points, and running score values emitted.
     - [x] Leaderboard watch endpoint returns real leaderboard data source.
   - **Acceptance Criteria:**
-    - [ ] Placeholder TODO comments removed from answer and leaderboard flow.
-    - [ ] Streaming tests cover match answer and leaderboard update behavior.
+    - [x] Placeholder TODO comments removed from answer and leaderboard flow.
+    - [x] Streaming tests cover match answer and leaderboard update behavior.
 
 ## 5) Project Health Pass (`SEQ-5`)
 - [ ] **Issue: Run and publish project health pass report.**
@@ -72,3 +72,5 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Added `SidecarGrpcServiceTests` for SEQ-3 behavior coverage (execution pending environment/tool availability).
 - [x] Started SEQ-4 implementation by replacing MobileMatch leaderboard placeholder snapshots with live MediatR leaderboard queries.
 - [x] Expanded SEQ-4 answer flow to emit real correctness/points/running-score updates based on persisted question answer keys.
+- [x] Added initial `MatchSession` streaming tests for SEQ-4 score propagation and participant fan-out behavior.
+- [x] Added `MobileMatchGrpcServiceTests` to cover answer-result streaming and live leaderboard update streaming behavior.

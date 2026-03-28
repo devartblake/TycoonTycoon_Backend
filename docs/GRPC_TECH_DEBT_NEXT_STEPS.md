@@ -28,7 +28,7 @@ This document operationalizes the next steps after dashboard-target alignment.
 ## Workstream 2 — MobileMatchGrpcService
 
 ### 2.1 Answer evaluation integration
-- Wire answer evaluation through mediator/match engine.
+- [x] Wire answer evaluation through mediator/match engine.
 - Populate correctness/points/running score from real domain logic.
 
 ### 2.2 Opponent score propagation
@@ -41,7 +41,7 @@ This document operationalizes the next steps after dashboard-target alignment.
 
 ## Definition of Done
 - TODO comments removed for covered paths.
-- Integration tests added for all gRPC methods touched.
+- Integration tests added for all gRPC methods touched (execution pending environment/tool availability).
 - Performance sanity check: streaming methods validated with cancellation + bounded resource use.
 
 ## Immediate Progress (this branch)
@@ -51,3 +51,5 @@ This document operationalizes the next steps after dashboard-target alignment.
 - ✅ Added `SidecarGrpcServiceTests` coverage for analytics acceptance/rejection, streamed summary counts, inference result storage, and backend action dispatch (pending environment execution).
 - ✅ `MobileMatchGrpcService` leaderboard stream now uses live MediatR leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
 - ✅ `MobileMatchGrpcService` answer flow now evaluates correctness against persisted question answer keys and emits live running-score/correct-count updates to participants.
+- ✅ Added initial `MatchSession` tests for score progression and fan-out broadcast behavior in streaming sessions.
+- ✅ Added `MobileMatchGrpcServiceTests` coverage for streamed answer-result/running-score behavior and live leaderboard update streaming.
