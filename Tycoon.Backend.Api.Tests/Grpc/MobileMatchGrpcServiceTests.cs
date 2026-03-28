@@ -1,5 +1,6 @@
 using Grpc.Core;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Tycoon.Backend.Api.Grpc;
 using Tycoon.Backend.Application.Leaderboards;
@@ -14,7 +15,7 @@ public sealed class MobileMatchGrpcServiceTests
     public async Task PlayMatch_Should_Emit_AnswerResult_With_RunningScore()
     {
         var mediator = new FakeMediator();
-        var service = new MobileMatchGrpcService(mediator, NullLogger<MobileMatchGrpcService>.Instance);
+        var service = CreateService(mediator);
 
         var actions = new List<PlayerAction>
         {
@@ -54,7 +55,7 @@ public sealed class MobileMatchGrpcServiceTests
     public async Task WatchLeaderboard_Should_Stream_Live_Leaderboard_Update()
     {
         var mediator = new FakeMediator();
-        var service = new MobileMatchGrpcService(mediator, NullLogger<MobileMatchGrpcService>.Instance);
+        var service = CreateService(mediator);
 
         var cts = new CancellationTokenSource();
         var ctx = TestServerCallContext.CreateWithBearer(cts);
@@ -105,6 +106,34 @@ public sealed class MobileMatchGrpcServiceTests
 
         public IAsyncEnumerable<object?> CreateStream(object request, CancellationToken cancellationToken = default)
             => AsyncEnumerable.Empty<object?>();
+    }
+
+    private static MobileMatchGrpcService CreateService(IMediator mediator)
+    {
+        var logger = NullLogger<MobileMatchGrpcService>.Instance;
+        var ctors = typeof(MobileMatchGrpcService).GetConstructors();
+
+        var twoParamCtor = ctors.FirstOrDefault(c =>
+        {
+            var p = c.GetParameters();
+            return p.Length == 2
+                && typeof(IMediator).IsAssignableFrom(p[0].ParameterType)
+                && typeof(ILogger<MobileMatchGrpcService>).IsAssignableFrom(p[1].ParameterType);
+        });
+        if (twoParamCtor is not null)
+            return (MobileMatchGrpcService)twoParamCtor.Invoke([mediator, logger]);
+
+        var threeParamCtor = ctors.FirstOrDefault(c =>
+        {
+            var p = c.GetParameters();
+            return p.Length == 3
+                && typeof(IMediator).IsAssignableFrom(p[0].ParameterType)
+                && typeof(ILogger<MobileMatchGrpcService>).IsAssignableFrom(p[2].ParameterType);
+        });
+        if (threeParamCtor is not null)
+            return (MobileMatchGrpcService)threeParamCtor.Invoke([mediator, null!, logger]);
+
+        throw new InvalidOperationException("No supported MobileMatchGrpcService constructor signature found.");
     }
 
     private sealed class TestAsyncStreamReader<T>(IReadOnlyList<T> items) : IAsyncStreamReader<T>
