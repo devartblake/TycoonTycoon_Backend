@@ -39,6 +39,27 @@ namespace Tycoon.Backend.Application.Seasons
             return new ApplySeasonPointsResultDto(req.EventId, req.SeasonId, req.PlayerId, "Applied", profile.RankPoints);
         }
 
+        public async Task<SeasonPointHistoryDto> GetHistoryAsync(Guid playerId, int page, int pageSize, CancellationToken ct)
+        {
+            page = Math.Max(1, page);
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            var q = db.SeasonPointTransactions.AsNoTracking()
+                .Where(x => x.PlayerId == playerId)
+                .OrderByDescending(x => x.CreatedAtUtc);
+
+            var total = await q.CountAsync(ct);
+
+            var items = await q
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new SeasonPointTxnListItemDto(
+                    x.EventId, x.SeasonId, x.Kind, x.Delta, x.Note, x.CreatedAtUtc))
+                .ToListAsync(ct);
+
+            return new SeasonPointHistoryDto(playerId, page, pageSize, total, items);
+        }
+
         public async Task<Season?> GetActiveSeasonAsync(CancellationToken ct)
         {
             return await db.Seasons.AsNoTracking().FirstOrDefaultAsync(x => x.Status == SeasonStatus.Active, ct);
