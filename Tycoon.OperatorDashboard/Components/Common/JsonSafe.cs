@@ -21,6 +21,11 @@ public static class JsonSafe
         if (!source.TryGetProperty(propertyName, out var value))
             return fallback;
 
+        return GetText(value, fallback);
+    }
+
+    public static string GetText(JsonElement value, string fallback = "—")
+    {
         return value.ValueKind switch
         {
             JsonValueKind.String => value.GetString() ?? fallback,
@@ -59,5 +64,16 @@ public static class JsonSafe
             JsonValueKind.String when int.TryParse(value.GetString(), out var n) => n,
             _ => fallback
         };
+    }
+
+    public static Guid GetGuid(JsonElement source, string propertyName, Guid fallback = default)
+    {
+        if (!source.TryGetProperty(propertyName, out var value))
+            return fallback;
+
+        if (value.ValueKind == JsonValueKind.String && Guid.TryParse(value.GetString(), out var parsed))
+            return parsed;
+
+        return fallback;
     }
 }

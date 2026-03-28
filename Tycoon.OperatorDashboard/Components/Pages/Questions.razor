@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
+@using Tycoon.OperatorDashboard.Components.Common
 
 <h1>Questions</h1>
 
@@ -84,15 +85,15 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var el in _questions.RootElement.GetProperty("items").EnumerateArray())
+            @foreach (var el in JsonSafe.EnumerateArrayProperty(_questions, "items"))
             {
-                var id    = el.TryGetProperty("id", out var i) ? i.GetGuid() : Guid.Empty;
-                var text  = el.TryGetProperty("text",       out var t) ? t.GetString() ?? "" : "";
-                var cat   = el.TryGetProperty("category",   out var c) ? c.GetString() ?? "—" : "—";
-                var diff  = el.TryGetProperty("difficulty", out var d) ? d.GetString() ?? "—" : "—";
-                var tags  = el.TryGetProperty("tags",       out var tg) ? string.Join(", ", tg.EnumerateArray().Select(x => x.GetString())) : "";
-                var opts  = el.TryGetProperty("options",    out var op) ? op : default;
-                var corrId = el.TryGetProperty("correctOptionId", out var cid) ? cid.GetString() ?? "" : "";
+                var id    = JsonSafe.GetGuid(el, "id");
+                var text  = JsonSafe.GetText(el, "text", string.Empty);
+                var cat   = JsonSafe.GetText(el, "category");
+                var diff  = JsonSafe.GetText(el, "difficulty");
+                var tags  = el.TryGetProperty("tags", out var tg) && tg.ValueKind == JsonValueKind.Array
+                    ? string.Join(", ", tg.EnumerateArray().Select(x => JsonSafe.GetText(x, string.Empty)).Where(x => !string.IsNullOrWhiteSpace(x)))
+                    : string.Empty;
                 <tr>
                     <td><input type="checkbox" checked="@_selectedIds.Contains(id)" @onchange="e => ToggleSelect(id, (bool)e.Value!)" /></td>
                     <td style="max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@text</td>
@@ -180,9 +181,9 @@ else
 
         @if (_importResult is not null)
         {
-            var received = _importResult.RootElement.TryGetProperty("received", out var rv) ? rv.GetInt32() : 0;
-            var created  = _importResult.RootElement.TryGetProperty("created",  out var cr) ? cr.GetInt32() : 0;
-            var failed   = _importResult.RootElement.TryGetProperty("failed",   out var fl) ? fl.GetInt32() : 0;
+            var received = JsonSafe.GetInt(_importResult.RootElement, "received");
+            var created  = JsonSafe.GetInt(_importResult.RootElement, "created");
+            var failed   = JsonSafe.GetInt(_importResult.RootElement, "failed");
             <div style="margin-top:1rem;padding:.75rem;background:#f0fdf4;border-radius:8px;font-size:.875rem;border:1px solid #bbf7d0">
                 <strong>Import complete</strong> — Received: @received &nbsp;|&nbsp; Created: @created &nbsp;|&nbsp;
                 <span style="@(failed > 0 ? "color:#ef4444;font-weight:600" : "")">Failed: @failed</span>
@@ -248,9 +249,10 @@ else
         try
         {
             _questions = await Api.ListQuestionsAsync(_query, _category, _page);
-            _currentPageIds = _questions?.RootElement.TryGetProperty("items", out var items) == true
-                ? items.EnumerateArray().Select(e => e.TryGetProperty("id", out var id) ? id.GetGuid() : Guid.Empty).Where(g => g != Guid.Empty).ToList()
-                : [];
+            _currentPageIds = JsonSafe.EnumerateArrayProperty(_questions, "items")
+                .Select(e => JsonSafe.GetGuid(e, "id"))
+                .Where(g => g != Guid.Empty)
+                .ToList();
 
             _message = string.Empty;
             _isError = false;
@@ -304,21 +306,21 @@ else
     private void StartEdit(Guid id, System.Text.Json.JsonElement el)
     {
         _editingId = id;
-        _editText = el.TryGetProperty("text", out var t) ? t.GetString() ?? "" : "";
-        _editCategory = el.TryGetProperty("category", out var c) ? c.GetString() ?? "" : "";
-        _editDifficulty = el.TryGetProperty("difficulty", out var d) ? d.GetString() ?? "Medium" : "Medium";
+        _editText = JsonSafe.GetText(el, "text", string.Empty);
+        _editCategory = JsonSafe.GetText(el, "category", string.Empty);
+        _editDifficulty = JsonSafe.GetText(el, "difficulty", "Medium");
         _editTags = el.TryGetProperty("tags", out var tg)
-            ? string.Join(", ", tg.EnumerateArray().Select(x => x.GetString()))
+            ? string.Join(", ", tg.EnumerateArray().Select(x => JsonSafe.GetText(x, string.Empty)).Where(x => !string.IsNullOrWhiteSpace(x)))
             : "";
 
         // Preserve existing options so we don't lose them on edit
         _editOptions = el.TryGetProperty("options", out var op)
             ? op.EnumerateArray()
-                .Select(o => new { id = o.TryGetProperty("id", out var oid) ? oid.GetString() ?? "" : "", text = o.TryGetProperty("text", out var otxt) ? otxt.GetString() ?? "" : "" })
+                .Select(o => new { id = JsonSafe.GetText(o, "id", string.Empty), text = JsonSafe.GetText(o, "text", string.Empty) })
                 .Cast<object>()
                 .ToList()
             : [];
-        _editCorrectId = el.TryGetProperty("correctOptionId", out var cid) ? cid.GetString() ?? "a" : "a";
+        _editCorrectId = JsonSafe.GetText(el, "correctOptionId", "a");
         _editMsg = string.Empty;
     }
 
@@ -369,7 +371,7 @@ else
         }
         else
         {
-            var deleted = result.RootElement.TryGetProperty("deleted", out var d) ? d.GetInt32() : _selectedIds.Count;
+            var deleted = JsonSafe.GetInt(result.RootElement, "deleted", _selectedIds.Count);
             _message = $"Deleted {deleted} question(s).";
         }
         _selectedIds.Clear();
