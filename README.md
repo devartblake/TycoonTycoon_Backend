@@ -497,6 +497,10 @@ The sidecar talks to backend gRPC endpoints on the dedicated HTTP/2 port.
 - Replace in-memory inference store with durable persistence.
 - Continue SEQ-3 / SEQ-4 work in `docs/GITHUB_ISSUES_CHECKLIST.md` and `docs/GRPC_TECH_DEBT_NEXT_STEPS.md`.
 
+### Mobile gRPC note
+
+- `WatchLeaderboard` now uses live leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
+
 ---
 
 ## 🛠️ Available Services

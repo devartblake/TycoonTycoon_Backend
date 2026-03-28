@@ -27,12 +27,12 @@ This checklist converts the actionable plan into issue-ready work items with dep
 ## 3) Sidecar gRPC Technical Debt (`SEQ-3`)
 - [ ] **Issue: Replace SidecarGrpcService placeholders with real application/infrastructure wiring.**
   - **Scope:**
-    - [ ] `SubmitAnalyticsEvent` forwards to analytics service/command.
-    - [ ] `StreamAnalyticsEvents` uses batch insert path.
-    - [ ] `SubmitInferenceResult` persists via repository/service.
-    - [ ] `TriggerBackendAction` dispatches action-specific command.
+    - [x] `SubmitAnalyticsEvent` forwards to analytics service/command.
+    - [x] `StreamAnalyticsEvents` uses batch insert path.
+    - [x] `SubmitInferenceResult` persists via repository/service.
+    - [x] `TriggerBackendAction` dispatches action-specific command.
   - **Acceptance Criteria:**
-    - [ ] TODO comments removed from the above paths.
+    - [x] TODO comments removed from the above paths.
     - [ ] Unit/integration tests cover success + validation + failure.
 
 ## 4) MobileMatch gRPC Technical Debt (`SEQ-4`)
@@ -40,7 +40,7 @@ This checklist converts the actionable plan into issue-ready work items with dep
   - **Scope:**
     - [ ] Answer evaluation integrated with match engine/mediator.
     - [ ] Real correctness, points, and running score values emitted.
-    - [ ] Leaderboard watch endpoint returns real leaderboard data source.
+    - [x] Leaderboard watch endpoint returns real leaderboard data source.
   - **Acceptance Criteria:**
     - [ ] Placeholder TODO comments removed from answer and leaderboard flow.
     - [ ] Streaming tests cover match answer and leaderboard update behavior.
@@ -67,3 +67,7 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Added `docs/GRPC_TECH_DEBT_NEXT_STEPS.md` as the next-sequence implementation tracker for gRPC TODO debt.
 - [x] Started SEQ-3 implementation: wired `SidecarGrpcService` analytics/inference/backend-action paths to concrete services/dispatch.
 - [x] Updated README with Sidecar gRPC current-status matrix and planned follow-up items.
+- [x] Added changelog entry documenting Sidecar gRPC wiring progress and dashboard build source-of-truth decisions.
+- [x] Checked off completed SEQ-3 scope/acceptance items after Sidecar gRPC implementation landed.
+- [x] Added `SidecarGrpcServiceTests` for SEQ-3 behavior coverage (execution pending environment/tool availability).
+- [x] Started SEQ-4 implementation by replacing MobileMatch leaderboard placeholder snapshots with live MediatR leaderboard queries.
