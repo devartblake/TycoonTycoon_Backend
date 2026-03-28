@@ -251,7 +251,15 @@ builder.Services.AddSingleton<ISidecarInferenceStore>(_ =>
         ?? Environment.GetEnvironmentVariable("SIDECAR_INFERENCE_STORE_PATH")
         ?? "/tmp/tycoon-sidecar/inference-store.jsonl";
 
-    return new FileSidecarInferenceStore(path);
+    try
+    {
+        return new FileSidecarInferenceStore(path);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ Falling back to InMemorySidecarInferenceStore because file-backed store init failed for '{path}': {ex.Message}");
+        return new InMemorySidecarInferenceStore();
+    }
 });
 
 var signalr = builder.Services.AddSignalR();

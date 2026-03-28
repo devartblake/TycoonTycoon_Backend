@@ -4,7 +4,11 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPORT_PATH="${ROOT_DIR}/docs/PROJECT_HEALTH_REPORT.md"
 TMP_DIR="$(mktemp -d)"
+LOG_DIR="${ROOT_DIR}/artifacts/health-pass"
 trap 'rm -rf "${TMP_DIR}"' EXIT
+
+rm -rf "${LOG_DIR}"
+mkdir -p "${LOG_DIR}"
 
 declare -a COMMANDS=(
   "dotnet restore"
@@ -20,7 +24,7 @@ timestamp_utc="$(date -u +%Y-%m-%d)"
 run_cmd() {
   local cmd="$1"
   local idx="$2"
-  local out_file="${TMP_DIR}/cmd_${idx}.log"
+  local out_file="${LOG_DIR}/cmd_${idx}.log"
   local status notes
   local runner_cmd="${cmd}"
 
@@ -46,10 +50,10 @@ run_cmd() {
   else
     if grep -qiE "command not found|not installed|No such file or directory" "${out_file}"; then
       status="❌ Blocked"
-      notes="$(head -n 1 "${out_file}" | sed 's/|/\\|/g')"
+      notes="$(head -n 1 "${out_file}" | sed 's/|/\\|/g') (log: artifacts/health-pass/cmd_${idx}.log)"
     else
       status="❌ Fail"
-      notes="$(head -n 1 "${out_file}" | sed 's/|/\\|/g')"
+      notes="$(head -n 1 "${out_file}" | sed 's/|/\\|/g') (log: artifacts/health-pass/cmd_${idx}.log)"
       if [[ -z "${notes}" ]]; then
         notes="Exited with code ${exit_code}."
       fi
@@ -96,3 +100,4 @@ done
 } > "${REPORT_PATH}"
 
 echo "Wrote health report to ${REPORT_PATH}"
+echo "Wrote command logs to ${LOG_DIR}"

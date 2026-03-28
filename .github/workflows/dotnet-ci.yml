@@ -181,3 +181,9 @@ jobs:
         with:
           name: project-health-report
           path: docs/PROJECT_HEALTH_REPORT.md
+
+      - name: Upload health pass command logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-health-pass-logs
+          path: artifacts/health-pass

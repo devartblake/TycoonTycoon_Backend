@@ -79,3 +79,4 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Added Docker SDK fallback mode in `scripts/run-health-pass.sh` for dotnet-dependent checks on hosts without a local .NET installation.
 - [x] Added CI workflow job `health-pass-report` to run the health-pass script and publish `docs/PROJECT_HEALTH_REPORT.md` as a build artifact.
 - [x] Wired a persistent compose volume (`sidecar_inference_data`) for file-backed sidecar inference records and documented the runtime path/env wiring.
+- [x] Added health-pass command log artifacts (`artifacts/health-pass/*.log`) and CI artifact upload for easier blocker triage.

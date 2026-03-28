@@ -485,6 +485,7 @@ The sidecar talks to backend gRPC endpoints on the dedicated HTTP/2 port.
   - Default implementation is file-backed (`FileSidecarInferenceStore`) with idempotency by `(modelName, entityId, score, metadataJson)`.
   - Default path: `/tmp/tycoon-sidecar/inference-store.jsonl` (overridable with `SidecarInference:StorePath` or `SIDECAR_INFERENCE_STORE_PATH`).
   - In Docker Compose, backend mounts `sidecar_inference_data` at `/var/lib/tycoon-sidecar` and sets `SIDECAR_INFERENCE_STORE_PATH=/var/lib/tycoon-sidecar/inference-store.jsonl`.
+  - If file-store initialization fails at startup (e.g., invalid/unwritable path), API falls back to `InMemorySidecarInferenceStore` with a startup warning.
 
 - `TriggerBackendAction`
   - Supports `action = "admin_event_queue_reprocess"` with optional `params_json`:
