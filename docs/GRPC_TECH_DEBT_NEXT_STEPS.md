@@ -36,7 +36,7 @@ This document operationalizes the next steps after dashboard-target alignment.
 - Add stream consistency tests for concurrent participants.
 
 ### 2.3 Leaderboard streaming source
-- Replace placeholder leaderboard snapshots with leaderboard service query.
+- [x] Replace placeholder leaderboard snapshots with leaderboard service query.
 - Keep polling initially; later replace with pub/sub subscription path.
 
 ## Definition of Done
@@ -49,3 +49,4 @@ This document operationalizes the next steps after dashboard-target alignment.
 - ✅ `SidecarGrpcService` now stores inference results through `ISidecarInferenceStore` (in-memory implementation) instead of placeholder record IDs.
 - ✅ `SidecarGrpcService` now supports deterministic backend action dispatch for `admin_event_queue_reprocess` via MediatR (`AdminReprocessEventQueue`), with explicit validation for unsupported actions and invalid params payloads.
 - ✅ Added `SidecarGrpcServiceTests` coverage for analytics acceptance/rejection, streamed summary counts, inference result storage, and backend action dispatch (pending environment execution).
+- ✅ `MobileMatchGrpcService` leaderboard stream now uses live MediatR leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.

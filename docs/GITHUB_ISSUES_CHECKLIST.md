@@ -40,7 +40,7 @@ This checklist converts the actionable plan into issue-ready work items with dep
   - **Scope:**
     - [ ] Answer evaluation integrated with match engine/mediator.
     - [ ] Real correctness, points, and running score values emitted.
-    - [ ] Leaderboard watch endpoint returns real leaderboard data source.
+    - [x] Leaderboard watch endpoint returns real leaderboard data source.
   - **Acceptance Criteria:**
     - [ ] Placeholder TODO comments removed from answer and leaderboard flow.
     - [ ] Streaming tests cover match answer and leaderboard update behavior.
@@ -70,3 +70,4 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Added changelog entry documenting Sidecar gRPC wiring progress and dashboard build source-of-truth decisions.
 - [x] Checked off completed SEQ-3 scope/acceptance items after Sidecar gRPC implementation landed.
 - [x] Added `SidecarGrpcServiceTests` for SEQ-3 behavior coverage (execution pending environment/tool availability).
+- [x] Started SEQ-4 implementation by replacing MobileMatch leaderboard placeholder snapshots with live MediatR leaderboard queries.

@@ -3,6 +3,7 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Tycoon.Backend.Application.Leaderboards;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Api.Grpc;
 using Tycoon.Shared.Contracts.Dtos;
@@ -243,8 +244,7 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
         {
             try
             {
-                // TODO: query ILeaderboardService for real data
-                var update = BuildPlaceholderUpdate(request.PlayerId, windowSize);
+                var update = await BuildLiveLeaderboardUpdateAsync(request.PlayerId, windowSize, context.CancellationToken);
                 await responseStream.WriteAsync(update, context.CancellationToken);
 
                 await Task.Delay(TimeSpan.FromSeconds(15), context.CancellationToken);
@@ -270,16 +270,40 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
             throw new RpcException(new Status(StatusCode.Unauthenticated, "Bearer token required"));
     }
 
-    private static LeaderboardUpdate BuildPlaceholderUpdate(string playerId, int windowSize)
+    private async Task<LeaderboardUpdate> BuildLiveLeaderboardUpdateAsync(
+        string playerId,
+        int windowSize,
+        CancellationToken ct)
     {
-        // Placeholder — replace with real leaderboard data once wired
+        if (!Guid.TryParse(playerId, out var playerGuid))
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "player_id must be a valid UUID"));
+
+        var myTier = await _mediator.Send(new GetMyTier(playerGuid), ct);
+        var tierId = myTier?.TierId ?? 1;
+
+        var pageSize = Math.Clamp((windowSize * 2) + 1, 1, 100);
+        var leaderboard = await _mediator.Send(new GetTierLeaderboard(tierId, 1, pageSize), ct);
+
         var update = new LeaderboardUpdate
         {
             PlayerId      = playerId,
-            PlayerRank    = 0,
-            PlayerScore   = 0,
+            PlayerRank    = myTier?.TierRank ?? 0,
+            PlayerScore   = myTier?.Score ?? 0,
             SnapshotAtMs  = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         };
+
+        foreach (var entry in leaderboard.Entries.Take(pageSize))
+        {
+            update.Nearby.Add(new LeaderboardEntry
+            {
+                Rank = entry.TierRank,
+                PlayerId = entry.PlayerId.ToString(),
+                Handle = entry.Username,
+                Score = entry.Score,
+                Country = entry.CountryCode
+            });
+        }
+
         return update;
     }
 }
