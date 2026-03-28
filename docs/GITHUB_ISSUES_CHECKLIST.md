@@ -39,7 +39,7 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [ ] **Issue: Replace MobileMatchGrpcService placeholders with real match/leaderboard integration.**
   - **Scope:**
     - [ ] Answer evaluation integrated with match engine/mediator.
-    - [ ] Real correctness, points, and running score values emitted.
+    - [x] Real correctness, points, and running score values emitted.
     - [x] Leaderboard watch endpoint returns real leaderboard data source.
   - **Acceptance Criteria:**
     - [ ] Placeholder TODO comments removed from answer and leaderboard flow.
@@ -71,3 +71,4 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Checked off completed SEQ-3 scope/acceptance items after Sidecar gRPC implementation landed.
 - [x] Added `SidecarGrpcServiceTests` for SEQ-3 behavior coverage (execution pending environment/tool availability).
 - [x] Started SEQ-4 implementation by replacing MobileMatch leaderboard placeholder snapshots with live MediatR leaderboard queries.
+- [x] Expanded SEQ-4 answer flow to emit real correctness/points/running-score updates based on persisted question answer keys.

@@ -500,6 +500,7 @@ The sidecar talks to backend gRPC endpoints on the dedicated HTTP/2 port.
 ### Mobile gRPC note
 
 - `WatchLeaderboard` now uses live leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
+- `PlayMatch` now evaluates answer correctness using persisted question answer keys and emits running score/correct-count updates in stream events.
 
 ---
 

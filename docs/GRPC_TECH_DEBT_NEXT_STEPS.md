@@ -32,7 +32,7 @@ This document operationalizes the next steps after dashboard-target alignment.
 - Populate correctness/points/running score from real domain logic.
 
 ### 2.2 Opponent score propagation
-- Replace placeholder opponent score with live score state.
+- [x] Replace placeholder opponent score with live score state.
 - Add stream consistency tests for concurrent participants.
 
 ### 2.3 Leaderboard streaming source
@@ -50,3 +50,4 @@ This document operationalizes the next steps after dashboard-target alignment.
 - ✅ `SidecarGrpcService` now supports deterministic backend action dispatch for `admin_event_queue_reprocess` via MediatR (`AdminReprocessEventQueue`), with explicit validation for unsupported actions and invalid params payloads.
 - ✅ Added `SidecarGrpcServiceTests` coverage for analytics acceptance/rejection, streamed summary counts, inference result storage, and backend action dispatch (pending environment execution).
 - ✅ `MobileMatchGrpcService` leaderboard stream now uses live MediatR leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
+- ✅ `MobileMatchGrpcService` answer flow now evaluates correctness against persisted question answer keys and emits live running-score/correct-count updates to participants.

@@ -3,6 +3,8 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Leaderboards;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Api.Grpc;
@@ -30,11 +32,13 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
     private static readonly ConcurrentDictionary<string, MatchSession> _sessions = new();
 
     private readonly IMediator _mediator;
+    private readonly IAppDb _db;
     private readonly ILogger<MobileMatchGrpcService> _logger;
 
-    public MobileMatchGrpcService(IMediator mediator, ILogger<MobileMatchGrpcService> logger)
+    public MobileMatchGrpcService(IMediator mediator, IAppDb db, ILogger<MobileMatchGrpcService> logger)
     {
         _mediator = mediator;
+        _db = db;
         _logger   = logger;
     }
 
@@ -166,16 +170,21 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
                             "gRPC answer: player={PlayerId} question={QuestionId} option={OptionId}",
                             playerId, ans.QuestionId, ans.SelectedOptionId);
 
-                        // TODO: run answer evaluation through IMediator / match engine
-                        // For now, echo back a placeholder result
+                        var (correctOptionId, isCorrect, pointsAwarded) = await EvaluateAnswerAsync(
+                            ans.QuestionId,
+                            ans.SelectedOptionId,
+                            context.CancellationToken);
+
+                        var (runningScore, correctCount) = session.ApplyAnswerResult(playerId!, pointsAwarded, isCorrect);
+
                         var result = new AnswerResultEvent
                         {
                             QuestionId       = ans.QuestionId,
                             SelectedOptionId = ans.SelectedOptionId,
-                            CorrectOptionId  = "",   // TODO: fetch from match engine
-                            IsCorrect        = false, // TODO
-                            PointsAwarded    = 0,     // TODO
-                            RunningScore     = 0      // TODO
+                            CorrectOptionId  = correctOptionId,
+                            IsCorrect        = isCorrect,
+                            PointsAwarded    = pointsAwarded,
+                            RunningScore     = runningScore
                         };
                         await responseStream.WriteAsync(
                             new MatchEvent { AnswerResult = result },
@@ -189,8 +198,8 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
                                 OpponentScore = new OpponentScoreEvent
                                 {
                                     OpponentPlayerId = playerId,
-                                    Score            = 0, // TODO: running score
-                                    CorrectCount     = 0
+                                    Score            = runningScore,
+                                    CorrectCount     = correctCount
                                 }
                             };
                             await session.BroadcastExceptAsync(playerId, opponentEvt, context.CancellationToken);
@@ -306,6 +315,25 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
 
         return update;
     }
+
+    private async Task<(string CorrectOptionId, bool IsCorrect, int PointsAwarded)> EvaluateAnswerAsync(
+        string questionId,
+        string selectedOptionId,
+        CancellationToken ct)
+    {
+        if (!Guid.TryParse(questionId, out var qid))
+            return (string.Empty, false, 0);
+
+        var question = await _db.Questions.AsNoTracking()
+            .FirstOrDefaultAsync(q => q.Id == qid, ct);
+
+        if (question is null || string.IsNullOrWhiteSpace(question.CorrectOptionId))
+            return (string.Empty, false, 0);
+
+        var isCorrect = string.Equals(selectedOptionId, question.CorrectOptionId, StringComparison.OrdinalIgnoreCase);
+        var points = isCorrect ? 100 : 0;
+        return (question.CorrectOptionId, isCorrect, points);
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -316,15 +344,32 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
 internal sealed class MatchSession(string matchId)
 {
     private readonly ConcurrentDictionary<string, IServerStreamWriter<MatchEvent>> _writers = new();
+    private readonly ConcurrentDictionary<string, PlayerScoreState> _scores = new();
 
     public string MatchId => matchId;
     public bool   IsEmpty => _writers.IsEmpty;
 
     public void AddParticipant(string playerId, IServerStreamWriter<MatchEvent> writer)
-        => _writers[playerId] = writer;
+    {
+        _writers[playerId] = writer;
+        _scores.TryAdd(playerId, new PlayerScoreState());
+    }
 
     public void RemoveParticipant(string playerId)
-        => _writers.TryRemove(playerId, out _);
+    {
+        _writers.TryRemove(playerId, out _);
+        _scores.TryRemove(playerId, out _);
+    }
+
+    public (int RunningScore, int CorrectCount) ApplyAnswerResult(string playerId, int pointsAwarded, bool isCorrect)
+    {
+        var state = _scores.GetOrAdd(playerId, _ => new PlayerScoreState());
+        var runningScore = Interlocked.Add(ref state.Score, pointsAwarded);
+        if (isCorrect)
+            Interlocked.Increment(ref state.CorrectCount);
+
+        return (runningScore, Volatile.Read(ref state.CorrectCount));
+    }
 
     /// <summary>Sends <paramref name="evt"/> to every participant except <paramref name="excludePlayerId"/>.</summary>
     public async Task BroadcastExceptAsync(string excludePlayerId, MatchEvent evt, CancellationToken ct)
@@ -335,5 +380,11 @@ internal sealed class MatchSession(string matchId)
             try { await writer.WriteAsync(evt, ct); }
             catch { /* participant disconnected; will clean up in its own finally block */ }
         }
+    }
+
+    private sealed class PlayerScoreState
+    {
+        public int Score;
+        public int CorrectCount;
     }
 }

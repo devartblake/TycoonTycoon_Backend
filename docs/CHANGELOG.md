@@ -15,6 +15,7 @@ All changes made on this branch relative to `main`.
 
 ### Mobile gRPC
 - `MobileMatchGrpcService.WatchLeaderboard` now builds live snapshots via MediatR (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshot generation.
+- `MobileMatchGrpcService.PlayMatch` now evaluates submitted answers against persisted question answer keys and emits live running score / correct-count updates per participant.
 
 ### Dashboard build source-of-truth
 - Blazor operator dashboard remains authoritative in compose (`docker/Dockerfile.dashboard`).

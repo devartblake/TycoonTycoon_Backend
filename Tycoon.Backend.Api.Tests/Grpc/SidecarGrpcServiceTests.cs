@@ -185,6 +185,13 @@ public sealed class SidecarGrpcServiceTests
             throw new InvalidOperationException($"Unsupported request type: {request.GetType().Name}");
         }
 
+        public Task Send<TRequest>(TRequest request, CancellationToken cancellationToken = default)
+            where TRequest : IRequest
+        {
+            SentRequests.Add(request!);
+            return Task.CompletedTask;
+        }
+
         public Task<object?> Send(object request, CancellationToken cancellationToken = default)
         {
             SentRequests.Add(request);
