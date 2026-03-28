@@ -555,7 +555,14 @@ public sealed class AdminApiClient
         if (!string.IsNullOrWhiteSpace(q)) qs += $"&q={Uri.EscapeDataString(q)}";
         if (!string.IsNullOrWhiteSpace(category)) qs += $"&category={Uri.EscapeDataString(category)}";
         var resp = await http.GetAsync($"/admin/questions?{qs}", ct);
-        if (!resp.IsSuccessStatusCode) return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            var body = await resp.Content.ReadAsStringAsync(ct);
+            throw new HttpRequestException(
+                $"ListQuestions failed with {(int)resp.StatusCode} {resp.ReasonPhrase}. Body: {body}",
+                null,
+                resp.StatusCode);
+        }
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
