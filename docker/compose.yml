@@ -480,8 +480,13 @@ services:
       start_period: 20s
 
   # ================================
-  # Operator Dashboard (Blazor Server)
+  # Operator Dashboard (Blazor Server) — PRIMARY/AUTHORITATIVE TARGET
   # ================================
+  # NOTE:
+  # - Alternate Next.js dashboard Dockerfiles are intentionally archived as:
+  #   - Dockerfile.dashboard-web.txt
+  #   - docker/Dockerfile.dashboard-web.txt
+  # - They are NOT referenced here by default to avoid accidental build-path drift.
   operator-dashboard:
     build:
       context: ..
@@ -494,7 +499,9 @@ services:
       - "${DASHBOARD_PORT:-8200}:8200"
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
-      ASPNETCORE_URLS: "http://+:8200"
+      # Align with ASP.NET 9 container defaults to avoid startup warning:
+      # "Overriding HTTP_PORTS '8080' ... Binding to values defined by URLS ..."
+      HTTP_PORTS: "8200"
       # Override appsettings.Development.json (which points to localhost:5100 for standalone dev).
       # In Docker, "localhost" resolves to the container itself — use the service name instead.
       ApiBaseUrl: "http://backend-api:5000"
@@ -545,4 +552,7 @@ volumes:
   prometheus_data:
   grafana_data:
   dashboard_dp_keys:
+  # Back-compat alias for older compose service variants that still reference
+  # `blazor_dp_keys` (for example `operator-dashboard-blazor`).
+  blazor_dp_keys:
   letsencrypt:
