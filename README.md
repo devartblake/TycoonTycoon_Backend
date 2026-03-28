@@ -445,6 +445,18 @@ dotnet ef migrations add YourMigrationName \
   --output-dir Migrations
 ```
 
+Or use the helper script to create/update migrations consistently:
+
+```bash
+./scripts/update-ef-migration.sh --name AddYourChange
+```
+
+Useful options:
+
+- `--remove-last` : remove the latest migration first, then create the new one
+- `--apply` : run `dotnet ef database update` after generating the migration
+- `--no-build` : pass `--no-build` to EF commands
+
 ### Resetting Migrations (Start Over)
 
 To wipe `Tycoon.Backend.Migrations/Migrations` and recreate a fresh baseline migration:
