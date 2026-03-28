@@ -490,13 +490,42 @@ services:
   operator-dashboard:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.dashboard
+      dockerfile: docker/Dockerfile.dashboard-vue
       args:
-        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
+        VITE_API_URL: ""
+        VITE_ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
     container_name: tycoon_operator_dashboard
     restart: unless-stopped
     ports:
-      - "${DASHBOARD_PORT:-8200}:8200"
+      - "${DASHBOARD_PORT:-8200}:80"
+    depends_on:
+      backend-api:
+        condition: service_healthy
+    networks: [tycoon-net]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.operator-dashboard.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.operator-dashboard.entrypoints=web"
+      - "traefik.http.routers.operator-dashboard.priority=1"
+      - "traefik.http.services.operator-dashboard.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ================================
+  # Operator Dashboard (Blazor Server) — legacy, for comparison
+  # ================================
+  operator-dashboard-blazor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: tycoon_operator_dashboard_blazor
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_BLAZOR_PORT:-8201}:8200"
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       # Align with ASP.NET 9 container defaults to avoid startup warning:
@@ -505,30 +534,20 @@ services:
       # Override appsettings.Development.json (which points to localhost:5100 for standalone dev).
       # In Docker, "localhost" resolves to the container itself — use the service name instead.
       ApiBaseUrl: "http://backend-api:5000"
-      # Also set the Aspire service-discovery key so both resolution paths work.
-      services__tycoon-api__http__0: "http://backend-api:5000"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
-      # Persist Data Protection keys across restarts (fixes antiforgery / cookie decryption errors)
       DataProtection__KeysPath: "/app/dp-keys"
     volumes:
-      - dashboard_dp_keys:/app/dp-keys
+      - blazor_dp_keys:/app/dp-keys
     depends_on:
       backend-api:
         condition: service_healthy
     networks: [tycoon-net]
-    labels:
-      - "traefik.enable=true"
-      # Route everything else to the operator dashboard (lowest priority)
-      - "traefik.http.routers.operator-dashboard.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.operator-dashboard.entrypoints=web"
-      - "traefik.http.routers.operator-dashboard.priority=1"
-      - "traefik.http.services.operator-dashboard.loadbalancer.server.port=8200"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8200"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 20s
 
 # ================================
 # Networks
