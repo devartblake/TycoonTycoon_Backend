@@ -88,4 +88,22 @@
         string Status,        // "Applied" | "Duplicate"
         int NewRankPoints
     );
+
+    // Season-point transaction history (paginated)
+    public sealed record SeasonPointTxnListItemDto(
+        Guid EventId,
+        Guid SeasonId,
+        string Kind,
+        int Delta,
+        string? Note,
+        DateTimeOffset CreatedAtUtc
+    );
+
+    public sealed record SeasonPointHistoryDto(
+        Guid PlayerId,
+        int Page,
+        int PageSize,
+        int Total,
+        IReadOnlyList<SeasonPointTxnListItemDto> Items
+    );
 }
