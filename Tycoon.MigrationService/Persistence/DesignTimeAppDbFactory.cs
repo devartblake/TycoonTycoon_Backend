@@ -41,6 +41,7 @@ public sealed class DesignTimeAppDbFactory : IDesignTimeDbContextFactory<AppDb>
                 // Migrations always live in Tycoon.Backend.Migrations — single source of truth.
                 npgsql.MigrationsAssembly("Tycoon.Backend.Migrations");
             })
+            .UseSnakeCaseNamingConvention()
             .Options;
 
         return new AppDb(options);
