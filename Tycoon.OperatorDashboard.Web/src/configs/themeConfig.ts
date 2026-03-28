@@ -23,7 +23,7 @@ export type Config = {
 }
 
 const themeConfig: Config = {
-  templateName: 'Tycoon Ops',
+  templateName: 'Synaptix Command',
   settingsCookieName: 'tycoon-ops-dashboard',
   mode: 'light', // 'light', 'dark'
   layoutPadding: 24, // Common padding for header, content, footer layout components (in px)
