@@ -33,7 +33,7 @@ This document operationalizes the next steps after dashboard-target alignment.
 
 ### 2.2 Opponent score propagation
 - [x] Replace placeholder opponent score with live score state.
-- Add stream consistency tests for concurrent participants.
+- [x] Add stream consistency tests for concurrent participants.
 
 ### 2.3 Leaderboard streaming source
 - [x] Replace placeholder leaderboard snapshots with leaderboard service query.
@@ -55,4 +55,6 @@ This document operationalizes the next steps after dashboard-target alignment.
 - ✅ `MobileMatchGrpcService` leaderboard stream now uses live MediatR leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
 - ✅ `MobileMatchGrpcService` answer flow now evaluates correctness against persisted question answer keys and emits live running-score/correct-count updates to participants.
 - ✅ Added initial `MatchSession` tests for score progression and fan-out broadcast behavior in streaming sessions.
+- ✅ Added concurrent participant score-consistency coverage for `MatchSession.ApplyAnswerResult` under parallel updates.
 - ✅ Added `MobileMatchGrpcServiceTests` coverage for streamed answer-result/running-score behavior and live leaderboard update streaming.
+- ✅ Added `PlayMatch` action-cap guard (`MaxActionsPerStream`) and test coverage to ensure long-lived streams remain bounded.

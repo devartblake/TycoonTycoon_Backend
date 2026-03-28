@@ -45,6 +45,27 @@ public sealed class MobileMatchSessionTests
         Assert.Single(writerP2.Events);
     }
 
+    [Fact]
+    public async Task ApplyAnswerResult_Should_Keep_Player_State_Consistent_Under_Concurrent_Updates()
+    {
+        var session = new MatchSession("match-1");
+        session.AddParticipant("p1", new TestServerStreamWriter());
+        session.AddParticipant("p2", new TestServerStreamWriter());
+
+        var p1Updates = Enumerable.Range(0, 100)
+            .Select(_ => Task.Run(() => session.ApplyAnswerResult("p1", pointsAwarded: 1, isCorrect: true)));
+        var p2Updates = Enumerable.Range(0, 100)
+            .Select(_ => Task.Run(() => session.ApplyAnswerResult("p2", pointsAwarded: 2, isCorrect: false)));
+
+        await Task.WhenAll(p1Updates.Concat(p2Updates));
+
+        var p1Snapshot = session.ApplyAnswerResult("p1", pointsAwarded: 0, isCorrect: false);
+        var p2Snapshot = session.ApplyAnswerResult("p2", pointsAwarded: 0, isCorrect: false);
+
+        Assert.Equal((100, 100), p1Snapshot);
+        Assert.Equal((200, 0), p2Snapshot);
+    }
+
     private sealed class TestServerStreamWriter : IServerStreamWriter<MatchEvent>
     {
         public List<MatchEvent> Events { get; } = [];

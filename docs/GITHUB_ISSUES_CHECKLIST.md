@@ -75,3 +75,5 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Added initial `MatchSession` streaming tests for SEQ-4 score propagation and participant fan-out behavior.
 - [x] Added `MobileMatchGrpcServiceTests` to cover answer-result streaming and live leaderboard update streaming behavior.
 - [x] Hardened `/admin/questions` list query shape to avoid provider-fragile nested tag projections that were causing repeated dashboard 500 retries.
+- [x] Added `scripts/run-health-pass.sh` to automate SEQ-5 command execution and regenerate `docs/PROJECT_HEALTH_REPORT.md`.
+- [x] Added Docker SDK fallback mode in `scripts/run-health-pass.sh` for dotnet-dependent checks on hosts without a local .NET installation.

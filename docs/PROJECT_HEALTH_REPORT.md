@@ -13,12 +13,12 @@ Health-pass commands requested for:
 
 | Command | Status | Notes |
 |---|---|---|
-| `dotnet restore` | ❌ Blocked | `dotnet: command not found` in current environment |
-| `dotnet build --configuration Release --no-restore` | ❌ Blocked | `dotnet: command not found` |
-| `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build` | ❌ Blocked | `dotnet: command not found` |
-| `bash scripts/check-error-envelope-hardening.sh` | ✅ Pass | Hardened endpoint scan passed |
-| `bash scripts/validate-ef-schema.sh` | ❌ Blocked | Script starts but fails at `dotnet ef` step because dotnet CLI is unavailable |
-| `docker compose -f docker/compose.yml build operator-dashboard` | ❌ Blocked | `docker: command not found` |
+| `dotnet restore` | ❌ Blocked | bash: command not found: dotnet |
+| `dotnet build --configuration Release --no-restore` | ❌ Blocked | bash: command not found: dotnet |
+| `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build` | ❌ Blocked | bash: command not found: dotnet |
+| `bash scripts/check-error-envelope-hardening.sh` | ✅ Pass | Command completed successfully. |
+| `bash scripts/validate-ef-schema.sh` | ❌ Blocked | Running EF Core schema drift validation... |
+| `docker compose -f docker/compose.yml build operator-dashboard` | ❌ Blocked | bash: command not found: docker |
 
 ## Dashboard Target Decision
 - Authoritative target remains **Blazor Operator Dashboard** via `docker/Dockerfile.dashboard` as configured in compose.

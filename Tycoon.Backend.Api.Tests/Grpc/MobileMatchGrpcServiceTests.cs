@@ -74,6 +74,24 @@ public sealed class MobileMatchGrpcServiceTests
         Assert.NotEmpty(update.Nearby);
     }
 
+    [Fact]
+    public async Task PlayMatch_Should_Stop_When_Action_Cap_Is_Reached()
+    {
+        var mediator = new FakeMediator();
+        var service = CreateService(mediator);
+
+        var requestStream = new EndlessPingStreamReader("m-cap", "p-cap");
+        var responseStream = new TestServerStreamWriter<MatchEvent>();
+        var ctx = TestServerCallContext.CreateWithBearer();
+
+        var playTask = service.PlayMatch(requestStream, responseStream, ctx);
+        var completed = await Task.WhenAny(playTask, Task.Delay(TimeSpan.FromSeconds(2)));
+
+        Assert.Same(playTask, completed);
+        Assert.True(playTask.IsCompletedSuccessfully);
+        Assert.NotEmpty(responseStream.Events); // join ack was emitted before cap stop
+    }
+
     private sealed class FakeMediator : IMediator
     {
         public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -148,6 +166,32 @@ public sealed class MobileMatchGrpcServiceTests
                 return Task.FromResult(false);
 
             Current = items[_index];
+            return Task.FromResult(true);
+        }
+    }
+
+    private sealed class EndlessPingStreamReader(string matchId, string playerId) : IAsyncStreamReader<PlayerAction>
+    {
+        private int _index = -1;
+        public PlayerAction Current { get; private set; } = default!;
+
+        public Task<bool> MoveNext(CancellationToken cancellationToken)
+        {
+            _index++;
+            Current = _index == 0
+                ? new PlayerAction
+                {
+                    Join = new JoinMatchAction
+                    {
+                        MatchId = matchId,
+                        PlayerId = playerId
+                    }
+                }
+                : new PlayerAction
+                {
+                    Ping = new PingAction()
+                };
+
             return Task.FromResult(true);
         }
     }

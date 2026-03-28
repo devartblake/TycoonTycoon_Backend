@@ -25,6 +25,8 @@ namespace Tycoon.Backend.Api.Grpc;
 /// </summary>
 public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServiceBase
 {
+    internal const int MaxActionsPerStream = 2048;
+
     // Active bidirectional match streams keyed by matchId.
     // Used to fan-out MatchEvents (opponent score, timer, end) to all
     // participants in the same match.
@@ -139,8 +141,18 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
 
         try
         {
+            var processedActions = 0;
             await foreach (var action in requestStream.ReadAllAsync(context.CancellationToken))
             {
+                processedActions++;
+                if (processedActions > MaxActionsPerStream)
+                {
+                    _logger.LogWarning(
+                        "gRPC PlayMatch: action cap reached for match {MatchId} player {PlayerId} cap={Cap}",
+                        matchId, playerId, MaxActionsPerStream);
+                    break;
+                }
+
                 switch (action.ActionCase)
                 {
                     // ── Join ────────────────────────────────────────────────
