@@ -66,6 +66,19 @@ public static class JsonSafe
         };
     }
 
+    public static long GetLong(JsonElement source, string propertyName, long fallback = 0)
+    {
+        if (!source.TryGetProperty(propertyName, out var value))
+            return fallback;
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetInt64(out var n) => n,
+            JsonValueKind.String when long.TryParse(value.GetString(), out var n) => n,
+            _ => fallback
+        };
+    }
+
     public static Guid GetGuid(JsonElement source, string propertyName, Guid fallback = default)
     {
         if (!source.TryGetProperty(propertyName, out var value))
