@@ -9,19 +9,7 @@
 
   <ItemGroup>
     <Compile Include="MigrationAssemblyMarker.cs" />
-    <Compile Include="Migrations\AppDbModelSnapshot.cs" />
-    <Compile Include="Migrations\20260303024251_InitialCreate.cs" />
-    <Compile Include="Migrations\20260303024251_InitialCreate.Designer.cs" />
-    <Compile Include="Migrations\20260315000000_AddPlayerEventStats.cs" />
-    <Compile Include="Migrations\20260315000000_AddPlayerEventStats.Designer.cs" />
-    <Compile Include="Migrations\20260319000000_AddGameEventTables.cs" />
-    <Compile Include="Migrations\20260319000000_AddGameEventTables.Designer.cs" />
-    <Compile Include="Migrations\20260321090000_AddGameBalancePolicyPersistence.cs" />
-    <Compile Include="Migrations\20260321090000_AddGameBalancePolicyPersistence.Designer.cs" />
-    <Compile Include="Migrations\20260322000000_AddAdminEmailAcl.cs" />
-    <Compile Include="Migrations\20260322000000_AddAdminEmailAcl.Designer.cs" />
-    <Compile Include="Migrations\20260323000000_NormalizeSnakeCaseNaming.cs" />
-    <Compile Include="Migrations\20260323000000_NormalizeSnakeCaseNaming.Designer.cs" />
+    <Compile Include="Migrations\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
