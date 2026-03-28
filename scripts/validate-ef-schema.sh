@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Reduce first-time prompts and telemetry noise during CI
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+export DOTNET_ENVIRONMENT=Development
+export ASPNETCORE_ENVIRONMENT=Development
+
 PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
-STARTUP="Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+STARTUP="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
 CONTEXT="AppDb"
 TMP_NAME="__SchemaCheck$(date +%s)"
 TMP_DIR="Tycoon.Backend.Migrations/Migrations/__SchemaCheck"
@@ -20,8 +26,7 @@ OUTPUT=$(dotnet ef migrations add "$TMP_NAME" \
   --project "$PROJECT" \
   --startup-project "$STARTUP" \
   --context "$CONTEXT" \
-  --output-dir "Migrations/__SchemaCheck" \
-  --no-build 2>&1)
+  --output-dir "Migrations/__SchemaCheck" 2>&1)
 STATUS=$?
 set -e
 

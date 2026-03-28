@@ -25,7 +25,15 @@ Health-pass commands requested for:
 - Archived alternate dashboard-web Dockerfiles as `.txt` to avoid split build paths without deleting project artifacts.
 
 ## Next Actions
-1. Ensure prerequisites are installed locally: `bash scripts/setup-health-pass-prereqs.sh`.
-2. Re-run this health pass in CI/dev with .NET 9 SDK + Docker available.
-3. Attach full command logs if any command fails.
-4. Mark blockers cleared and update final pass/fail summary.
+1. Re-run this health pass in a CI/dev environment with .NET 9 SDK + Docker installed.
+2. Attach full command logs to this report.
+3. Mark blockers cleared and update final pass/fail summary.
+
+## Latest Command Notes (2026-03-28)
+- `bash scripts/check-error-envelope-hardening.sh` re-run: **pass**.
+- `bash scripts/validate-ef-schema.sh` re-run: **blocked** by `dotnet: command not found`.
+
+## Dashboard `/admin/questions` Incident Follow-up (2026-03-28)
+- Symptom observed from operator dashboard logs: repeated HTTP 500 responses on `GET /admin/questions` with Polly retries, while other admin endpoints remained 200.
+- Mitigation applied in application query handler: page rows and tag lists are now fetched in two steps to avoid nested tag-list projection in the EF query path.
+- Next validation step (requires local/CI .NET runtime): run `dotnet test` + manual dashboard smoke (`Questions` page load) to confirm no further 500s.
