@@ -456,6 +456,7 @@ Useful options:
 - `--remove-last` : remove the latest migration first, then create the new one
 - `--apply` : run `dotnet ef database update` after generating the migration
 - `--no-build` : pass `--no-build` to EF commands
+- `--configuration <Config>` : choose build config for EF commands (default `Debug`)
 
 If schema validation reports drift, you can auto-fix and re-validate in one command:
 

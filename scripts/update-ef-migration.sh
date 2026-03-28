@@ -12,6 +12,7 @@ MIGRATION_NAME=""
 REMOVE_LAST=false
 APPLY_DATABASE=false
 NO_BUILD=false
+CONFIGURATION="${CONFIGURATION:-Debug}"
 
 usage() {
   cat <<USAGE
@@ -24,6 +25,7 @@ Options:
   --remove-last            Remove the last migration first (uses '--force').
   --apply                  Run 'dotnet ef database update' after migration add.
   --no-build               Pass '--no-build' to ef commands.
+  --configuration <Config> Build configuration for EF commands (default: Debug).
   -h, --help               Show this help text.
 USAGE
 }
@@ -59,6 +61,11 @@ while [[ $# -gt 0 ]]; do
       NO_BUILD=true
       shift
       ;;
+    --configuration)
+      [[ $# -ge 2 ]] || { echo "Missing value for --configuration" >&2; exit 1; }
+      CONFIGURATION="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -81,6 +88,7 @@ EF_ARGS=(
   --project "$PROJECT"
   --startup-project "$STARTUP_PROJECT"
   --context "$CONTEXT"
+  --configuration "$CONFIGURATION"
 )
 
 if $NO_BUILD; then
@@ -95,7 +103,30 @@ if $REMOVE_LAST; then
 fi
 
 log "Adding migration '$MIGRATION_NAME'..."
-dotnet ef migrations add "$MIGRATION_NAME" "${EF_ARGS[@]}" --output-dir "$OUTPUT_DIR"
+set +e
+ADD_OUTPUT="$(dotnet ef migrations add "$MIGRATION_NAME" "${EF_ARGS[@]}" --output-dir "$OUTPUT_DIR" 2>&1)"
+ADD_STATUS=$?
+set -e
+echo "$ADD_OUTPUT"
+
+if [[ $ADD_STATUS -ne 0 ]]; then
+  if echo "$ADD_OUTPUT" | grep -q "Tycoon.Backend.Migrations.dll' not found"; then
+    log "Primary startup project output did not include migrations assembly; retrying with migrations project as startup..."
+    RETRY_ARGS=()
+    if $NO_BUILD; then
+      RETRY_ARGS+=(--no-build)
+    fi
+    dotnet ef migrations add "$MIGRATION_NAME" \
+      --project "$PROJECT" \
+      --startup-project "$PROJECT" \
+      --context "$CONTEXT" \
+      --configuration "$CONFIGURATION" \
+      "${RETRY_ARGS[@]}" \
+      --output-dir "$OUTPUT_DIR"
+  else
+    exit $ADD_STATUS
+  fi
+fi
 
 if [[ -x "./scripts/validate-ef-schema.sh" ]]; then
   log "Running EF schema validation..."
