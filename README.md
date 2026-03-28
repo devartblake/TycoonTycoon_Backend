@@ -457,6 +457,12 @@ Useful options:
 - `--apply` : run `dotnet ef database update` after generating the migration
 - `--no-build` : pass `--no-build` to EF commands
 
+If schema validation reports drift, you can auto-fix and re-validate in one command:
+
+```bash
+./scripts/validate-ef-schema.sh --auto-fix --name AddYourChange
+```
+
 ### Resetting Migrations (Start Over)
 
 To wipe `Tycoon.Backend.Migrations/Migrations` and recreate a fresh baseline migration:

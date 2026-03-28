@@ -18,21 +18,40 @@ TARGETS=(
 
 PATTERN='Results\.(NotFound|BadRequest|Conflict|Unauthorized|Forbid|Problem|StatusCode)\('
 
+scan_matches() {
+  if command -v rg >/dev/null 2>&1; then
+    rg -n "$PATTERN" "${TARGETS[@]}"
+    return $?
+  fi
+
+  # Fallback for environments without ripgrep.
+  local status=1
+  local file
+  for target in "${TARGETS[@]}"; do
+    while IFS= read -r -d '' file; do
+      if grep -nE "$PATTERN" "$file"; then
+        status=0
+      fi
+    done < <(find "$target" -type f -name '*.cs' -print0)
+  done
+
+  return $status
+}
+
 set +e
-# Search only C# files to reduce noise
-raw_matches="$(rg -n --hidden -t cs "$PATTERN" "${TARGETS[@]}" 2>&1)"
-rg_status=$?
+raw_matches="$(scan_matches 2>&1)"
+scan_status=$?
 set -e
 
-if [[ $rg_status -eq 2 ]]; then
+if [[ $scan_status -eq 2 ]]; then
   echo "Failed to scan hardened surfaces:"
   echo "$raw_matches"
   exit 2
 fi
 
-# rg exit status:
+# scan exit status:
 #   0 => matches, 1 => no matches
-if [[ $rg_status -eq 1 ]]; then
+if [[ $scan_status -eq 1 ]]; then
   echo "OK: Hardened surfaces use structured error envelopes for targeted error branches."
   exit 0
 fi
