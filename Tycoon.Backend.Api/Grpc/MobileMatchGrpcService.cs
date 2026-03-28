@@ -3,6 +3,7 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Tycoon.Backend.Application.Leaderboards;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Api.Grpc;
 using Tycoon.Shared.Contracts.Dtos;
@@ -165,16 +166,21 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
                             "gRPC answer: player={PlayerId} question={QuestionId} option={OptionId}",
                             playerId, ans.QuestionId, ans.SelectedOptionId);
 
-                        // TODO: run answer evaluation through IMediator / match engine
-                        // For now, echo back a placeholder result
+                        var (correctOptionId, isCorrect, pointsAwarded) = await EvaluateAnswerAsync(
+                            ans.QuestionId,
+                            ans.SelectedOptionId,
+                            context.CancellationToken);
+
+                        var (runningScore, correctCount) = session.ApplyAnswerResult(playerId!, pointsAwarded, isCorrect);
+
                         var result = new AnswerResultEvent
                         {
                             QuestionId       = ans.QuestionId,
                             SelectedOptionId = ans.SelectedOptionId,
-                            CorrectOptionId  = "",   // TODO: fetch from match engine
-                            IsCorrect        = false, // TODO
-                            PointsAwarded    = 0,     // TODO
-                            RunningScore     = 0      // TODO
+                            CorrectOptionId  = correctOptionId,
+                            IsCorrect        = isCorrect,
+                            PointsAwarded    = pointsAwarded,
+                            RunningScore     = runningScore
                         };
                         await responseStream.WriteAsync(
                             new MatchEvent { AnswerResult = result },
@@ -188,8 +194,8 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
                                 OpponentScore = new OpponentScoreEvent
                                 {
                                     OpponentPlayerId = playerId,
-                                    Score            = 0, // TODO: running score
-                                    CorrectCount     = 0
+                                    Score            = runningScore,
+                                    CorrectCount     = correctCount
                                 }
                             };
                             await session.BroadcastExceptAsync(playerId, opponentEvt, context.CancellationToken);
@@ -237,14 +243,13 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
         var windowSize = request.WindowSize > 0 ? request.WindowSize : 5;
 
         // Push an initial snapshot immediately, then poll every 15 s.
-        // TODO: replace polling with a Redis pub/sub subscription once
-        // the leaderboard service exposes a change stream.
+        // Future enhancement: switch to Redis pub/sub once leaderboard change-stream
+        // plumbing is promoted to a shared notification channel.
         while (!context.CancellationToken.IsCancellationRequested)
         {
             try
             {
-                // TODO: query ILeaderboardService for real data
-                var update = BuildPlaceholderUpdate(request.PlayerId, windowSize);
+                var update = await BuildLiveLeaderboardUpdateAsync(request.PlayerId, windowSize, context.CancellationToken);
                 await responseStream.WriteAsync(update, context.CancellationToken);
 
                 await Task.Delay(TimeSpan.FromSeconds(15), context.CancellationToken);
@@ -270,17 +275,53 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
             throw new RpcException(new Status(StatusCode.Unauthenticated, "Bearer token required"));
     }
 
-    private static LeaderboardUpdate BuildPlaceholderUpdate(string playerId, int windowSize)
+    private async Task<LeaderboardUpdate> BuildLiveLeaderboardUpdateAsync(
+        string playerId,
+        int windowSize,
+        CancellationToken ct)
     {
-        // Placeholder — replace with real leaderboard data once wired
+        if (!Guid.TryParse(playerId, out var playerGuid))
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "player_id must be a valid UUID"));
+
+        var myTier = await _mediator.Send(new GetMyTier(playerGuid), ct);
+        var tierId = myTier?.TierId ?? 1;
+
+        var pageSize = Math.Clamp((windowSize * 2) + 1, 1, 100);
+        var leaderboard = await _mediator.Send(new GetTierLeaderboard(tierId, 1, pageSize), ct);
+
         var update = new LeaderboardUpdate
         {
             PlayerId      = playerId,
-            PlayerRank    = 0,
-            PlayerScore   = 0,
+            PlayerRank    = myTier?.TierRank ?? 0,
+            PlayerScore   = myTier?.Score ?? 0,
             SnapshotAtMs  = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         };
+
+        foreach (var entry in leaderboard.Entries.Take(pageSize))
+        {
+            update.Nearby.Add(new LeaderboardEntry
+            {
+                Rank = entry.TierRank,
+                PlayerId = entry.PlayerId.ToString(),
+                Handle = entry.Username,
+                Score = entry.Score,
+                Country = entry.CountryCode
+            });
+        }
+
         return update;
+    }
+
+    private async Task<(string CorrectOptionId, bool IsCorrect, int PointsAwarded)> EvaluateAnswerAsync(
+        string questionId,
+        string selectedOptionId,
+        CancellationToken ct)
+    {
+        if (!Guid.TryParse(questionId, out var qid))
+            return (string.Empty, false, 0);
+
+        var evaluation = await _mediator.Send(new EvaluateMatchAnswer(qid, selectedOptionId), ct);
+        return (evaluation.CorrectOptionId, evaluation.IsCorrect, evaluation.PointsAwarded);
     }
 }
 
@@ -292,15 +333,32 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
 internal sealed class MatchSession(string matchId)
 {
     private readonly ConcurrentDictionary<string, IServerStreamWriter<MatchEvent>> _writers = new();
+    private readonly ConcurrentDictionary<string, PlayerScoreState> _scores = new();
 
     public string MatchId => matchId;
     public bool   IsEmpty => _writers.IsEmpty;
 
     public void AddParticipant(string playerId, IServerStreamWriter<MatchEvent> writer)
-        => _writers[playerId] = writer;
+    {
+        _writers[playerId] = writer;
+        _scores.TryAdd(playerId, new PlayerScoreState());
+    }
 
     public void RemoveParticipant(string playerId)
-        => _writers.TryRemove(playerId, out _);
+    {
+        _writers.TryRemove(playerId, out _);
+        _scores.TryRemove(playerId, out _);
+    }
+
+    public (int RunningScore, int CorrectCount) ApplyAnswerResult(string playerId, int pointsAwarded, bool isCorrect)
+    {
+        var state = _scores.GetOrAdd(playerId, _ => new PlayerScoreState());
+        var runningScore = Interlocked.Add(ref state.Score, pointsAwarded);
+        if (isCorrect)
+            Interlocked.Increment(ref state.CorrectCount);
+
+        return (runningScore, Volatile.Read(ref state.CorrectCount));
+    }
 
     /// <summary>Sends <paramref name="evt"/> to every participant except <paramref name="excludePlayerId"/>.</summary>
     public async Task BroadcastExceptAsync(string excludePlayerId, MatchEvent evt, CancellationToken ct)
@@ -311,5 +369,11 @@ internal sealed class MatchSession(string matchId)
             try { await writer.WriteAsync(evt, ct); }
             catch { /* participant disconnected; will clean up in its own finally block */ }
         }
+    }
+
+    private sealed class PlayerScoreState
+    {
+        public int Score;
+        public int CorrectCount;
     }
 }
