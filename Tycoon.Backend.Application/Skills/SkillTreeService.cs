@@ -1,7 +1,8 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.PlayerTransactions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -11,13 +12,15 @@ namespace Tycoon.Backend.Application.Skills
     {
         private readonly IAppDb _db;
         private readonly EconomyService _econ;
+        private readonly PlayerTransactionService _ptxnSvc;
 
         private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
-        public SkillTreeService(IAppDb db, EconomyService econ)
+        public SkillTreeService(IAppDb db, EconomyService econ, PlayerTransactionService ptxnSvc)
         {
             _db = db;
             _econ = econ;
+            _ptxnSvc = ptxnSvc;
         }
 
         public async Task<SkillTreeCatalogDto> GetCatalogAsync(CancellationToken ct)
@@ -65,7 +68,7 @@ namespace Tycoon.Backend.Application.Skills
                     return await StateResult(req, "MissingPrereq", ct);
             }
 
-            // costs -> ledger spend
+            // costs -> ledger spend via PlayerTransaction (atomic currency debit + unlock)
             var costs = JsonSerializer.Deserialize<List<SkillCostDto>>(node.CostsJson, JsonOpts) ?? new();
             var lines = costs.Select(c =>
                 new EconomyLineDto(
@@ -73,17 +76,21 @@ namespace Tycoon.Backend.Application.Skills
                     -Math.Abs(c.Amount)
                 )).ToList();
 
-            var econRes = await _econ.ApplyAsync(
-                new CreateEconomyTxnRequest(req.EventId, req.PlayerId, "skill-unlock", lines, req.NodeKey),
-                ct);
+            var ptxnResult = await _ptxnSvc.ExecuteAsync(new CreatePlayerTransactionRequest(
+                EventId: req.EventId,
+                Kind: "skill-unlock",
+                Actors: new[] { new PlayerTransactionActorDto(req.PlayerId, "buyer") },
+                CurrencyChanges: new[] { new PlayerTransactionCurrencyDto(req.PlayerId, lines) },
+                Note: req.NodeKey
+            ), ct);
 
-            if (econRes.Status == EconomyTxnStatus.Duplicate)
+            if (ptxnResult.Status == "Duplicate")
                 return await StateResult(req, "Duplicate", ct);
 
-            if (econRes.Status == EconomyTxnStatus.InsufficientFunds)
+            if (ptxnResult.Status == "InsufficientFunds")
                 return await StateResult(req, "InsufficientFunds", ct);
 
-            if (econRes.Status != EconomyTxnStatus.Applied)
+            if (ptxnResult.Status != "Applied")
                 return await StateResult(req, "NotFound", ct);
 
             // persist unlock
@@ -95,7 +102,7 @@ namespace Tycoon.Backend.Application.Skills
 
         public async Task<RespecSkillsResultDto> RespecAsync(RespecSkillsRequest req, CancellationToken ct)
         {
-            var already = await _db.EconomyTransactions.AsNoTracking()
+            var already = await _db.PlayerTransactions.AsNoTracking()
                 .AnyAsync(x => x.EventId == req.EventId, ct);
             if (already)
             {
@@ -121,10 +128,16 @@ namespace Tycoon.Backend.Application.Skills
             if (refundCoins > 0) refundLines.Add(new EconomyLineDto(CurrencyType.Coins, refundCoins));
             if (refundDiamonds > 0) refundLines.Add(new EconomyLineDto(CurrencyType.Diamonds, refundDiamonds));
 
-            // Ledger tx for respec (audit-only allowed; if no refund lines, still fine)
-            await _econ.ApplyAsync(
-                new CreateEconomyTxnRequest(req.EventId, req.PlayerId, "skill-respec", refundLines, $"refund:{pct}%"),
-                ct);
+            // Respec via PlayerTransaction (audit-only allowed; if no refund lines, still tracked)
+            await _ptxnSvc.ExecuteAsync(new CreatePlayerTransactionRequest(
+                EventId: req.EventId,
+                Kind: "skill-respec",
+                Actors: new[] { new PlayerTransactionActorDto(req.PlayerId, "recipient") },
+                CurrencyChanges: refundLines.Count > 0
+                    ? new[] { new PlayerTransactionCurrencyDto(req.PlayerId, refundLines) }
+                    : null,
+                Note: $"refund:{pct}%"
+            ), ct);
 
             // Remove unlocks
             var unlocks = await _db.PlayerSkillUnlocks.Where(x => x.PlayerId == req.PlayerId).ToListAsync(ct);

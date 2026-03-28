@@ -30,11 +30,13 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
     private static readonly ConcurrentDictionary<string, MatchSession> _sessions = new();
 
     private readonly IMediator _mediator;
+    private readonly IAppDb _db;
     private readonly ILogger<MobileMatchGrpcService> _logger;
 
-    public MobileMatchGrpcService(IMediator mediator, ILogger<MobileMatchGrpcService> logger)
+    public MobileMatchGrpcService(IMediator mediator, IAppDb db, ILogger<MobileMatchGrpcService> logger)
     {
         _mediator = mediator;
+        _db = db;
         _logger   = logger;
     }
 
