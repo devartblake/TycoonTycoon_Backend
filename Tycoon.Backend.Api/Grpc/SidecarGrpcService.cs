@@ -1,6 +1,12 @@
 using Grpc.Core;
+using MediatR;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using Tycoon.Backend.Application.Analytics.Abstractions;
+using Tycoon.Backend.Application.Analytics.Models;
+using Tycoon.Backend.Application.Events;
 using Tycoon.Backend.Api.Grpc;
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Grpc;
 
@@ -17,41 +23,59 @@ namespace Tycoon.Backend.Api.Grpc;
 public sealed class SidecarGrpcService : SidecarService.SidecarServiceBase
 {
     private readonly ILogger<SidecarGrpcService> _logger;
+    private readonly IAnalyticsEventWriter _analyticsWriter;
+    private readonly ISidecarInferenceStore _inferenceStore;
+    private readonly IMediator _mediator;
 
-    public SidecarGrpcService(ILogger<SidecarGrpcService> logger)
+    public SidecarGrpcService(
+        ILogger<SidecarGrpcService> logger,
+        IAnalyticsEventWriter analyticsWriter,
+        ISidecarInferenceStore inferenceStore,
+        IMediator mediator)
     {
         _logger = logger;
+        _analyticsWriter = analyticsWriter;
+        _inferenceStore = inferenceStore;
+        _mediator = mediator;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Analytics — single event
     // ─────────────────────────────────────────────────────────────────────────
 
-    public override Task<AnalyticsEventResponse> ReportAnalyticsEvent(
+    public override async Task<AnalyticsEventResponse> ReportAnalyticsEvent(
         AnalyticsEventRequest request,
         ServerCallContext context)
     {
         if (string.IsNullOrWhiteSpace(request.EventType))
         {
-            return Task.FromResult(new AnalyticsEventResponse
+            return new AnalyticsEventResponse
             {
                 Accepted = false,
                 RejectReason = "event_type is required"
-            });
+            };
         }
 
-        var eventId = Guid.NewGuid().ToString("N");
+        if (!TryMapQuestionAnsweredEvent(request, out var evt))
+        {
+            return new AnalyticsEventResponse
+            {
+                Accepted = false,
+                RejectReason = "unsupported event_type or invalid payload_json"
+            };
+        }
+
+        await _analyticsWriter.UpsertQuestionAnsweredEventAsync(evt, context.CancellationToken);
 
         _logger.LogDebug(
             "gRPC analytics event received: type={EventType} entity={EntityId} id={EventId}",
-            request.EventType, request.EntityId, eventId);
+            request.EventType, request.EntityId, evt.Id);
 
-        // TODO: forward to IAnalyticsService / MediatR command once wired
-        return Task.FromResult(new AnalyticsEventResponse
+        return new AnalyticsEventResponse
         {
             Accepted = true,
-            EventId  = eventId
-        });
+            EventId = evt.Id
+        };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -74,11 +98,13 @@ public sealed class SidecarGrpcService : SidecarService.SidecarServiceBase
                 continue;
             }
 
-            // TODO: batch-insert via IAnalyticsService
-            _logger.LogDebug(
-                "gRPC stream event: type={EventType} entity={EntityId}",
-                request.EventType, request.EntityId);
+            if (!TryMapQuestionAnsweredEvent(request, out var evt))
+            {
+                rejected++;
+                continue;
+            }
 
+            await _analyticsWriter.UpsertQuestionAnsweredEventAsync(evt, context.CancellationToken);
             accepted++;
         }
 
@@ -98,55 +124,215 @@ public sealed class SidecarGrpcService : SidecarService.SidecarServiceBase
     // ML inference results
     // ─────────────────────────────────────────────────────────────────────────
 
-    public override Task<InferenceResultResponse> SubmitInferenceResult(
+    public override async Task<InferenceResultResponse> SubmitInferenceResult(
         InferenceResultRequest request,
         ServerCallContext context)
     {
         if (string.IsNullOrWhiteSpace(request.ModelName) || string.IsNullOrWhiteSpace(request.EntityId))
         {
-            return Task.FromResult(new InferenceResultResponse { Stored = false });
+            return new InferenceResultResponse { Stored = false };
         }
 
-        var recordId = Guid.NewGuid().ToString("N");
+        var recordId = await _inferenceStore.StoreAsync(
+            request.ModelName,
+            request.EntityId,
+            request.Score,
+            request.MetadataJson,
+            context.CancellationToken);
 
         _logger.LogInformation(
             "gRPC inference result: model={Model} entity={EntityId} score={Score:F3} record={RecordId}",
             request.ModelName, request.EntityId, request.Score, recordId);
 
-        // TODO: persist via IInferenceResultRepository once available
-        return Task.FromResult(new InferenceResultResponse
+        return new InferenceResultResponse
         {
             Stored   = true,
             RecordId = recordId
-        });
+        };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Backend action trigger
     // ─────────────────────────────────────────────────────────────────────────
 
-    public override Task<BackendActionResponse> TriggerBackendAction(
+    public override async Task<BackendActionResponse> TriggerBackendAction(
         BackendActionRequest request,
         ServerCallContext context)
     {
         if (string.IsNullOrWhiteSpace(request.Action))
         {
-            return Task.FromResult(new BackendActionResponse
+            return new BackendActionResponse
             {
                 Executed     = false,
                 ErrorMessage = "action is required"
-            });
+            };
         }
 
         _logger.LogInformation(
             "gRPC backend action: action={Action} target={TargetId}",
             request.Action, request.TargetId);
 
-        // TODO: dispatch to MediatR based on request.Action string
-        return Task.FromResult(new BackendActionResponse
+        if (!string.Equals(request.Action, "admin_event_queue_reprocess", StringComparison.OrdinalIgnoreCase))
         {
-            Executed   = true,
-            ResultJson = "{\"status\":\"queued\"}"
-        });
+            return new BackendActionResponse
+            {
+                Executed = false,
+                ErrorMessage = $"unsupported action '{request.Action}'"
+            };
+        }
+
+        var parseOk = TryParseReprocessParams(request.ParamsJson, out var reprocessScope, out var reprocessLimit, out var adminUser);
+        if (!parseOk)
+        {
+            return new BackendActionResponse
+            {
+                Executed = false,
+                ErrorMessage = "invalid params_json for admin_event_queue_reprocess"
+            };
+        }
+
+        var reprocessResult = await _mediator.Send(
+            new AdminReprocessEventQueue(
+                new AdminEventQueueReprocessRequest(reprocessScope, reprocessLimit),
+                adminUser),
+            context.CancellationToken);
+
+        return new BackendActionResponse
+        {
+            Executed = true,
+            ResultJson = JsonSerializer.Serialize(reprocessResult)
+        };
+    }
+
+    private static bool TryMapQuestionAnsweredEvent(AnalyticsEventRequest request, out QuestionAnsweredAnalyticsEvent evt)
+    {
+        evt = default!;
+
+        if (!string.Equals(request.EventType, "question_answered", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(request.PayloadJson))
+            return false;
+
+        using var doc = JsonDocument.Parse(request.PayloadJson);
+        var src = doc.RootElement;
+
+        if (!TryGetGuid(src, "playerId", out var playerId)) return false;
+        if (!TryGetGuid(src, "matchId", out var matchId)) return false;
+        if (!TryGetString(src, "questionId", out var questionId)) return false;
+
+        var id = !string.IsNullOrWhiteSpace(request.EntityId)
+            ? request.EntityId
+            : $"{playerId:N}:{questionId}:{DateTime.UtcNow.Ticks}";
+
+        var mode = TryGetString(src, "mode", out var modeValue) ? modeValue : "unknown";
+        var category = TryGetString(src, "category", out var categoryValue) ? categoryValue : "unknown";
+        var difficulty = TryGetInt(src, "difficulty", out var difficultyValue) ? difficultyValue : 0;
+        var isCorrect = TryGetBool(src, "isCorrect", out var isCorrectValue) && isCorrectValue;
+        var answerTimeMs = TryGetInt(src, "answerTimeMs", out var answerTimeMsValue) ? answerTimeMsValue : 0;
+        var pointsAwarded = TryGetInt(src, "pointsAwarded", out var pointsAwardedValue) ? pointsAwardedValue : 0;
+        var answeredAtUtc = request.TimestampMs > 0
+            ? DateTimeOffset.FromUnixTimeMilliseconds(request.TimestampMs).UtcDateTime
+            : (TryGetDateTime(src, "answeredAtUtc", out var answeredAtUtcValue) ? answeredAtUtcValue : DateTime.UtcNow);
+
+        evt = new QuestionAnsweredAnalyticsEvent(id, matchId, playerId, mode, category, difficulty, isCorrect, answerTimeMs, answeredAtUtc)
+        {
+            QuestionId = questionId,
+            PointsAwarded = pointsAwarded
+        };
+
+        return true;
+    }
+
+    private static bool TryParseReprocessParams(string paramsJson, out string scope, out int limit, out string? adminUser)
+    {
+        scope = "all";
+        limit = 1000;
+        adminUser = null;
+
+        if (string.IsNullOrWhiteSpace(paramsJson))
+            return true;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(paramsJson);
+            var root = doc.RootElement;
+
+            if (TryGetString(root, "scope", out var parsedScope))
+                scope = parsedScope;
+
+            if (TryGetInt(root, "limit", out var parsedLimit) && parsedLimit > 0)
+                limit = parsedLimit;
+
+            if (TryGetString(root, "adminUser", out var parsedAdminUser))
+                adminUser = parsedAdminUser;
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryGetString(JsonElement src, string key, out string value)
+    {
+        value = string.Empty;
+        if (!src.TryGetProperty(key, out var prop) || prop.ValueKind != JsonValueKind.String)
+            return false;
+
+        value = prop.GetString() ?? string.Empty;
+        return !string.IsNullOrWhiteSpace(value);
+    }
+
+    private static bool TryGetGuid(JsonElement src, string key, out Guid value)
+    {
+        value = Guid.Empty;
+        if (!TryGetString(src, key, out var raw))
+            return false;
+
+        return Guid.TryParse(raw, out value);
+    }
+
+    private static bool TryGetInt(JsonElement src, string key, out int value)
+    {
+        value = 0;
+        if (!src.TryGetProperty(key, out var prop))
+            return false;
+
+        if (prop.ValueKind == JsonValueKind.Number)
+            return prop.TryGetInt32(out value);
+
+        if (prop.ValueKind == JsonValueKind.String)
+            return int.TryParse(prop.GetString(), out value);
+
+        return false;
+    }
+
+    private static bool TryGetBool(JsonElement src, string key, out bool value)
+    {
+        value = false;
+        if (!src.TryGetProperty(key, out var prop))
+            return false;
+
+        if (prop.ValueKind == JsonValueKind.True || prop.ValueKind == JsonValueKind.False)
+        {
+            value = prop.GetBoolean();
+            return true;
+        }
+
+        if (prop.ValueKind == JsonValueKind.String)
+            return bool.TryParse(prop.GetString(), out value);
+
+        return false;
+    }
+
+    private static bool TryGetDateTime(JsonElement src, string key, out DateTime value)
+    {
+        value = default;
+        if (!TryGetString(src, key, out var raw))
+            return false;
+
+        return DateTime.TryParse(raw, out value);
     }
 }

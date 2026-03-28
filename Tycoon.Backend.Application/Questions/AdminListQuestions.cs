@@ -30,25 +30,27 @@ namespace Tycoon.Backend.Application.Questions
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            // Base query
-            var q = db.Questions.AsNoTracking();
+            // Base filtered query (no ordering yet). Keep this query reusable for
+            // count/facets to avoid provider-specific translation issues from reusing
+            // an already-ordered query as a subquery.
+            var filtered = db.Questions.AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(r.Search))
             {
                 var s = r.Search.Trim();
                 // Simple contains; later you can swap to PostgreSQL full-text.
-                q = q.Where(x => x.Text.Contains(s) || x.Category.Contains(s));
+                filtered = filtered.Where(x => x.Text.Contains(s) || x.Category.Contains(s));
             }
 
             if (!string.IsNullOrWhiteSpace(r.Category))
             {
                 var c = r.Category.Trim();
-                q = q.Where(x => x.Category == c);
+                filtered = filtered.Where(x => x.Category == c);
             }
 
             if (r.Difficulty.HasValue)
             {
-                q = q.Where(x => x.Difficulty == r.Difficulty.Value);
+                filtered = filtered.Where(x => x.Difficulty == r.Difficulty.Value);
             }
 
             if (tags.Length > 0)
@@ -56,28 +58,28 @@ namespace Tycoon.Backend.Application.Questions
                 // Tag filter using join table: ANY = exists one of tags, ALL = must have all tags
                 if (r.TagMode == TagFilterMode.Any)
                 {
-                    q = q.Where(x => db.QuestionTags.Any(t => t.QuestionId == x.Id && tags.Contains(t.Tag)));
+                    filtered = filtered.Where(x => db.QuestionTags.Any(t => t.QuestionId == x.Id && tags.Contains(t.Tag)));
                 }
                 else
                 {
                     // ALL tags must exist
                     foreach (var t in tags)
-                        q = q.Where(x => db.QuestionTags.Any(qt => qt.QuestionId == x.Id && qt.Tag == t));
+                        filtered = filtered.Where(x => db.QuestionTags.Any(qt => qt.QuestionId == x.Id && qt.Tag == t));
                 }
             }
 
             // Sorting
-            q = r.Sort switch
+            var sorted = r.Sort switch
             {
-                "updated_asc" => q.OrderBy(x => x.UpdatedAtUtc),
-                "created_desc" => q.OrderByDescending(x => x.CreatedAtUtc),
-                "created_asc" => q.OrderBy(x => x.CreatedAtUtc),
-                _ => q.OrderByDescending(x => x.UpdatedAtUtc)
+                "updated_asc" => filtered.OrderBy(x => x.UpdatedAtUtc),
+                "created_desc" => filtered.OrderByDescending(x => x.CreatedAtUtc),
+                "created_asc" => filtered.OrderBy(x => x.CreatedAtUtc),
+                _ => filtered.OrderByDescending(x => x.UpdatedAtUtc)
             };
 
-            var total = await q.CountAsync(ct);
+            var total = await filtered.CountAsync(ct);
 
-            var items = await q
+            var items = await sorted
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(x => new QuestionListItemDto(
@@ -93,7 +95,7 @@ namespace Tycoon.Backend.Application.Questions
 
             // Facets (based on current filtered set except the facet dimension itself could be expanded later)
             // For now: compute facets from the filtered result set.
-            var filteredIds = q.Select(x => x.Id);
+            var filteredIds = filtered.Select(x => x.Id);
 
             var tagFacets = await db.QuestionTags.AsNoTracking()
                 .Where(t => filteredIds.Contains(t.QuestionId))
