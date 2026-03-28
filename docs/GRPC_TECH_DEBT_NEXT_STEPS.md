@@ -18,8 +18,8 @@ This document operationalizes the next steps after dashboard-target alignment.
 
 ### 1.3 SubmitInferenceResult persistence
 - [x] Persist model/entity/score payload via repository abstraction.
-- [ ] Replace in-memory store with durable persistence implementation.
-- [ ] Add idempotency guard for duplicate inference submissions if required.
+- [x] Replace in-memory store with durable persistence implementation.
+- [x] Add idempotency guard for duplicate inference submissions if required.
 
 ### 1.4 TriggerBackendAction dispatch
 - [x] Introduce action map: `request.Action` -> MediatR command.
@@ -50,6 +50,8 @@ This document operationalizes the next steps after dashboard-target alignment.
 - ✅ `SidecarGrpcService` now supports deterministic backend action dispatch for `admin_event_queue_reprocess` via MediatR (`AdminReprocessEventQueue`), with explicit validation for unsupported actions and invalid params payloads.
 - ✅ Added `SidecarGrpcServiceTests` coverage for analytics acceptance/rejection, streamed summary counts, inference result storage, and backend action dispatch (pending environment execution).
 - ✅ Added stream-cap and cancellation coverage for `SidecarGrpcService.StreamAnalyticsEvents`, and wired a bounded per-stream event cap in service logic.
+- ✅ Added in-memory idempotency guard for duplicate inference submissions (same model/entity/score/metadata returns stable record id) with service-level test coverage.
+- ✅ Added file-backed durable inference store (`FileSidecarInferenceStore`) with on-start index reload and tests for duplicate payload idempotency across process restarts.
 - ✅ `MobileMatchGrpcService` leaderboard stream now uses live MediatR leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
 - ✅ `MobileMatchGrpcService` answer flow now evaluates correctness against persisted question answer keys and emits live running-score/correct-count updates to participants.
 - ✅ Added initial `MatchSession` tests for score progression and fan-out broadcast behavior in streaming sessions.

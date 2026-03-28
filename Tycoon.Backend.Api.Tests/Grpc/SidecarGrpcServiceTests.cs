@@ -128,7 +128,8 @@ public sealed class SidecarGrpcServiceTests
     [Fact]
     public async Task SubmitInferenceResult_Should_Store_And_Return_RecordId()
     {
-        var svc = CreateService(out _, out _);
+        var store = new InMemorySidecarInferenceStore();
+        var svc = CreateService(out _, out _, store);
         var ctx = TestServerCallContext.Create();
 
         var res = await svc.SubmitInferenceResult(new InferenceResultRequest
@@ -141,6 +142,30 @@ public sealed class SidecarGrpcServiceTests
 
         Assert.True(res.Stored);
         Assert.False(string.IsNullOrWhiteSpace(res.RecordId));
+    }
+
+    [Fact]
+    public async Task SubmitInferenceResult_Should_Be_Idempotent_For_Same_Payload()
+    {
+        var store = new InMemorySidecarInferenceStore();
+        var svc = CreateService(out _, out _, store);
+        var ctx = TestServerCallContext.Create();
+
+        var req = new InferenceResultRequest
+        {
+            ModelName = "churn-risk",
+            EntityId = "player-1",
+            Score = 0.82f,
+            MetadataJson = "{}"
+        };
+
+        var first = await svc.SubmitInferenceResult(req, ctx);
+        var second = await svc.SubmitInferenceResult(req, ctx);
+
+        Assert.True(first.Stored);
+        Assert.True(second.Stored);
+        Assert.Equal(first.RecordId, second.RecordId);
+        Assert.Equal(1, store.Count);
     }
 
     [Fact]
@@ -179,14 +204,17 @@ public sealed class SidecarGrpcServiceTests
         Assert.IsType<AdminReprocessEventQueue>(mediator.SentRequests[0]);
     }
 
-    private static SidecarGrpcService CreateService(out FakeAnalyticsWriter writer, out FakeMediator mediator)
+    private static SidecarGrpcService CreateService(
+        out FakeAnalyticsWriter writer,
+        out FakeMediator mediator,
+        ISidecarInferenceStore? inferenceStore = null)
     {
         writer = new FakeAnalyticsWriter();
         mediator = new FakeMediator();
         return new SidecarGrpcService(
             NullLogger<SidecarGrpcService>.Instance,
             writer,
-            new InMemorySidecarInferenceStore(),
+            inferenceStore ?? new InMemorySidecarInferenceStore(),
             mediator);
     }
 
