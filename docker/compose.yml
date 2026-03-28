@@ -567,4 +567,7 @@ volumes:
   prometheus_data:
   grafana_data:
   dashboard_dp_keys:
+  # Back-compat alias for older compose service variants that still reference
+  # `blazor_dp_keys` (for example `operator-dashboard-blazor`).
+  blazor_dp_keys:
   letsencrypt:
