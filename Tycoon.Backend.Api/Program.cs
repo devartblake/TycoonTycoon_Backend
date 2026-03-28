@@ -244,6 +244,7 @@ var redis = builder.Configuration.GetConnectionString("redis")
 
 // gRPC — sidecar service (port 5001, HTTP/2)
 builder.Services.AddGrpc(o => o.EnableDetailedErrors = builder.Environment.IsDevelopment());
+builder.Services.AddSingleton<ISidecarInferenceStore, InMemorySidecarInferenceStore>();
 
 var signalr = builder.Services.AddSignalR();
 if (!string.IsNullOrWhiteSpace(redis))
