@@ -17,7 +17,7 @@ Health-pass commands requested for:
 | `dotnet build --configuration Release --no-restore` | ❌ Blocked | bash: command not found: dotnet (log: artifacts/health-pass/cmd_1.log) |
 | `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build` | ❌ Blocked | bash: command not found: dotnet (log: artifacts/health-pass/cmd_2.log) |
 | `bash scripts/check-error-envelope-hardening.sh` | ✅ Pass | Command completed successfully. |
-| `bash scripts/validate-ef-schema.sh` | ❌ Blocked | Running EF Core schema drift validation... (log: artifacts/health-pass/cmd_4.log) |
+| `bash scripts/validate-ef-schema.sh` | ❌ Blocked | scripts/validate-ef-schema.sh: line 24: dotnet: command not found (log: artifacts/health-pass/cmd_4.log) |
 | `docker compose -f docker/compose.yml build operator-dashboard` | ❌ Blocked | bash: command not found: docker (log: artifacts/health-pass/cmd_5.log) |
 
 ## Dashboard Target Decision

@@ -48,12 +48,21 @@ run_cmd() {
     status="✅ Pass"
     notes="Command completed successfully."
   else
+    local first_line
+    first_line="$(grep -m 1 -E '.' "${out_file}" || true)"
+    local missing_tool_line
+    missing_tool_line="$(grep -m 1 -Ei 'command not found|not installed|No such file or directory' "${out_file}" || true)"
+
+    if [[ -n "${missing_tool_line}" ]]; then
+      first_line="${missing_tool_line}"
+    fi
+
     if grep -qiE "command not found|not installed|No such file or directory" "${out_file}"; then
       status="❌ Blocked"
-      notes="$(head -n 1 "${out_file}" | sed 's/|/\\|/g') (log: artifacts/health-pass/cmd_${idx}.log)"
+      notes="$(echo "${first_line}" | sed 's/|/\\|/g') (log: artifacts/health-pass/cmd_${idx}.log)"
     else
       status="❌ Fail"
-      notes="$(head -n 1 "${out_file}" | sed 's/|/\\|/g') (log: artifacts/health-pass/cmd_${idx}.log)"
+      notes="$(echo "${first_line}" | sed 's/|/\\|/g') (log: artifacts/health-pass/cmd_${idx}.log)"
       if [[ -z "${notes}" ]]; then
         notes="Exited with code ${exit_code}."
       fi

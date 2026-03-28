@@ -80,3 +80,5 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Added CI workflow job `health-pass-report` to run the health-pass script and publish `docs/PROJECT_HEALTH_REPORT.md` as a build artifact.
 - [x] Wired a persistent compose volume (`sidecar_inference_data`) for file-backed sidecar inference records and documented the runtime path/env wiring.
 - [x] Added health-pass command log artifacts (`artifacts/health-pass/*.log`) and CI artifact upload for easier blocker triage.
+- [x] Improved health-pass report note extraction to include actionable missing-tool error lines for blocked commands.
+- [x] Added CI job `grpc-streaming-tests` to run Sidecar/Mobile gRPC-focused test suites explicitly in workflow validation.
