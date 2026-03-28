@@ -71,6 +71,61 @@ public sealed class SidecarGrpcServiceTests
     }
 
     [Fact]
+    public async Task StreamAnalyticsEvents_Should_Stop_At_Configured_Stream_Cap()
+    {
+        var svc = CreateService(out var writer, out _);
+        var ctx = TestServerCallContext.Create();
+
+        var requests = Enumerable.Range(1, SidecarGrpcService.MaxAnalyticsEventsPerStream + 1)
+            .Select(i => new AnalyticsEventRequest
+            {
+                EventType = "question_answered",
+                EntityId = $"evt-{i}",
+                PayloadJson = ValidQuestionAnsweredPayload()
+            })
+            .ToList();
+
+        var stream = new TestAsyncStreamReader<AnalyticsEventRequest>(requests);
+
+        var summary = await svc.StreamAnalyticsEvents(stream, ctx);
+
+        Assert.Equal(SidecarGrpcService.MaxAnalyticsEventsPerStream, summary.EventsReceived);
+        Assert.Equal(SidecarGrpcService.MaxAnalyticsEventsPerStream, summary.EventsAccepted);
+        Assert.Equal(1, summary.EventsRejected);
+        Assert.Equal(SidecarGrpcService.MaxAnalyticsEventsPerStream, writer.Events.Count);
+    }
+
+    [Fact]
+    public async Task StreamAnalyticsEvents_Should_Return_Summary_When_Canceled()
+    {
+        var svc = CreateService(out var writer, out _);
+        var cts = new CancellationTokenSource();
+        var ctx = TestServerCallContext.Create(cts);
+
+        var requests = new List<AnalyticsEventRequest>
+        {
+            new() { EventType = "question_answered", EntityId = "evt-1", PayloadJson = ValidQuestionAnsweredPayload() },
+            new() { EventType = "question_answered", EntityId = "evt-2", PayloadJson = ValidQuestionAnsweredPayload() },
+        };
+
+        var stream = new TestAsyncStreamReader<AnalyticsEventRequest>(
+            requests,
+            onMoveNext: index =>
+            {
+                if (index == 1)
+                    cts.Cancel();
+            },
+            throwIfCanceled: true);
+
+        var summary = await svc.StreamAnalyticsEvents(stream, ctx);
+
+        Assert.Equal(1, summary.EventsReceived);
+        Assert.Equal(1, summary.EventsAccepted);
+        Assert.Equal(0, summary.EventsRejected);
+        Assert.Single(writer.Events);
+    }
+
+    [Fact]
     public async Task SubmitInferenceResult_Should_Store_And_Return_RecordId()
     {
         var svc = CreateService(out _, out _);
@@ -205,7 +260,10 @@ public sealed class SidecarGrpcServiceTests
             => AsyncEnumerable.Empty<object?>();
     }
 
-    private sealed class TestAsyncStreamReader<T>(IReadOnlyList<T> items) : IAsyncStreamReader<T>
+    private sealed class TestAsyncStreamReader<T>(
+        IReadOnlyList<T> items,
+        Action<int>? onMoveNext = null,
+        bool throwIfCanceled = false) : IAsyncStreamReader<T>
     {
         private int _index = -1;
         public T Current { get; private set; } = default!;
@@ -213,6 +271,10 @@ public sealed class SidecarGrpcServiceTests
         public Task<bool> MoveNext(CancellationToken cancellationToken)
         {
             _index++;
+            onMoveNext?.Invoke(_index);
+            if (throwIfCanceled && cancellationToken.IsCancellationRequested)
+                throw new OperationCanceledException(cancellationToken);
+
             if (_index >= items.Count)
                 return Task.FromResult(false);
 
@@ -223,16 +285,23 @@ public sealed class SidecarGrpcServiceTests
 
     private sealed class TestServerCallContext : ServerCallContext
     {
+        private readonly CancellationToken _cancellationToken;
         private readonly Metadata _requestHeaders = new();
 
-        public static TestServerCallContext Create() => new();
+        private TestServerCallContext(CancellationToken cancellationToken)
+        {
+            _cancellationToken = cancellationToken;
+        }
+
+        public static TestServerCallContext Create(CancellationTokenSource? cts = null)
+            => new(cts?.Token ?? CancellationToken.None);
 
         protected override string MethodCore => "test";
         protected override string HostCore => "localhost";
         protected override string PeerCore => "peer";
         protected override DateTime DeadlineCore => DateTime.UtcNow.AddMinutes(1);
         protected override Metadata RequestHeadersCore => _requestHeaders;
-        protected override CancellationToken CancellationTokenCore => CancellationToken.None;
+        protected override CancellationToken CancellationTokenCore => _cancellationToken;
         protected override Metadata ResponseTrailersCore { get; } = new();
         protected override Status StatusCore { get; set; }
         protected override WriteOptions? WriteOptionsCore { get; set; }

@@ -14,7 +14,7 @@ This document operationalizes the next steps after dashboard-target alignment.
 
 ### 1.2 StreamAnalyticsEvents batching
 - [x] Implement batch write path (service/repository abstraction).
-- [ ] Add backpressure/size guard + cancellation handling tests.
+- [x] Add backpressure/size guard + cancellation handling tests.
 
 ### 1.3 SubmitInferenceResult persistence
 - [x] Persist model/entity/score payload via repository abstraction.
@@ -49,6 +49,7 @@ This document operationalizes the next steps after dashboard-target alignment.
 - ✅ `SidecarGrpcService` now stores inference results through `ISidecarInferenceStore` (in-memory implementation) instead of placeholder record IDs.
 - ✅ `SidecarGrpcService` now supports deterministic backend action dispatch for `admin_event_queue_reprocess` via MediatR (`AdminReprocessEventQueue`), with explicit validation for unsupported actions and invalid params payloads.
 - ✅ Added `SidecarGrpcServiceTests` coverage for analytics acceptance/rejection, streamed summary counts, inference result storage, and backend action dispatch (pending environment execution).
+- ✅ Added stream-cap and cancellation coverage for `SidecarGrpcService.StreamAnalyticsEvents`, and wired a bounded per-stream event cap in service logic.
 - ✅ `MobileMatchGrpcService` leaderboard stream now uses live MediatR leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
 - ✅ `MobileMatchGrpcService` answer flow now evaluates correctness against persisted question answer keys and emits live running-score/correct-count updates to participants.
 - ✅ Added initial `MatchSession` tests for score progression and fan-out broadcast behavior in streaming sessions.

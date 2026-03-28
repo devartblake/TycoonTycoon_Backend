@@ -32,3 +32,8 @@ Health-pass commands requested for:
 ## Latest Command Notes (2026-03-28)
 - `bash scripts/check-error-envelope-hardening.sh` re-run: **pass**.
 - `bash scripts/validate-ef-schema.sh` re-run: **blocked** by `dotnet: command not found`.
+
+## Dashboard `/admin/questions` Incident Follow-up (2026-03-28)
+- Symptom observed from operator dashboard logs: repeated HTTP 500 responses on `GET /admin/questions` with Polly retries, while other admin endpoints remained 200.
+- Mitigation applied in application query handler: page rows and tag lists are now fetched in two steps to avoid nested tag-list projection in the EF query path.
+- Next validation step (requires local/CI .NET runtime): run `dotnet test` + manual dashboard smoke (`Questions` page load) to confirm no further 500s.

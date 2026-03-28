@@ -22,6 +22,8 @@ namespace Tycoon.Backend.Api.Grpc;
 /// </summary>
 public sealed class SidecarGrpcService : SidecarService.SidecarServiceBase
 {
+    internal const int MaxAnalyticsEventsPerStream = 5000;
+
     private readonly ILogger<SidecarGrpcService> _logger;
     private readonly IAnalyticsEventWriter _analyticsWriter;
     private readonly ISidecarInferenceStore _inferenceStore;
@@ -87,30 +89,53 @@ public sealed class SidecarGrpcService : SidecarService.SidecarServiceBase
         ServerCallContext context)
     {
         int received = 0, accepted = 0, rejected = 0;
+        var capped = false;
 
-        await foreach (var request in requestStream.ReadAllAsync(context.CancellationToken))
+        try
         {
-            received++;
-
-            if (string.IsNullOrWhiteSpace(request.EventType))
+            await foreach (var request in requestStream.ReadAllAsync(context.CancellationToken))
             {
-                rejected++;
-                continue;
-            }
+                if (received >= MaxAnalyticsEventsPerStream)
+                {
+                    capped = true;
+                    rejected++;
+                    break;
+                }
 
-            if (!TryMapQuestionAnsweredEvent(request, out var evt))
-            {
-                rejected++;
-                continue;
-            }
+                received++;
 
-            await _analyticsWriter.UpsertQuestionAnsweredEventAsync(evt, context.CancellationToken);
-            accepted++;
+                if (string.IsNullOrWhiteSpace(request.EventType))
+                {
+                    rejected++;
+                    continue;
+                }
+
+                if (!TryMapQuestionAnsweredEvent(request, out var evt))
+                {
+                    rejected++;
+                    continue;
+                }
+
+                await _analyticsWriter.UpsertQuestionAnsweredEventAsync(evt, context.CancellationToken);
+                accepted++;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning(
+                "gRPC analytics stream canceled: received={Received} accepted={Accepted} rejected={Rejected}",
+                received, accepted, rejected);
         }
 
         _logger.LogInformation(
             "gRPC analytics stream complete: received={Received} accepted={Accepted} rejected={Rejected}",
             received, accepted, rejected);
+        if (capped)
+        {
+            _logger.LogWarning(
+                "gRPC analytics stream reached max event cap: cap={Cap} received={Received}",
+                MaxAnalyticsEventsPerStream, received);
+        }
 
         return new StreamSummary
         {

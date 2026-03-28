@@ -4,6 +4,20 @@ All changes made on this branch relative to `main`.
 
 ---
 
+## [2026-03-28] Admin Questions 500 Follow-up + Plan Status Refresh
+
+### Backend query hardening
+- Updated `AdminListQuestions` paging query to avoid nested tag-list materialization inside the SQL projection path.
+- Switched to two-step retrieval (paged rows + page-scoped tag dictionary) to reduce provider translation/runtime fragility that manifested as repeated dashboard 500 retries on `/admin/questions`.
+
+### Planning/status updates
+- Refreshed checklist and health-report status to reflect current SEQ-5 state:
+  - `check-error-envelope-hardening` re-run and passing
+  - EF schema validation still blocked by missing `dotnet` CLI in this environment
+  - Health report exists and tracks blockers plus follow-up actions
+
+---
+
 ## [2026-03-28] gRPC Checklist Progress + Health Report Refresh
 
 ### gRPC debt-tracking docs

@@ -51,11 +51,11 @@ This checklist converts the actionable plan into issue-ready work items with dep
     - [ ] `dotnet restore`
     - [ ] `dotnet build --configuration Release --no-restore`
     - [ ] `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build`
-    - [ ] `bash scripts/check-error-envelope-hardening.sh`
+    - [x] `bash scripts/check-error-envelope-hardening.sh`
     - [ ] `bash scripts/validate-ef-schema.sh`
     - [ ] `docker compose -f docker/compose.yml build operator-dashboard` *(if Blazor target remains authoritative)*
   - **Acceptance Criteria:**
-    - [ ] `docs/PROJECT_HEALTH_REPORT.md` added with command outputs, pass/fail status, and blockers.
+    - [x] `docs/PROJECT_HEALTH_REPORT.md` added with command outputs, pass/fail status, and blockers.
 
 ---
 
@@ -74,3 +74,4 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Expanded SEQ-4 answer flow to emit real correctness/points/running-score updates based on persisted question answer keys.
 - [x] Added initial `MatchSession` streaming tests for SEQ-4 score propagation and participant fan-out behavior.
 - [x] Added `MobileMatchGrpcServiceTests` to cover answer-result streaming and live leaderboard update streaming behavior.
+- [x] Hardened `/admin/questions` list query shape to avoid provider-fragile nested tag projections that were causing repeated dashboard 500 retries.
