@@ -208,7 +208,7 @@ public sealed class MobileMatchGrpcServiceTests
                 }
                 : new PlayerAction
                 {
-                    Ping = new PingAction()
+                    Ping = new HeartbeatAction()
                 };
 
             return Task.FromResult(true);
