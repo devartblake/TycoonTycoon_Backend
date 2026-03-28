@@ -1,6 +1,212 @@
-# Changelog — `claude/add-minio-docker-QBFUx`
+# Changelog
 
-All changes made on this branch relative to `main`.
+All notable changes to this project.
+
+---
+
+## [2026-03-28] Synaptix BE Packet A — Audit + Brand Surface Reframe
+
+### BE-A1: Backend Surface Inventory (Phase 0)
+- Created `docs/backend_surface_inventory.md` — complete audit of all product-visible strings, including Swagger config, dashboard titles, code comments, and documentation headings
+- Created risk register documenting items that must NOT be renamed (namespaces, JWT config, DB names, endpoints, DTOs, CI/CD)
+- Created deferred technical rename list for Packet E
+
+### BE-A2: Brand Surface Reframe (Phase 1)
+
+**Swagger/OpenAPI** (`Tycoon.Backend.Api/Program.cs`):
+- Title: "Tycoon Backend API" → "Synaptix API"
+- Description: "Trivia Tycoon Game Backend - Multiplayer Quiz Game API" → "Platform API for Synaptix gameplay, progression, live competition, and player systems."
+- Contact: "Tycoon Development Team" → "Synaptix Development Team"
+- SwaggerUI endpoint label: "Tycoon Trivia Backend API v1" → "Synaptix API v1"
+- DocumentTitle: "Tycoon API Documentation" → "Synaptix API Documentation"
+
+**Blazor Operator Dashboard** (`Tycoon.OperatorDashboard/`):
+- App title: "Tycoon Operator Dashboard" → "Synaptix Command"
+- Sidebar brand: "Tycoon Ops" → "Synaptix Command"
+- Dashboard API-unreachable banner: "tycoon-api" → "synaptix-api"
+
+**Vue Operator Dashboard** (`Tycoon.OperatorDashboard.Vue/`):
+- HTML title: "Materio - Vuetify Vuejs Admin Template" → "Synaptix Command"
+- Nav header: "Tycoon Ops" → "Synaptix Command"
+
+**Web/React Operator Dashboard** (`Tycoon.OperatorDashboard.Web/`):
+- Layout metadata title: "Tycoon Operator Dashboard" → "Synaptix Command"
+- Layout metadata description: "managing the Tycoon platform" → "managing the Synaptix platform"
+- themeConfig templateName: "Tycoon Ops" → "Synaptix Command"
+
+**Backend Code Comments**:
+- `AppDb.cs` XML doc: "Trivia Tycoon" → "Synaptix"
+
+**Documentation**:
+- `README.md` heading: "TycoonTycoon Backend" → "Synaptix Backend"
+- `README.md` description: updated to reference Synaptix platform
+
+### Separated Migration Plans
+- Created `docs/synaptix_frontend_plan.md` — self-contained Flutter app migration plan (FE Packets A–E)
+- Created `docs/synaptix_backend_plan.md` — self-contained backend migration plan (BE Packets A–E)
+
+### What was NOT changed (by design)
+- `Tycoon.Backend.*` / `Tycoon.Shared.*` namespaces
+- Project names and .csproj files
+- Endpoint paths and DTO field names
+- JWT issuer/audience (`TycoonBackendApi` / `TycoonFrontendApp`)
+- Database names, table names, migration identifiers
+- gRPC proto package (`tycoon.sidecar`)
+- Observability service name (`Tycoon.Backend.Api`)
+- CI/CD pipeline names, Docker image names
+- Cookie/persistence keys (`tycoon-ops-dashboard`)
+
+---
+
+## [2026-03-28] Durable Sidecar Inference Path in Compose
+
+- Updated `docker/compose.yml` backend service to mount persistent volume `sidecar_inference_data` at `/var/lib/tycoon-sidecar`.
+- Added `SIDECAR_INFERENCE_STORE_PATH=/var/lib/tycoon-sidecar/inference-store.jsonl` so the file-backed inference store persists across backend container restarts.
+- Updated README sidecar gRPC status section to reflect that file-backed inference storage is now the default baseline.
+
+---
+
+## [2026-03-28] Health Pass Automation Script
+
+- Added `scripts/run-health-pass.sh` to execute the SEQ-5 command checklist and regenerate `docs/PROJECT_HEALTH_REPORT.md` in a consistent format.
+- Added fallback execution mode for dotnet-dependent commands using `mcr.microsoft.com/dotnet/sdk:9.0` when local `dotnet` is unavailable but Docker is installed.
+- Added CI workflow job `health-pass-report` to execute `scripts/run-health-pass.sh` and upload `docs/PROJECT_HEALTH_REPORT.md` as a workflow artifact.
+- Added health-pass command log output under `artifacts/health-pass/` and CI upload of that folder as `project-health-pass-logs`.
+- Improved health-pass blocker notes to surface the most actionable missing-tool error line (instead of generic script preamble lines).
+- Added CI job `grpc-streaming-tests` to run the new Sidecar/Mobile gRPC-focused test suites as a dedicated validation stage.
+- Ran the script in this environment:
+  - `check-error-envelope-hardening` passed
+  - `dotnet`/`docker` dependent checks remained blocked due to missing local tooling
+
+---
+
+## [2026-03-28] Admin Questions 500 Follow-up + Plan Status Refresh
+
+### Backend query hardening
+- Updated `AdminListQuestions` paging query to avoid nested tag-list materialization inside the SQL projection path.
+- Switched to two-step retrieval (paged rows + page-scoped tag dictionary) to reduce provider translation/runtime fragility that manifested as repeated dashboard 500 retries on `/admin/questions`.
+
+### Planning/status updates
+- Refreshed checklist and health-report status to reflect current SEQ-5 state:
+  - `check-error-envelope-hardening` re-run and passing
+  - EF schema validation still blocked by missing `dotnet` CLI in this environment
+  - Health report exists and tracks blockers plus follow-up actions
+
+---
+
+## [2026-03-28] gRPC Checklist Progress + Health Report Refresh
+
+### gRPC debt-tracking docs
+- Marked SEQ-3 and SEQ-4 issue checklists as complete in `docs/GITHUB_ISSUES_CHECKLIST.md` after adding gRPC coverage for sidecar and mobile streaming behavior.
+- Added explicit progress note for `MobileMatchGrpcServiceTests` covering answer-result/running-score and live leaderboard stream behavior.
+- Updated `docs/GRPC_TECH_DEBT_NEXT_STEPS.md` to reflect expanded test coverage and clarify that execution is pending environment/tool availability.
+
+### Health pass refresh
+- Refreshed `docs/PROJECT_HEALTH_REPORT.md` date and latest run notes.
+- Re-ran shell health checks:
+  - `bash scripts/check-error-envelope-hardening.sh` ✅ pass
+  - `bash scripts/validate-ef-schema.sh` ❌ blocked (`dotnet: command not found`)
+
+---
+
+## [2026-03-27] Sidecar gRPC Wiring + Dashboard Build Path Clarification
+
+### Sidecar gRPC
+- `SidecarGrpcService` now wires concrete paths for:
+  - `ReportAnalyticsEvent` / `StreamAnalyticsEvents` (supports `question_answered` payload mapping + persistence via `IAnalyticsEventWriter`)
+  - `SubmitInferenceResult` (stores through `ISidecarInferenceStore`)
+  - `TriggerBackendAction` (supports `admin_event_queue_reprocess` via MediatR command dispatch with deterministic errors for unsupported/invalid actions)
+- Added `ISidecarInferenceStore` + `InMemorySidecarInferenceStore` and DI registration in API startup.
+
+### Mobile gRPC
+- `MobileMatchGrpcService.WatchLeaderboard` now builds live snapshots via MediatR (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshot generation.
+- `MobileMatchGrpcService.PlayMatch` now evaluates submitted answers against persisted question answer keys and emits live running score / correct-count updates per participant.
+- Added `EvaluateMatchAnswer` MediatR handler in application layer and initial `MatchSession` tests for score progression + stream fan-out behavior.
+
+### Dashboard build source-of-truth
+- Blazor operator dashboard remains authoritative in compose (`docker/Dockerfile.dashboard`).
+- Alternate Next.js dashboard Dockerfiles are preserved as archived `.txt` artifacts to avoid accidental default build-path drift.
+
+### Docs / planning updates
+- README includes sidecar gRPC “current status” contract notes.
+- `docs/GITHUB_ISSUES_CHECKLIST.md` marks SEQ-1/SEQ-2 complete and SEQ-3 in progress.
+- `docs/GRPC_TECH_DEBT_NEXT_STEPS.md` now tracks Workstream 1 subtasks with completion state.
+
+---
+
+## [2026-03-28] Durable Sidecar Inference Path in Compose
+
+- Updated `docker/compose.yml` backend service to mount persistent volume `sidecar_inference_data` at `/var/lib/tycoon-sidecar`.
+- Added `SIDECAR_INFERENCE_STORE_PATH=/var/lib/tycoon-sidecar/inference-store.jsonl` so the file-backed inference store persists across backend container restarts.
+- Updated README sidecar gRPC status section to reflect that file-backed inference storage is now the default baseline.
+
+---
+
+## [2026-03-28] Health Pass Automation Script
+
+- Added `scripts/run-health-pass.sh` to execute the SEQ-5 command checklist and regenerate `docs/PROJECT_HEALTH_REPORT.md` in a consistent format.
+- Added fallback execution mode for dotnet-dependent commands using `mcr.microsoft.com/dotnet/sdk:9.0` when local `dotnet` is unavailable but Docker is installed.
+- Added CI workflow job `health-pass-report` to execute `scripts/run-health-pass.sh` and upload `docs/PROJECT_HEALTH_REPORT.md` as a workflow artifact.
+- Added health-pass command log output under `artifacts/health-pass/` and CI upload of that folder as `project-health-pass-logs`.
+- Improved health-pass blocker notes to surface the most actionable missing-tool error line (instead of generic script preamble lines).
+- Added CI job `grpc-streaming-tests` to run the new Sidecar/Mobile gRPC-focused test suites as a dedicated validation stage.
+- Ran the script in this environment:
+  - `check-error-envelope-hardening` passed
+  - `dotnet`/`docker` dependent checks remained blocked due to missing local tooling
+
+---
+
+## [2026-03-28] Admin Questions 500 Follow-up + Plan Status Refresh
+
+### Backend query hardening
+- Updated `AdminListQuestions` paging query to avoid nested tag-list materialization inside the SQL projection path.
+- Switched to two-step retrieval (paged rows + page-scoped tag dictionary) to reduce provider translation/runtime fragility that manifested as repeated dashboard 500 retries on `/admin/questions`.
+
+### Planning/status updates
+- Refreshed checklist and health-report status to reflect current SEQ-5 state:
+  - `check-error-envelope-hardening` re-run and passing
+  - EF schema validation still blocked by missing `dotnet` CLI in this environment
+  - Health report exists and tracks blockers plus follow-up actions
+
+---
+
+## [2026-03-28] gRPC Checklist Progress + Health Report Refresh
+
+### gRPC debt-tracking docs
+- Marked SEQ-3 and SEQ-4 issue checklists as complete in `docs/GITHUB_ISSUES_CHECKLIST.md` after adding gRPC coverage for sidecar and mobile streaming behavior.
+- Added explicit progress note for `MobileMatchGrpcServiceTests` covering answer-result/running-score and live leaderboard stream behavior.
+- Updated `docs/GRPC_TECH_DEBT_NEXT_STEPS.md` to reflect expanded test coverage and clarify that execution is pending environment/tool availability.
+
+### Health pass refresh
+- Refreshed `docs/PROJECT_HEALTH_REPORT.md` date and latest run notes.
+- Re-ran shell health checks:
+  - `bash scripts/check-error-envelope-hardening.sh` ✅ pass
+  - `bash scripts/validate-ef-schema.sh` ❌ blocked (`dotnet: command not found`)
+
+---
+
+## [2026-03-27] Sidecar gRPC Wiring + Dashboard Build Path Clarification
+
+### Sidecar gRPC
+- `SidecarGrpcService` now wires concrete paths for:
+  - `ReportAnalyticsEvent` / `StreamAnalyticsEvents` (supports `question_answered` payload mapping + persistence via `IAnalyticsEventWriter`)
+  - `SubmitInferenceResult` (stores through `ISidecarInferenceStore`)
+  - `TriggerBackendAction` (supports `admin_event_queue_reprocess` via MediatR command dispatch with deterministic errors for unsupported/invalid actions)
+- Added `ISidecarInferenceStore` + `InMemorySidecarInferenceStore` and DI registration in API startup.
+
+### Mobile gRPC
+- `MobileMatchGrpcService.WatchLeaderboard` now builds live snapshots via MediatR (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshot generation.
+- `MobileMatchGrpcService.PlayMatch` now evaluates submitted answers against persisted question answer keys and emits live running score / correct-count updates per participant.
+- Added `EvaluateMatchAnswer` MediatR handler in application layer and initial `MatchSession` tests for score progression + stream fan-out behavior.
+
+### Dashboard build source-of-truth
+- Blazor operator dashboard remains authoritative in compose (`docker/Dockerfile.dashboard`).
+- Alternate Next.js dashboard Dockerfiles are preserved as archived `.txt` artifacts to avoid accidental default build-path drift.
+
+### Docs / planning updates
+- README includes sidecar gRPC “current status” contract notes.
+- `docs/GITHUB_ISSUES_CHECKLIST.md` marks SEQ-1/SEQ-2 complete and SEQ-3 in progress.
+- `docs/GRPC_TECH_DEBT_NEXT_STEPS.md` now tracks Workstream 1 subtasks with completion state.
 
 ---
 
