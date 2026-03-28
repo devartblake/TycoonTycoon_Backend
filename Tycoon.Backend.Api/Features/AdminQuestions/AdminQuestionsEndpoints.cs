@@ -47,7 +47,7 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                     Difficulty: null,
                     Sort: normalizedSort,
                     Page: page <= 0 ? 1 : page,
-                    PageSize: page is <= 0 ? 25 : Math.Clamp(pageSize, 1, 200)
+                    PageSize: pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200)
                 ), ct);
 
                 var pageEnvelope = AdminApiResponses.Page(dto.Items, dto.Page, dto.PageSize, dto.Total);

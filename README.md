@@ -59,6 +59,9 @@ TycoonTycoon_Backend/
 └── scripts/                         # Development automation scripts
 ```
 
+> Operator dashboard container source of truth: **Blazor (`Tycoon.OperatorDashboard`)**.
+> Alternate Next.js dashboard Dockerfiles are archived as `*.txt` and are not part of default compose builds.
+
 ### Technology Stack
 
 - **Runtime**: .NET 9
@@ -344,9 +347,26 @@ make -f docker/MakeFile migrate
 ### Creating New Migrations
 
 ```bash
-cd Tycoon.Backend.Infrastructure
-dotnet ef migrations add YourMigrationName --startup-project ../Tycoon.Backend.Api
+dotnet ef migrations add YourMigrationName \
+  --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
+  --startup-project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj \
+  --context AppDb \
+  --output-dir Migrations
 ```
+
+### Resetting Migrations (Start Over)
+
+To wipe `Tycoon.Backend.Migrations/Migrations` and recreate a fresh baseline migration:
+
+```bash
+./scripts/reset-migrations.sh --force --name InitialCreate
+```
+
+Useful options:
+
+- `--skip-add` : clear migration files only (no new migration generated)
+- `--name <Name>` : set the baseline migration name
+- Runs `scripts/validate-ef-schema.sh` after regeneration to catch pending model changes early
 
 ### Migration Modes
 
@@ -355,6 +375,44 @@ Configure via `MigrationService__Mode` in appsettings or environment variable:
 - `MigrateAndSeed` (default) - Run migrations and seed data
 - `RebuildElastic` - Rebuild Elasticsearch indices only
 - `MigrateSeedAndRebuildElastic` - Do everything
+
+---
+
+## 🔌 Sidecar gRPC Integration (Current Status)
+
+The sidecar talks to backend gRPC endpoints on the dedicated HTTP/2 port.
+
+### Currently wired paths
+
+- `ReportAnalyticsEvent` / `StreamAnalyticsEvents`
+  - Accepts `event_type = "question_answered"` with valid `payload_json`.
+  - Persists via `IAnalyticsEventWriter`.
+  - Unsupported event types are explicitly rejected.
+
+- `SubmitInferenceResult`
+  - Persists via `ISidecarInferenceStore`.
+  - Default implementation is file-backed (`FileSidecarInferenceStore`) with idempotency by `(modelName, entityId, score, metadataJson)`.
+  - Default path: `/tmp/tycoon-sidecar/inference-store.jsonl` (overridable with `SidecarInference:StorePath` or `SIDECAR_INFERENCE_STORE_PATH`).
+  - In Docker Compose, backend mounts `sidecar_inference_data` at `/var/lib/tycoon-sidecar` and sets `SIDECAR_INFERENCE_STORE_PATH=/var/lib/tycoon-sidecar/inference-store.jsonl`.
+  - If file-store initialization fails at startup (e.g., invalid/unwritable path), API falls back to `InMemorySidecarInferenceStore` with a startup warning.
+
+- `TriggerBackendAction`
+  - Supports `action = "admin_event_queue_reprocess"` with optional `params_json`:
+    - `scope` (string, default `"all"`)
+    - `limit` (int, default `1000`)
+    - `adminUser` (string, optional)
+  - Unknown actions return explicit errors.
+
+### Next planned improvements
+
+- Expand supported analytics event types beyond `question_answered`.
+- Add a relational/warehouse-backed inference store implementation (file-backed store is current durable baseline).
+- Continue SEQ-3 / SEQ-4 work in `docs/GITHUB_ISSUES_CHECKLIST.md` and `docs/GRPC_TECH_DEBT_NEXT_STEPS.md`.
+
+### Mobile gRPC note
+
+- `WatchLeaderboard` now uses live leaderboard queries (`GetMyTier` + `GetTierLeaderboard`) instead of static placeholder snapshots.
+- `PlayMatch` now evaluates answer correctness using persisted question answer keys and emits running score/correct-count updates in stream events.
 
 ---
 
@@ -603,4 +661,3 @@ Built with:
 ---
 
 **Happy coding! 🚀**
-
