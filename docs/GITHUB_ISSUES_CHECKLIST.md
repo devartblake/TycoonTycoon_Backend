@@ -46,16 +46,17 @@ This checklist converts the actionable plan into issue-ready work items with dep
     - [x] Streaming tests cover match answer and leaderboard update behavior.
 
 ## 5) Project Health Pass (`SEQ-5`)
-- [ ] **Issue: Run and publish project health pass report.**
+- [x] **Issue: Run and publish project health pass report.**
   - **Command checklist:**
-    - [ ] `dotnet restore`
-    - [ ] `dotnet build --configuration Release --no-restore`
-    - [ ] `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build`
+    - [x] `dotnet restore` *(executed in CI jobs: `build-test`, `schema-validation`, `grpc-streaming-tests`, `health-pass-report`)*
+    - [x] `dotnet build --configuration Release --no-restore` *(executed in CI jobs: `build-test`, `grpc-streaming-tests`)*
+    - [x] `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build` *(executed in CI `build-test` + focused suites in `grpc-streaming-tests`)*
     - [x] `bash scripts/check-error-envelope-hardening.sh`
-    - [ ] `bash scripts/validate-ef-schema.sh`
-    - [ ] `docker compose -f docker/compose.yml build operator-dashboard` *(if Blazor target remains authoritative)*
+    - [x] `bash scripts/validate-ef-schema.sh` *(executed in CI `schema-validation`)*
+    - [x] `docker compose -f docker/compose.yml build operator-dashboard` *(executed by `scripts/run-health-pass.sh` in CI `health-pass-report`; local run remains tool-blocked on machines without Docker)*
   - **Acceptance Criteria:**
     - [x] `docs/PROJECT_HEALTH_REPORT.md` added with command outputs, pass/fail status, and blockers.
+    - [x] CI workflow publishes both `project-health-report` and `project-health-pass-logs` artifacts from `health-pass-report`.
 
 ---
 
@@ -82,3 +83,4 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Added health-pass command log artifacts (`artifacts/health-pass/*.log`) and CI artifact upload for easier blocker triage.
 - [x] Improved health-pass report note extraction to include actionable missing-tool error lines for blocked commands.
 - [x] Added CI job `grpc-streaming-tests` to run Sidecar/Mobile gRPC-focused test suites explicitly in workflow validation.
+- [x] Marked SEQ-5 as completed via CI-backed execution/artifacts while retaining explicit note that some local environments can still be tool-blocked.
