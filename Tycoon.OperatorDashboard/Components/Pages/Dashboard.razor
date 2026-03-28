@@ -161,7 +161,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var authenticated = await Auth.TryAttachTokenAsync();
         if (!await Auth.TryAttachTokenAsync()) { _authFailed = true; return; }
 
         // Fire all requests in parallel
@@ -181,16 +180,12 @@ else
 
         _apiConnected = _config is not null;
 
-        if (usersDoc is not null && usersDoc.RootElement.TryGetProperty("total", out var ut))
-            _userCount = ut.GetInt32();
-
-        if (matchDoc is not null && matchDoc.RootElement.TryGetProperty("total", out var mt))
-            _matchCount = mt.GetInt32();
+        _userCount = GetTotal(usersDoc);
+        _matchCount = GetTotal(matchDoc);
 
         _activeSeason = seasons?.Items.FirstOrDefault(s => s.Status == SeasonStatus.Active);
 
-        if (flagsDoc is not null && flagsDoc.RootElement.TryGetProperty("total", out var ft))
-            _pendingFlagCount = ft.GetInt32();
+        _pendingFlagCount = GetTotal(flagsDoc);
 
         _loading = false;
     }
@@ -201,4 +196,17 @@ else
         >= 1_000     => $"{n / 1_000.0:0.#}K",
         _            => n.ToString()
     };
+
+    private static int GetTotal(JsonDocument? doc)
+    {
+        if (doc is null || !doc.RootElement.TryGetProperty("total", out var total))
+            return 0;
+
+        return total.ValueKind switch
+        {
+            JsonValueKind.Number when total.TryGetInt32(out var n) => n,
+            JsonValueKind.String when int.TryParse(total.GetString(), out var n) => n,
+            _ => 0
+        };
+    }
 }
