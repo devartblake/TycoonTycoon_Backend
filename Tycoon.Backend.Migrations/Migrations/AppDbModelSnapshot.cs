@@ -25,48 +25,62 @@ namespace Tycoon.Backend.Migrations.Migrations
             modelBuilder.Entity("Tycoon.Backend.Application.Analytics.Models.QuestionAnsweredAnalyticsEvent", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("id");
 
                     b.Property<int>("AnswerTimeMs")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("answer_time_ms");
 
                     b.Property<DateTime>("AnsweredAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("answered_at_utc");
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("category");
 
                     b.Property<int>("Difficulty")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("difficulty");
 
                     b.Property<bool>("IsCorrect")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_correct");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
 
                     b.Property<string>("Mode")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("mode");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("PointsAwarded")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("points_awarded");
 
                     b.Property<string>("QuestionId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("question_id");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_question_answered_analytics_events");
 
                     b.HasIndex("PlayerId", "QuestionId", "AnsweredAtUtc")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_question_answered_analytics_events_player_id_question_id_an");
 
                     b.ToTable("question_answered_analytics_events", (string)null);
                 });
@@ -74,47 +88,61 @@ namespace Tycoon.Backend.Migrations.Migrations
             modelBuilder.Entity("Tycoon.Backend.Application.Analytics.Models.QuestionAnsweredDailyRollup", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("id");
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("category");
 
                     b.Property<int>("CorrectAnswers")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("correct_answers");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateOnly>("Day")
-                        .HasColumnType("date");
+                        .HasColumnType("date")
+                        .HasColumnName("day");
 
                     b.Property<int>("Difficulty")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("difficulty");
 
                     b.Property<int>("MaxAnswerTimeMs")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("max_answer_time_ms");
 
                     b.Property<int>("MinAnswerTimeMs")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("min_answer_time_ms");
 
                     b.Property<string>("Mode")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("mode");
 
                     b.Property<long>("SumAnswerTimeMs")
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasColumnName("sum_answer_time_ms");
 
                     b.Property<int>("TotalAnswers")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("total_answers");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
                     b.Property<int>("WrongAnswers")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("wrong_answers");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_question_answered_daily_rollups");
 
                     b.ToTable("question_answered_daily_rollups", (string)null);
                 });
@@ -122,50 +150,65 @@ namespace Tycoon.Backend.Migrations.Migrations
             modelBuilder.Entity("Tycoon.Backend.Application.Analytics.Models.QuestionAnsweredPlayerDailyRollup", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("id");
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("category");
 
                     b.Property<int>("CorrectAnswers")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("correct_answers");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateOnly>("Day")
-                        .HasColumnType("date");
+                        .HasColumnType("date")
+                        .HasColumnName("day");
 
                     b.Property<int>("Difficulty")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("difficulty");
 
                     b.Property<int>("MaxAnswerTimeMs")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("max_answer_time_ms");
 
                     b.Property<int>("MinAnswerTimeMs")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("min_answer_time_ms");
 
                     b.Property<string>("Mode")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("mode");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<long>("SumAnswerTimeMs")
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasColumnName("sum_answer_time_ms");
 
                     b.Property<int>("TotalAnswers")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("total_answers");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
                     b.Property<int>("WrongAnswers")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("wrong_answers");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_question_answered_player_daily_rollups");
 
                     b.ToTable("question_answered_player_daily_rollups", (string)null);
                 });
@@ -174,24 +217,30 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("id");
 
                     b.Property<string>("ApiBaseUrl")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("api_base_url");
 
                     b.Property<bool>("EnableLogging")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("enable_logging");
 
                     b.Property<string>("FeatureFlagsJson")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("feature_flags_json");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_admin_app_config");
 
                     b.ToTable("admin_app_config", (string)null);
                 });
@@ -200,49 +249,61 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("AddedBy")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("added_by");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
 
                     b.Property<string>("ListType")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("list_type");
 
                     b.Property<string>("NormalizedEmail")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_email");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("role");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_admin_email_acls");
 
-                    b.HasIndex("ListType");
+                    b.HasIndex("ListType")
+                        .HasDatabaseName("ix_admin_email_acls_list_type");
 
                     b.HasIndex("NormalizedEmail")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_admin_email_acls_normalized_email");
 
                     b.ToTable("admin_email_acls", (string)null);
                 });
@@ -251,30 +312,37 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<string>("Key")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("key");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
 
                     b.Property<bool>("Enabled")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
 
                     b.Property<string>("Importance")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("importance");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Key");
+                    b.HasKey("Key")
+                        .HasName("pk_admin_notification_channels");
 
                     b.ToTable("admin_notification_channels", (string)null);
                 });
@@ -283,34 +351,43 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("id");
 
                     b.Property<string>("ChannelKey")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("channel_key");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("MetadataJson")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata_json");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("title");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_admin_notification_history");
 
-                    b.HasIndex("ChannelKey");
+                    b.HasIndex("ChannelKey")
+                        .HasDatabaseName("ix_admin_notification_history_channel_key");
 
-                    b.HasIndex("CreatedAt");
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_admin_notification_history_created_at");
 
                     b.ToTable("admin_notification_history", (string)null);
                 });
@@ -319,54 +396,69 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<string>("ScheduleId")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("schedule_id");
 
                     b.Property<string>("Body")
                         .IsRequired()
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
 
                     b.Property<string>("ChannelKey")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("channel_key");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("LastError")
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("last_error");
 
                     b.Property<int>("MaxRetries")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("max_retries");
 
                     b.Property<DateTimeOffset?>("ProcessedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at_utc");
 
                     b.Property<int>("RetryCount")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("retry_count");
 
                     b.Property<DateTimeOffset>("ScheduledAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("title");
 
-                    b.HasKey("ScheduleId");
+                    b.HasKey("ScheduleId")
+                        .HasName("pk_admin_notification_schedules");
 
-                    b.HasIndex("ChannelKey");
+                    b.HasIndex("ChannelKey")
+                        .HasDatabaseName("ix_admin_notification_schedules_channel_key");
 
-                    b.HasIndex("ScheduledAt");
+                    b.HasIndex("ScheduledAt")
+                        .HasDatabaseName("ix_admin_notification_schedules_scheduled_at");
 
-                    b.HasIndex("Status");
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_admin_notification_schedules_status");
 
                     b.ToTable("admin_notification_schedules", (string)null);
                 });
@@ -375,39 +467,48 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<string>("TemplateId")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("template_id");
 
                     b.Property<string>("Body")
                         .IsRequired()
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
 
                     b.Property<string>("ChannelKey")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("channel_key");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("title");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
                     b.Property<string>("VariablesJson")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("variables_json");
 
-                    b.HasKey("TemplateId");
+                    b.HasKey("TemplateId")
+                        .HasName("pk_admin_notification_templates");
 
                     b.HasIndex("Name")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_admin_notification_templates_name");
 
                     b.ToTable("admin_notification_templates", (string)null);
                 });
@@ -416,60 +517,79 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("Action")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("action");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("EvidenceJson")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("evidence_json");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
 
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("message");
 
                     b.Property<Guid?>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<string>("ReviewNote")
                         .HasMaxLength(400)
-                        .HasColumnType("character varying(400)");
+                        .HasColumnType("character varying(400)")
+                        .HasColumnName("review_note");
 
                     b.Property<DateTimeOffset?>("ReviewedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at_utc");
 
                     b.Property<string>("ReviewedBy")
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("reviewed_by");
 
                     b.Property<string>("RuleKey")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("rule_key");
 
                     b.Property<int>("Severity")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("severity");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_anti_cheat_flags");
 
-                    b.HasIndex("CreatedAtUtc");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_anti_cheat_flags_created_at_utc");
 
-                    b.HasIndex("MatchId");
+                    b.HasIndex("MatchId")
+                        .HasDatabaseName("ix_anti_cheat_flags_match_id");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_anti_cheat_flags_player_id");
 
-                    b.HasIndex("ReviewedAtUtc");
+                    b.HasIndex("ReviewedAtUtc")
+                        .HasDatabaseName("ix_anti_cheat_flags_reviewed_at_utc");
 
-                    b.HasIndex("Severity", "CreatedAtUtc");
+                    b.HasIndex("Severity", "CreatedAtUtc")
+                        .HasDatabaseName("ix_anti_cheat_flags_severity_created_at_utc");
 
-                    b.HasIndex("Severity", "ReviewedAtUtc", "CreatedAtUtc");
+                    b.HasIndex("Severity", "ReviewedAtUtc", "CreatedAtUtc")
+                        .HasDatabaseName("ix_anti_cheat_flags_severity_reviewed_at_utc_created_at_utc");
 
                     b.ToTable("anti_cheat_flags", (string)null);
                 });
@@ -478,37 +598,55 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
 
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("kind");
 
                     b.Property<string>("Note")
                         .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("note");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<Guid?>("PlayerTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_transaction_id");
 
                     b.Property<Guid?>("ReversalOfTransactionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("reversal_of_transaction_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_economy_transactions");
 
                     b.HasIndex("EventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_economy_transactions_event_id");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_economy_transactions_player_id");
 
-                    b.HasIndex("ReversalOfTransactionId");
+                    b.HasIndex("PlayerTransactionId")
+                        .HasDatabaseName("ix_economy_transactions_player_transaction_id");
+
+                    b.HasIndex("ReversalOfTransactionId")
+                        .HasDatabaseName("ix_economy_transactions_reversal_of_transaction_id");
 
                     b.ToTable("economy_transactions", (string)null);
                 });
@@ -517,20 +655,26 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("Currency")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("currency");
 
                     b.Property<int>("Delta")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("delta");
 
                     b.Property<Guid>("EconomyTransactionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("economy_transaction_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_economy_transaction_lines");
 
-                    b.HasIndex("EconomyTransactionId");
+                    b.HasIndex("EconomyTransactionId")
+                        .HasDatabaseName("ix_economy_transaction_lines_economy_transaction_id");
 
                     b.ToTable("economy_transaction_lines", (string)null);
                 });
@@ -539,23 +683,30 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("FriendPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("friend_player_id");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_friend_edges");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_friend_edges_player_id");
 
                     b.HasIndex("PlayerId", "FriendPlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_friend_edges_player_id_friend_player_id");
 
                     b.ToTable("friend_edges", (string)null);
                 });
@@ -564,30 +715,39 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("FromPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("from_player_id");
 
                     b.Property<DateTimeOffset?>("RespondedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("responded_at_utc");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
 
                     b.Property<Guid>("ToPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("to_player_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_friend_requests");
 
-                    b.HasIndex("FromPlayerId", "ToPlayerId", "Status");
+                    b.HasIndex("FromPlayerId", "ToPlayerId", "Status")
+                        .HasDatabaseName("ix_friend_requests_from_player_id_to_player_id_status");
 
-                    b.HasIndex("ToPlayerId", "Status", "CreatedAtUtc");
+                    b.HasIndex("ToPlayerId", "Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_friend_requests_to_player_id_status_created_at_utc");
 
                     b.ToTable("friend_requests", (string)null);
                 });
@@ -596,16 +756,20 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("id");
 
                     b.Property<string>("ConfigJson")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("config_json");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_balance_configs");
 
                     b.ToTable("game_balance_configs", (string)null);
                 });
@@ -614,47 +778,62 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<int>("EntryFeeCoins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("entry_fee_coins");
 
                     b.Property<int>("JackpotPool")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("jackpot_pool");
 
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
 
                     b.Property<int>("MaxParticipants")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("max_participants");
 
                     b.Property<DateTimeOffset?>("OpenAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("open_at_utc");
 
                     b.Property<int>("ReviveCostGems")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("revive_cost_gems");
 
                     b.Property<DateTimeOffset>("ScheduledAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_at_utc");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
 
                     b.Property<int>("TierId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_events");
 
-                    b.HasIndex("ScheduledAtUtc");
+                    b.HasIndex("ScheduledAtUtc")
+                        .HasDatabaseName("ix_game_events_scheduled_at_utc");
 
-                    b.HasIndex("Status");
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_game_events_status");
 
-                    b.HasIndex("Kind", "Status");
+                    b.HasIndex("Kind", "Status")
+                        .HasDatabaseName("ix_game_events_kind_status");
 
                     b.ToTable("game_events", (string)null);
                 });
@@ -663,36 +842,47 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateTimeOffset?>("EliminatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("eliminated_at");
 
                     b.Property<Guid>("EntryEventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("entry_event_id");
 
                     b.Property<int?>("FinalRank")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("final_rank");
 
                     b.Property<Guid>("GameEventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_event_id");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("RevivesUsed")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("revives_used");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_event_participants");
 
                     b.HasIndex("EntryEventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_event_participants_entry_event_id");
 
                     b.HasIndex("GameEventId", "PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_event_participants_game_event_id_player_id");
 
                     b.ToTable("game_event_participants", (string)null);
                 });
@@ -701,36 +891,47 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("AwardedCoins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("awarded_coins");
 
                     b.Property<int>("AwardedXp")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("awarded_xp");
 
                     b.Property<DateTimeOffset>("ClaimedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_at_utc");
 
                     b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
 
                     b.Property<Guid>("GameEventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_event_id");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("Rank")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("rank");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_event_prize_claims");
 
                     b.HasIndex("EventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_event_prize_claims_event_id");
 
                     b.HasIndex("GameEventId", "PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_event_prize_claims_game_event_id_player_id");
 
                     b.ToTable("game_event_prize_claims", (string)null);
                 });
@@ -739,38 +940,50 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("ChallengerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("challenger_id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("GuardianId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("guardian_id");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
 
                     b.Property<DateTimeOffset?>("ResolvedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
 
                     b.Property<int>("TierNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_number");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_guardian_challenges");
 
                     b.HasIndex("MatchId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_guardian_challenges_match_id");
 
-                    b.HasIndex("SeasonId", "TierNumber", "ChallengerId");
+                    b.HasIndex("SeasonId", "TierNumber", "ChallengerId")
+                        .HasDatabaseName("ix_guardian_challenges_season_id_tier_number_challenger_id");
 
                     b.ToTable("guardian_challenges", (string)null);
                 });
@@ -779,27 +992,35 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("GlobalRank")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("global_rank");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("Score")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("score");
 
                     b.Property<int>("TierId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_id");
 
                     b.Property<int>("TierRank")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_rank");
 
                     b.Property<double>("XpProgress")
-                        .HasColumnType("double precision");
+                        .HasColumnType("double precision")
+                        .HasColumnName("xp_progress");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_leaderboard_entries");
 
                     b.ToTable("leaderboard_entries", (string)null);
                 });
@@ -808,32 +1029,41 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset?>("FinishedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
 
                     b.Property<Guid>("HostPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("host_player_id");
 
                     b.Property<string>("Mode")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("mode");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("bytea")
+                        .HasColumnName("row_version");
 
                     b.Property<DateTimeOffset>("StartedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_matches");
 
-                    b.HasIndex("HostPlayerId");
+                    b.HasIndex("HostPlayerId")
+                        .HasDatabaseName("ix_matches_host_player_id");
 
-                    b.HasIndex("StartedAt");
+                    b.HasIndex("StartedAt")
+                        .HasDatabaseName("ix_matches_started_at");
 
                     b.ToTable("matches", (string)null);
                 });
@@ -842,32 +1072,42 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<double>("AvgAnswerTimeMs")
-                        .HasColumnType("double precision");
+                        .HasColumnType("double precision")
+                        .HasColumnName("avg_answer_time_ms");
 
                     b.Property<int>("Correct")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("correct");
 
                     b.Property<Guid>("MatchResultId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_result_id");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("Score")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("score");
 
                     b.Property<int>("Wrong")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("wrong");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_match_participant_results");
 
-                    b.HasIndex("MatchResultId");
+                    b.HasIndex("MatchResultId")
+                        .HasDatabaseName("ix_match_participant_results_match_result_id");
 
                     b.HasIndex("MatchResultId", "PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_match_participant_results_match_result_id_player_id");
 
                     b.ToTable("match_participant_results", (string)null);
                 });
@@ -876,42 +1116,54 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("category");
 
                     b.Property<DateTimeOffset>("EndedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at_utc");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
 
                     b.Property<string>("Mode")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("mode");
 
                     b.Property<int>("QuestionCount")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("question_count");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
 
                     b.Property<Guid>("SubmitEventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("submit_event_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_match_results");
 
-                    b.HasIndex("EndedAtUtc");
+                    b.HasIndex("EndedAtUtc")
+                        .HasDatabaseName("ix_match_results_ended_at_utc");
 
                     b.HasIndex("MatchId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_match_results_match_id");
 
                     b.HasIndex("SubmitEventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_match_results_submit_event_id");
 
                     b.ToTable("match_results", (string)null);
                 });
@@ -920,26 +1172,34 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("AnswerTimeMs")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("answer_time_ms");
 
                     b.Property<bool>("Correct")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("correct");
 
                     b.Property<int>("Index")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("index");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
 
                     b.Property<int>("Points")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("points");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_match_rounds");
 
-                    b.HasIndex("MatchId");
+                    b.HasIndex("MatchId")
+                        .HasDatabaseName("ix_match_rounds_match_id");
 
                     b.ToTable("match_rounds", (string)null);
                 });
@@ -948,48 +1208,61 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
 
                     b.Property<string>("Mode")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("mode");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("bytea")
+                        .HasColumnName("row_version");
 
                     b.Property<string>("Scope")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("scope");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
 
                     b.Property<int>("Tier")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_matchmaking_tickets");
 
-                    b.HasIndex("PlayerId", "Status");
+                    b.HasIndex("PlayerId", "Status")
+                        .HasDatabaseName("ix_matchmaking_tickets_player_id_status");
 
-                    b.HasIndex("Status", "ExpiresAtUtc");
+                    b.HasIndex("Status", "ExpiresAtUtc")
+                        .HasDatabaseName("ix_matchmaking_tickets_status_expires_at_utc");
 
-                    b.HasIndex("Mode", "Tier", "Scope", "Status", "CreatedAtUtc");
+                    b.HasIndex("Mode", "Tier", "Scope", "Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_matchmaking_tickets_mode_tier_scope_status_created_at_utc");
 
                     b.ToTable("matchmaking_tickets", (string)null);
                 });
@@ -998,43 +1271,55 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<bool>("Active")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("active");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("description");
 
                     b.Property<int>("Goal")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("goal");
 
                     b.Property<string>("Key")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("key");
 
                     b.Property<int>("RewardCoins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("reward_coins");
 
                     b.Property<int>("RewardDiamonds")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("reward_diamonds");
 
                     b.Property<int>("RewardXp")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("reward_xp");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("title");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("type");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_missions");
 
                     b.HasIndex("Type", "Key")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_missions_type_key");
 
                     b.ToTable("missions", (string)null);
                 });
@@ -1043,42 +1328,55 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<bool>("Claimed")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("claimed");
 
                     b.Property<DateTime?>("ClaimedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_at_utc");
 
                     b.Property<bool>("Completed")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("completed");
 
                     b.Property<DateTime?>("CompletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("LastResetAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reset_at_utc");
 
                     b.Property<Guid>("MissionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("mission_id");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("Progress")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("progress");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_mission_claims");
 
                     b.HasIndex("PlayerId", "MissionId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_mission_claims_player_id_mission_id");
 
                     b.ToTable("mission_claims", (string)null);
                 });
@@ -1087,44 +1385,58 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateTimeOffset?>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
 
                     b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("new_status");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("notes");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
 
                     b.Property<Guid?>("RelatedFlagId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("related_flag_id");
 
                     b.Property<string>("SetByAdmin")
                         .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("set_by_admin");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_moderation_action_logs");
 
-                    b.HasIndex("CreatedAtUtc");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_moderation_action_logs_created_at_utc");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_moderation_action_logs_player_id");
 
-                    b.HasIndex("RelatedFlagId");
+                    b.HasIndex("RelatedFlagId")
+                        .HasDatabaseName("ix_moderation_action_logs_related_flag_id");
 
-                    b.HasIndex("NewStatus", "CreatedAtUtc");
+                    b.HasIndex("NewStatus", "CreatedAtUtc")
+                        .HasDatabaseName("ix_moderation_action_logs_new_status_created_at_utc");
 
                     b.ToTable("moderation_action_logs", (string)null);
                 });
@@ -1133,24 +1445,31 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("LeaderPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("leader_player_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_parties");
 
-                    b.HasIndex("LeaderPlayerId", "Status");
+                    b.HasIndex("LeaderPlayerId", "Status")
+                        .HasDatabaseName("ix_parties_leader_player_id_status");
 
-                    b.HasIndex("Status", "CreatedAtUtc");
+                    b.HasIndex("Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_parties_status_created_at_utc");
 
                     b.ToTable("parties", (string)null);
                 });
@@ -1159,35 +1478,46 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("FromPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("from_player_id");
 
                     b.Property<Guid>("PartyId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("party_id");
 
                     b.Property<DateTimeOffset?>("RespondedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("responded_at_utc");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
 
                     b.Property<Guid>("ToPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("to_player_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_party_invites");
 
-                    b.HasIndex("PartyId", "Status");
+                    b.HasIndex("PartyId", "Status")
+                        .HasDatabaseName("ix_party_invites_party_id_status");
 
-                    b.HasIndex("FromPlayerId", "PartyId", "Status");
+                    b.HasIndex("FromPlayerId", "PartyId", "Status")
+                        .HasDatabaseName("ix_party_invites_from_player_id_party_id_status");
 
-                    b.HasIndex("ToPlayerId", "Status", "CreatedAtUtc");
+                    b.HasIndex("ToPlayerId", "Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_party_invites_to_player_id_status_created_at_utc");
 
                     b.ToTable("party_invites", (string)null);
                 });
@@ -1196,31 +1526,40 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset?>("ClosedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at_utc");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
 
                     b.Property<Guid>("PartyId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("party_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_party_match_links");
 
-                    b.HasIndex("MatchId", "Status");
+                    b.HasIndex("MatchId", "Status")
+                        .HasDatabaseName("ix_party_match_links_match_id_status");
 
                     b.HasIndex("PartyId", "MatchId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_party_match_links_party_id_match_id");
 
                     b.ToTable("party_match_links", (string)null);
                 });
@@ -1228,27 +1567,35 @@ namespace Tycoon.Backend.Migrations.Migrations
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PartyMatchMember", b =>
                 {
                     b.Property<Guid>("PartyId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("party_id");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<DateTimeOffset>("CapturedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("captured_at_utc");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("role");
 
-                    b.HasKey("PartyId", "MatchId", "PlayerId");
+                    b.HasKey("PartyId", "MatchId", "PlayerId")
+                        .HasName("pk_party_match_members");
 
-                    b.HasIndex("MatchId");
+                    b.HasIndex("MatchId")
+                        .HasDatabaseName("ix_party_match_members_match_id");
 
-                    b.HasIndex("PartyId");
+                    b.HasIndex("PartyId")
+                        .HasDatabaseName("ix_party_match_members_party_id");
 
                     b.ToTable("party_match_members", (string)null);
                 });
@@ -1257,50 +1604,64 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
 
                     b.Property<Guid>("LeaderPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("leader_player_id");
 
                     b.Property<string>("Mode")
                         .IsRequired()
                         .HasMaxLength(24)
-                        .HasColumnType("character varying(24)");
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("mode");
 
                     b.Property<Guid>("PartyId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("party_id");
 
                     b.Property<int>("PartySize")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("party_size");
 
                     b.Property<long>("RowVersion")
                         .IsConcurrencyToken()
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasColumnName("row_version");
 
                     b.Property<string>("Scope")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("scope");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
 
                     b.Property<int>("Tier")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_party_matchmaking_tickets");
 
-                    b.HasIndex("PartyId", "Status");
+                    b.HasIndex("PartyId", "Status")
+                        .HasDatabaseName("ix_party_matchmaking_tickets_party_id_status");
 
-                    b.HasIndex("Status", "Mode", "Scope", "Tier", "PartySize", "CreatedAtUtc");
+                    b.HasIndex("Status", "Mode", "Scope", "Tier", "PartySize", "CreatedAtUtc")
+                        .HasDatabaseName("ix_party_matchmaking_tickets_status_mode_scope_tier_party_size");
 
                     b.ToTable("party_matchmaking_tickets", (string)null);
                 });
@@ -1309,28 +1670,36 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("JoinedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at_utc");
 
                     b.Property<Guid>("PartyId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("party_id");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("role");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_party_members");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_party_members_player_id");
 
                     b.HasIndex("PartyId", "PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_party_members_party_id_player_id");
 
                     b.ToTable("party_members", (string)null);
                 });
@@ -1339,48 +1708,62 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("Coins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("coins");
 
                     b.Property<string>("CountryCode")
                         .IsRequired()
                         .HasMaxLength(4)
-                        .HasColumnType("character varying(4)");
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("country_code");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<int>("Diamonds")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("diamonds");
 
                     b.Property<int>("Level")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("level");
 
                     b.Property<int>("Score")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("score");
 
                     b.Property<Guid?>("TierId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("tier_id");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("username");
 
                     b.Property<double>("Xp")
                         .HasPrecision(12, 2)
-                        .HasColumnType("double precision");
+                        .HasColumnType("double precision")
+                        .HasColumnName("xp");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_players");
 
-                    b.HasIndex("Score");
+                    b.HasIndex("Score")
+                        .HasDatabaseName("ix_players_score");
 
-                    b.HasIndex("TierId");
+                    b.HasIndex("TierId")
+                        .HasDatabaseName("ix_players_tier_id");
 
                     b.HasIndex("Username")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_players_username");
 
                     b.ToTable("players", (string)null);
                 });
@@ -1389,36 +1772,47 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("CurrentEnergy")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("current_energy");
 
                     b.Property<int>("FreeTicketsClaimedToday")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("free_tickets_claimed_today");
 
                     b.Property<DateTimeOffset>("LastEnergyRegenAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_energy_regen_at_utc");
 
                     b.Property<DateOnly?>("LastFreeTicketClaimDate")
-                        .HasColumnType("date");
+                        .HasColumnType("date")
+                        .HasColumnName("last_free_ticket_claim_date");
 
                     b.Property<int>("LossStreak")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("loss_streak");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("SessionsStarted")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("sessions_started");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_player_economy_safeguard_states");
 
                     b.HasIndex("PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_economy_safeguard_states_player_id");
 
                     b.ToTable("player_economy_safeguard_states", (string)null);
                 });
@@ -1427,92 +1821,114 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("ChampionBattleEliminations")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("champion_battle_eliminations");
 
                     b.Property<int>("CurrentTilesOwned")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("current_tiles_owned");
 
                     b.Property<int>("EventsEntered")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("events_entered");
 
                     b.Property<int>("EventsTop20")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("events_top20");
 
                     b.Property<int>("EventsWon")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("events_won");
 
                     b.Property<int>("GuardianDaysTotal")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("guardian_days_total");
 
                     b.Property<int>("GuardianDefencesLost")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("guardian_defences_lost");
 
                     b.Property<int>("GuardianDefencesWon")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("guardian_defences_won");
 
                     b.Property<int>("GuardianPromotions")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("guardian_promotions");
 
                     b.Property<int>("PeakXpMultiplierBps")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("peak_xp_multiplier_bps");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
                     b.Property<int>("TilesEverCaptured")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("tiles_ever_captured");
 
                     b.Property<int>("TotalEventCoinsEarned")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("total_event_coins_earned");
 
                     b.Property<int>("TotalEventXpEarned")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("total_event_xp_earned");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_player_event_stats");
 
-                    b.HasIndex("SeasonId", "CurrentTilesOwned");
+                    b.HasIndex("SeasonId", "CurrentTilesOwned")
+                        .HasDatabaseName("ix_player_event_stats_season_id_current_tiles_owned");
 
-                    b.HasIndex("SeasonId", "EventsWon");
+                    b.HasIndex("SeasonId", "EventsWon")
+                        .HasDatabaseName("ix_player_event_stats_season_id_events_won");
 
-                    b.HasIndex("SeasonId", "GuardianDefencesWon");
+                    b.HasIndex("SeasonId", "GuardianDefencesWon")
+                        .HasDatabaseName("ix_player_event_stats_season_id_guardian_defences_won");
 
                     b.HasIndex("SeasonId", "PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_event_stats_season_id_player_id");
 
                     b.ToTable("player_event_stats", (string)null);
                 });
@@ -1521,40 +1937,52 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset?>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("notes");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
 
                     b.Property<DateTimeOffset>("SetAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("set_at_utc");
 
                     b.Property<string>("SetByAdmin")
                         .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("set_by_admin");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_player_moderation_profiles");
 
                     b.HasIndex("PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_moderation_profiles_player_id");
 
-                    b.HasIndex("SetAtUtc");
+                    b.HasIndex("SetAtUtc")
+                        .HasDatabaseName("ix_player_moderation_profiles_set_at_utc");
 
-                    b.HasIndex("Status");
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_player_moderation_profiles_status");
 
                     b.ToTable("player_moderation_profiles", (string)null);
                 });
@@ -1563,27 +1991,35 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset?>("CooldownUntilUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cooldown_until_utc");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("Quantity")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
 
                     b.Property<int>("Type")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_player_powerups");
 
                     b.HasIndex("PlayerId", "Type")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_powerups_player_id_type");
 
                     b.ToTable("player_powerups", (string)null);
                 });
@@ -1592,60 +2028,80 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("Draws")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("draws");
 
                     b.Property<DateTimeOffset?>("LastDemotionAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_demotion_at_utc");
 
                     b.Property<DateTimeOffset?>("LastPromotionAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_promotion_at_utc");
 
                     b.Property<int>("Losses")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("losses");
 
                     b.Property<int>("MatchesPlayed")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("matches_played");
 
                     b.Property<int>("PlacementMatchesCompleted")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("placement_matches_completed");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("RankPoints")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("rank_points");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
                     b.Property<int>("SeasonRank")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("season_rank");
 
                     b.Property<int>("Tier")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier");
 
                     b.Property<int>("TierRank")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_rank");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
                     b.Property<int>("Wins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("wins");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_player_season_profiles");
 
                     b.HasIndex("SeasonId", "PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_season_profiles_season_id_player_id");
 
-                    b.HasIndex("SeasonId", "RankPoints");
+                    b.HasIndex("SeasonId", "RankPoints")
+                        .HasDatabaseName("ix_player_season_profiles_season_id_rank_points");
 
-                    b.HasIndex("SeasonId", "SeasonRank");
+                    b.HasIndex("SeasonId", "SeasonRank")
+                        .HasDatabaseName("ix_player_season_profiles_season_id_season_rank");
 
-                    b.HasIndex("SeasonId", "Tier", "TierRank");
+                    b.HasIndex("SeasonId", "Tier", "TierRank")
+                        .HasDatabaseName("ix_player_season_profiles_season_id_tier_tier_rank");
 
                     b.ToTable("player_season_profiles", (string)null);
                 });
@@ -1654,54 +2110,198 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("NodeKey")
                         .IsRequired()
                         .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("node_key");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<DateTimeOffset>("UnlockedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("unlocked_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_player_skill_unlocks");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_player_skill_unlocks_player_id");
 
                     b.HasIndex("PlayerId", "NodeKey")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_skill_unlocks_player_id_node_key");
 
                     b.ToTable("player_skill_unlocks", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<Guid?>("CorrelatedEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlated_event_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid?>("DisputeLinkedToTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dispute_linked_to_transaction_id");
+
+                    b.Property<string>("DisputeReason")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("dispute_reason");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Receipt")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("receipt");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_player_transactions");
+
+                    b.HasIndex("CorrelatedEventId")
+                        .HasDatabaseName("ix_player_transactions_correlated_event_id");
+
+                    b.HasIndex("EventId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_transactions_event_id");
+
+                    b.ToTable("player_transactions", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerTransactionActor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AllocationPercent")
+                        .HasColumnType("integer")
+                        .HasColumnName("allocation_percent");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<Guid>("PlayerTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_transaction_id");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer")
+                        .HasColumnName("role");
+
+                    b.HasKey("Id")
+                        .HasName("pk_player_transaction_actors");
+
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_player_transaction_actors_player_id");
+
+                    b.HasIndex("PlayerTransactionId")
+                        .HasDatabaseName("ix_player_transaction_actors_player_transaction_id");
+
+                    b.ToTable("player_transaction_actors", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerTransactionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("item_type");
+
+                    b.Property<int>("Operation")
+                        .HasColumnType("integer")
+                        .HasColumnName("operation");
+
+                    b.Property<Guid>("PlayerTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_transaction_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.HasKey("Id")
+                        .HasName("pk_player_transaction_items");
+
+                    b.HasIndex("PlayerTransactionId")
+                        .HasDatabaseName("ix_player_transaction_items_player_transaction_id");
+
+                    b.ToTable("player_transaction_items", (string)null);
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerWallet", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("Coins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("coins");
 
                     b.Property<int>("Diamonds")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("diamonds");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
                     b.Property<int>("Xp")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("xp");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_player_wallets");
 
                     b.HasIndex("PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_wallets_player_id");
 
                     b.ToTable("player_wallets", (string)null);
                 });
@@ -1710,26 +2310,33 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
 
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("kind");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_processed_gameplay_events");
 
                     b.HasIndex("EventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_processed_gameplay_events_event_id");
 
                     b.ToTable("processed_gameplay_events", (string)null);
                 });
@@ -1738,36 +2345,47 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
 
                     b.Property<DateTimeOffset>("OccurredAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<DateTimeOffset>("StoredAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("stored_at_utc");
 
                     b.Property<int>("Type")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
 
                     b.Property<string>("Value")
                         .IsRequired()
                         .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("value");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_qr_scan_events");
 
                     b.HasIndex("EventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_qr_scan_events_event_id");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_qr_scan_events_player_id");
 
-                    b.HasIndex("PlayerId", "Type", "OccurredAtUtc");
+                    b.HasIndex("PlayerId", "Type", "OccurredAtUtc")
+                        .HasDatabaseName("ix_qr_scan_events_player_id_type_occurred_at_utc");
 
                     b.ToTable("qr_scan_events", (string)null);
                 });
@@ -1776,43 +2394,55 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("category");
 
                     b.Property<string>("CorrectOptionId")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("correct_option_id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<int>("Difficulty")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("difficulty");
 
                     b.Property<string>("MediaKey")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("media_key");
 
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("text");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_questions");
 
-                    b.HasIndex("Category");
+                    b.HasIndex("Category")
+                        .HasDatabaseName("ix_questions_category");
 
-                    b.HasIndex("Difficulty");
+                    b.HasIndex("Difficulty")
+                        .HasDatabaseName("ix_questions_difficulty");
 
-                    b.HasIndex("UpdatedAtUtc");
+                    b.HasIndex("UpdatedAtUtc")
+                        .HasDatabaseName("ix_questions_updated_at_utc");
 
                     b.ToTable("questions", (string)null);
                 });
@@ -1821,25 +2451,31 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("OptionId")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("option_id");
 
                     b.Property<Guid>("QuestionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
 
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("text");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_question_options");
 
                     b.HasIndex("QuestionId", "OptionId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_question_options_question_id_option_id");
 
                     b.ToTable("question_options", (string)null);
                 });
@@ -1848,22 +2484,28 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("QuestionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
 
                     b.Property<string>("Tag")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tag");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_question_tags");
 
-                    b.HasIndex("Tag");
+                    b.HasIndex("Tag")
+                        .HasDatabaseName("ix_question_tags_tag");
 
                     b.HasIndex("QuestionId", "Tag")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_question_tags_question_id_tag");
 
                     b.ToTable("question_tags", (string)null);
                 });
@@ -1872,25 +2514,32 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("code");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("OwnerPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_player_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_referral_codes");
 
                     b.HasIndex("Code")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_referral_codes_code");
 
-                    b.HasIndex("OwnerPlayerId");
+                    b.HasIndex("OwnerPlayerId")
+                        .HasDatabaseName("ix_referral_codes_owner_player_id");
 
                     b.ToTable("referral_codes", (string)null);
                 });
@@ -1899,43 +2548,57 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("AwardCoinsToOwner")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("award_coins_to_owner");
 
                     b.Property<int>("AwardCoinsToRedeemer")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("award_coins_to_redeemer");
 
                     b.Property<int>("AwardXpToOwner")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("award_xp_to_owner");
 
                     b.Property<int>("AwardXpToRedeemer")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("award_xp_to_redeemer");
 
                     b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
 
                     b.Property<Guid>("OwnerPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_player_id");
 
                     b.Property<DateTimeOffset>("RedeemedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("redeemed_at_utc");
 
                     b.Property<Guid>("RedeemerPlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("redeemer_player_id");
 
                     b.Property<Guid>("ReferralCodeId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("referral_code_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_referral_redemptions");
 
                     b.HasIndex("EventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_referral_redemptions_event_id");
 
-                    b.HasIndex("ReferralCodeId");
+                    b.HasIndex("ReferralCodeId")
+                        .HasDatabaseName("ix_referral_redemptions_referral_code_id");
 
-                    b.HasIndex("OwnerPlayerId", "RedeemerPlayerId");
+                    b.HasIndex("OwnerPlayerId", "RedeemerPlayerId")
+                        .HasDatabaseName("ix_referral_redemptions_owner_player_id_redeemer_player_id");
 
                     b.ToTable("referral_redemptions", (string)null);
                 });
@@ -1944,48 +2607,62 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("ClientType")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("client_type");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("DeviceId")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("device_id");
 
                     b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
 
                     b.Property<bool>("IsRevoked")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_revoked");
 
                     b.Property<DateTimeOffset?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
 
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("token");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_tokens");
 
-                    b.HasIndex("ExpiresAt");
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_refresh_tokens_expires_at");
 
                     b.HasIndex("Token")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_refresh_tokens_token");
 
-                    b.HasIndex("UserId", "ClientType", "IsRevoked");
+                    b.HasIndex("UserId", "ClientType", "IsRevoked")
+                        .HasDatabaseName("ix_refresh_tokens_user_id_client_type_is_revoked");
 
-                    b.HasIndex("UserId", "DeviceId", "IsRevoked");
+                    b.HasIndex("UserId", "DeviceId", "IsRevoked")
+                        .HasDatabaseName("ix_refresh_tokens_user_id_device_id_is_revoked");
 
                     b.ToTable("refresh_tokens", (string)null);
                 });
@@ -1994,41 +2671,54 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("ClosedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at_utc");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateTimeOffset>("EndsAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at_utc");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
 
                     b.Property<int>("SeasonNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("season_number");
 
                     b.Property<DateTimeOffset>("StartsAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at_utc");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_seasons");
 
-                    b.HasIndex("EndsAtUtc");
+                    b.HasIndex("EndsAtUtc")
+                        .HasDatabaseName("ix_seasons_ends_at_utc");
 
                     b.HasIndex("SeasonNumber")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_seasons_season_number");
 
-                    b.HasIndex("StartsAtUtc");
+                    b.HasIndex("StartsAtUtc")
+                        .HasDatabaseName("ix_seasons_starts_at_utc");
 
-                    b.HasIndex("Status");
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_seasons_status");
 
                     b.ToTable("seasons", (string)null);
                 });
@@ -2037,39 +2727,51 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<int>("Delta")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("delta");
 
                     b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
 
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(48)
-                        .HasColumnType("character varying(48)");
+                        .HasColumnType("character varying(48)")
+                        .HasColumnName("kind");
 
                     b.Property<string>("Note")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("note");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_season_point_transactions");
 
-                    b.HasIndex("CreatedAtUtc");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_season_point_transactions_created_at_utc");
 
                     b.HasIndex("EventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_season_point_transactions_event_id");
 
-                    b.HasIndex("SeasonId", "PlayerId");
+                    b.HasIndex("SeasonId", "PlayerId")
+                        .HasDatabaseName("ix_season_point_transactions_season_id_player_id");
 
                     b.ToTable("season_point_transactions", (string)null);
                 });
@@ -2078,49 +2780,65 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CapturedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("captured_at_utc");
 
                     b.Property<int>("Draws")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("draws");
 
                     b.Property<int>("Losses")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("losses");
 
                     b.Property<int>("MatchesPlayed")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("matches_played");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<int>("RankPoints")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("rank_points");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
                     b.Property<int>("SeasonRank")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("season_rank");
 
                     b.Property<int>("Tier")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier");
 
                     b.Property<int>("TierRank")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_rank");
 
                     b.Property<int>("Wins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("wins");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_season_rank_snapshot_rows");
 
                     b.HasIndex("SeasonId", "PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_season_rank_snapshot_rows_season_id_player_id");
 
-                    b.HasIndex("SeasonId", "SeasonRank");
+                    b.HasIndex("SeasonId", "SeasonRank")
+                        .HasDatabaseName("ix_season_rank_snapshot_rows_season_id_season_rank");
 
-                    b.HasIndex("SeasonId", "Tier", "TierRank");
+                    b.HasIndex("SeasonId", "Tier", "TierRank")
+                        .HasDatabaseName("ix_season_rank_snapshot_rows_season_id_tier_tier_rank");
 
                     b.ToTable("season_rank_snapshot_rows", (string)null);
                 });
@@ -2129,36 +2847,47 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("AwardedCoins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("awarded_coins");
 
                     b.Property<int>("AwardedXp")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("awarded_xp");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<DateOnly>("RewardDay")
-                        .HasColumnType("date");
+                        .HasColumnType("date")
+                        .HasColumnName("reward_day");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_season_reward_claims");
 
                     b.HasIndex("EventId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_season_reward_claims_event_id");
 
                     b.HasIndex("SeasonId", "PlayerId", "RewardDay")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_season_reward_claims_season_id_player_id_reward_day");
 
                     b.ToTable("season_reward_claims", (string)null);
                 });
@@ -2167,52 +2896,66 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("Branch")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("branch");
 
                     b.Property<string>("CostsJson")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("costs_json");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(600)
-                        .HasColumnType("character varying(600)");
+                        .HasColumnType("character varying(600)")
+                        .HasColumnName("description");
 
                     b.Property<string>("EffectsJson")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("effects_json");
 
                     b.Property<string>("Key")
                         .IsRequired()
                         .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("key");
 
                     b.Property<string>("PrereqKeysJson")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("prereq_keys_json");
 
                     b.Property<int>("Tier")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_skill_nodes");
 
-                    b.HasIndex("Branch");
+                    b.HasIndex("Branch")
+                        .HasDatabaseName("ix_skill_nodes_branch");
 
                     b.HasIndex("Key")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_skill_nodes_key");
 
-                    b.HasIndex("Tier");
+                    b.HasIndex("Tier")
+                        .HasDatabaseName("ix_skill_nodes_tier");
 
                     b.ToTable("skill_nodes", (string)null);
                 });
@@ -2221,46 +2964,60 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("category");
 
                     b.Property<Guid>("ChallengerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("challenger_id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid?>("DefenderId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("defender_id");
 
                     b.Property<Guid?>("GameEventId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_event_id");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
 
                     b.Property<int?>("Outcome")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("outcome");
 
                     b.Property<DateTimeOffset?>("ResolvedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
                     b.Property<int>("TierNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_number");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_territory_duels");
 
                     b.HasIndex("MatchId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_territory_duels_match_id");
 
-                    b.HasIndex("SeasonId", "TierNumber", "Category");
+                    b.HasIndex("SeasonId", "TierNumber", "Category")
+                        .HasDatabaseName("ix_territory_duels_season_id_tier_number_category");
 
                     b.ToTable("territory_duels", (string)null);
                 });
@@ -2269,36 +3026,46 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset?>("CapturedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("captured_at_utc");
 
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("category");
 
                     b.Property<Guid?>("OwnerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_id");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
                     b.Property<int>("TierNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_number");
 
                     b.Property<int>("XpMultiplierBps")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("xp_multiplier_bps");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_territory_tiles");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("OwnerId")
+                        .HasDatabaseName("ix_territory_tiles_owner_id");
 
                     b.HasIndex("SeasonId", "TierNumber", "Category")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_territory_tiles_season_id_tier_number_category");
 
                     b.ToTable("territory_tiles", (string)null);
                 });
@@ -2307,22 +3074,28 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("MaxScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("max_score");
 
                     b.Property<int>("MinScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("min_score");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("name");
 
                     b.Property<int>("Order")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("order");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_tiers");
 
                     b.ToTable("tiers", (string)null);
                 });
@@ -2331,41 +3104,54 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("AssignedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at_utc");
 
                     b.Property<int>("DefencesLost")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("defences_lost");
 
                     b.Property<int>("DefencesWon")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("defences_won");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
 
                     b.Property<int>("PassiveCoins")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("passive_coins");
 
                     b.Property<int>("PassiveXp")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("passive_xp");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
 
                     b.Property<int>("TierNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tier_number");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_tier_guardians");
 
-                    b.HasIndex("SeasonId", "TierNumber");
+                    b.HasIndex("SeasonId", "TierNumber")
+                        .HasDatabaseName("ix_tier_guardians_season_id_tier_number");
 
                     b.HasIndex("SeasonId", "TierNumber", "PlayerId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_tier_guardians_season_id_tier_number_player_id");
 
                     b.ToTable("tier_guardians", (string)null);
                 });
@@ -2374,51 +3160,65 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Country")
                         .HasMaxLength(2)
-                        .HasColumnType("character varying(2)");
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("country");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
 
                     b.Property<string>("Handle")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("handle");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
 
                     b.Property<DateTimeOffset?>("LastLoginAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at");
 
                     b.Property<int>("Mmr")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("mmr");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
 
                     b.Property<string>("Tier")
                         .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tier");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_users");
 
-                    b.HasIndex("CreatedAt");
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_users_created_at");
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_email");
 
                     b.HasIndex("Handle")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_handle");
 
                     b.ToTable("users", (string)null);
                 });
@@ -2427,32 +3227,49 @@ namespace Tycoon.Backend.Migrations.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Option")
                         .IsRequired()
                         .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("option");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
 
                     b.Property<DateTimeOffset>("TimestampUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp_utc");
 
                     b.Property<string>("Topic")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("topic");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_votes");
 
-                    b.HasIndex("Topic");
+                    b.HasIndex("Topic")
+                        .HasDatabaseName("ix_votes_topic");
 
                     b.HasIndex("PlayerId", "Topic")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_votes_player_id_topic");
 
                     b.ToTable("votes", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.EconomyTransaction", b =>
+                {
+                    b.HasOne("Tycoon.Backend.Domain.Entities.PlayerTransaction", null)
+                        .WithMany("EconomyTransactions")
+                        .HasForeignKey("PlayerTransactionId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_economy_transactions_player_transactions_player_transaction");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.EconomyTransactionLine", b =>
@@ -2461,7 +3278,8 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .WithMany("Lines")
                         .HasForeignKey("EconomyTransactionId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_economy_transaction_lines_economy_transactions_economy_tran");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.MatchParticipantResult", b =>
@@ -2470,7 +3288,8 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .WithMany("Participants")
                         .HasForeignKey("MatchResultId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_match_participant_results_match_results_match_result_id");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.MatchRound", b =>
@@ -2479,7 +3298,28 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .WithMany("Rounds")
                         .HasForeignKey("MatchId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_match_rounds_matches_match_id");
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerTransactionActor", b =>
+                {
+                    b.HasOne("Tycoon.Backend.Domain.Entities.PlayerTransaction", null)
+                        .WithMany("Actors")
+                        .HasForeignKey("PlayerTransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_player_transaction_actors_player_transactions_player_transa");
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerTransactionItem", b =>
+                {
+                    b.HasOne("Tycoon.Backend.Domain.Entities.PlayerTransaction", null)
+                        .WithMany("ItemChanges")
+                        .HasForeignKey("PlayerTransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_player_transaction_items_player_transactions_player_transac");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.QuestionOption", b =>
@@ -2488,7 +3328,8 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .WithMany("Options")
                         .HasForeignKey("QuestionId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_question_options_questions_question_id");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.QuestionTag", b =>
@@ -2497,7 +3338,8 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .WithMany("Tags")
                         .HasForeignKey("QuestionId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_question_tags_questions_question_id");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.EconomyTransaction", b =>
@@ -2513,6 +3355,15 @@ namespace Tycoon.Backend.Migrations.Migrations
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.MatchResult", b =>
                 {
                     b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerTransaction", b =>
+                {
+                    b.Navigation("Actors");
+
+                    b.Navigation("EconomyTransactions");
+
+                    b.Navigation("ItemChanges");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.Question", b =>
