@@ -25,7 +25,7 @@ onMounted(() => {
           Welcome, {{ admin?.displayName ?? 'Admin' }}
         </h4>
         <p class="text-body-1 text-medium-emphasis mt-1">
-          Tycoon Operator Dashboard
+          Synaptix Command Dashboard
         </p>
       </VCol>
     </VRow>

@@ -28,7 +28,7 @@ A modern, cloud-native backend API built with .NET 9, designed for the scalable 
 
 ## 🎯 Overview
 
-TycoonTycoon Backend provides a complete game backend infrastructure featuring:
+Synaptix Backend provides a complete platform backend infrastructure featuring:
 
 - **🎮 Game State Management**: PostgreSQL-based persistent game state with EF Core
 - **📊 Real-time Analytics**: MongoDB for event tracking and player analytics

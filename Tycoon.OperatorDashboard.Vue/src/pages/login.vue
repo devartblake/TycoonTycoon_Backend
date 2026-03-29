@@ -46,7 +46,7 @@ async function onSubmit() {
             v-html="logo"
           />
           <h2 class="font-weight-medium text-2xl text-uppercase">
-            Tycoon Ops
+            Synaptix Command
           </h2>
         </div>
       </VCardItem>
