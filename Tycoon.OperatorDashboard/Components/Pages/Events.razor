@@ -3,6 +3,7 @@
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
 @using System.Text.Json
+@using Tycoon.OperatorDashboard.Components.Common
 
 <h1>Game Events</h1>
 
@@ -58,10 +59,10 @@ else
         }
         else
         {
-            var items = _doc.RootElement.GetProperty("items");
-            var total = _doc.RootElement.TryGetProperty("total", out var t) ? t.GetInt32() : 0;
+            var items = JsonSafe.EnumerateArrayProperty(_doc, "items").ToList();
+            var total = JsonSafe.GetInt(_doc.RootElement, "total");
 
-            @if (items.GetArrayLength() == 0)
+            @if (items.Count == 0)
             {
                 <p style="margin-top:1rem;color:#64748b">No events found.</p>
             }
@@ -81,15 +82,15 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var el in items.EnumerateArray())
+                        @foreach (var el in items)
                         {
-                            var id        = el.GetProperty("id").GetGuid();
-                            var kind      = el.TryGetProperty("kind",            out var k)  ? k.GetString()  ?? "—" : "—";
-                            var tierId    = el.TryGetProperty("tierId",          out var tr) ? tr.GetInt32()         : 0;
-                            var status    = el.TryGetProperty("status",          out var s)  ? s.GetString()  ?? "—" : "—";
-                            var scheduled = el.TryGetProperty("scheduledAtUtc",  out var sc) ? sc.GetString() ?? "—" : "—";
-                            var entryFee  = el.TryGetProperty("entryFeeCoins",   out var ef) ? ef.GetInt32()         : 0;
-                            var maxPart   = el.TryGetProperty("maxParticipants", out var mp) ? mp.GetInt32()         : 0;
+                            var id        = JsonSafe.GetGuid(el, "id");
+                            var kind      = JsonSafe.GetText(el, "kind");
+                            var tierId    = JsonSafe.GetInt(el, "tierId");
+                            var status    = JsonSafe.GetText(el, "status");
+                            var scheduled = JsonSafe.GetText(el, "scheduledAtUtc");
+                            var entryFee  = JsonSafe.GetInt(el, "entryFeeCoins");
+                            var maxPart   = JsonSafe.GetInt(el, "maxParticipants");
 
                             <tr>
                                 <td><code title="@id">@id.ToString()[..8]…</code></td>
