@@ -87,31 +87,34 @@ else
                             var id        = JsonSafe.GetGuid(el, "id");
                             var kind      = JsonSafe.GetText(el, "kind");
                             var tierId    = JsonSafe.GetInt(el, "tierId");
-                            var status    = JsonSafe.GetText(el, "status");
+                            var status    = JsonSafe.GetText(el, "status", string.Empty);
+                            var statusKey = status.Trim().ToLowerInvariant();
+                            var statusDisplay = string.IsNullOrWhiteSpace(status) ? "Unknown" : status;
                             var scheduled = JsonSafe.GetText(el, "scheduledAtUtc");
                             var entryFee  = JsonSafe.GetInt(el, "entryFeeCoins");
                             var maxPart   = JsonSafe.GetInt(el, "maxParticipants");
+                            var missingId = id == Guid.Empty;
 
                             <tr>
                                 <td><code title="@id">@id.ToString()[..8]…</code></td>
                                 <td>@kind</td>
                                 <td>@tierId</td>
-                                <td><span class="badge status-@status.ToLower()">@status</span></td>
+                                <td><span class="badge status-@statusKey">@statusDisplay</span></td>
                                 <td>@FormatDate(scheduled)</td>
                                 <td>@entryFee</td>
                                 <td>@maxPart</td>
                                 <td class="actions">
-                                    @if (status == "Scheduled")
+                                    @if (statusKey == "scheduled")
                                     {
-                                        <button @onclick='@(() => LifecycleAsync(id, "open"))'>Open</button>
+                                        <button @onclick='@(() => LifecycleAsync(id, "open"))' disabled="@missingId" title="@(missingId ? "Missing event id from API response." : null)">Open</button>
                                     }
-                                    @if (status == "Open")
+                                    @if (statusKey == "open")
                                     {
-                                        <button @onclick='@(() => LifecycleAsync(id, "start"))'>Start</button>
+                                        <button @onclick='@(() => LifecycleAsync(id, "start"))' disabled="@missingId" title="@(missingId ? "Missing event id from API response." : null)">Start</button>
                                     }
-                                    @if (status is "Open" or "Live")
+                                    @if (statusKey is "open" or "live")
                                     {
-                                        <button class="danger" @onclick='@(() => LifecycleAsync(id, "close"))'>Close</button>
+                                        <button class="danger" @onclick='@(() => LifecycleAsync(id, "close"))' disabled="@missingId" title="@(missingId ? "Missing event id from API response." : null)">Close</button>
                                     }
                                 </td>
                             </tr>
@@ -177,6 +180,13 @@ else
         _message = string.Empty;
         _isError = false;
 
+        if (id == Guid.Empty)
+        {
+            _message = "Action failed: event id is missing from API payload.";
+            _isError = true;
+            return;
+        }
+
         var ok = action switch
         {
             "open"  => await Api.OpenGameEventAsync(id),
@@ -185,7 +195,14 @@ else
             _       => false
         };
 
-        _message = ok ? $"Event {action}ed." : $"{char.ToUpper(action[0])}{action[1..]} failed.";
+        var verb = action switch
+        {
+            "open" => "opened",
+            "start" => "started",
+            "close" => "closed",
+            _ => $"{action}ed"
+        };
+        _message = ok ? $"Event {verb}." : $"{char.ToUpper(action[0])}{action[1..]} failed.";
         _isError = !ok;
         await LoadAsync();
     }
