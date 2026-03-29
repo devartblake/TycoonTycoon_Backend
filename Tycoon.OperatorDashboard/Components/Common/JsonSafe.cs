@@ -29,6 +29,25 @@ public static class JsonSafe
         }
     }
 
+    public static IEnumerable<JsonElement> EnumerateArrayProperty(JsonElement source, string propertyName)
+    {
+        if (source.ValueKind != JsonValueKind.Object)
+            yield break;
+
+        if (!source.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.Array)
+            yield break;
+
+        foreach (var item in property.EnumerateArray())
+            yield return item;
+    }
+
+    public static string JoinTextArrayProperty(JsonElement source, string propertyName, string separator = ", ")
+    {
+        return string.Join(separator, EnumerateArrayProperty(source, propertyName)
+            .Select(item => GetText(item, string.Empty))
+            .Where(text => !string.IsNullOrWhiteSpace(text)));
+    }
+
     public static string GetText(JsonElement source, string propertyName, string fallback = "—")
     {
         if (source.ValueKind != JsonValueKind.Object)

@@ -91,9 +91,7 @@ else
                 var text  = JsonSafe.GetText(el, "text", string.Empty);
                 var cat   = JsonSafe.GetText(el, "category");
                 var diff  = JsonSafe.GetText(el, "difficulty");
-                var tags  = el.TryGetProperty("tags", out var tg) && tg.ValueKind == JsonValueKind.Array
-                    ? string.Join(", ", tg.EnumerateArray().Select(x => JsonSafe.GetText(x, string.Empty)).Where(x => !string.IsNullOrWhiteSpace(x)))
-                    : string.Empty;
+                var tags  = JsonSafe.JoinTextArrayProperty(el, "tags");
                 <tr>
                     <td><input type="checkbox" checked="@_selectedIds.Contains(id)" @onchange="e => ToggleSelect(id, (bool)e.Value!)" /></td>
                     <td style="max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@text</td>
@@ -309,17 +307,13 @@ else
         _editText = JsonSafe.GetText(el, "text", string.Empty);
         _editCategory = JsonSafe.GetText(el, "category", string.Empty);
         _editDifficulty = JsonSafe.GetText(el, "difficulty", "Medium");
-        _editTags = el.TryGetProperty("tags", out var tg)
-            ? string.Join(", ", tg.EnumerateArray().Select(x => JsonSafe.GetText(x, string.Empty)).Where(x => !string.IsNullOrWhiteSpace(x)))
-            : "";
+        _editTags = JsonSafe.JoinTextArrayProperty(el, "tags");
 
         // Preserve existing options so we don't lose them on edit
-        _editOptions = el.TryGetProperty("options", out var op)
-            ? op.EnumerateArray()
-                .Select(o => new { id = JsonSafe.GetText(o, "id", string.Empty), text = JsonSafe.GetText(o, "text", string.Empty) })
-                .Cast<object>()
-                .ToList()
-            : [];
+        _editOptions = JsonSafe.EnumerateArrayProperty(el, "options")
+            .Select(o => new { id = JsonSafe.GetText(o, "id", string.Empty), text = JsonSafe.GetText(o, "text", string.Empty) })
+            .Cast<object>()
+            .ToList();
         _editCorrectId = JsonSafe.GetText(el, "correctOptionId", "a");
         _editMsg = string.Empty;
     }
