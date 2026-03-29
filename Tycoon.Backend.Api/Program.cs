@@ -24,6 +24,7 @@ using Tycoon.Backend.Api.Features.AdminAnalytics;
 using Tycoon.Backend.Api.Features.AdminAntiCheat;
 using Tycoon.Backend.Api.Features.AdminAuth;
 using Tycoon.Backend.Api.Features.AdminEconomy;
+using Tycoon.Backend.Api.Features.AdminPlayerTransactions;
 using Tycoon.Backend.Api.Features.AdminEventQueue;
 using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
@@ -148,12 +149,12 @@ builder.Services.AddSwaggerGen(c =>
 
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Tycoon Backend API",
+        Title = "Synaptix API",
         Version = "v1",
-        Description = "Trivia Tycoon Game Backend - Multiplayer Quiz Game API",
+        Description = "Platform API for Synaptix gameplay, progression, live competition, and player systems.",
         Contact = new OpenApiContact
         {
-            Name = "Tycoon Development Team"
+            Name = "Synaptix Development Team"
         }
     });
 
@@ -503,9 +504,9 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tycoon Trivia Backend API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Synaptix API v1");
         c.RoutePrefix = "swagger";
-        c.DocumentTitle = "Tycoon API Documentation";
+        c.DocumentTitle = "Synaptix API Documentation";
         c.DisplayRequestDuration();
         c.EnableDeepLinking();
         c.EnableFilter();
@@ -732,6 +733,7 @@ AdminMediaEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
 AdminAuditEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);
+AdminPlayerTransactionEndpoints.Map(admin);
 AdminPowerupsEndpoints.Map(admin);
 AdminSkillsEndpoints.Map(admin);
 AdminMatchesEndpoints.Map(admin);
@@ -743,6 +745,7 @@ AdminAntiCheatAnalyticsEndpoints.Map(admin);
 AdminPartyAntiCheatEndpoints.Map(admin);
 AdminSeasonRewardsEndpoints.Map(admin);
 AdminSeasonLifecycleEndpoints.Map(admin);
+AdminSeasonPointsEndpoints.Map(admin);
 AdminEmailAclEndpoints.Map(admin);
 
 // Startup logging
