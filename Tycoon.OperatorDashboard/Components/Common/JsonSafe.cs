@@ -9,8 +9,12 @@ public static class JsonSafe
         if (doc is null)
             yield break;
 
+        var root = doc.RootElement;
+
         // Prefer named property arrays (e.g., { items: [...] }).
-        if (doc.RootElement.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.Array)
+        if (root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty(propertyName, out var property) &&
+            property.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in property.EnumerateArray())
                 yield return item;
@@ -18,15 +22,18 @@ public static class JsonSafe
         }
 
         // Fallback for endpoints that return a root-level array.
-        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        if (root.ValueKind == JsonValueKind.Array)
         {
-            foreach (var item in doc.RootElement.EnumerateArray())
+            foreach (var item in root.EnumerateArray())
                 yield return item;
         }
     }
 
     public static string GetText(JsonElement source, string propertyName, string fallback = "—")
     {
+        if (source.ValueKind != JsonValueKind.Object)
+            return fallback;
+
         if (!source.TryGetProperty(propertyName, out var value))
             return fallback;
 
@@ -49,6 +56,9 @@ public static class JsonSafe
 
     public static bool GetBool(JsonElement source, string propertyName, bool fallback = false)
     {
+        if (source.ValueKind != JsonValueKind.Object)
+            return fallback;
+
         if (!source.TryGetProperty(propertyName, out var value))
             return fallback;
 
@@ -64,6 +74,9 @@ public static class JsonSafe
 
     public static int GetInt(JsonElement source, string propertyName, int fallback = 0)
     {
+        if (source.ValueKind != JsonValueKind.Object)
+            return fallback;
+
         if (!source.TryGetProperty(propertyName, out var value))
             return fallback;
 
@@ -77,6 +90,9 @@ public static class JsonSafe
 
     public static long GetLong(JsonElement source, string propertyName, long fallback = 0)
     {
+        if (source.ValueKind != JsonValueKind.Object)
+            return fallback;
+
         if (!source.TryGetProperty(propertyName, out var value))
             return fallback;
 
@@ -90,6 +106,9 @@ public static class JsonSafe
 
     public static Guid GetGuid(JsonElement source, string propertyName, Guid fallback = default)
     {
+        if (source.ValueKind != JsonValueKind.Object)
+            return fallback;
+
         if (!source.TryGetProperty(propertyName, out var value))
             return fallback;
 
