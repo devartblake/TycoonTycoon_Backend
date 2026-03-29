@@ -240,6 +240,7 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\b
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\BCrypt.Net-Next.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\CommunityToolkit.HighPerformance.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\DnsClient.dll
+C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\EFCore.NamingConventions.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\Elastic.Clients.Elasticsearch.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\Elastic.Transport.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\FluentAssertions.dll
