@@ -9,11 +9,20 @@ public static class JsonSafe
         if (doc is null)
             yield break;
 
-        if (!doc.RootElement.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.Array)
+        // Prefer named property arrays (e.g., { items: [...] }).
+        if (doc.RootElement.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in property.EnumerateArray())
+                yield return item;
             yield break;
+        }
 
-        foreach (var item in property.EnumerateArray())
-            yield return item;
+        // Fallback for endpoints that return a root-level array.
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in doc.RootElement.EnumerateArray())
+                yield return item;
+        }
     }
 
     public static string GetText(JsonElement source, string propertyName, string fallback = "—")
