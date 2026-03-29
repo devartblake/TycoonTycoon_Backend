@@ -4,6 +4,36 @@ All notable changes to this project.
 
 ---
 
+## [2026-03-29] Synaptix BE Packet D — Analytics & Stabilization
+
+### BE-D1: Analytics Dimensions (Phase 6)
+
+**Analytics Models** (`Tycoon.Backend.Application/Analytics/Models/`):
+- Added nullable Synaptix dimensions to `QuestionAnsweredAnalyticsEvent.cs`: `SynaptixMode`, `Surface`, `AudienceSegment`
+- Added same dimensions to `QuestionAnsweredDailyRollup.cs` and `QuestionAnsweredPlayerDailyRollup.cs`
+- `UpdateFrom()` already copies the new fields during upsert operations
+
+**Analytics Endpoint** (`Tycoon.Backend.Api/Features/Analytics/AnalyticsEndpoints.cs`):
+- Added JSON extraction for `synaptixMode`, `surface`, `audienceSegment` in `TryMapQuestionAnsweredEvent()`
+- Fields are optional — omitting them leaves null values (backward compatible)
+
+**Elasticsearch Templates** (`Tycoon.Backend.Infrastructure/Analytics/Elastic/ElasticAdmin.cs`):
+- Added `.Keyword("synaptixMode")`, `.Keyword("surface")`, `.Keyword("audienceSegment")` to daily rollup template
+- Added same fields to player daily rollup template
+- Bumped both template versions to 2
+
+**Writers (no changes needed)**:
+- `PostgresAnalyticsEventWriter` uses EF Core `SetValues()`/`UpdateFrom()` — handles new fields automatically
+- `MongoAnalyticsEventWriter` uses BSON serialization — handles new nullable fields automatically
+
+### BE-D2: Stabilization (Phase 7)
+- Verified Swagger titles/descriptions read as "Synaptix API"
+- Verified all 3 operator dashboards (Blazor, Vue, Web) display "Synaptix Command"
+- Verified no remaining "Tycoon Ops" or "Trivia Tycoon" in operator-visible UI text
+- Technical identifiers (`Tycoon.Backend.*` namespaces, cookie keys, container labels) intentionally preserved — deferred to Packet E
+
+---
+
 ## [2026-03-29] Synaptix BE Packet C — Product-Language Alignment
 
 ### BE-C1: Swagger/OpenAPI

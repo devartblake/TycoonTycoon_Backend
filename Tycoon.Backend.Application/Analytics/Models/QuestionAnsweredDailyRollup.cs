@@ -14,6 +14,11 @@
         public string Category { get; set; } = string.Empty;
         public int Difficulty { get; set; }
 
+        // ── Synaptix analytics dimensions (additive) ──
+        public string? SynaptixMode { get; set; }
+        public string? Surface { get; set; }
+        public string? AudienceSegment { get; set; }
+
         public int TotalAnswers { get; set; }
         public int CorrectAnswers { get; set; }
         public int WrongAnswers { get; set; }
