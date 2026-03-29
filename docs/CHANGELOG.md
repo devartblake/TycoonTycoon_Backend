@@ -4,6 +4,72 @@ All notable changes to this project.
 
 ---
 
+## [2026-03-29] Synaptix BE Packet D — Analytics & Stabilization
+
+### BE-D1: Analytics Dimensions (Phase 6)
+
+**Analytics Models** (`Tycoon.Backend.Application/Analytics/Models/`):
+- Added nullable Synaptix dimensions to `QuestionAnsweredAnalyticsEvent.cs`: `SynaptixMode`, `Surface`, `AudienceSegment`
+- Added same dimensions to `QuestionAnsweredDailyRollup.cs` and `QuestionAnsweredPlayerDailyRollup.cs`
+- `UpdateFrom()` already copies the new fields during upsert operations
+
+**Analytics Endpoint** (`Tycoon.Backend.Api/Features/Analytics/AnalyticsEndpoints.cs`):
+- Added JSON extraction for `synaptixMode`, `surface`, `audienceSegment` in `TryMapQuestionAnsweredEvent()`
+- Fields are optional — omitting them leaves null values (backward compatible)
+
+**Elasticsearch Templates** (`Tycoon.Backend.Infrastructure/Analytics/Elastic/ElasticAdmin.cs`):
+- Added `.Keyword("synaptixMode")`, `.Keyword("surface")`, `.Keyword("audienceSegment")` to daily rollup template
+- Added same fields to player daily rollup template
+- Bumped both template versions to 2
+
+**Writers (no changes needed)**:
+- `PostgresAnalyticsEventWriter` uses EF Core `SetValues()`/`UpdateFrom()` — handles new fields automatically
+- `MongoAnalyticsEventWriter` uses BSON serialization — handles new nullable fields automatically
+
+### BE-D2: Stabilization (Phase 7)
+- Verified Swagger titles/descriptions read as "Synaptix API"
+- Verified all 3 operator dashboards (Blazor, Vue, Web) display "Synaptix Command"
+- Verified no remaining "Tycoon Ops" or "Trivia Tycoon" in operator-visible UI text
+- Technical identifiers (`Tycoon.Backend.*` namespaces, cookie keys, container labels) intentionally preserved — deferred to Packet E
+
+---
+
+## [2026-03-29] Synaptix BE Packet C — Product-Language Alignment
+
+### BE-C1: Swagger/OpenAPI
+- Swagger tags (Leaderboards, Skills, Matches, etc.) are conventional API labels — kept as-is per plan
+- Swagger title and descriptions were already updated in Packet A
+
+### BE-C2: Blazor Operator Dashboard
+- `_Host.cshtml` title: "Tycoon Operator Dashboard" → "Synaptix Command"
+- `Login.cshtml` title: "Sign In — Tycoon Ops" → "Sign In — Synaptix Command"
+- `Login.cshtml` brand title: "Tycoon Ops" → "Synaptix Command"
+- `Login.cshtml` logo mark: "T" → "S"
+- `Login.cshtml` footer: "Tycoon Backend" → "Synaptix Backend"
+- `Login.cshtml` placeholder: "admin@tycoon.local" → "admin@synaptix.local"
+- `app.css` header comment: "Tycoon Operator Dashboard" → "Synaptix Command"
+
+### BE-C3: Vue Operator Dashboard
+- `dashboard.vue` subtitle: "Tycoon Operator Dashboard" → "Synaptix Command Dashboard"
+- `login.vue` brand: "Tycoon Ops" → "Synaptix Command"
+- `Footer.vue` copyright: "Tycoon Ops Dashboard" → "Synaptix Command"
+
+### BE-C4: Web/React Operator Dashboard
+- `FooterContent.tsx` copyright: "Tycoon Ops Dashboard" → "Synaptix Command"
+
+### BE-C5: Backend Documentation
+- `docs/FLUTTER_INTEGRATION.md` heading and description: "Trivia Tycoon" → "Synaptix"
+- `README.md` overview: "TycoonTycoon Backend" → "Synaptix Backend"
+
+### What was NOT changed (by design)
+- Dashboard inner page headings (Users, Anti-Cheat, Economy, etc.) — conventional admin labels kept per plan
+- Swagger endpoint tags — kept as technical API labels
+- Code comments referencing `Tycoon.Shared.Contracts` namespace paths — deferred to Packet E
+- `admin.ts` type file comments referencing DTO namespaces — deferred to Packet E
+- `settingsCookieName: 'tycoon-ops-dashboard'` — persistence key, deferred to Packet E
+
+---
+
 ## [2026-03-28] Synaptix BE Packet A — Audit + Brand Surface Reframe
 
 ### BE-A1: Backend Surface Inventory (Phase 0)

@@ -49,6 +49,14 @@ public sealed class QuestionAnsweredAnalyticsEvent
     public DateTime AnsweredAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
+    // ── Synaptix analytics dimensions (additive — nullable for backward compatibility) ──
+    /// <summary>Synaptix presentation mode: kids, teen, or adult.</summary>
+    public string? SynaptixMode { get; set; }
+    /// <summary>Platform surface the event originated from: hub, arena, labs, pathways, journey, circles, command.</summary>
+    public string? Surface { get; set; }
+    /// <summary>Audience segment derived from player profile.</summary>
+    public string? AudienceSegment { get; set; }
+
     /// <summary>
     /// Copies mutable fields from <paramref name="src"/> onto this instance.
     /// Used by upsert logic in writers.
@@ -65,6 +73,9 @@ public sealed class QuestionAnsweredAnalyticsEvent
         PointsAwarded = src.PointsAwarded;
         AnswerTimeMs = src.AnswerTimeMs;
         AnsweredAtUtc = src.AnsweredAtUtc;
+        SynaptixMode = src.SynaptixMode;
+        Surface = src.Surface;
+        AudienceSegment = src.AudienceSegment;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }

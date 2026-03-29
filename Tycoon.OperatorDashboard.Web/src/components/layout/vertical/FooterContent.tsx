@@ -12,7 +12,7 @@ const FooterContent = () => {
       className={classnames(verticalLayoutClasses.footerContent, 'flex items-center justify-between flex-wrap gap-4')}
     >
       <p>
-        <span>{`© ${new Date().getFullYear()} Tycoon Ops Dashboard`}</span>
+        <span>{`© ${new Date().getFullYear()} Synaptix Command`}</span>
       </p>
     </div>
   )
