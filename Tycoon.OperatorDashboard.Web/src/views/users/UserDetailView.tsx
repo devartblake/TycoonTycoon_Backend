@@ -97,7 +97,7 @@ const antiCheatColumns: Column<AntiCheatFlag>[] = [
 
 // ─── Economy Tab ────────────────────────────────────────────────────
 
-const currencyLabel: Record<number, string> = { 1: 'XP', 2: 'Coins', 3: 'Diamonds' }
+const currencyLabel: Record<number, string> = { 1: 'Neural XP', 2: 'Credits', 3: 'Diamonds' }
 
 const economyColumns: Column<EconomyTxnListItem>[] = [
   { id: 'kind', label: 'Kind', render: row => row.kind },

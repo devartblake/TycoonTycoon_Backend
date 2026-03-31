@@ -18,8 +18,8 @@ const historyPage = ref(1)
 const historyHeaders = [
   { title: 'Event ID', key: 'eventId' },
   { title: 'Kind', key: 'kind' },
-  { title: 'XP', key: 'xp' },
-  { title: 'Coins', key: 'coins' },
+  { title: 'Neural XP', key: 'xp' },
+  { title: 'Credits', key: 'coins' },
   { title: 'Diamonds', key: 'diamonds' },
   { title: 'Date', key: 'createdAtUtc' },
 ]
@@ -238,7 +238,7 @@ async function confirmRollback() {
             >
               <VTextField
                 v-model.number="createForm.xp"
-                label="XP Delta"
+                label="Neural XP Delta"
                 type="number"
               />
             </VCol>
@@ -248,7 +248,7 @@ async function confirmRollback() {
             >
               <VTextField
                 v-model.number="createForm.coins"
-                label="Coins Delta"
+                label="Credits Delta"
                 type="number"
               />
             </VCol>
@@ -284,7 +284,7 @@ async function confirmRollback() {
             type="success"
             class="mt-4"
           >
-            Transaction applied. Balance: XP={{ createResult.balanceXp }}, Coins={{ createResult.balanceCoins }}, Diamonds={{ createResult.balanceDiamonds }}
+            Transaction applied. Balance: Neural XP={{ createResult.balanceXp }}, Credits={{ createResult.balanceCoins }}, Diamonds={{ createResult.balanceDiamonds }}
           </VAlert>
         </VTabsWindowItem>
 
@@ -325,7 +325,7 @@ async function confirmRollback() {
             type="success"
             class="mt-4"
           >
-            Rollback applied. New balance: XP={{ rollbackResult.balanceXp }}, Coins={{ rollbackResult.balanceCoins }}, Diamonds={{ rollbackResult.balanceDiamonds }}
+            Rollback applied. New balance: Neural XP={{ rollbackResult.balanceXp }}, Credits={{ rollbackResult.balanceCoins }}, Diamonds={{ rollbackResult.balanceDiamonds }}
           </VAlert>
         </VTabsWindowItem>
       </VTabsWindow>
