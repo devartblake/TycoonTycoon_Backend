@@ -56,6 +56,10 @@ public sealed class QuestionAnsweredAnalyticsEvent
     public string? Surface { get; set; }
     /// <summary>Audience segment derived from player profile.</summary>
     public string? AudienceSegment { get; set; }
+    /// <summary>Navigation entry point that led to this event (e.g., hub, deep-link, notification).</summary>
+    public string? EntryPoint { get; set; }
+    /// <summary>Brand version identifier for A/B rollout tracking.</summary>
+    public string? BrandVersion { get; set; }
 
     /// <summary>
     /// Copies mutable fields from <paramref name="src"/> onto this instance.
@@ -76,6 +80,8 @@ public sealed class QuestionAnsweredAnalyticsEvent
         SynaptixMode = src.SynaptixMode;
         Surface = src.Surface;
         AudienceSegment = src.AudienceSegment;
+        EntryPoint = src.EntryPoint;
+        BrandVersion = src.BrandVersion;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }

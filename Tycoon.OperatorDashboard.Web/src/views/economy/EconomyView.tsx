@@ -37,8 +37,8 @@ import { CurrencyType } from '@/lib/types/admin'
 // ─── Helpers ────────────────────────────────────────────────────────
 
 const currencyLabel: Record<number, string> = {
-  [CurrencyType.Xp]: 'XP',
-  [CurrencyType.Coins]: 'Coins',
+  [CurrencyType.Xp]: 'Neural XP',
+  [CurrencyType.Coins]: 'Credits',
   [CurrencyType.Diamonds]: 'Diamonds'
 }
 
@@ -272,7 +272,7 @@ const EconomyView = () => {
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
-                    label='XP'
+                    label='Neural XP'
                     type='number'
                     value={txnXp}
                     onChange={e => setTxnXp(e.target.value)}
@@ -280,7 +280,7 @@ const EconomyView = () => {
                     sx={{ flex: 1 }}
                   />
                   <TextField
-                    label='Coins'
+                    label='Credits'
                     type='number'
                     value={txnCoins}
                     onChange={e => setTxnCoins(e.target.value)}
@@ -326,7 +326,7 @@ const EconomyView = () => {
                       </Box>
                       {txnResult.status === 1 && (
                         <Typography variant='body2' color='text.secondary'>
-                          Balances — XP: {txnResult.balanceXp}, Coins: {txnResult.balanceCoins}, Diamonds: {txnResult.balanceDiamonds}
+                          Balances — Neural XP: {txnResult.balanceXp}, Credits: {txnResult.balanceCoins}, Diamonds: {txnResult.balanceDiamonds}
                         </Typography>
                       )}
                     </CardContent>
@@ -386,7 +386,7 @@ const EconomyView = () => {
                       </Box>
                       {rollbackResult.status === 1 && (
                         <Typography variant='body2' color='text.secondary'>
-                          Updated balances — XP: {rollbackResult.balanceXp}, Coins: {rollbackResult.balanceCoins}, Diamonds: {rollbackResult.balanceDiamonds}
+                          Updated balances — Neural XP: {rollbackResult.balanceXp}, Credits: {rollbackResult.balanceCoins}, Diamonds: {rollbackResult.balanceDiamonds}
                         </Typography>
                       )}
                     </CardContent>

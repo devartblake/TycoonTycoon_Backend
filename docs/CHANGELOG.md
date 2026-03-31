@@ -4,6 +4,41 @@ All notable changes to this project.
 
 ---
 
+## [2026-03-31] Synaptix BE Packet D — Analytics & Stabilization (continued)
+
+### BE-D1: Remaining Analytics Dimensions
+- Added `EntryPoint` and `BrandVersion` nullable fields to all 3 analytics models
+- Added JSON extraction for `entryPoint`, `brandVersion` in `AnalyticsEndpoints.cs`
+- Added `.Keyword("entryPoint")`, `.Keyword("brandVersion")` to both Elasticsearch index templates
+- Bumped both template versions to 3
+- All 5 planned Synaptix dimensions now complete: `SynaptixMode`, `Surface`, `AudienceSegment`, `EntryPoint`, `BrandVersion`
+
+### BE-C5: Analytics/Admin Terminology Alignment
+
+**Blazor Operator Dashboard** (`Tycoon.OperatorDashboard/`):
+- `Events.razor`: "Entry Fee (coins)" → "(Credits)", "Revive Cost (gems)" → "(Synapse Shards)"
+- `Economy.razor`: Wallet labels "Coins" → "Credits", "XP" → "Neural XP"
+- `Economy.razor`: Grant currency dropdown "Coins" → "Credits", "XP" → "Neural XP"
+
+**Vue Operator Dashboard** (`Tycoon.OperatorDashboard.Vue/`):
+- `economy.vue`: Table headers "XP" → "Neural XP", "Coins" → "Credits"
+- `economy.vue`: Form labels "XP Delta" → "Neural XP Delta", "Coins Delta" → "Credits Delta"
+- `economy.vue`: Transaction/rollback balance messages updated
+- `users/[id].vue`: Currency labels "XP" → "Neural XP", "Coins" → "Credits"
+
+**Web/React Operator Dashboard** (`Tycoon.OperatorDashboard.Web/`):
+- `EconomyView.tsx`: Currency label map "XP" → "Neural XP", "Coins" → "Credits"
+- `EconomyView.tsx`: Form field labels and balance messages updated
+- `UserDetailView.tsx`: Currency labels "XP" → "Neural XP", "Coins" → "Credits"
+
+**What was NOT changed (by design)**:
+- "Social Accounts" in account-settings — refers to OAuth integrations (Google, Twitter), not Synaptix Circles
+- "Diamonds" — kept as-is per terminology reference (no Synaptix rename defined)
+- API property names (`balanceCoins`, `balanceXp`, etc.) — contract stability
+- Enum values (`CurrencyType.Coins`, etc.) — technical identifiers
+
+---
+
 ## [2026-03-29] Synaptix BE Packet D — Analytics & Stabilization
 
 ### BE-D1: Analytics Dimensions (Phase 6)

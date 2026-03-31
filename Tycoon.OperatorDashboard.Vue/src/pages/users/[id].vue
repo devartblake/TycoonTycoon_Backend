@@ -86,7 +86,7 @@ const unbanLoading = ref(false)
 const severityColors: Record<number, string> = { 2: 'error', 1: 'warning', 0: 'info' }
 const statusLabels: Record<number, string> = { 0: 'Normal', 1: 'Suspected', 2: 'Restricted', 3: 'Banned' }
 const statusColors: Record<number, string> = { 0: 'success', 1: 'warning', 2: 'error', 3: 'error' }
-const currencyLabel: Record<number, string> = { 1: 'XP', 2: 'Coins', 3: 'Diamonds' }
+const currencyLabel: Record<number, string> = { 1: 'Neural XP', 2: 'Credits', 3: 'Diamonds' }
 
 // ─── Loaders ─────────────────────────────────────────────────────────
 async function loadUser() {

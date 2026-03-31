@@ -74,6 +74,8 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                             .Keyword("synaptixMode")
                             .Keyword("surface")
                             .Keyword("audienceSegment")
+                            .Keyword("entryPoint")
+                            .Keyword("brandVersion")
                             .LongNumber("totalAnswers")
                             .LongNumber("correctAnswers")
                             .LongNumber("wrongAnswers")
@@ -86,7 +88,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                         ))
                     )
                     .Priority(500)
-                    .Version(2), ct);
+                    .Version(3), ct);
 
                 if (!put.IsValidResponse)
                 {
@@ -159,6 +161,8 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                             .Keyword("synaptixMode")
                             .Keyword("surface")
                             .Keyword("audienceSegment")
+                            .Keyword("entryPoint")
+                            .Keyword("brandVersion")
                             .LongNumber("totalAnswers")
                             .LongNumber("correctAnswers")
                             .LongNumber("wrongAnswers")
@@ -171,7 +175,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                         ))
                     )
                     .Priority(500)
-                    .Version(2), ct);
+                    .Version(3), ct);
 
                 if (!put.IsValidResponse)
                 {
