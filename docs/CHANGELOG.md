@@ -4,6 +4,36 @@ All notable changes to this project.
 
 ---
 
+## [2026-03-31] Synaptix BE Packet B — Profile Support
+
+### BE-B1: PlayerPreferences Entity
+- Created `PlayerPreferences` domain entity (`Tycoon.Backend.Domain/Entities/PlayerPreferences.cs`)
+- Fields: `SynaptixMode` (kids/teen/adult), `PreferredSurface` (hub/arena/labs/pathways/journey/circles/command), `ReducedMotion` (bool), `TonePreference` (playful/balanced/competitive)
+- One row per player, created on first PUT
+- Sensible defaults: adult mode, hub surface, no reduced motion, balanced tone
+
+### BE-B2: EF Core Persistence
+- Created `PlayerPreferencesConfiguration` with unique index on `PlayerId` and max-length constraints
+- Added `DbSet<PlayerPreferences>` to `AppDb` and `IAppDb`
+
+### BE-B3: DTOs
+- Created `PlayerPreferencesDto` (read) and `UpdatePlayerPreferencesRequest` (write) records
+- Update request uses nullable fields — only provided fields are changed (partial update)
+
+### BE-B4: API Endpoints
+- `GET /users/me/preferences` — returns current preferences (defaults if none set)
+- `PUT /users/me/preferences` — upserts preferences with input validation
+- Validates allowed values for mode, surface, and tone
+- Requires authorization (uses `ClaimTypes.NameIdentifier`)
+- Registered in `Program.cs`
+
+**What was NOT changed (by design)**:
+- No existing profile fields or endpoints modified
+- No existing profile endpoint paths changed
+- No new migrations generated (requires `dotnet ef` in a build environment)
+
+---
+
 ## [2026-03-31] Synaptix BE Packet D — Analytics & Stabilization (continued)
 
 ### BE-D1: Remaining Analytics Dimensions

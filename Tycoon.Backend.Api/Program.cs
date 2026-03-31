@@ -685,6 +685,7 @@ app.MapGrpcService<MobileMatchGrpcService>();
 AnalyticsEndpoints.Map(app);
 AuthEndpoints.Map(app);
 UsersEndpoints.Map(app);
+PlayerPreferencesEndpoints.Map(app);
 PlayersEndpoints.Map(app);
 MatchesEndpoints.Map(app);
 MatchmakingEndpoints.Map(app);
