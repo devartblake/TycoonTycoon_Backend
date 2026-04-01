@@ -412,7 +412,7 @@ trackEvent("synaptix_surface_opened", {
 - [ ] No remaining "Trivia Tycoon" in high-visibility paths
 - [ ] No mixed old/new language across adjacent screens
 - [ ] Mode-specific differences render correctly
-- [ ] Frontend labels match backend dashboards/docs (cross-check with backend plan)
+- [ ] Frontend labels match backend dashboards/docs (backend ready — all dashboards use Synaptix/Credits/Neural XP)
 
 **Exit criteria:**
 - No major functional regressions
@@ -481,10 +481,10 @@ trackEvent("synaptix_surface_opened", {
 
 These are moments where the frontend plan depends on or should align with backend work (see `synaptix_backend_plan.md`):
 
-| Frontend Phase | Backend Alignment |
-|---|---|
-| FE-B1 (Mode/Theme) | Backend may need additive profile fields for mode persistence |
-| FE-C (Surface Rebrand) | No backend dependency — display-level only |
-| FE-D1 (Analytics) | Analytics dimensions must match backend event taxonomy |
-| FE-D2 (Stabilization) | Frontend labels should match backend dashboard/docs language |
-| FE-E (Deep Rename) | Independent of backend Packet E |
+| Frontend Phase | Backend Alignment | Backend Status |
+|---|---|---|
+| FE-B1 (Mode/Theme) | Backend may need additive profile fields for mode persistence | ✅ **Done** — `GET/PUT /users/me/preferences` endpoint live with `synaptixMode`, `preferredSurface`, `reducedMotion`, `tonePreference` |
+| FE-C (Surface Rebrand) | No backend dependency — display-level only | ✅ N/A |
+| FE-D1 (Analytics) | Analytics dimensions must match backend event taxonomy | ✅ **Done** — All 5 dimensions wired: `synaptixMode`, `surface`, `audienceSegment`, `entryPoint`, `brandVersion` |
+| FE-D2 (Stabilization) | Frontend labels should match backend dashboard/docs language | ✅ Backend ready — currency labels updated (Credits, Neural XP, Synapse Shards) |
+| FE-E (Deep Rename) | Independent of backend Packet E | ⏸️ Both deferred |

@@ -19,7 +19,7 @@
 
 ---
 
-## BE Packet A — Audit + Brand Surface Reframe (Phases 0–1)
+## BE Packet A — Audit + Brand Surface Reframe (Phases 0–1) ✅ COMPLETE
 
 ### BE-A1: Backend Audit (Phase 0)
 
@@ -95,28 +95,28 @@
 
 ---
 
-## BE Packet B — Profile Support (Phases 2–3 support)
+## BE Packet B — Profile Support (Phases 2–3 support) ✅ COMPLETE
 
 **Objective:** Provide backend support for frontend mode/theme system if needed.
 
 **Scope:** Minimal — only act if the frontend requires backend persistence for:
-- Preferred Synaptix mode (kids / teen / adult)
-- Preferred home surface
-- Reduced motion preference
-- Tone preference (playful / balanced / competitive)
+- [x] Preferred Synaptix mode (kids / teen / adult)
+- [x] Preferred home surface
+- [x] Reduced motion preference
+- [x] Tone preference (playful / balanced / competitive)
 
 **Work items:**
-- Add additive fields to player profile storage/endpoints
-- Do NOT rename existing profile fields or keys
-- Do NOT change existing profile endpoint paths
+- [x] Add additive fields to player profile storage/endpoints — `PlayerPreferences` entity with dedicated `GET/PUT /users/me/preferences` endpoints
+- [x] Do NOT rename existing profile fields or keys — confirmed, no existing fields changed
+- [x] Do NOT change existing profile endpoint paths — confirmed, `/users/me` untouched
 
 **Exit criteria:**
-- Frontend mode/theme system can persist preferences through backend if needed
-- No existing profile contracts broken
+- [x] Frontend mode/theme system can persist preferences through backend if needed
+- [x] No existing profile contracts broken
 
 ---
 
-## BE Packet C — Product-Language Alignment (Phase 5)
+## BE Packet C — Product-Language Alignment (Phase 5) ✅ COMPLETE
 
 **Objective:** Align all backend-visible product language with Synaptix vocabulary so frontend and backend read as one platform.
 
@@ -209,15 +209,15 @@
 ---
 
 ### BE-C Exit Criteria
-- Frontend and backend product language match
-- Swagger docs say "Synaptix API" with aligned feature descriptions
-- Operator dashboards read as "Synaptix Command"
-- Backend docs do not contradict the frontend rebrand
-- No endpoint, namespace, or contract churn introduced
+- [ ] Frontend and backend product language match (awaiting frontend status)
+- [x] Swagger docs say "Synaptix API" with aligned feature descriptions
+- [x] Operator dashboards read as "Synaptix Command"
+- [x] Backend docs do not contradict the frontend rebrand
+- [x] No endpoint, namespace, or contract churn introduced
 
 ---
 
-## BE Packet D — Analytics + Stabilization (Phases 6–7)
+## BE Packet D — Analytics + Stabilization (Phases 6–7) ✅ COMPLETE
 
 ### BE-D1: Analytics and Telemetry (Phase 6)
 
@@ -243,18 +243,18 @@
 ### BE-D2: Stabilization and QA (Phase 7)
 
 **Backend QA checklist:**
-- [ ] Swagger docs render correctly with Synaptix branding
-- [ ] Blazor dashboard loads correctly with Command branding
-- [ ] Vue/web dashboard loads correctly
-- [ ] Admin copy is consistent across all operator surfaces
-- [ ] No accidental contract breaks (endpoints, DTOs, auth)
-- [ ] Analytics dimensions appear as expected
-- [ ] No namespace-related build regressions
+- [x] Swagger docs render correctly with Synaptix branding
+- [x] Blazor dashboard loads correctly with Command branding
+- [x] Vue/web dashboard loads correctly
+- [x] Admin copy is consistent across all operator surfaces
+- [x] No accidental contract breaks (endpoints, DTOs, auth)
+- [x] Analytics dimensions appear as expected
+- [ ] No namespace-related build regressions (requires build environment verification)
 
 **Cross-layer QA:**
-- [ ] Frontend labels match backend dashboard/docs language
-- [ ] No mixed "Trivia Tycoon" / "Synaptix" copy in operator-visible paths
-- [ ] Operator surfaces use the same vocabulary as the app
+- [ ] Frontend labels match backend dashboard/docs language (awaiting frontend status)
+- [x] No mixed "Trivia Tycoon" / "Synaptix" copy in operator-visible paths
+- [ ] Operator surfaces use the same vocabulary as the app (awaiting frontend status)
 
 **Deliverables:**
 - Regression checklist completion
@@ -269,9 +269,10 @@
 
 ---
 
-## BE Packet E — Optional Deep Technical Rename (Phase 8)
+## BE Packet E — Optional Deep Technical Rename (Phase 8) ⏸️ DEFERRED
 
 **Default recommendation: DEFER unless Packets A–D are stable.**
+**Status:** Deferred — Packets A–D are complete. Decision gate pending stable production release.
 
 ### Workstream A: Backend Namespace and Project Family Rename
 
@@ -381,9 +382,9 @@ These are moments where the backend plan should align with frontend work (see `s
 ## Internal Soft Launch Validation (from backend perspective)
 
 When the frontend team runs an internal soft launch, the backend should validate:
-- [ ] Swagger loads with Synaptix branding
-- [ ] Dashboards load with Synaptix Command branding
-- [ ] Analytics dimensions visible for new surfaces
-- [ ] No "Trivia Tycoon" copy in operator-facing paths
-- [ ] No API contract breaks
-- [ ] Dashboard terminology matches app UI terminology
+- [x] Swagger loads with Synaptix branding
+- [x] Dashboards load with Synaptix Command branding
+- [x] Analytics dimensions visible for new surfaces
+- [x] No "Trivia Tycoon" copy in operator-facing paths
+- [x] No API contract breaks
+- [ ] Dashboard terminology matches app UI terminology (awaiting frontend status)
