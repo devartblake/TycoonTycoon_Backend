@@ -1,92 +1,157 @@
 # Synaptix Migration — Remaining Work
 
-**Date:** 2026-04-01
-**Purpose:** Summary of completed and remaining work across backend and frontend for review.
+**Date:** 2026-04-01 | **Last updated:** 2026-04-01
+**Purpose:** Consolidated status across backend and frontend, incorporating cross-comparison findings.
 
 ---
 
-## Backend Status (TycoonTycoon_Backend)
+## 1. Backend Rebrand Status (Packets A–D) ✅ COMPLETE
 
-### Completed
-
-| Packet | Description | Commits |
+| Packet | Description | Status |
 |---|---|---|
-| **BE-A** | Audit + Brand Surface Reframe | `dc0b90f`, `03e4f10` |
-| **BE-B** | Profile Support (PlayerPreferences entity + API) | `8ddeaeb` |
-| **BE-C** | Product-Language Alignment (all 3 dashboards + docs) | `1a971c9` |
-| **BE-C5** | Currency terminology (Coins->Credits, XP->Neural XP, gems->Synapse Shards) | `a168e5c` |
-| **BE-D1** | Analytics dimensions (all 5: SynaptixMode, Surface, AudienceSegment, EntryPoint, BrandVersion) | `9080021`, `a168e5c` |
-| **BE-D2** | Stabilization QA — no old branding in operator-visible UI | `9080021` |
-
-### Remaining Backend Work
-
-#### Requires Build Environment
-- [ ] Verify solution compiles cleanly (`dotnet build`) — no .NET SDK available in current environment
-- [ ] Generate EF Core migration for `PlayerPreferences` table (`dotnet ef migrations add AddPlayerPreferences`)
-- [ ] Run migration against dev database
-
-#### Awaiting Frontend Status (Cross-Layer)
-- [ ] Confirm frontend labels match backend dashboard/docs language
-- [ ] Confirm operator surfaces use the same vocabulary as the app
-- [ ] Verify no namespace-related build regressions in CI
-
-#### Deferred (BE Packet E — Optional)
-- [ ] Deep namespace rename: `Tycoon.Backend.*` -> `Synaptix.Backend.*`
-- [ ] Deep namespace rename: `Tycoon.OperatorDashboard.*` -> `Synaptix.OperatorDashboard.*`
-- [ ] Deep namespace rename: `Tycoon.Shared.*` -> `Synaptix.Shared.*`
-- [ ] Cookie/persistence key rename: `tycoon-ops-dashboard`
-- [ ] Docker image name updates
-- [ ] CI/CD pipeline name updates
-- [ ] JWT issuer/audience name updates
-- [ ] Service name and telemetry identifier updates
-
-**Decision gate for BE-E:** Approve only after stable production release of Packets A-D, with rollback strategy documented and build/test coverage confirmed.
+| **BE-A** | Audit + Brand Surface Reframe | ✅ Complete |
+| **BE-B** | Profile Support (PlayerPreferences entity + API) | ✅ Complete |
+| **BE-C** | Product-Language Alignment (all 3 dashboards + docs + currency terms) | ✅ Complete |
+| **BE-D** | Analytics dimensions (all 5) + Stabilization QA | ✅ Complete |
+| **BE-E** | Deep namespace rename | ⏸️ Deferred |
 
 ---
 
-## Frontend Status (Flutter App)
+## 2. Frontend Rebrand Status (Packets A–D) ✅ COMPLETE
 
-> **Awaiting status update from frontend development process.**
+Source: `synaptix_frontend_cross_comparison_status.md`
 
-### FE Packet A — Audit + Brand Surface Reframe
-- [ ] FE-A1: Frontend surface inventory
-- [ ] FE-A2: Brand surface reframe (logo, splash, main, menu, router)
-
-### FE Packet B — Mode/Theme Foundation + Hub
-- [ ] FE-B1: Mode and theme foundation (SynaptixMode enum, provider, theme presets)
-- [ ] FE-B2: Shell and navigation upgrade (Synaptix Hub)
-- **Backend dependency:** ✅ Ready — `GET/PUT /users/me/preferences` endpoint available
-
-### FE Packet C — Core Feature Surface Rebrand
-- [ ] FE-C1: Arena (Leaderboard labels)
-- [ ] FE-C2: Labs (Arcade labels)
-- [ ] FE-C3: Pathways (Skill Tree labels)
-- [ ] FE-C4: Journey (Profile labels)
-- [ ] FE-C5: Circles (Social labels)
-- [ ] FE-C6: Command (Admin labels)
-
-### FE Packet D — Analytics + Stabilization
-- [ ] FE-D1: Analytics instrumentation
-- [ ] FE-D2: Stabilization and QA
-- **Backend dependency:** ✅ Ready — all 5 analytics dimensions wired in backend
-
-### FE Packet E — Optional Deep Technical Rename
-- [ ] Workstream 1: Frontend symbol cleanup (`TriviaTycoonApp` -> `SynaptixApp`)
-- [ ] Workstream 2: Package root rename (`package:trivia_tycoon` -> `package:synaptix`)
+| Packet | Description | Status |
+|---|---|---|
+| **FE-A** | Branding (splash, logo, first-touch surfaces) | ✅ Complete |
+| **FE-B** | Mode/Theme Foundation + Synaptix Hub | ✅ Complete |
+| **FE-C** | Core Feature Surface Rebrand (Arena/Labs/Pathways/Journey/Circles/Command) | ✅ Complete |
+| **FE-D** | Analytics + Stabilization (onboarding evolution, Hub polish) | ✅ Complete |
+| **FE-E** | Deep technical rename (`TriviaTycoonApp`, package root) | ⏸️ Deferred |
 
 ---
 
-## Backend API Endpoints Available for Frontend
+## 3. Cross-Layer Verification (Rebrand)
 
-| Endpoint | Method | Purpose | Status |
+| Check | Status |
+|---|---|
+| Backend dashboards say "Synaptix Command" | ✅ |
+| Swagger says "Synaptix API" | ✅ |
+| No "Trivia Tycoon" in operator-visible paths | ✅ |
+| Backend currency labels: Credits / Neural XP / Synapse Shards | ✅ |
+| Frontend labels match backend terminology | ⚠️ Needs runtime verification |
+| No API contract breaks | ✅ |
+| Analytics dimensions match (5/5) | ✅ |
+| Preferences persistence aligned | ✅ |
+
+---
+
+## 4. Backend Gameplay API Status (Beyond Rebrand)
+
+Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 6
+
+| Area | Status | Routes | Notes |
 |---|---|---|---|
-| `/users/me/preferences` | `GET` | Read player preferences (returns defaults if none set) | ✅ Available |
-| `/users/me/preferences` | `PUT` | Upsert player preferences (partial update) | ✅ Available |
-| `/analytics/events` | `POST` | Ingest analytics events with Synaptix dimensions | ✅ Available |
+| **Auth** | ✅ Production | 5 | Register, login, refresh, logout |
+| **Profile/Users** | ✅ Alpha+ | 5 | CRUD + preferences; no search/avatar |
+| **Leaderboards** | ✅ Production | 6 | Tier-based, ranked, paginated |
+| **Economy/Wallet** | ✅ Production | 11 | Authoritative wallet, 3 currencies, safeguards |
+| **Missions** | ✅ Production | 4 | Progress tracking, claims, SignalR |
+| **Seasons/Tiers** | ✅ Production | 3 | Season state, tier tracking |
+| **Skills/Pathways** | ✅ Production | 4 | Unlock, respec |
+| **Friends/Social** | ✅ Production | 5 | Requests, accept/decline |
+| **Party** | ✅ Production | 8 | Create, invite, group matchmaking |
+| **Matchmaking** | ✅ Production | 3 | Enqueue, cancel, status |
+| **Matches** | ✅ Production | 4 | Start, submit, retrieve |
+| **Guardians** | ✅ Production | 2 | Boss battles |
+| **Territory** | ✅ Production | 3 | Tile control, duel |
+| **Game Events** | ✅ Production | 4 | Jackpot/Crown, enter, revive |
+| **Votes/Powerups/Referrals/QR** | ✅ Production | 10 | All functional |
+| **Real-time (SignalR)** | ✅ Production | 3 hubs | Match, notifications, presence |
+| **Sidecar (ML/Utils)** | ✅ Utils | 20+ | Analytics, rebalance, placeholder ML models |
+| **Questions** | ❌ Stub | 1 | Upload only — no serving or grading |
+| **Store/IAP** | ❌ Missing | 0 | No shop, purchases, or receipt validation |
+| **Crypto Economy** | ❌ Missing | 0 | Ledger, wallet linking, withdrawal |
 
-### Preferences API Shape
+---
 
-**GET response / PUT request:**
+## 5. Remaining Work — Priority Order
+
+### Priority 1: Build & Migration Verification
+- [ ] Verify solution compiles cleanly (`dotnet build`)
+- [ ] Generate EF Core migration for `PlayerPreferences` table
+- [ ] Run migration against dev database
+- [ ] Confirm CI passes with no namespace/build regressions
+
+### Priority 2: Question Serving Pipeline
+- [ ] `GET /questions?category=&difficulty=&count=` — Serve questions for match play
+- [ ] `POST /questions/answer` or integrate into match submit — Per-question answer grading
+- [ ] Question bank management (categories, difficulty tagging, approval workflow)
+- [ ] Wire Python sidecar `/ml/question-difficulty` for NLP-based difficulty estimation
+
+### Priority 3: Store/Shop/IAP
+- [ ] `GET /store/catalog` — Fetch available items/bundles
+- [ ] `POST /store/purchase` — Purchase with in-game currency (Credits/Synapse Shards)
+- [ ] IAP receipt validation (Apple App Store / Google Play)
+- [ ] Player inventory/cosmetics endpoint
+- [ ] Battle pass / premium subscription support (if planned)
+
+### Priority 4: Frontend Economy Integration
+- [ ] Frontend wallet sync against authoritative backend state (economy endpoints exist)
+- [ ] Frontend reward reconciliation via backend economy transactions
+- [ ] Frontend purchase flow wired to store API (once built)
+
+### Priority 5: Crypto Economy Layer
+- [ ] Crypto ledger entity and persistence
+- [ ] Wallet linking API (external wallet address)
+- [ ] Crypto balance/history endpoints
+- [ ] Withdrawal flow with approval/audit
+- [ ] Prize pool system
+- [ ] Optional staking (later phase)
+
+### Priority 6: Polish & Gaps
+- [ ] Player search/discovery endpoint (`GET /users/search?handle=`)
+- [ ] Profile enrichment (career stats summary, W-L, winrate)
+- [ ] Unfriend endpoint
+- [ ] Cosmetics/avatar loadout system
+- [ ] ML model deployment (replace placeholder churn/difficulty/quality scorers)
+
+### Priority 7: Frontend Polish (No Backend Dependency)
+- [ ] Retention hooks (bonus challenge, streak system, session-end trigger)
+- [ ] Sound cue layer
+- [ ] Final empty-state sweep and copy consistency
+- [ ] Mode-specific accessibility pass
+- [ ] Release-level QA on all core screens
+
+### Deferred: BE Packet E + FE Packet E
+- [ ] Backend namespace rename (`Tycoon.*` → `Synaptix.*`)
+- [ ] Frontend package rename (`package:trivia_tycoon` → `package:synaptix`)
+- [ ] Cookie/persistence key cleanup
+- [ ] Docker/CI/JWT/telemetry identifier updates
+
+---
+
+## 6. Deployment Readiness Assessment
+
+| Milestone | Status | Blockers |
+|---|---|---|
+| **Closed Beta / Soft Launch** | ✅ Ready | Core gameplay loop functional (auth → match → rewards → leaderboard) |
+| **Public Production** | ⚠️ Blocked | Missing: Store/IAP + Question serving pipeline |
+| **Monetization** | ❌ Not ready | No shop, no IAP receipt validation, no crypto layer |
+
+---
+
+## 7. Backend API Reference (for Frontend Integration)
+
+### Synaptix-Specific Endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/users/me/preferences` | `GET` | Read player preferences (defaults if none set) |
+| `/users/me/preferences` | `PUT` | Upsert preferences (partial update, validated) |
+| `/analytics/events` | `POST` | Ingest analytics events with Synaptix dimensions |
+
+### Preferences Shape
 ```json
 {
   "synaptixMode": "kids | teen | adult",
@@ -95,11 +160,8 @@
   "tonePreference": "playful | balanced | competitive"
 }
 ```
-All fields are optional on PUT — only provided fields are updated.
 
-### Analytics Event Dimensions
-
-Send with `/analytics/events` POST body:
+### Analytics Dimensions
 ```json
 {
   "synaptixMode": "teen",
@@ -109,4 +171,3 @@ Send with `/analytics/events` POST body:
   "brandVersion": "1.0"
 }
 ```
-All dimension fields are optional and nullable.

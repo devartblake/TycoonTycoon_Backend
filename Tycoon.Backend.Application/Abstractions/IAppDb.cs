@@ -72,6 +72,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<PlayerTransactionActor> PlayerTransactionActors { get; }
         DbSet<PlayerTransactionItem> PlayerTransactionItems { get; }
         DbSet<PlayerPreferences> PlayerPreferences { get; }
+        DbSet<StoreItem> StoreItems { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);
