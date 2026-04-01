@@ -701,6 +701,7 @@ PartyEndpoints.Map(app);
 RankedLeaderboardsEndpoints.Map(app);
 SeasonRewardsEndpoints.Map(app);
 QuestionsUploadEndpoints.Map(app);
+QuestionsEndpoints.Map(app);
 VoteEndpoints.Map(app);
 GameEventsEndpoints.Map(app);
 GameEventStatsEndpoints.Map(app);
