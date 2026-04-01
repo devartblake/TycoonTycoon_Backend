@@ -4,6 +4,26 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-01] Backend Gaps — Search, Unfriend, Career Stats
+
+### Player Search
+- Added `GET /users/search?handle=&page=&pageSize=` endpoint
+- Case-insensitive partial match via `EF.Functions.ILike`
+- Returns paginated `UserSearchResponseDto` (Id, Handle, Country, Tier, Mmr)
+- Minimum 2 characters required, max 50 results per page
+
+### Unfriend
+- Added `RemoveFriendAsync` to `FriendsService` — deletes both directional edges (A→B and B→A)
+- Added `DELETE /friends/remove` endpoint with `RemoveFriendRequest` body
+- Returns 404 if no friendship exists
+
+### Career Stats
+- Added `GET /players/{id}/stats` endpoint to `PlayersEndpoints`
+- Aggregates from `MatchParticipantResults`: total matches, wins (highest score), losses, win rate, correct/wrong counts, avg score, avg answer time
+- Returns `PlayerCareerStatsDto` with zero-initialized response for players with no match history
+
+---
+
 ## [2026-03-31] Synaptix BE Packet B — Profile Support
 
 ### BE-B1: PlayerPreferences Entity
