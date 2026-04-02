@@ -39,7 +39,7 @@ public static class QueryCollectionExtensions
     )
     {
         var values = All<T>(collection, key);
-        var value = @default;
+        T? value = @default;
 
         if (values.Any())
         {
@@ -51,7 +51,7 @@ public static class QueryCollectionExtensions
             };
         }
 
-        return value ?? @default;
+        return value ?? @default!;
     }
 
     public static T GetCollection<T>(this IQueryCollection collection, string key, T @default = default)
@@ -60,7 +60,7 @@ public static class QueryCollectionExtensions
         var type = typeof(T).GetGenericArguments()[0];
         var listType = typeof(List<>);
         var constructedListType = listType.MakeGenericType(type);
-        dynamic values = Activator.CreateInstance(constructedListType);
+        dynamic? values = Activator.CreateInstance(constructedListType);
 
         if (collection.TryGetValue(key, out var results))
         {
@@ -68,10 +68,11 @@ public static class QueryCollectionExtensions
             {
                 try
                 {
-                    if (s.IsValidJson())
+                    if (s is not null && s.IsValidJson())
                     {
-                        dynamic result = JsonConvert.DeserializeObject(s, type);
-                        values.Add(result);
+                        var result = JsonConvert.DeserializeObject(s, type);
+                        if (result is not null)
+                            values.Add(result);
                     }
                     else
                     {
@@ -91,7 +92,7 @@ public static class QueryCollectionExtensions
             return @default;
         }
 
-        return values;
+        return (T)values;
     }
 
     private static bool IsValidJson(this string strInput)
