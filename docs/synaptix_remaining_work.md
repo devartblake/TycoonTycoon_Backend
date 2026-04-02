@@ -112,9 +112,9 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [ ] Optional staking (later phase)
 
 ### Priority 6: Polish & Gaps
-- [ ] Player search/discovery endpoint (`GET /users/search?handle=`)
-- [ ] Profile enrichment (career stats summary, W-L, winrate)
-- [ ] Unfriend endpoint
+- [x] Player search/discovery endpoint (`GET /users/search?handle=`) ✅
+- [x] Profile enrichment / career stats (`GET /players/{id}/stats`) ✅
+- [x] Unfriend endpoint (`DELETE /friends/remove`) ✅
 - [ ] Cosmetics/avatar loadout system
 - [ ] ML model deployment (replace placeholder churn/difficulty/quality scorers)
 
@@ -140,17 +140,6 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 | **Closed Beta / Soft Launch** | ✅ Ready | Core gameplay loop functional (auth → match → rewards → leaderboard) |
 | **Public Production** | ⚠️ Blocked | Strict external IAP verification + withdrawal settlement pipeline still need hardening |
 | **Monetization** | ⚠️ Partial | Store + IAP endpoint + crypto request flow exist; settlement/prize pool still open |
-
----
-
-## 6.1 Immediate next steps (owner runlist)
-
-1. [ ] Run local build + migration gate (`dotnet build`, `dotnet ef database update`).
-2. [ ] Perform request-level smoke checks for Auth, Questions, Store, and Crypto routes.
-   - Helper: `./scripts/alpha-p0-smoke.sh`
-3. [ ] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
-4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
-5. [ ] Record go/no-go with explicit defer list (prize pool, staking, strict provider hardening follow-ups if needed).
 
 ---
 
