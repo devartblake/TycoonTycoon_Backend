@@ -38,3 +38,42 @@ Changes made:
 - Install/use local .NET SDK to complete build + migration gate.
 - Start API and execute request-level smoke tests for P0 endpoints.
 - Provide real non-placeholder IAP provider config values for Apple/Google strict mode tests.
+
+## Next-step command runbook (local)
+
+### 1) Build + migration gate
+```bash
+dotnet --info
+dotnet build Tycoon.sln
+dotnet ef migrations list --project Tycoon.Backend.Migrations --startup-project Tycoon.Backend.Api
+dotnet ef database update --project Tycoon.Backend.Migrations --startup-project Tycoon.Backend.Api
+```
+
+### 2) Start API (development)
+```bash
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project Tycoon.Backend.Api
+```
+
+### 3) P0 smoke API checks (examples)
+```bash
+# one-command smoke script
+./scripts/alpha-p0-smoke.sh
+
+# auth login (replace payload)
+curl -sS -X POST http://localhost:5000/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demo@example.com\",\"password\":\"demo\"}'
+
+# questions set
+curl -sS \"http://localhost:5000/questions/set?count=5\"
+
+# store catalog
+curl -sS \"http://localhost:5000/store/catalog\"
+```
+
+### 4) Strict IAP validation prechecks
+Before calling `/store/iap/validate` in Development, replace placeholders in `Tycoon.Backend.Api/appsettings.Development.json`:
+- `Iap:AppleSharedSecret`
+- `Iap:GooglePackageName`
+- `Iap:GoogleServiceAccountJsonPath`
+
+Without real values, strict mode intentionally returns:
+- `503` + `IAP_STRICT_CONFIG_MISSING`
