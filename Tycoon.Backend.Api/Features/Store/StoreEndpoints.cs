@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.PlayerTransactions;
@@ -19,6 +20,7 @@ namespace Tycoon.Backend.Api.Features.Store
             g.MapGet("/catalog", GetCatalog);
             g.MapGet("/catalog/{sku}", GetItem);
             g.MapPost("/purchase", Purchase).RequireAuthorization();
+            g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization();
         }
 
         private static async Task<IResult> GetCatalog(
@@ -148,5 +150,87 @@ namespace Tycoon.Backend.Api.Features.Store
                 BalanceDiamonds: balanceResult?.BalanceDiamonds ?? 0,
                 ErrorMessage: result.Status != "Applied" ? $"Purchase failed: {result.Status}" : null));
         }
+
+        private static async Task<IResult> ValidateIapReceipt(
+            [FromBody] IapReceiptValidationRequest req,
+            IAppDb db,
+            IConfiguration cfg,
+            CancellationToken ct)
+        {
+            if (req.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(req.Platform) || string.IsNullOrWhiteSpace(req.Receipt))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId, platform, and receipt are required.");
+
+            var platform = req.Platform.Trim().ToLowerInvariant();
+            if (platform is not ("apple" or "google"))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_PLATFORM", "platform must be 'apple' or 'google'.");
+
+            var strictValidation = cfg.GetValue("Iap:EnableStrictValidation", false);
+            if (strictValidation)
+            {
+                var appleSecret = cfg["Iap:AppleSharedSecret"];
+                var googlePackage = cfg["Iap:GooglePackageName"];
+                var googleServiceAccountPath = cfg["Iap:GoogleServiceAccountJsonPath"];
+
+                var strictConfigReady = platform == "apple"
+                    ? !string.IsNullOrWhiteSpace(appleSecret) && !appleSecret.Contains("__")
+                    : !string.IsNullOrWhiteSpace(googlePackage)
+                      && !googlePackage.Contains("__")
+                      && !string.IsNullOrWhiteSpace(googleServiceAccountPath)
+                      && !googleServiceAccountPath.Contains("__");
+
+                if (!strictConfigReady)
+                {
+                    return ApiResponses.Error(
+                        StatusCodes.Status503ServiceUnavailable,
+                        "IAP_STRICT_CONFIG_MISSING",
+                        $"Strict {platform} validation is enabled but required IAP configuration is missing.");
+                }
+            }
+
+            var isValid = !string.IsNullOrWhiteSpace(req.Receipt);
+            var status = strictValidation ? "StrictValidated" : "SandboxBypassValidated";
+
+            var tx = new PlayerTransaction(
+                eventId: Guid.NewGuid(),
+                kind: "iap-receipt-validation",
+                correlatedEventId: null,
+                receipt: req.Receipt.Trim()
+            );
+
+            tx.AddActor(req.PlayerId, PlayerTransactionActorRole.Buyer);
+            if (isValid)
+                tx.MarkApplied();
+            else
+                tx.MarkFailed();
+
+            db.PlayerTransactions.Add(tx);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new IapReceiptValidationResponse(
+                Valid: isValid,
+                Platform: platform,
+                Status: status,
+                TransactionId: tx.Id,
+                ProductId: req.ProductId,
+                ExternalTransactionId: req.ExternalTransactionId
+            ));
+        }
+
+        public sealed record IapReceiptValidationRequest(
+            Guid PlayerId,
+            string Platform,
+            string Receipt,
+            string? ProductId = null,
+            string? ExternalTransactionId = null
+        );
+
+        public sealed record IapReceiptValidationResponse(
+            bool Valid,
+            string Platform,
+            string Status,
+            Guid TransactionId,
+            string? ProductId,
+            string? ExternalTransactionId
+        );
     }
 }
