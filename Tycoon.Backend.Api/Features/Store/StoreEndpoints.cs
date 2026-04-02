@@ -165,8 +165,30 @@ namespace Tycoon.Backend.Api.Features.Store
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_PLATFORM", "platform must be 'apple' or 'google'.");
 
             var strictValidation = cfg.GetValue("Iap:EnableStrictValidation", false);
+            if (strictValidation)
+            {
+                var appleSecret = cfg["Iap:AppleSharedSecret"];
+                var googlePackage = cfg["Iap:GooglePackageName"];
+                var googleServiceAccountPath = cfg["Iap:GoogleServiceAccountJsonPath"];
+
+                var strictConfigReady = platform == "apple"
+                    ? !string.IsNullOrWhiteSpace(appleSecret) && !appleSecret.Contains("__")
+                    : !string.IsNullOrWhiteSpace(googlePackage)
+                      && !googlePackage.Contains("__")
+                      && !string.IsNullOrWhiteSpace(googleServiceAccountPath)
+                      && !googleServiceAccountPath.Contains("__");
+
+                if (!strictConfigReady)
+                {
+                    return ApiResponses.Error(
+                        StatusCodes.Status503ServiceUnavailable,
+                        "IAP_STRICT_CONFIG_MISSING",
+                        $"Strict {platform} validation is enabled but required IAP configuration is missing.");
+                }
+            }
+
             var isValid = !string.IsNullOrWhiteSpace(req.Receipt);
-            var status = strictValidation ? "Validated" : "SandboxBypassValidated";
+            var status = strictValidation ? "StrictValidated" : "SandboxBypassValidated";
 
             var tx = new PlayerTransaction(
                 eventId: Guid.NewGuid(),
