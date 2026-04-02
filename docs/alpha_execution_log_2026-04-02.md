@@ -59,6 +59,13 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --project Tycoon.Backend.Api
 # one-command smoke script
 ./scripts/alpha-p0-smoke.sh
 
+# optional overrides:
+# - BASE_URL for non-default port/host
+# - EMAIL/PASSWORD for login creds
+# - JQ_BIN if jq is installed at a custom path
+# Script now supports either jq or python3 for JSON parsing.
+BASE_URL=http://localhost:5000 EMAIL=you@example.com PASSWORD='***' ./scripts/alpha-p0-smoke.sh
+
 # auth login (replace payload)
 curl -sS -X POST http://localhost:5000/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demo@example.com\",\"password\":\"demo\"}'
 
@@ -68,6 +75,14 @@ curl -sS \"http://localhost:5000/questions/set?count=5\"
 # store catalog
 curl -sS \"http://localhost:5000/store/catalog\"
 ```
+
+Windows PowerShell option:
+```powershell
+pwsh ./scripts/alpha-p0-smoke.ps1 -BaseUrl http://localhost:5000 -Email you@example.com -Password '***'
+```
+
+Important:
+- `alpha-p0-smoke.sh` is a **Bash script** and should be run with `bash`/`sh`, not with `python`.
 
 ### 4) Strict IAP validation prechecks
 Before calling `/store/iap/validate` in Development, replace placeholders in `Tycoon.Backend.Api/appsettings.Development.json`:
