@@ -76,6 +76,14 @@ curl -sS \"http://localhost:5000/questions/set?count=5\"
 curl -sS \"http://localhost:5000/store/catalog\"
 ```
 
+Windows PowerShell option:
+```powershell
+pwsh ./scripts/alpha-p0-smoke.ps1 -BaseUrl http://localhost:5000 -Email you@example.com -Password '***'
+```
+
+Important:
+- `alpha-p0-smoke.sh` is a **Bash script** and should be run with `bash`/`sh`, not with `python`.
+
 ### 4) Strict IAP validation prechecks
 Before calling `/store/iap/validate` in Development, replace placeholders in `Tycoon.Backend.Api/appsettings.Development.json`:
 - `Iap:AppleSharedSecret`

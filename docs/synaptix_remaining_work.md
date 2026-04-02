@@ -147,7 +147,8 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 
 1. [ ] Run local build + migration gate (`dotnet build`, `dotnet ef database update`).
 2. [ ] Perform request-level smoke checks for Auth, Questions, Store, and Crypto routes.
-   - Helper: `./scripts/alpha-p0-smoke.sh`
+   - Helper (bash): `./scripts/alpha-p0-smoke.sh`
+   - Helper (PowerShell): `pwsh ./scripts/alpha-p0-smoke.ps1`
 3. [ ] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
 4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
 5. [ ] Record go/no-go with explicit defer list (prize pool, staking, strict provider hardening follow-ups if needed).
