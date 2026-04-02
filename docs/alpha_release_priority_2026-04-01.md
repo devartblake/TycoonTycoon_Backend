@@ -73,3 +73,58 @@ Both docs are newly added today and agree on the main gap: backend gameplay/econ
 - [ ] No unresolved P0 TODOs without explicit defer decision
 - [ ] Vocabulary consistency pass complete
 - [ ] Release notes include clearly deferred items
+
+---
+
+## Next execution sequence (single-owner mode)
+
+Owner: You (solo execution)
+Policy: Ship if P0 passes, defer P1
+Scope: All core alpha APIs
+
+### Step 1 — Build + migration gate (P0)
+1. Run `dotnet build` for the solution.
+2. Generate migrations (if needed) and apply to local dev DB.
+3. Capture the exact command output in release notes.
+
+Exit criteria:
+- Build is green.
+- Migration is applied cleanly.
+- App boots without DI/runtime startup errors.
+
+### Step 2 — API readiness gate (P0)
+Verify each required API in this order:
+1. Auth
+2. Profile sync
+3. Quiz submit
+4. Leaderboard read
+5. Economy state read/write
+
+Exit criteria:
+- Each endpoint returns expected status code and payload shape.
+- No blocking 5xx errors in local logs.
+
+### Step 3 — Cross-stack language + telemetry smoke gate (P0)
+1. Launch operator surface(s) and app client.
+2. Run one test flow end-to-end.
+3. Confirm:
+   - no mixed old/new product labels in visible UX
+   - expected analytics/event payload fields still flow
+
+Exit criteria:
+- Vocabulary is consistent in app + operator views.
+- Telemetry appears for the same test session.
+
+### Step 4 — Release decision
+Go:
+- All P0 gates pass.
+
+No-Go:
+- Any P0 gate fails without a safe temporary mitigation.
+
+### Step 5 — P1 deferrals (allowed by policy)
+If P0 passes, explicitly defer to next window:
+- retention hook
+- sound cues
+- additional polish items
+- optional Packet E renames
