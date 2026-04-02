@@ -63,8 +63,10 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --project Tycoon.Backend.Api
 # - BASE_URL for non-default port/host
 # - EMAIL/PASSWORD for login creds
 # - JQ_BIN if jq is installed at a custom path
+# - SMOKE_MODE=routes for CI/static route-map validation (no running API required)
 # Script now supports either jq or python3 for JSON parsing.
 BASE_URL=http://localhost:5000 EMAIL=you@example.com PASSWORD='***' ./scripts/alpha-p0-smoke.sh
+SMOKE_MODE=routes ./scripts/alpha-p0-smoke.sh
 
 # auth login (replace payload)
 curl -sS -X POST http://localhost:5000/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demo@example.com\",\"password\":\"demo\"}'

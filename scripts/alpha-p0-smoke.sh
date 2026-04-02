@@ -4,6 +4,7 @@ set -euo pipefail
 BASE_URL="${BASE_URL:-http://localhost:5000}"
 EMAIL="${EMAIL:-demo@example.com}"
 PASSWORD="${PASSWORD:-demo}"
+SMOKE_MODE="${SMOKE_MODE:-live}"
 
 jq_bin="${JQ_BIN:-jq}"
 has_jq=false
@@ -14,6 +15,23 @@ fi
 if [[ "$has_jq" == false ]] && ! command -v python3 >/dev/null 2>&1; then
   echo "ERROR: neither jq nor python3 is available. Install one of them." >&2
   exit 1
+fi
+
+if [[ "$SMOKE_MODE" == "routes" ]]; then
+  if ! command -v rg >/dev/null 2>&1; then
+    echo "ERROR: SMOKE_MODE=routes requires ripgrep (rg)." >&2
+    exit 1
+  fi
+
+  echo "[route-check] verifying required endpoint maps exist"
+  rg -n 'MapPost\("/login"' Tycoon.Backend.Api/Features/Auth/AuthEndpoints.cs >/dev/null
+  rg -n 'MapGet\("/set"|MapPost\("/check"|MapPost\("/check-batch"' Tycoon.Backend.Api/Features/Questions/QuestionsEndpoints.cs >/dev/null
+  rg -n 'MapGet\("/catalog"|MapPost\("/purchase"|MapPost\("/iap/validate"' Tycoon.Backend.Api/Features/Store/StoreEndpoints.cs >/dev/null
+  rg -n 'MapPost\("/link-wallet"|MapGet\("/balance|MapGet\("/history|MapPost\("/withdraw"' Tycoon.Backend.Api/Features/Crypto/CryptoEconomyEndpoints.cs >/dev/null
+  rg -n 'MapGet\("/tiers/\{tierId:int\}"' Tycoon.Backend.Api/Features/Leaderboards/LeaderboardsEndpoints.cs >/dev/null
+
+  echo "P0 smoke route-check completed."
+  exit 0
 fi
 
 extract_token() {

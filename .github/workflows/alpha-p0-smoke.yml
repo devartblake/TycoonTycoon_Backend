@@ -1,0 +1,19 @@
+name: alpha-p0-smoke
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  route-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Run alpha P0 smoke (route mode)
+        run: SMOKE_MODE=routes bash ./scripts/alpha-p0-smoke.sh
