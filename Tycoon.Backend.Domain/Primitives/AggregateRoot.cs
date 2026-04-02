@@ -7,10 +7,10 @@
     {
         private readonly List<IDomainEvent> _domainEvents = new();
 
-        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents;
+        public new IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents;
 
-        protected void Raise(IDomainEvent evt) => _domainEvents.Add(evt);
+        protected new void Raise(IDomainEvent evt) => _domainEvents.Add(evt);
 
-        public void ClearDomainEvents() => _domainEvents.Clear();
+        public new void ClearDomainEvents() => _domainEvents.Clear();
     }
 }
