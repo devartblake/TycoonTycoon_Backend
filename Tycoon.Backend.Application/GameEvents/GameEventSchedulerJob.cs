@@ -1,5 +1,4 @@
 using Hangfire;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Tycoon.Backend.Application.Abstractions;
@@ -8,7 +7,7 @@ using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.GameEvents
 {
-    public sealed class GameEventSchedulerJob(IAppDb db, IMediator mediator, ILogger<GameEventSchedulerJob> logger, FeatureFlagService flags)
+    public sealed class GameEventSchedulerJob(IAppDb db, ILogger<GameEventSchedulerJob> logger, FeatureFlagService flags)
     {
         public async Task RunAsync(CancellationToken ct)
         {
