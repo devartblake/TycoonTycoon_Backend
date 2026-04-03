@@ -164,8 +164,8 @@ namespace Tycoon.Backend.Infrastructure
                         o.Url = elasticUrl;
 
                         // Credentials (optional)
-                        o.Username = cfg["Elastic:Username"];
-                        o.Password = cfg["Elastic:Password"];
+                        o.Username = cfg["Elastic:Username"] ?? string.Empty;
+                        o.Password = cfg["Elastic:Password"] ?? string.Empty;
 
                         // Aliases (optional defaults)
                         o.DailyWriteAlias = cfg["Elastic:DailyWriteAlias"] ?? o.DailyWriteAlias;
