@@ -62,6 +62,9 @@ public static class QueryCollectionExtensions
         var constructedListType = listType.MakeGenericType(type);
         dynamic? values = Activator.CreateInstance(constructedListType);
 
+        if (values is null)
+            return @default;
+
         if (collection.TryGetValue(key, out var results))
         {
             foreach (var s in results)
@@ -92,7 +95,7 @@ public static class QueryCollectionExtensions
             return @default;
         }
 
-        return (T)values;
+        return values is null ? @default : (T)values;
     }
 
     private static bool IsValidJson(this string strInput)

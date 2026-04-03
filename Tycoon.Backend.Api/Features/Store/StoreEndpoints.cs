@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.PlayerTransactions;
@@ -152,12 +155,18 @@ namespace Tycoon.Backend.Api.Features.Store
 
         private static async Task<IResult> ValidateIapReceipt(
             [FromBody] IapReceiptValidationRequest req,
+            HttpContext httpContext,
             IAppDb db,
             IConfiguration cfg,
             CancellationToken ct)
         {
             if (req.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(req.Platform) || string.IsNullOrWhiteSpace(req.Receipt))
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId, platform, and receipt are required.");
+
+            // Enforce that the authenticated caller may only validate for their own account.
+            var callerIdStr = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(callerIdStr, out var callerId) || callerId != req.PlayerId)
+                return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "You may only validate receipts for your own account.");
 
             var platform = req.Platform.Trim().ToLowerInvariant();
             if (platform is not ("apple" or "google"))
@@ -184,16 +193,25 @@ namespace Tycoon.Backend.Api.Features.Store
                         "IAP_STRICT_CONFIG_MISSING",
                         $"Strict {platform} validation is enabled but required IAP configuration is missing.");
                 }
+
+                // Provider-side verification is not yet implemented; refuse rather than return a misleading "StrictValidated" status.
+                return ApiResponses.Error(
+                    StatusCodes.Status503ServiceUnavailable,
+                    "IAP_STRICT_VALIDATION_NOT_IMPLEMENTED",
+                    $"Strict {platform} validation is enabled, but provider-side receipt verification is not implemented in this endpoint.");
             }
 
             var isValid = !string.IsNullOrWhiteSpace(req.Receipt);
-            var status = strictValidation ? "StrictValidated" : "SandboxBypassValidated";
+            var status = "SandboxBypassValidated";
+
+            // Store a SHA-256 hash of the receipt instead of the full payload to avoid exceeding the column length limit.
+            var receiptHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(req.Receipt.Trim())));
 
             var tx = new PlayerTransaction(
                 eventId: Guid.NewGuid(),
                 kind: "iap-receipt-validation",
                 correlatedEventId: null,
-                receipt: req.Receipt.Trim()
+                receipt: receiptHash
             );
 
             tx.AddActor(req.PlayerId, PlayerTransactionActorRole.Buyer);

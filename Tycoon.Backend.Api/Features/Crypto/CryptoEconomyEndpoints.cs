@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
@@ -22,6 +23,7 @@ public static class CryptoEconomyEndpoints
 
     private static async Task<IResult> LinkWallet(
         [FromBody] LinkWalletRequest req,
+        HttpContext httpContext,
         IAppDb db,
         IConfiguration cfg,
         CancellationToken ct)
@@ -32,6 +34,17 @@ public static class CryptoEconomyEndpoints
         if (req.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(req.WalletAddress))
             return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId and walletAddress are required.");
 
+        // Enforce caller ownership.
+        var callerIdStr = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(callerIdStr, out var callerId) || callerId != req.PlayerId)
+            return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "You may only link a wallet for your own account.");
+
+        // Validate the requested network against the configured allowed list.
+        var allowedNetworks = cfg.GetSection("Crypto:AllowedNetworks").Get<string[]>() ?? Array.Empty<string>();
+        var requestedNetwork = req.Network.Trim().ToLowerInvariant();
+        if (allowedNetworks.Length > 0 && !allowedNetworks.Contains(requestedNetwork, StringComparer.OrdinalIgnoreCase))
+            return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_NETWORK", $"Network '{req.Network}' is not supported.");
+
         var normalized = req.WalletAddress.Trim();
 
         var tx = new PlayerTransaction(Guid.NewGuid(), "crypto-wallet-link", receipt: normalized);
@@ -41,42 +54,53 @@ public static class CryptoEconomyEndpoints
         db.PlayerTransactions.Add(tx);
         await db.SaveChangesAsync(ct);
 
-        return Results.Ok(new LinkWalletResponse(req.PlayerId, normalized, req.Network, tx.Id, tx.Status.ToString()));
+        return Results.Ok(new LinkWalletResponse(req.PlayerId, normalized, requestedNetwork, tx.Id, tx.Status.ToString()));
     }
 
     private static async Task<IResult> GetBalance(
         [FromRoute] Guid playerId,
+        HttpContext httpContext,
         IAppDb db,
         CancellationToken ct)
     {
         if (playerId == Guid.Empty)
             return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
 
-        var applied = await db.PlayerTransactions.AsNoTracking()
-            .Include(x => x.Actors)
-            .Include(x => x.ItemChanges)
-            .Where(x =>
-                x.Status == PlayerTransactionStatus.Applied &&
-                x.Actors.Any(a => a.PlayerId == playerId) &&
-                x.ItemChanges.Any(i => i.ItemType == "crypto:units"))
-            .ToListAsync(ct);
+        // Enforce caller ownership.
+        var callerIdStr = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(callerIdStr, out var callerId) || callerId != playerId)
+            return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "You may only view your own balance.");
 
-        var units = applied.SelectMany(x => x.ItemChanges)
-            .Where(i => i.ItemType == "crypto:units")
-            .Sum(i => i.Operation == ItemOperation.Grant ? i.Quantity : -i.Quantity);
+        var units = await GetAppliedCryptoUnitsBalanceAsync(db, playerId, ct);
 
         return Results.Ok(new CryptoBalanceResponse(playerId, Math.Max(0, units), "CRYPTO_UNITS"));
     }
+
+    private static Task<int> GetAppliedCryptoUnitsBalanceAsync(IAppDb db, Guid playerId, CancellationToken ct) =>
+        db.PlayerTransactions.AsNoTracking()
+            .Where(x =>
+                x.Status == PlayerTransactionStatus.Applied &&
+                x.Actors.Any(a => a.PlayerId == playerId))
+            .SelectMany(x => x.ItemChanges.Where(i => i.ItemType == "crypto:units"))
+            .SumAsync(
+                i => i.Operation == ItemOperation.Grant ? i.Quantity : -i.Quantity,
+                ct);
 
     private static async Task<IResult> GetHistory(
         [FromRoute] Guid playerId,
         [FromQuery] int page,
         [FromQuery] int pageSize,
+        HttpContext httpContext,
         IAppDb db,
         CancellationToken ct)
     {
         if (playerId == Guid.Empty)
             return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
+
+        // Enforce caller ownership.
+        var callerIdStr = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(callerIdStr, out var callerId) || callerId != playerId)
+            return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "You may only view your own transaction history.");
 
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize <= 0 ? 20 : pageSize, 1, 100);
@@ -114,6 +138,7 @@ public static class CryptoEconomyEndpoints
 
     private static async Task<IResult> RequestWithdrawal(
         [FromBody] CryptoWithdrawRequest req,
+        HttpContext httpContext,
         IAppDb db,
         IConfiguration cfg,
         CancellationToken ct)
@@ -123,6 +148,11 @@ public static class CryptoEconomyEndpoints
 
         if (req.PlayerId == Guid.Empty || req.Units <= 0 || string.IsNullOrWhiteSpace(req.ToWalletAddress))
             return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId, units, and toWalletAddress are required.");
+
+        // Enforce caller ownership.
+        var callerIdStr = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(callerIdStr, out var callerId) || callerId != req.PlayerId)
+            return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "You may only request withdrawals for your own account.");
 
         var minWithdrawal = cfg.GetValue("Crypto:MinWithdrawalUnits", 1);
         if (req.Units < minWithdrawal)
@@ -137,19 +167,20 @@ public static class CryptoEconomyEndpoints
         if (!linked)
             return ApiResponses.Error(StatusCodes.Status409Conflict, "WALLET_NOT_LINKED", "Link wallet before requesting withdrawal.");
 
-        static Task<int> GetAppliedCryptoUnitsBalanceAsync(AppDbContext db, Guid playerId, CancellationToken ct) =>
-            db.PlayerTransactions.AsNoTracking()
-                .Where(x =>
-                    x.Status == PlayerTransactionStatus.Applied &&
-                    x.Actors.Any(a => a.PlayerId == playerId))
-                .SelectMany(x => x.ItemChanges.Where(i => i.ItemType == "crypto:units"))
-                .SumAsync(
-                    i => i.Operation == ItemOperation.Grant ? i.Quantity : -i.Quantity,
-                    ct);
-
         var balance = await GetAppliedCryptoUnitsBalanceAsync(db, req.PlayerId, ct);
 
-        if (balance < req.Units)
+        // Reserve funds by subtracting pending withdrawal amounts to prevent over-committing balance.
+        var pendingWithdrawals = await db.PlayerTransactions.AsNoTracking()
+            .Where(x =>
+                x.Kind == "crypto-withdraw-request" &&
+                x.Status == PlayerTransactionStatus.Pending &&
+                x.Actors.Any(a => a.PlayerId == req.PlayerId))
+            .SelectMany(x => x.ItemChanges.Where(i => i.ItemType == "crypto:units" && i.Operation == ItemOperation.Revoke))
+            .SumAsync(i => i.Quantity, ct);
+
+        var effectiveBalance = balance - pendingWithdrawals;
+
+        if (effectiveBalance < req.Units)
             return ApiResponses.Error(StatusCodes.Status409Conflict, "INSUFFICIENT_CRYPTO_BALANCE", "Insufficient crypto balance.");
 
         var tx = new PlayerTransaction(Guid.NewGuid(), "crypto-withdraw-request", receipt: req.ToWalletAddress.Trim());
