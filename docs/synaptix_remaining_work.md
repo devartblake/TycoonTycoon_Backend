@@ -69,9 +69,9 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 | **Votes/Powerups/Referrals/QR** | ✅ Production | 10 | All functional |
 | **Real-time (SignalR)** | ✅ Production | 3 hubs | Match, notifications, presence |
 | **Sidecar (ML/Utils)** | ✅ Utils | 20+ | Analytics, rebalance, placeholder ML models |
-| **Questions** | ❌ Stub | 1 | Upload only — no serving or grading |
-| **Store/IAP** | ❌ Missing | 0 | No shop, purchases, or receipt validation |
-| **Crypto Economy** | ❌ Missing | 0 | Ledger, wallet linking, withdrawal |
+| **Questions** | ✅ Production | 3 | `/questions/set`, `/questions/check`, `/questions/check-batch` serve + grade questions |
+| **Store/IAP** | ⚠️ Partial | 4 | Catalog + purchase + `/store/iap/validate`; strict provider validation still optional via config |
+| **Crypto Economy** | ⚠️ Partial | 4 | `/crypto/link-wallet`, `/crypto/balance/{playerId}`, `/crypto/history/{playerId}`, `/crypto/withdraw` |
 
 ---
 
@@ -83,16 +83,18 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [ ] Run migration against dev database
 - [ ] Confirm CI passes with no namespace/build regressions
 
-### Priority 2: Question Serving Pipeline
-- [ ] `GET /questions?category=&difficulty=&count=` — Serve questions for match play
-- [ ] `POST /questions/answer` or integrate into match submit — Per-question answer grading
+### Priority 2: Questions Gameplay Hardening
+- [x] `GET /questions/set?category=&difficulty=&count=` — Serve questions for match play
+- [x] `POST /questions/check` and `POST /questions/check-batch` — Server-side grading
+- [ ] Integrate questions flow into authoritative match/session pipeline end-to-end
 - [ ] Question bank management (categories, difficulty tagging, approval workflow)
 - [ ] Wire Python sidecar `/ml/question-difficulty` for NLP-based difficulty estimation
 
 ### Priority 3: Store/Shop/IAP
-- [ ] `GET /store/catalog` — Fetch available items/bundles
-- [ ] `POST /store/purchase` — Purchase with in-game currency (Credits/Synapse Shards)
-- [ ] IAP receipt validation (Apple App Store / Google Play)
+- [x] `GET /store/catalog` — Fetch available items/bundles
+- [x] `POST /store/purchase` — Purchase with in-game currency (Credits/Synapse Shards)
+- [x] `POST /store/iap/validate` — Receipt validation endpoint + transaction tracking
+- [ ] Strict Apple/Google provider-side verification (enable with `Iap:EnableStrictValidation`)
 - [ ] Player inventory/cosmetics endpoint
 - [ ] Battle pass / premium subscription support (if planned)
 
@@ -102,10 +104,10 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [ ] Frontend purchase flow wired to store API (once built)
 
 ### Priority 5: Crypto Economy Layer
-- [ ] Crypto ledger entity and persistence
-- [ ] Wallet linking API (external wallet address)
-- [ ] Crypto balance/history endpoints
-- [ ] Withdrawal flow with approval/audit
+- [x] Crypto ledger entries via `PlayerTransaction` (`crypto-*` kinds)
+- [x] Wallet linking API (external wallet address)
+- [x] Crypto balance/history endpoints
+- [x] Withdrawal request flow (pending, approval/audit ready)
 - [ ] Prize pool system
 - [ ] Optional staking (later phase)
 
@@ -136,8 +138,21 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 | Milestone | Status | Blockers |
 |---|---|---|
 | **Closed Beta / Soft Launch** | ✅ Ready | Core gameplay loop functional (auth → match → rewards → leaderboard) |
-| **Public Production** | ⚠️ Blocked | Missing: Store/IAP + Question serving pipeline |
-| **Monetization** | ❌ Not ready | No shop, no IAP receipt validation, no crypto layer |
+| **Public Production** | ⚠️ Blocked | Strict external IAP verification + withdrawal settlement pipeline still need hardening |
+| **Monetization** | ⚠️ Partial | Store + IAP endpoint + crypto request flow exist; settlement/prize pool still open |
+
+---
+
+## 6.1 Immediate next steps (owner runlist)
+
+1. [ ] Run local build + migration gate (`dotnet build`, `dotnet ef database update`).
+2. [ ] Perform request-level smoke checks for Auth, Questions, Store, and Crypto routes.
+   - Helper (bash): `./scripts/alpha-p0-smoke.sh`
+   - Helper (PowerShell): `pwsh ./scripts/alpha-p0-smoke.ps1`
+   - CI helper: `.github/workflows/alpha-p0-smoke.yml` (route-check mode)
+3. [ ] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
+4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
+5. [ ] Record go/no-go with explicit defer list (prize pool, staking, strict provider hardening follow-ups if needed).
 
 ---
 

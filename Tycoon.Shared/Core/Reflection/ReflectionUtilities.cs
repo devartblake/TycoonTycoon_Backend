@@ -123,6 +123,8 @@ namespace Tycoon.Shared.Core.Reflection
             var lambdaArgument = new List<ParameterExpression> { instanceArgument };
 
             var type = methodInfo.DeclaringType;
+            if (type is null)
+                throw new InvalidOperationException("Method declaring type cannot be null.");
             var instanceVariable = Expression.Variable(type);
             var blockVariables = new List<ParameterExpression> { instanceVariable };
             var blockExpressions = new List<Expression>
@@ -199,4 +201,3 @@ namespace Tycoon.Shared.Core.Reflection
         }
     }
 }
-
