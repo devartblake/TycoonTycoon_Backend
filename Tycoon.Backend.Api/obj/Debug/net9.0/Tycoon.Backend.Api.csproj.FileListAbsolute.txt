@@ -851,6 +851,7 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\ref\Tycoon.Backend.Api.dll
+<<<<<<< Updated upstream
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\bin\Debug\net9.0\Tycoon.Backend.Api.exe
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\bin\Debug\net9.0\Tycoon.Backend.Api.deps.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\bin\Debug\net9.0\Tycoon.Backend.Api.runtimeconfig.json
@@ -1228,12 +1229,19 @@ C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\bin\Debug\ne
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\bin\Debug\net9.0\Tycoon.Shared.Observability.pdb
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\bin\Debug\net9.0\Tycoon.Shared.pdb
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\bin\Debug\net9.0\Tycoon.Backend.Domain.pdb
+=======
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.dll
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\refint\Tycoon.Backend.Api.dll
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.xml
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.pdb
+>>>>>>> Stashed changes
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.csproj.AssemblyReference.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.AssemblyInfoInputs.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.AssemblyInfo.cs
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.csproj.CoreCompileInputs.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.sourcelink.json
+<<<<<<< Updated upstream
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.B.227A31D9.Up2Date
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\refint\Tycoon.Backend.Api.dll
@@ -1241,3 +1249,5 @@ C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\ne
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.pdb
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\Tycoon.Backend.Api.genruntimeconfig.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Api\obj\Debug\net9.0\ref\Tycoon.Backend.Api.dll
+=======
+>>>>>>> Stashed changes

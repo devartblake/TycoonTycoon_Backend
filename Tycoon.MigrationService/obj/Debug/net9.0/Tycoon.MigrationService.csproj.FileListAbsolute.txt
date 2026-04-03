@@ -1167,6 +1167,12 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\ref\Tycoon.MigrationService.dll
+<<<<<<< Updated upstream
+=======
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.dll
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\refint\Tycoon.MigrationService.dll
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.pdb
+>>>>>>> Stashed changes
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\appsettings.Development.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\appsettings.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\bin\Debug\net9.0\appsettings.Local.json
@@ -1548,8 +1554,11 @@ C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Deb
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.csproj.CoreCompileInputs.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.sourcelink.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.M.9B19F373.Up2Date
+<<<<<<< Updated upstream
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\refint\Tycoon.MigrationService.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.pdb
+=======
+>>>>>>> Stashed changes
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\Tycoon.MigrationService.genruntimeconfig.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.MigrationService\obj\Debug\net9.0\ref\Tycoon.MigrationService.dll

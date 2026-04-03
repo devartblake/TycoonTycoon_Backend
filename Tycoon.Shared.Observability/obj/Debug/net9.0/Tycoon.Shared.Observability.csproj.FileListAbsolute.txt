@@ -37,6 +37,12 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\De
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\refint\Tycoon.Shared.Observability.dll
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\ref\Tycoon.Shared.Observability.dll
+<<<<<<< Updated upstream
+=======
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.dll
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\refint\Tycoon.Shared.Observability.dll
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.pdb
+>>>>>>> Stashed changes
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\bin\Debug\net9.0\Tycoon.Shared.Observability.deps.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\bin\Debug\net9.0\Tycoon.Shared.Observability.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\bin\Debug\net9.0\Tycoon.Shared.Observability.pdb
@@ -46,7 +52,10 @@ C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.AssemblyInfo.cs
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.csproj.CoreCompileInputs.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.sourcelink.json
+<<<<<<< Updated upstream
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\refint\Tycoon.Shared.Observability.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\Tycoon.Shared.Observability.pdb
+=======
+>>>>>>> Stashed changes
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Shared.Observability\obj\Debug\net9.0\ref\Tycoon.Shared.Observability.dll

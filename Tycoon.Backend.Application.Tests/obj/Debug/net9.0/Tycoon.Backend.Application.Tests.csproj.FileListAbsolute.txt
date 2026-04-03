@@ -459,10 +459,20 @@ C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\o
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.pdb
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.genruntimeconfig.cache
 C:\Users\lmxbl\Documents\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\ref\Tycoon.Backend.Application.Tests.dll
+<<<<<<< Updated upstream
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\.msCoverageSourceRootsMapping_Tycoon.Backend.Application.Tests
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\CoverletSourceRootsMapping_Tycoon.Backend.Application.Tests
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\testhost.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\testhost.exe
+=======
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.dll
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\refint\Tycoon.Backend.Application.Tests.dll
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.pdb
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\.msCoverageSourceRootsMapping_Tycoon.Backend.Application.Tests
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\CoverletSourceRootsMapping_Tycoon.Backend.Application.Tests
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\testhost.exe
+C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\testhost.dll
+>>>>>>> Stashed changes
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\xunit.runner.visualstudio.testadapter.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\xunit.runner.reporters.netcoreapp10.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\bin\Debug\net9.0\xunit.runner.utility.netcoreapp10.dll
@@ -687,8 +697,11 @@ C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Test
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.csproj.CoreCompileInputs.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.sourcelink.json
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.B.DD8855B8.Up2Date
+<<<<<<< Updated upstream
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\refint\Tycoon.Backend.Application.Tests.dll
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.pdb
+=======
+>>>>>>> Stashed changes
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\Tycoon.Backend.Application.Tests.genruntimeconfig.cache
 C:\Users\scorp\source\repos\TycoonTycoon_Backend\Tycoon.Backend.Application.Tests\obj\Debug\net9.0\ref\Tycoon.Backend.Application.Tests.dll
