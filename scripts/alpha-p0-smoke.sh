@@ -119,7 +119,7 @@ login_payload=$(cat <<JSON
 JSON
 )
 
-login_response=$(curl_json "POST" "$BASE_URL/auth/login" "Content-Type: application/json" "$login_payload")
+login_response=$(curl_json "POST" "$BASE_URL/auth/login" "$login_payload")
 
 token=$(extract_token "$login_response")
 if [[ -z "$token" || "$token" == "null" ]]; then

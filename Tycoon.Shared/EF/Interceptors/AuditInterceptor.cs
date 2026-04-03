@@ -50,9 +50,9 @@ public class AuditInterceptor(IHttpContextAccessor httpContextAccessor) : SaveCh
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private int? ResolveCurrentUserId()
+    private int ResolveCurrentUserId()
     {
         var userIdClaim = httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.TryParse(userIdClaim, out var parsedUserId) ? parsedUserId : null;
+        return int.TryParse(userIdClaim, out var parsedUserId) ? parsedUserId : 1;
     }
 }
