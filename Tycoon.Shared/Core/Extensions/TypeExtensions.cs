@@ -159,7 +159,7 @@ namespace Tycoon.Shared.Core.Extensions
             return query.ToArray<MethodInfo>();
         }
 
-        public static MethodInfo GetExtensionMethod(this Type t, string methodeName)
+        public static MethodInfo? GetExtensionMethod(this Type t, string methodeName)
         {
             var mi = from methode in t.GetExtensionMethods() where methode.Name == methodeName select methode;
             if (!mi.Any())
@@ -272,6 +272,9 @@ namespace Tycoon.Shared.Core.Extensions
             var baseType = type.BaseType;
             while (baseType != toBaseType && baseType != typeof(object))
             {
+                if (baseType is null)
+                    break;
+
                 retVal.Add(baseType);
                 baseType = baseType?.BaseType;
             }
@@ -679,7 +682,7 @@ namespace Tycoon.Shared.Core.Extensions
             return givenType == genericType
                 || givenType.MapsToGenericTypeDefinition(genericType)
                 || givenType.HasInterfaceThatMapsToGenericTypeDefinition(genericType)
-                || givenType.BaseType.IsAssignableToGenericType(genericType);
+                || (givenType.BaseType?.IsAssignableToGenericType(genericType) ?? false);
         }
 
         private static bool HasInterfaceThatMapsToGenericTypeDefinition(this Type givenType, Type genericType)
@@ -721,7 +724,8 @@ namespace Tycoon.Shared.Core.Extensions
             }
             else
             {
-                return IsMatchingWithInterface(handlerType.GetInterface(handlerInterface.Name), handlerInterface);
+                var resolved = handlerType.GetInterface(handlerInterface.Name);
+                return resolved is not null && IsMatchingWithInterface(resolved, handlerInterface);
             }
 
             return false;
@@ -778,7 +782,8 @@ namespace Tycoon.Shared.Core.Extensions
                 }
             }
             else if (
-                pluggedType.GetTypeInfo().BaseType.GetTypeInfo().IsGenericType
+                pluggedType.GetTypeInfo().BaseType is not null
+                && pluggedType.GetTypeInfo().BaseType.GetTypeInfo().IsGenericType
                 && (pluggedType.GetTypeInfo().BaseType.GetGenericTypeDefinition() == templateType)
             )
             {
@@ -788,6 +793,9 @@ namespace Tycoon.Shared.Core.Extensions
             if (pluggedType == typeof(object))
                 yield break;
             if (pluggedType.GetTypeInfo().BaseType == typeof(object))
+                yield break;
+
+            if (pluggedType.GetTypeInfo().BaseType is null)
                 yield break;
 
             foreach (var interfaceType in FindInterfacesThatClose(pluggedType.GetTypeInfo().BaseType, templateType))
@@ -933,4 +941,3 @@ namespace Tycoon.Shared.Core.Extensions
         }
     }
 }
-

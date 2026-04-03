@@ -38,7 +38,7 @@ public static class HeaderDictionaryExtensions
     )
     {
         var values = All<T>(collection, key).ToList();
-        var value = @default;
+        T? value = @default;
 
         if (values.Any())
         {
@@ -50,7 +50,7 @@ public static class HeaderDictionaryExtensions
             };
         }
 
-        return value ?? @default;
+        return value ?? @default!;
     }
 }
 
