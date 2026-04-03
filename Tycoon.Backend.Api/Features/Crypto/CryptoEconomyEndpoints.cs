@@ -42,7 +42,7 @@ public static class CryptoEconomyEndpoints
         // Validate the requested network against the configured allowed list.
         var allowedNetworks = cfg.GetSection("Crypto:AllowedNetworks").Get<string[]>() ?? Array.Empty<string>();
         var requestedNetwork = req.Network.Trim().ToLowerInvariant();
-        if (allowedNetworks.Length > 0 && !allowedNetworks.Contains(requestedNetwork, StringComparer.OrdinalIgnoreCase))
+        if (allowedNetworks.Length > 0 && !allowedNetworks.Contains(requestedNetwork, StringComparer.Ordinal))
             return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_NETWORK", $"Network '{req.Network}' is not supported.");
 
         var normalized = req.WalletAddress.Trim();
