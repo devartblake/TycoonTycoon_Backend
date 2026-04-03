@@ -5,6 +5,7 @@ BASE_URL="${BASE_URL:-http://localhost:5000}"
 EMAIL="${EMAIL:-demo@example.com}"
 PASSWORD="${PASSWORD:-demo}"
 SMOKE_MODE="${SMOKE_MODE:-live}"
+EXPECT_IAP_STRICT_READY="${EXPECT_IAP_STRICT_READY:-false}"
 
 jq_bin="${JQ_BIN:-jq}"
 has_jq=false
@@ -68,15 +69,57 @@ validate_json() {
   fi
 }
 
+curl_json() {
+  local method="$1"
+  local url="$2"
+  local body="${3:-}"
+  local auth="${4:-}"
+
+  local tmp
+  tmp=$(mktemp)
+
+  local status
+  if [[ -n "$body" ]]; then
+    if [[ -n "$auth" ]]; then
+      status=$(curl -sS -o "$tmp" -w '%{http_code}' -X "$method" "$url" \
+        -H 'Content-Type: application/json' \
+        -H "$auth" \
+        -d "$body")
+    else
+      status=$(curl -sS -o "$tmp" -w '%{http_code}' -X "$method" "$url" \
+        -H 'Content-Type: application/json' \
+        -d "$body")
+    fi
+  else
+    if [[ -n "$auth" ]]; then
+      status=$(curl -sS -o "$tmp" -w '%{http_code}' -X "$method" "$url" \
+        -H "$auth")
+    else
+      status=$(curl -sS -o "$tmp" -w '%{http_code}' -X "$method" "$url")
+    fi
+  fi
+
+  local payload
+  payload=$(cat "$tmp")
+  rm -f "$tmp"
+
+  if [[ ! "$status" =~ ^2 ]]; then
+    echo "ERROR: $method $url returned HTTP $status" >&2
+    echo "$payload" >&2
+    exit 1
+  fi
+
+  validate_json "$payload"
+  echo "$payload"
+}
+
 echo "[1/6] Login"
 login_payload=$(cat <<JSON
 {"email":"$EMAIL","password":"$PASSWORD"}
 JSON
 )
 
-login_response=$(curl -sS -X POST "$BASE_URL/auth/login" \
-  -H 'Content-Type: application/json' \
-  -d "$login_payload")
+login_response=$(curl_json "POST" "$BASE_URL/auth/login" "Content-Type: application/json" "$login_payload")
 
 token=$(extract_token "$login_response")
 if [[ -z "$token" || "$token" == "null" ]]; then
@@ -88,25 +131,26 @@ fi
 auth_header="Authorization: Bearer $token"
 
 echo "[2/6] Questions set"
-validate_json "$(curl -sS "$BASE_URL/questions/set?count=5")"
+curl_json "GET" "$BASE_URL/questions/set?count=5" >/dev/null
 
 echo "[3/6] Store catalog"
-validate_json "$(curl -sS "$BASE_URL/store/catalog")"
+curl_json "GET" "$BASE_URL/store/catalog" >/dev/null
 
 echo "[4/6] IAP validate (strict mode behavior check)"
 iap_payload='{"playerId":"00000000-0000-0000-0000-000000000001","platform":"apple","receipt":"test-receipt"}'
-iap_response=$(curl -sS -X POST "$BASE_URL/store/iap/validate" \
-  -H 'Content-Type: application/json' \
-  -H "$auth_header" \
-  -d "$iap_payload")
-validate_json "$iap_response"
+iap_response=$(curl_json "POST" "$BASE_URL/store/iap/validate" "$iap_payload" "$auth_header")
+
+if [[ "$EXPECT_IAP_STRICT_READY" == "true" ]]; then
+  if [[ "$iap_response" == *"IAP_STRICT_CONFIG_MISSING"* ]]; then
+    echo "ERROR: strict IAP mode is not fully configured (IAP_STRICT_CONFIG_MISSING)." >&2
+    exit 1
+  fi
+fi
 
 echo "[5/6] Crypto history route health check"
-crypto_history_response=$(curl -sS "$BASE_URL/crypto/history/00000000-0000-0000-0000-000000000001?page=1&pageSize=1" \
-  -H "$auth_header")
-validate_json "$crypto_history_response"
+curl_json "GET" "$BASE_URL/crypto/history/00000000-0000-0000-0000-000000000001?page=1&pageSize=1" "" "$auth_header" >/dev/null
 
 echo "[6/6] Leaderboards route health check"
-validate_json "$(curl -sS "$BASE_URL/leaderboards/tiers/1?page=1&pageSize=10")"
+curl_json "GET" "$BASE_URL/leaderboards/tiers/1?page=1&pageSize=10" >/dev/null
 
 echo "P0 smoke script completed."

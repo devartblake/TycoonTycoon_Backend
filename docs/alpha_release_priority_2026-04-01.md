@@ -128,3 +128,79 @@ If P0 passes, explicitly defer to next window:
 - sound cues
 - additional polish items
 - optional Packet E renames
+
+---
+
+## Strict execution checklist (ordered by blocker impact)
+
+### NOW (release blockers — do before any ship decision)
+1. [ ] Build gate passes in real environment (`dotnet build` on solution).
+2. [ ] Database migration gate passes (`dotnet ef database update` in target dev env).
+3. [ ] API P0 smoke checks pass (Auth, Questions, Store, Economy, Leaderboards, Crypto routes).
+4. [ ] Strict IAP precheck complete in Development:
+   - real (non-placeholder) provider config values present
+   - `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING` for valid test requests
+5. [ ] One end-to-end player path validated:
+   - login -> questions set/check -> purchase path -> leaderboard read
+6. [ ] Go/No-Go decision recorded with explicit defer list.
+
+### NEXT (high priority immediately after blockers clear)
+1. [ ] Questions pipeline hardening:
+   - authoritative match/session integration
+   - question bank workflow (category/difficulty/approval)
+2. [ ] Store hardening:
+   - strict provider-side Apple/Google verification behavior validated
+   - inventory/cosmetics endpoint design finalized
+3. [ ] Crypto hardening:
+   - withdrawal settlement worker/approval flow
+   - prize-pool design and audit trail
+4. [ ] Cross-stack validation:
+   - terminology consistency across app + operator dashboards
+   - telemetry continuity verification
+
+### LATER (non-blocking for current alpha cut)
+1. [ ] Frontend polish:
+   - retention hooks
+   - sound cues
+   - accessibility/copy sweep
+2. [ ] Optional crypto expansion:
+   - staking
+   - richer wallet history UX
+3. [ ] Packet E technical cleanup:
+   - namespace/package renames
+   - key/cookie/identifier cleanup across CI/runtime surfaces
+
+---
+
+## Execution update — 2026-04-03 (UTC)
+
+What was executed now:
+- [x] Route-surface P0 smoke in `routes` mode:
+  - command: `SMOKE_MODE=routes bash ./scripts/alpha-p0-smoke.sh`
+  - result: pass (`P0 smoke route-check completed.`)
+- [ ] Full .NET build gate:
+  - attempted: `dotnet build Tycoon.sln`
+  - blocker: `dotnet` SDK unavailable in this environment (`dotnet: command not found`)
+- [ ] Migration gate:
+  - blocked pending .NET SDK/runtime-capable environment
+
+## Backend-only remaining work (no frontend input required)
+
+### NOW (complete in backend environment first)
+1. [ ] Install/attach .NET SDK environment and run `dotnet build Tycoon.sln`.
+2. [ ] Run DB migration apply in target dev/staging environment (`dotnet ef database update`).
+3. [ ] Execute live-mode P0 smoke against a running backend (`BASE_URL=... ./scripts/alpha-p0-smoke.sh`).
+4. [ ] Validate strict IAP config with non-placeholder Apple/Google values and successful `/store/iap/validate` path.
+5. [ ] Record Go/No-Go with explicit backend defer list.
+
+### NEXT (backend hardening immediately after NOW)
+1. [ ] Questions service hardening (authoritative session/match scoring flow).
+2. [ ] Store hardening (provider-side verification + inventory/cosmetics contract finalization).
+3. [ ] Crypto hardening (withdrawal settlement worker + approval/audit flow).
+4. [ ] Add backend integration tests for Auth/Questions/Store/Economy/Leaderboard/Crypto critical flows.
+5. [ ] Add CI path for live smoke mode once a runtime test environment is available.
+
+### LATER (backend-only, non-blocking for current alpha)
+1. [ ] Packet E backend technical cleanup (`Tycoon.*` -> `Synaptix.*` namespace/project identifiers).
+2. [ ] Extended platform APIs (seasons, social, multiplayer) after alpha stability window.
+3. [ ] Optional crypto expansion (staking + richer ledger/history capabilities).

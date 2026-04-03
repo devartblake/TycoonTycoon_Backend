@@ -94,3 +94,33 @@ Before calling `/store/iap/validate` in Development, replace placeholders in `Ty
 
 Without real values, strict mode intentionally returns:
 - `503` + `IAP_STRICT_CONFIG_MISSING`
+
+---
+
+## Status update — 2026-04-03 (UTC)
+
+Continued NOW-step execution with backend-only automation.
+
+### Added helper
+- `scripts/alpha-now-status.sh`
+  - Purpose: quick backend-only status gate for NOW items.
+  - Checks:
+    1. whether `.NET` SDK is available (and optionally runs `dotnet build` when `RUN_BUILD=true`)
+    2. route-mode P0 smoke gate
+    3. optional PowerShell route-mode smoke gate
+
+### Command run
+```bash
+./scripts/alpha-now-status.sh
+```
+
+### Current status in this environment
+- `dotnet` SDK: unavailable (build/migration still blocked here)
+- Bash route smoke: pass
+- PowerShell route smoke: skipped by default (can enable with `RUN_PWSH_ROUTE_SMOKE=true`)
+
+### Remaining work (backend, non-frontend)
+1. Execute build + migration gates in .NET-capable runner/workstation.
+2. Run live-mode smoke (`SMOKE_MODE=live`) against a running API instance.
+3. Validate strict IAP with real provider config (`EXPECT_IAP_STRICT_READY=true`).
+4. Record Go/No-Go and deferred backend items after live gates pass.

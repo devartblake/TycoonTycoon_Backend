@@ -159,9 +159,9 @@ namespace Tycoon.Shared.Core.Extensions
             return query.ToArray<MethodInfo>();
         }
 
-        public static MethodInfo? GetExtensionMethod(this Type t, string methodeName)
+        public static MethodInfo? GetExtensionMethod(this Type t, string methodName)
         {
-            var mi = from methode in t.GetExtensionMethods() where methode.Name == methodeName select methode;
+            var mi = from method in t.GetExtensionMethods() where method.Name == methodName select method;
             if (!mi.Any())
                 return null;
             else

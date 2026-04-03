@@ -1,10 +1,24 @@
 param(
   [string]$BaseUrl = "http://localhost:5000",
   [string]$Email = "demo@example.com",
-  [SecureString]$Password = "demo"
+  [SecureString]$Password = "demo",
+  [ValidateSet("live", "routes")]
+  [string]$SmokeMode = "live",
+  [switch]$ExpectIapStrictReady
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($SmokeMode -eq "routes") {
+  Write-Host "[route-check] verifying required endpoint maps exist"
+  Select-String -Path "Tycoon.Backend.Api/Features/Auth/AuthEndpoints.cs" -Pattern 'MapPost\("/login"' | Out-Null
+  Select-String -Path "Tycoon.Backend.Api/Features/Questions/QuestionsEndpoints.cs" -Pattern 'MapGet\("/set"|MapPost\("/check"|MapPost\("/check-batch"' | Out-Null
+  Select-String -Path "Tycoon.Backend.Api/Features/Store/StoreEndpoints.cs" -Pattern 'MapGet\("/catalog"|MapPost\("/purchase"|MapPost\("/iap/validate"' | Out-Null
+  Select-String -Path "Tycoon.Backend.Api/Features/Crypto/CryptoEconomyEndpoints.cs" -Pattern 'MapPost\("/link-wallet"|MapGet\("/balance|MapGet\("/history|MapPost\("/withdraw"' | Out-Null
+  Select-String -Path "Tycoon.Backend.Api/Features/Leaderboards/LeaderboardsEndpoints.cs" -Pattern 'MapGet\("/tiers/\{tierId:int\}"' | Out-Null
+  Write-Host "P0 smoke route-check completed."
+  exit 0
+}
 
 Write-Host "[1/6] Login"
 $loginBody = @{
@@ -38,7 +52,10 @@ $iapBody = @{
   platform = "apple"
   receipt = "test-receipt"
 } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri "$BaseUrl/store/iap/validate" -Headers $headers -ContentType "application/json" -Body $iapBody | Out-Null
+$iapResponse = Invoke-RestMethod -Method Post -Uri "$BaseUrl/store/iap/validate" -Headers $headers -ContentType "application/json" -Body $iapBody
+if ($ExpectIapStrictReady -and ($iapResponse | ConvertTo-Json -Depth 10) -match "IAP_STRICT_CONFIG_MISSING") {
+  throw "Strict IAP config is not fully configured (IAP_STRICT_CONFIG_MISSING)."
+}
 
 Write-Host "[5/6] Crypto history route health check"
 Invoke-RestMethod -Method Get -Uri "$BaseUrl/crypto/history/00000000-0000-0000-0000-000000000001?page=1&pageSize=1" -Headers $headers | Out-Null
