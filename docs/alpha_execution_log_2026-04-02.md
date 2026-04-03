@@ -124,3 +124,23 @@ Continued NOW-step execution with backend-only automation.
 2. Run live-mode smoke (`SMOKE_MODE=live`) against a running API instance.
 3. Validate strict IAP with real provider config (`EXPECT_IAP_STRICT_READY=true`).
 4. Record Go/No-Go and deferred backend items after live gates pass.
+
+### Getting .NET tooling in this environment (no sudo)
+Use the local bootstrap script:
+
+```bash
+chmod +x ./scripts/bootstrap-dotnet.sh
+./scripts/bootstrap-dotnet.sh
+
+# then in your shell:
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$HOME/.dotnet:$PATH"
+dotnet --info
+dotnet build Tycoon.sln
+```
+
+If outbound download is blocked, use an internal mirror/local installer file:
+
+```bash
+DOTNET_INSTALL_SCRIPT_PATH=/path/to/dotnet-install.sh ./scripts/bootstrap-dotnet.sh
+```
