@@ -1,7 +1,7 @@
 param(
   [string]$BaseUrl = "http://localhost:5000",
   [string]$Email = "demo@example.com",
-  [string]$Password = "demo",
+  [SecureString]$Password = "demo",
   [ValidateSet("live", "routes")]
   [string]$SmokeMode = "live",
   [switch]$ExpectIapStrictReady

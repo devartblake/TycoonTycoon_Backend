@@ -161,7 +161,7 @@ namespace Tycoon.Shared.Core.Extensions
 
         public static MethodInfo? GetExtensionMethod(this Type t, string methodeName)
         {
-            var mi = from methode in t.GetExtensionMethods() where methode.Name == methodeName select methode;
+            var mi = from method in t.GetExtensionMethods() where method.Name == methodName select method;
             if (!mi.Any())
                 return null;
             else
