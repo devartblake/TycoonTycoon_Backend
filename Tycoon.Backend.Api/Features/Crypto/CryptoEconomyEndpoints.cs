@@ -137,18 +137,17 @@ public static class CryptoEconomyEndpoints
         if (!linked)
             return ApiResponses.Error(StatusCodes.Status409Conflict, "WALLET_NOT_LINKED", "Link wallet before requesting withdrawal.");
 
-        var applied = await db.PlayerTransactions.AsNoTracking()
-            .Include(x => x.Actors)
-            .Include(x => x.ItemChanges)
-            .Where(x =>
-                x.Status == PlayerTransactionStatus.Applied &&
-                x.Actors.Any(a => a.PlayerId == req.PlayerId) &&
-                x.ItemChanges.Any(i => i.ItemType == "crypto:units"))
-            .ToListAsync(ct);
+        static Task<int> GetAppliedCryptoUnitsBalanceAsync(AppDbContext db, Guid playerId, CancellationToken ct) =>
+            db.PlayerTransactions.AsNoTracking()
+                .Where(x =>
+                    x.Status == PlayerTransactionStatus.Applied &&
+                    x.Actors.Any(a => a.PlayerId == playerId))
+                .SelectMany(x => x.ItemChanges.Where(i => i.ItemType == "crypto:units"))
+                .SumAsync(
+                    i => i.Operation == ItemOperation.Grant ? i.Quantity : -i.Quantity,
+                    ct);
 
-        var balance = applied.SelectMany(x => x.ItemChanges)
-            .Where(i => i.ItemType == "crypto:units")
-            .Sum(i => i.Operation == ItemOperation.Grant ? i.Quantity : -i.Quantity);
+        var balance = await GetAppliedCryptoUnitsBalanceAsync(db, req.PlayerId, ct);
 
         if (balance < req.Units)
             return ApiResponses.Error(StatusCodes.Status409Conflict, "INSUFFICIENT_CRYPTO_BALANCE", "Insufficient crypto balance.");
