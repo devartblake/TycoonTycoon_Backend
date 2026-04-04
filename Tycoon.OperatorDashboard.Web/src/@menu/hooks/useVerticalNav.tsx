@@ -9,8 +9,7 @@ const useVerticalNav = () => {
   const context = useContext(VerticalNavContext)
 
   if (context === undefined) {
-    //TODO: set better error message
-    throw new Error('VerticalNav Component is required!')
+    throw new Error('useVerticalNav must be used within a VerticalNavProvider.')
   }
 
   return context
