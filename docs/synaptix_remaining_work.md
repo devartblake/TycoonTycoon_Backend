@@ -115,7 +115,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [x] Player search/discovery endpoint (`GET /users/search?handle=`)
 - [x] Profile enrichment (career stats summary, W-L, winrate)
 - [x] Unfriend endpoint
-- [ ] Cosmetics/avatar loadout system
+- [x] Cosmetics/avatar loadout system
 - [ ] ML model deployment (replace placeholder churn/difficulty/quality scorers)
 - [x] Added backend smoke route contract integration tests (`Tycoon.Backend.Api.Tests/Smoke/AlphaP0RouteContractsTests.cs`)
   - validates core P0 route mapping (non-404 contract checks)
@@ -155,7 +155,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
    - Helper (bash): `./scripts/alpha-p0-smoke.sh`
    - Helper (PowerShell): `pwsh ./scripts/alpha-p0-smoke.ps1`
    - CI helper: `.github/workflows/alpha-p0-smoke.yml` (NOW build + route checks)
-3. [ ] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
+3. [x] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
 4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
 5. [ ] Record go/no-go with explicit defer list (prize pool, staking, strict provider hardening follow-ups if needed).
 
