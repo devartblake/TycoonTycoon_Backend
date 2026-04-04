@@ -244,6 +244,22 @@ var redis = builder.Configuration.GetConnectionString("redis")
 
 // gRPC — sidecar service (port 5001, HTTP/2)
 builder.Services.AddGrpc(o => o.EnableDetailedErrors = builder.Environment.IsDevelopment());
+builder.Services.AddSingleton<ISidecarInferenceStore>(_ =>
+{
+    var path = builder.Configuration["SidecarInference:StorePath"]
+        ?? Environment.GetEnvironmentVariable("SIDECAR_INFERENCE_STORE_PATH")
+        ?? "/tmp/tycoon-sidecar/inference-store.jsonl";
+
+    try
+    {
+        return new FileSidecarInferenceStore(path);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ Falling back to InMemorySidecarInferenceStore because file-backed store init failed for '{path}': {ex.Message}");
+        return new InMemorySidecarInferenceStore();
+    }
+});
 
 var signalr = builder.Services.AddSignalR();
 if (!string.IsNullOrWhiteSpace(redis))
@@ -447,6 +463,10 @@ builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
 builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
 
 builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
+
+// Ensure IHttpClientFactory is always available for minimal-API endpoints that
+// take it as a service dependency (avoids startup parameter-inference failures).
+builder.Services.AddHttpClient();
 
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 
