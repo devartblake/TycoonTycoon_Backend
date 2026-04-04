@@ -114,6 +114,8 @@ while preserving feature parity, role-based access control, and operational reli
 - ✅ Initial `Tycoon.OperatorDashboard.Web` ASP.NET Core baseline added:
   - `Program.cs` with `/health/live`, `/health/ready`
   - `/api/admin/{**path}` proxy skeleton with auth-header forwarding
+  - Domain-specific proxy groups for Wave A: `/api/dashboard`, `/api/audit-log`, `/api/users`
+  - Session bootstrap endpoint: `/api/me`
   - `appsettings.json` with `Backend:BaseUrl`
 - ✅ Initial `Tycoon.OperatorDashboard.Vue` app shell added:
   - Vite + Vue + Vue Router bootstrap

@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,33 +18,72 @@ var app = builder.Build();
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/health/ready", () => Results.Ok(new { status = "ready", backend = backendBaseUrl }));
 
-app.MapMethods("/api/admin/{**path}", ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    async Task<IResult> (HttpContext context, IHttpClientFactory httpClientFactory, string? path) =>
+var proxyMethods = new[] { "GET", "POST", "PUT", "PATCH", "DELETE" };
+
+app.MapMethods("/api/admin/{**path}", proxyMethods,
+    (HttpContext context, IHttpClientFactory httpClientFactory, string? path) =>
+        ProxyToBackend(context, httpClientFactory, $"/admin/{path}{context.Request.QueryString}"));
+
+// Initial domain-specific BFF groups for Wave A migration.
+app.MapMethods("/api/dashboard/{**path}", proxyMethods,
+    (HttpContext context, IHttpClientFactory httpClientFactory, string? path) =>
+        ProxyToBackend(context, httpClientFactory, $"/admin/dashboard/{path}{context.Request.QueryString}"));
+
+app.MapMethods("/api/audit-log/{**path}", proxyMethods,
+    (HttpContext context, IHttpClientFactory httpClientFactory, string? path) =>
+        ProxyToBackend(context, httpClientFactory, $"/admin/audit-log/{path}{context.Request.QueryString}"));
+
+app.MapMethods("/api/users/{**path}", proxyMethods,
+    (HttpContext context, IHttpClientFactory httpClientFactory, string? path) =>
+        ProxyToBackend(context, httpClientFactory, $"/admin/users/{path}{context.Request.QueryString}"));
+
+app.MapGet("/api/me", (HttpContext context) =>
+{
+    if (context.User?.Identity?.IsAuthenticated is true)
     {
-        var client = httpClientFactory.CreateClient("tycoon-api");
-        var request = new HttpRequestMessage(new HttpMethod(context.Request.Method),
-            $"/admin/{path}{context.Request.QueryString}");
-
-        if (context.Request.ContentLength is > 0)
+        return Results.Ok(new
         {
-            request.Content = new StreamContent(context.Request.Body);
+            authenticated = true,
+            name = context.User.Identity.Name ?? "unknown"
+        });
+    }
 
-            if (!string.IsNullOrWhiteSpace(context.Request.ContentType))
-            {
-                request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(context.Request.ContentType);
-            }
-        }
-
-        if (context.Request.Headers.TryGetValue("Authorization", out var auth) && !string.IsNullOrWhiteSpace(auth))
-        {
-            request.Headers.TryAddWithoutValidation("Authorization", auth.ToString());
-        }
-
-        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
-        var responseBytes = await response.Content.ReadAsByteArrayAsync(context.RequestAborted);
-
-        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
-        return Results.Content(System.Text.Encoding.UTF8.GetString(responseBytes), contentType, statusCode: (int)response.StatusCode);
-    });
+    return Results.Ok(new { authenticated = false, name = "anonymous" });
+});
 
 app.Run();
+
+static async Task<ContentHttpResult> ProxyToBackend(
+    HttpContext context,
+    IHttpClientFactory httpClientFactory,
+    string backendPathAndQuery)
+{
+    var client = httpClientFactory.CreateClient("tycoon-api");
+    var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), backendPathAndQuery);
+
+    if (context.Request.ContentLength is > 0)
+    {
+        request.Content = new StreamContent(context.Request.Body);
+
+        if (!string.IsNullOrWhiteSpace(context.Request.ContentType))
+        {
+            request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(context.Request.ContentType);
+        }
+    }
+
+    if (context.Request.Headers.TryGetValue("Authorization", out var auth) && !string.IsNullOrWhiteSpace(auth))
+    {
+        request.Headers.TryAddWithoutValidation("Authorization", auth.ToString());
+    }
+
+    if (context.User?.Identity?.IsAuthenticated is true)
+    {
+        request.Headers.TryAddWithoutValidation("X-Operator-User", context.User.Identity?.Name ?? "unknown");
+    }
+
+    using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
+    var responseBytes = await response.Content.ReadAsByteArrayAsync(context.RequestAborted);
+
+    var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
+    return TypedResults.Content(System.Text.Encoding.UTF8.GetString(responseBytes), contentType, statusCode: (int)response.StatusCode);
+}

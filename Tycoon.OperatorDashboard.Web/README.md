@@ -6,9 +6,10 @@ Web/BFF target for Operator Dashboard migration.
 - [x] Health/readiness endpoints
 - [x] Admin API proxy baseline (`/api/admin/{**path}`)
 - [x] Backend base URL configuration (`Backend:BaseUrl`)
+- [x] Initial domain-specific proxy groups (`/api/dashboard`, `/api/audit-log`, `/api/users`)
+- [x] Session bootstrap endpoint (`/api/me`)
 - [ ] Auth/session integration layer
-- [ ] Domain-specific endpoint groups
 - [ ] Structured error envelope passthrough refinements
 
 ## Expected next implementation step
-Tighten auth/session forwarding and split proxy into domain-specific endpoint groups for Dashboard/AuditLog/Users.
+Replace placeholder session model with real auth integration and introduce typed endpoint handlers for Wave A pages.
