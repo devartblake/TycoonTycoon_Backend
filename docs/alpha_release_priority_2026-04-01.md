@@ -271,6 +271,9 @@ NEXT progress (2026-04-04):
   - replaced `IApplicationLifetime` check with `IHostApplicationLifetime` in DI dependency validation path
 - [x] Integration test coverage start for NEXT:
   - added `AlphaP0RouteContractsTests` to verify core P0 GET/POST routes are mapped (non-404 contract checks)
+- [x] Nullability warning cleanup:
+  - guarded nullable `HttpRequestException.StatusCode` mapping in default problem-detail mapper
+  - made propagation-context property-name parsing null-safe in JSON converter
 - [ ] Continue with remaining nullability warning passes after CI build results from the NOW gate.
 
 ## Current completion status (2026-04-04 UTC)
