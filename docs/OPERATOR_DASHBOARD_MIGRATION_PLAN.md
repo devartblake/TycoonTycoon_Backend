@@ -105,3 +105,10 @@ while preserving feature parity, role-based access control, and operational reli
 3. Migrate **Dashboard**, **AuditLog**, and **Users** first as Wave A.
 4. Add CI workflow jobs for Vue/Web build + test gates before Wave B starts.
 5. Create a parity checklist issue for each page in the mapping table.
+
+## Kickoff Status
+- **Started on April 4, 2026**.
+- ✅ Initial migration scaffolding committed for:
+  - `Tycoon.OperatorDashboard.Vue` (README, package manifest, local `.gitignore`)
+  - `Tycoon.OperatorDashboard.Web` (README + execution notes)
+- ✅ Plan execution now at **Workstream 1: Platform Foundations**.
