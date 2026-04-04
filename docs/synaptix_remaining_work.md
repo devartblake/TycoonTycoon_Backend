@@ -154,11 +154,14 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 2. [ ] Perform request-level smoke checks for Auth, Questions, Store, and Crypto routes.
    - [x] Route/static smoke executed via helper scripts (`SMOKE_MODE=routes`).
    - [ ] Live/request-level smoke (`SMOKE_MODE=live`) against running API instance.
+   - [x] Live helper scripts now support auto-signup auth bootstrap + question-check + purchase contract check pathing.
    - Helper (bash): `./scripts/alpha-p0-smoke.sh`
    - Helper (PowerShell): `pwsh ./scripts/alpha-p0-smoke.ps1`
    - CI helper: `.github/workflows/alpha-p0-smoke.yml` (NOW build + route checks)
 3. [x] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
 4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
+   - [x] Live smoke helpers now execute this path shape with auto-signup bootstrap.
+   - [ ] Execute against running API instance and archive response/status evidence.
 5. [ ] Record go/no-go with explicit defer list (withdrawal settlement worker/monitoring hardening + ML churn/quality model deployment follow-ups).
 
 ---
