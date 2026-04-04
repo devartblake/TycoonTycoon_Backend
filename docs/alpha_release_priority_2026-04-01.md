@@ -255,3 +255,36 @@ Plan movement:
 - **NOW**: automated and moved into CI execution path (build + route checks).
 - **NEXT**: continue warning triage once NOW CI gates are stable.
 - **LATER**: keep broader warning-debt and platform expansion items deferred until NEXT is complete.
+
+NEXT progress (2026-04-04):
+- [x] Reduced immediate warning noise in `Tycoon.Shared` by:
+  - replacing obsolete implicit Redis channel conversion usage with `RedisChannel.Literal(...)`
+  - assigning safe defaults for `RedisOptions.Host` and `CorsOptions.AllowedUrls`
+- [x] Additional warning triage pass:
+  - aligned `MessagePackHybridCacheSerializerFactory.TryCreateSerializer` out-nullability with interface contract
+  - constrained `IHaveIdentity<TId>` to `TId : notnull` for safer identity projection
+  - updated `SqlKataExtensions.QueryOneAsync` to return `Task<T?>` (matches `QueryFirstOrDefaultAsync` behavior)
+- [ ] Continue with remaining nullability warning passes after CI build results from the NOW gate.
+
+## Current completion status (2026-04-04 UTC)
+
+### NOW tasks — completion check
+1. [x] Route/static gates automated and passing in local script (`alpha-now-status.sh`).
+2. [x] NOW gates wired into CI (`now-build-gate` in `alpha-p0-smoke.yml`).
+3. [ ] Build gate confirmed green in a real run output (`dotnet build Tycoon.sln`).
+4. [ ] Migration gate confirmed green in a real run output (`dotnet ef database update`).
+5. [ ] Live smoke + strict-IAP gate confirmed green against running API.
+6. [ ] Go/No-Go decision recorded after all NOW runtime gates pass.
+
+**Are all NOW tasks complete?**  
+No — automation is in place, but runtime confirmations (build/migration/live strict-IAP/Go-NoGo) are still pending execution evidence.
+
+### Remaining NEXT tasks
+1. [ ] Continue nullability warning cleanup in `Tycoon.Shared` (post-NOW CI feedback loop).
+2. [ ] Triage obsolete API warnings and replace with supported alternatives where safe.
+3. [ ] Add/expand integration tests for Auth/Questions/Store/Economy/Leaderboard/Crypto core paths.
+
+### Remaining LATER tasks
+1. [ ] Packet E backend technical cleanup (`Tycoon.*` -> `Synaptix.*` namespace/project identifiers).
+2. [ ] Broader warning-debt cleanup sweep after NOW/NEXT stabilize.
+3. [ ] Extended platform APIs (seasons/social/multiplayer) after alpha stabilization window.
