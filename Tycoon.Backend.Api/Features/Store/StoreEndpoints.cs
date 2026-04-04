@@ -268,7 +268,7 @@ namespace Tycoon.Backend.Api.Features.Store
         {
             var payload = JsonSerializer.Serialize(new
             {
-                ["receipt-data"] = req.Receipt.Trim(),
+            ["receipt-data"] = req.Receipt.Trim(),
                 password = appleSecret
             });
 
