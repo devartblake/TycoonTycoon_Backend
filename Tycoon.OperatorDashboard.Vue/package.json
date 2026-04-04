@@ -1,0 +1,12 @@
+{
+  "name": "tycoon-operator-dashboard-vue",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'TODO: wire Vue dev server'",
+    "build": "echo 'TODO: wire Vue build'",
+    "test": "echo 'TODO: wire Vue tests'",
+    "lint": "echo 'TODO: wire Vue lint'"
+  }
+}
