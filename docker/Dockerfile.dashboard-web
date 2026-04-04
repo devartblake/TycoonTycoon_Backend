@@ -1,0 +1,42 @@
+# ── Stage 1: Install dependencies ──────────────────────────────────────
+FROM node:22-alpine AS deps
+WORKDIR /app
+
+COPY Tycoon.OperatorDashboard.Web/.npmrc Tycoon.OperatorDashboard.Web/package.json Tycoon.OperatorDashboard.Web/package-lock.json* ./
+
+# Install deps but skip postinstall (it needs source files not yet available).
+RUN npm ci --ignore-scripts || npm install --ignore-scripts
+
+# ── Stage 2: Build the Next.js app ────────────────────────────────────
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY Tycoon.OperatorDashboard.Web/ .
+
+# Run icon build now that source files are available (skipped during deps stage).
+# Use --require tsx/cjs so require.resolve() and __dirname work (the script uses CJS APIs).
+RUN node --require tsx/cjs src/assets/iconify-icons/bundle-icons-css.ts
+
+# Build args become env vars at build time
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_ADMIN_OPS_KEY
+
+RUN npm run build
+
+# ── Stage 3: Production runner ─────────────────────────────────────────
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+
+# Copy standalone output (includes server.js + required node_modules)
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

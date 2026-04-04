@@ -42,26 +42,32 @@ builder.Services.AddScoped<AdminAuthService>();
 // Aspire service discovery resolves "http://tycoon-api" via services__tycoon-api__http__0.
 // Standalone: set ApiBaseUrl in appsettings or environment (e.g. "http://localhost:5100").
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://tycoon-api";
+var opsHeaderName = builder.Configuration["AdminOps:Header"] ?? "X-Admin-Ops-Key";
+var opsKey = builder.Configuration["AdminOps:Key"] ?? builder.Configuration["AdminOps__Key"] ?? "";
+
 builder.Services.AddHttpClient("tycoon-api", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
+    if (!string.IsNullOrWhiteSpace(opsKey))
+        client.DefaultRequestHeaders.TryAddWithoutValidation(opsHeaderName, opsKey);
+});
 
-// AdminApiClient is scoped — one shared instance per Blazor Server circuit.
-// It takes IHttpClientFactory in its constructor and creates the named "tycoon-api" client.
-// Scoped ensures Dashboard.razor and AdminAuthService share the same instance per circuit,
-// so SetToken() and all subsequent API calls use the same HttpClient headers.
-builder.Services.AddScoped<AdminApiClient>();
+    // AdminApiClient is scoped — one shared instance per Blazor Server circuit.
+    // It takes IHttpClientFactory in its constructor and creates the named "tycoon-api" client.
+    // Scoped ensures Dashboard.razor and AdminAuthService share the same instance per circuit,
+    // so SetToken() and all subsequent API calls use the same HttpClient headers.
+    builder.Services.AddScoped<AdminApiClient>();
 
-var app = builder.Build();
+    var app = builder.Build();
 
-app.UseStaticFiles();
-app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
+    app.UseStaticFiles();
+    app.UseRouting();
+    app.UseAuthentication();
+    app.UseAuthorization();
 
-app.MapDefaultEndpoints();
-app.MapRazorPages();
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
+    app.MapDefaultEndpoints();
+    app.MapRazorPages();
+    app.MapBlazorHub();
+    app.MapFallbackToPage("/_Host");
 
-app.Run();
+    app.Run();

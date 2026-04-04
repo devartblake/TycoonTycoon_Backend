@@ -15,10 +15,18 @@ public static class QueryCollectionExtensions
         {
             foreach (var s in results)
             {
+                if (s is null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    var result = (T)Convert.ChangeType(s, typeof(T));
-                    values.Add(result);
+                    var converted = Convert.ChangeType(s, typeof(T));
+                    if (converted is T result)
+                    {
+                        values.Add(result);
+                    }
                 }
                 catch (System.Exception)
                 {
@@ -34,12 +42,12 @@ public static class QueryCollectionExtensions
     public static T Get<T>(
         this IQueryCollection collection,
         string key,
-        T @default = default,
+        T? @default = default,
         ParameterPick option = ParameterPick.First
     )
     {
         var values = All<T>(collection, key);
-        var value = @default;
+        T? value = @default;
 
         if (values.Any())
         {
@@ -51,16 +59,26 @@ public static class QueryCollectionExtensions
             };
         }
 
-        return value ?? @default;
+        return value ?? @default!;
     }
 
-    public static T GetCollection<T>(this IQueryCollection collection, string key, T @default = default)
+    public static T GetCollection<T>(this IQueryCollection collection, string key, T? @default = default)
         where T : IEnumerable
     {
-        var type = typeof(T).GetGenericArguments()[0];
+        var genericTypeArgs = typeof(T).GetGenericArguments();
+        if (genericTypeArgs.Length == 0)
+        {
+            return @default!;
+        }
+
+        var type = genericTypeArgs[0];
         var listType = typeof(List<>);
         var constructedListType = listType.MakeGenericType(type);
-        dynamic values = Activator.CreateInstance(constructedListType);
+        var values = Activator.CreateInstance(constructedListType) as IList;
+        if (values is null)
+        {
+            return @default!;
+        }
 
         if (collection.TryGetValue(key, out var results))
         {
@@ -68,15 +86,21 @@ public static class QueryCollectionExtensions
             {
                 try
                 {
-                    if (s.IsValidJson())
+                    if (s is not null && s.IsValidJson())
                     {
-                        dynamic result = JsonConvert.DeserializeObject(s, type);
-                        values.Add(result);
+                        var result = JsonConvert.DeserializeObject(s, type);
+                        if (result is not null)
+                        {
+                            values.Add(result);
+                        }
                     }
                     else
                     {
-                        dynamic result = Convert.ChangeType(s, type);
-                        values.Add(result);
+                        var result = Convert.ChangeType(s, type);
+                        if (result is not null)
+                        {
+                            values.Add(result);
+                        }
                     }
                 }
                 catch (System.Exception)
@@ -88,10 +112,10 @@ public static class QueryCollectionExtensions
         }
         else
         {
-            return @default;
+            return @default!;
         }
 
-        return values;
+        return values is T typedValues ? typedValues : @default!;
     }
 
     private static bool IsValidJson(this string strInput)
