@@ -86,9 +86,9 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 ### Priority 2: Questions Gameplay Hardening
 - [x] `GET /questions/set?category=&difficulty=&count=` — Serve questions for match play
 - [x] `POST /questions/check` and `POST /questions/check-batch` — Server-side grading
-- [ ] Integrate questions flow into authoritative match/session pipeline end-to-end
-- [ ] Question bank management (categories, difficulty tagging, approval workflow)
-- [ ] Wire Python sidecar `/ml/question-difficulty` for NLP-based difficulty estimation
+- [x] Integrate questions flow into authoritative match/session pipeline end-to-end
+- [x] Question bank management (categories, difficulty tagging, approval workflow)
+- [x] Wire Python sidecar `/ml/question-difficulty` for NLP-based difficulty estimation
 
 ### Priority 3: Store/Shop/IAP
 - [x] `GET /store/catalog` — Fetch available items/bundles

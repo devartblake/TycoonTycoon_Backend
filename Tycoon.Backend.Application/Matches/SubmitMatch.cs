@@ -48,6 +48,18 @@ namespace Tycoon.Backend.Application.Matches
             if (req.Participants is null || req.Participants.Count == 0)
                 return new SubmitMatchResponse(req.EventId, req.MatchId, "Invalid", Array.Empty<MatchAwardDto>());
 
+            if (req.Answers is { Count: > 0 })
+            {
+                var authoritativeParticipants = await BuildAuthoritativeParticipantsAsync(req.Participants, req.Answers, ct);
+                var authoritativeQuestionCount = req.Answers.Select(a => a.QuestionId).Distinct().Count();
+
+                req = req with
+                {
+                    Participants = authoritativeParticipants,
+                    QuestionCount = authoritativeQuestionCount > 0 ? authoritativeQuestionCount : req.QuestionCount
+                };
+            }
+
             // Submit idempotency
             var dup = await db.MatchResults.AsNoTracking()
                 .AnyAsync(x => x.SubmitEventId == req.EventId, ct);
@@ -276,8 +288,59 @@ namespace Tycoon.Backend.Application.Matches
             }
 
             return new SubmitMatchResponse(req.EventId, req.MatchId, "Applied", awards);
-
         }
+
+        private async Task<IReadOnlyList<MatchParticipantResultDto>> BuildAuthoritativeParticipantsAsync(
+            IReadOnlyList<MatchParticipantResultDto> requestedParticipants,
+            IReadOnlyList<MatchAnswerSubmissionDto> answers,
+            CancellationToken ct)
+        {
+            var questionIds = answers.Select(a => a.QuestionId).Distinct().ToArray();
+            var answerKey = await db.Questions.AsNoTracking()
+                .Where(q => questionIds.Contains(q.Id))
+                .Select(q => new { q.Id, q.CorrectOptionId })
+                .ToDictionaryAsync(x => x.Id, x => x.CorrectOptionId, ct);
+
+            var byPlayer = answers
+                .GroupBy(a => a.PlayerId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var recomputed = new List<MatchParticipantResultDto>(requestedParticipants.Count);
+
+            foreach (var p in requestedParticipants)
+            {
+                if (!byPlayer.TryGetValue(p.PlayerId, out var playerAnswers) || playerAnswers.Count == 0)
+                {
+                    recomputed.Add(p);
+                    continue;
+                }
+
+                var correct = 0;
+                foreach (var answer in playerAnswers)
+                {
+                    if (answerKey.TryGetValue(answer.QuestionId, out var correctOptionId)
+                        && string.Equals(correctOptionId, answer.SelectedOptionId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        correct++;
+                    }
+                }
+
+                var total = playerAnswers.Count;
+                var wrong = Math.Max(0, total - correct);
+                var avgAnswerTime = total == 0 ? 0 : playerAnswers.Average(x => x.AnswerTimeMs);
+                var score = correct * 10;
+
+                recomputed.Add(new MatchParticipantResultDto(
+                    p.PlayerId,
+                    score,
+                    correct,
+                    wrong,
+                    avgAnswerTime));
+            }
+
+            return recomputed;
+        }
+
         private async Task ApplySeasonPointsAndRanksAsync(SubmitMatchRequest req, Match match, CancellationToken ct)
         {
             // Only award season points for completed matches
