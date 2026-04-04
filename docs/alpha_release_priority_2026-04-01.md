@@ -271,9 +271,13 @@ NEXT progress (2026-04-04):
   - replaced `IApplicationLifetime` check with `IHostApplicationLifetime` in DI dependency validation path
 - [x] Integration test coverage start for NEXT:
   - added `AlphaP0RouteContractsTests` to verify core P0 GET/POST routes are mapped (non-404 contract checks)
+  - added anonymous request contract assertions for sensitive POST routes (`/store/iap/validate`, `/crypto/withdraw`) to ensure non-404/non-500 behavior under unauthenticated access
 - [x] Nullability warning cleanup:
   - guarded nullable `HttpRequestException.StatusCode` mapping in default problem-detail mapper
   - made propagation-context property-name parsing null-safe in JSON converter
+- [x] CI blocker fixes:
+  - NOW build scripts switched from missing `Tycoon.sln` to explicit `Tycoon.Backend.Api/Tycoon.Backend.Api.csproj` build target
+  - Hangfire disabled automatically when `Testing:UseInMemoryDb=true`, preventing test-host attempts to connect to `127.0.0.1:5432`
 - [ ] Continue with remaining nullability warning passes after CI build results from the NOW gate.
 
 ## Current completion status (2026-04-04 UTC)
@@ -281,7 +285,7 @@ NEXT progress (2026-04-04):
 ### NOW tasks — completion check
 1. [x] Route/static gates automated and passing in local script (`alpha-now-status.sh`).
 2. [x] NOW gates wired into CI (`now-build-gate` in `alpha-p0-smoke.yml`).
-3. [ ] Build gate confirmed green in a real run output (`dotnet build Tycoon.sln`).
+3. [ ] Build gate confirmed green in a real run output (`dotnet build Tycoon.Backend.Api/Tycoon.Backend.Api.csproj`).
 4. [ ] Migration gate confirmed green in a real run output (`dotnet ef database update`).
 5. [ ] Live smoke + strict-IAP gate confirmed green against running API.
 6. [ ] Go/No-Go decision recorded after all NOW runtime gates pass.
@@ -292,7 +296,8 @@ No — automation is in place, but runtime confirmations (build/migration/live s
 ### Remaining NEXT tasks
 1. [ ] Continue nullability warning cleanup in `Tycoon.Shared` (post-NOW CI feedback loop).
 2. [ ] Triage obsolete API warnings and replace with supported alternatives where safe.
-3. [ ] Expand integration tests beyond route-mapping contracts to include authenticated flow assertions (Auth/Store/Crypto happy+error paths).
+3. [ ] Expand integration tests to include authenticated happy-path assertions (Auth token acquisition + Store/Crypto success flows), not only anonymous/error contracts.
+4. [ ] Resolve EF schema-drift gate by adding/updating migrations in `Tycoon.Backend.Migrations`.
 
 ### Remaining LATER tasks
 1. [ ] Packet E backend technical cleanup (`Tycoon.*` -> `Synaptix.*` namespace/project identifiers).

@@ -277,6 +277,13 @@ else
 
 // Hangfire
 var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", true);
+var useInMemoryDbForTesting = builder.Configuration.GetValue("Testing:UseInMemoryDb", false);
+
+if (useInMemoryDbForTesting)
+{
+    Console.WriteLine("⚠️ Testing:UseInMemoryDb=true detected. Disabling Hangfire.");
+    hangfireEnabled = false;
+}
 
 if (hangfireEnabled)
 {

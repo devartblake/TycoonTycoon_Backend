@@ -7,6 +7,7 @@ set -euo pipefail
 RUN_BUILD="${RUN_BUILD:-false}"
 RUN_ROUTE_SMOKE="${RUN_ROUTE_SMOKE:-true}"
 RUN_PWSH_ROUTE_SMOKE="${RUN_PWSH_ROUTE_SMOKE:-false}"
+BUILD_TARGET="${BUILD_TARGET:-Tycoon.Backend.Api/Tycoon.Backend.Api.csproj}"
 
 pass_count=0
 warn_count=0
@@ -42,13 +43,13 @@ fi
 if command -v dotnet >/dev/null 2>&1; then
   report PASS "dotnet SDK available" "$(dotnet --version)"
   if [[ "$RUN_BUILD" == "true" ]]; then
-    if dotnet build Tycoon.sln >/dev/null; then
-      report PASS "Build gate (dotnet build Tycoon.sln)"
+    if dotnet build "$BUILD_TARGET" >/dev/null; then
+      report PASS "Build gate (dotnet build $BUILD_TARGET)"
     else
-      report FAIL "Build gate (dotnet build Tycoon.sln)" "See build output above."
+      report FAIL "Build gate (dotnet build $BUILD_TARGET)" "See build output above."
     fi
   else
-    report WARN "Build gate not executed" "Set RUN_BUILD=true to execute dotnet build."
+    report WARN "Build gate not executed" "Set RUN_BUILD=true to execute dotnet build for $BUILD_TARGET."
   fi
 else
   report WARN "dotnet SDK unavailable" "Cannot run build/migration gates in this environment."

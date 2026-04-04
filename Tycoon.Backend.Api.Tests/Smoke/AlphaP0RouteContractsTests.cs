@@ -34,4 +34,15 @@ public sealed class AlphaP0RouteContractsTests : IClassFixture<TycoonApiFactory>
         var resp = await _http.PostAsync(route, content);
         resp.StatusCode.Should().NotBe(HttpStatusCode.NotFound);
     }
+
+    [Theory]
+    [InlineData("/store/iap/validate", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"platform\":\"apple\",\"receipt\":\"test\"}")]
+    [InlineData("/crypto/withdraw", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"amount\":1,\"currency\":\"USDT\"}")]
+    public async Task SensitivePostRoutes_Should_NotReturn_ServerError_When_Anonymous(string route, string json)
+    {
+        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        var resp = await _http.PostAsync(route, content);
+        resp.StatusCode.Should().NotBe(HttpStatusCode.NotFound);
+        resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
+    }
 }
