@@ -55,3 +55,4 @@ Tycoon/bin/**
 **/bin/**
 # Caches
 *.cache
+**/node_modules/**
