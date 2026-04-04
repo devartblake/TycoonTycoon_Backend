@@ -1,7 +1,7 @@
 ﻿namespace Tycoon.Backend.Domain.Primitives
 {
     /// <summary>
-    /// Aggregate root base type. Holds domain events raised by aggregates.
+    /// Aggregate root base type. Domain event storage is inherited from <see cref="Entity"/>.
     /// </summary>
     public abstract class AggregateRoot : Entity
     {
