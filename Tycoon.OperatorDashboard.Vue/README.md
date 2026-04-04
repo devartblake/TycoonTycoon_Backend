@@ -12,6 +12,7 @@ Vue front-end target for Operator Dashboard migration.
 
 ## NPM scripts
 - `npm run dev`
+- `npm run build:icons` (placeholder no-op for Docker parity with legacy frontend image flow)
 - `npm run build`
 - `npm run preview`
 - `npm run test`

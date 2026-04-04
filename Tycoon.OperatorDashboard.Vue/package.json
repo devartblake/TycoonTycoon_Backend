@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build:icons": "echo 'No icon prebuild step configured for Vue dashboard yet.'",
     "build": "vite build",
     "preview": "vite preview",
     "test": "echo 'TODO: wire Vue tests'",
