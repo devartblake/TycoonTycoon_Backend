@@ -12,7 +12,7 @@ Scope: Backend alpha readiness follow-up after P0 route/test surface expansion
 - **Priority 3 (store/IAP):** ✅ Complete for current backend contract scope.
 - **Priority 4 (frontend economy integration):** ⏸️ Frontend-dependent.
 - **Priority 5 (crypto layer):** ✅ Complete baseline (wallet, history, prize pool, staking, settlement controls).
-- **Priority 6 (polish/gaps):** ⚠️ Partially complete; ML churn/quality deployment still open.
+- **Priority 6 (polish/gaps):** ✅ Complete for backend baseline scope (search/profile/social/loadout + ML scorer endpoints/fallbacks).
 - **6.1 deployment runlist:** ⚠️ Partially complete (tooling is ready; live/runtime execution evidence still needed).
 
 ---
@@ -75,11 +75,10 @@ Record explicitly:
 
 ## Defer list proposal (if GO today)
 
-1. ML deployment completion:
-   - churn scorer model integration
-   - quality scorer model integration
+1. ML model ops hardening:
+   - scorer calibration against production data
+   - alerting/observability for model endpoint failures
 2. Withdrawal settlement operational hardening:
    - worker automation
    - monitoring/alerting
    - reconciliation runbook
-

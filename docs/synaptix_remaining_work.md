@@ -118,7 +118,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [x] Profile enrichment (career stats summary, W-L, winrate)
 - [x] Unfriend endpoint
 - [x] Cosmetics/avatar loadout system
-- [ ] ML model deployment (in progress: question difficulty estimator now supports deployed model endpoint via `MlModels:QuestionDifficultyUrl`; churn/quality scorers still pending)
+- [x] ML model deployment baseline (`/ml/churn-risk`, `/ml/match-quality` + deployed model fallback; question difficulty path supports deployed/sidecar/heuristic)
 - [x] Added backend smoke route contract integration tests (`Tycoon.Backend.Api.Tests/Smoke/AlphaP0RouteContractsTests.cs`)
   - validates core P0 route mapping (non-404 contract checks)
   - validates sensitive anonymous POSTs avoid 500 regression
@@ -162,7 +162,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
    - [x] Live smoke helpers now execute this path shape with auto-signup bootstrap.
    - [ ] Execute against running API instance and archive response/status evidence.
-5. [ ] Record go/no-go with explicit defer list (withdrawal settlement worker/monitoring hardening + ML churn/quality model deployment follow-ups).
+5. [ ] Record go/no-go with explicit defer list (withdrawal settlement worker/monitoring hardening + ML model calibration/ops follow-ups).
 
 ---
 

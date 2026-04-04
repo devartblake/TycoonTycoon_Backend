@@ -144,3 +144,33 @@ If outbound download is blocked, use an internal mirror/local installer file:
 ```bash
 DOTNET_INSTALL_SCRIPT_PATH=/path/to/dotnet-install.sh ./scripts/bootstrap-dotnet.sh
 ```
+
+---
+
+## Status update — 2026-04-04 (UTC)
+
+### What was completed
+- Added/confirmed backend ML scorer baseline endpoints:
+  - `POST /ml/churn-risk`
+  - `POST /ml/match-quality`
+  - both support deployed-model callout (when configured) with heuristic fallback
+- Expanded live smoke helper pathing to include:
+  - auto-signup bootstrap
+  - question set/check
+  - store catalog + iap validate + purchase contract check
+  - crypto history + leaderboard check
+- Added alpha status/handoff docs:
+  - `docs/alpha_release_priority_2026-04-04.md`
+  - `docs/frontend_backend_handoff_alpha_2026-04-04.md`
+
+### Commands run in this environment
+```bash
+SMOKE_MODE=routes bash ./scripts/alpha-p0-smoke.sh
+bash ./scripts/alpha-now-status.sh
+dotnet build Tycoon.sln   # blocked: dotnet not found in this container
+```
+
+### Current blockers
+1. Build/migration proof remains blocked in this runner due to missing .NET SDK.
+2. Live request-level smoke proof still requires a running API host (`BASE_URL=...`).
+3. Go/No-Go note still pending final runtime evidence and owner signoff.

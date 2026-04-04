@@ -3,6 +3,15 @@
 Date: 2026-04-01 (UTC)
 Release target: 2026-04-02 00:00 UTC
 
+## Status refresh — 2026-04-04 (UTC)
+
+- [x] Priority 2 (questions hardening) complete.
+- [x] Priority 3 (store/IAP baseline) complete.
+- [x] Priority 5 (crypto baseline + settlement controls) complete.
+- [x] Priority 6 backend gap-baseline complete, including ML scoring endpoints/fallback paths.
+- [ ] Priority 1 runtime build/migration verification still pending in .NET-capable environment.
+- [ ] 6.1 closeout still needs live runtime evidence + recorded go/no-go note.
+
 ## Scope checked
 - Repo-wide `TODO` scan
 - `docs/synaptix_backend_cross_comparison_status.md`

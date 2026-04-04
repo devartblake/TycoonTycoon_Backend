@@ -51,14 +51,21 @@ This handoff summarizes what backend contracts are now available for frontend in
 
 **Frontend action:** wire profile/search/loadout/friend removal directly against backend endpoints.
 
+## 5) ML scoring endpoints (new baseline)
+- `POST /ml/churn-risk`
+- `POST /ml/match-quality`
+- both return `source` (`deployed-model` or `heuristic`) so UI/telemetry can track fallback behavior.
+
+**Frontend action:** consume as optional enhancement signals (do not hard-block primary UX if source is heuristic).
+
 ---
 
 ## Items still pending (frontend impact)
 
-1. **ML model deployment completion**
-   - difficulty path supports deployed endpoint fallback, but churn/quality scorer rollout remains pending.
-2. **Runtime deployment evidence (6.1 closeout)**
+1. **Runtime deployment evidence (6.1 closeout)**
    - build/migration/live-smoke proof still needs to be executed in .NET-capable runtime environment.
+2. **ML model operations hardening**
+   - production calibration + monitoring for deployed model health remains pending.
 3. **Frontend-only polish priorities (from remaining work)**
    - retention hooks
    - sound cue layer
@@ -83,4 +90,3 @@ This handoff summarizes what backend contracts are now available for frontend in
 - Treat store purchase responses as source of updated balances.
 - For crypto withdrawals and settlement status, poll backend history rather than inferring from local actions.
 - Keep strict IAP behavior environment-driven; surface user-friendly retry/error messaging for transient validation failures.
-

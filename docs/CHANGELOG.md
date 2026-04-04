@@ -28,6 +28,12 @@ All notable changes to this project.
 - Added `docs/alpha_release_priority_2026-04-04.md` with an updated alpha-priority status and a concrete completion checklist for unresolved 6.1 tasks.
 - Added `docs/frontend_backend_handoff_alpha_2026-04-04.md` for frontend integration planning aligned to completed backend capabilities and remaining gaps.
 
+### Backend ML scorer baseline
+- Added authenticated ML scoring endpoints:
+  - `POST /ml/churn-risk`
+  - `POST /ml/match-quality`
+- Both endpoints support deployed model invocation (config-driven URL + optional bearer key) with deterministic heuristic fallback when unavailable.
+
 ---
 
 ## [2026-03-31] Synaptix BE Packet B — Profile Support
