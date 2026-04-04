@@ -13,7 +13,7 @@ public class CommandHandlerMetrics
     private readonly Counter<long> _failedCommandsNumber;
     private readonly Histogram<double> _handlerDuration;
 
-    private Stopwatch _timer;
+    private Stopwatch _timer = new();
 
     public CommandHandlerMetrics(IDiagnosticsProvider diagnosticsProvider)
     {
@@ -115,7 +115,7 @@ public class CommandHandlerMetrics
         if (!_handlerDuration.Enabled)
             return;
 
-        var elapsedTimeSeconds = _timer.Elapsed.Seconds;
+        var elapsedTimeSeconds = _timer.Elapsed.TotalSeconds;
 
         _handlerDuration.Record(elapsedTimeSeconds, tags);
 

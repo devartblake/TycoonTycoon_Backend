@@ -285,7 +285,7 @@ namespace Tycoon.Shared.Core.Extensions.ServiceCollectionsExtensions
             // Skip services that are not typically resolved directly or are special cases
             if (
                 serviceDescriptor.ServiceType == typeof(IHostedService)
-                || serviceDescriptor.ServiceType == typeof(IApplicationLifetime)
+                || serviceDescriptor.ServiceType == typeof(IHostApplicationLifetime)
             )
             {
                 continue;
@@ -317,4 +317,3 @@ namespace Tycoon.Shared.Core.Extensions.ServiceCollectionsExtensions
     }
 }
 }
-

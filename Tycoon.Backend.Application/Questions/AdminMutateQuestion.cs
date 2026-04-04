@@ -12,6 +12,7 @@ namespace Tycoon.Backend.Application.Questions
     public sealed record AdminDeleteQuestion(Guid Id) : IRequest<bool>;
     public sealed record AdminBulkDelete(BulkDeleteQuestionsRequest Req) : IRequest<BulkDeleteResultDto>;
     public sealed record AdminImportQuestions(ImportQuestionsRequest Req) : IRequest<ImportQuestionsResultDto>;
+    public sealed record AdminSetQuestionStatus(Guid Id, string Status) : IRequest<QuestionDto?>;
 
     public sealed class AdminCreateQuestionHandler(IAppDb db, ILogger<AdminCreateQuestionHandler> logger) : IRequestHandler<AdminCreateQuestion, QuestionDto>
     {
@@ -20,6 +21,7 @@ namespace Tycoon.Backend.Application.Questions
             Validate(r.Req);
 
             var q = new Question(r.Req.Text, r.Req.Category, r.Req.Difficulty, r.Req.CorrectOptionId, r.Req.MediaKey);
+            q.SetStatus(r.Req.Status ?? "Draft");
 
             var options = r.Req.Options.Select(o => new QuestionOption(q.Id, o.Id, o.Text));
             q.ReplaceOptions(options);
@@ -59,6 +61,8 @@ namespace Tycoon.Backend.Application.Questions
             if (r.Req.Options.All(o => o.Id != r.Req.CorrectOptionId)) throw new ArgumentException("CorrectOptionId must match an option id.");
 
             q.Update(r.Req.Text, r.Req.Category, r.Req.Difficulty, r.Req.CorrectOptionId, r.Req.MediaKey);
+            if (!string.IsNullOrWhiteSpace(r.Req.Status))
+                q.SetStatus(r.Req.Status);
 
             // Replace options
             var existingOptions = db.QuestionOptions.Where(o => o.QuestionId == q.Id);
@@ -74,6 +78,22 @@ namespace Tycoon.Backend.Application.Questions
 
             logger.LogInformation("Admin question updated: QuestionId={QuestionId}, Category={Category}", q.Id, q.Category);
 
+            return await new AdminGetQuestionHandler(db).Handle(new AdminGetQuestion(q.Id), ct);
+        }
+    }
+
+    public sealed class AdminSetQuestionStatusHandler(IAppDb db, ILogger<AdminSetQuestionStatusHandler> logger)
+        : IRequestHandler<AdminSetQuestionStatus, QuestionDto?>
+    {
+        public async Task<QuestionDto?> Handle(AdminSetQuestionStatus r, CancellationToken ct)
+        {
+            var q = await db.Questions.FirstOrDefaultAsync(x => x.Id == r.Id, ct);
+            if (q is null) return null;
+
+            q.SetStatus(r.Status);
+            await db.SaveChangesAsync(ct);
+
+            logger.LogInformation("Admin question status changed: QuestionId={QuestionId}, Status={Status}", q.Id, q.Status);
             return await new AdminGetQuestionHandler(db).Handle(new AdminGetQuestion(q.Id), ct);
         }
     }
@@ -125,6 +145,7 @@ namespace Tycoon.Backend.Application.Questions
                     if (req.Options.All(o => o.Id != req.CorrectOptionId)) { failed++; continue; }
 
                     var q = new Question(req.Text, req.Category, req.Difficulty, req.CorrectOptionId, req.MediaKey);
+                    q.SetStatus(req.Status ?? "Draft");
                     q.ReplaceOptions(req.Options.Select(o => new QuestionOption(q.Id, o.Id, o.Text)));
                     q.ReplaceTags(req.Tags);
 

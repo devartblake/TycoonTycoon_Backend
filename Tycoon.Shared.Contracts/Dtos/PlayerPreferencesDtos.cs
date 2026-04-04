@@ -11,4 +11,12 @@ namespace Tycoon.Shared.Contracts.Dtos
         string? PreferredSurface,
         bool? ReducedMotion,
         string? TonePreference);
+
+    public record PlayerLoadoutDto(
+        string? AvatarItemType,
+        IReadOnlyList<string> EquippedCosmeticItemTypes);
+
+    public record UpdatePlayerLoadoutRequest(
+        string? AvatarItemType,
+        IReadOnlyList<string>? EquippedCosmeticItemTypes);
 }
