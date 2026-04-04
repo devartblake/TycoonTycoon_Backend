@@ -27,6 +27,12 @@ public static class CryptoEconomyEndpoints
         g.MapPost("/stake", Stake).RequireAuthorization();
         g.MapPost("/unstake", Unstake).RequireAuthorization();
         g.MapGet("/staking/{playerId:guid}", GetStakingPosition).RequireAuthorization();
+        g.MapGet("/withdraw/pending", ListPendingWithdrawals).RequireAuthorization()
+            .WithMetadata(new Security.RequireAdminOpsKeyAttribute());
+        g.MapPost("/withdraw/{transactionId:guid}/approve", ApproveWithdrawal).RequireAuthorization()
+            .WithMetadata(new Security.RequireAdminOpsKeyAttribute());
+        g.MapPost("/withdraw/{transactionId:guid}/reject", RejectWithdrawal).RequireAuthorization()
+            .WithMetadata(new Security.RequireAdminOpsKeyAttribute());
     }
 
     private static async Task<IResult> LinkWallet(
@@ -325,6 +331,86 @@ public static class CryptoEconomyEndpoints
         return Results.Ok(new CryptoStakingPositionResponse(playerId, Math.Max(0, available), Math.Max(0, staked), "CRYPTO_UNITS"));
     }
 
+    private static async Task<IResult> ListPendingWithdrawals(
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        IAppDb db,
+        CancellationToken ct)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize <= 0 ? 20 : pageSize, 1, 100);
+
+        var q = db.PlayerTransactions.AsNoTracking()
+            .Include(x => x.Actors)
+            .Include(x => x.ItemChanges)
+            .Where(x => x.Kind == "crypto-withdraw-request" && x.Status == PlayerTransactionStatus.Pending)
+            .OrderBy(x => x.CreatedAtUtc);
+
+        var total = await q.CountAsync(ct);
+        var rows = await q.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+
+        var items = rows.Select(x =>
+        {
+            var actor = x.Actors.FirstOrDefault();
+            var units = x.ItemChanges
+                .Where(i => i.ItemType == "crypto:units")
+                .Sum(i => i.Operation == ItemOperation.Grant ? i.Quantity : -i.Quantity);
+
+            return new PendingWithdrawalItem(
+                x.Id,
+                actor?.PlayerId ?? Guid.Empty,
+                Math.Abs(units),
+                x.Receipt,
+                x.CreatedAtUtc);
+        }).ToList();
+
+        return Results.Ok(new PendingWithdrawalsResponse(page, pageSize, total, items));
+    }
+
+    private static async Task<IResult> ApproveWithdrawal(
+        [FromRoute] Guid transactionId,
+        IAppDb db,
+        CancellationToken ct)
+    {
+        if (transactionId == Guid.Empty)
+            return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "transactionId is required.");
+
+        var tx = await db.PlayerTransactions
+            .FirstOrDefaultAsync(x => x.Id == transactionId && x.Kind == "crypto-withdraw-request", ct);
+        if (tx is null)
+            return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Withdrawal request not found.");
+
+        if (tx.Status != PlayerTransactionStatus.Pending)
+            return ApiResponses.Error(StatusCodes.Status409Conflict, "WITHDRAWAL_NOT_PENDING", "Withdrawal request is not pending.");
+
+        tx.MarkApplied();
+        await db.SaveChangesAsync(ct);
+
+        return Results.Ok(new WithdrawalSettlementResponse(tx.Id, tx.Status.ToString(), tx.CompletedAtUtc));
+    }
+
+    private static async Task<IResult> RejectWithdrawal(
+        [FromRoute] Guid transactionId,
+        IAppDb db,
+        CancellationToken ct)
+    {
+        if (transactionId == Guid.Empty)
+            return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "transactionId is required.");
+
+        var tx = await db.PlayerTransactions
+            .FirstOrDefaultAsync(x => x.Id == transactionId && x.Kind == "crypto-withdraw-request", ct);
+        if (tx is null)
+            return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Withdrawal request not found.");
+
+        if (tx.Status != PlayerTransactionStatus.Pending)
+            return ApiResponses.Error(StatusCodes.Status409Conflict, "WITHDRAWAL_NOT_PENDING", "Withdrawal request is not pending.");
+
+        tx.MarkFailed();
+        await db.SaveChangesAsync(ct);
+
+        return Results.Ok(new WithdrawalSettlementResponse(tx.Id, tx.Status.ToString(), tx.CompletedAtUtc));
+    }
+
     private static string NormalizePoolId(string? poolId)
         => string.IsNullOrWhiteSpace(poolId) ? "global" : poolId.Trim().ToLowerInvariant();
 
@@ -412,4 +498,8 @@ public static class CryptoEconomyEndpoints
     public sealed record CryptoStakeRequest(Guid PlayerId, int Units, string? StakeId = null);
     public sealed record CryptoStakeResponse(Guid TransactionId, Guid PlayerId, int Units, int CurrentStakedUnits, string Status);
     public sealed record CryptoStakingPositionResponse(Guid PlayerId, int AvailableUnits, int StakedUnits, string UnitType);
+
+    public sealed record PendingWithdrawalItem(Guid TransactionId, Guid PlayerId, int Units, string? ToWalletAddress, DateTimeOffset RequestedAtUtc);
+    public sealed record PendingWithdrawalsResponse(int Page, int PageSize, int Total, IReadOnlyList<PendingWithdrawalItem> Items);
+    public sealed record WithdrawalSettlementResponse(Guid TransactionId, string Status, DateTimeOffset? CompletedAtUtc);
 }

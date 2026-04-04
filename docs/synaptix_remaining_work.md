@@ -111,6 +111,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [x] Withdrawal request flow (pending, approval/audit ready)
 - [x] Prize pool system (`/crypto/prize-pool/fund`, `/crypto/prize-pool/{poolId}`, `/crypto/prize-pool/distribute`)
 - [x] Optional staking baseline (`/crypto/stake`, `/crypto/unstake`, `/crypto/staking/{playerId}`)
+- [x] Admin withdrawal settlement baseline (`/crypto/withdraw/pending`, `/crypto/withdraw/{id}/approve`, `/crypto/withdraw/{id}/reject`)
 
 ### Priority 6: Polish & Gaps
 - [x] Player search/discovery endpoint (`GET /users/search?handle=`)
@@ -142,8 +143,8 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 | Milestone | Status | Blockers |
 |---|---|---|
 | **Closed Beta / Soft Launch** | ✅ Ready | Core gameplay loop functional (auth → match → rewards → leaderboard) |
-| **Public Production** | ⚠️ Blocked | Strict external IAP verification + withdrawal settlement pipeline still need hardening |
-| **Monetization** | ✅ Alpha+ | Store + IAP endpoint + crypto request/prize-pool/staking flows exist; withdrawal settlement hardening still open |
+| **Public Production** | ⚠️ Blocked | Strict external IAP verification + operational hardening for withdrawal settlement workers/monitoring |
+| **Monetization** | ✅ Alpha+ | Store + IAP endpoint + crypto request/prize-pool/staking + admin settlement controls exist |
 
 ---
 
@@ -158,7 +159,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
    - CI helper: `.github/workflows/alpha-p0-smoke.yml` (NOW build + route checks)
 3. [x] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
 4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
-5. [ ] Record go/no-go with explicit defer list (withdrawal settlement hardening + ML churn/quality model deployment follow-ups).
+5. [ ] Record go/no-go with explicit defer list (withdrawal settlement worker/monitoring hardening + ML churn/quality model deployment follow-ups).
 
 ---
 
