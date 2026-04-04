@@ -204,3 +204,23 @@ What was executed now:
 1. [ ] Packet E backend technical cleanup (`Tycoon.*` -> `Synaptix.*` namespace/project identifiers).
 2. [ ] Extended platform APIs (seasons, social, multiplayer) after alpha stability window.
 3. [ ] Optional crypto expansion (staking + richer ledger/history capabilities).
+<<<<<<< HEAD
+
+---
+
+## Warning triage update — 2026-04-03 (UTC)
+
+Completed now:
+1. [x] Fixed CI-breaking issues first:
+   - PowerShell smoke argument binding issue (`Password` -> `LoginPassword`)
+   - `TypeExtensions.GetExtensionMethod` compile error (`methodName` variable mismatch)
+2. [x] Warning triage pass #1 for high-signal web extension warnings:
+   - `HeaderDictionaryExtensions` conversion/nullability cleanup
+   - `QueryCollectionExtensions` conversion/nullability cleanup
+
+Now / Next / Later follow-through:
+- **NOW**: run full `dotnet build` in CI/local runner and confirm no remaining errors.
+- **NEXT**: continue warning triage in `Tycoon.Shared` focusing on nullability + obsolete API calls with highest runtime impact.
+- **LATER**: broad warning debt cleanup sweep after alpha gate checks and live smoke/IAP gates are green.
+=======
+>>>>>>> main

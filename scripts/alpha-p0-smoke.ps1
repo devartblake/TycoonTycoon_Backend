@@ -1,7 +1,11 @@
 param(
   [string]$BaseUrl = "http://localhost:5000",
   [string]$Email = "demo@example.com",
+<<<<<<< HEAD
+  [string]$LoginPassword = "demo",
+=======
   [SecureString]$Password = "demo",
+>>>>>>> main
   [ValidateSet("live", "routes")]
   [string]$SmokeMode = "live",
   [switch]$ExpectIapStrictReady
@@ -23,7 +27,11 @@ if ($SmokeMode -eq "routes") {
 Write-Host "[1/6] Login"
 $loginBody = @{
   email = $Email
+<<<<<<< HEAD
+  password = $LoginPassword
+=======
   password = $Password
+>>>>>>> main
 } | ConvertTo-Json
 
 $loginResponse = Invoke-RestMethod -Method Post -Uri "$BaseUrl/auth/login" -ContentType "application/json" -Body $loginBody
