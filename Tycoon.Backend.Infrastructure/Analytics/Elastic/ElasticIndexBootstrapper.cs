@@ -1,31 +1,25 @@
-﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch;
 
 namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 {
     /// <summary>
-    /// Ensures Elasticsearch templates and base indices exist. Idempotent.
+    /// Ensures Elasticsearch base indices exist. Idempotent.
     /// </summary>
     public sealed class ElasticIndexBootstrapper
     {
         private readonly ElasticsearchClient _client;
-        private readonly ElasticAdmin _admin;
         private readonly ElasticOptions _opt;
 
         public ElasticIndexBootstrapper(
             ElasticsearchClient client,
-            ElasticAdmin admin,
             ElasticOptions opt)
         {
             _client = client;
-            _admin = admin;
             _opt = opt;
         }
 
         public async Task EnsureCreatedAsync(CancellationToken ct)
         {
-            // Step 6: templates (no ILM required)
-            await _admin.EnsureTemplatesAsync(ct);
-
             // Create base indices explicitly so you can index immediately.
             // If you later switch to rollover, you will replace these with alias bootstrapping (Step 6.5).
             await EnsureIndexExistsAsync(_opt.DailyWriteAlias, ct);

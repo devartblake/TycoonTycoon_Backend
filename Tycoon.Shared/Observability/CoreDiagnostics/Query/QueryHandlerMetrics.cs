@@ -13,7 +13,7 @@ public class QueryHandlerMetrics
     private readonly Counter<long> _failedQueriesNumber;
     private readonly Histogram<double> _handlerDuration;
 
-    private Stopwatch _timer;
+    private Stopwatch _timer = new();
 
     public QueryHandlerMetrics(IDiagnosticsProvider diagnosticsProvider)
     {
@@ -115,7 +115,7 @@ public class QueryHandlerMetrics
         if (!_handlerDuration.Enabled)
             return;
 
-        var elapsedTimeSeconds = _timer.Elapsed.Seconds;
+        var elapsedTimeSeconds = _timer.Elapsed.TotalSeconds;
 
         _handlerDuration.Record(elapsedTimeSeconds, tags);
 
