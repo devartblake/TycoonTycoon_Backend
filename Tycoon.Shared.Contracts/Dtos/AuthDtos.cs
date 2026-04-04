@@ -37,6 +37,23 @@ namespace Tycoon.Shared.Contracts.Dtos
 
     public record UpdateProfileRequest(string? Handle, string? Country);
 
+    // ===== User Search DTOs =====
+
+    public sealed record UserSearchResultDto(
+        Guid Id,
+        string Handle,
+        string? Country,
+        string? Tier,
+        int Mmr
+    );
+
+    public sealed record UserSearchResponseDto(
+        int Page,
+        int PageSize,
+        int Total,
+        IReadOnlyList<UserSearchResultDto> Items
+    );
+
     // ===== NEW: Signup DTOs =====
 
     /// <summary>
