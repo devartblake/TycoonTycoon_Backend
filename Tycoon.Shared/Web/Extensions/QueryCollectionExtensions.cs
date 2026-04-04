@@ -74,15 +74,13 @@ public static class QueryCollectionExtensions
         var type = genericTypeArgs[0];
         var listType = typeof(List<>);
         var constructedListType = listType.MakeGenericType(type);
-<<<<<<< HEAD
         var values = Activator.CreateInstance(constructedListType) as IList;
         if (values is null)
         {
             return @default!;
         }
-=======
-        dynamic? values = Activator.CreateInstance(constructedListType);
->>>>>>> main
+        
+          dynamic? values = Activator.CreateInstance(constructedListType);
 
         if (collection.TryGetValue(key, out var results))
         {
@@ -94,13 +92,9 @@ public static class QueryCollectionExtensions
                     {
                         var result = JsonConvert.DeserializeObject(s, type);
                         if (result is not null)
-<<<<<<< HEAD
                         {
                             values.Add(result);
                         }
-=======
-                            values.Add(result);
->>>>>>> main
                     }
                     else
                     {
@@ -123,11 +117,7 @@ public static class QueryCollectionExtensions
             return @default;
         }
 
-<<<<<<< HEAD
         return values is T typedValues ? typedValues : @default!;
-=======
-        return (T)values;
->>>>>>> main
     }
 
     private static bool IsValidJson(this string strInput)

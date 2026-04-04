@@ -204,7 +204,6 @@ What was executed now:
 1. [ ] Packet E backend technical cleanup (`Tycoon.*` -> `Synaptix.*` namespace/project identifiers).
 2. [ ] Extended platform APIs (seasons, social, multiplayer) after alpha stability window.
 3. [ ] Optional crypto expansion (staking + richer ledger/history capabilities).
-<<<<<<< HEAD
 
 ---
 
@@ -222,5 +221,37 @@ Now / Next / Later follow-through:
 - **NOW**: run full `dotnet build` in CI/local runner and confirm no remaining errors.
 - **NEXT**: continue warning triage in `Tycoon.Shared` focusing on nullability + obsolete API calls with highest runtime impact.
 - **LATER**: broad warning debt cleanup sweep after alpha gate checks and live smoke/IAP gates are green.
-=======
->>>>>>> main
+
+## Status update — 2026-04-04 (UTC)
+
+Completed:
+1. [x] Verified/fixed `TypeExtensions.GetExtensionMethod` compile issue (`methodName` symbol alignment at the failing location).
+2. [x] Added NOW-gate script check to prevent regression of the same compile issue in future local/CI checks.
+
+Current plan status:
+- **NOW**:
+  - static compile-fix guard check: complete
+  - route smoke gate: complete
+  - full `dotnet build`/migration gate: pending .NET-capable environment
+- **NEXT**:
+  - continue warning cleanup in `Tycoon.Shared` (nullability/obsolete API passes)
+- **LATER**:
+  - broader warning debt sweep after NOW gates pass in runtime-capable environment
+
+## Execution update — 2026-04-04 (NOW/Next/Later continuation)
+
+Delivered:
+1. Added `scripts/alpha-now-complete.sh` to execute NOW gates in sequence:
+   - static/route guard
+   - build gate
+   - optional migration gate
+   - optional live smoke + strict IAP gate
+   - Go/No-Go note
+2. Added CI `now-build-gate` job in `.github/workflows/alpha-p0-smoke.yml`:
+   - installs .NET 8 SDK
+   - runs NOW automation with build + route checks enabled
+
+Plan movement:
+- **NOW**: automated and moved into CI execution path (build + route checks).
+- **NEXT**: continue warning triage once NOW CI gates are stable.
+- **LATER**: keep broader warning-debt and platform expansion items deferred until NEXT is complete.

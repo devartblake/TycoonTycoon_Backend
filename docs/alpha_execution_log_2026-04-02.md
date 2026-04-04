@@ -80,11 +80,7 @@ curl -sS \"http://localhost:5000/store/catalog\"
 
 Windows PowerShell option:
 ```powershell
-<<<<<<< HEAD
 pwsh ./scripts/alpha-p0-smoke.ps1 -BaseUrl http://localhost:5000 -Email you@example.com -LoginPassword '***'
-=======
-pwsh ./scripts/alpha-p0-smoke.ps1 -BaseUrl http://localhost:5000 -Email you@example.com -Password '***'
->>>>>>> main
 ```
 
 Important:
