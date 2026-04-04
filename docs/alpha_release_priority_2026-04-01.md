@@ -267,6 +267,10 @@ NEXT progress (2026-04-04):
 - [x] Metrics warning cleanup:
   - initialized `_timer` fields in command/query metrics handlers to avoid non-nullable initialization warnings
   - switched handler duration recording to `Elapsed.TotalSeconds` for more accurate duration telemetry
+- [x] Obsolete API warning cleanup:
+  - replaced `IApplicationLifetime` check with `IHostApplicationLifetime` in DI dependency validation path
+- [x] Integration test coverage start for NEXT:
+  - added `AlphaP0RouteContractsTests` to verify core P0 GET/POST routes are mapped (non-404 contract checks)
 - [ ] Continue with remaining nullability warning passes after CI build results from the NOW gate.
 
 ## Current completion status (2026-04-04 UTC)
@@ -285,7 +289,7 @@ No — automation is in place, but runtime confirmations (build/migration/live s
 ### Remaining NEXT tasks
 1. [ ] Continue nullability warning cleanup in `Tycoon.Shared` (post-NOW CI feedback loop).
 2. [ ] Triage obsolete API warnings and replace with supported alternatives where safe.
-3. [ ] Add/expand integration tests for Auth/Questions/Store/Economy/Leaderboard/Crypto core paths.
+3. [ ] Expand integration tests beyond route-mapping contracts to include authenticated flow assertions (Auth/Store/Crypto happy+error paths).
 
 ### Remaining LATER tasks
 1. [ ] Packet E backend technical cleanup (`Tycoon.*` -> `Synaptix.*` namespace/project identifiers).
