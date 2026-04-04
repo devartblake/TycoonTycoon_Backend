@@ -112,7 +112,7 @@ public static class QueryCollectionExtensions
         }
         else
         {
-            return @default;
+            return @default!;
         }
 
         return values is T typedValues ? typedValues : @default!;

@@ -17,7 +17,7 @@ namespace Tycoon.Shared.Cache
 
         public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
         {
-            return await _hybridCache.GetOrCreateAsync<T>(
+            return await _hybridCache.GetOrCreateAsync<T?>(
                 key,
                 ct => ValueTask.FromResult<T?>(default),
                 cancellationToken: cancellationToken

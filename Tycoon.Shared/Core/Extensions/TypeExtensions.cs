@@ -111,7 +111,7 @@ namespace Tycoon.Shared.Core.Extensions
             if (method is null)
                 return null!;
 
-            return method.Invoke(null, parameters);
+            return method.Invoke(null, parameters)!;
         }
 
         /// <summary>
@@ -781,13 +781,11 @@ namespace Tycoon.Shared.Core.Extensions
                     yield return interfaceType;
                 }
             }
-            else if (
-                pluggedType.GetTypeInfo().BaseType is not null
-                && pluggedType.GetTypeInfo().BaseType.GetTypeInfo().IsGenericType
-                && (pluggedType.GetTypeInfo().BaseType.GetGenericTypeDefinition() == templateType)
-            )
+            else if (pluggedType.GetTypeInfo().BaseType is { } baseType
+                && baseType.GetTypeInfo().IsGenericType
+                && (baseType.GetGenericTypeDefinition() == templateType))
             {
-                yield return pluggedType.GetTypeInfo().BaseType;
+                yield return baseType;
             }
 
             if (pluggedType == typeof(object))
@@ -795,10 +793,10 @@ namespace Tycoon.Shared.Core.Extensions
             if (pluggedType.GetTypeInfo().BaseType == typeof(object))
                 yield break;
 
-            if (pluggedType.GetTypeInfo().BaseType is null)
+            if (pluggedType.GetTypeInfo().BaseType is not { } parentType)
                 yield break;
 
-            foreach (var interfaceType in FindInterfacesThatClose(pluggedType.GetTypeInfo().BaseType, templateType))
+            foreach (var interfaceType in FindInterfacesThatClose(parentType, templateType))
             {
                 yield return interfaceType;
             }
