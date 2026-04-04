@@ -60,6 +60,8 @@ public abstract class EfDbContextBase(DbContextOptions options)
             var propertyMethodInfo = typeof(Microsoft.EntityFrameworkCore.EF)
                 .GetMethod("Property")
                 ?.MakeGenericMethod(typeof(bool));
+            if (propertyMethodInfo is null)
+                continue;
             var isDeletedProperty = Expression.Call(propertyMethodInfo, parameter, Expression.Constant("IsDeleted"));
 
             // EF.Property<bool>(TEntity, "IsDeleted") == false

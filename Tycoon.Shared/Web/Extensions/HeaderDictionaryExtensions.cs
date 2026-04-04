@@ -13,10 +13,18 @@ public static class HeaderDictionaryExtensions
         {
             foreach (var s in results)
             {
+                if (s is null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    var result = (T)Convert.ChangeType(s, typeof(T));
-                    values.Add(result);
+                    var converted = Convert.ChangeType(s, typeof(T));
+                    if (converted is T result)
+                    {
+                        values.Add(result);
+                    }
                 }
                 catch
                 {
@@ -33,12 +41,12 @@ public static class HeaderDictionaryExtensions
     public static T Get<T>(
         this IHeaderDictionary collection,
         string key,
-        T @default = default,
+        T? @default = default,
         ParameterPick option = ParameterPick.First
     )
     {
         var values = All<T>(collection, key).ToList();
-        var value = @default;
+        T? value = @default;
 
         if (values.Any())
         {
@@ -50,7 +58,7 @@ public static class HeaderDictionaryExtensions
             };
         }
 
-        return value ?? @default;
+        return value ?? @default!;
     }
 }
 
