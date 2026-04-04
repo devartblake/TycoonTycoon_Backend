@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
+@using Tycoon.OperatorDashboard.Components.Common
 
 <h1>Users</h1>
 
@@ -27,12 +28,12 @@ else
     <table>
         <thead><tr><th>ID</th><th>Handle</th><th>Email</th><th>Banned</th><th>Actions</th></tr></thead>
         <tbody>
-            @foreach (var el in _doc.RootElement.GetProperty("items").EnumerateArray())
+            @foreach (var el in JsonSafe.EnumerateArrayProperty(_doc, "items"))
             {
-                var userId  = el.GetProperty("id").GetString() ?? "";
-                var handle  = el.TryGetProperty("handle", out var h) ? h.GetString() ?? "—" : "—";
-                var email   = el.TryGetProperty("email", out var em) ? em.GetString() ?? "—" : "—";
-                var banned  = el.TryGetProperty("isBanned", out var b) && b.GetBoolean();
+                var userId  = JsonSafe.GetText(el, "id", string.Empty);
+                var handle  = JsonSafe.GetText(el, "handle");
+                var email   = JsonSafe.GetText(el, "email");
+                var banned  = JsonSafe.GetBool(el, "isBanned");
                 <tr>
                     <td><code>@userId[..Math.Min(8, userId.Length)]…</code></td>
                     <td>@handle</td>
