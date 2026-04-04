@@ -17,7 +17,7 @@ namespace Tycoon.Shared.Cache
                 new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }
             );
 
-            await database.PublishAsync(channelName, jsonData);
+            await database.PublishAsync(RedisChannel.Literal(channelName), jsonData);
         }
 
         public static async Task PublishMessage<T>(this IDatabase database, T data)
@@ -33,7 +33,7 @@ namespace Tycoon.Shared.Cache
                 new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }
             );
 
-            await transaction.PublishAsync(channelName, jsonData);
+            await transaction.PublishAsync(RedisChannel.Literal(channelName), jsonData);
         }
 
         public static async Task PublishMessage<T>(this ITransaction transaction, T data)
@@ -48,7 +48,7 @@ namespace Tycoon.Shared.Cache
             Func<string, T, Task> handler
         )
         {
-            var channelMessageQueue = await database.Multiplexer.GetSubscriber().SubscribeAsync(channelName);
+            var channelMessageQueue = await database.Multiplexer.GetSubscriber().SubscribeAsync(RedisChannel.Literal(channelName));
 
             channelMessageQueue.OnMessage(async channelMessage =>
             {
@@ -59,7 +59,7 @@ namespace Tycoon.Shared.Cache
 
         public static async Task SubscribeMessage<T>(this IDatabase database, string channelName, Func<T, Task> handler)
         {
-            var channelMessageQueue = await database.Multiplexer.GetSubscriber().SubscribeAsync(channelName);
+            var channelMessageQueue = await database.Multiplexer.GetSubscriber().SubscribeAsync(RedisChannel.Literal(channelName));
 
             channelMessageQueue.OnMessage(async channelMessage =>
             {

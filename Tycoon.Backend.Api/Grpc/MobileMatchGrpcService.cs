@@ -7,6 +7,7 @@ using Tycoon.Backend.Application.Leaderboards;
 using Tycoon.Backend.Application.Matches;
 using Tycoon.Backend.Api.Grpc;
 using Tycoon.Shared.Contracts.Dtos;
+using Tycoon.Backend.Application.Abstractions;
 
 namespace Tycoon.Backend.Api.Grpc;
 
@@ -19,7 +20,7 @@ namespace Tycoon.Backend.Api.Grpc;
 ///   PlayMatch       — bidirectional stream; live match session
 ///   WatchLeaderboard — server stream; live rank neighbourhood
 ///
-/// Authentication: clients must send an `authorization: Bearer <jwt>`
+/// Authentication: clients must send an `authorization: Bearer &lt;jwt&gt;`
 /// gRPC metadata header (same token from POST /auth/login).
 /// </summary>
 public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServiceBase
@@ -34,12 +35,14 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
     private static readonly ConcurrentDictionary<string, MatchSession> _sessions = new();
 
     private readonly IMediator _mediator;
+    private readonly IAppDb _db;
     private readonly ILogger<MobileMatchGrpcService> _logger;
     private readonly TimeSpan _leaderboardPollInterval;
 
-    public MobileMatchGrpcService(IMediator mediator, ILogger<MobileMatchGrpcService> logger)
+    public MobileMatchGrpcService(IMediator mediator, IAppDb db, ILogger<MobileMatchGrpcService> logger)
     {
         _mediator = mediator;
+        _db = db;
         _logger   = logger;
         _leaderboardPollInterval = ResolveLeaderboardPollInterval(
             Environment.GetEnvironmentVariable(LeaderboardPollSecondsEnv));

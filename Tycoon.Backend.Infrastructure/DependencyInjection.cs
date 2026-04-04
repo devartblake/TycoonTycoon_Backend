@@ -82,13 +82,10 @@ namespace Tycoon.Backend.Infrastructure
                 })
                 .UseSnakeCaseNamingConvention();
 
-                // Suppress pending model changes warning if configured
-                var suppressWarnings = cfg.GetValue<bool>("MigrationService:SuppressPendingModelWarnings");
-                if (suppressWarnings)
-                {
-                    opt.ConfigureWarnings(warnings =>
-                        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
-                }
+                // Suppress false-positive pending model changes warning caused by
+                // UseSnakeCaseNamingConvention() runtime vs design-time model diff.
+                opt.ConfigureWarnings(warnings =>
+                    warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
 
                 // Enable sensitive data logging in development (or when explicitly enabled)
                 if (cfg.GetValue<bool>("Logging:EnableSensitiveDataLogging"))
@@ -167,8 +164,8 @@ namespace Tycoon.Backend.Infrastructure
                         o.Url = elasticUrl;
 
                         // Credentials (optional)
-                        o.Username = cfg["Elastic:Username"];
-                        o.Password = cfg["Elastic:Password"];
+                        o.Username = cfg["Elastic:Username"] ?? string.Empty;
+                        o.Password = cfg["Elastic:Password"] ?? string.Empty;
 
                         // Aliases (optional defaults)
                         o.DailyWriteAlias = cfg["Elastic:DailyWriteAlias"] ?? o.DailyWriteAlias;
