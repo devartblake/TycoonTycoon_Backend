@@ -1,4 +1,4 @@
-import { apiGetJson } from '../lib/apiClient'
+import { apiGetJson, apiPostJson } from '../lib/apiClient'
 
 export function getUsers({ page = 1, pageSize = 20, query = '', isBanned = '' } = {}) {
   const params = new URLSearchParams({
@@ -8,4 +8,12 @@ export function getUsers({ page = 1, pageSize = 20, query = '', isBanned = '' } 
   if (query) params.set('q', query)
   if (isBanned !== '') params.set('isBanned', isBanned)
   return apiGetJson(`/api/users?${params.toString()}`)
+}
+
+export function banUser(userId, reason = 'Actioned from Operator Dashboard (Vue)') {
+  return apiPostJson(`/api/users/${userId}/ban`, { reason })
+}
+
+export function unbanUser(userId) {
+  return apiPostJson(`/api/users/${userId}/unban`)
 }

@@ -134,6 +134,7 @@ while preserving feature parity, role-based access control, and operational reli
 - ✅ **Wave A UI parity started**: Audit Log and Users now render table/paging UI (not raw JSON payload dumps).
 - ✅ **Dashboard UI parity started**: overview route now renders KPI-style metric cards from BFF payload.
 - ✅ **Wave A filtering started**: Audit Log status filter and Users search/ban filters now map to BFF query params.
+- ✅ **Wave A actions started**: Users ban/unban workflow wired through Web BFF user endpoints.
 - ⏳ **Still pending**:
   - Real cookie/JWT auth integration in `Tycoon.OperatorDashboard.Web`
-  - Wave A parity completion checklist (action workflows + richer UX interactions)
+  - Remaining Wave A action workflows + richer UX interactions

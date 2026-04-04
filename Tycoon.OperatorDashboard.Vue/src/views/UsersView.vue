@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { getUsers } from '../api/users'
+import { banUser, getUsers, unbanUser } from '../api/users'
 
 const loading = ref(true)
 const error = ref('')
@@ -10,6 +10,7 @@ const pageSize = 20
 const total = ref(0)
 const query = ref('')
 const isBanned = ref('')
+const actionMessage = ref('')
 
 function readItems(payload) {
   return Array.isArray(payload?.items) ? payload.items : []
@@ -21,6 +22,7 @@ function readTotal(payload, itemCount) {
 
 async function loadUsers() {
   loading.value = true
+  actionMessage.value = ''
   try {
     const payload = await getUsers({
       page: page.value,
@@ -35,6 +37,23 @@ async function loadUsers() {
     error.value = err?.message ?? 'Failed to load users.'
   } finally {
     loading.value = false
+  }
+}
+
+async function toggleBan(user) {
+  actionMessage.value = ''
+
+  try {
+    if (user.isBanned) {
+      await unbanUser(user.id)
+      actionMessage.value = `Unbanned ${user.handle || user.id}.`
+    } else {
+      await banUser(user.id)
+      actionMessage.value = `Banned ${user.handle || user.id}.`
+    }
+    await loadUsers()
+  } catch (err) {
+    actionMessage.value = err?.message ?? 'User action failed.'
   }
 }
 
@@ -81,6 +100,7 @@ onMounted(loadUsers)
             <th style="text-align:left;padding:.5rem;border-bottom:1px solid #e2e8f0">Handle</th>
             <th style="text-align:left;padding:.5rem;border-bottom:1px solid #e2e8f0">Email</th>
             <th style="text-align:left;padding:.5rem;border-bottom:1px solid #e2e8f0">Banned</th>
+            <th style="text-align:left;padding:.5rem;border-bottom:1px solid #e2e8f0">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -89,6 +109,11 @@ onMounted(loadUsers)
             <td style="padding:.5rem;border-bottom:1px solid #f1f5f9">{{ user.handle || '—' }}</td>
             <td style="padding:.5rem;border-bottom:1px solid #f1f5f9">{{ user.email || '—' }}</td>
             <td style="padding:.5rem;border-bottom:1px solid #f1f5f9">{{ user.isBanned ? 'Yes' : 'No' }}</td>
+            <td style="padding:.5rem;border-bottom:1px solid #f1f5f9">
+              <button @click="toggleBan(user)">
+                {{ user.isBanned ? 'Unban' : 'Ban' }}
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -99,6 +124,8 @@ onMounted(loadUsers)
         <span>Page {{ page }}</span>
         <button @click="nextPage" :disabled="page * pageSize >= total">Next</button>
       </div>
+
+      <p v-if="actionMessage" style="margin-top:.5rem;color:#0f766e">{{ actionMessage }}</p>
     </template>
   </section>
 </template>
