@@ -54,6 +54,7 @@ using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.Questions;
+using Tycoon.Backend.Api.Features.Crypto;
 using Tycoon.Backend.Api.Features.Store;
 using Tycoon.Backend.Api.Features.Referrals;
 using Tycoon.Backend.Api.Features.GameEvents;
@@ -276,6 +277,13 @@ else
 
 // Hangfire
 var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", true);
+var useInMemoryDbForTesting = builder.Configuration.GetValue("Testing:UseInMemoryDb", false);
+
+if (useInMemoryDbForTesting)
+{
+    Console.WriteLine("⚠️ Testing:UseInMemoryDb=true detected. Disabling Hangfire.");
+    hangfireEnabled = false;
+}
 
 if (hangfireEnabled)
 {
@@ -705,6 +713,7 @@ QuestionsUploadEndpoints.Map(app);
 QuestionsEndpoints.Map(app);
 VoteEndpoints.Map(app);
 StoreEndpoints.Map(app);
+CryptoEconomyEndpoints.Map(app);
 GameEventsEndpoints.Map(app);
 GameEventStatsEndpoints.Map(app);
 GameEventStatsEndpoints.MapTerritory(app);

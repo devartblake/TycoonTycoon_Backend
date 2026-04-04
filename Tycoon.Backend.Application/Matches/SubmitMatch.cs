@@ -27,7 +27,6 @@ namespace Tycoon.Backend.Application.Matches
         AntiCheatService antiCheat,
         SeasonService seasons,
         SeasonPointsService seasonsPoints,
-        TierAssignmentService tiers,
         ModerationService moderation,
         EnforcementService enforcement,
         PartyIntegrityService partyIntegrity,
