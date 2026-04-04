@@ -24,6 +24,7 @@ using Tycoon.Backend.Api.Features.AdminAnalytics;
 using Tycoon.Backend.Api.Features.AdminAntiCheat;
 using Tycoon.Backend.Api.Features.AdminAuth;
 using Tycoon.Backend.Api.Features.AdminEconomy;
+using Tycoon.Backend.Api.Features.AdminPlayerTransactions;
 using Tycoon.Backend.Api.Features.AdminEventQueue;
 using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
@@ -33,6 +34,7 @@ using Tycoon.Backend.Api.Features.AdminConfig;
 using Tycoon.Backend.Api.Features.AdminEmailAcl;
 using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
+using Tycoon.Backend.Api.Features.AdminStore;
 using Tycoon.Backend.Api.Features.AdminSeasons;
 using Tycoon.Backend.Api.Features.AdminSkills;
 using Tycoon.Backend.Api.Features.AdminUsers;
@@ -43,6 +45,7 @@ using Tycoon.Backend.Api.Features.Leaderboards;
 using Tycoon.Backend.Api.Features.Matches;
 using Tycoon.Backend.Api.Features.Matchmaking;
 using Tycoon.Backend.Api.Features.Missions;
+using Tycoon.Backend.Api.Features.Ml;
 using Tycoon.Backend.Api.Features.Mobile.Matches;
 using Tycoon.Backend.Api.Features.Mobile.Seasons;
 using Tycoon.Backend.Api.Features.Mobile.Players;
@@ -53,6 +56,8 @@ using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.Questions;
+using Tycoon.Backend.Api.Features.Crypto;
+using Tycoon.Backend.Api.Features.Store;
 using Tycoon.Backend.Api.Features.Referrals;
 using Tycoon.Backend.Api.Features.GameEvents;
 using Tycoon.Backend.Api.Features.Guardians;
@@ -148,12 +153,12 @@ builder.Services.AddSwaggerGen(c =>
 
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Tycoon Backend API",
+        Title = "Synaptix API",
         Version = "v1",
-        Description = "Trivia Tycoon Game Backend - Multiplayer Quiz Game API",
+        Description = "Platform API for Synaptix gameplay, progression, live competition, and player systems.",
         Contact = new OpenApiContact
         {
-            Name = "Tycoon Development Team"
+            Name = "Synaptix Development Team"
         }
     });
 
@@ -274,6 +279,13 @@ else
 
 // Hangfire
 var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", true);
+var useInMemoryDbForTesting = builder.Configuration.GetValue("Testing:UseInMemoryDb", false);
+
+if (useInMemoryDbForTesting)
+{
+    Console.WriteLine("⚠️ Testing:UseInMemoryDb=true detected. Disabling Hangfire.");
+    hangfireEnabled = false;
+}
 
 if (hangfireEnabled)
 {
@@ -507,9 +519,9 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tycoon Trivia Backend API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Synaptix API v1");
         c.RoutePrefix = "swagger";
-        c.DocumentTitle = "Tycoon API Documentation";
+        c.DocumentTitle = "Synaptix API Documentation";
         c.DisplayRequestDuration();
         c.EnableDeepLinking();
         c.EnableFilter();
@@ -688,6 +700,7 @@ app.MapGrpcService<MobileMatchGrpcService>();
 AnalyticsEndpoints.Map(app);
 AuthEndpoints.Map(app);
 UsersEndpoints.Map(app);
+PlayerPreferencesEndpoints.Map(app);
 PlayersEndpoints.Map(app);
 MatchesEndpoints.Map(app);
 MatchmakingEndpoints.Map(app);
@@ -702,8 +715,11 @@ FriendsEndpoints.Map(app);
 PartyEndpoints.Map(app);
 RankedLeaderboardsEndpoints.Map(app);
 SeasonRewardsEndpoints.Map(app);
-QuestionsUploadEndpoints.Map(app);
+QuestionsEndpoints.Map(app);
 VoteEndpoints.Map(app);
+StoreEndpoints.Map(app);
+CryptoEconomyEndpoints.Map(app);
+MlScoringEndpoints.Map(app);
 GameEventsEndpoints.Map(app);
 GameEventStatsEndpoints.Map(app);
 GameEventStatsEndpoints.MapTerritory(app);
@@ -736,6 +752,7 @@ AdminMediaEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
 AdminAuditEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);
+AdminPlayerTransactionEndpoints.Map(admin);
 AdminPowerupsEndpoints.Map(admin);
 AdminSkillsEndpoints.Map(admin);
 AdminMatchesEndpoints.Map(admin);
@@ -747,7 +764,9 @@ AdminAntiCheatAnalyticsEndpoints.Map(admin);
 AdminPartyAntiCheatEndpoints.Map(admin);
 AdminSeasonRewardsEndpoints.Map(admin);
 AdminSeasonLifecycleEndpoints.Map(admin);
+AdminSeasonPointsEndpoints.Map(admin);
 AdminEmailAclEndpoints.Map(admin);
+AdminStoreEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Tycoon Backend API starting...");

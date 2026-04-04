@@ -6,10 +6,12 @@ import httpx
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from elasticsearch import AsyncElasticsearch
+from pymongo.errors import OperationFailure
 
 from app.config import settings
 from app.grpc_client import GrpcClientManager
 from app.routers import analytics, ml, utilities, webhooks
+from app.routes import auth as auth_routes, config as config_routes
 
 # Normalize .NET-style log level names (Information, Warning, Critical) to Python equivalents
 _DOTNET_TO_PYTHON_LEVEL: dict[str, str] = {
@@ -27,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Shared async HTTP client for REST calls to tycoon-api
+    # Shared async HTTP client for REST calls to synaptix-api
     app.state.backend = httpx.AsyncClient(
         base_url=settings.backend_base_url,
         timeout=10.0,
@@ -49,6 +51,14 @@ async def lifespan(app: FastAPI):
         headers=es_headers,
     )
 
+    # Ensure analytics_events collection has a unique index on event_id for idempotency
+    try:
+        await app.state.mongo_db["analytics_events"].create_index(
+            [("event_id", 1)], unique=True, background=True
+        )
+    except OperationFailure as exc:
+        logger.warning("Could not create analytics_events index (may already exist): %s", exc)
+
     stop_event = asyncio.Event()
 
     async def dry_run_scheduler():
@@ -64,11 +74,10 @@ async def lifespan(app: FastAPI):
                 pass
 
     scheduler_task = asyncio.create_task(dry_run_scheduler())
-    logger.info("Sidecar started. Backend: %s", settings.backend_base_url)
     # Shared gRPC channel for high-throughput internal calls (port 5001)
     app.state.grpc = GrpcClientManager()
     await app.state.grpc.connect()
-    logger.info("Sidecar started. Backend: %s  gRPC: %s", settings.backend_base_url, settings.backend_grpc_url)
+    logger.info("Synaptix Sidecar started. Backend: %s  gRPC: %s", settings.backend_base_url, settings.backend_grpc_url)
     yield
     stop_event.set()
     await scheduler_task
@@ -79,16 +88,18 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Tycoon Sidecar",
+    title="Synaptix Sidecar",
     version="1.0.0",
-    description="AI/ML inference, analytics pipelines, webhooks, and utilities for Tycoon Backend.",
+    description="AI/ML inference, analytics, webhooks, and game balance utilities for Synaptix.",
     lifespan=lifespan,
 )
 
-app.include_router(ml.router,        prefix="/ml",        tags=["ML"])
-app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
-app.include_router(webhooks.router,  prefix="/webhooks",  tags=["Webhooks"])
-app.include_router(utilities.router, prefix="/utilities", tags=["Utilities"])
+app.include_router(ml.router,               prefix="/ml",        tags=["ML"])
+app.include_router(analytics.router,        prefix="/analytics", tags=["Analytics"])
+app.include_router(webhooks.router,         prefix="/webhooks",  tags=["Webhooks"])
+app.include_router(utilities.router,        prefix="/utilities", tags=["Utilities"])
+app.include_router(auth_routes.router,      prefix="/auth",      tags=["Auth"])
+app.include_router(config_routes.router,    prefix="/config",    tags=["Config"])
 
 
 @app.get("/health", tags=["Health"])

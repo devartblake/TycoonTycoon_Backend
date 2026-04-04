@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Economy;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.Users
@@ -16,7 +18,39 @@ namespace Tycoon.Backend.Api.Features.Users
                 .WithTags("Users")
                 .RequireAuthorization();
 
+            usersGroup.MapGet("/search", SearchUsers);
+            usersGroup.MapGet("/{userId:guid}/career-summary", GetCareerSummary);
             usersGroup.MapPatch("/me", UpdateCurrentUserProfile);
+            usersGroup.MapGet("/me/wallet", GetMyWallet);
+            usersGroup.MapGet("/me/transactions", GetMyTransactions);
+            usersGroup.MapPost("/me/onboarding-reward", ClaimOnboardingReward);
+        }
+
+        private static async Task<IResult> SearchUsers(
+            [FromQuery] string handle,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            if (string.IsNullOrWhiteSpace(handle) || handle.Trim().Length < 2)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Query parameter 'handle' must be at least 2 characters.");
+
+            var normalizedHandle = handle.Trim().ToLowerInvariant();
+
+            var users = await database.Users
+                .Where(u => u.Handle.ToLower().Contains(normalizedHandle))
+                .OrderBy(u => u.Handle)
+                .Take(20)
+                .Select(u => new UserDto(
+                    u.Id,
+                    u.Handle,
+                    u.Email,
+                    u.Country,
+                    u.Tier,
+                    u.Mmr
+                ))
+                .ToListAsync(cancellation);
+
+            return Results.Ok(users);
         }
 
         private static async Task<IResult> UpdateCurrentUserProfile(
@@ -25,7 +59,7 @@ namespace Tycoon.Backend.Api.Features.Users
             IAppDb database,
             CancellationToken cancellation)
         {
-            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userIdClaim?.Value))
                 return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
 
@@ -52,5 +86,152 @@ namespace Tycoon.Backend.Api.Features.Users
 
             return Results.Ok(updatedProfile);
         }
+
+        private static async Task<IResult> GetCareerSummary(
+            Guid userId,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            if (userId == Guid.Empty)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "userId cannot be empty.");
+
+            var exists = await database.Users
+                .AnyAsync(u => u.Id == userId, cancellation);
+
+            if (!exists)
+                return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "User not found.");
+
+            var aggregate = await database.PlayerSeasonProfiles
+                .Where(x => x.PlayerId == userId)
+                .GroupBy(_ => 1)
+                .Select(g => new
+                {
+                    Wins = g.Sum(x => x.Wins),
+                    Losses = g.Sum(x => x.Losses),
+                    Draws = g.Sum(x => x.Draws),
+                    MatchesPlayed = g.Sum(x => x.MatchesPlayed)
+                })
+                .FirstOrDefaultAsync(cancellation);
+
+            var wins = aggregate?.Wins ?? 0;
+            var losses = aggregate?.Losses ?? 0;
+            var draws = aggregate?.Draws ?? 0;
+            var matchesPlayed = aggregate?.MatchesPlayed ?? 0;
+            var winRate = matchesPlayed > 0
+                ? Math.Round((decimal)wins / matchesPlayed, 4, MidpointRounding.AwayFromZero)
+                : 0m;
+
+            return Results.Ok(new UserCareerSummaryDto(
+                UserId: userId,
+                Wins: wins,
+                Losses: losses,
+                Draws: draws,
+                MatchesPlayed: matchesPlayed,
+                WinRate: winRate));
+        }
+
+        private static async Task<IResult> GetMyWallet(
+            HttpContext httpContext,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            if (!TryGetUserId(httpContext, out var userId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            var wallet = await database.PlayerWallets
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.PlayerId == userId, cancellation);
+
+            return Results.Ok(new PlayerWalletDto(
+                PlayerId: userId,
+                Credits: wallet?.Coins ?? 0,
+                NeuralXp: wallet?.Xp ?? 0,
+                SynapseShards: wallet?.Diamonds ?? 0,
+                UpdatedAtUtc: wallet?.UpdatedAtUtc ?? DateTimeOffset.UtcNow));
+        }
+
+        private static async Task<IResult> GetMyTransactions(
+            HttpContext httpContext,
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
+            EconomyService economyService,
+            CancellationToken cancellation)
+        {
+            if (!TryGetUserId(httpContext, out var userId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            page = page <= 0 ? 1 : page;
+            pageSize = pageSize <= 0 ? 20 : Math.Clamp(pageSize, 1, 100);
+
+            var history = await economyService.GetHistoryAsync(userId, page, pageSize, cancellation);
+            return Results.Ok(history);
+        }
+
+        private static async Task<IResult> ClaimOnboardingReward(
+            HttpContext httpContext,
+            IAppDb database,
+            EconomyService economyService,
+            CancellationToken cancellation)
+        {
+            if (!TryGetUserId(httpContext, out var userId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            var alreadyClaimed = await database.EconomyTransactions
+                .AsNoTracking()
+                .AnyAsync(t => t.PlayerId == userId && t.Kind == "onboarding-reward", cancellation);
+
+            if (alreadyClaimed)
+                return ApiResponses.Error(StatusCodes.Status409Conflict, "ALREADY_CLAIMED", "Onboarding reward has already been claimed.");
+
+            // Deterministic EventId — same player always produces same ID, preventing double-grants on retries.
+            var eventId = new Guid(System.Security.Cryptography.MD5.HashData(
+                System.Text.Encoding.UTF8.GetBytes($"onboarding-reward:{userId}")));
+
+            var result = await economyService.ApplyAsync(new CreateEconomyTxnRequest(
+                EventId: eventId,
+                PlayerId: userId,
+                Kind: "onboarding-reward",
+                Lines: new[]
+                {
+                    new EconomyLineDto(CurrencyType.Coins, 500),
+                    new EconomyLineDto(CurrencyType.Xp, 100)
+                },
+                Note: "Welcome to Synaptix — starter Credits and Neural XP granted."
+            ), cancellation);
+
+            if (result.Status == EconomyTxnStatus.Duplicate)
+                return ApiResponses.Error(StatusCodes.Status409Conflict, "ALREADY_CLAIMED", "Onboarding reward has already been claimed.");
+
+            return Results.Ok(new OnboardingRewardDto(
+                PlayerId: userId,
+                CreditsGranted: 500,
+                NeuralXpGranted: 100,
+                BalanceCredits: result.BalanceCoins,
+                BalanceNeuralXp: result.BalanceXp,
+                BalanceSynapseShards: result.BalanceDiamonds));
+        }
+
+        private static bool TryGetUserId(HttpContext httpContext, out Guid userId)
+        {
+            userId = Guid.Empty;
+            var claim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)
+                        ?? httpContext.User.FindFirst("sub");
+            return claim is not null && Guid.TryParse(claim.Value, out userId) && userId != Guid.Empty;
+        }
+
+        public sealed record PlayerWalletDto(
+            Guid PlayerId,
+            int Credits,
+            int NeuralXp,
+            int SynapseShards,
+            DateTimeOffset UpdatedAtUtc);
+
+        public sealed record OnboardingRewardDto(
+            Guid PlayerId,
+            int CreditsGranted,
+            int NeuralXpGranted,
+            int BalanceCredits,
+            int BalanceNeuralXp,
+            int BalanceSynapseShards);
     }
 }
