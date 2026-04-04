@@ -34,9 +34,9 @@ namespace Tycoon.Backend.Application.Economy
                 // Allow
             }
 
-            var dxp = req.Lines.Where(l => l.Currency == CurrencyType.Xp).Sum(l => l.Delta);
-            var dcoins = req.Lines.Where(l => l.Currency == CurrencyType.Coins).Sum(l => l.Delta);
-            var ddiamonds = req.Lines.Where(l => l.Currency == CurrencyType.Diamonds).Sum(l => l.Delta);
+            var dxp = lines.Where(l => l.Currency == CurrencyType.Xp).Sum(l => l.Delta);
+            var dcoins = lines.Where(l => l.Currency == CurrencyType.Coins).Sum(l => l.Delta);
+            var ddiamonds = lines.Where(l => l.Currency == CurrencyType.Diamonds).Sum(l => l.Delta);
 
             var w = await _db.PlayerWallets.FirstOrDefaultAsync(x => x.PlayerId == req.PlayerId, ct);
             if (w is null)
@@ -49,7 +49,7 @@ namespace Tycoon.Backend.Application.Economy
             if (!w.CanApply(dxp, dcoins, ddiamonds))
             {
                 return new EconomyTxnResultDto(req.EventId, req.PlayerId, EconomyTxnStatus.InsufficientFunds,
-                    req.Lines, w.Xp, w.Coins, w.Diamonds, now);
+                    lines, w.Xp, w.Coins, w.Diamonds, now);
             }
 
             // Apply wallet changes
@@ -57,7 +57,7 @@ namespace Tycoon.Backend.Application.Economy
 
             // Persist transaction
             var txn = new EconomyTransaction(req.EventId, req.PlayerId, req.Kind, req.Note);
-            txn.SetLines(req.Lines);
+            txn.SetLines(lines);
 
             _db.EconomyTransactions.Add(txn);
 
@@ -70,11 +70,11 @@ namespace Tycoon.Backend.Application.Economy
                 // Race: treat as duplicate
                 var wallet = await EnsureWalletAsync(req.PlayerId, ct);
                 return new EconomyTxnResultDto(req.EventId, req.PlayerId, EconomyTxnStatus.Duplicate,
-                    req.Lines, wallet.Xp, wallet.Coins, wallet.Diamonds, now);
+                    lines, wallet.Xp, wallet.Coins, wallet.Diamonds, now);
             }
 
             return new EconomyTxnResultDto(req.EventId, req.PlayerId, EconomyTxnStatus.Applied,
-                req.Lines, w.Xp, w.Coins, w.Diamonds, now);
+                lines, w.Xp, w.Coins, w.Diamonds, now);
         }
 
         public async Task<EconomyHistoryDto> GetHistoryAsync(Guid playerId, int page, int pageSize, CancellationToken ct)

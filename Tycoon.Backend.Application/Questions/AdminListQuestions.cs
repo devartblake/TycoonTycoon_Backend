@@ -10,6 +10,7 @@ namespace Tycoon.Backend.Application.Questions
         IReadOnlyList<string>? Tags,
         TagFilterMode TagMode,
         string? Category,
+        string? Status,
         QuestionDifficulty? Difficulty,
         string Sort = "updated_desc",
         int Page = 1,

@@ -1,6 +1,7 @@
 namespace Tycoon.Shared.Abstractions.Core.Domain
 {
-    public interface IAuditableEntity<out TId> : IEntity<TId>, IHaveAudit;
+    public interface IAuditableEntity<out TId> : IEntity<TId>, IHaveAudit
+        where TId : notnull;
 
     public interface IAuditableEntity<out TIdentity, TId> : IAuditableEntity<TIdentity>
         where TIdentity : Identity<TId>;
