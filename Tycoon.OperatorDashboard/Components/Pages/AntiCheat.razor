@@ -42,14 +42,14 @@ else
         <tbody>
             @if (_flags is not null)
             {
-                @foreach (var el in _flags.RootElement.GetProperty("items").EnumerateArray())
+                @foreach (var el in EnumerateItems(_flags))
                 {
-                    var id       = el.TryGetProperty("id",         out var i) ? i.GetGuid() : Guid.Empty;
-                    var player   = el.TryGetProperty("playerId",   out var p) ? p.GetString() ?? "—" : "—";
-                    var rule     = el.TryGetProperty("ruleKey",    out var r) ? r.GetString() ?? "—" : "—";
-                    var sev      = el.TryGetProperty("severity",   out var s) ? s.GetString() ?? "—" : "—";
-                    var created  = el.TryGetProperty("flaggedAt",  out var c) ? c.GetString() ?? "—" : "—";
-                    var reviewed = el.TryGetProperty("isReviewed", out var rv) && rv.GetBoolean();
+                    var id       = GetGuid(el, "id");
+                    var player   = GetText(el, "playerId");
+                    var rule     = GetText(el, "ruleKey");
+                    var sev      = GetText(el, "severity");
+                    var created  = GetText(el, "flaggedAt");
+                    var reviewed = GetBool(el, "isReviewed");
                     <tr>
                         <td><code>@player[..Math.Min(8, player.Length)]…</code></td>
                         <td><code>@rule</code></td>
@@ -98,7 +98,7 @@ else
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem">
             @foreach (var (label, key, cls) in new[] { ("Total", "total", ""), ("Severe", "severe", "badge off"), ("Warning", "warning", "badge"), ("Info", "info", "badge on") })
             {
-                var val = root.TryGetProperty(key, out var v) ? v.GetInt32() : 0;
+                var val = GetInt(root, key);
                 <div class="card" style="text-align:center">
                     <div style="font-size:2rem;font-weight:700;color:#1e293b">@val</div>
                     <div style="font-size:.875rem;color:#64748b">@label</div>
@@ -113,8 +113,8 @@ else
                 <tbody>
                     @foreach (var rule in topRules.EnumerateArray())
                     {
-                        var rkey   = rule.TryGetProperty("ruleKey", out var rk) ? rk.GetString() ?? "—" : "—";
-                        var rcount = rule.TryGetProperty("count",   out var rc) ? rc.GetInt32() : 0;
+                        var rkey   = GetText(rule, "ruleKey");
+                        var rcount = GetInt(rule, "count");
                         <tr><td><code>@rkey</code></td><td>@rcount</td></tr>
                     }
                 </tbody>
@@ -138,14 +138,14 @@ else
         <tbody>
             @if (_partyFlags is not null)
             {
-                @foreach (var el in _partyFlags.RootElement.GetProperty("items").EnumerateArray())
+                @foreach (var el in EnumerateItems(_partyFlags))
                 {
-                    var id      = el.TryGetProperty("id",         out var i) ? i.GetGuid() : Guid.Empty;
-                    var party   = el.TryGetProperty("partyId",    out var pa) ? pa.GetString() ?? "—" : "—";
-                    var player  = el.TryGetProperty("playerId",   out var p) ? p.GetString() ?? "—" : "—";
-                    var rule    = el.TryGetProperty("ruleKey",    out var r) ? r.GetString() ?? "—" : "—";
-                    var created = el.TryGetProperty("flaggedAt",  out var c) ? c.GetString() ?? "—" : "—";
-                    var reviewed = el.TryGetProperty("isReviewed", out var rv) && rv.GetBoolean();
+                    var id      = GetGuid(el, "id");
+                    var party   = GetText(el, "partyId");
+                    var player  = GetText(el, "playerId");
+                    var rule    = GetText(el, "ruleKey");
+                    var created = GetText(el, "flaggedAt");
+                    var reviewed = GetBool(el, "isReviewed");
                     <tr>
                         <td><code>@party[..Math.Min(8, party.Length)]…</code></td>
                         <td><code>@player[..Math.Min(8, player.Length)]…</code></td>
@@ -235,6 +235,71 @@ else
         "warning" => "",
         _         => "on"
     };
+
+    private static IEnumerable<JsonElement> EnumerateItems(JsonDocument doc)
+    {
+        if (doc.RootElement.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in items.EnumerateArray())
+                yield return item;
+        }
+    }
+
+    private static string GetText(JsonElement source, string propertyName, string fallback = "—")
+    {
+        if (!source.TryGetProperty(propertyName, out var value))
+            return fallback;
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString() ?? fallback,
+            JsonValueKind.Number => value.ToString(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Null => fallback,
+            JsonValueKind.Undefined => fallback,
+            _ => value.ToString()
+        };
+    }
+
+    private static Guid GetGuid(JsonElement source, string propertyName)
+    {
+        if (!source.TryGetProperty(propertyName, out var value))
+            return Guid.Empty;
+
+        if (value.ValueKind == JsonValueKind.String && Guid.TryParse(value.GetString(), out var parsed))
+            return parsed;
+
+        return Guid.Empty;
+    }
+
+    private static bool GetBool(JsonElement source, string propertyName)
+    {
+        if (!source.TryGetProperty(propertyName, out var value))
+            return false;
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.String => bool.TryParse(value.GetString(), out var parsed) && parsed,
+            JsonValueKind.Number => value.TryGetInt32(out var n) && n != 0,
+            _ => false
+        };
+    }
+
+    private static int GetInt(JsonElement source, string propertyName)
+    {
+        if (!source.TryGetProperty(propertyName, out var value))
+            return 0;
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetInt32(out var n) => n,
+            JsonValueKind.String when int.TryParse(value.GetString(), out var n) => n,
+            _ => 0
+        };
+    }
 }
 
 <style>
