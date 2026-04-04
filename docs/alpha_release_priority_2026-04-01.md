@@ -264,6 +264,9 @@ NEXT progress (2026-04-04):
   - aligned `MessagePackHybridCacheSerializerFactory.TryCreateSerializer` out-nullability with interface contract
   - constrained `IHaveIdentity<TId>` to `TId : notnull` for safer identity projection
   - updated `SqlKataExtensions.QueryOneAsync` to return `Task<T?>` (matches `QueryFirstOrDefaultAsync` behavior)
+- [x] Metrics warning cleanup:
+  - initialized `_timer` fields in command/query metrics handlers to avoid non-nullable initialization warnings
+  - switched handler duration recording to `Elapsed.TotalSeconds` for more accurate duration telemetry
 - [ ] Continue with remaining nullability warning passes after CI build results from the NOW gate.
 
 ## Current completion status (2026-04-04 UTC)
