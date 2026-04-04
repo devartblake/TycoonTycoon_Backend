@@ -30,4 +30,13 @@ namespace Tycoon.Shared.Contracts.Dtos
         int BalanceCoins,
         int BalanceDiamonds,
         string? ErrorMessage);
+
+    public sealed record PlayerInventoryItemDto(
+        string ItemType,
+        int Quantity);
+
+    public sealed record PlayerInventoryDto(
+        Guid PlayerId,
+        IReadOnlyList<PlayerInventoryItemDto> Items,
+        int Count);
 }

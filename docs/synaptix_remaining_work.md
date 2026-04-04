@@ -95,7 +95,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [x] `POST /store/purchase` — Purchase with in-game currency (Credits/Synapse Shards)
 - [x] `POST /store/iap/validate` — Receipt validation endpoint + transaction tracking
 - [ ] Strict Apple/Google provider-side verification (enable with `Iap:EnableStrictValidation`)
-- [ ] Player inventory/cosmetics endpoint
+- [x] Player inventory/cosmetics endpoint
 - [ ] Battle pass / premium subscription support (if planned)
 
 ### Priority 4: Frontend Economy Integration

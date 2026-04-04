@@ -22,6 +22,7 @@ namespace Tycoon.Backend.Api.Features.Store
 
             g.MapGet("/catalog", GetCatalog);
             g.MapGet("/catalog/{sku}", GetItem);
+            g.MapGet("/inventory/{playerId:guid}", GetInventory).RequireAuthorization();
             g.MapPost("/purchase", Purchase).RequireAuthorization();
             g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization();
         }
@@ -152,6 +153,32 @@ namespace Tycoon.Backend.Api.Features.Store
                 BalanceCoins: balanceResult?.BalanceCoins ?? 0,
                 BalanceDiamonds: balanceResult?.BalanceDiamonds ?? 0,
                 ErrorMessage: result.Status != "Applied" ? $"Purchase failed: {result.Status}" : null));
+        }
+
+        private static async Task<IResult> GetInventory(
+            [FromRoute] Guid playerId,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            if (playerId == Guid.Empty)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId cannot be empty.");
+
+            var items = await db.PlayerTransactions
+                .AsNoTracking()
+                .Where(t => t.Status == PlayerTransactionStatus.Applied
+                            && t.Actors.Any(a => a.PlayerId == playerId))
+                .SelectMany(t => t.ItemChanges)
+                .Where(i => i.ItemType.StartsWith("cosmetic:", StringComparison.OrdinalIgnoreCase)
+                            || i.ItemType.StartsWith("powerup:", StringComparison.OrdinalIgnoreCase))
+                .GroupBy(i => i.ItemType)
+                .Select(g => new PlayerInventoryItemDto(
+                    g.Key,
+                    g.Sum(i => i.Operation == ItemOperation.Revoke ? -i.Quantity : i.Quantity)))
+                .Where(x => x.Quantity > 0)
+                .OrderBy(x => x.ItemType)
+                .ToListAsync(ct);
+
+            return Results.Ok(new PlayerInventoryDto(playerId, items, items.Count));
         }
 
         private static async Task<IResult> ValidateIapReceipt(
