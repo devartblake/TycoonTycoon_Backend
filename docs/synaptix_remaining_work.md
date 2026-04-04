@@ -97,7 +97,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [x] `POST /store/iap/validate` — Receipt validation endpoint + transaction tracking
 - [ ] Strict Apple/Google provider-side verification (enable with `Iap:EnableStrictValidation`)
 - [x] Player inventory/cosmetics endpoint
-- [ ] Battle pass / premium subscription support (if planned)
+- [x] Battle pass / premium subscription support (if planned)
 
 ### Priority 4: Frontend Economy Integration
 - [ ] Frontend wallet sync against authoritative backend state (economy endpoints exist)

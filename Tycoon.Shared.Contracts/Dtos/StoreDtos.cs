@@ -39,4 +39,17 @@ namespace Tycoon.Shared.Contracts.Dtos
         Guid PlayerId,
         IReadOnlyList<PlayerInventoryItemDto> Items,
         int Count);
+
+    public sealed record ActivateSubscriptionRequest(
+        Guid PlayerId,
+        string Tier,
+        string BillingPeriod,
+        string? ExternalTransactionId = null);
+
+    public sealed record SubscriptionStatusDto(
+        Guid PlayerId,
+        bool IsActive,
+        string? Tier,
+        string? BillingPeriod,
+        DateTimeOffset? ActivatedAtUtc);
 }

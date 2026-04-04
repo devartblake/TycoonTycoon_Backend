@@ -23,6 +23,8 @@ namespace Tycoon.Backend.Api.Features.Store
             g.MapGet("/catalog", GetCatalog);
             g.MapGet("/catalog/{sku}", GetItem);
             g.MapGet("/inventory/{playerId:guid}", GetInventory).RequireAuthorization();
+            g.MapGet("/subscription/status/{playerId:guid}", GetSubscriptionStatus).RequireAuthorization();
+            g.MapPost("/subscription/activate", ActivateSubscription).RequireAuthorization();
             g.MapPost("/purchase", Purchase).RequireAuthorization();
             g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization();
         }
@@ -244,6 +246,72 @@ namespace Tycoon.Backend.Api.Features.Store
                 ProductId: req.ProductId,
                 ExternalTransactionId: req.ExternalTransactionId
             ));
+        }
+
+        private static async Task<IResult> ActivateSubscription(
+            [FromBody] ActivateSubscriptionRequest req,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            if (req.PlayerId == Guid.Empty)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
+
+            var tier = (req.Tier ?? "").Trim().ToLowerInvariant();
+            if (tier is not ("premium" or "elite"))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "tier must be 'premium' or 'elite'.");
+
+            var period = (req.BillingPeriod ?? "").Trim().ToLowerInvariant();
+            if (period is not ("monthly" or "seasonal"))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "billingPeriod must be 'monthly' or 'seasonal'.");
+
+            var tx = new PlayerTransaction(
+                eventId: Guid.NewGuid(),
+                kind: "battle-pass-subscription",
+                correlatedEventId: null,
+                receipt: $"{tier}:{period}:{req.ExternalTransactionId ?? ""}");
+            tx.AddActor(req.PlayerId, PlayerTransactionActorRole.Buyer);
+            tx.MarkApplied();
+
+            db.PlayerTransactions.Add(tx);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new SubscriptionStatusDto(
+                PlayerId: req.PlayerId,
+                IsActive: true,
+                Tier: tier,
+                BillingPeriod: period,
+                ActivatedAtUtc: tx.CompletedAtUtc ?? tx.CreatedAtUtc));
+        }
+
+        private static async Task<IResult> GetSubscriptionStatus(
+            [FromRoute] Guid playerId,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            if (playerId == Guid.Empty)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId cannot be empty.");
+
+            var latest = await db.PlayerTransactions
+                .AsNoTracking()
+                .Where(t => t.Kind == "battle-pass-subscription"
+                            && t.Status == PlayerTransactionStatus.Applied
+                            && t.Actors.Any(a => a.PlayerId == playerId))
+                .OrderByDescending(t => t.CompletedAtUtc ?? t.CreatedAtUtc)
+                .FirstOrDefaultAsync(ct);
+
+            if (latest is null)
+                return Results.Ok(new SubscriptionStatusDto(playerId, false, null, null, null));
+
+            var parts = (latest.Receipt ?? "").Split(':', StringSplitOptions.RemoveEmptyEntries);
+            var tier = parts.Length > 0 ? parts[0] : "premium";
+            var period = parts.Length > 1 ? parts[1] : "monthly";
+
+            return Results.Ok(new SubscriptionStatusDto(
+                PlayerId: playerId,
+                IsActive: true,
+                Tier: tier,
+                BillingPeriod: period,
+                ActivatedAtUtc: latest.CompletedAtUtc ?? latest.CreatedAtUtc));
         }
 
         public sealed record IapReceiptValidationRequest(

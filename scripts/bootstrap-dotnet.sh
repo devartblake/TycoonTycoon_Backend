@@ -8,6 +8,7 @@ DOTNET_CHANNEL="${DOTNET_CHANNEL:-8.0}"
 DOTNET_INSTALL_DIR="${DOTNET_INSTALL_DIR:-$HOME/.dotnet}"
 DOTNET_INSTALL_SCRIPT_URL_PRIMARY="https://dot.net/v1/dotnet-install.sh"
 DOTNET_INSTALL_SCRIPT_URL_FALLBACK="https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh"
+DOTNET_INSTALL_SCRIPT_URL_GITHUB_RAW="https://raw.githubusercontent.com/dotnet/install-scripts/main/src/dotnet-install.sh"
 DOTNET_INSTALL_SCRIPT_PATH="${DOTNET_INSTALL_SCRIPT_PATH:-}"
 
 echo "[dotnet-bootstrap] channel: $DOTNET_CHANNEL"
@@ -25,12 +26,16 @@ else
   if ! curl -fsSL "$DOTNET_INSTALL_SCRIPT_URL_PRIMARY" -o "$tmp_script"; then
     echo "[dotnet-bootstrap] Primary installer URL failed, trying fallback..."
     if ! curl -fsSL "$DOTNET_INSTALL_SCRIPT_URL_FALLBACK" -o "$tmp_script"; then
-      echo "[dotnet-bootstrap] ERROR: Unable to download dotnet-install.sh from both URLs." >&2
+      echo "[dotnet-bootstrap] Fallback installer URL failed, trying GitHub raw..."
+      if ! curl -fsSL "$DOTNET_INSTALL_SCRIPT_URL_GITHUB_RAW" -o "$tmp_script"; then
+      echo "[dotnet-bootstrap] ERROR: Unable to download dotnet-install.sh from all URLs." >&2
       echo "[dotnet-bootstrap] Options:" >&2
       echo "  1) Provide local script path: DOTNET_INSTALL_SCRIPT_PATH=/path/to/dotnet-install.sh ./scripts/bootstrap-dotnet.sh" >&2
       echo "  2) Enable outbound access to dot.net and builds.dotnet.microsoft.com" >&2
-      echo "  3) Use a prebuilt image/runner that already contains .NET SDK $DOTNET_CHANNEL" >&2
+      echo "  3) Enable outbound access to raw.githubusercontent.com for the install-scripts mirror" >&2
+      echo "  4) Use a prebuilt image/runner that already contains .NET SDK $DOTNET_CHANNEL" >&2
       exit 1
+      fi
     fi
   fi
 fi
