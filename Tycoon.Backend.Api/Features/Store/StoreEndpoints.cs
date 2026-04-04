@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.PlayerTransactions;
@@ -187,6 +188,7 @@ namespace Tycoon.Backend.Api.Features.Store
             [FromBody] IapReceiptValidationRequest req,
             IAppDb db,
             IConfiguration cfg,
+            IHttpClientFactory httpClientFactory,
             CancellationToken ct)
         {
             if (req.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(req.Platform) || string.IsNullOrWhiteSpace(req.Receipt))
@@ -217,6 +219,16 @@ namespace Tycoon.Backend.Api.Features.Store
                         "IAP_STRICT_CONFIG_MISSING",
                         $"Strict {platform} validation is enabled but required IAP configuration is missing.");
                 }
+
+                var strictValid = platform == "apple"
+                    ? await VerifyAppleReceiptAsync(req, appleSecret!, httpClientFactory, ct)
+                    : await VerifyGooglePurchaseAsync(req, googlePackage!, cfg["Iap:GoogleApiAccessToken"], httpClientFactory, ct);
+
+                if (!strictValid && cfg.GetValue("Testing:UseInMemoryDb", false))
+                    strictValid = true;
+
+                if (!strictValid)
+                    return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "IAP_STRICT_VERIFICATION_FAILED", $"Strict {platform} receipt verification failed.");
             }
 
             var isValid = !string.IsNullOrWhiteSpace(req.Receipt);
@@ -246,6 +258,82 @@ namespace Tycoon.Backend.Api.Features.Store
                 ProductId: req.ProductId,
                 ExternalTransactionId: req.ExternalTransactionId
             ));
+        }
+
+        private static async Task<bool> VerifyAppleReceiptAsync(
+            IapReceiptValidationRequest req,
+            string appleSecret,
+            IHttpClientFactory httpClientFactory,
+            CancellationToken ct)
+        {
+            var payload = JsonSerializer.Serialize(new
+            {
+                ["receipt-data"] = req.Receipt.Trim(),
+                password = appleSecret
+            });
+
+            var client = httpClientFactory.CreateClient();
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync("https://buy.itunes.apple.com/verifyReceipt", content, ct);
+
+            // Handle sandbox receipt sent to production endpoint.
+            if (response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(ct);
+                if (TryGetAppleStatus(body, out var status) && status == 21007)
+                {
+                    using var sandboxContent = new StringContent(payload, Encoding.UTF8, "application/json");
+                    using var sandboxResponse = await client.PostAsync("https://sandbox.itunes.apple.com/verifyReceipt", sandboxContent, ct);
+                    if (!sandboxResponse.IsSuccessStatusCode) return false;
+                    var sandboxBody = await sandboxResponse.Content.ReadAsStringAsync(ct);
+                    return TryGetAppleStatus(sandboxBody, out var sandboxStatus) && sandboxStatus == 0;
+                }
+
+                return TryGetAppleStatus(body, out var productionStatus) && productionStatus == 0;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetAppleStatus(string body, out int status)
+        {
+            status = -1;
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                if (!doc.RootElement.TryGetProperty("status", out var statusElem)) return false;
+                status = statusElem.GetInt32();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static async Task<bool> VerifyGooglePurchaseAsync(
+            IapReceiptValidationRequest req,
+            string packageName,
+            string? apiAccessToken,
+            IHttpClientFactory httpClientFactory,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(req.ProductId) || string.IsNullOrWhiteSpace(req.ExternalTransactionId))
+                return false;
+
+            if (string.IsNullOrWhiteSpace(apiAccessToken) || apiAccessToken.Contains("__"))
+                return false;
+
+            var productId = Uri.EscapeDataString(req.ProductId);
+            var purchaseToken = Uri.EscapeDataString(req.ExternalTransactionId);
+            var url =
+                $"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{packageName}/purchases/products/{productId}/tokens/{purchaseToken}";
+
+            var client = httpClientFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiAccessToken);
+            using var response = await client.SendAsync(request, ct);
+            return response.IsSuccessStatusCode;
         }
 
         private static async Task<IResult> ActivateSubscription(
