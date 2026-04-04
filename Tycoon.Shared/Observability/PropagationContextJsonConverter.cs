@@ -32,14 +32,14 @@ public class PropagationContextJsonConverter : JsonConverter<PropagationContext>
 
             if (reader.TokenType == JsonTokenType.PropertyName)
             {
-                string propertyName = reader.GetString();
+                string? propertyName = reader.GetString();
 
                 reader.Read(); // Move to the value
-                if (propertyName == TraceParentPropertyName)
+                if (string.Equals(propertyName, TraceParentPropertyName, StringComparison.Ordinal))
                 {
                     traceParent = reader.GetString();
                 }
-                else if (propertyName == TraceStatePropertyName)
+                else if (string.Equals(propertyName, TraceStatePropertyName, StringComparison.Ordinal))
                 {
                     traceState = reader.GetString();
                 }

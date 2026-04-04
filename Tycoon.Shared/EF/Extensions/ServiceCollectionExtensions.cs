@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ public static class ServiceCollectionExtensions
         where TDbContext : DbContext, IDbFacadeResolver, IDomainEventContext
     {
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+        services.AddHttpContextAccessor();
 
         services.AddValidatedOptions<PostgresOptions>(nameof(PostgresOptions));
 
@@ -56,7 +58,7 @@ public static class ServiceCollectionExtensions
                 options.ReplaceService<IValueConverterSelector, StronglyTypedIdValueConverterSelector<long>>();
 
                 options.AddInterceptors(
-                    new AuditInterceptor(),
+                    new AuditInterceptor(sp.GetRequiredService<IHttpContextAccessor>()),
                     new SoftDeleteInterceptor(),
                     new ConcurrencyInterceptor()
                 );
