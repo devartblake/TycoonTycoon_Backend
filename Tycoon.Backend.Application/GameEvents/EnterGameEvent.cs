@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Application.GameEvents
 {
     public sealed record EnterGameEvent(Guid EventId, Guid GameEventId, Guid PlayerId) : IRequest<EnterGameEventResponse>;
 
-    public sealed class EnterGameEventHandler(IAppDb db, EconomyService econ, PlayerTransactionService ptxnSvc, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
+    public sealed class EnterGameEventHandler(IAppDb db, PlayerTransactionService ptxnSvc, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
     {
         private const int ChampionBattleEliminationIncrement = 50;
 

@@ -16,7 +16,35 @@ namespace Tycoon.Backend.Api.Features.Users
                 .WithTags("Users")
                 .RequireAuthorization();
 
+            usersGroup.MapGet("/search", SearchUsers);
             usersGroup.MapPatch("/me", UpdateCurrentUserProfile);
+        }
+
+        private static async Task<IResult> SearchUsers(
+            [FromQuery] string handle,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            if (string.IsNullOrWhiteSpace(handle) || handle.Trim().Length < 2)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Query parameter 'handle' must be at least 2 characters.");
+
+            var normalizedHandle = handle.Trim().ToLowerInvariant();
+
+            var users = await database.Users
+                .Where(u => u.Handle.ToLower().Contains(normalizedHandle))
+                .OrderBy(u => u.Handle)
+                .Take(20)
+                .Select(u => new UserDto(
+                    u.Id,
+                    u.Handle,
+                    u.Email,
+                    u.Country,
+                    u.Tier,
+                    u.Mmr
+                ))
+                .ToListAsync(cancellation);
+
+            return Results.Ok(users);
         }
 
         private static async Task<IResult> UpdateCurrentUserProfile(
