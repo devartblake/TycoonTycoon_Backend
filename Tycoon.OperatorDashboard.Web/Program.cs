@@ -20,6 +20,19 @@ app.MapGet("/health/ready", () => Results.Ok(new { status = "ready", backend = b
 
 var proxyMethods = new[] { "GET", "POST", "PUT", "PATCH", "DELETE" };
 
+// Initial typed Wave A BFF endpoints.
+app.MapGet("/api/dashboard/overview",
+    (HttpContext context, IHttpClientFactory httpClientFactory) =>
+        ProxyToBackend(context, httpClientFactory, $"/admin/dashboard{context.Request.QueryString}"));
+
+app.MapGet("/api/audit-log",
+    (HttpContext context, IHttpClientFactory httpClientFactory) =>
+        ProxyToBackend(context, httpClientFactory, $"/admin/audit-log{context.Request.QueryString}"));
+
+app.MapGet("/api/users",
+    (HttpContext context, IHttpClientFactory httpClientFactory) =>
+        ProxyToBackend(context, httpClientFactory, $"/admin/users{context.Request.QueryString}"));
+
 app.MapMethods("/api/admin/{**path}", proxyMethods,
     (HttpContext context, IHttpClientFactory httpClientFactory, string? path) =>
         ProxyToBackend(context, httpClientFactory, $"/admin/{path}{context.Request.QueryString}"));
@@ -39,16 +52,21 @@ app.MapMethods("/api/users/{**path}", proxyMethods,
 
 app.MapGet("/api/me", (HttpContext context) =>
 {
+    var permissions = context.Request.Headers.TryGetValue("X-Operator-Permissions", out var perms)
+        ? perms.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        : [];
+
     if (context.User?.Identity?.IsAuthenticated is true)
     {
         return Results.Ok(new
         {
             authenticated = true,
-            name = context.User.Identity.Name ?? "unknown"
+            name = context.User.Identity.Name ?? "unknown",
+            permissions
         });
     }
 
-    return Results.Ok(new { authenticated = false, name = "anonymous" });
+    return Results.Ok(new { authenticated = false, name = "anonymous", permissions });
 });
 
 app.Run();

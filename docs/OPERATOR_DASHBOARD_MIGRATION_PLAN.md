@@ -116,6 +116,7 @@ while preserving feature parity, role-based access control, and operational reli
   - `/api/admin/{**path}` proxy skeleton with auth-header forwarding
   - Domain-specific proxy groups for Wave A: `/api/dashboard`, `/api/audit-log`, `/api/users`
   - Session bootstrap endpoint: `/api/me`
+  - Typed Wave A endpoints: `/api/dashboard/overview`, `/api/audit-log`, `/api/users`
   - `appsettings.json` with `Backend:BaseUrl`
 - ✅ Initial `Tycoon.OperatorDashboard.Vue` app shell added:
   - Vite + Vue + Vue Router bootstrap
