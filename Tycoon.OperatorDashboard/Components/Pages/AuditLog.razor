@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
+@using Tycoon.OperatorDashboard.Components.Common
 
 <h1>Security Audit Log</h1>
 
@@ -29,18 +30,18 @@
     </div>
 }
 else if (_doc is null) { <p>Loading...</p> }
-else if (_doc.RootElement.TryGetProperty("items", out var items))
+else
 {
     <table>
         <thead><tr><th>Timestamp</th><th>Admin</th><th>Operation</th><th>Status</th><th>IP</th></tr></thead>
         <tbody>
-            @foreach (var el in items.EnumerateArray())
+            @foreach (var el in JsonSafe.EnumerateArrayProperty(_doc, "items"))
             {
-                var ts      = el.TryGetProperty("timestamp",  out var t) ? t.GetString() ?? "—" : "—";
-                var admin   = el.TryGetProperty("adminEmail", out var a) ? a.GetString() ?? "—" : "—";
-                var op      = el.TryGetProperty("operation",  out var o) ? o.GetString() ?? "—" : "—";
-                var stat    = el.TryGetProperty("status",     out var s) ? s.GetString() ?? "—" : "—";
-                var ip      = el.TryGetProperty("ipAddress",  out var i) ? i.GetString() ?? "—" : "—";
+                var ts      = JsonSafe.GetText(el, "timestamp");
+                var admin   = JsonSafe.GetText(el, "adminEmail");
+                var op      = JsonSafe.GetText(el, "operation");
+                var stat    = JsonSafe.GetText(el, "status");
+                var ip      = JsonSafe.GetText(el, "ipAddress");
                 <tr>
                     <td>@ts</td>
                     <td>@admin</td>

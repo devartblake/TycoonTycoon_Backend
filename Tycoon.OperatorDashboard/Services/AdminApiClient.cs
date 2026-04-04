@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Tycoon.OperatorDashboard.Components.Common;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.OperatorDashboard.Services;
@@ -202,9 +203,15 @@ public sealed class AdminApiClient
         try
         {
             using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-            var error = json.RootElement.GetProperty("error");
-            var code = error.TryGetProperty("code", out var c) ? c.GetString() : null;
-            var message = error.TryGetProperty("message", out var m) ? m.GetString() : null;
+            if (json.RootElement.ValueKind != JsonValueKind.Object
+                || !json.RootElement.TryGetProperty("error", out var error)
+                || error.ValueKind != JsonValueKind.Object)
+            {
+                return new ApiCallResult<GameBalanceConfigDto>(null, resp.StatusCode, null, null);
+            }
+
+            var code = JsonSafe.GetText(error, "code", string.Empty);
+            var message = JsonSafe.GetText(error, "message", string.Empty);
             return new ApiCallResult<GameBalanceConfigDto>(null, resp.StatusCode, code, message);
         }
         catch
@@ -237,8 +244,14 @@ public sealed class AdminApiClient
         try
         {
             using var json = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-            var error = json.RootElement.GetProperty("error");
-            var msg = error.TryGetProperty("message", out var m) ? m.GetString() : null;
+            if (json.RootElement.ValueKind != JsonValueKind.Object
+                || !json.RootElement.TryGetProperty("error", out var error)
+                || error.ValueKind != JsonValueKind.Object)
+            {
+                return new BalancePatchResult(null, [], null);
+            }
+
+            var msg = JsonSafe.GetText(error, "message", string.Empty);
             var errors = new List<string>();
             if (error.TryGetProperty("details", out var details)
                 && details.TryGetProperty("errors", out var detailErrors)
@@ -555,7 +568,14 @@ public sealed class AdminApiClient
         if (!string.IsNullOrWhiteSpace(q)) qs += $"&q={Uri.EscapeDataString(q)}";
         if (!string.IsNullOrWhiteSpace(category)) qs += $"&category={Uri.EscapeDataString(category)}";
         var resp = await http.GetAsync($"/admin/questions?{qs}", ct);
-        if (!resp.IsSuccessStatusCode) return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            var body = await resp.Content.ReadAsStringAsync(ct);
+            throw new HttpRequestException(
+                $"ListQuestions failed with {(int)resp.StatusCode} {resp.ReasonPhrase}. Body: {body}",
+                null,
+                resp.StatusCode);
+        }
         return await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
