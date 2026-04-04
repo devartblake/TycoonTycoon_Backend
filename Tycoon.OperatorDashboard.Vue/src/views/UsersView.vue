@@ -11,6 +11,8 @@ const total = ref(0)
 const query = ref('')
 const isBanned = ref('')
 const actionMessage = ref('')
+const banReason = ref('Policy violation')
+const actionBusyId = ref('')
 
 function readItems(payload) {
   return Array.isArray(payload?.items) ? payload.items : []
@@ -41,6 +43,9 @@ async function loadUsers() {
 }
 
 async function toggleBan(user) {
+  if (!user?.id || actionBusyId.value) return
+
+  actionBusyId.value = user.id
   actionMessage.value = ''
 
   try {
@@ -48,12 +53,14 @@ async function toggleBan(user) {
       await unbanUser(user.id)
       actionMessage.value = `Unbanned ${user.handle || user.id}.`
     } else {
-      await banUser(user.id)
+      await banUser(user.id, banReason.value || 'Policy violation')
       actionMessage.value = `Banned ${user.handle || user.id}.`
     }
     await loadUsers()
   } catch (err) {
     actionMessage.value = err?.message ?? 'User action failed.'
+  } finally {
+    actionBusyId.value = ''
   }
 }
 
@@ -90,6 +97,7 @@ onMounted(loadUsers)
           <option value="true">Banned</option>
           <option value="false">Not banned</option>
         </select>
+        <input v-model="banReason" placeholder="Ban reason…" style="padding:.35rem .5rem;border:1px solid #cbd5e1;border-radius:6px;min-width:220px" />
         <button @click="applyFilters">Apply</button>
       </div>
 
@@ -110,8 +118,8 @@ onMounted(loadUsers)
             <td style="padding:.5rem;border-bottom:1px solid #f1f5f9">{{ user.email || '—' }}</td>
             <td style="padding:.5rem;border-bottom:1px solid #f1f5f9">{{ user.isBanned ? 'Yes' : 'No' }}</td>
             <td style="padding:.5rem;border-bottom:1px solid #f1f5f9">
-              <button @click="toggleBan(user)">
-                {{ user.isBanned ? 'Unban' : 'Ban' }}
+              <button @click="toggleBan(user)" :disabled="actionBusyId === user.id">
+                {{ actionBusyId === user.id ? 'Working…' : user.isBanned ? 'Unban' : 'Ban' }}
               </button>
             </td>
           </tr>

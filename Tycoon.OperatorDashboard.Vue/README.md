@@ -31,4 +31,5 @@ Do not commit `node_modules`.
 - Dashboard now renders KPI-style cards from overview payload.
 - Audit Log status filter and Users search/ban filters are now wired to Wave A API query params.
 - Users ban/unban action workflow is now wired via BFF (`/api/users/{id}/ban|unban`).
+- Users action workflow now supports operator-provided ban reason and in-flight action button state.
 - Next: add moderation/economy Wave A action workflows and richer table UX polish.
