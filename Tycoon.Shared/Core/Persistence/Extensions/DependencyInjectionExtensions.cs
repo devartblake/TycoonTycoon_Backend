@@ -55,6 +55,8 @@ namespace Tycoon.Shared.Core.Persistence.Extensions
 
             foreach (var dbExecutor in CollectionsMarshal.AsSpan(dbExecutors))
             {
+                if (dbExecutor is null)
+                    continue;
                 var instantiatedType = (IDbExecutors)Activator.CreateInstance(dbExecutor)!;
                 instantiatedType.Register(services);
             }
@@ -90,4 +92,3 @@ namespace Tycoon.Shared.Core.Persistence.Extensions
         }
     }
 }
-

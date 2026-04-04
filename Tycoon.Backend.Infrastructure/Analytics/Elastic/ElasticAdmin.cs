@@ -71,6 +71,11 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                             .Keyword("mode")
                             .Keyword("category")
                             .IntegerNumber("difficulty")
+                            .Keyword("synaptixMode")
+                            .Keyword("surface")
+                            .Keyword("audienceSegment")
+                            .Keyword("entryPoint")
+                            .Keyword("brandVersion")
                             .LongNumber("totalAnswers")
                             .LongNumber("correctAnswers")
                             .LongNumber("wrongAnswers")
@@ -83,7 +88,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                         ))
                     )
                     .Priority(500)
-                    .Version(1), ct);
+                    .Version(3), ct);
 
                 if (!put.IsValidResponse)
                 {
@@ -106,7 +111,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 
                     if (put.TryGetOriginalException(out var ex))
                     {
-                        errorDetails.AppendLine($"Original Exception: {ex.Message}");
+                        errorDetails.AppendLine($"Original Exception: {ex?.Message}");
                     }
 
                     _logger?.LogError("Template creation failed. Details: {ErrorDetails}", errorDetails.ToString());
@@ -153,6 +158,11 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                             .Keyword("mode")
                             .Keyword("category")
                             .IntegerNumber("difficulty")
+                            .Keyword("synaptixMode")
+                            .Keyword("surface")
+                            .Keyword("audienceSegment")
+                            .Keyword("entryPoint")
+                            .Keyword("brandVersion")
                             .LongNumber("totalAnswers")
                             .LongNumber("correctAnswers")
                             .LongNumber("wrongAnswers")
@@ -165,7 +175,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
                         ))
                     )
                     .Priority(500)
-                    .Version(1), ct);
+                    .Version(3), ct);
 
                 if (!put.IsValidResponse)
                 {
@@ -188,7 +198,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 
                     if (put.TryGetOriginalException(out var ex))
                     {
-                        errorDetails.AppendLine($"Original Exception: {ex.Message}");
+                        errorDetails.AppendLine($"Original Exception: {ex?.Message}");
                     }
 
                     _logger?.LogError("Template creation failed. Details: {ErrorDetails}", errorDetails.ToString());

@@ -3,6 +3,7 @@ using Tycoon.Shared.Abstractions.Core.Domain;
 namespace Tycoon.Shared.Core.Domain;
 
 public abstract class AuditAggregate<TId> : Aggregate<TId>, IAuditableEntity<TId>
+    where TId : notnull
 {
     public DateTime? LastModified { get; protected set; } = default!;
     public int? LastModifiedBy { get; protected set; } = default!;

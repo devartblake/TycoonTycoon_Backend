@@ -31,6 +31,13 @@
         double AvgAnswerTimeMs
     );
 
+    public sealed record MatchAnswerSubmissionDto(
+        Guid PlayerId,
+        Guid QuestionId,
+        string SelectedOptionId,
+        double AnswerTimeMs
+    );
+
     public sealed record SubmitMatchRequest(
         Guid EventId,                  // idempotency key for match submission + payouts
         Guid MatchId,                  // stable match identifier (server or client minted)
@@ -40,7 +47,8 @@
         DateTimeOffset StartedAtUtc,
         DateTimeOffset EndedAtUtc,
         MatchStatus Status,
-        IReadOnlyList<MatchParticipantResultDto> Participants
+        IReadOnlyList<MatchParticipantResultDto> Participants,
+        IReadOnlyList<MatchAnswerSubmissionDto>? Answers = null
     );
 
     public sealed record MatchAwardDto(Guid PlayerId, int AwardedXp, int AwardedCoins);
