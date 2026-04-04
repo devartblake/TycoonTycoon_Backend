@@ -88,7 +88,7 @@ public class DiagnosticsProvider(IMeterFactory meterFactory, IOptions<Observabil
         }
     }
 
-    public async Task<TResult?> ExecuteActivityAsync<TResult>(
+    public async Task<TResult> ExecuteActivityAsync<TResult>(
         CreateActivityInfo createActivityInfo,
         Func<Activity?, CancellationToken, Task<TResult>> action,
         CancellationToken cancellationToken = default

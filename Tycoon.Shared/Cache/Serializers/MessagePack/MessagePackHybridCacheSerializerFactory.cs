@@ -8,7 +8,7 @@ namespace Tycoon.Shared.Cache.Serializers.MessagePack
     {
         private readonly MessagePackSerializerOptions _options = options ?? MessagePackSerializer.DefaultOptions;
 
-        public bool TryCreateSerializer<T>(out IHybridCacheSerializer<T>? serializer)
+        public bool TryCreateSerializer<T>(out IHybridCacheSerializer<T> serializer)
         {
             // Try to create a serializer for the type T.
             serializer = new MessagePackHybridCacheSerializer<T>(_options);
