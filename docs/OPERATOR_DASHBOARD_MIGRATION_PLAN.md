@@ -124,4 +124,5 @@ while preserving feature parity, role-based access control, and operational reli
   - Route shell for Wave A pages (`/dashboard`, `/audit-log`, `/users`)
   - RBAC route-guard helper skeleton
   - `/api/me` session bootstrap wired into router guard permission resolution
+  - Shared API client conventions (`src/lib/apiClient.js`, `src/api/*`) for Wave A endpoints
 - ✅ Plan execution now at **Workstream 1: Platform Foundations**.
