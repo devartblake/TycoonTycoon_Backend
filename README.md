@@ -19,7 +19,7 @@ A modern, cloud-native backend API built with .NET 9, designed for the scalable 
 - [Database Migrations](#database-migrations)
 - [Available Services](#available-services)
 - [Testing](#testing)
-- [CI/CD](#cicd)
+- [Operator Dashboard Migration Status](#operator-dashboard-migration-status)
 - [Troubleshooting](#troubleshooting)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -64,6 +64,14 @@ TycoonTycoon_Backend/
 
 > Operator dashboard container source of truth: **Blazor (`Tycoon.OperatorDashboard`)**.
 > Alternate Next.js dashboard Dockerfiles are archived as `*.txt` and are not part of default compose builds.
+
+## 🧭 Operator Dashboard Migration Status
+
+As of **April 4, 2026**:
+- `Tycoon.OperatorDashboard` (Blazor) remains the authoritative production dashboard.
+- `Tycoon.OperatorDashboard.Web` has Wave A BFF foundations (health, proxy groups, typed Wave A endpoints, session bootstrap endpoint).
+- `Tycoon.OperatorDashboard.Vue` has Wave A routes and API-backed loading states for Dashboard, Audit Log, and Users.
+- Active migration tracker: `docs/OPERATOR_DASHBOARD_MIGRATION_PLAN.md`.
 
 ### Technology Stack
 

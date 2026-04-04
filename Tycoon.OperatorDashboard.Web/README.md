@@ -15,3 +15,9 @@ Web/BFF target for Operator Dashboard migration.
 
 ## Expected next implementation step
 Replace header-based auth/session bootstrap with real cookie/JWT auth and move permissions to server-issued claims.
+
+## Current Status (April 4, 2026)
+- Generic + domain proxy endpoints are active for Wave A migration paths.
+- Typed Wave A handlers exist for dashboard overview, audit log, and users list.
+- Session bootstrap is currently header-assisted (`X-Operator-User`, `X-Operator-Permissions`) and intended only as migration bootstrap.
+- Next: switch to real auth middleware and tighten standardized error-envelope passthrough.

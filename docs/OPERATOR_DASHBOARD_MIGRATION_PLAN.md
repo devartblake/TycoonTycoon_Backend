@@ -126,3 +126,12 @@ while preserving feature parity, role-based access control, and operational reli
   - `/api/me` session bootstrap wired into router guard permission resolution
   - Shared API client conventions (`src/lib/apiClient.js`, `src/api/*`) for Wave A endpoints
 - ✅ Plan execution now at **Workstream 1: Platform Foundations**.
+
+## Current Status Update (April 4, 2026)
+- ✅ **Web BFF foundations**: health endpoints, generic admin proxy, Wave A domain proxy groups, typed Wave A endpoints, and `/api/me` session bootstrap are in place.
+- ✅ **Vue Wave A foundations**: router + RBAC guard + session bootstrap are in place.
+- ✅ **Vue data flow kickoff**: shared API client conventions and Wave A API modules now back Dashboard/AuditLog/Users views with loading/error/data states.
+- ⏳ **Still pending**:
+  - Real cookie/JWT auth integration in `Tycoon.OperatorDashboard.Web`
+  - Structured error-envelope passthrough normalization in Web BFF
+  - Wave A parity completion checklist (filters, paging, table UX, action workflows)
