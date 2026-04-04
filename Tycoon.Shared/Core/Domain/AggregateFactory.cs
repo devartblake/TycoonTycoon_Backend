@@ -16,14 +16,12 @@ public static class AggregateFactory<T>
         }
         catch (ArgumentException)
         {
-            return null;
+            return () => throw new System.Exception($"Aggregate {typeof(T).Name} does not have a parameterless constructor");
         }
     }
 
     public static T CreateAggregate()
     {
-        if (_constructor == null)
-            throw new System.Exception($"Aggregate {typeof(T).Name} does not have a parameterless constructor");
         return _constructor();
     }
 }

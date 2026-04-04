@@ -24,6 +24,7 @@
         string Text,
         string Category,
         QuestionDifficulty Difficulty,
+        string Status,
         IReadOnlyList<QuestionOptionDto> Options,
         string CorrectOptionId,
         IReadOnlyList<string> Tags,
@@ -76,7 +77,8 @@
         IReadOnlyList<QuestionOptionDto> Options,
         string CorrectOptionId,
         IReadOnlyList<string> Tags,
-        string? MediaKey
+        string? MediaKey,
+        string? Status = null
     );
 
     public sealed record UpdateQuestionRequest(
@@ -86,7 +88,8 @@
         IReadOnlyList<QuestionOptionDto> Options,
         string CorrectOptionId,
         IReadOnlyList<string> Tags,
-        string? MediaKey
+        string? MediaKey,
+        string? Status = null
     );
 
     public sealed record BulkDeleteQuestionsRequest(IReadOnlyList<Guid> Ids);
@@ -104,4 +107,50 @@
     // JSON upload endpoint
     public sealed record UploadQuestionRequest(string QuestionTitle, string QuestionDetails);
     public sealed record UploadQuestionResponseDto(string Message, string QuestionTitle, string QuestionDetails);
+
+    public sealed record QuestionDifficultyEstimateRequest(string Text);
+    public sealed record QuestionDifficultyEstimateResponse(
+        QuestionDifficulty Difficulty,
+        decimal Confidence,
+        string Source
+    );
+
+    // ── Gameplay question serving (client-facing, no correct answer exposed) ──
+
+    /// <summary>A question as served to the client during gameplay — correctOptionId is withheld.</summary>
+    public sealed record GameplayQuestionDto(
+        Guid Id,
+        string Text,
+        string Category,
+        QuestionDifficulty Difficulty,
+        IReadOnlyList<QuestionOptionDto> Options,
+        string? MediaKey
+    );
+
+    /// <summary>A set of questions served for a match or practice session.</summary>
+    public sealed record QuestionSetDto(
+        IReadOnlyList<GameplayQuestionDto> Questions,
+        int Count
+    );
+
+    /// <summary>Request to check an answer server-side.</summary>
+    public sealed record CheckAnswerRequest(Guid QuestionId, string SelectedOptionId);
+
+    /// <summary>Server response after checking an answer.</summary>
+    public sealed record CheckAnswerResponse(
+        Guid QuestionId,
+        string SelectedOptionId,
+        string CorrectOptionId,
+        bool IsCorrect
+    );
+
+    /// <summary>Batch answer check for a full match round.</summary>
+    public sealed record CheckAnswersBatchRequest(IReadOnlyList<CheckAnswerRequest> Answers);
+
+    /// <summary>Batch answer check response.</summary>
+    public sealed record CheckAnswersBatchResponse(
+        IReadOnlyList<CheckAnswerResponse> Results,
+        int Total,
+        int Correct
+    );
 }

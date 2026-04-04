@@ -3,6 +3,7 @@ using Tycoon.Shared.Abstractions.Core.Domain;
 namespace Tycoon.Shared.Core.Domain;
 
 public abstract class Entity<TId> : IEntity<TId>
+    where TId : notnull
 {
     public TId Id { get; protected init; } = default!;
     public DateTime Created { get; private set; } = default!;

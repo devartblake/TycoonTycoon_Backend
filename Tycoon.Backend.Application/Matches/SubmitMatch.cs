@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -8,6 +8,7 @@ using Tycoon.Backend.Application.AntiCheat;
 using Tycoon.Backend.Application.Economy;
 using Tycoon.Backend.Application.Enforcement;
 using Tycoon.Backend.Application.Moderation;
+using Tycoon.Backend.Application.PlayerTransactions;
 using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Application.Guardians;
 using Tycoon.Backend.Application.Social;
@@ -22,10 +23,10 @@ namespace Tycoon.Backend.Application.Matches
     public sealed class SubmitMatchHandler(
         IAppDb db,
         EconomyService econ,
+        PlayerTransactionService ptxnSvc,
         AntiCheatService antiCheat,
         SeasonService seasons,
         SeasonPointsService seasonsPoints,
-        TierAssignmentService tiers,
         ModerationService moderation,
         EnforcementService enforcement,
         PartyIntegrityService partyIntegrity,
@@ -46,6 +47,18 @@ namespace Tycoon.Backend.Application.Matches
 
             if (req.Participants is null || req.Participants.Count == 0)
                 return new SubmitMatchResponse(req.EventId, req.MatchId, "Invalid", Array.Empty<MatchAwardDto>());
+
+            if (req.Answers is { Count: > 0 })
+            {
+                var authoritativeParticipants = await BuildAuthoritativeParticipantsAsync(req.Participants, req.Answers, ct);
+                var authoritativeQuestionCount = req.Answers.Select(a => a.QuestionId).Distinct().Count();
+
+                req = req with
+                {
+                    Participants = authoritativeParticipants,
+                    QuestionCount = authoritativeQuestionCount > 0 ? authoritativeQuestionCount : req.QuestionCount
+                };
+            }
 
             // Submit idempotency
             var dup = await db.MatchResults.AsNoTracking()
@@ -170,10 +183,10 @@ namespace Tycoon.Backend.Application.Matches
 
             IReadOnlyList<MatchAwardDto> awards = Array.Empty<MatchAwardDto>();
 
-            // Mint economy rewards only when allowed
+            // Mint economy rewards only when allowed — now via PlayerTransaction
             if (!blockRewards)
             {
-                awards = await AwardAsync(req, match, econ, ct);
+                awards = await AwardAsync(req, match, ptxnSvc, ct);
 
                 // Apply territory XP multiplier bonus for territory_duel mode
                 if (req.Mode.Equals("territory_duel", StringComparison.OrdinalIgnoreCase)
@@ -275,8 +288,59 @@ namespace Tycoon.Backend.Application.Matches
             }
 
             return new SubmitMatchResponse(req.EventId, req.MatchId, "Applied", awards);
-
         }
+
+        private async Task<IReadOnlyList<MatchParticipantResultDto>> BuildAuthoritativeParticipantsAsync(
+            IReadOnlyList<MatchParticipantResultDto> requestedParticipants,
+            IReadOnlyList<MatchAnswerSubmissionDto> answers,
+            CancellationToken ct)
+        {
+            var questionIds = answers.Select(a => a.QuestionId).Distinct().ToArray();
+            var answerKey = await db.Questions.AsNoTracking()
+                .Where(q => questionIds.Contains(q.Id))
+                .Select(q => new { q.Id, q.CorrectOptionId })
+                .ToDictionaryAsync(x => x.Id, x => x.CorrectOptionId, ct);
+
+            var byPlayer = answers
+                .GroupBy(a => a.PlayerId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var recomputed = new List<MatchParticipantResultDto>(requestedParticipants.Count);
+
+            foreach (var p in requestedParticipants)
+            {
+                if (!byPlayer.TryGetValue(p.PlayerId, out var playerAnswers) || playerAnswers.Count == 0)
+                {
+                    recomputed.Add(p);
+                    continue;
+                }
+
+                var correct = 0;
+                foreach (var answer in playerAnswers)
+                {
+                    if (answerKey.TryGetValue(answer.QuestionId, out var correctOptionId)
+                        && string.Equals(correctOptionId, answer.SelectedOptionId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        correct++;
+                    }
+                }
+
+                var total = playerAnswers.Count;
+                var wrong = Math.Max(0, total - correct);
+                var avgAnswerTime = total == 0 ? 0 : playerAnswers.Average(x => x.AnswerTimeMs);
+                var score = correct * 10;
+
+                recomputed.Add(new MatchParticipantResultDto(
+                    p.PlayerId,
+                    score,
+                    correct,
+                    wrong,
+                    avgAnswerTime));
+            }
+
+            return recomputed;
+        }
+
         private async Task ApplySeasonPointsAndRanksAsync(SubmitMatchRequest req, Match match, CancellationToken ct)
         {
             // Only award season points for completed matches
@@ -387,7 +451,7 @@ namespace Tycoon.Backend.Application.Matches
             );
         }
 
-        private static async Task<IReadOnlyList<MatchAwardDto>> AwardAsync(SubmitMatchRequest req, Match match, EconomyService econ, CancellationToken ct)
+        private static async Task<IReadOnlyList<MatchAwardDto>> AwardAsync(SubmitMatchRequest req, Match match, PlayerTransactionService ptxnSvc, CancellationToken ct)
         {
             // Winner is highest score; ties -> draw
             var ordered = req.Participants.OrderByDescending(p => p.Score).ToList();
@@ -396,6 +460,8 @@ namespace Tycoon.Backend.Application.Matches
             var isDraw = second is not null && second.Score == top.Score;
 
             var awards = new List<MatchAwardDto>(req.Participants.Count);
+            var currencyChanges = new List<PlayerTransactionCurrencyDto>();
+            var actors = new List<PlayerTransactionActorDto>();
 
             foreach (var p in req.Participants)
             {
@@ -438,23 +504,28 @@ namespace Tycoon.Backend.Application.Matches
                     }
                 }
 
-                // Per-player deterministic idempotency under one submit EventId
-                var playerEventId = DeterministicGuid(req.EventId, p.PlayerId);
-
-                await econ.ApplyAsync(new CreateEconomyTxnRequest(
-                    EventId: playerEventId,
-                    PlayerId: p.PlayerId,
-                    Kind: "match-complete",
-                    Lines: new[]
+                actors.Add(new PlayerTransactionActorDto(p.PlayerId, "recipient"));
+                currencyChanges.Add(new PlayerTransactionCurrencyDto(
+                    p.PlayerId,
+                    new[]
                     {
                         new EconomyLineDto(CurrencyType.Xp, xp),
                         new EconomyLineDto(CurrencyType.Coins, coins),
-                    },
-                    Note: $"{match.Mode}:{req.MatchId}"
-                ), ct);
+                    }
+                ));
 
                 awards.Add(new MatchAwardDto(p.PlayerId, xp, coins));
             }
+
+            // Single PlayerTransaction wrapping all per-player economy ledger entries
+            await ptxnSvc.ExecuteAsync(new CreatePlayerTransactionRequest(
+                EventId: req.EventId,
+                Kind: "match-complete",
+                CorrelatedEventId: req.MatchId,
+                Actors: actors,
+                CurrencyChanges: currencyChanges,
+                Note: $"{match.Mode}:{req.MatchId}"
+            ), ct);
 
             return awards;
         }
