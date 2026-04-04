@@ -2,20 +2,65 @@
 Analytics & reporting endpoints.
 
 Routes:
+  POST /analytics/events                       — ingest a single analytics event (idempotent)
   GET  /analytics/season/{season_id}/summary   — aggregated season KPIs
   GET  /analytics/events/funnel                — event entry → win funnel
   GET  /analytics/retention/{cohort_date}      — D1/D7/D30 retention for a cohort
   POST /analytics/behavior-segmentation        — classify player archetype for adaptive balancing
 """
 
+import hashlib
+import json
 import logging
-from datetime import date
+from datetime import date, datetime
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, status
+from fastapi.responses import JSONResponse
+from pymongo.errors import DuplicateKeyError
 from pydantic import BaseModel
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+class AnalyticsEventRequest(BaseModel):
+    user_id: str
+    event_type: str
+    payload: dict = {}
+    event_id: str | None = None  # client-supplied; generated from content hash if omitted
+
+
+def _compute_event_hash(user_id: str, event_type: str, payload: dict) -> str:
+    canonical = json.dumps(
+        {"user_id": user_id, "event_type": event_type, **payload},
+        sort_keys=True,
+        default=str,
+    )
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+@router.post("/events")
+async def ingest_event(event: AnalyticsEventRequest, request: Request):
+    """
+    Ingest a single analytics event. Idempotent: duplicate event_ids are silently
+    acknowledged rather than rejected, so clients can safely retry on network failure.
+    """
+    db = request.app.state.mongo_db
+    event_id = event.event_id or _compute_event_hash(event.user_id, event.event_type, event.payload)
+
+    doc = {
+        "event_id": event_id,
+        "user_id": event.user_id,
+        "event_type": event.event_type,
+        "payload": event.payload,
+        "received_at": datetime.utcnow().isoformat(),
+    }
+
+    try:
+        await db["analytics_events"].insert_one(doc)
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"status": "accepted", "event_id": event_id})
+    except DuplicateKeyError:
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"status": "duplicate", "event_id": event_id})
 
 
 class BehaviorSegmentationRequest(BaseModel):

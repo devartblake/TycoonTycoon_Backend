@@ -7,6 +7,7 @@ using Tycoon.Shared.Core.Exceptions;
 namespace Tycoon.Shared.Core.Domain;
 
 public abstract class Aggregate<TId> : Entity<TId>, IAggregate<TId>
+    where TId : notnull
 {
     [NonSerialized]
     private readonly ConcurrentQueue<IDomainEvent> _uncommittedDomainEvents = new();
