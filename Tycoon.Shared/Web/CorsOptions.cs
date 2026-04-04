@@ -2,5 +2,5 @@ namespace Tycoon.Shared.Web;
 
 public class CorsOptions
 {
-    public IEnumerable<string> AllowedUrls { get; set; }
+    public IEnumerable<string> AllowedUrls { get; set; } = System.Array.Empty<string>();
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
@@ -28,6 +29,8 @@ namespace Tycoon.Backend.Api.Features.Users
 
             group.MapGet("", GetPreferences);
             group.MapPut("", UpdatePreferences);
+            group.MapGet("/loadout", GetLoadout);
+            group.MapPut("/loadout", UpdateLoadout);
         }
 
         private static async Task<IResult> GetPreferences(
@@ -107,5 +110,106 @@ namespace Tycoon.Backend.Api.Features.Users
             var claim = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
             return claim is not null && Guid.TryParse(claim.Value, out userId);
         }
+
+        private static async Task<IResult> GetLoadout(
+            HttpContext httpContext,
+            IAppDb database,
+            CancellationToken ct)
+        {
+            if (!TryGetUserId(httpContext, out var userId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            var prefs = await database.PlayerPreferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.PlayerId == userId, ct);
+
+            if (prefs is null)
+                return Results.Ok(new PlayerLoadoutDto(null, Array.Empty<string>()));
+
+            return Results.Ok(new PlayerLoadoutDto(
+                prefs.AvatarItemType,
+                ParseCsv(prefs.EquippedCosmeticItemTypesCsv)));
+        }
+
+        private static async Task<IResult> UpdateLoadout(
+            [FromBody] UpdatePlayerLoadoutRequest request,
+            HttpContext httpContext,
+            IAppDb database,
+            CancellationToken ct)
+        {
+            if (!TryGetUserId(httpContext, out var userId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            var desiredAvatar = string.IsNullOrWhiteSpace(request.AvatarItemType)
+                ? null
+                : request.AvatarItemType.Trim().ToLowerInvariant();
+
+            if (desiredAvatar is not null && !IsLoadoutItemType(desiredAvatar))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_LOADOUT_ITEM", "Avatar item type must start with 'avatar:' or 'cosmetic:'.");
+
+            var desiredCosmetics = (request.EquippedCosmeticItemTypes ?? Array.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim().ToLowerInvariant())
+                .Distinct()
+                .ToList();
+
+            if (desiredCosmetics.Any(x => !x.StartsWith("cosmetic:", StringComparison.OrdinalIgnoreCase)))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_LOADOUT_ITEM", "Cosmetic item types must start with 'cosmetic:'.");
+
+            var ownedItems = await database.PlayerTransactions
+                .AsNoTracking()
+                .Where(t => t.Status == PlayerTransactionStatus.Applied
+                            && t.Actors.Any(a => a.PlayerId == userId))
+                .SelectMany(t => t.ItemChanges)
+                .Where(i => IsLoadoutItemType(i.ItemType))
+                .GroupBy(i => i.ItemType.ToLower())
+                .Select(g => new
+                {
+                    ItemType = g.Key,
+                    Quantity = g.Sum(i => i.Operation == ItemOperation.Revoke ? -i.Quantity : i.Quantity)
+                })
+                .Where(x => x.Quantity > 0)
+                .ToListAsync(ct);
+
+            var ownedSet = ownedItems.Select(x => x.ItemType).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (desiredAvatar is not null && !ownedSet.Contains(desiredAvatar))
+                return ApiResponses.Error(StatusCodes.Status409Conflict, "LOADOUT_ITEM_NOT_OWNED", $"Avatar item '{desiredAvatar}' is not owned.");
+
+            var missingCosmetics = desiredCosmetics.Where(c => !ownedSet.Contains(c)).ToArray();
+            if (missingCosmetics.Length > 0)
+                return ApiResponses.Error(StatusCodes.Status409Conflict, "LOADOUT_ITEM_NOT_OWNED", $"Cosmetic item '{missingCosmetics[0]}' is not owned.");
+
+            var prefs = await database.PlayerPreferences
+                .FirstOrDefaultAsync(p => p.PlayerId == userId, ct);
+
+            if (prefs is null)
+            {
+                prefs = new PlayerPreferences { PlayerId = userId };
+                database.PlayerPreferences.Add(prefs);
+            }
+
+            prefs.AvatarItemType = desiredAvatar;
+            prefs.EquippedCosmeticItemTypesCsv = string.Join(",", desiredCosmetics);
+            prefs.UpdatedAtUtc = DateTimeOffset.UtcNow;
+
+            await database.SaveChangesAsync(ct);
+
+            return Results.Ok(new PlayerLoadoutDto(
+                prefs.AvatarItemType,
+                desiredCosmetics));
+        }
+
+        private static bool IsLoadoutItemType(string itemType)
+            => itemType.StartsWith("avatar:", StringComparison.OrdinalIgnoreCase)
+               || itemType.StartsWith("cosmetic:", StringComparison.OrdinalIgnoreCase);
+
+        private static IReadOnlyList<string> ParseCsv(string csv)
+            => string.IsNullOrWhiteSpace(csv)
+                ? Array.Empty<string>()
+                : csv.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToArray();
     }
 }

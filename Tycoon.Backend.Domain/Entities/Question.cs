@@ -11,6 +11,8 @@ namespace Tycoon.Backend.Domain.Entities
         public QuestionDifficulty Difficulty { get; private set; } = QuestionDifficulty.Easy;
 
         public string CorrectOptionId { get; private set; } = string.Empty;
+        public string Status { get; private set; } = "Draft";
+        public DateTimeOffset? StatusChangedAtUtc { get; private set; }
 
         public string? MediaKey { get; private set; }
 
@@ -48,6 +50,17 @@ namespace Tycoon.Backend.Domain.Entities
                 .Select(t => new QuestionTag(Id, t))
                 .ToList();
 
+            UpdatedAtUtc = DateTimeOffset.UtcNow;
+        }
+
+        public void SetStatus(string status)
+        {
+            var normalized = string.IsNullOrWhiteSpace(status) ? "Draft" : status.Trim();
+            if (normalized is not ("Draft" or "Approved" or "Rejected" or "Archived"))
+                throw new ArgumentException("Status must be one of: Draft, Approved, Rejected, Archived.");
+
+            Status = normalized;
+            StatusChangedAtUtc = DateTimeOffset.UtcNow;
             UpdatedAtUtc = DateTimeOffset.UtcNow;
         }
 

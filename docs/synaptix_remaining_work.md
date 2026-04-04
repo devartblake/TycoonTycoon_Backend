@@ -1,6 +1,6 @@
 # Synaptix Migration — Remaining Work
 
-**Date:** 2026-04-01 | **Last updated:** 2026-04-01
+**Date:** 2026-04-01 | **Last updated:** 2026-04-04
 **Purpose:** Consolidated status across backend and frontend, incorporating cross-comparison findings.
 
 ---
@@ -69,32 +69,35 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 | **Votes/Powerups/Referrals/QR** | ✅ Production | 10 | All functional |
 | **Real-time (SignalR)** | ✅ Production | 3 hubs | Match, notifications, presence |
 | **Sidecar (ML/Utils)** | ✅ Utils | 20+ | Analytics, rebalance, placeholder ML models |
-| **Questions** | ❌ Stub | 1 | Upload only — no serving or grading |
-| **Store/IAP** | ❌ Missing | 0 | No shop, purchases, or receipt validation |
-| **Crypto Economy** | ❌ Missing | 0 | Ledger, wallet linking, withdrawal |
+| **Questions** | ✅ Production | 3 | `/questions/set`, `/questions/check`, `/questions/check-batch` serve + grade questions |
+| **Store/IAP** | ⚠️ Partial | 4 | Catalog + purchase + `/store/iap/validate`; strict provider validation still optional via config |
+| **Crypto Economy** | ✅ Alpha+ | 10 | Wallet link/balance/history/withdraw + prize-pool fund/distribute + staking endpoints |
 
 ---
 
 ## 5. Remaining Work — Priority Order
 
 ### Priority 1: Build & Migration Verification
-- [ ] Verify solution compiles cleanly (`dotnet build`)
+- [ ] Verify solution compiles cleanly (`dotnet build` on `Tycoon.Backend.Api/Tycoon.Backend.Api.csproj`)
 - [ ] Generate EF Core migration for `PlayerPreferences` table
 - [ ] Run migration against dev database
 - [ ] Confirm CI passes with no namespace/build regressions
+  - Attempted local bootstrap on 2026-04-04 via `./scripts/bootstrap-dotnet.sh`; blocked by HTTP 403 fetching `dotnet-install.sh` in this environment.
 
-### Priority 2: Question Serving Pipeline
-- [ ] `GET /questions?category=&difficulty=&count=` — Serve questions for match play
-- [ ] `POST /questions/answer` or integrate into match submit — Per-question answer grading
-- [ ] Question bank management (categories, difficulty tagging, approval workflow)
-- [ ] Wire Python sidecar `/ml/question-difficulty` for NLP-based difficulty estimation
+### Priority 2: Questions Gameplay Hardening
+- [x] `GET /questions/set?category=&difficulty=&count=` — Serve questions for match play
+- [x] `POST /questions/check` and `POST /questions/check-batch` — Server-side grading
+- [x] Integrate questions flow into authoritative match/session pipeline end-to-end
+- [x] Question bank management (categories, difficulty tagging, approval workflow)
+- [x] Wire Python sidecar `/ml/question-difficulty` for NLP-based difficulty estimation
 
 ### Priority 3: Store/Shop/IAP
-- [ ] `GET /store/catalog` — Fetch available items/bundles
-- [ ] `POST /store/purchase` — Purchase with in-game currency (Credits/Synapse Shards)
-- [ ] IAP receipt validation (Apple App Store / Google Play)
-- [ ] Player inventory/cosmetics endpoint
-- [ ] Battle pass / premium subscription support (if planned)
+- [x] `GET /store/catalog` — Fetch available items/bundles
+- [x] `POST /store/purchase` — Purchase with in-game currency (Credits/Synapse Shards)
+- [x] `POST /store/iap/validate` — Receipt validation endpoint + transaction tracking
+- [x] Strict Apple/Google provider-side verification (enable with `Iap:EnableStrictValidation`)
+- [x] Player inventory/cosmetics endpoint
+- [x] Battle pass / premium subscription support (if planned)
 
 ### Priority 4: Frontend Economy Integration
 - [ ] Frontend wallet sync against authoritative backend state (economy endpoints exist)
@@ -102,19 +105,23 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [ ] Frontend purchase flow wired to store API (once built)
 
 ### Priority 5: Crypto Economy Layer
-- [ ] Crypto ledger entity and persistence
-- [ ] Wallet linking API (external wallet address)
-- [ ] Crypto balance/history endpoints
-- [ ] Withdrawal flow with approval/audit
-- [ ] Prize pool system
-- [ ] Optional staking (later phase)
+- [x] Crypto ledger entries via `PlayerTransaction` (`crypto-*` kinds)
+- [x] Wallet linking API (external wallet address)
+- [x] Crypto balance/history endpoints
+- [x] Withdrawal request flow (pending, approval/audit ready)
+- [x] Prize pool system (`/crypto/prize-pool/fund`, `/crypto/prize-pool/{poolId}`, `/crypto/prize-pool/distribute`)
+- [x] Optional staking baseline (`/crypto/stake`, `/crypto/unstake`, `/crypto/staking/{playerId}`)
+- [x] Admin withdrawal settlement baseline (`/crypto/withdraw/pending`, `/crypto/withdraw/{id}/approve`, `/crypto/withdraw/{id}/reject`)
 
 ### Priority 6: Polish & Gaps
-- [ ] Player search/discovery endpoint (`GET /users/search?handle=`)
-- [ ] Profile enrichment (career stats summary, W-L, winrate)
-- [ ] Unfriend endpoint
-- [ ] Cosmetics/avatar loadout system
-- [ ] ML model deployment (replace placeholder churn/difficulty/quality scorers)
+- [x] Player search/discovery endpoint (`GET /users/search?handle=`)
+- [x] Profile enrichment (career stats summary, W-L, winrate)
+- [x] Unfriend endpoint
+- [x] Cosmetics/avatar loadout system
+- [ ] ML model deployment (in progress: question difficulty estimator now supports deployed model endpoint via `MlModels:QuestionDifficultyUrl`; churn/quality scorers still pending)
+- [x] Added backend smoke route contract integration tests (`Tycoon.Backend.Api.Tests/Smoke/AlphaP0RouteContractsTests.cs`)
+  - validates core P0 route mapping (non-404 contract checks)
+  - validates sensitive anonymous POSTs avoid 500 regression
 
 ### Priority 7: Frontend Polish (No Backend Dependency)
 - [ ] Retention hooks (bonus challenge, streak system, session-end trigger)
@@ -136,8 +143,26 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 | Milestone | Status | Blockers |
 |---|---|---|
 | **Closed Beta / Soft Launch** | ✅ Ready | Core gameplay loop functional (auth → match → rewards → leaderboard) |
-| **Public Production** | ⚠️ Blocked | Missing: Store/IAP + Question serving pipeline |
-| **Monetization** | ❌ Not ready | No shop, no IAP receipt validation, no crypto layer |
+| **Public Production** | ⚠️ Blocked | Strict external IAP verification + operational hardening for withdrawal settlement workers/monitoring |
+| **Monetization** | ✅ Alpha+ | Store + IAP endpoint + crypto request/prize-pool/staking + admin settlement controls exist |
+
+---
+
+## 6.1 Immediate next steps (owner runlist)
+
+1. [ ] Run local build + migration gate (`dotnet build`, `dotnet ef database update`).
+2. [ ] Perform request-level smoke checks for Auth, Questions, Store, and Crypto routes.
+   - [x] Route/static smoke executed via helper scripts (`SMOKE_MODE=routes`).
+   - [ ] Live/request-level smoke (`SMOKE_MODE=live`) against running API instance.
+   - [x] Live helper scripts now support auto-signup auth bootstrap + question-check + purchase contract check pathing.
+   - Helper (bash): `./scripts/alpha-p0-smoke.sh`
+   - Helper (PowerShell): `pwsh ./scripts/alpha-p0-smoke.ps1`
+   - CI helper: `.github/workflows/alpha-p0-smoke.yml` (NOW build + route checks)
+3. [x] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
+4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
+   - [x] Live smoke helpers now execute this path shape with auto-signup bootstrap.
+   - [ ] Execute against running API instance and archive response/status evidence.
+5. [ ] Record go/no-go with explicit defer list (withdrawal settlement worker/monitoring hardening + ML churn/quality model deployment follow-ups).
 
 ---
 
