@@ -20,7 +20,7 @@ namespace Tycoon.Backend.Api.Grpc;
 ///   PlayMatch       — bidirectional stream; live match session
 ///   WatchLeaderboard — server stream; live rank neighbourhood
 ///
-/// Authentication: clients must send an `authorization: Bearer <jwt>`
+/// Authentication: clients must send an `authorization: Bearer &lt;jwt&gt;`
 /// gRPC metadata header (same token from POST /auth/login).
 /// </summary>
 public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServiceBase
