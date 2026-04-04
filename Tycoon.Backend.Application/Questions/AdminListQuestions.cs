@@ -110,6 +110,7 @@ namespace Tycoon.Backend.Application.Questions
                     x.Text.Length <= 90 ? x.Text : x.Text.Substring(0, 90) + "…",
                     x.Category,
                     x.Difficulty,
+                    x.MediaKey,
                     tagsByQuestionId.TryGetValue(x.Id, out var tagsForQuestion) ? tagsForQuestion : [],
                     x.MediaKey != null,
                     x.UpdatedAtUtc
