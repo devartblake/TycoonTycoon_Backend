@@ -87,7 +87,7 @@ namespace Tycoon.Backend.Api.Features.Friends
             });
 
             // DELETE /friends
-            g.MapDelete("", async (
+            g.MapDelete("/remove", async (
                 [FromBody] RemoveFriend req,
                 FriendsService friends,
                 CancellationToken ct) =>
