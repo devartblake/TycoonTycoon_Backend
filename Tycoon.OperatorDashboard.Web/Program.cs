@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,28 @@ builder.Services.AddHttpClient("tycoon-api", client =>
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    if (context.User?.Identity?.IsAuthenticated is not true
+        && context.Request.Headers.TryGetValue("X-Operator-User", out var headerUser)
+        && !string.IsNullOrWhiteSpace(headerUser))
+    {
+        var claims = new List<Claim> { new(ClaimTypes.Name, headerUser.ToString()) };
+        if (context.Request.Headers.TryGetValue("X-Operator-Permissions", out var headerPerms))
+        {
+            foreach (var permission in headerPerms.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                claims.Add(new Claim("permission", permission));
+            }
+        }
+
+        var identity = new ClaimsIdentity(claims, authenticationType: "operator-header");
+        context.User = new ClaimsPrincipal(identity);
+    }
+
+    await next();
+});
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/health/ready", () => Results.Ok(new { status = "ready", backend = backendBaseUrl }));

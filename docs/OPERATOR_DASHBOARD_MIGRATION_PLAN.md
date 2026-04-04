@@ -117,9 +117,11 @@ while preserving feature parity, role-based access control, and operational reli
   - Domain-specific proxy groups for Wave A: `/api/dashboard`, `/api/audit-log`, `/api/users`
   - Session bootstrap endpoint: `/api/me`
   - Typed Wave A endpoints: `/api/dashboard/overview`, `/api/audit-log`, `/api/users`
+  - Header-based auth/session bootstrap middleware (`X-Operator-User`, `X-Operator-Permissions`)
   - `appsettings.json` with `Backend:BaseUrl`
 - ✅ Initial `Tycoon.OperatorDashboard.Vue` app shell added:
   - Vite + Vue + Vue Router bootstrap
   - Route shell for Wave A pages (`/dashboard`, `/audit-log`, `/users`)
   - RBAC route-guard helper skeleton
+  - `/api/me` session bootstrap wired into router guard permission resolution
 - ✅ Plan execution now at **Workstream 1: Platform Foundations**.

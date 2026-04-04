@@ -6,6 +6,7 @@ Vue front-end target for Operator Dashboard migration.
 - [x] App shell + router scaffold
 - [x] Initial Wave-A routes: Dashboard, Audit Log, Users
 - [x] RBAC route guard helper skeleton
+- [x] Session bootstrap integration (`/api/me`) for route guard permission checks
 - [ ] Shared API client conventions
 - [ ] Error envelope normalization
 
