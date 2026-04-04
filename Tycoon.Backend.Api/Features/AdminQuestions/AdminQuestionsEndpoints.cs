@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using System.Net.Http.Json;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Questions;
 using Tycoon.Shared.Contracts.Dtos;
@@ -28,6 +29,7 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
             g.MapGet("", async (
                 [FromQuery] string? q,
                 [FromQuery] string? category,
+                [FromQuery] string? status,
                 [FromQuery] string[]? tag,
                 [FromQuery] string? sortBy,
                 [FromQuery] string? sortOrder,
@@ -44,6 +46,7 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                     Tags: tags,
                     TagMode: TagFilterMode.Any,
                     Category: category,
+                    Status: status,
                     Difficulty: null,
                     Sort: normalizedSort,
                     Page: page <= 0 ? 1 : page,
@@ -91,6 +94,22 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 return ok ? Results.NoContent() : AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.");
             });
 
+            g.MapPost("/{id:guid}/approve", async (Guid id, IMediator mediator, CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new AdminSetQuestionStatus(id, "Approved"), ct);
+                return dto is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
+                    : Results.Ok(dto);
+            });
+
+            g.MapPost("/{id:guid}/reject", async (Guid id, IMediator mediator, CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new AdminSetQuestionStatus(id, "Rejected"), ct);
+                return dto is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
+                    : Results.Ok(dto);
+            });
+
             g.MapPost("/bulk", async ([FromBody] ImportQuestionsRequest req, IMediator mediator, CancellationToken ct) =>
             {
                 var dto = await mediator.Send(new AdminImportQuestions(req), ct);
@@ -100,6 +119,7 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
             g.MapGet("/export", async (
                 [FromQuery] string? q,
                 [FromQuery] string? category,
+                [FromQuery] string? status,
                 [FromQuery] string[]? tag,
                 IMediator mediator,
                 CancellationToken ct) =>
@@ -110,6 +130,7 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                     Tags: tags,
                     TagMode: TagFilterMode.Any,
                     Category: category,
+                    Status: status,
                     Difficulty: null,
                     Sort: "updated_desc",
                     Page: 1,
@@ -131,6 +152,44 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 var dto = await mediator.Send(new AdminImportQuestions(req), ct);
                 return Results.Ok(dto);
             });
+
+            g.MapPost("/estimate-difficulty", async (
+                [FromBody] QuestionDifficultyEstimateRequest req,
+                IConfiguration cfg,
+                IHttpClientFactory httpClientFactory,
+                CancellationToken ct) =>
+            {
+                if (string.IsNullOrWhiteSpace(req.Text))
+                    return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Text is required.");
+
+                var enableSidecar = cfg.GetValue("SidecarInference:EnableQuestionDifficultyEstimator", false);
+                var sidecarUrl = cfg["SidecarInference:QuestionDifficultyUrl"];
+
+                if (enableSidecar && !string.IsNullOrWhiteSpace(sidecarUrl))
+                {
+                    try
+                    {
+                        var http = httpClientFactory.CreateClient();
+                        var sidecarResp = await http.PostAsJsonAsync(sidecarUrl, new { text = req.Text }, ct);
+                        if (sidecarResp.IsSuccessStatusCode)
+                        {
+                            var payload = await sidecarResp.Content.ReadFromJsonAsync<SidecarDifficultyPayload>(cancellationToken: ct);
+                            if (payload is not null)
+                            {
+                                var mapped = MapDifficulty(payload.Difficulty, payload.Score);
+                                return Results.Ok(new QuestionDifficultyEstimateResponse(mapped, payload.Score, "sidecar"));
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // fall through to heuristic
+                    }
+                }
+
+                var heuristic = EstimateDifficultyHeuristic(req.Text);
+                return Results.Ok(new QuestionDifficultyEstimateResponse(heuristic, 0.55m, "heuristic"));
+            });
         }
 
         private static string BuildSort(string? sortBy, string? sortOrder)
@@ -139,5 +198,31 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
             var order = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "asc" : "desc";
             return $"{by}_{order}";
         }
+
+        private static QuestionDifficulty EstimateDifficultyHeuristic(string text)
+        {
+            var length = text.Trim().Length;
+            return length switch
+            {
+                < 55 => QuestionDifficulty.Easy,
+                < 110 => QuestionDifficulty.Medium,
+                < 180 => QuestionDifficulty.Hard,
+                _ => QuestionDifficulty.Expert
+            };
+        }
+
+        private static QuestionDifficulty MapDifficulty(string? difficulty, decimal score)
+        {
+            if (!string.IsNullOrWhiteSpace(difficulty)
+                && Enum.TryParse<QuestionDifficulty>(difficulty, true, out var parsed))
+                return parsed;
+
+            if (score < 0.35m) return QuestionDifficulty.Easy;
+            if (score < 0.60m) return QuestionDifficulty.Medium;
+            if (score < 0.82m) return QuestionDifficulty.Hard;
+            return QuestionDifficulty.Expert;
+        }
+
+        private sealed record SidecarDifficultyPayload(string? Difficulty, decimal Score);
     }
 }
