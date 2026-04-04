@@ -476,6 +476,10 @@ builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
 
 builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 
+// Ensure IHttpClientFactory is always available for minimal-API endpoints that
+// take it as a service dependency (avoids startup parameter-inference failures).
+builder.Services.AddHttpClient();
+
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 
 var app = builder.Build();
