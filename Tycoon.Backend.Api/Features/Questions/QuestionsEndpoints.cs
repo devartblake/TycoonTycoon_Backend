@@ -35,6 +35,7 @@ namespace Tycoon.Backend.Api.Features.Questions
             var query = db.Questions
                 .AsNoTracking()
                 .Include(q => q.Options)
+                .Where(q => q.Status == "Approved")
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(category))

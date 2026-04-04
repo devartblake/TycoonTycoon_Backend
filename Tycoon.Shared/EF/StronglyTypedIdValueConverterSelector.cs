@@ -17,6 +17,11 @@ public class StronglyTypedIdValueConverterSelector<TId> : ValueConverterSelector
 
     public override IEnumerable<ValueConverterInfo> Select(Type? modelClrType, Type? providerClrType = null)
     {
+        if (modelClrType is null)
+        {
+            yield break;
+        }
+
         var baseConverters = base.Select(modelClrType, providerClrType);
         foreach (var converter in baseConverters)
         {
@@ -25,6 +30,10 @@ public class StronglyTypedIdValueConverterSelector<TId> : ValueConverterSelector
 
         var underlyingModelType = UnwrapNullableType(modelClrType);
         var underlyingProviderType = UnwrapNullableType(providerClrType);
+        if (underlyingModelType is null)
+        {
+            yield break;
+        }
 
         if (underlyingProviderType is null || underlyingProviderType == typeof(TId))
         {
@@ -42,7 +51,7 @@ public class StronglyTypedIdValueConverterSelector<TId> : ValueConverterSelector
                     _ =>
                     {
                         return new ValueConverterInfo(
-                            modelClrType: modelClrType,
+                            modelClrType: underlyingModelType,
                             providerClrType: typeof(TId),
                             factory: valueConverterInfo =>
                                 (ValueConverter)
@@ -60,7 +69,7 @@ public class StronglyTypedIdValueConverterSelector<TId> : ValueConverterSelector
                     _ =>
                     {
                         return new ValueConverterInfo(
-                            modelClrType: modelClrType,
+                            modelClrType: underlyingModelType,
                             providerClrType: typeof(TId),
                             factory: valueConverterInfo =>
                                 (ValueConverter)
