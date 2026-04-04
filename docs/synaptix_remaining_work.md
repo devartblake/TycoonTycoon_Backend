@@ -1,6 +1,6 @@
 # Synaptix Migration — Remaining Work
 
-**Date:** 2026-04-01 | **Last updated:** 2026-04-01
+**Date:** 2026-04-01 | **Last updated:** 2026-04-04
 **Purpose:** Consolidated status across backend and frontend, incorporating cross-comparison findings.
 
 ---
@@ -78,7 +78,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 ## 5. Remaining Work — Priority Order
 
 ### Priority 1: Build & Migration Verification
-- [ ] Verify solution compiles cleanly (`dotnet build`)
+- [ ] Verify solution compiles cleanly (`dotnet build` on `Tycoon.Backend.Api/Tycoon.Backend.Api.csproj`)
 - [ ] Generate EF Core migration for `PlayerPreferences` table
 - [ ] Run migration against dev database
 - [ ] Confirm CI passes with no namespace/build regressions
@@ -117,6 +117,9 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [x] Unfriend endpoint (`DELETE /friends/remove`) ✅
 - [ ] Cosmetics/avatar loadout system
 - [ ] ML model deployment (replace placeholder churn/difficulty/quality scorers)
+- [x] Added backend smoke route contract integration tests (`Tycoon.Backend.Api.Tests/Smoke/AlphaP0RouteContractsTests.cs`)
+  - validates core P0 route mapping (non-404 contract checks)
+  - validates sensitive anonymous POSTs avoid 500 regression
 
 ### Priority 7: Frontend Polish (No Backend Dependency)
 - [ ] Retention hooks (bonus challenge, streak system, session-end trigger)
@@ -147,9 +150,11 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 
 1. [ ] Run local build + migration gate (`dotnet build`, `dotnet ef database update`).
 2. [ ] Perform request-level smoke checks for Auth, Questions, Store, and Crypto routes.
+   - [x] Route/static smoke executed via helper scripts (`SMOKE_MODE=routes`).
+   - [ ] Live/request-level smoke (`SMOKE_MODE=live`) against running API instance.
    - Helper (bash): `./scripts/alpha-p0-smoke.sh`
    - Helper (PowerShell): `pwsh ./scripts/alpha-p0-smoke.ps1`
-   - CI helper: `.github/workflows/alpha-p0-smoke.yml` (route-check mode)
+   - CI helper: `.github/workflows/alpha-p0-smoke.yml` (NOW build + route checks)
 3. [ ] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
 4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
 5. [ ] Record go/no-go with explicit defer list (prize pool, staking, strict provider hardening follow-ups if needed).
