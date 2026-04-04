@@ -79,6 +79,8 @@ public static class QueryCollectionExtensions
         {
             return @default!;
         }
+        
+          dynamic? values = Activator.CreateInstance(constructedListType);
 
         if (collection.TryGetValue(key, out var results))
         {
