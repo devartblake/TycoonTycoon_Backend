@@ -24,6 +24,7 @@
         string Text,
         string Category,
         QuestionDifficulty Difficulty,
+        string Status,
         IReadOnlyList<QuestionOptionDto> Options,
         string CorrectOptionId,
         IReadOnlyList<string> Tags,
@@ -39,6 +40,7 @@
         string TextPreview,
         string Category,
         QuestionDifficulty Difficulty,
+        string Status,
         IReadOnlyList<string> Tags,
         bool HasMedia,
         DateTimeOffset UpdatedAtUtc
@@ -75,7 +77,8 @@
         IReadOnlyList<QuestionOptionDto> Options,
         string CorrectOptionId,
         IReadOnlyList<string> Tags,
-        string? MediaKey
+        string? MediaKey,
+        string? Status = null
     );
 
     public sealed record UpdateQuestionRequest(
@@ -85,7 +88,8 @@
         IReadOnlyList<QuestionOptionDto> Options,
         string CorrectOptionId,
         IReadOnlyList<string> Tags,
-        string? MediaKey
+        string? MediaKey,
+        string? Status = null
     );
 
     public sealed record BulkDeleteQuestionsRequest(IReadOnlyList<Guid> Ids);
@@ -103,6 +107,13 @@
     // JSON upload endpoint
     public sealed record UploadQuestionRequest(string QuestionTitle, string QuestionDetails);
     public sealed record UploadQuestionResponseDto(string Message, string QuestionTitle, string QuestionDetails);
+
+    public sealed record QuestionDifficultyEstimateRequest(string Text);
+    public sealed record QuestionDifficultyEstimateResponse(
+        QuestionDifficulty Difficulty,
+        decimal Confidence,
+        string Source
+    );
 
     // ── Gameplay question serving (client-facing, no correct answer exposed) ──
 
