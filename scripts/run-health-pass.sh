@@ -103,7 +103,7 @@ done
   echo "- Archived alternate dashboard-web Dockerfiles as \`.txt\` to avoid split build paths without deleting project artifacts."
   echo
   echo "## Next Actions"
-  echo "1. Ensure prerequisites are installed locally: `bash scripts/setup-health-pass-prereqs.sh`."
+  echo '1. Ensure prerequisites are installed locally: `bash scripts/setup-health-pass-prereqs.sh`.'
   echo "2. Re-run this health pass in CI/dev with .NET 9 SDK + Docker available."
   echo "3. Attach full command logs if any command fails."
   echo "4. Mark blockers cleared and update final pass/fail summary."
