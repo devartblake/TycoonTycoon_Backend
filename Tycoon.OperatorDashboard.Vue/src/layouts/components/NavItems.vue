@@ -56,7 +56,7 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
   />
   <VerticalNavLink
     :item="{
-      title: 'Moderation Log',
+      title: 'Moderation',
       icon: 'ri-file-list-line',
       to: '/moderation',
     }"
@@ -86,7 +86,7 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
   <!-- Communications -->
   <VerticalNavSectionTitle
     :item="{
-      heading: 'Communications',
+      heading: 'Content',
     }"
   />
   <VerticalNavLink

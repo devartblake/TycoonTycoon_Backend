@@ -113,7 +113,7 @@ namespace Tycoon.Backend.Application.Auth
             }
 
             var jwtToken = CreateJwtToken(authenticatedUser, clientType, aclRole);
-            var deviceRefreshToken = await CreateRefreshTokenForDevice(
+            var deviceRefreshToken = CreateRefreshTokenForDevice(
                 authenticatedUser.Id, deviceId, clientType);
 
             await _database.SaveChangesAsync();
@@ -159,7 +159,7 @@ namespace Tycoon.Backend.Application.Auth
             }
 
             var newJwtToken = CreateJwtToken(tokenOwner, expectedClientType, aclRole);
-            var newDeviceToken = await CreateRefreshTokenForDevice(
+            var newDeviceToken = CreateRefreshTokenForDevice(
                 tokenOwner.Id, storedToken.DeviceId, expectedClientType);
 
             await _database.SaveChangesAsync();
@@ -210,7 +210,7 @@ namespace Tycoon.Backend.Application.Auth
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
         }
 
-        private async Task<string> CreateRefreshTokenForDevice(
+        private string CreateRefreshTokenForDevice(
             Guid userId, string deviceId, string clientType)
         {
             var randomBytes = RandomNumberGenerator.GetBytes(64);
