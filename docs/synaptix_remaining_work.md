@@ -82,6 +82,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [ ] Generate EF Core migration for `PlayerPreferences` table
 - [ ] Run migration against dev database
 - [ ] Confirm CI passes with no namespace/build regressions
+  - Attempted local bootstrap on 2026-04-04 via `./scripts/bootstrap-dotnet.sh`; blocked by HTTP 403 fetching `dotnet-install.sh` in this environment.
 
 ### Priority 2: Questions Gameplay Hardening
 - [x] `GET /questions/set?category=&difficulty=&count=` — Serve questions for match play
