@@ -26,6 +26,15 @@ namespace Tycoon.Shared.Contracts.Dtos
         int Mmr
     );
 
+    public record UserCareerSummaryDto(
+        Guid UserId,
+        int Wins,
+        int Losses,
+        int Draws,
+        int MatchesPlayed,
+        decimal WinRate
+    );
+
     public record UpdateProfileRequest(string? Handle, string? Country);
 
     // ===== User Search DTOs =====

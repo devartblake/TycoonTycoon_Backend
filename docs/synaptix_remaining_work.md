@@ -113,8 +113,8 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 
 ### Priority 6: Polish & Gaps
 - [x] Player search/discovery endpoint (`GET /users/search?handle=`)
-- [ ] Profile enrichment (career stats summary, W-L, winrate)
-- [ ] Unfriend endpoint
+- [x] Profile enrichment (career stats summary, W-L, winrate)
+- [x] Unfriend endpoint
 - [ ] Cosmetics/avatar loadout system
 - [ ] ML model deployment (replace placeholder churn/difficulty/quality scorers)
 - [x] Added backend smoke route contract integration tests (`Tycoon.Backend.Api.Tests/Smoke/AlphaP0RouteContractsTests.cs`)
