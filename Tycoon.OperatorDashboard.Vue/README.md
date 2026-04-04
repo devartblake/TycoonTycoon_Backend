@@ -2,15 +2,17 @@
 
 Vue front-end target for Operator Dashboard migration.
 
-## Phase-1 bootstrap (started)
-- App shell + router scaffold
-- Shared API client conventions
-- RBAC route guards
-- Error envelope normalization
+## Phase-1 bootstrap (in progress)
+- [x] App shell + router scaffold
+- [x] Initial Wave-A routes: Dashboard, Audit Log, Users
+- [x] RBAC route guard helper skeleton
+- [ ] Shared API client conventions
+- [ ] Error envelope normalization
 
-## NPM scripts (expected)
+## NPM scripts
 - `npm run dev`
 - `npm run build`
+- `npm run preview`
 - `npm run test`
 - `npm run lint`
 
