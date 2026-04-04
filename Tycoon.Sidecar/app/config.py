@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     elasticsearch_url: str = "http://localhost:9200"
     elasticsearch_user: str = "elastic"
     elasticsearch_password: str = "tycoon_elastic_password_123"
+    elasticsearch_compatibility_version: int = 8
 
     # Service settings
     port: int = 8100

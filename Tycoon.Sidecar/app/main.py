@@ -34,10 +34,19 @@ async def lifespan(app: FastAPI):
     )
     app.state.mongo_client = AsyncIOMotorClient(settings.mongo_url)
     app.state.mongo_db = app.state.mongo_client[settings.mongo_db]
+    es_compat_version = max(0, int(settings.elasticsearch_compatibility_version))
+    es_headers = None
+    if es_compat_version > 0:
+        media_type = f"application/vnd.elasticsearch+json; compatible-with={es_compat_version}"
+        es_headers = {
+            "accept": media_type,
+            "content-type": media_type,
+        }
     app.state.elasticsearch = AsyncElasticsearch(
         settings.elasticsearch_url,
         basic_auth=(settings.elasticsearch_user, settings.elasticsearch_password),
         verify_certs=False,
+        headers=es_headers,
     )
 
     stop_event = asyncio.Event()

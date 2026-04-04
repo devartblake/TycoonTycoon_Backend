@@ -1,0 +1,22 @@
+{
+  "name": "tycoon-operator-dashboard-vue",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:icons": "echo 'No icon prebuild step configured for Vue dashboard yet.'",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo 'TODO: wire Vue tests'",
+    "lint": "echo 'TODO: wire Vue lint'"
+  },
+  "dependencies": {
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^5.4.14"
+  }
+}

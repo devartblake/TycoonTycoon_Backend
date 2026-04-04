@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
+@using Tycoon.OperatorDashboard.Components.Common
 
 <h1>Seasons</h1>
 
@@ -76,18 +77,18 @@ else
     </div>
 
     @if (_claims is null) { <p>Enter a season or player ID and search.</p> }
-    else if (_claims.RootElement.TryGetProperty("items", out var claimItems))
+    else
     {
         <table>
             <thead><tr><th>Player</th><th>Season</th><th>Tier</th><th>Reward</th><th>Claimed At</th></tr></thead>
             <tbody>
-                @foreach (var el in claimItems.EnumerateArray())
+                @foreach (var el in JsonSafe.EnumerateArrayProperty(_claims, "items"))
                 {
-                    var player  = el.TryGetProperty("playerId",   out var p) ? p.GetString() ?? "—" : "—";
-                    var season  = el.TryGetProperty("seasonId",   out var s) ? s.GetString() ?? "—" : "—";
-                    var tier    = el.TryGetProperty("tier",       out var t) ? t.GetInt32() : 0;
-                    var reward  = el.TryGetProperty("rewardType", out var r) ? r.GetString() ?? "—" : "—";
-                    var at      = el.TryGetProperty("claimedAt",  out var a) ? a.GetString() ?? "—" : "—";
+                    var player  = JsonSafe.GetText(el, "playerId");
+                    var season  = JsonSafe.GetText(el, "seasonId");
+                    var tier    = JsonSafe.GetInt(el, "tier");
+                    var reward  = JsonSafe.GetText(el, "rewardType");
+                    var at      = JsonSafe.GetText(el, "claimedAt");
                     <tr>
                         <td><code>@player[..Math.Min(8, player.Length)]…</code></td>
                         <td><code>@season[..Math.Min(8, season.Length)]…</code></td>

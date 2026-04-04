@@ -39,6 +39,7 @@
         string TextPreview,
         string Category,
         QuestionDifficulty Difficulty,
+        string? MediaKey,
         IReadOnlyList<string> Tags,
         bool HasMedia,
         DateTimeOffset UpdatedAtUtc
