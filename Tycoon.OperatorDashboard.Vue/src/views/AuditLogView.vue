@@ -8,6 +8,7 @@ const rows = ref([])
 const page = ref(1)
 const pageSize = 20
 const total = ref(0)
+const status = ref('')
 
 function readItems(payload) {
   return Array.isArray(payload?.items) ? payload.items : []
@@ -20,7 +21,11 @@ function readTotal(payload, itemCount) {
 async function loadAuditLog() {
   loading.value = true
   try {
-    const payload = await getAuditLog(page.value, pageSize)
+    const payload = await getAuditLog({
+      page: page.value,
+      pageSize,
+      status: status.value
+    })
     const items = readItems(payload)
     rows.value = items
     total.value = readTotal(payload, items.length)
@@ -43,6 +48,11 @@ function nextPage() {
   loadAuditLog()
 }
 
+function applyFilters() {
+  page.value = 1
+  loadAuditLog()
+}
+
 onMounted(loadAuditLog)
 </script>
 
@@ -52,6 +62,15 @@ onMounted(loadAuditLog)
     <p v-if="loading">Loading audit log…</p>
     <p v-else-if="error" style="color:#ef4444">{{ error }}</p>
     <template v-else>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem;flex-wrap:wrap">
+        <select v-model="status" style="padding:.35rem .5rem;border:1px solid #cbd5e1;border-radius:6px">
+          <option value="">All statuses</option>
+          <option value="Success">Success</option>
+          <option value="Failed">Failed</option>
+        </select>
+        <button @click="applyFilters">Apply</button>
+      </div>
+
       <table v-if="rows.length > 0" style="width:100%;border-collapse:collapse;background:white">
         <thead>
           <tr>
