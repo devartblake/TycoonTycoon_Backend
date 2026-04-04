@@ -6,7 +6,7 @@ public record EntityId<T> : Identity<T>
 {
     public static implicit operator T(EntityId<T> id)
     {
-        ArgumentNullException.ThrowIfNull(id.Value);
+        ArgumentNullException.ThrowIfNull(id);
         return id.Value;
     }
 
@@ -17,7 +17,7 @@ public record EntityId : EntityId<long>
 {
     public static implicit operator long(EntityId id)
     {
-        ArgumentNullException.ThrowIfNull(id.Value);
+        ArgumentNullException.ThrowIfNull(id);
         return id.Value;
     }
 

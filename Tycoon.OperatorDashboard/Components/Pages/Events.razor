@@ -42,8 +42,8 @@ else
                 </div>
                 <div class="form-row">
                     <label>Scheduled At (UTC)<input type="datetime-local" @bind="_newScheduledAt" /></label>
-                    <label>Entry Fee (coins)<input type="number" @bind="_newEntryFee" min="0" /></label>
-                    <label>Revive Cost (gems)<input type="number" @bind="_newReviveCost" min="0" /></label>
+                    <label>Entry Fee (Credits)<input type="number" @bind="_newEntryFee" min="0" /></label>
+                    <label>Revive Cost (Synapse Shards)<input type="number" @bind="_newReviveCost" min="0" /></label>
                 </div>
                 <button @onclick="CreateAsync">Create Event</button>
                 @if (!string.IsNullOrEmpty(_createMessage))

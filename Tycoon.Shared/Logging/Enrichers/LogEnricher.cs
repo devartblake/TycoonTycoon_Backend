@@ -27,20 +27,20 @@ public static class LogEnricher
         // Only set it if available. You're not sending sensitive data in a querystring right?!
         if (request.QueryString.HasValue)
         {
-            diagnosticContext.Set("QueryString", request.QueryString.Value);
+            diagnosticContext.Set("QueryString", request.QueryString.Value ?? string.Empty);
         }
 
         // Set the content-type of the Response at this point
-        diagnosticContext.Set("ContentType", httpContext.Response.ContentType);
+        diagnosticContext.Set("ContentType", httpContext.Response.ContentType ?? string.Empty);
 
         // Set userId
-        diagnosticContext.Set("UserId", httpContext.User.FindFirst(x => x.Type == ClaimTypes.NameIdentifier)?.Value);
+        diagnosticContext.Set("UserId", httpContext.User.FindFirst(x => x.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty);
 
         // Retrieve the IEndpointFeature selected for the request
         var endpoint = httpContext.GetEndpoint();
         if (endpoint is not null)
         {
-            diagnosticContext.Set("EndpointName", endpoint.DisplayName);
+            diagnosticContext.Set("EndpointName", endpoint.DisplayName ?? string.Empty);
         }
     }
 

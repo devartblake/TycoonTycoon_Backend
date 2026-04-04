@@ -111,7 +111,7 @@ namespace Tycoon.Shared.Core.Extensions
             if (method is null)
                 return null!;
 
-            return method.Invoke(null, parameters);
+            return method.Invoke(null, parameters)!;
         }
 
         /// <summary>
@@ -159,9 +159,9 @@ namespace Tycoon.Shared.Core.Extensions
             return query.ToArray<MethodInfo>();
         }
 
-        public static MethodInfo GetExtensionMethod(this Type t, string methodeName)
+        public static MethodInfo? GetExtensionMethod(this Type t, string methodName)
         {
-            var mi = from methode in t.GetExtensionMethods() where methode.Name == methodeName select methode;
+            var mi = from method in t.GetExtensionMethods() where method.Name == methodName select method;
             if (!mi.Any())
                 return null;
             else
@@ -272,6 +272,9 @@ namespace Tycoon.Shared.Core.Extensions
             var baseType = type.BaseType;
             while (baseType != toBaseType && baseType != typeof(object))
             {
+                if (baseType is null)
+                    break;
+
                 retVal.Add(baseType);
                 baseType = baseType?.BaseType;
             }
@@ -679,7 +682,7 @@ namespace Tycoon.Shared.Core.Extensions
             return givenType == genericType
                 || givenType.MapsToGenericTypeDefinition(genericType)
                 || givenType.HasInterfaceThatMapsToGenericTypeDefinition(genericType)
-                || givenType.BaseType.IsAssignableToGenericType(genericType);
+                || (givenType.BaseType?.IsAssignableToGenericType(genericType) ?? false);
         }
 
         private static bool HasInterfaceThatMapsToGenericTypeDefinition(this Type givenType, Type genericType)
@@ -721,7 +724,8 @@ namespace Tycoon.Shared.Core.Extensions
             }
             else
             {
-                return IsMatchingWithInterface(handlerType.GetInterface(handlerInterface.Name), handlerInterface);
+                var resolved = handlerType.GetInterface(handlerInterface.Name);
+                return resolved is not null && IsMatchingWithInterface(resolved, handlerInterface);
             }
 
             return false;
@@ -777,12 +781,11 @@ namespace Tycoon.Shared.Core.Extensions
                     yield return interfaceType;
                 }
             }
-            else if (
-                pluggedType.GetTypeInfo().BaseType.GetTypeInfo().IsGenericType
-                && (pluggedType.GetTypeInfo().BaseType.GetGenericTypeDefinition() == templateType)
-            )
+            else if (pluggedType.GetTypeInfo().BaseType is { } baseType
+                && baseType.GetTypeInfo().IsGenericType
+                && (baseType.GetGenericTypeDefinition() == templateType))
             {
-                yield return pluggedType.GetTypeInfo().BaseType;
+                yield return baseType;
             }
 
             if (pluggedType == typeof(object))
@@ -790,7 +793,10 @@ namespace Tycoon.Shared.Core.Extensions
             if (pluggedType.GetTypeInfo().BaseType == typeof(object))
                 yield break;
 
-            foreach (var interfaceType in FindInterfacesThatClose(pluggedType.GetTypeInfo().BaseType, templateType))
+            if (pluggedType.GetTypeInfo().BaseType is not { } parentType)
+                yield break;
+
+            foreach (var interfaceType in FindInterfacesThatClose(parentType, templateType))
             {
                 yield return interfaceType;
             }
@@ -933,4 +939,3 @@ namespace Tycoon.Shared.Core.Extensions
         }
     }
 }
-

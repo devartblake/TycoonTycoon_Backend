@@ -295,7 +295,7 @@ else
     @if (_history.RootElement.TryGetProperty("wallet", out var wallet))
     {
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem">
-            @foreach (var (label, key) in new[] { ("Coins", "coins"), ("Diamonds", "diamonds"), ("XP", "xp") })
+            @foreach (var (label, key) in new[] { ("Credits", "coins"), ("Diamonds", "diamonds"), ("Neural XP", "xp") })
             {
                 var val = JsonSafe.GetLong(wallet, key);
                 <div class="card" style="text-align:center">
@@ -317,9 +317,9 @@ else
         <h2>Grant Currency</h2>
         <label>Currency type
             <select @bind="_grantType">
-                <option value="coins">Coins</option>
+                <option value="coins">Credits</option>
                 <option value="diamonds">Diamonds</option>
-                <option value="xp">XP</option>
+                <option value="xp">Neural XP</option>
             </select>
         </label>
         <label>Amount<input type="number" @bind="_grantAmount" min="1" /></label>
