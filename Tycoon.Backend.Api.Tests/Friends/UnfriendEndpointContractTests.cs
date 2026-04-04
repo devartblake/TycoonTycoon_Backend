@@ -23,11 +23,15 @@ public sealed class UnfriendEndpointContractTests : IClassFixture<TycoonApiFacto
     [Fact]
     public async Task Unfriend_WithEmptyIds_ReturnsValidationEnvelope()
     {
-        var resp = await _http.DeleteAsJsonAsync("/friends", new
+        var request = new HttpRequestMessage(HttpMethod.Delete, "/friends")
         {
-            PlayerId = Guid.Empty,
-            FriendPlayerId = Guid.Empty
-        });
+            Content = JsonContent.Create(new
+            {
+                PlayerId = Guid.Empty,
+                FriendPlayerId = Guid.Empty
+            })
+        };
+        var resp = await _http.SendAsync(request);
 
         resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         await resp.HasErrorCodeAsync("VALIDATION_ERROR");
@@ -47,11 +51,15 @@ public sealed class UnfriendEndpointContractTests : IClassFixture<TycoonApiFacto
         var accept = await _http.PostAsJsonAsync($"/friends/request/{req!.RequestId}/accept", new { PlayerId = to });
         accept.EnsureSuccessStatusCode();
 
-        var remove = await _http.DeleteAsJsonAsync("/friends", new { PlayerId = from, FriendPlayerId = to });
+        var removeRequest = new HttpRequestMessage(HttpMethod.Delete, "/friends")
+        {
+            Content = JsonContent.Create(new { PlayerId = from, FriendPlayerId = to })
+        };
+        var remove = await _http.SendAsync(removeRequest);
         remove.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
         var remaining = await db.FriendEdges
             .Where(x => (x.PlayerId == from && x.FriendPlayerId == to) || (x.PlayerId == to && x.FriendPlayerId == from))

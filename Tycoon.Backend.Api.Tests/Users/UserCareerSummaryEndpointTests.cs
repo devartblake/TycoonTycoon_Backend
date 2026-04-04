@@ -50,7 +50,7 @@ public sealed class UserCareerSummaryEndpointTests : IClassFixture<TycoonApiFact
 
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
             var seasonA = new PlayerSeasonProfile(Guid.NewGuid(), userId, 0);
             seasonA.ApplyMatchOutcome(win: true, draw: false);
