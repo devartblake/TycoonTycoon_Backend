@@ -16,39 +16,35 @@ namespace Tycoon.Backend.Api.Features.Users
                 .WithTags("Users")
                 .RequireAuthorization();
 
-            usersGroup.MapGet("/search", SearchUsers).WithOpenApi();
+            usersGroup.MapGet("/search", SearchUsers);
             usersGroup.MapPatch("/me", UpdateCurrentUserProfile);
         }
 
         private static async Task<IResult> SearchUsers(
             [FromQuery] string handle,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20,
-            IAppDb database = default!,
-            CancellationToken cancellation = default)
+            IAppDb database,
+            CancellationToken cancellation)
         {
             if (string.IsNullOrWhiteSpace(handle) || handle.Trim().Length < 2)
-                return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_QUERY",
-                    "Handle search requires at least 2 characters.");
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Query parameter 'handle' must be at least 2 characters.");
 
-            page = page <= 0 ? 1 : page;
-            pageSize = pageSize is <= 0 or > 50 ? 20 : pageSize;
+            var normalizedHandle = handle.Trim().ToLowerInvariant();
 
-            var pattern = $"%{handle.Trim()}%";
-
-            var query = database.Users.AsNoTracking()
-                .Where(u => u.IsActive && EF.Functions.ILike(u.Handle, pattern))
-                .OrderBy(u => u.Handle);
-
-            var total = await query.CountAsync(cancellation);
-
-            var items = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(u => new UserSearchResultDto(u.Id, u.Handle, u.Country, u.Tier, u.Mmr))
+            var users = await database.Users
+                .Where(u => u.Handle.ToLower().Contains(normalizedHandle))
+                .OrderBy(u => u.Handle)
+                .Take(20)
+                .Select(u => new UserDto(
+                    u.Id,
+                    u.Handle,
+                    u.Email,
+                    u.Country,
+                    u.Tier,
+                    u.Mmr
+                ))
                 .ToListAsync(cancellation);
 
-            return Results.Ok(new UserSearchResponseDto(page, pageSize, total, items));
+            return Results.Ok(users);
         }
 
         private static async Task<IResult> UpdateCurrentUserProfile(
