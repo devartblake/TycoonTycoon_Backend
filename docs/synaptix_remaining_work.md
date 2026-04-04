@@ -71,7 +71,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 | **Sidecar (ML/Utils)** | ✅ Utils | 20+ | Analytics, rebalance, placeholder ML models |
 | **Questions** | ✅ Production | 3 | `/questions/set`, `/questions/check`, `/questions/check-batch` serve + grade questions |
 | **Store/IAP** | ⚠️ Partial | 4 | Catalog + purchase + `/store/iap/validate`; strict provider validation still optional via config |
-| **Crypto Economy** | ⚠️ Partial | 4 | `/crypto/link-wallet`, `/crypto/balance/{playerId}`, `/crypto/history/{playerId}`, `/crypto/withdraw` |
+| **Crypto Economy** | ✅ Alpha+ | 10 | Wallet link/balance/history/withdraw + prize-pool fund/distribute + staking endpoints |
 
 ---
 
@@ -109,15 +109,15 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [x] Wallet linking API (external wallet address)
 - [x] Crypto balance/history endpoints
 - [x] Withdrawal request flow (pending, approval/audit ready)
-- [ ] Prize pool system
-- [ ] Optional staking (later phase)
+- [x] Prize pool system (`/crypto/prize-pool/fund`, `/crypto/prize-pool/{poolId}`, `/crypto/prize-pool/distribute`)
+- [x] Optional staking baseline (`/crypto/stake`, `/crypto/unstake`, `/crypto/staking/{playerId}`)
 
 ### Priority 6: Polish & Gaps
 - [x] Player search/discovery endpoint (`GET /users/search?handle=`)
 - [x] Profile enrichment (career stats summary, W-L, winrate)
 - [x] Unfriend endpoint
 - [x] Cosmetics/avatar loadout system
-- [ ] ML model deployment (replace placeholder churn/difficulty/quality scorers)
+- [ ] ML model deployment (in progress: question difficulty estimator now supports deployed model endpoint via `MlModels:QuestionDifficultyUrl`; churn/quality scorers still pending)
 - [x] Added backend smoke route contract integration tests (`Tycoon.Backend.Api.Tests/Smoke/AlphaP0RouteContractsTests.cs`)
   - validates core P0 route mapping (non-404 contract checks)
   - validates sensitive anonymous POSTs avoid 500 regression
@@ -143,7 +143,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 |---|---|---|
 | **Closed Beta / Soft Launch** | ✅ Ready | Core gameplay loop functional (auth → match → rewards → leaderboard) |
 | **Public Production** | ⚠️ Blocked | Strict external IAP verification + withdrawal settlement pipeline still need hardening |
-| **Monetization** | ⚠️ Partial | Store + IAP endpoint + crypto request flow exist; settlement/prize pool still open |
+| **Monetization** | ✅ Alpha+ | Store + IAP endpoint + crypto request/prize-pool/staking flows exist; withdrawal settlement hardening still open |
 
 ---
 
@@ -158,7 +158,7 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
    - CI helper: `.github/workflows/alpha-p0-smoke.yml` (NOW build + route checks)
 3. [x] Replace strict IAP placeholders in Development config and verify `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING`.
 4. [ ] Validate one full player path end-to-end (login -> question set/check -> purchase -> leaderboard view).
-5. [ ] Record go/no-go with explicit defer list (prize pool, staking, strict provider hardening follow-ups if needed).
+5. [ ] Record go/no-go with explicit defer list (withdrawal settlement hardening + ML churn/quality model deployment follow-ups).
 
 ---
 

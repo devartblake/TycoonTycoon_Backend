@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Questions;
@@ -162,28 +163,37 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 if (string.IsNullOrWhiteSpace(req.Text))
                     return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Text is required.");
 
+                var deployedModelUrl = cfg["MlModels:QuestionDifficultyUrl"];
+                var deployedModelApiKey = cfg["MlModels:ApiKey"];
+                if (!string.IsNullOrWhiteSpace(deployedModelUrl))
+                {
+                    var deployedPayload = await TryEstimateDifficultyFromHttpAsync(
+                        httpClientFactory,
+                        deployedModelUrl,
+                        req.Text,
+                        ct,
+                        deployedModelApiKey);
+                    if (deployedPayload is not null)
+                    {
+                        var mapped = MapDifficulty(deployedPayload.Difficulty, deployedPayload.Score);
+                        return Results.Ok(new QuestionDifficultyEstimateResponse(mapped, deployedPayload.Score, "deployed-model"));
+                    }
+                }
+
                 var enableSidecar = cfg.GetValue("SidecarInference:EnableQuestionDifficultyEstimator", false);
                 var sidecarUrl = cfg["SidecarInference:QuestionDifficultyUrl"];
 
                 if (enableSidecar && !string.IsNullOrWhiteSpace(sidecarUrl))
                 {
-                    try
+                    var sidecarPayload = await TryEstimateDifficultyFromHttpAsync(
+                        httpClientFactory,
+                        sidecarUrl,
+                        req.Text,
+                        ct);
+                    if (sidecarPayload is not null)
                     {
-                        var http = httpClientFactory.CreateClient();
-                        var sidecarResp = await http.PostAsJsonAsync(sidecarUrl, new { text = req.Text }, ct);
-                        if (sidecarResp.IsSuccessStatusCode)
-                        {
-                            var payload = await sidecarResp.Content.ReadFromJsonAsync<SidecarDifficultyPayload>(cancellationToken: ct);
-                            if (payload is not null)
-                            {
-                                var mapped = MapDifficulty(payload.Difficulty, payload.Score);
-                                return Results.Ok(new QuestionDifficultyEstimateResponse(mapped, payload.Score, "sidecar"));
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // fall through to heuristic
+                        var mapped = MapDifficulty(sidecarPayload.Difficulty, sidecarPayload.Score);
+                        return Results.Ok(new QuestionDifficultyEstimateResponse(mapped, sidecarPayload.Score, "sidecar"));
                     }
                 }
 
@@ -221,6 +231,36 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
             if (score < 0.60m) return QuestionDifficulty.Medium;
             if (score < 0.82m) return QuestionDifficulty.Hard;
             return QuestionDifficulty.Expert;
+        }
+
+        private static async Task<SidecarDifficultyPayload?> TryEstimateDifficultyFromHttpAsync(
+            IHttpClientFactory httpClientFactory,
+            string url,
+            string text,
+            CancellationToken ct,
+            string? bearerToken = null)
+        {
+            try
+            {
+                var http = httpClientFactory.CreateClient();
+                using var req = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = JsonContent.Create(new { text })
+                };
+
+                if (!string.IsNullOrWhiteSpace(bearerToken))
+                    req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken.Trim());
+
+                using var resp = await http.SendAsync(req, ct);
+                if (!resp.IsSuccessStatusCode)
+                    return null;
+
+                return await resp.Content.ReadFromJsonAsync<SidecarDifficultyPayload>(cancellationToken: ct);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private sealed record SidecarDifficultyPayload(string? Difficulty, decimal Score);
