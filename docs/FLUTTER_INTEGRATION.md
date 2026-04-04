@@ -1,6 +1,6 @@
-# Flutter Integration Guide — Trivia Tycoon Backend
+# Flutter Integration Guide — Synaptix Backend
 
-This document is the authoritative reference for connecting the Flutter client to the Trivia Tycoon backend. It covers every integration point: authentication, the full REST API surface, real-time SignalR events, feature flows, and error handling.
+This document is the authoritative reference for connecting the Flutter client to the Synaptix backend. It covers every integration point: authentication, the full REST API surface, real-time SignalR events, feature flows, and error handling.
 
 > **Base URL:** configure per environment. All paths below are relative to this base.
 > **API Version:** v1 (no version prefix in path — `Content-Type: application/json` on all requests).

@@ -4,6 +4,7 @@ using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
 using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.EventStats;
+using Tycoon.Backend.Application.PlayerTransactions;
 using Tycoon.Backend.Application.Seasons;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -12,7 +13,7 @@ namespace Tycoon.Backend.Application.GameEvents
 {
     public sealed record EnterGameEvent(Guid EventId, Guid GameEventId, Guid PlayerId) : IRequest<EnterGameEventResponse>;
 
-    public sealed class EnterGameEventHandler(IAppDb db, EconomyService econ, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
+    public sealed class EnterGameEventHandler(IAppDb db, PlayerTransactionService ptxnSvc, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
     {
         private const int ChampionBattleEliminationIncrement = 50;
 
@@ -33,19 +34,34 @@ namespace Tycoon.Backend.Application.GameEvents
             if (alreadyIn)
                 return new EnterGameEventResponse(r.EventId, "Duplicate");
 
+            // Use PlayerTransaction to atomically debit entry fee + create participant
+            var currencyChanges = new List<PlayerTransactionCurrencyDto>();
+
             if (ev.EntryFeeCoins > 0)
             {
-                var econResult = await econ.ApplyAsync(new CreateEconomyTxnRequest(
-                    EventId: r.EventId,
-                    PlayerId: r.PlayerId,
-                    Kind: "game-event-entry",
-                    Lines: new[] { new EconomyLineDto(CurrencyType.Coins, -ev.EntryFeeCoins) },
-                    Note: $"game-event:{r.GameEventId}"
-                ), ct);
-
-                if (econResult.Status == EconomyTxnStatus.InsufficientFunds)
-                    return new EnterGameEventResponse(r.EventId, "InsufficientFunds");
+                currencyChanges.Add(new PlayerTransactionCurrencyDto(
+                    r.PlayerId,
+                    new[] { new EconomyLineDto(CurrencyType.Coins, -ev.EntryFeeCoins) }
+                ));
             }
+
+            var ptxnResult = await ptxnSvc.ExecuteAsync(new CreatePlayerTransactionRequest(
+                EventId: r.EventId,
+                Kind: "game-event-entry",
+                CorrelatedEventId: r.GameEventId,
+                Actors: new[] { new PlayerTransactionActorDto(r.PlayerId, "buyer") },
+                CurrencyChanges: currencyChanges.Count > 0 ? currencyChanges : null,
+                Note: $"game-event:{r.GameEventId}"
+            ), ct);
+
+            if (ptxnResult.Status == "Duplicate")
+                return new EnterGameEventResponse(r.EventId, "Duplicate");
+
+            if (ptxnResult.Status == "InsufficientFunds")
+                return new EnterGameEventResponse(r.EventId, "InsufficientFunds");
+
+            if (ptxnResult.Status == "Failed")
+                return new EnterGameEventResponse(r.EventId, "Failed");
 
             if (ev.Kind == "champion_battle")
                 ev.AddToJackpot(ev.EntryFeeCoins);
