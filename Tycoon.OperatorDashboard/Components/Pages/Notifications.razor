@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
+@using Tycoon.OperatorDashboard.Components.Common
 
 <h1>Notifications</h1>
 
@@ -31,10 +32,10 @@ else
                 <option value="">— select channel —</option>
                 @if (_channels is not null)
                 {
-                    @foreach (var ch in _channels.RootElement.EnumerateArray())
+                    @foreach (var ch in JsonSafe.EnumerateArrayProperty(_channels, "items"))
                     {
-                        var key  = ch.TryGetProperty("key",  out var k) ? k.GetString() ?? "" : "";
-                        var name = ch.TryGetProperty("name", out var n) ? n.GetString() ?? key : key;
+                        var key  = JsonSafe.GetText(ch, "key", string.Empty);
+                        var name = JsonSafe.GetText(ch, "name", key);
                         <option value="@key">@name</option>
                     }
                 }
@@ -60,12 +61,12 @@ else
         <tbody>
             @if (_scheduled is not null)
             {
-                @foreach (var el in _scheduled.RootElement.GetProperty("items").EnumerateArray())
+                @foreach (var el in JsonSafe.EnumerateArrayProperty(_scheduled, "items"))
                 {
-                    var id    = el.TryGetProperty("id", out var i) ? i.GetGuid() : Guid.Empty;
-                    var ch    = el.TryGetProperty("channelKey",   out var c) ? c.GetString() ?? "—" : "—";
-                    var title = el.TryGetProperty("title",        out var t) ? t.GetString() ?? "—" : "—";
-                    var sAt   = el.TryGetProperty("scheduledAt",  out var s) ? s.GetString() ?? "—" : "—";
+                    var id    = JsonSafe.GetGuid(el, "id");
+                    var ch    = JsonSafe.GetText(el, "channelKey");
+                    var title = JsonSafe.GetText(el, "title");
+                    var sAt   = JsonSafe.GetText(el, "scheduledAt");
                     <tr>
                         <td><code>@id.ToString()[..8]…</code></td>
                         <td>@ch</td>
@@ -102,12 +103,12 @@ else
         <tbody>
             @if (_templates is not null)
             {
-                @foreach (var el in _templates.RootElement.EnumerateArray())
+                @foreach (var el in JsonSafe.EnumerateArrayProperty(_templates, "items"))
                 {
-                    var id    = el.TryGetProperty("id",         out var i) ? i.GetGuid() : Guid.Empty;
-                    var name  = el.TryGetProperty("name",       out var n) ? n.GetString() ?? "—" : "—";
-                    var title = el.TryGetProperty("title",      out var t) ? t.GetString() ?? "—" : "—";
-                    var ch    = el.TryGetProperty("channelKey", out var c) ? c.GetString() ?? "—" : "—";
+                    var id    = JsonSafe.GetGuid(el, "id");
+                    var name  = JsonSafe.GetText(el, "name");
+                    var title = JsonSafe.GetText(el, "title");
+                    var ch    = JsonSafe.GetText(el, "channelKey");
                     <tr>
                         <td>@name</td><td>@title</td><td>@ch</td>
                         <td><button class="danger" @onclick="() => DeleteTemplateAsync(id)">Delete</button></td>
@@ -128,14 +129,14 @@ else
     <table>
         <thead><tr><th>Channel</th><th>Title</th><th>Status</th><th>Sent At</th></tr></thead>
         <tbody>
-            @if (_history is not null && _history.RootElement.TryGetProperty("items", out var histItems))
+            @if (_history is not null)
             {
-                @foreach (var el in histItems.EnumerateArray())
+                @foreach (var el in JsonSafe.EnumerateArrayProperty(_history, "items"))
                 {
-                    var ch    = el.TryGetProperty("channelKey", out var c) ? c.GetString() ?? "—" : "—";
-                    var title = el.TryGetProperty("title",      out var t) ? t.GetString() ?? "—" : "—";
-                    var stat  = el.TryGetProperty("status",     out var s) ? s.GetString() ?? "—" : "—";
-                    var at    = el.TryGetProperty("sentAt",     out var a) ? a.GetString() ?? "—" : "—";
+                    var ch    = JsonSafe.GetText(el, "channelKey");
+                    var title = JsonSafe.GetText(el, "title");
+                    var stat  = JsonSafe.GetText(el, "status");
+                    var at    = JsonSafe.GetText(el, "sentAt");
                     <tr><td>@ch</td><td>@title</td><td>@stat</td><td>@at</td></tr>
                 }
             }
@@ -148,14 +149,14 @@ else
     <table>
         <thead><tr><th>ID</th><th>Channel</th><th>Title</th><th>Failed At</th><th>Actions</th></tr></thead>
         <tbody>
-            @if (_deadLetter is not null && _deadLetter.RootElement.TryGetProperty("items", out var dlItems))
+            @if (_deadLetter is not null)
             {
-                @foreach (var el in dlItems.EnumerateArray())
+                @foreach (var el in JsonSafe.EnumerateArrayProperty(_deadLetter, "items"))
                 {
-                    var id    = el.TryGetProperty("id",         out var i) ? i.GetGuid() : Guid.Empty;
-                    var ch    = el.TryGetProperty("channelKey", out var c) ? c.GetString() ?? "—" : "—";
-                    var title = el.TryGetProperty("title",      out var t) ? t.GetString() ?? "—" : "—";
-                    var at    = el.TryGetProperty("failedAt",   out var a) ? a.GetString() ?? "—" : "—";
+                    var id    = JsonSafe.GetGuid(el, "id");
+                    var ch    = JsonSafe.GetText(el, "channelKey");
+                    var title = JsonSafe.GetText(el, "title");
+                    var at    = JsonSafe.GetText(el, "failedAt");
                     <tr>
                         <td><code>@id.ToString()[..8]…</code></td>
                         <td>@ch</td><td>@title</td><td>@at</td>
