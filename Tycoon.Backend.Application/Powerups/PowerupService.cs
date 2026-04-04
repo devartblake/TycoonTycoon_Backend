@@ -1,6 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.PlayerTransactions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -10,11 +11,13 @@ namespace Tycoon.Backend.Application.Powerups
     {
         private readonly IAppDb _db;
         private readonly EconomyService _econ;
+        private readonly PlayerTransactionService _ptxnSvc;
 
-        public PowerupService(IAppDb db, EconomyService econ)
+        public PowerupService(IAppDb db, EconomyService econ, PlayerTransactionService ptxnSvc)
         {
             _db = db;
             _econ = econ;
+            _ptxnSvc = ptxnSvc;
         }
 
         public async Task<PowerupStateDto> GetStateAsync(Guid playerId, CancellationToken ct)
@@ -28,59 +31,30 @@ namespace Tycoon.Backend.Application.Powerups
             return new PowerupStateDto(playerId, list);
         }
 
-        public async Task<EconomyTxnResultDto> GrantAsync(GrantPowerupRequest req, CancellationToken ct)
+        public async Task<PlayerTransactionResultDto> GrantAsync(GrantPowerupRequest req, CancellationToken ct)
         {
-            // Idempotency is handled at the ledger layer using EventId.
-            // We still update inventory as part of the same unit-of-work (same DbContext).
-            // Approach: apply ledger txn (0 currency delta allowed? If not, add a tiny non-monetary line later).
-            // For now: ledger entry with 0 lines is "Invalid". We'll include a 0-coin line? No.
-            // Better: treat grants as out-of-band inventory change with its own idempotency.
-            // We'll implement idempotency using ProcessedGameplayEvent table if you kept it,
-            // but since Step 5 establishes the ledger, we’ll just do a small coins delta of 0 is invalid.
-            // So: store a ledger transaction with a note and a 0-coin line is still invalid in our validation.
-            // We'll instead record inventory idempotency with EconomyTransactions by adding a 0 delta line is allowed.
-            // Update: allow 0 deltas by not rejecting empty/non-zero; easiest fix is to accept 0 line(s) in EconomyService.
-            // To avoid touching that now, we do "coins +0" as a single line.
-            var econReq = new CreateEconomyTxnRequest(
-                req.EventId,
-                req.PlayerId,
-                "powerup-grant",
-                new[] { new EconomyLineDto(CurrencyType.Coins, 0) },
-                req.Reason);
+            // Use PlayerTransaction for atomic idempotent grant (no more 0-delta hack).
+            var result = await _ptxnSvc.ExecuteAsync(new CreatePlayerTransactionRequest(
+                EventId: req.EventId,
+                Kind: "powerup-grant",
+                Actors: new[] { new PlayerTransactionActorDto(req.PlayerId, "recipient") },
+                ItemChanges: new[] { new PlayerTransactionItemDto($"powerup:{req.Type}", req.Quantity, "grant") },
+                Note: req.Reason
+            ), ct);
 
-            var econRes = await _econ.ApplyAsync(econReq, ct);
-            if (econRes.Status is EconomyTxnStatus.Duplicate)
-                return econRes;
-
-            // Apply inventory
-            var p = await _db.PlayerPowerups.FirstOrDefaultAsync(x => x.PlayerId == req.PlayerId && x.Type == req.Type, ct);
-            if (p is null)
-            {
-                p = new PlayerPowerup(req.PlayerId, req.Type);
-                _db.PlayerPowerups.Add(p);
-            }
-            p.Add(req.Quantity);
-
-            await _db.SaveChangesAsync(ct);
-            return econRes;
+            return result;
         }
 
         public async Task<UsePowerupResultDto> UseAsync(UsePowerupRequest req, CancellationToken ct)
         {
             var now = DateTimeOffset.UtcNow;
 
-            // Idempotency via economy ledger (0 delta line)
-            var econReq = new CreateEconomyTxnRequest(
-                req.EventId,
-                req.PlayerId,
-                "powerup-use",
-                new[] { new EconomyLineDto(CurrencyType.Coins, 0) },
-                req.Type.ToString());
+            // Idempotency via PlayerTransaction (replaces the 0-delta economy hack)
+            var dupCheck = await _db.PlayerTransactions.AsNoTracking()
+                .AnyAsync(x => x.EventId == req.EventId, ct);
 
-            var econRes = await _econ.ApplyAsync(econReq, ct);
-            if (econRes.Status == EconomyTxnStatus.Duplicate)
+            if (dupCheck)
             {
-                // Best-effort state read
                 var dupState = await _db.PlayerPowerups.AsNoTracking()
                     .FirstOrDefaultAsync(x => x.PlayerId == req.PlayerId && x.Type == req.Type, ct);
 
@@ -99,6 +73,15 @@ namespace Tycoon.Backend.Application.Powerups
                     p.Quantity,
                     p.CooldownUntilUtc);
             }
+
+            // Record the use via PlayerTransaction for audit trail
+            await _ptxnSvc.ExecuteAsync(new CreatePlayerTransactionRequest(
+                EventId: req.EventId,
+                Kind: "powerup-use",
+                Actors: new[] { new PlayerTransactionActorDto(req.PlayerId, "system") },
+                ItemChanges: new[] { new PlayerTransactionItemDto($"powerup:{req.Type}", 1, "revoke") },
+                Note: req.Type.ToString()
+            ), ct);
 
             // Cooldown policy (tune later)
             var cooldown = req.Type switch

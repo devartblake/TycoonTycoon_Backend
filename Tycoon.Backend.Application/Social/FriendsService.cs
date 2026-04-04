@@ -193,6 +193,27 @@ namespace Tycoon.Backend.Application.Social
             return new FriendsListResponseDto(page, pageSize, total, items);
         }
 
+        public async Task RemoveFriendAsync(Guid playerId, Guid friendPlayerId, CancellationToken ct)
+        {
+            if (playerId == Guid.Empty || friendPlayerId == Guid.Empty)
+                throw new ArgumentException("PlayerId cannot be empty.");
+
+            if (playerId == friendPlayerId)
+                throw new ArgumentException("Cannot unfriend yourself.");
+
+            var edges = await db.FriendEdges
+                .Where(x =>
+                    (x.PlayerId == playerId && x.FriendPlayerId == friendPlayerId) ||
+                    (x.PlayerId == friendPlayerId && x.FriendPlayerId == playerId))
+                .ToListAsync(ct);
+
+            if (edges.Count == 0)
+                return;
+
+            db.FriendEdges.RemoveRange(edges);
+            await db.SaveChangesAsync(ct);
+        }
+
         private async Task EnsureEdgesAsync(Guid a, Guid b, CancellationToken ct)
         {
             // Create A->B if missing
