@@ -20,6 +20,7 @@ All changes made on this branch relative to `main`.
 - Updated migration status docs (`docs/OPERATOR_DASHBOARD_MIGRATION_PLAN.md`, Vue README, Web README) with a dated status snapshot and next-step checklist.
 - Replaced Wave A JSON `<pre>` placeholders for Audit Log and Users with API-backed table + paging views.
 - Replaced Dashboard Wave A JSON placeholder with KPI-style metric cards bound to overview payload values.
+- Added initial Wave A query/filter wiring: Audit Log status filter and Users search/isBanned filters.
 
 ---
 

@@ -8,6 +8,8 @@ const users = ref([])
 const page = ref(1)
 const pageSize = 20
 const total = ref(0)
+const query = ref('')
+const isBanned = ref('')
 
 function readItems(payload) {
   return Array.isArray(payload?.items) ? payload.items : []
@@ -20,7 +22,12 @@ function readTotal(payload, itemCount) {
 async function loadUsers() {
   loading.value = true
   try {
-    const payload = await getUsers(page.value, pageSize)
+    const payload = await getUsers({
+      page: page.value,
+      pageSize,
+      query: query.value.trim(),
+      isBanned: isBanned.value
+    })
     const items = readItems(payload)
     users.value = items
     total.value = readTotal(payload, items.length)
@@ -43,6 +50,11 @@ function nextPage() {
   loadUsers()
 }
 
+function applyFilters() {
+  page.value = 1
+  loadUsers()
+}
+
 onMounted(loadUsers)
 </script>
 
@@ -52,6 +64,16 @@ onMounted(loadUsers)
     <p v-if="loading">Loading users…</p>
     <p v-else-if="error" style="color:#ef4444">{{ error }}</p>
     <template v-else>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem;flex-wrap:wrap">
+        <input v-model="query" placeholder="Search handle/email…" style="padding:.35rem .5rem;border:1px solid #cbd5e1;border-radius:6px" />
+        <select v-model="isBanned" style="padding:.35rem .5rem;border:1px solid #cbd5e1;border-radius:6px">
+          <option value="">All</option>
+          <option value="true">Banned</option>
+          <option value="false">Not banned</option>
+        </select>
+        <button @click="applyFilters">Apply</button>
+      </div>
+
       <table v-if="users.length > 0" style="width:100%;border-collapse:collapse;background:white">
         <thead>
           <tr>

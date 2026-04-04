@@ -29,4 +29,5 @@ Do not commit `node_modules`.
 - Router guard now resolves permissions via `/api/me` session bootstrap.
 - Audit Log and Users now render table/paging views from API payloads.
 - Dashboard now renders KPI-style cards from overview payload.
-- Next: complete parity filters/actions across Wave A views.
+- Audit Log status filter and Users search/ban filters are now wired to Wave A API query params.
+- Next: complete action workflows and richer parity interactions across Wave A views.

@@ -133,6 +133,7 @@ while preserving feature parity, role-based access control, and operational reli
 - ✅ **Vue data flow kickoff**: shared API client conventions and Wave A API modules now back Dashboard/AuditLog/Users views with loading/error/data states.
 - ✅ **Wave A UI parity started**: Audit Log and Users now render table/paging UI (not raw JSON payload dumps).
 - ✅ **Dashboard UI parity started**: overview route now renders KPI-style metric cards from BFF payload.
+- ✅ **Wave A filtering started**: Audit Log status filter and Users search/ban filters now map to BFF query params.
 - ⏳ **Still pending**:
   - Real cookie/JWT auth integration in `Tycoon.OperatorDashboard.Web`
-  - Wave A parity completion checklist (filters, paging, table UX, action workflows)
+  - Wave A parity completion checklist (action workflows + richer UX interactions)
