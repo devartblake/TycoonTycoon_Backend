@@ -99,6 +99,7 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
     private static void Validate(GameBalanceConfigDto cfg)
     {
         var errors = new List<string>();
+        var modes = cfg.Modes ?? Array.Empty<ModeBalanceRuleDto>();
         if (cfg.MaxEnergy <= 0)
             errors.Add("MaxEnergy must be greater than zero.");
         if (cfg.StartEnergy < 0)
@@ -109,11 +110,11 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
             errors.Add("RegenMinutesPerEnergy must be greater than zero.");
         if (cfg.AdEnergyMin < 0 || cfg.AdEnergyMax < 0 || cfg.AdEnergyMin > cfg.AdEnergyMax)
             errors.Add("Ad energy range is invalid.");
-        if (cfg.Modes is null || cfg.Modes.Count == 0)
+        if (modes.Count == 0)
             errors.Add("At least one mode rule is required.");
-        if (cfg.Modes.Any(m => string.IsNullOrWhiteSpace(m.Mode)))
+        if (modes.Any(m => string.IsNullOrWhiteSpace(m.Mode)))
             errors.Add("Mode names cannot be empty.");
-        if (cfg.Modes.Any(m => m.EnergyCost < 0))
+        if (modes.Any(m => m.EnergyCost < 0))
             errors.Add("Mode energyCost cannot be negative.");
         if (cfg.Safeguards.FirstSessionsReducedCostCount < 0 || cfg.Safeguards.FirstSessionsEnergyDiscount < 0)
             errors.Add("First-session safeguard values cannot be negative.");

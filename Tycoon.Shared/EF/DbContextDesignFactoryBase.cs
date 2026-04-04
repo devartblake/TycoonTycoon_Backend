@@ -53,6 +53,10 @@ public abstract class DbContextDesignFactoryBase<TDbContext> : IDesignTimeDbCont
             .UseSnakeCaseNamingConvention()
             .ReplaceService<IValueConverterSelector, StronglyTypedIdValueConverterSelector<long>>();
 
-        return (TDbContext)Activator.CreateInstance(typeof(TDbContext), optionsBuilder.Options);
+        var context = Activator.CreateInstance(typeof(TDbContext), optionsBuilder.Options) as TDbContext;
+        if (context is null)
+            throw new InvalidOperationException($"Could not create DbContext instance of type {typeof(TDbContext).FullName}.");
+
+        return context;
     }
 }

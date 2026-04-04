@@ -62,12 +62,12 @@ var migrator = builder
 
 api.WaitFor(migrator);
 
-// Operator dashboard — Blazor Server UI for the ops/admin team
+// Operator dashboard moved to Tycoon.OperatorDashboard.Web (Next.js).
+// Run separately: cd Tycoon.OperatorDashboard.Web && pnpm dev
 var dashboard = builder
     .AddProject("tycoon-dashboard", "../Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj")
     .WithReference(api)
     .WithExternalHttpEndpoints();
-
 dashboard.WaitFor(api);
 
 // FastAPI sidecar — ML inference, analytics pipelines, webhooks, utilities
