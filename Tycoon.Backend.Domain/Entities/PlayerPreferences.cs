@@ -21,6 +21,12 @@ namespace Tycoon.Backend.Domain.Entities
         /// <summary>Tone preference: playful, balanced, or competitive.</summary>
         public string TonePreference { get; set; } = "balanced";
 
+        /// <summary>Equipped avatar item type (e.g., "avatar:default", "cosmetic:avatar-neon").</summary>
+        public string? AvatarItemType { get; set; }
+
+        /// <summary>Comma-separated equipped cosmetic item types.</summary>
+        public string EquippedCosmeticItemTypesCsv { get; set; } = string.Empty;
+
         public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
     }
 }

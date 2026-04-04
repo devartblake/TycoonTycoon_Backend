@@ -30,4 +30,26 @@ namespace Tycoon.Shared.Contracts.Dtos
         int BalanceCoins,
         int BalanceDiamonds,
         string? ErrorMessage);
+
+    public sealed record PlayerInventoryItemDto(
+        string ItemType,
+        int Quantity);
+
+    public sealed record PlayerInventoryDto(
+        Guid PlayerId,
+        IReadOnlyList<PlayerInventoryItemDto> Items,
+        int Count);
+
+    public sealed record ActivateSubscriptionRequest(
+        Guid PlayerId,
+        string Tier,
+        string BillingPeriod,
+        string? ExternalTransactionId = null);
+
+    public sealed record SubscriptionStatusDto(
+        Guid PlayerId,
+        bool IsActive,
+        string? Tier,
+        string? BillingPeriod,
+        DateTimeOffset? ActivatedAtUtc);
 }

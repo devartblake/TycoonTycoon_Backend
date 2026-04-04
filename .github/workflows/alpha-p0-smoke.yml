@@ -1,0 +1,48 @@
+name: alpha-p0-smoke
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  now-build-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Run NOW gates (build + route checks)
+        run: |
+          chmod +x ./scripts/alpha-now-status.sh ./scripts/alpha-now-complete.sh
+          RUN_MIGRATIONS=false RUN_LIVE_SMOKE=false ./scripts/alpha-now-complete.sh
+
+  route-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Run alpha P0 smoke (route mode)
+        run: SMOKE_MODE=routes bash ./scripts/alpha-p0-smoke.sh
+
+  route-smoke-pwsh:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run alpha P0 smoke (route mode, PowerShell)
+        shell: pwsh
+        run: ./scripts/alpha-p0-smoke.ps1 -SmokeMode routes

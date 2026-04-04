@@ -4,6 +4,38 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-04] Alpha 6.1 Readiness Tooling + Frontend Handoff
+
+### Deployment readiness tooling (6.1 follow-through)
+- Enhanced `scripts/alpha-p0-smoke.sh` live mode:
+  - Added auto-signup bootstrap (`AUTO_SIGNUP=true` default in live mode path)
+  - Added dynamic `userId` extraction for authenticated follow-up calls
+  - Expanded request flow checks to include:
+    - questions set/check
+    - store catalog
+    - IAP validate
+    - purchase contract check (accepting expected non-2xx contract statuses)
+    - crypto history
+    - leaderboard read
+- Enhanced `scripts/alpha-p0-smoke.ps1` with equivalent improvements:
+  - `-AutoSignup` option
+  - Expanded request flow pathing to mirror bash script behavior
+
+### Documentation updates
+- Updated `docs/synaptix_remaining_work.md` 6.1 section to reflect:
+  - live helper scripts now cover auto-auth + fuller end-to-end path shape
+  - explicit remaining requirement to run against a live API and archive evidence
+- Added `docs/alpha_release_priority_2026-04-04.md` with an updated alpha-priority status and a concrete completion checklist for unresolved 6.1 tasks.
+- Added `docs/frontend_backend_handoff_alpha_2026-04-04.md` for frontend integration planning aligned to completed backend capabilities and remaining gaps.
+
+### Backend ML scorer baseline
+- Added authenticated ML scoring endpoints:
+  - `POST /ml/churn-risk`
+  - `POST /ml/match-quality`
+- Both endpoints support deployed model invocation (config-driven URL + optional bearer key) with deterministic heuristic fallback when unavailable.
+
+---
+
 ## [2026-03-31] Synaptix BE Packet B — Profile Support
 
 ### BE-B1: PlayerPreferences Entity

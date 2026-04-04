@@ -32,6 +32,7 @@ namespace Tycoon.Backend.Application.Questions
                 q.Text,
                 q.Category,
                 q.Difficulty,
+                q.Status,
                 options,
                 q.CorrectOptionId,
                 tags,
