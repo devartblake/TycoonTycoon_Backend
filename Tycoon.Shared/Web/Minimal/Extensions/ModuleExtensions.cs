@@ -48,11 +48,15 @@ public static class ModuleExtensions
 
         foreach (var sharedModule in sharedModulesConfiguration)
         {
+            if (sharedModule is null)
+                continue;
             AddModulesDependencyInjection(webApplicationBuilder, sharedModule);
         }
 
         foreach (var module in modulesConfiguration)
         {
+            if (module is null)
+                continue;
             AddModulesDependencyInjection(webApplicationBuilder, module);
         }
 

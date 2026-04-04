@@ -108,10 +108,22 @@ namespace Tycoon.Backend.Api.Features.Analytics
                 ? answeredAtUtcValue
                 : DateTime.UtcNow;
 
+            // ── Synaptix analytics dimensions (optional, nullable) ──
+            var synaptixMode = TryGetString(src, "synaptixMode", out var synaptixModeValue) ? synaptixModeValue : null;
+            var surface = TryGetString(src, "surface", out var surfaceValue) ? surfaceValue : null;
+            var audienceSegment = TryGetString(src, "audienceSegment", out var audienceSegmentValue) ? audienceSegmentValue : null;
+            var entryPoint = TryGetString(src, "entryPoint", out var entryPointValue) ? entryPointValue : null;
+            var brandVersion = TryGetString(src, "brandVersion", out var brandVersionValue) ? brandVersionValue : null;
+
             evt = new QuestionAnsweredAnalyticsEvent(id, matchId, playerId, mode, category, difficulty, isCorrect, answerTimeMs, answeredAtUtc)
             {
                 QuestionId = questionId,
-                PointsAwarded = pointsAwarded
+                PointsAwarded = pointsAwarded,
+                SynaptixMode = synaptixMode,
+                Surface = surface,
+                AudienceSegment = audienceSegment,
+                EntryPoint = entryPoint,
+                BrandVersion = brandVersion
             };
 
             return true;
