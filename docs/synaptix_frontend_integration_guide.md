@@ -129,6 +129,47 @@ PATCH /users/me   [Requires Authorization]
 ```
 Both fields are optional — only provided fields are updated.
 
+### Search Users
+
+```
+GET /users/search?handle={query}&page=1&pageSize=20   [Requires Authorization]
+```
+Case-insensitive partial match on handle. Minimum 2 characters required, max 50 per page.
+
+**Response:**
+```json
+{
+  "page": 1,
+  "pageSize": 20,
+  "total": 3,
+  "items": [
+    { "id": "guid", "handle": "PlayerName", "country": "US", "tier": "T3", "mmr": 1450 }
+  ]
+}
+```
+Use this for friend discovery / add-friend search.
+
+### Player Career Stats
+
+```
+GET /players/{id}/stats
+```
+**Response:**
+```json
+{
+  "playerId": "guid",
+  "totalMatches": 42,
+  "wins": 28,
+  "losses": 14,
+  "winRate": 66.7,
+  "totalCorrect": 312,
+  "totalWrong": 108,
+  "avgScore": 745.2,
+  "avgAnswerTimeMs": 3420.5
+}
+```
+Returns zeroed stats for players with no match history. Win is defined as highest score in a match.
+
 ---
 
 ## 3. Player Preferences
@@ -582,6 +623,16 @@ Body: `{ "playerId": "guid" }`
 GET /friends?playerId={guid}&page=1&pageSize=25
 ```
 
+### Remove Friend (Unfriend)
+
+```
+DELETE /friends/remove
+```
+```json
+{ "playerId": "guid", "friendPlayerId": "guid" }
+```
+Removes both directional edges. Returns `{ "removed": true }` on success, 404 if no friendship exists.
+
 ### List Friend Requests
 
 ```
@@ -878,7 +929,7 @@ Use these display names in the Flutter app:
 |---|---|---|
 | **EF migration for PlayerPreferences + StoreItem** | Tables don't exist in DB yet — endpoints will 500 until migration runs | Needs `dotnet ef migrations add` in build env |
 | **Store catalog is empty** | `GET /store/catalog` returns 0 items until an admin seeds data | Need admin seeding script or admin endpoint |
-| **No player search** | Cannot search players by handle for friend requests | Backend gap — `GET /users/search?handle=` needed |
+| ~~**No player search**~~ | ~~Cannot search players by handle for friend requests~~ | **DONE** — `GET /users/search?handle=` available |
 | **No IAP receipt validation** | Cannot validate Apple/Google purchase receipts | Backend gap — needs platform-specific receipt checking |
 | **Question bank may be empty** | `GET /questions/set` returns 0 if no questions imported | Use admin bulk import or sidecar `/utilities/questions/import` |
 
@@ -888,8 +939,8 @@ Use these display names in the Flutter app:
 |---|---|---|
 | **Crypto economy layer** | No crypto rewards, wallet linking, or withdrawal | Not started — backend-led |
 | **Cosmetics/avatar system** | No equipped items, banners, or visual customization | Not started |
-| **Profile enrichment** | No career stats summary (W-L, winrate, seasonal rank trend) | Not started |
-| **Unfriend endpoint** | Can add friends but cannot remove them | Quick backend fix needed |
+| ~~**Profile enrichment**~~ | ~~No career stats summary~~ | **DONE** — `GET /players/{id}/stats` available |
+| ~~**Unfriend endpoint**~~ | ~~Can add friends but cannot remove them~~ | **DONE** — `DELETE /friends/remove` available |
 | **ML models** | Churn/difficulty/quality scorers are placeholder rules, not trained models | Sidecar improvement |
 
 ### Does NOT Affect Frontend (Backend-Only)

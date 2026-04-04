@@ -12,6 +12,7 @@ namespace Tycoon.Backend.Api.Features.Friends
     {
         public sealed record SendRequest(Guid FromPlayerId, Guid ToPlayerId);
         public sealed record RespondRequest(Guid PlayerId);
+        public sealed record RemoveFriendRequest(Guid PlayerId, Guid FriendPlayerId);
 
         public static void Map(IEndpointRouteBuilder app)
         {
@@ -81,6 +82,22 @@ namespace Tycoon.Backend.Api.Features.Friends
                 {
                     var res = await friends.ListFriendsAsync(playerId, page, pageSize, ct);
                     return Results.Ok(res);
+                }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
+            });
+
+            // DELETE /friends/remove
+            g.MapDelete("/remove", async (
+                [FromBody] RemoveFriendRequest req,
+                FriendsService friends,
+                CancellationToken ct) =>
+            {
+                try
+                {
+                    var removed = await friends.RemoveFriendAsync(req.PlayerId, req.FriendPlayerId, ct);
+                    return removed
+                        ? Results.Ok(new { removed = true })
+                        : ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Friendship not found.");
                 }
                 catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
             });
