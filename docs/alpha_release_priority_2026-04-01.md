@@ -204,6 +204,7 @@ What was executed now:
 1. [ ] Packet E backend technical cleanup (`Tycoon.*` -> `Synaptix.*` namespace/project identifiers).
 2. [ ] Extended platform APIs (seasons, social, multiplayer) after alpha stability window.
 3. [ ] Optional crypto expansion (staking + richer ledger/history capabilities).
+<<<<<<< HEAD
 
 ---
 
@@ -221,3 +222,5 @@ Now / Next / Later follow-through:
 - **NOW**: run full `dotnet build` in CI/local runner and confirm no remaining errors.
 - **NEXT**: continue warning triage in `Tycoon.Shared` focusing on nullability + obsolete API calls with highest runtime impact.
 - **LATER**: broad warning debt cleanup sweep after alpha gate checks and live smoke/IAP gates are green.
+=======
+>>>>>>> main
