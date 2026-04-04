@@ -111,7 +111,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 
                     if (put.TryGetOriginalException(out var ex))
                     {
-                        errorDetails.AppendLine($"Original Exception: {ex.Message}");
+                        errorDetails.AppendLine($"Original Exception: {ex?.Message}");
                     }
 
                     _logger?.LogError("Template creation failed. Details: {ErrorDetails}", errorDetails.ToString());
@@ -198,7 +198,7 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 
                     if (put.TryGetOriginalException(out var ex))
                     {
-                        errorDetails.AppendLine($"Original Exception: {ex.Message}");
+                        errorDetails.AppendLine($"Original Exception: {ex?.Message}");
                     }
 
                     _logger?.LogError("Template creation failed. Details: {ErrorDetails}", errorDetails.ToString());

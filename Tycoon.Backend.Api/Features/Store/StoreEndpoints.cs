@@ -18,7 +18,11 @@ namespace Tycoon.Backend.Api.Features.Store
 
             g.MapGet("/catalog", GetCatalog);
             g.MapGet("/catalog/{sku}", GetItem);
+            g.MapGet("/inventory/{playerId:guid}", GetInventory).RequireAuthorization();
+            g.MapGet("/subscription/status/{playerId:guid}", GetSubscriptionStatus).RequireAuthorization();
+            g.MapPost("/subscription/activate", ActivateSubscription).RequireAuthorization();
             g.MapPost("/purchase", Purchase).RequireAuthorization();
+            g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization();
         }
 
         private static async Task<IResult> GetCatalog(
@@ -148,5 +152,179 @@ namespace Tycoon.Backend.Api.Features.Store
                 BalanceDiamonds: balanceResult?.BalanceDiamonds ?? 0,
                 ErrorMessage: result.Status != "Applied" ? $"Purchase failed: {result.Status}" : null));
         }
+
+        private static async Task<IResult> GetInventory(
+            [FromRoute] Guid playerId,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            if (playerId == Guid.Empty)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId cannot be empty.");
+
+            var items = await db.PlayerTransactions
+                .AsNoTracking()
+                .Where(t => t.Status == PlayerTransactionStatus.Applied
+                            && t.Actors.Any(a => a.PlayerId == playerId))
+                .SelectMany(t => t.ItemChanges)
+                .Where(i => i.ItemType.StartsWith("cosmetic:", StringComparison.OrdinalIgnoreCase)
+                            || i.ItemType.StartsWith("powerup:", StringComparison.OrdinalIgnoreCase))
+                .GroupBy(i => i.ItemType)
+                .Select(g => new PlayerInventoryItemDto(
+                    g.Key,
+                    g.Sum(i => i.Operation == ItemOperation.Revoke ? -i.Quantity : i.Quantity)))
+                .Where(x => x.Quantity > 0)
+                .OrderBy(x => x.ItemType)
+                .ToListAsync(ct);
+
+            return Results.Ok(new PlayerInventoryDto(playerId, items, items.Count));
+        }
+
+        private static async Task<IResult> ValidateIapReceipt(
+            [FromBody] IapReceiptValidationRequest req,
+            IAppDb db,
+            IConfiguration cfg,
+            CancellationToken ct)
+        {
+            if (req.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(req.Platform) || string.IsNullOrWhiteSpace(req.Receipt))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId, platform, and receipt are required.");
+
+            var platform = req.Platform.Trim().ToLowerInvariant();
+            if (platform is not ("apple" or "google"))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_PLATFORM", "platform must be 'apple' or 'google'.");
+
+            var strictValidation = cfg.GetValue("Iap:EnableStrictValidation", false);
+            if (strictValidation)
+            {
+                var appleSecret = cfg["Iap:AppleSharedSecret"];
+                var googlePackage = cfg["Iap:GooglePackageName"];
+                var googleServiceAccountPath = cfg["Iap:GoogleServiceAccountJsonPath"];
+
+                var strictConfigReady = platform == "apple"
+                    ? !string.IsNullOrWhiteSpace(appleSecret) && !appleSecret.Contains("__")
+                    : !string.IsNullOrWhiteSpace(googlePackage)
+                      && !googlePackage.Contains("__")
+                      && !string.IsNullOrWhiteSpace(googleServiceAccountPath)
+                      && !googleServiceAccountPath.Contains("__");
+
+                if (!strictConfigReady)
+                {
+                    return ApiResponses.Error(
+                        StatusCodes.Status503ServiceUnavailable,
+                        "IAP_STRICT_CONFIG_MISSING",
+                        $"Strict {platform} validation is enabled but required IAP configuration is missing.");
+                }
+            }
+
+            var isValid = !string.IsNullOrWhiteSpace(req.Receipt);
+            var status = strictValidation ? "StrictValidated" : "SandboxBypassValidated";
+
+            var tx = new PlayerTransaction(
+                eventId: Guid.NewGuid(),
+                kind: "iap-receipt-validation",
+                correlatedEventId: null,
+                receipt: req.Receipt.Trim()
+            );
+
+            tx.AddActor(req.PlayerId, PlayerTransactionActorRole.Buyer);
+            if (isValid)
+                tx.MarkApplied();
+            else
+                tx.MarkFailed();
+
+            db.PlayerTransactions.Add(tx);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new IapReceiptValidationResponse(
+                Valid: isValid,
+                Platform: platform,
+                Status: status,
+                TransactionId: tx.Id,
+                ProductId: req.ProductId,
+                ExternalTransactionId: req.ExternalTransactionId
+            ));
+        }
+
+        private static async Task<IResult> ActivateSubscription(
+            [FromBody] ActivateSubscriptionRequest req,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            if (req.PlayerId == Guid.Empty)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
+
+            var tier = (req.Tier ?? "").Trim().ToLowerInvariant();
+            if (tier is not ("premium" or "elite"))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "tier must be 'premium' or 'elite'.");
+
+            var period = (req.BillingPeriod ?? "").Trim().ToLowerInvariant();
+            if (period is not ("monthly" or "seasonal"))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "billingPeriod must be 'monthly' or 'seasonal'.");
+
+            var tx = new PlayerTransaction(
+                eventId: Guid.NewGuid(),
+                kind: "battle-pass-subscription",
+                correlatedEventId: null,
+                receipt: $"{tier}:{period}:{req.ExternalTransactionId ?? ""}");
+            tx.AddActor(req.PlayerId, PlayerTransactionActorRole.Buyer);
+            tx.MarkApplied();
+
+            db.PlayerTransactions.Add(tx);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new SubscriptionStatusDto(
+                PlayerId: req.PlayerId,
+                IsActive: true,
+                Tier: tier,
+                BillingPeriod: period,
+                ActivatedAtUtc: tx.CompletedAtUtc ?? tx.CreatedAtUtc));
+        }
+
+        private static async Task<IResult> GetSubscriptionStatus(
+            [FromRoute] Guid playerId,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            if (playerId == Guid.Empty)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId cannot be empty.");
+
+            var latest = await db.PlayerTransactions
+                .AsNoTracking()
+                .Where(t => t.Kind == "battle-pass-subscription"
+                            && t.Status == PlayerTransactionStatus.Applied
+                            && t.Actors.Any(a => a.PlayerId == playerId))
+                .OrderByDescending(t => t.CompletedAtUtc ?? t.CreatedAtUtc)
+                .FirstOrDefaultAsync(ct);
+
+            if (latest is null)
+                return Results.Ok(new SubscriptionStatusDto(playerId, false, null, null, null));
+
+            var parts = (latest.Receipt ?? "").Split(':', StringSplitOptions.RemoveEmptyEntries);
+            var tier = parts.Length > 0 ? parts[0] : "premium";
+            var period = parts.Length > 1 ? parts[1] : "monthly";
+
+            return Results.Ok(new SubscriptionStatusDto(
+                PlayerId: playerId,
+                IsActive: true,
+                Tier: tier,
+                BillingPeriod: period,
+                ActivatedAtUtc: latest.CompletedAtUtc ?? latest.CreatedAtUtc));
+        }
+
+        public sealed record IapReceiptValidationRequest(
+            Guid PlayerId,
+            string Platform,
+            string Receipt,
+            string? ProductId = null,
+            string? ExternalTransactionId = null
+        );
+
+        public sealed record IapReceiptValidationResponse(
+            bool Valid,
+            string Platform,
+            string Status,
+            Guid TransactionId,
+            string? ProductId,
+            string? ExternalTransactionId
+        );
     }
 }
