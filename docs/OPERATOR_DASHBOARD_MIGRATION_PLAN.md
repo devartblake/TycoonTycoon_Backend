@@ -131,7 +131,7 @@ while preserving feature parity, role-based access control, and operational reli
 - ✅ **Web BFF foundations**: health endpoints, generic admin proxy, Wave A domain proxy groups, typed Wave A endpoints, and `/api/me` session bootstrap are in place.
 - ✅ **Vue Wave A foundations**: router + RBAC guard + session bootstrap are in place.
 - ✅ **Vue data flow kickoff**: shared API client conventions and Wave A API modules now back Dashboard/AuditLog/Users views with loading/error/data states.
+- ✅ **Wave A UI parity started**: Audit Log and Users now render table/paging UI (not raw JSON payload dumps).
 - ⏳ **Still pending**:
   - Real cookie/JWT auth integration in `Tycoon.OperatorDashboard.Web`
-  - Structured error-envelope passthrough normalization in Web BFF
   - Wave A parity completion checklist (filters, paging, table UX, action workflows)

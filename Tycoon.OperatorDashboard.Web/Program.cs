@@ -94,7 +94,7 @@ app.MapGet("/api/me", (HttpContext context) =>
 
 app.Run();
 
-static async Task<ContentHttpResult> ProxyToBackend(
+static async Task<IResult> ProxyToBackend(
     HttpContext context,
     IHttpClientFactory httpClientFactory,
     string backendPathAndQuery)
@@ -122,9 +122,56 @@ static async Task<ContentHttpResult> ProxyToBackend(
         request.Headers.TryAddWithoutValidation("X-Operator-User", context.User.Identity?.Name ?? "unknown");
     }
 
-    using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
-    var responseBytes = await response.Content.ReadAsByteArrayAsync(context.RequestAborted);
+    try
+    {
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
+        var responseBytes = await response.Content.ReadAsByteArrayAsync(context.RequestAborted);
 
-    var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
-    return TypedResults.Content(System.Text.Encoding.UTF8.GetString(responseBytes), contentType, statusCode: (int)response.StatusCode);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
+        var contentText = System.Text.Encoding.UTF8.GetString(responseBytes);
+        var isJson = contentType.Contains("application/json", StringComparison.OrdinalIgnoreCase);
+
+        if ((int)response.StatusCode >= 400 && !isJson)
+        {
+            return TypedResults.Json(new
+            {
+                error = new
+                {
+                    code = "BFF_UPSTREAM_ERROR",
+                    message = "Upstream service returned a non-JSON error payload.",
+                    details = new
+                    {
+                        upstreamStatus = (int)response.StatusCode,
+                        upstreamContentType = contentType,
+                        body = string.IsNullOrWhiteSpace(contentText) ? null : contentText
+                    }
+                }
+            }, statusCode: (int)response.StatusCode);
+        }
+
+        return TypedResults.Content(contentText, contentType, statusCode: (int)response.StatusCode);
+    }
+    catch (TaskCanceledException) when (!context.RequestAborted.IsCancellationRequested)
+    {
+        return TypedResults.Json(new
+        {
+            error = new
+            {
+                code = "BFF_UPSTREAM_TIMEOUT",
+                message = "Timed out while waiting for backend response."
+            }
+        }, statusCode: StatusCodes.Status504GatewayTimeout);
+    }
+    catch (HttpRequestException ex)
+    {
+        return TypedResults.Json(new
+        {
+            error = new
+            {
+                code = "BFF_UPSTREAM_UNREACHABLE",
+                message = "Unable to reach backend service.",
+                details = ex.Message
+            }
+        }, statusCode: StatusCodes.Status502BadGateway);
+    }
 }

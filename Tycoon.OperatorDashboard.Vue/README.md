@@ -27,4 +27,5 @@ Do not commit `node_modules`.
   - `/api/audit-log`
   - `/api/users`
 - Router guard now resolves permissions via `/api/me` session bootstrap.
-- Next: replace JSON `<pre>` placeholders with parity UI components and table/filter behavior.
+- Audit Log and Users now render table/paging views from API payloads.
+- Next: complete parity filters/actions and migrate Dashboard KPIs cards.

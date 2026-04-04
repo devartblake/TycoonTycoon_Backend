@@ -11,7 +11,7 @@ Web/BFF target for Operator Dashboard migration.
 - [x] Initial typed Wave A endpoints (`/api/dashboard/overview`, `/api/audit-log`, `/api/users`)
 - [x] Header-based auth/session bootstrap middleware (`X-Operator-User`, `X-Operator-Permissions`)
 - [ ] Real auth/session integration layer (cookie/JWT-backed)
-- [ ] Structured error envelope passthrough refinements
+- [x] Structured error envelope passthrough refinements (non-JSON upstream errors + timeout/unreachable handling)
 
 ## Expected next implementation step
 Replace header-based auth/session bootstrap with real cookie/JWT auth and move permissions to server-issued claims.
