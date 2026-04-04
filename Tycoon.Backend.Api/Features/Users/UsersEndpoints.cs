@@ -16,7 +16,36 @@ namespace Tycoon.Backend.Api.Features.Users
                 .WithTags("Users")
                 .RequireAuthorization();
 
+            usersGroup.MapGet("/search", SearchUsers);
+            usersGroup.MapGet("/{userId:guid}/career-summary", GetCareerSummary);
             usersGroup.MapPatch("/me", UpdateCurrentUserProfile);
+        }
+
+        private static async Task<IResult> SearchUsers(
+            [FromQuery] string handle,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            if (string.IsNullOrWhiteSpace(handle) || handle.Trim().Length < 2)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Query parameter 'handle' must be at least 2 characters.");
+
+            var normalizedHandle = handle.Trim().ToLowerInvariant();
+
+            var users = await database.Users
+                .Where(u => u.Handle.ToLower().Contains(normalizedHandle))
+                .OrderBy(u => u.Handle)
+                .Take(20)
+                .Select(u => new UserDto(
+                    u.Id,
+                    u.Handle,
+                    u.Email,
+                    u.Country,
+                    u.Tier,
+                    u.Mmr
+                ))
+                .ToListAsync(cancellation);
+
+            return Results.Ok(users);
         }
 
         private static async Task<IResult> UpdateCurrentUserProfile(
@@ -51,6 +80,49 @@ namespace Tycoon.Backend.Api.Features.Users
             );
 
             return Results.Ok(updatedProfile);
+        }
+
+        private static async Task<IResult> GetCareerSummary(
+            Guid userId,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            if (userId == Guid.Empty)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "userId cannot be empty.");
+
+            var exists = await database.Users
+                .AnyAsync(u => u.Id == userId, cancellation);
+
+            if (!exists)
+                return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "User not found.");
+
+            var aggregate = await database.PlayerSeasonProfiles
+                .Where(x => x.PlayerId == userId)
+                .GroupBy(_ => 1)
+                .Select(g => new
+                {
+                    Wins = g.Sum(x => x.Wins),
+                    Losses = g.Sum(x => x.Losses),
+                    Draws = g.Sum(x => x.Draws),
+                    MatchesPlayed = g.Sum(x => x.MatchesPlayed)
+                })
+                .FirstOrDefaultAsync(cancellation);
+
+            var wins = aggregate?.Wins ?? 0;
+            var losses = aggregate?.Losses ?? 0;
+            var draws = aggregate?.Draws ?? 0;
+            var matchesPlayed = aggregate?.MatchesPlayed ?? 0;
+            var winRate = matchesPlayed > 0
+                ? Math.Round((decimal)wins / matchesPlayed, 4, MidpointRounding.AwayFromZero)
+                : 0m;
+
+            return Results.Ok(new UserCareerSummaryDto(
+                UserId: userId,
+                Wins: wins,
+                Losses: losses,
+                Draws: draws,
+                MatchesPlayed: matchesPlayed,
+                WinRate: winRate));
         }
     }
 }
