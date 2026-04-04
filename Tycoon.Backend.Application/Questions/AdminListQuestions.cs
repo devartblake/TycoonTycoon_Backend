@@ -49,6 +49,12 @@ namespace Tycoon.Backend.Application.Questions
                 filtered = filtered.Where(x => x.Category == c);
             }
 
+            if (!string.IsNullOrWhiteSpace(r.Status))
+            {
+                var status = r.Status.Trim();
+                filtered = filtered.Where(x => x.Status == status);
+            }
+
             if (r.Difficulty.HasValue)
             {
                 filtered = filtered.Where(x => x.Difficulty == r.Difficulty.Value);
@@ -89,6 +95,7 @@ namespace Tycoon.Backend.Application.Questions
                     x.Text,
                     x.Category,
                     x.Difficulty,
+                    x.Status,
                     x.MediaKey,
                     x.UpdatedAtUtc
                 })
@@ -110,6 +117,7 @@ namespace Tycoon.Backend.Application.Questions
                     x.Text.Length <= 90 ? x.Text : x.Text.Substring(0, 90) + "…",
                     x.Category,
                     x.Difficulty,
+                    x.Status,
                     tagsByQuestionId.TryGetValue(x.Id, out var tagsForQuestion) ? tagsForQuestion : [],
                     x.MediaKey != null,
                     x.UpdatedAtUtc

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -266,10 +267,10 @@ namespace Tycoon.Backend.Api.Features.Store
             IHttpClientFactory httpClientFactory,
             CancellationToken ct)
         {
-            var payload = JsonSerializer.Serialize(new
+            var payload = JsonSerializer.Serialize(new Dictionary<string, string>
             {
-            ["receipt-data"] = req.Receipt.Trim(),
-                password = appleSecret
+                ["receipt-data"] = req.Receipt.Trim(),
+                ["password"] = appleSecret
             });
 
             var client = httpClientFactory.CreateClient();
