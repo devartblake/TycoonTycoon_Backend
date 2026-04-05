@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Operator Dashboard</title>
+    <style>
+      body {
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 2rem;
+        background: #0b1020;
+        color: #f8fafc;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+      }
+
+      .card {
+        background: #121936;
+        border-radius: 14px;
+        padding: 1rem;
+        border: 1px solid #1f2b54;
+      }
+
+      .pill {
+        display: inline-block;
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+        border-radius: 999px;
+        padding: 0.2rem 0.6rem;
+      }
+
+      .status-ok {
+        background: #14532d;
+      }
+
+      .status-warn {
+        background: #78350f;
+      }
+
+      .status-bad {
+        background: #7f1d1d;
+      }
+
+      .status-unknown {
+        background: #334155;
+      }
+
+      code {
+        font-size: 0.8rem;
+        color: #cbd5e1;
+      }
+
+      pre {
+        background: #0f172a;
+        border-radius: 8px;
+        padding: 0.75rem;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tycoon Operator Dashboard</h1>
+    <p>Django frontend monitoring .NET API and FastAPI sidecar health.</p>
+
+    <div class="grid">
+      {% for service in services %}
+      <section class="card">
+        <span class="pill {{ service.css_class }}">{{ service.status|upper }}</span>
+        <h2>{{ service.service_name }}</h2>
+        <p><code>{{ service.base_url }}</code></p>
+        <p>{{ service.detail }}</p>
+        {% if service.payload %}
+        <pre>{{ service.payload|pprint }}</pre>
+        {% endif %}
+      </section>
+      {% endfor %}
+    </div>
+  </body>
+</html>
