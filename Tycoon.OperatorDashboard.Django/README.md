@@ -43,7 +43,7 @@ python manage.py test dashboard.tests
 ## API endpoints
 
 - `/healthz` - container health endpoint for probes
-- `/api/operator/health` - aggregated upstream service status JSON payload
+- `/api/operator/health` - aggregated upstream service status JSON payload (`.NET`, `FastAPI`, `MinIO`)
 
 ## Configuration
 
@@ -51,9 +51,11 @@ python manage.py test dashboard.tests
 | --- | --- | --- |
 | `DOTNET_API_BASE_URL` | Base URL for ASP.NET API | `http://localhost:5000` |
 | `FASTAPI_BASE_URL` | Base URL for FastAPI sidecar | `http://localhost:8100` |
+| `MINIO_BASE_URL` | Base URL for MinIO | `http://localhost:9000` |
 | `API_REQUEST_TIMEOUT_SECONDS` | Timeout for status checks | `5` |
 
 When running inside Docker Compose, these are overridden to:
 
 - `DOTNET_API_BASE_URL=http://backend-api:5000`
 - `FASTAPI_BASE_URL=http://sidecar:8100`
+- `MINIO_BASE_URL=http://minio:9000`

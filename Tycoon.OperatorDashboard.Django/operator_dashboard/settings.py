@@ -71,3 +71,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DOTNET_API_BASE_URL = os.getenv("DOTNET_API_BASE_URL", "http://localhost:5000")
 FASTAPI_BASE_URL = os.getenv("FASTAPI_BASE_URL", "http://localhost:8100")
 API_REQUEST_TIMEOUT_SECONDS = float(os.getenv("API_REQUEST_TIMEOUT_SECONDS", "5"))
+
+MINIO_BASE_URL = os.getenv("MINIO_BASE_URL", "http://localhost:9000")

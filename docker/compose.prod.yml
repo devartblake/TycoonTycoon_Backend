@@ -50,6 +50,7 @@ services:
     ports: []
     environment:
       DJANGO_DEBUG: "false"
+      MINIO_BASE_URL: "http://minio:9000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.operator-dashboard.rule=Host(`${DOMAIN:?DOMAIN is required in prod}`)"
