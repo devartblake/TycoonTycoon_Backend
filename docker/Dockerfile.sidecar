@@ -6,8 +6,14 @@ WORKDIR /app
 COPY Tycoon.Sidecar/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy source + shared protos and generate gRPC stubs at build time
+COPY Tycoon.Sidecar/generate_grpc.sh ./generate_grpc.sh
 COPY Tycoon.Sidecar/app ./app
+COPY protos /protos
+
+RUN bash ./generate_grpc.sh \
+    && test -f ./app/grpc_generated/sidecar_pb2.py \
+    && test -f ./app/grpc_generated/sidecar_pb2_grpc.py
 
 EXPOSE 8100
 
