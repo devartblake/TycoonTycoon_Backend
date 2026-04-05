@@ -18,6 +18,7 @@ from .services.admin_users_client import (
     update_admin_user,
 )
 from .services.api_clients import get_overall_status, list_service_statuses
+from .services.upstream_error import build_upstream_http_error_response, build_upstream_unavailable_response
 
 STATUS_CLASSES = {
     "healthy": "status-ok",
@@ -143,21 +144,9 @@ def operator_users(request):
         payload = list_admin_users(access_token, query)
         return JsonResponse(payload)
     except httpx.HTTPStatusError as ex:
-        return JsonResponse(
-            {
-                "code": "UPSTREAM_ERROR",
-                "message": f"Admin users endpoint failed with HTTP {ex.response.status_code}.",
-            },
-            status=502,
-        )
+        return build_upstream_http_error_response(ex, "Admin users endpoint failed.")
     except httpx.RequestError:
-        return JsonResponse(
-            {
-                "code": "UPSTREAM_UNAVAILABLE",
-                "message": "Unable to reach backend admin users endpoint.",
-            },
-            status=503,
-        )
+        return build_upstream_unavailable_response("Unable to reach backend admin users endpoint.")
 
 
 @operator_login_required
@@ -168,16 +157,9 @@ def operator_user_detail(request, user_id: str):
         payload = get_admin_user(access_token, user_id)
         return JsonResponse(payload)
     except httpx.HTTPStatusError as ex:
-        code = ex.response.status_code
-        return JsonResponse(
-            {"code": "UPSTREAM_ERROR", "message": f"Admin user detail failed with HTTP {code}."},
-            status=502,
-        )
+        return build_upstream_http_error_response(ex, "Admin user detail failed.")
     except httpx.RequestError:
-        return JsonResponse(
-            {"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend admin user detail endpoint."},
-            status=503,
-        )
+        return build_upstream_unavailable_response("Unable to reach backend admin user detail endpoint.")
 
 
 @operator_login_required
@@ -191,10 +173,9 @@ def operator_user_ban(request, user_id: str):
         payload = ban_admin_user(access_token, user_id, reason, until)
         return JsonResponse(payload)
     except httpx.HTTPStatusError as ex:
-        code = ex.response.status_code
-        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"Ban endpoint failed with HTTP {code}."}, status=502)
+        return build_upstream_http_error_response(ex, "Ban endpoint failed.")
     except httpx.RequestError:
-        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend ban endpoint."}, status=503)
+        return build_upstream_unavailable_response("Unable to reach backend ban endpoint.")
 
 
 @operator_login_required
@@ -205,10 +186,9 @@ def operator_user_unban(request, user_id: str):
         payload = unban_admin_user(access_token, user_id)
         return JsonResponse(payload)
     except httpx.HTTPStatusError as ex:
-        code = ex.response.status_code
-        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"Unban endpoint failed with HTTP {code}."}, status=502)
+        return build_upstream_http_error_response(ex, "Unban endpoint failed.")
     except httpx.RequestError:
-        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend unban endpoint."}, status=503)
+        return build_upstream_unavailable_response("Unable to reach backend unban endpoint.")
 
 
 @operator_login_required
@@ -228,10 +208,9 @@ def operator_user_activity(request, user_id: str):
         payload = get_admin_user_activity(access_token, user_id, query)
         return JsonResponse(payload)
     except httpx.HTTPStatusError as ex:
-        code = ex.response.status_code
-        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"User activity endpoint failed with HTTP {code}."}, status=502)
+        return build_upstream_http_error_response(ex, "User activity endpoint failed.")
     except httpx.RequestError:
-        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend user activity endpoint."}, status=503)
+        return build_upstream_unavailable_response("Unable to reach backend user activity endpoint.")
 
 
 @operator_login_required
@@ -258,10 +237,9 @@ def operator_user_update(request, user_id: str):
         response_payload = update_admin_user(access_token, user_id, payload)
         return JsonResponse(response_payload)
     except httpx.HTTPStatusError as ex:
-        code = ex.response.status_code
-        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"User update endpoint failed with HTTP {code}."}, status=502)
+        return build_upstream_http_error_response(ex, "User update endpoint failed.")
     except httpx.RequestError:
-        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend user update endpoint."}, status=503)
+        return build_upstream_unavailable_response("Unable to reach backend user update endpoint.")
 
 
 @operator_login_required
@@ -281,10 +259,9 @@ def operator_audit_security(request):
         payload = get_security_audit(access_token, query)
         return JsonResponse(payload)
     except httpx.HTTPStatusError as ex:
-        code = ex.response.status_code
-        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"Security audit endpoint failed with HTTP {code}."}, status=502)
+        return build_upstream_http_error_response(ex, "Security audit endpoint failed.")
     except httpx.RequestError:
-        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend security audit endpoint."}, status=503)
+        return build_upstream_unavailable_response("Unable to reach backend security audit endpoint.")
 
 
 def login_view(request):
