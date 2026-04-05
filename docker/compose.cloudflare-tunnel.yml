@@ -1,0 +1,22 @@
+# Cloudflare Tunnel override for on-prem deployments.
+# Usage:
+#   docker compose \
+#     -f docker/compose.yml \
+#     -f docker/compose.prod.yml \
+#     -f docker/compose.cloudflare-tunnel.yml \
+#     up -d
+
+services:
+  # Cloudflare Tunnel publishes your local Traefik entrypoint to Cloudflare edge
+  # without opening inbound 80/443 on your router/firewall.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: tycoon_cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:?CLOUDFLARE_TUNNEL_TOKEN is required}"
+    depends_on:
+      traefik:
+        condition: service_started
+    networks: [tycoon-net]
