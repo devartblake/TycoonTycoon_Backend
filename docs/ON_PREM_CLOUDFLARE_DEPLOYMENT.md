@@ -238,3 +238,38 @@ docker compose \
 
 docker compose -f docker/compose.yml -f docker/compose.prod.yml run --rm migration
 ```
+
+
+---
+
+## 10) Flutter frontend: do you need to add it to Docker?
+
+Short answer: **not for Flutter mobile apps**.
+
+- If your frontend is iOS/Android Flutter, users run it on their devices; your server only hosts the backend API.
+- You only need a server-hosted frontend container if you are shipping a **Flutter Web** build.
+
+### If you are using Flutter Mobile
+
+- Keep current backend stack as-is.
+- Point the app's API base URL to your Cloudflare endpoint (for example `https://api.yourdomain.com`).
+- In backend config, set CORS origins only for web clients; mobile apps are not browser-origin constrained.
+
+### If you are using Flutter Web
+
+You can host Flutter web static files behind the same Cloudflare + Traefik edge:
+
+1. Build web bundle in your Flutter repo:
+
+```bash
+flutter build web --release
+```
+
+2. Serve `build/web` via Nginx/Caddy (container or host).
+3. Route `yourdomain.com` to that web host and `api.yourdomain.com` to this backend stack.
+4. Set backend CORS to allow `https://yourdomain.com`.
+
+This keeps one clean public domain pair:
+
+- `https://yourdomain.com` -> Flutter Web
+- `https://api.yourdomain.com` -> Tycoon backend API
