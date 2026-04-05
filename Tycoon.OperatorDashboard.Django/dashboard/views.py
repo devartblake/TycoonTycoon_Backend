@@ -156,11 +156,20 @@ def operator_users(request):
 @require_permission("users:read")
 def operator_users_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        page = max(1, int(request.GET.get("page", 1) or 1))
+    except ValueError:
+        page = 1
+
+    try:
+        page_size = max(1, int(request.GET.get("pageSize", 25) or 25))
+    except ValueError:
+        page_size = 25
     query = {
         "q": request.GET.get("q"),
         "status": request.GET.get("status"),
-        "page": request.GET.get("page", 1),
-        "pageSize": request.GET.get("pageSize", 25),
+        "page": page,
+        "pageSize": page_size,
     }
     query = {k: v for k, v in query.items() if v not in (None, "")}
 
@@ -168,13 +177,26 @@ def operator_users_view(request):
         "query": query,
         "items": [],
         "total": 0,
+        "page": page,
+        "page_size": page_size,
+        "has_prev": page > 1,
+        "has_next": False,
+        "prev_page": max(1, page - 1),
+        "next_page": page + 1,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
 
     try:
         payload = list_admin_users(access_token, query)
         context["items"] = payload.get("items", [])
-        context["total"] = payload.get("total", len(context["items"]))
+        context["total"] = int(payload.get("total", len(context["items"])))
+        context["page"] = int(payload.get("page", page))
+        context["page_size"] = int(payload.get("pageSize", page_size))
+        viewed = context["page"] * context["page_size"]
+        context["has_next"] = context["total"] > viewed
+        context["has_prev"] = context["page"] > 1
+        context["prev_page"] = max(1, context["page"] - 1)
+        context["next_page"] = context["page"] + 1
     except httpx.HTTPStatusError as ex:
         messages.error(request, f"Users lookup failed (HTTP {ex.response.status_code}).")
     except httpx.RequestError:

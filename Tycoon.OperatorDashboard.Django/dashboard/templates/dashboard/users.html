@@ -34,9 +34,26 @@
             <option value="suspended" {% if query.status == "suspended" %}selected{% endif %}>suspended</option>
           </select>
         </label>
+        <label>
+          Page size
+          <select name="pageSize">
+            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+          </select>
+        </label>
         <button type="submit">Refresh</button>
       </form>
-      <p class="muted">Showing {{ items|length }} records · total {{ total }}</p>
+      <p class="muted">Showing {{ items|length }} records · total {{ total }} · page {{ page }}</p>
+      <p class="muted">
+        {% if has_prev %}
+          <a href="?q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&page={{ prev_page }}&pageSize={{ page_size }}">← Previous</a>
+        {% endif %}
+        {% if has_prev and has_next %} · {% endif %}
+        {% if has_next %}
+          <a href="?q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&page={{ next_page }}&pageSize={{ page_size }}">Next →</a>
+        {% endif %}
+      </p>
     </section>
 
     <section class="card">

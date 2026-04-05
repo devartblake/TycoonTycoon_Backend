@@ -146,13 +146,30 @@ class DashboardViewsTests(TestCase):
 
         mock_list_admin_users.return_value = {
             "items": [{"id": "u1", "email": "user@example.com", "username": "user1", "role": "player", "isVerified": True, "isBanned": False}],
-            "total": 1,
+            "total": 51,
+            "page": 1,
+            "pageSize": 25,
         }
         response = self.client.get(reverse("operator-users-view"), {"q": "user"})
 
         self.assertEqual(200, response.status_code)
         self.assertContains(response, "Operator Users")
         self.assertContains(response, "user@example.com")
+        self.assertContains(response, "Next →")
+
+    @mock.patch("dashboard.views.list_admin_users")
+    def test_operator_users_view_invalid_page_defaults_to_one(self, mock_list_admin_users):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_admin_users.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("operator-users-view"), {"page": "bad", "pageSize": "nope"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "page 1")
 
     def test_operator_users_view_redirects_to_login_when_not_authenticated(self):
         response = self.client.get(reverse("operator-users-view"))
