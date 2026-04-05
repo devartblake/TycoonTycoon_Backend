@@ -154,6 +154,37 @@ def operator_users(request):
 
 @operator_login_required
 @require_permission("users:read")
+def operator_users_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "q": request.GET.get("q"),
+        "status": request.GET.get("status"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+
+    context = {
+        "query": query,
+        "items": [],
+        "total": 0,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+
+    try:
+        payload = list_admin_users(access_token, query)
+        context["items"] = payload.get("items", [])
+        context["total"] = payload.get("total", len(context["items"]))
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Users lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend admin users endpoint.")
+
+    return render(request, "dashboard/users.html", context)
+
+
+@operator_login_required
+@require_permission("users:read")
 def operator_user_detail(request, user_id: str):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     try:

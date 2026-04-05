@@ -18,6 +18,7 @@ from .views import (
     operator_user_detail,
     operator_user_unban,
     operator_user_update,
+    operator_users_view,
     operator_users,
 )
 
@@ -34,6 +35,7 @@ urlpatterns = [
     path("api/operator/moderation/profile/<str:player_id>", operator_moderation_profile, name="operator-moderation-profile"),
     path("api/operator/moderation/set-status", operator_moderation_set_status, name="operator-moderation-set-status"),
     path("api/operator/users", operator_users, name="operator-users"),
+    path("users", operator_users_view, name="operator-users-view"),
     path("api/operator/users/<str:user_id>", operator_user_detail, name="operator-user-detail"),
     path("api/operator/users/<str:user_id>/activity", operator_user_activity, name="operator-user-activity"),
     path("api/operator/users/<str:user_id>/update", operator_user_update, name="operator-user-update"),
