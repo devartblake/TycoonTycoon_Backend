@@ -19,7 +19,7 @@ class DashboardViewsTests(TestCase):
         session = self.client.session
         session["operator_access_token"] = "token"
         session["operator_access_expires_at"] = 32503680000
-        session["operator_admin_profile"] = {"email": "ops@example.com"}
+        session["operator_admin_profile"] = {"email": "ops@example.com", "permissions": ["users:read"]}
         session.save()
 
         service = mock.Mock()
@@ -55,7 +55,7 @@ class DashboardViewsTests(TestCase):
             refresh_token="rt",
             expires_in=3600,
         )
-        mock_admin_me.return_value = {"email": "ops@example.com", "roles": ["admin"]}
+        mock_admin_me.return_value = {"email": "ops@example.com", "roles": ["admin"], "permissions": ["users:read"]}
 
         response = self.client.post(
             reverse("operator-login"),
@@ -102,7 +102,7 @@ class DashboardViewsTests(TestCase):
         session.save()
 
         mock_admin_refresh.return_value = mock.Mock(access_token="new-token", expires_in=1200)
-        mock_admin_me.return_value = {"email": "ops@example.com", "roles": ["admin"]}
+        mock_admin_me.return_value = {"email": "ops@example.com", "roles": ["admin"], "permissions": ["users:read"]}
         mock_list_service_statuses.return_value = []
         mock_overall_status.return_value = "healthy"
 
@@ -116,6 +116,7 @@ class DashboardViewsTests(TestCase):
         session = self.client.session
         session["operator_access_token"] = "token"
         session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"]}
         session.save()
 
         mock_list_admin_users.return_value = {"items": [{"id": "u1"}], "page": 1}
@@ -124,3 +125,119 @@ class DashboardViewsTests(TestCase):
 
         self.assertEqual(200, response.status_code)
         self.assertEqual({"items": [{"id": "u1"}], "page": 1}, response.json())
+
+    def test_operator_users_requires_permission(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": []}
+        session.save()
+
+        response = self.client.get(reverse("operator-users"))
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_admin_user")
+    def test_operator_user_detail(self, mock_get_admin_user):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"]}
+        session.save()
+
+        mock_get_admin_user.return_value = {"id": "u1"}
+        response = self.client.get(reverse("operator-user-detail", kwargs={"user_id": "u1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("u1", response.json()["id"])
+
+    @mock.patch("dashboard.views.ban_admin_user")
+    def test_operator_user_ban(self, mock_ban_admin_user):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:write"]}
+        session.save()
+
+        mock_ban_admin_user.return_value = {"id": "u1", "isBanned": True}
+        response = self.client.post(reverse("operator-user-ban", kwargs={"user_id": "u1"}), data={"reason": "policy"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json()["isBanned"])
+
+    @mock.patch("dashboard.views.unban_admin_user")
+    def test_operator_user_unban(self, mock_unban_admin_user):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:write"]}
+        session.save()
+
+        mock_unban_admin_user.return_value = {"id": "u1", "isBanned": False}
+        response = self.client.post(reverse("operator-user-unban", kwargs={"user_id": "u1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(response.json()["isBanned"])
+
+
+    @mock.patch("dashboard.views.get_admin_user_activity")
+    def test_operator_user_activity(self, mock_get_admin_user_activity):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"]}
+        session.save()
+
+        mock_get_admin_user_activity.return_value = {"items": [{"id": "a1"}], "page": 1}
+        response = self.client.get(reverse("operator-user-activity", kwargs={"user_id": "u1"}), {"page": 1})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.json()["items"]))
+
+    @mock.patch("dashboard.views.update_admin_user")
+    def test_operator_user_update(self, mock_update_admin_user):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:write"]}
+        session.save()
+
+        mock_update_admin_user.return_value = {"id": "u1"}
+        response = self.client.post(reverse("operator-user-update", kwargs={"user_id": "u1"}), data={"role": "admin"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("u1", response.json()["id"])
+
+    def test_operator_user_update_requires_payload(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:write"]}
+        session.save()
+
+        response = self.client.post(reverse("operator-user-update", kwargs={"user_id": "u1"}), data={})
+        self.assertEqual(422, response.status_code)
+
+
+    @mock.patch("dashboard.views.get_security_audit")
+    def test_operator_audit_security(self, mock_get_security_audit):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"]}
+        session.save()
+
+        mock_get_security_audit.return_value = {"items": [], "page": 1}
+        response = self.client.get(reverse("operator-audit-security"), {"page": 1})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, response.json()["page"])
+
+    def test_operator_audit_security_requires_permission(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": []}
+        session.save()
+
+        response = self.client.get(reverse("operator-audit-security"))
+        self.assertEqual(403, response.status_code)

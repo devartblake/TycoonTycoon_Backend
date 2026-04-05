@@ -41,6 +41,7 @@ The dashboard now uses session-based operator login:
 - `GET /logout` to clear operator session
 - Protected routes (`/`, `/api/operator/health`, `/api/operator/users`) require a valid operator session
 - Session middleware auto-attempts refresh via `/admin/auth/refresh` when access token is near expiry
+- API routes enforce permission checks from the operator profile (`users:read`, `users:write`)
 
 ## Basic verification
 
@@ -53,7 +54,13 @@ python manage.py test dashboard.tests
 
 - `/healthz` - container health endpoint for probes
 - `/api/operator/health` - aggregated upstream service status JSON payload (`.NET`, `FastAPI`, `MinIO`)
-- `/api/operator/users` - authenticated BFF pass-through for admin users list
+- `/api/operator/audit/security` - security audit history endpoint (requires `events:read`)
+- `/api/operator/users` - authenticated users list endpoint (requires `users:read`)
+- `/api/operator/users/{userId}` - user detail endpoint (requires `users:read`)
+- `/api/operator/users/{userId}/activity` - user activity endpoint (requires `users:read`)
+- `/api/operator/users/{userId}/update` - user update endpoint (requires `users:write`)
+- `/api/operator/users/{userId}/ban` - ban action endpoint (requires `users:write`)
+- `/api/operator/users/{userId}/unban` - unban action endpoint (requires `users:write`)
 
 ## Configuration
 

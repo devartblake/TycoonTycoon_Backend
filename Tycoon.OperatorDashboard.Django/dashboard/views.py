@@ -7,17 +7,23 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from .services.admin_audit_client import get_security_audit
 from .services.admin_auth_client import admin_login, admin_me, admin_refresh
-from .services.admin_users_client import list_admin_users
+from .services.admin_users_client import (
+    ban_admin_user,
+    get_admin_user,
+    get_admin_user_activity,
+    list_admin_users,
+    unban_admin_user,
+    update_admin_user,
+)
 from .services.api_clients import get_overall_status, list_service_statuses
-
 
 STATUS_CLASSES = {
     "healthy": "status-ok",
     "degraded": "status-warn",
     "offline": "status-bad",
 }
-
 
 SESSION_ACCESS_TOKEN_KEY = "operator_access_token"
 SESSION_REFRESH_TOKEN_KEY = "operator_refresh_token"
@@ -49,6 +55,12 @@ def _try_refresh_session(request) -> bool:
         return False
 
 
+def _has_permission(request, permission: str) -> bool:
+    profile = request.session.get(SESSION_ADMIN_PROFILE_KEY) or {}
+    permissions = set(profile.get("permissions") or [])
+    return permission in permissions
+
+
 def operator_login_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
@@ -62,6 +74,22 @@ def operator_login_required(view_func):
         return view_func(request, *args, **kwargs)
 
     return _wrapped
+
+
+def require_permission(permission: str):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            if not _has_permission(request, permission):
+                return JsonResponse(
+                    {"code": "FORBIDDEN", "message": f"Missing required permission: {permission}"},
+                    status=403,
+                )
+            return view_func(request, *args, **kwargs)
+
+        return _wrapped
+
+    return decorator
 
 
 @operator_login_required
@@ -94,6 +122,7 @@ def operator_health(request):
 
 
 @operator_login_required
+@require_permission("users:read")
 def operator_users(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
 
@@ -129,6 +158,133 @@ def operator_users(request):
             },
             status=503,
         )
+
+
+@operator_login_required
+@require_permission("users:read")
+def operator_user_detail(request, user_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        payload = get_admin_user(access_token, user_id)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        code = ex.response.status_code
+        return JsonResponse(
+            {"code": "UPSTREAM_ERROR", "message": f"Admin user detail failed with HTTP {code}."},
+            status=502,
+        )
+    except httpx.RequestError:
+        return JsonResponse(
+            {"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend admin user detail endpoint."},
+            status=503,
+        )
+
+
+@operator_login_required
+@require_permission("users:write")
+def operator_user_ban(request, user_id: str):
+    reason = (request.POST.get("reason") or request.GET.get("reason") or "Operator action").strip()
+    until = request.POST.get("until") or request.GET.get("until")
+
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        payload = ban_admin_user(access_token, user_id, reason, until)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        code = ex.response.status_code
+        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"Ban endpoint failed with HTTP {code}."}, status=502)
+    except httpx.RequestError:
+        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend ban endpoint."}, status=503)
+
+
+@operator_login_required
+@require_permission("users:write")
+def operator_user_unban(request, user_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        payload = unban_admin_user(access_token, user_id)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        code = ex.response.status_code
+        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"Unban endpoint failed with HTTP {code}."}, status=502)
+    except httpx.RequestError:
+        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend unban endpoint."}, status=503)
+
+
+@operator_login_required
+@require_permission("users:read")
+def operator_user_activity(request, user_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "from": request.GET.get("from"),
+        "to": request.GET.get("to"),
+        "type": request.GET.get("type"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+
+    try:
+        payload = get_admin_user_activity(access_token, user_id, query)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        code = ex.response.status_code
+        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"User activity endpoint failed with HTTP {code}."}, status=502)
+    except httpx.RequestError:
+        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend user activity endpoint."}, status=503)
+
+
+@operator_login_required
+@require_permission("users:write")
+def operator_user_update(request, user_id: str):
+    payload = {
+        "username": request.POST.get("username") or request.GET.get("username"),
+        "role": request.POST.get("role") or request.GET.get("role"),
+        "isVerified": request.POST.get("isVerified") or request.GET.get("isVerified"),
+    }
+
+    # Normalize bool-ish input for isVerified if provided
+    raw_verified = payload.get("isVerified")
+    if raw_verified is not None:
+        payload["isVerified"] = str(raw_verified).lower() in {"1", "true", "yes", "on"}
+
+    payload = {k: v for k, v in payload.items() if v is not None and v != ""}
+
+    if not payload:
+        return JsonResponse({"code": "VALIDATION_ERROR", "message": "No updatable fields were provided."}, status=422)
+
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        response_payload = update_admin_user(access_token, user_id, payload)
+        return JsonResponse(response_payload)
+    except httpx.HTTPStatusError as ex:
+        code = ex.response.status_code
+        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"User update endpoint failed with HTTP {code}."}, status=502)
+    except httpx.RequestError:
+        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend user update endpoint."}, status=503)
+
+
+@operator_login_required
+@require_permission("events:read")
+def operator_audit_security(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "from": request.GET.get("from"),
+        "to": request.GET.get("to"),
+        "status": request.GET.get("status"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+
+    try:
+        payload = get_security_audit(access_token, query)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        code = ex.response.status_code
+        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"Security audit endpoint failed with HTTP {code}."}, status=502)
+    except httpx.RequestError:
+        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend security audit endpoint."}, status=503)
 
 
 def login_view(request):
