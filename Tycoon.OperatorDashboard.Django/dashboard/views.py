@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from .services.admin_audit_client import get_security_audit
 from .services.admin_auth_client import admin_login, admin_me, admin_refresh
+from .services.admin_media_client import create_upload_intent
 from .services.admin_moderation_client import get_moderation_logs, get_moderation_profile, set_moderation_status
 from .services.admin_users_client import (
     ban_admin_user,
@@ -19,6 +20,7 @@ from .services.admin_users_client import (
     update_admin_user,
 )
 from .services.api_clients import get_overall_status, list_service_statuses
+from .services.minio_diagnostics import get_minio_diagnostics
 from .services.upstream_error import build_upstream_http_error_response, build_upstream_unavailable_response
 
 STATUS_CLASSES = {
@@ -328,6 +330,39 @@ def operator_moderation_set_status(request):
         return build_upstream_http_error_response(ex, "Moderation set-status endpoint failed.")
     except httpx.RequestError:
         return build_upstream_unavailable_response("Unable to reach backend moderation set-status endpoint.")
+
+
+@operator_login_required
+@require_permission("questions:write")
+def operator_media_intent(request):
+    file_name = request.POST.get("fileName") or request.GET.get("fileName")
+    content_type = request.POST.get("contentType") or request.GET.get("contentType")
+    size_bytes = request.POST.get("sizeBytes") or request.GET.get("sizeBytes")
+
+    if not file_name or not content_type or not size_bytes:
+        return JsonResponse({"code": "VALIDATION_ERROR", "message": "fileName, contentType, and sizeBytes are required."}, status=422)
+
+    try:
+        size_value = int(size_bytes)
+    except (TypeError, ValueError):
+        return JsonResponse({"code": "VALIDATION_ERROR", "message": "sizeBytes must be an integer."}, status=422)
+
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        payload = create_upload_intent(access_token, file_name, content_type, size_value)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        return build_upstream_http_error_response(ex, "Media intent endpoint failed.")
+    except httpx.RequestError:
+        return build_upstream_unavailable_response("Unable to reach backend media intent endpoint.")
+
+
+@operator_login_required
+@require_permission("users:read")
+def operator_minio_diagnostics(request):
+    payload = get_minio_diagnostics()
+    status_map = {"healthy": 200, "degraded": 200, "offline": 503}
+    return JsonResponse(payload, status=status_map.get(payload.get("overallStatus", "degraded"), 200))
 
 
 def login_view(request):

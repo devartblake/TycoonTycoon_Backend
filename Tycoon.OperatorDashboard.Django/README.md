@@ -58,6 +58,8 @@ python manage.py test dashboard.tests
 - `/api/operator/moderation/logs` - moderation log list endpoint (requires `events:read`)
 - `/api/operator/moderation/profile/{playerId}` - moderation profile endpoint (requires `events:read`)
 - `/api/operator/moderation/set-status` - moderation status action endpoint (requires `events:write`)
+- `/api/operator/media/intent` - media upload-intent endpoint (requires `questions:write`)
+- `/api/operator/minio/diagnostics` - MinIO diagnostics endpoint (requires `users:read`)
 - `/api/operator/users` - authenticated users list endpoint (requires `users:read`)
 - `/api/operator/users/{userId}` - user detail endpoint (requires `users:read`)
 - `/api/operator/users/{userId}/activity` - user activity endpoint (requires `users:read`)

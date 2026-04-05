@@ -297,3 +297,45 @@ class DashboardViewsTests(TestCase):
 
         response = self.client.post(reverse("operator-moderation-set-status"), data={"playerId": "p1"})
         self.assertEqual(422, response.status_code)
+
+
+    @mock.patch("dashboard.views.create_upload_intent")
+    def test_operator_media_intent(self, mock_create_upload_intent):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["questions:write"]}
+        session.save()
+
+        mock_create_upload_intent.return_value = {"assetKey": "media/key"}
+        response = self.client.post(
+            reverse("operator-media-intent"),
+            data={"fileName": "avatar.png", "contentType": "image/png", "sizeBytes": 1234},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("media/key", response.json()["assetKey"])
+
+    def test_operator_media_intent_requires_fields(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["questions:write"]}
+        session.save()
+
+        response = self.client.post(reverse("operator-media-intent"), data={"fileName": "avatar.png"})
+        self.assertEqual(422, response.status_code)
+
+    @mock.patch("dashboard.views.get_minio_diagnostics")
+    def test_operator_minio_diagnostics(self, mock_get_minio_diagnostics):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"]}
+        session.save()
+
+        mock_get_minio_diagnostics.return_value = {"overallStatus": "healthy", "checks": {}}
+        response = self.client.get(reverse("operator-minio-diagnostics"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("healthy", response.json()["overallStatus"])
