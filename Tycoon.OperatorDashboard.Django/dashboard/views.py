@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from .services.admin_audit_client import get_security_audit
 from .services.admin_auth_client import admin_login, admin_me, admin_refresh
+from .services.admin_moderation_client import get_moderation_logs, get_moderation_profile, set_moderation_status
 from .services.admin_users_client import (
     ban_admin_user,
     get_admin_user,
@@ -262,6 +263,71 @@ def operator_audit_security(request):
         return build_upstream_http_error_response(ex, "Security audit endpoint failed.")
     except httpx.RequestError:
         return build_upstream_unavailable_response("Unable to reach backend security audit endpoint.")
+
+
+@operator_login_required
+@require_permission("events:read")
+def operator_moderation_profile(request, player_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        payload = get_moderation_profile(access_token, player_id)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        return build_upstream_http_error_response(ex, "Moderation profile endpoint failed.")
+    except httpx.RequestError:
+        return build_upstream_unavailable_response("Unable to reach backend moderation profile endpoint.")
+
+
+@operator_login_required
+@require_permission("events:read")
+def operator_moderation_logs(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+        "playerId": request.GET.get("playerId"),
+        "status": request.GET.get("status"),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+
+    try:
+        payload = get_moderation_logs(access_token, query)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        return build_upstream_http_error_response(ex, "Moderation logs endpoint failed.")
+    except httpx.RequestError:
+        return build_upstream_unavailable_response("Unable to reach backend moderation logs endpoint.")
+
+
+@operator_login_required
+@require_permission("events:write")
+def operator_moderation_set_status(request):
+    admin_profile = request.session.get(SESSION_ADMIN_PROFILE_KEY) or {}
+    admin_user = admin_profile.get("email")
+
+    payload = {
+        "playerId": request.POST.get("playerId") or request.GET.get("playerId"),
+        "status": request.POST.get("status") or request.GET.get("status"),
+        "reason": request.POST.get("reason") or request.GET.get("reason"),
+        "notes": request.POST.get("notes") or request.GET.get("notes"),
+        "expiresAtUtc": request.POST.get("expiresAtUtc") or request.GET.get("expiresAtUtc"),
+        "relatedFlagId": request.POST.get("relatedFlagId") or request.GET.get("relatedFlagId"),
+    }
+    payload = {k: v for k, v in payload.items() if v not in (None, "")}
+
+    required = {"playerId", "status", "reason"}
+    missing = sorted(required - set(payload.keys()))
+    if missing:
+        return JsonResponse({"code": "VALIDATION_ERROR", "message": f"Missing required fields: {', '.join(missing)}"}, status=422)
+
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        response_payload = set_moderation_status(access_token, admin_user, payload)
+        return JsonResponse(response_payload)
+    except httpx.HTTPStatusError as ex:
+        return build_upstream_http_error_response(ex, "Moderation set-status endpoint failed.")
+    except httpx.RequestError:
+        return build_upstream_unavailable_response("Unable to reach backend moderation set-status endpoint.")
 
 
 def login_view(request):

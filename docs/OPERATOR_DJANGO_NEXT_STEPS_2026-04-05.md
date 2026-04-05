@@ -17,6 +17,7 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 - ✅ Production compose override updated for Django runtime env
 - ✅ MinIO health integrated into dashboard status aggregation
 - ✅ Initial centralized upstream error mapping helper added for BFF endpoints
+- ✅ Moderation BFF read/action endpoints added (logs, profile, set-status)
 - ✅ Initial tests added and passing for service aggregation + API endpoint responses
 
 ## What Is Next (Priority Order)
@@ -69,7 +70,7 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 
 - [ ] Admin authentication integrated and enforced in Django dashboard
 - [ ] Operator role/permission model connected to UI rendering and action guards
-- [~] BFF proxy modules in progress: users + security-audit implemented; moderation/media pending
+- [~] BFF proxy modules in progress: users + security-audit + moderation implemented; media pending
 - [ ] MinIO diagnostics page implemented (not only health ping)
 - [ ] CI pipeline includes Django tests/lint
 - [ ] Runbook updated for dashboard incident triage

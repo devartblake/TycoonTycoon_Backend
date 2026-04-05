@@ -241,3 +241,59 @@ class DashboardViewsTests(TestCase):
 
         response = self.client.get(reverse("operator-audit-security"))
         self.assertEqual(403, response.status_code)
+
+
+    @mock.patch("dashboard.views.get_moderation_logs")
+    def test_operator_moderation_logs(self, mock_get_moderation_logs):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"]}
+        session.save()
+
+        mock_get_moderation_logs.return_value = {"items": [], "page": 1}
+        response = self.client.get(reverse("operator-moderation-logs"), {"page": 1})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, response.json()["page"])
+
+    @mock.patch("dashboard.views.get_moderation_profile")
+    def test_operator_moderation_profile(self, mock_get_moderation_profile):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"]}
+        session.save()
+
+        mock_get_moderation_profile.return_value = {"playerId": "p1"}
+        response = self.client.get(reverse("operator-moderation-profile", kwargs={"player_id": "p1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("p1", response.json()["playerId"])
+
+    @mock.patch("dashboard.views.set_moderation_status")
+    def test_operator_moderation_set_status(self, mock_set_moderation_status):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:write"], "email": "ops@example.com"}
+        session.save()
+
+        mock_set_moderation_status.return_value = {"playerId": "p1", "status": 2}
+        response = self.client.post(
+            reverse("operator-moderation-set-status"),
+            data={"playerId": "p1", "status": 2, "reason": "signal"},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, response.json()["status"])
+
+    def test_operator_moderation_set_status_requires_fields(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:write"], "email": "ops@example.com"}
+        session.save()
+
+        response = self.client.post(reverse("operator-moderation-set-status"), data={"playerId": "p1"})
+        self.assertEqual(422, response.status_code)

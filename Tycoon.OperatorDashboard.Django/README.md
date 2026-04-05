@@ -55,6 +55,9 @@ python manage.py test dashboard.tests
 - `/healthz` - container health endpoint for probes
 - `/api/operator/health` - aggregated upstream service status JSON payload (`.NET`, `FastAPI`, `MinIO`)
 - `/api/operator/audit/security` - security audit history endpoint (requires `events:read`)
+- `/api/operator/moderation/logs` - moderation log list endpoint (requires `events:read`)
+- `/api/operator/moderation/profile/{playerId}` - moderation profile endpoint (requires `events:read`)
+- `/api/operator/moderation/set-status` - moderation status action endpoint (requires `events:write`)
 - `/api/operator/users` - authenticated users list endpoint (requires `users:read`)
 - `/api/operator/users/{userId}` - user detail endpoint (requires `users:read`)
 - `/api/operator/users/{userId}/activity` - user activity endpoint (requires `users:read`)
