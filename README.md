@@ -54,6 +54,7 @@ TycoonTycoon_Backend/
 ├── Tycoon.Backend.Migrations/       # EF Core migrations
 ├── Tycoon.MigrationService/         # Database migration runner service
 ├── Tycoon.OperatorDashboard/        # Blazor Server operator control panel (port 8200)
+├── Tycoon.OperatorDashboard.Django/ # Django operator dashboard (port 8300)
 ├── Tycoon.Sidecar/                  # FastAPI Python sidecar — ML, analytics, webhooks (port 8100)
 ├── Tycoon.AppHost/                  # .NET Aspire orchestration host
 ├── Tycoon.Shared/                   # Shared contracts, DTOs, utilities
@@ -62,22 +63,22 @@ TycoonTycoon_Backend/
 └── scripts/                         # Development automation scripts
 ```
 
-> Operator dashboard container source of truth: **Blazor (`Tycoon.OperatorDashboard`)**.
-> Alternate Next.js dashboard Dockerfiles are archived as `*.txt` and are not part of default compose builds.
+> Operator dashboard container source of truth: **Django (`Tycoon.OperatorDashboard.Django`)**.
+> Blazor dashboard remains available as `operator-dashboard-blazor` for side-by-side validation.
 
 ## 🧭 Operator Dashboard Migration Status
 
-As of **April 4, 2026**:
-- `Tycoon.OperatorDashboard` (Blazor) remains the authoritative production dashboard.
-- `Tycoon.OperatorDashboard.Web` has Wave A BFF foundations (health, proxy groups, typed Wave A endpoints, session bootstrap endpoint).
-- `Tycoon.OperatorDashboard.Vue` has Wave A routes and API-backed loading states for Dashboard, Audit Log, and Users.
+As of **April 5, 2026**:
+- `Tycoon.OperatorDashboard.Django` is now the default operator dashboard service in Docker Compose.
+- `Tycoon.OperatorDashboard` (Blazor) is retained as a legacy comparison target (`operator-dashboard-blazor`).
+- `Tycoon.OperatorDashboard.Web` and `Tycoon.OperatorDashboard.Vue` remain migration reference implementations.
 - Active migration tracker: `docs/OPERATOR_DASHBOARD_MIGRATION_PLAN.md`.
 
 ### Technology Stack
 
 - **Runtime**: .NET 9
 - **Web Framework**: ASP.NET Core 9.0 (Minimal API)
-- **Operator Dashboard**: Blazor Server (.NET 9)
+- **Operator Dashboard**: Django 5.2 (primary), Blazor Server (.NET 9 legacy)
 - **ORM**: Entity Framework Core 9.0
 - **Databases**: PostgreSQL 16, MongoDB 7.0
 - **Cache**: Redis 7
