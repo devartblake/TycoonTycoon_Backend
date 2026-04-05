@@ -216,3 +216,28 @@ class DashboardViewsTests(TestCase):
 
         response = self.client.post(reverse("operator-user-update", kwargs={"user_id": "u1"}), data={})
         self.assertEqual(422, response.status_code)
+
+
+    @mock.patch("dashboard.views.get_security_audit")
+    def test_operator_audit_security(self, mock_get_security_audit):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"]}
+        session.save()
+
+        mock_get_security_audit.return_value = {"items": [], "page": 1}
+        response = self.client.get(reverse("operator-audit-security"), {"page": 1})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, response.json()["page"])
+
+    def test_operator_audit_security_requires_permission(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": []}
+        session.save()
+
+        response = self.client.get(reverse("operator-audit-security"))
+        self.assertEqual(403, response.status_code)

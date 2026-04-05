@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from .services.admin_audit_client import get_security_audit
 from .services.admin_auth_client import admin_login, admin_me, admin_refresh
 from .services.admin_users_client import (
     ban_admin_user,
@@ -261,6 +262,29 @@ def operator_user_update(request, user_id: str):
         return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"User update endpoint failed with HTTP {code}."}, status=502)
     except httpx.RequestError:
         return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend user update endpoint."}, status=503)
+
+
+@operator_login_required
+@require_permission("events:read")
+def operator_audit_security(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "from": request.GET.get("from"),
+        "to": request.GET.get("to"),
+        "status": request.GET.get("status"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+
+    try:
+        payload = get_security_audit(access_token, query)
+        return JsonResponse(payload)
+    except httpx.HTTPStatusError as ex:
+        code = ex.response.status_code
+        return JsonResponse({"code": "UPSTREAM_ERROR", "message": f"Security audit endpoint failed with HTTP {code}."}, status=502)
+    except httpx.RequestError:
+        return JsonResponse({"code": "UPSTREAM_UNAVAILABLE", "message": "Unable to reach backend security audit endpoint."}, status=503)
 
 
 def login_view(request):
