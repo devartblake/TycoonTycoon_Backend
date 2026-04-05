@@ -49,7 +49,7 @@ services:
   operator-dashboard:
     ports: []
     environment:
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
+      DJANGO_DEBUG: "false"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.operator-dashboard.rule=Host(`${DOMAIN:?DOMAIN is required in prod}`)"
