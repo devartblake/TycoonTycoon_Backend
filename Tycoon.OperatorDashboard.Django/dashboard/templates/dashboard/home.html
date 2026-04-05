@@ -69,6 +69,7 @@
   </head>
   <body>
     <h1>Tycoon Operator Dashboard</h1>
+    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout" style="color:#93c5fd">Sign out</a></p>{% endif %}
     <p>
       Overall Status:
       <span class="pill status-{% if overall_status == 'healthy' %}ok{% elif overall_status == 'degraded' %}warn{% else %}bad{% endif %}">
@@ -76,7 +77,7 @@
       </span>
     </p>
     <p class="muted">Generated at: {{ generated_at }}</p>
-    <p class="muted">JSON endpoint: <code>/api/operator/health</code></p>
+    <p class="muted">JSON endpoints: <code>/api/operator/health</code> · <code>/api/operator/users</code></p>
 
     <div class="grid">
       {% for service in services %}

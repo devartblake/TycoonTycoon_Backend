@@ -33,6 +33,15 @@ Open http://localhost:8300.
 
 The main compose service now builds this dashboard with `docker/Dockerfile.dashboard-django` and serves it on container port `8200`.
 
+## Authentication
+
+The dashboard now uses session-based operator login:
+
+- `GET/POST /login` for admin auth against `DOTNET_API_BASE_URL/admin/auth/login`
+- `GET /logout` to clear operator session
+- Protected routes (`/`, `/api/operator/health`, `/api/operator/users`) require a valid operator session
+- Session middleware auto-attempts refresh via `/admin/auth/refresh` when access token is near expiry
+
 ## Basic verification
 
 ```bash
@@ -44,6 +53,7 @@ python manage.py test dashboard.tests
 
 - `/healthz` - container health endpoint for probes
 - `/api/operator/health` - aggregated upstream service status JSON payload (`.NET`, `FastAPI`, `MinIO`)
+- `/api/operator/users` - authenticated BFF pass-through for admin users list
 
 ## Configuration
 
@@ -53,6 +63,7 @@ python manage.py test dashboard.tests
 | `FASTAPI_BASE_URL` | Base URL for FastAPI sidecar | `http://localhost:8100` |
 | `MINIO_BASE_URL` | Base URL for MinIO | `http://localhost:9000` |
 | `API_REQUEST_TIMEOUT_SECONDS` | Timeout for status checks | `5` |
+| `ADMIN_OPS_KEY` | Optional value for `X-Admin-Ops-Key` on admin auth calls | `` |
 
 When running inside Docker Compose, these are overridden to:
 
