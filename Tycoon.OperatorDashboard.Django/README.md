@@ -33,6 +33,18 @@ Open http://localhost:8300.
 
 The main compose service now builds this dashboard with `docker/Dockerfile.dashboard-django` and serves it on container port `8200`.
 
+## Basic verification
+
+```bash
+python3 -m py_compile manage.py operator_dashboard/settings.py operator_dashboard/urls.py dashboard/views.py dashboard/services/api_clients.py
+python manage.py test dashboard.tests
+```
+
+## API endpoints
+
+- `/healthz` - container health endpoint for probes
+- `/api/operator/health` - aggregated upstream service status JSON payload
+
 ## Configuration
 
 | Variable | Purpose | Default |

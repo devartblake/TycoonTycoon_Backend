@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import httpx
@@ -13,6 +13,9 @@ class ServiceStatus:
     detail: str
     payload: dict[str, Any] | None = None
     css_class: str = "status-unknown"
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 def _fetch_json(url: str) -> tuple[str, str, dict[str, Any] | None]:
@@ -51,3 +54,17 @@ def get_fastapi_status() -> ServiceStatus:
         detail=detail,
         payload=payload,
     )
+
+
+def list_service_statuses() -> list[ServiceStatus]:
+    return [get_dotnet_status(), get_fastapi_status()]
+
+
+def get_overall_status(services: list[ServiceStatus]) -> str:
+    if any(service.status == "offline" for service in services):
+        return "offline"
+
+    if any(service.status == "degraded" for service in services):
+        return "degraded"
+
+    return "healthy"

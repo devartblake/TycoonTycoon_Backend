@@ -61,11 +61,22 @@
         padding: 0.75rem;
         overflow-x: auto;
       }
+
+      .muted {
+        color: #94a3b8;
+      }
     </style>
   </head>
   <body>
     <h1>Tycoon Operator Dashboard</h1>
-    <p>Django frontend monitoring .NET API and FastAPI sidecar health.</p>
+    <p>
+      Overall Status:
+      <span class="pill status-{% if overall_status == 'healthy' %}ok{% elif overall_status == 'degraded' %}warn{% else %}bad{% endif %}">
+        {{ overall_status|upper }}
+      </span>
+    </p>
+    <p class="muted">Generated at: {{ generated_at }}</p>
+    <p class="muted">JSON endpoint: <code>/api/operator/health</code></p>
 
     <div class="grid">
       {% for service in services %}
