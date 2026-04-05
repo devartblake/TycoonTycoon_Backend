@@ -4,6 +4,7 @@ from .views import (
     dashboard_home,
     healthz,
     login_view,
+    minio_diagnostics_view,
     logout_view,
     operator_audit_security,
     operator_media_intent,
@@ -17,6 +18,7 @@ from .views import (
     operator_user_detail,
     operator_user_unban,
     operator_user_update,
+    operator_users_view,
     operator_users,
 )
 
@@ -28,10 +30,12 @@ urlpatterns = [
     path("api/operator/audit/security", operator_audit_security, name="operator-audit-security"),
     path("api/operator/media/intent", operator_media_intent, name="operator-media-intent"),
     path("api/operator/minio/diagnostics", operator_minio_diagnostics, name="operator-minio-diagnostics"),
+    path("minio/diagnostics", minio_diagnostics_view, name="operator-minio-diagnostics-view"),
     path("api/operator/moderation/logs", operator_moderation_logs, name="operator-moderation-logs"),
     path("api/operator/moderation/profile/<str:player_id>", operator_moderation_profile, name="operator-moderation-profile"),
     path("api/operator/moderation/set-status", operator_moderation_set_status, name="operator-moderation-set-status"),
     path("api/operator/users", operator_users, name="operator-users"),
+    path("users", operator_users_view, name="operator-users-view"),
     path("api/operator/users/<str:user_id>", operator_user_detail, name="operator-user-detail"),
     path("api/operator/users/<str:user_id>/activity", operator_user_activity, name="operator-user-activity"),
     path("api/operator/users/<str:user_id>/update", operator_user_update, name="operator-user-update"),

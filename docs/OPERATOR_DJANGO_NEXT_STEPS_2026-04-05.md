@@ -71,9 +71,9 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 
 - [ ] Admin authentication integrated and enforced in Django dashboard
 - [ ] Operator role/permission model connected to UI rendering and action guards
-- [~] BFF proxy modules in progress: users + security-audit + moderation + media diagnostics implemented
-- [~] MinIO diagnostics endpoint implemented; dedicated diagnostics UI page still pending
-- [~] CI pipeline now includes Django checks + test execution (`dotnet-ci` workflow, `django-dashboard-tests` job); add a dedicated lint step next
+- [~] BFF proxy modules in progress: users + security-audit + moderation + media diagnostics implemented (users now has an authenticated UI page)
+- [x] MinIO diagnostics endpoint + dedicated diagnostics UI page implemented
+- [x] CI pipeline includes Django lint (`ruff check`), Django system checks, and dashboard test execution (`dotnet-ci` workflow, `django-dashboard-tests` job)
 - [ ] Runbook updated for dashboard incident triage
 - [ ] Legacy dashboard deprecation date agreed and documented
 
@@ -85,7 +85,7 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 
 ## Recommended Immediate Sprint Scope (Next 3–5 Days)
 
-1. Add a dedicated lint pass for Django code (e.g., Ruff) in CI to complement the new test job.
-2. Add a basic MinIO diagnostics view with actionable messages.
-3. Finalize runbook updates for dashboard incident triage.
-4. Agree and document the legacy dashboard deprecation timeline.
+1. Finalize runbook updates for dashboard incident triage.
+2. Agree and document the legacy dashboard deprecation timeline.
+3. Close auth/permission checklist items with explicit validation notes in this doc.
+4. Expand authenticated operator workflow UI coverage beyond users/diagnostics (moderation, audit, media actions).

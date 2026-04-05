@@ -154,6 +154,37 @@ def operator_users(request):
 
 @operator_login_required
 @require_permission("users:read")
+def operator_users_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "q": request.GET.get("q"),
+        "status": request.GET.get("status"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+
+    context = {
+        "query": query,
+        "items": [],
+        "total": 0,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+
+    try:
+        payload = list_admin_users(access_token, query)
+        context["items"] = payload.get("items", [])
+        context["total"] = payload.get("total", len(context["items"]))
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Users lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend admin users endpoint.")
+
+    return render(request, "dashboard/users.html", context)
+
+
+@operator_login_required
+@require_permission("users:read")
 def operator_user_detail(request, user_id: str):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     try:
@@ -363,6 +394,36 @@ def operator_minio_diagnostics(request):
     payload = get_minio_diagnostics()
     status_map = {"healthy": 200, "degraded": 200, "offline": 503}
     return JsonResponse(payload, status=status_map.get(payload.get("overallStatus", "degraded"), 200))
+
+
+@operator_login_required
+@require_permission("users:read")
+def minio_diagnostics_view(request):
+    diagnostics = get_minio_diagnostics()
+    overall_status = diagnostics.get("overallStatus", "degraded")
+
+    guidance_by_status = {
+        "healthy": [
+            "MinIO is reachable and ready to accept object operations.",
+            "If uploads still fail, verify backend API intent generation and client content-type/size.",
+        ],
+        "degraded": [
+            "One or more MinIO probes are degraded; inspect MinIO logs and recent infrastructure changes.",
+            "Check bucket IAM policy and available disk capacity before retrying operator workflows.",
+        ],
+        "offline": [
+            "MinIO appears offline. Confirm container/pod is running and service DNS resolves.",
+            "Escalate to on-call if recovery exceeds your incident SLO and route uploads to fallback flows.",
+        ],
+    }
+
+    context = {
+        "diagnostics": diagnostics,
+        "overall_status": overall_status,
+        "guidance": guidance_by_status.get(overall_status, guidance_by_status["degraded"]),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    return render(request, "dashboard/minio_diagnostics.html", context)
 
 
 def login_view(request):

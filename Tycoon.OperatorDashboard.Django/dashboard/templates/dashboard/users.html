@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Operator Users</title>
+    <style>
+      body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 2rem; background: #0b1020; color: #f8fafc; }
+      .card { background: #121936; border-radius: 14px; padding: 1rem; border: 1px solid #1f2b54; margin-bottom: 1rem; }
+      .muted { color: #94a3b8; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 0.5rem; border-bottom: 1px solid #1f2b54; text-align: left; }
+      input, select { background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 8px; padding: 0.45rem 0.6rem; }
+      button { background: #1d4ed8; color: #fff; border: 0; border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; }
+      a { color: #93c5fd; }
+    </style>
+  </head>
+  <body>
+    <h1>Operator Users</h1>
+    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout">Sign out</a></p>{% endif %}
+    <p><a href="/">← Back to dashboard</a></p>
+
+    <section class="card">
+      <form method="get">
+        <label>
+          Search
+          <input type="text" name="q" value="{{ query.q|default:'' }}" placeholder="email or username" />
+        </label>
+        <label>
+          Status
+          <select name="status">
+            <option value="">All</option>
+            <option value="active" {% if query.status == "active" %}selected{% endif %}>active</option>
+            <option value="suspended" {% if query.status == "suspended" %}selected{% endif %}>suspended</option>
+          </select>
+        </label>
+        <button type="submit">Refresh</button>
+      </form>
+      <p class="muted">Showing {{ items|length }} records · total {{ total }}</p>
+    </section>
+
+    <section class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Verified</th>
+            <th>Banned</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in items %}
+          <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.email|default:"-" }}</td>
+            <td>{{ user.username|default:"-" }}</td>
+            <td>{{ user.role|default:"-" }}</td>
+            <td>{{ user.isVerified|yesno:"yes,no,-" }}</td>
+            <td>{{ user.isBanned|yesno:"yes,no,-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="muted">No users returned for this filter.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </body>
+</html>
