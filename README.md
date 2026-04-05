@@ -727,6 +727,7 @@ GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs on every PR and
 
 ### Infrastructure & Setup
 - **[Docker.md](Docker.md)** - Detailed Docker setup and infrastructure guide
+- **[docs/ON_PREM_CLOUDFLARE_DEPLOYMENT.md](docs/ON_PREM_CLOUDFLARE_DEPLOYMENT.md)** - On-prem Linux production deployment via Cloudflare DNS or Tunnel
 - **[docs/minio-setup.md](docs/minio-setup.md)** - MinIO bucket setup (console, mc CLI, AWS CLI, .NET SDK)
 - **[docs/backend-migrations-analysis.md](docs/backend-migrations-analysis.md)** - Migration strategy and analysis
 
