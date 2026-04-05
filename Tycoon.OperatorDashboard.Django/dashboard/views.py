@@ -365,6 +365,36 @@ def operator_minio_diagnostics(request):
     return JsonResponse(payload, status=status_map.get(payload.get("overallStatus", "degraded"), 200))
 
 
+@operator_login_required
+@require_permission("users:read")
+def minio_diagnostics_view(request):
+    diagnostics = get_minio_diagnostics()
+    overall_status = diagnostics.get("overallStatus", "degraded")
+
+    guidance_by_status = {
+        "healthy": [
+            "MinIO is reachable and ready to accept object operations.",
+            "If uploads still fail, verify backend API intent generation and client content-type/size.",
+        ],
+        "degraded": [
+            "One or more MinIO probes are degraded; inspect MinIO logs and recent infrastructure changes.",
+            "Check bucket IAM policy and available disk capacity before retrying operator workflows.",
+        ],
+        "offline": [
+            "MinIO appears offline. Confirm container/pod is running and service DNS resolves.",
+            "Escalate to on-call if recovery exceeds your incident SLO and route uploads to fallback flows.",
+        ],
+    }
+
+    context = {
+        "diagnostics": diagnostics,
+        "overall_status": overall_status,
+        "guidance": guidance_by_status.get(overall_status, guidance_by_status["degraded"]),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    return render(request, "dashboard/minio_diagnostics.html", context)
+
+
 def login_view(request):
     if request.method == "GET":
         if request.session.get(SESSION_ACCESS_TOKEN_KEY):

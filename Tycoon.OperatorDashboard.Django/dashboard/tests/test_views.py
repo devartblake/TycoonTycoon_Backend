@@ -339,3 +339,37 @@ class DashboardViewsTests(TestCase):
 
         self.assertEqual(200, response.status_code)
         self.assertEqual("healthy", response.json()["overallStatus"])
+
+    @mock.patch("dashboard.views.get_minio_diagnostics")
+    def test_operator_minio_diagnostics_view_renders(self, mock_get_minio_diagnostics):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_get_minio_diagnostics.return_value = {
+            "baseUrl": "http://minio:9000",
+            "overallStatus": "degraded",
+            "checks": {
+                "live": {"status": "healthy", "httpStatus": 200, "latencyMs": 12.3},
+                "ready": {"status": "degraded", "httpStatus": 503, "latencyMs": 40.1},
+            },
+        }
+
+        response = self.client.get(reverse("operator-minio-diagnostics-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "MinIO Diagnostics")
+        self.assertContains(response, "Recommended actions")
+        self.assertContains(response, "degraded")
+
+    def test_operator_minio_diagnostics_view_requires_permission(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": []}
+        session.save()
+
+        response = self.client.get(reverse("operator-minio-diagnostics-view"))
+        self.assertEqual(403, response.status_code)
