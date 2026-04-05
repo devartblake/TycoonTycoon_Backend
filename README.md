@@ -728,6 +728,7 @@ GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs on every PR and
 ### Infrastructure & Setup
 - **[Docker.md](Docker.md)** - Detailed Docker setup and infrastructure guide
 - **[docs/minio-setup.md](docs/minio-setup.md)** - MinIO bucket setup (console, mc CLI, AWS CLI, .NET SDK)
+- **[docs/OPERATOR_DJANGO_NEXT_STEPS_2026-04-05.md](docs/OPERATOR_DJANGO_NEXT_STEPS_2026-04-05.md)** - Django operator dashboard status, next steps, and remaining work
 - **[docs/backend-migrations-analysis.md](docs/backend-migrations-analysis.md)** - Migration strategy and analysis
 
 ### Game Systems
