@@ -335,6 +335,39 @@ def operator_moderation_profile(request, player_id: str):
 
 @operator_login_required
 @require_permission("events:read")
+def operator_moderation_logs_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "playerId": request.GET.get("playerId"),
+        "status": request.GET.get("status"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+
+    context = {
+        "query": query,
+        "items": [],
+        "page": 1,
+        "total": 0,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+
+    try:
+        payload = get_moderation_logs(access_token, query)
+        context["items"] = payload.get("items", [])
+        context["page"] = payload.get("page", 1)
+        context["total"] = payload.get("total", len(context["items"]))
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Moderation logs lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend moderation logs endpoint.")
+
+    return render(request, "dashboard/moderation_logs.html", context)
+
+
+@operator_login_required
+@require_permission("events:read")
 def operator_moderation_logs(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     query = {
