@@ -322,6 +322,40 @@ def operator_audit_security(request):
 
 @operator_login_required
 @require_permission("events:read")
+def operator_audit_security_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "from": request.GET.get("from"),
+        "to": request.GET.get("to"),
+        "status": request.GET.get("status"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+
+    context = {
+        "query": query,
+        "items": [],
+        "page": 1,
+        "total": 0,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+
+    try:
+        payload = get_security_audit(access_token, query)
+        context["items"] = payload.get("items", [])
+        context["page"] = payload.get("page", 1)
+        context["total"] = payload.get("total", len(context["items"]))
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Security audit lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend security audit endpoint.")
+
+    return render(request, "dashboard/audit_security.html", context)
+
+
+@operator_login_required
+@require_permission("events:read")
 def operator_moderation_profile(request, player_id: str):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     try:
@@ -441,6 +475,43 @@ def operator_media_intent(request):
         return build_upstream_http_error_response(ex, "Media intent endpoint failed.")
     except httpx.RequestError:
         return build_upstream_unavailable_response("Unable to reach backend media intent endpoint.")
+
+
+@operator_login_required
+@require_permission("questions:write")
+def operator_media_intent_view(request):
+    context = {
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "intent": None,
+    }
+
+    if request.method == "GET":
+        return render(request, "dashboard/media_intent.html", context)
+
+    file_name = request.POST.get("fileName")
+    content_type = request.POST.get("contentType")
+    size_bytes = request.POST.get("sizeBytes")
+
+    if not file_name or not content_type or not size_bytes:
+        messages.error(request, "fileName, contentType, and sizeBytes are required.")
+        return render(request, "dashboard/media_intent.html", context, status=422)
+
+    try:
+        size_value = int(size_bytes)
+    except (TypeError, ValueError):
+        messages.error(request, "sizeBytes must be an integer.")
+        return render(request, "dashboard/media_intent.html", context, status=422)
+
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        context["intent"] = create_upload_intent(access_token, file_name, content_type, size_value)
+        return render(request, "dashboard/media_intent.html", context)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Media intent failed with HTTP {ex.response.status_code}.")
+        return render(request, "dashboard/media_intent.html", context, status=502)
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend media intent endpoint.")
+        return render(request, "dashboard/media_intent.html", context, status=503)
 
 
 @operator_login_required
