@@ -80,7 +80,9 @@ if [[ $STATUS -ne 0 ]]; then
   exit $STATUS
 fi
 
-if find "$TMP_DIR" -type f | grep -q .; then
+MIGRATION_FILE=$(find "$TMP_DIR" -type f -name "*.cs" ! -name "*.Designer.cs" | head -1)
+
+if [[ -n "$MIGRATION_FILE" ]] && grep -q "migrationBuilder\." "$MIGRATION_FILE"; then
   echo "❌ Schema drift detected: model changes are not represented in migrations."
   if $AUTO_FIX; then
     if [[ -z "$AUTO_FIX_NAME" ]]; then
