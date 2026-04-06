@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Operator Dashboard</title>
+    <style>
+      body {
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 2rem;
+        background: #0b1020;
+        color: #f8fafc;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+      }
+
+      .card {
+        background: #121936;
+        border-radius: 14px;
+        padding: 1rem;
+        border: 1px solid #1f2b54;
+      }
+
+      .pill {
+        display: inline-block;
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+        border-radius: 999px;
+        padding: 0.2rem 0.6rem;
+      }
+
+      .status-ok {
+        background: #14532d;
+      }
+
+      .status-warn {
+        background: #78350f;
+      }
+
+      .status-bad {
+        background: #7f1d1d;
+      }
+
+      .status-unknown {
+        background: #334155;
+      }
+
+      code {
+        font-size: 0.8rem;
+        color: #cbd5e1;
+      }
+
+      pre {
+        background: #0f172a;
+        border-radius: 8px;
+        padding: 0.75rem;
+        overflow-x: auto;
+      }
+
+      .muted {
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tycoon Operator Dashboard</h1>
+    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout" style="color:#93c5fd">Sign out</a></p>{% endif %}
+    <p>
+      Overall Status:
+      <span class="pill status-{% if overall_status == 'healthy' %}ok{% elif overall_status == 'degraded' %}warn{% else %}bad{% endif %}">
+        {{ overall_status|upper }}
+      </span>
+    </p>
+    <p class="muted">Generated at: {{ generated_at }}</p>
+    <p class="muted">JSON endpoints: <code>/api/operator/health</code> · <code>/api/operator/users</code> · <code>/api/operator/users/{id}</code></p>
+    <p class="muted">Operator workflows: <a href="/users" style="color:#93c5fd">Users module</a> · <a href="/moderation/logs" style="color:#93c5fd">Moderation logs</a> · <a href="/audit/security" style="color:#93c5fd">Security audit</a></p>
+    <p class="muted">Diagnostics: <a href="/minio/diagnostics" style="color:#93c5fd">MinIO diagnostics page</a></p>
+
+    <div class="grid">
+      {% for service in services %}
+      <section class="card">
+        <span class="pill {{ service.css_class }}">{{ service.status|upper }}</span>
+        <h2>{{ service.service_name }}</h2>
+        <p><code>{{ service.base_url }}</code></p>
+        <p>{{ service.detail }}</p>
+        {% if service.payload %}
+        <pre>{{ service.payload|pprint }}</pre>
+        {% endif %}
+      </section>
+      {% endfor %}
+    </div>
+  </body>
+</html>
