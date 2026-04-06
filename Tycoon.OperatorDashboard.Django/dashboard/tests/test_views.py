@@ -316,6 +316,25 @@ class DashboardViewsTests(TestCase):
         response = self.client.get(reverse("operator-audit-security-view"))
         self.assertEqual(403, response.status_code)
 
+    @mock.patch("dashboard.views.get_security_audit")
+    def test_operator_audit_security_view_exports_csv(self, mock_get_security_audit):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"]}
+        session.save()
+
+        mock_get_security_audit.return_value = {
+            "items": [{"event": "admin_login", "status": "success", "actor": "ops@example.com", "ipAddress": "127.0.0.1", "createdAtUtc": "2026-04-06T00:00:00Z"}],
+            "page": 1,
+            "total": 1,
+        }
+        response = self.client.get(reverse("operator-audit-security-view"), {"format": "csv"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("text/csv; charset=utf-8", response["Content-Type"])
+        self.assertIn("admin_login", response.content.decode())
+
     def test_operator_audit_security_requires_permission(self):
         session = self.client.session
         session["operator_access_token"] = "token"
@@ -374,6 +393,25 @@ class DashboardViewsTests(TestCase):
 
         response = self.client.get(reverse("operator-moderation-logs-view"))
         self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_moderation_logs")
+    def test_operator_moderation_logs_view_exports_csv(self, mock_get_moderation_logs):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"]}
+        session.save()
+
+        mock_get_moderation_logs.return_value = {
+            "items": [{"playerId": "p1", "status": 2, "reason": "abuse", "appliedBy": "ops@example.com", "createdAtUtc": "2026-04-06T00:00:00Z"}],
+            "page": 1,
+            "total": 1,
+        }
+        response = self.client.get(reverse("operator-moderation-logs-view"), {"format": "csv"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("text/csv; charset=utf-8", response["Content-Type"])
+        self.assertIn("p1", response.content.decode())
 
     @mock.patch("dashboard.views.get_moderation_profile")
     def test_operator_moderation_profile(self, mock_get_moderation_profile):

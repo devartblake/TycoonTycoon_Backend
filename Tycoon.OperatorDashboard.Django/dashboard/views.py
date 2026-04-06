@@ -1,9 +1,11 @@
+import csv
 from functools import wraps
+from io import StringIO
 from time import time
 
 import httpx
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -33,6 +35,19 @@ SESSION_ACCESS_TOKEN_KEY = "operator_access_token"
 SESSION_REFRESH_TOKEN_KEY = "operator_refresh_token"
 SESSION_ADMIN_PROFILE_KEY = "operator_admin_profile"
 SESSION_ACCESS_EXP_KEY = "operator_access_expires_at"
+
+
+def _to_csv_response(rows: list[dict], fieldnames: list[str], filename: str):
+    buffer = StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+    response = HttpResponse(buffer.getvalue(), status=200)
+    response["Content-Type"] = "text/csv; charset=utf-8"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 def _is_access_token_expired(request) -> bool:
@@ -346,6 +361,12 @@ def operator_audit_security_view(request):
         context["items"] = payload.get("items", [])
         context["page"] = payload.get("page", 1)
         context["total"] = payload.get("total", len(context["items"]))
+        if request.GET.get("format") == "csv":
+            return _to_csv_response(
+                context["items"],
+                ["event", "status", "actor", "ipAddress", "createdAtUtc"],
+                "security_audit.csv",
+            )
     except httpx.HTTPStatusError as ex:
         messages.error(request, f"Security audit lookup failed (HTTP {ex.response.status_code}).")
     except httpx.RequestError:
@@ -392,6 +413,12 @@ def operator_moderation_logs_view(request):
         context["items"] = payload.get("items", [])
         context["page"] = payload.get("page", 1)
         context["total"] = payload.get("total", len(context["items"]))
+        if request.GET.get("format") == "csv":
+            return _to_csv_response(
+                context["items"],
+                ["playerId", "status", "reason", "appliedBy", "createdAtUtc"],
+                "moderation_logs.csv",
+            )
     except httpx.HTTPStatusError as ex:
         messages.error(request, f"Moderation logs lookup failed (HTTP {ex.response.status_code}).")
     except httpx.RequestError:

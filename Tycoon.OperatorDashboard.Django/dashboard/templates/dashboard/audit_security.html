@@ -41,6 +41,9 @@
         <button type="submit">Refresh</button>
       </form>
       <p class="muted">Showing {{ items|length }} records · total {{ total }} · page {{ page }}</p>
+      <p class="muted">
+        <a href="?from={{ query.from|default:'' }}&to={{ query.to|default:'' }}&status={{ query.status|default:'' }}&format=csv">Export CSV</a>
+      </p>
     </section>
 
     <section class="card">

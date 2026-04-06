@@ -88,4 +88,4 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 1. Finalize runbook updates for dashboard incident triage.
 2. Agree and document the legacy dashboard deprecation timeline.
 3. Add advanced users triage UX (sort controls + richer filter presets) for high-volume operations.
-4. Improve moderation/audit filtering presets and add export-friendly views.
+4. Improve moderation/audit filtering presets (CSV export views are now available).
