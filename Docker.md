@@ -714,3 +714,17 @@ docker rm tycoon_postgres
 ---
 
 **This file is the single source of truth for Docker usage in this repository.**
+
+---
+
+## 10. On-Prem + Cloudflare Deployment
+
+If you want to run this stack on your own Linux servers (Ubuntu/Fedora) and expose it through Cloudflare, use:
+
+- `docker/compose.yml`
+- `docker/compose.prod.yml`
+- optionally `docker/compose.cloudflare-tunnel.yml` (Cloudflare Tunnel mode)
+
+See the full runbook here:
+
+- `docs/ON_PREM_CLOUDFLARE_DEPLOYMENT.md`
