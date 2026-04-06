@@ -478,6 +478,43 @@ def operator_media_intent(request):
 
 
 @operator_login_required
+@require_permission("questions:write")
+def operator_media_intent_view(request):
+    context = {
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "intent": None,
+    }
+
+    if request.method == "GET":
+        return render(request, "dashboard/media_intent.html", context)
+
+    file_name = request.POST.get("fileName")
+    content_type = request.POST.get("contentType")
+    size_bytes = request.POST.get("sizeBytes")
+
+    if not file_name or not content_type or not size_bytes:
+        messages.error(request, "fileName, contentType, and sizeBytes are required.")
+        return render(request, "dashboard/media_intent.html", context, status=422)
+
+    try:
+        size_value = int(size_bytes)
+    except (TypeError, ValueError):
+        messages.error(request, "sizeBytes must be an integer.")
+        return render(request, "dashboard/media_intent.html", context, status=422)
+
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        context["intent"] = create_upload_intent(access_token, file_name, content_type, size_value)
+        return render(request, "dashboard/media_intent.html", context)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Media intent failed with HTTP {ex.response.status_code}.")
+        return render(request, "dashboard/media_intent.html", context, status=502)
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend media intent endpoint.")
+        return render(request, "dashboard/media_intent.html", context, status=503)
+
+
+@operator_login_required
 @require_permission("users:read")
 def operator_minio_diagnostics(request):
     payload = get_minio_diagnostics()

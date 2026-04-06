@@ -444,6 +444,39 @@ class DashboardViewsTests(TestCase):
         response = self.client.post(reverse("operator-media-intent"), data={"fileName": "avatar.png"})
         self.assertEqual(422, response.status_code)
 
+    @mock.patch("dashboard.views.create_upload_intent")
+    def test_operator_media_intent_view_renders_intent(self, mock_create_upload_intent):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["questions:write"], "email": "ops@example.com"}
+        session.save()
+
+        mock_create_upload_intent.return_value = {"assetKey": "media/k", "uploadUrl": "https://example/upload"}
+        response = self.client.post(
+            reverse("operator-media-intent-view"),
+            data={"fileName": "avatar.png", "contentType": "image/png", "sizeBytes": 321},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Intent response")
+        self.assertContains(response, "media/k")
+
+    def test_operator_media_intent_view_requires_login(self):
+        response = self.client.get(reverse("operator-media-intent-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
+
+    def test_operator_media_intent_view_requires_permission(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": []}
+        session.save()
+
+        response = self.client.get(reverse("operator-media-intent-view"))
+        self.assertEqual(403, response.status_code)
+
     @mock.patch("dashboard.views.get_minio_diagnostics")
     def test_operator_minio_diagnostics(self, mock_get_minio_diagnostics):
         session = self.client.session
