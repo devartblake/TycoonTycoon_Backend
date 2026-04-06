@@ -11,7 +11,8 @@ COPY Tycoon.Sidecar/generate_grpc.sh ./generate_grpc.sh
 COPY Tycoon.Sidecar/app ./app
 COPY protos /protos
 
-RUN bash ./generate_grpc.sh \
+RUN sed -i 's/\r//' ./generate_grpc.sh \
+    && bash ./generate_grpc.sh \
     && test -f ./app/grpc_generated/sidecar_pb2.py \
     && test -f ./app/grpc_generated/sidecar_pb2_grpc.py
 
