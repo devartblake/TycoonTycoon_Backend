@@ -205,6 +205,35 @@ class DashboardViewsTests(TestCase):
         response = self.client.get(reverse("operator-users-view"))
         self.assertEqual(403, response.status_code)
 
+    @mock.patch("dashboard.views.list_admin_users")
+    @mock.patch("dashboard.views.ban_admin_user")
+    def test_operator_users_view_bulk_ban(self, mock_ban_admin_user, mock_list_admin_users):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read", "users:write"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_admin_users.return_value = {"items": [{"id": "u1"}, {"id": "u2"}], "total": 2}
+        response = self.client.post(
+            reverse("operator-users-view"),
+            data={"action": "ban", "reason": "policy", "userIds": ["u1", "u2"]},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, mock_ban_admin_user.call_count)
+        self.assertContains(response, "Bulk ban")
+
+    def test_operator_users_view_bulk_action_requires_write_permission(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"]}
+        session.save()
+
+        response = self.client.post(reverse("operator-users-view"), data={"action": "ban", "userIds": ["u1"]})
+        self.assertEqual(403, response.status_code)
+
     @mock.patch("dashboard.views.get_admin_user")
     def test_operator_user_detail(self, mock_get_admin_user):
         session = self.client.session

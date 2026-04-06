@@ -171,6 +171,43 @@ def operator_users(request):
 @require_permission("users:read")
 def operator_users_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    bulk_result = None
+
+    if request.method == "POST":
+        if not _has_permission(request, "users:write"):
+            return JsonResponse({"code": "FORBIDDEN", "message": "Missing required permission: users:write"}, status=403)
+
+        action = (request.POST.get("action") or "").strip().lower()
+        user_ids = [user_id.strip() for user_id in request.POST.getlist("userIds") if user_id.strip()]
+        reason = (request.POST.get("reason") or "Operator bulk action").strip()
+
+        if action not in {"ban", "unban"}:
+            messages.error(request, "Bulk action must be 'ban' or 'unban'.")
+        elif not user_ids:
+            messages.error(request, "Select at least one user for bulk action.")
+        else:
+            succeeded = []
+            failed = []
+            for user_id in user_ids:
+                try:
+                    if action == "ban":
+                        ban_admin_user(access_token, user_id, reason, None)
+                    else:
+                        unban_admin_user(access_token, user_id)
+                    succeeded.append(user_id)
+                except httpx.HTTPError:
+                    failed.append(user_id)
+
+            bulk_result = {
+                "action": action,
+                "succeeded": succeeded,
+                "failed": failed,
+            }
+            if failed:
+                messages.warning(request, f"Bulk {action} completed with {len(failed)} failures.")
+            else:
+                messages.success(request, f"Bulk {action} succeeded for {len(succeeded)} users.")
+
     preset = (request.GET.get("preset") or "").strip()
     try:
         page = max(1, int(request.GET.get("page", 1) or 1))
@@ -218,6 +255,8 @@ def operator_users_view(request):
         "prev_page": max(1, page - 1),
         "next_page": page + 1,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "can_write_users": _has_permission(request, "users:write"),
+        "bulk_result": bulk_result,
     }
 
     try:

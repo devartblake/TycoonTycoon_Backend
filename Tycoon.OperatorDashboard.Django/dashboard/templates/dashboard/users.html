@@ -103,9 +103,23 @@
     </section>
 
     <section class="card">
+      {% if can_write_users %}
+      <form method="post">
+        {% csrf_token %}
+        <p class="muted">
+          Bulk actions:
+          <select name="action">
+            <option value="ban">ban</option>
+            <option value="unban">unban</option>
+          </select>
+          <input type="text" name="reason" placeholder="reason for bulk ban" />
+          <button type="submit">Run on selected users</button>
+        </p>
+      {% endif %}
       <table>
         <thead>
           <tr>
+            {% if can_write_users %}<th>Select</th>{% endif %}
             <th>User ID</th>
             <th>Email</th>
             <th>Username</th>
@@ -117,6 +131,7 @@
         <tbody>
           {% for user in items %}
           <tr>
+            {% if can_write_users %}<td><input type="checkbox" name="userIds" value="{{ user.id }}" /></td>{% endif %}
             <td>{{ user.id }}</td>
             <td>{{ user.email|default:"-" }}</td>
             <td>{{ user.username|default:"-" }}</td>
@@ -126,11 +141,20 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="6" class="muted">No users returned for this filter.</td>
+            <td colspan="{% if can_write_users %}7{% else %}6{% endif %}" class="muted">No users returned for this filter.</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
+      {% if can_write_users %}
+      </form>
+      {% endif %}
+
+      {% if bulk_result %}
+      <p class="muted">
+        Bulk {{ bulk_result.action }} → success: {{ bulk_result.succeeded|length }}, failed: {{ bulk_result.failed|length }}
+      </p>
+      {% endif %}
     </section>
   </body>
 </html>
