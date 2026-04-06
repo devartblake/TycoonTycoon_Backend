@@ -146,13 +146,35 @@ class DashboardViewsTests(TestCase):
 
         mock_list_admin_users.return_value = {
             "items": [{"id": "u1", "email": "user@example.com", "username": "user1", "role": "player", "isVerified": True, "isBanned": False}],
-            "total": 1,
+            "total": 51,
+            "page": 1,
+            "pageSize": 25,
         }
         response = self.client.get(reverse("operator-users-view"), {"q": "user"})
 
         self.assertEqual(200, response.status_code)
         self.assertContains(response, "Operator Users")
         self.assertContains(response, "user@example.com")
+        self.assertContains(response, "Next →")
+
+    @mock.patch("dashboard.views.list_admin_users")
+    def test_operator_users_view_invalid_page_defaults_to_one(self, mock_list_admin_users):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_admin_users.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("operator-users-view"), {"page": "bad", "pageSize": "nope"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "page 1")
+
+    def test_operator_users_view_redirects_to_login_when_not_authenticated(self):
+        response = self.client.get(reverse("operator-users-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
 
     def test_operator_users_view_requires_permission(self):
         session = self.client.session
@@ -285,6 +307,40 @@ class DashboardViewsTests(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(1, response.json()["page"])
 
+    @mock.patch("dashboard.views.get_moderation_logs")
+    def test_operator_moderation_logs_view_renders(self, mock_get_moderation_logs):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_get_moderation_logs.return_value = {
+            "items": [{"playerId": "p1", "status": 2, "reason": "abuse", "appliedBy": "ops@example.com"}],
+            "page": 1,
+            "total": 1,
+        }
+        response = self.client.get(reverse("operator-moderation-logs-view"), {"playerId": "p1"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Moderation Logs")
+        self.assertContains(response, "abuse")
+
+    def test_operator_moderation_logs_view_requires_login(self):
+        response = self.client.get(reverse("operator-moderation-logs-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
+
+    def test_operator_moderation_logs_view_requires_permission(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": []}
+        session.save()
+
+        response = self.client.get(reverse("operator-moderation-logs-view"))
+        self.assertEqual(403, response.status_code)
+
     @mock.patch("dashboard.views.get_moderation_profile")
     def test_operator_moderation_profile(self, mock_get_moderation_profile):
         session = self.client.session
@@ -401,3 +457,8 @@ class DashboardViewsTests(TestCase):
 
         response = self.client.get(reverse("operator-minio-diagnostics-view"))
         self.assertEqual(403, response.status_code)
+
+    def test_operator_minio_diagnostics_view_redirects_to_login_when_not_authenticated(self):
+        response = self.client.get(reverse("operator-minio-diagnostics-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
