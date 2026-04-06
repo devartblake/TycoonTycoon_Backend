@@ -147,6 +147,8 @@
             <option value="unban">unban</option>
           </select>
           <input type="text" name="reason" placeholder="reason for bulk ban" />
+          <label><input type="checkbox" name="dryRun" value="true" /> dry-run</label>
+          <input type="text" name="confirm" placeholder="type YES to execute" />
           <button type="submit">Run on selected users</button>
         </p>
       {% endif %}
@@ -186,7 +188,7 @@
 
       {% if bulk_result %}
       <p class="muted">
-        Bulk {{ bulk_result.action }} → success: {{ bulk_result.succeeded|length }}, failed: {{ bulk_result.failed|length }}
+        {% if bulk_result.dry_run %}Dry-run{% else %}Bulk{% endif %} {{ bulk_result.action }} → success: {{ bulk_result.succeeded|length }}, failed: {{ bulk_result.failed|length }}
       </p>
       {% endif %}
     </section>

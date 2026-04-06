@@ -86,9 +86,16 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 ## Recommended Immediate Sprint Scope (Next 3–5 Days)
 
 1. Add governance controls for team-shared saved views (ownership transfer, archive, and audit trail).
-2. Improve moderation/audit filtering presets (CSV export views are now available).
-3. Add bulk-action guardrails (confirmation UX + dry-run preview) for high-risk admin actions.
-4. Complete parity validation checklist before hard cutover.
+2. Complete parity validation checklist before hard cutover.
+3. Add runbook-linked drill checklist and monthly incident rehearsal cadence.
+4. Add operator UX polish pass (table density, inline field validation, and safer destructive action defaults).
+
+## Execution Update — April 6, 2026
+
+- ✅ Added moderation/audit quick filter presets in UI pages.
+- ✅ Added bulk-action guardrails for users workflows (`dry-run` and explicit `YES` confirmation for live execution).
+- ✅ Added CSV export capabilities for moderation/audit workflows.
+- ✅ Added DB-backed + team-shared saved views for users triage.
 
 ## Legacy Dashboard Deprecation Timeline
 

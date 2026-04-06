@@ -40,6 +40,12 @@ This runbook covers incidents affecting the Django-based `operator-dashboard` se
 - If restart fails, roll back to previous dashboard image tag.
 - Keep backend/sidecar/minio unchanged.
 
+### Operator Safety Guardrails (High-Risk Actions)
+
+- Prefer `dry-run` for bulk user actions before live execution.
+- Live bulk actions require explicit `YES` confirmation in the UI.
+- For incidents, keep bulk write actions disabled until dependency health is green.
+
 ### B) Upstream dependency degraded
 
 - Backend API degraded:
@@ -78,4 +84,3 @@ If dashboard incident exceeds SLO or blocks core operator operations:
 - **P0**: Complete operator outage or auth outage blocking all admin actions.
 - **P1**: One or more critical workflows unavailable (users/moderation/audit/media).
 - **P2**: Degraded non-critical diagnostics/UI behavior.
-

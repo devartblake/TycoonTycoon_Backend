@@ -217,12 +217,31 @@ class DashboardViewsTests(TestCase):
         mock_list_admin_users.return_value = {"items": [{"id": "u1"}, {"id": "u2"}], "total": 2}
         response = self.client.post(
             reverse("operator-users-view"),
-            data={"action": "ban", "reason": "policy", "userIds": ["u1", "u2"]},
+            data={"action": "ban", "reason": "policy", "confirm": "YES", "userIds": ["u1", "u2"]},
         )
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, mock_ban_admin_user.call_count)
         self.assertContains(response, "Bulk ban")
+
+    @mock.patch("dashboard.views.list_admin_users")
+    @mock.patch("dashboard.views.ban_admin_user")
+    def test_operator_users_view_bulk_ban_dry_run(self, mock_ban_admin_user, mock_list_admin_users):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read", "users:write"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_admin_users.return_value = {"items": [{"id": "u1"}], "total": 1}
+        response = self.client.post(
+            reverse("operator-users-view"),
+            data={"action": "ban", "dryRun": "true", "userIds": ["u1"]},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, mock_ban_admin_user.call_count)
+        self.assertContains(response, "Dry-run")
 
     def test_operator_users_view_bulk_action_requires_write_permission(self):
         session = self.client.session
@@ -408,6 +427,21 @@ class DashboardViewsTests(TestCase):
         self.assertEqual(403, response.status_code)
 
     @mock.patch("dashboard.views.get_security_audit")
+    def test_operator_audit_security_view_preset(self, mock_get_security_audit):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"]}
+        session.save()
+
+        mock_get_security_audit.return_value = {"items": [], "page": 1, "total": 0}
+        response = self.client.get(reverse("operator-audit-security-view"), {"preset": "login_failures_today"})
+
+        self.assertEqual(200, response.status_code)
+        _, call_query = mock_get_security_audit.call_args[0]
+        self.assertEqual("failure", call_query["status"])
+
+    @mock.patch("dashboard.views.get_security_audit")
     def test_operator_audit_security_view_exports_csv(self, mock_get_security_audit):
         session = self.client.session
         session["operator_access_token"] = "token"
@@ -484,6 +518,21 @@ class DashboardViewsTests(TestCase):
 
         response = self.client.get(reverse("operator-moderation-logs-view"))
         self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_moderation_logs")
+    def test_operator_moderation_logs_view_preset(self, mock_get_moderation_logs):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"]}
+        session.save()
+
+        mock_get_moderation_logs.return_value = {"items": [], "page": 1, "total": 0}
+        response = self.client.get(reverse("operator-moderation-logs-view"), {"preset": "suspended"})
+
+        self.assertEqual(200, response.status_code)
+        _, call_query = mock_get_moderation_logs.call_args[0]
+        self.assertEqual("2", call_query["status"])
 
     @mock.patch("dashboard.views.get_moderation_logs")
     def test_operator_moderation_logs_view_exports_csv(self, mock_get_moderation_logs):

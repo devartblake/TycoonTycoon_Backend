@@ -281,30 +281,40 @@ def operator_users_view(request):
 
             user_ids = [user_id.strip() for user_id in request.POST.getlist("userIds") if user_id.strip()]
             reason = (request.POST.get("reason") or "Operator bulk action").strip()
+            dry_run = str(request.POST.get("dryRun") or "").lower() in {"1", "true", "on", "yes"}
+            confirmed = (request.POST.get("confirm") or "").strip().upper() == "YES"
 
             if action not in {"ban", "unban"}:
                 messages.error(request, "Bulk action must be 'ban' or 'unban'.")
             elif not user_ids:
                 messages.error(request, "Select at least one user for bulk action.")
+            elif not dry_run and not confirmed:
+                messages.error(request, "Type YES in confirmation to execute a live bulk action, or use dry-run.")
             else:
                 succeeded = []
                 failed = []
-                for user_id in user_ids:
-                    try:
-                        if action == "ban":
-                            ban_admin_user(access_token, user_id, reason, None)
-                        else:
-                            unban_admin_user(access_token, user_id)
-                        succeeded.append(user_id)
-                    except httpx.HTTPError:
-                        failed.append(user_id)
+                if dry_run:
+                    succeeded = list(user_ids)
+                else:
+                    for user_id in user_ids:
+                        try:
+                            if action == "ban":
+                                ban_admin_user(access_token, user_id, reason, None)
+                            else:
+                                unban_admin_user(access_token, user_id)
+                            succeeded.append(user_id)
+                        except httpx.HTTPError:
+                            failed.append(user_id)
 
                 bulk_result = {
                     "action": action,
                     "succeeded": succeeded,
                     "failed": failed,
+                    "dry_run": dry_run,
                 }
-                if failed:
+                if dry_run:
+                    messages.warning(request, f"Dry-run: {len(succeeded)} users selected for bulk {action}.")
+                elif failed:
                     messages.warning(request, f"Bulk {action} completed with {len(failed)} failures.")
                 else:
                     messages.success(request, f"Bulk {action} succeeded for {len(succeeded)} users.")
@@ -504,6 +514,8 @@ def operator_audit_security(request):
 @require_permission("events:read")
 def operator_audit_security_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    preset = (request.GET.get("preset") or "").strip()
+    now = timezone.now()
     query = {
         "from": request.GET.get("from"),
         "to": request.GET.get("to"),
@@ -511,6 +523,12 @@ def operator_audit_security_view(request):
         "page": request.GET.get("page", 1),
         "pageSize": request.GET.get("pageSize", 25),
     }
+    if preset == "login_failures_today":
+        query["status"] = "failure"
+        query["from"] = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    elif preset == "login_success_today":
+        query["status"] = "success"
+        query["from"] = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     query = {k: v for k, v in query.items() if v not in (None, "")}
 
     context = {
@@ -518,6 +536,7 @@ def operator_audit_security_view(request):
         "items": [],
         "page": 1,
         "total": 0,
+        "preset": preset,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
 
@@ -557,12 +576,19 @@ def operator_moderation_profile(request, player_id: str):
 @require_permission("events:read")
 def operator_moderation_logs_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    preset = (request.GET.get("preset") or "").strip()
     query = {
         "playerId": request.GET.get("playerId"),
         "status": request.GET.get("status"),
         "page": request.GET.get("page", 1),
         "pageSize": request.GET.get("pageSize", 25),
     }
+    if preset == "active":
+        query["status"] = "1"
+    elif preset == "suspended":
+        query["status"] = "2"
+    elif preset == "banned":
+        query["status"] = "3"
     query = {k: v for k, v in query.items() if v not in (None, "")}
 
     context = {
@@ -570,6 +596,7 @@ def operator_moderation_logs_view(request):
         "items": [],
         "page": 1,
         "total": 0,
+        "preset": preset,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
 
