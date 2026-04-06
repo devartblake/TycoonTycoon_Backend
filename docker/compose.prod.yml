@@ -49,7 +49,9 @@ services:
   operator-dashboard:
     ports: []
     environment:
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
+      DJANGO_DEBUG: "false"
+      MINIO_BASE_URL: "http://minio:9000"
+      ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:?ADMIN_OPS_KEY is required in prod}"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.operator-dashboard.rule=Host(`${DOMAIN:?DOMAIN is required in prod}`)"
