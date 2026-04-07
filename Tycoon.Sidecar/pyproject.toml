@@ -1,7 +1,7 @@
 [project]
-name = "tycoon-sidecar"
+name = "synaptix-sidecar"
 version = "1.0.0"
-description = "Tycoon Backend sidecar — ML inference, analytics, webhooks, utilities"
+description = "Synaptix sidecar — ML inference, analytics, webhooks, and game balance utilities"
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]

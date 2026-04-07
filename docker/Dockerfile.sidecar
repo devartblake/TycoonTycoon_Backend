@@ -1,15 +1,21 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
+
+# Prevent .pyc files and ensure logs flush immediately
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 SHELL ["/bin/bash", "-c"]
 
 WORKDIR /app
 
-# Install dependencies
+# ── Stage: deps ──────────────────────────────────────────────────────────────
+# Install Python dependencies as a separate layer so Docker cache is reused
+# on code-only changes.
 COPY Tycoon.Sidecar/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt
 
-# Copy source + shared protos and generate gRPC stubs at build time
-COPY Tycoon.Sidecar/generate_grpc.sh ./generate_grpc.sh
+# ── Stage: app ───────────────────────────────────────────────────────────────
 COPY Tycoon.Sidecar/app ./app
 COPY protos /protos
 
@@ -17,6 +23,16 @@ RUN bash ./generate_grpc.sh \
     && test -f ./app/grpc_generated/sidecar_pb2.py \
     && test -f ./app/grpc_generated/sidecar_pb2_grpc.py
 
+# Run as non-root for security
+RUN addgroup --system sidecar \
+ && adduser --system --ingroup sidecar sidecar \
+ && chown -R sidecar:sidecar /app
+USER sidecar
+
 EXPOSE 8100
+
+# Health probe using Python's stdlib (no curl needed in slim image)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8100/health', timeout=5)" || exit 1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8100"]

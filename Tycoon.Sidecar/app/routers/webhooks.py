@@ -126,7 +126,7 @@ async def trigger_economy_offers(request: Request):
 
     if push_requested and recommendation["offer"] != "none":
         push_payload = {
-            "title": "Tycoon Offer",
+            "title": "Synaptix Offer",
             "body": recommendation["message"],
             "targetUserIds": [player_id] if player_id else [],
             "metadata": {"trigger": trigger, "offer": recommendation["offer"]},

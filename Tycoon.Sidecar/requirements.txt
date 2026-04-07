@@ -3,10 +3,13 @@ uvicorn[standard]>=0.30
 httpx>=0.27
 pydantic-settings>=2.0
 motor>=3.3
+pymongo>=4.7          # direct import (DuplicateKeyError, OperationFailure); also required by motor
 elasticsearch[async]>=8.0,<9.0
+numpy>=1.26           # direct import in ml.py; also required by scikit-learn
 pandas>=2.0
 scikit-learn>=1.4
 python-multipart>=0.0.9
-grpcio==1.80.0
-grpcio-tools==1.80.0
+grpcio>=1.66.0
 googleapis-common-protos>=1.63.0
+# grpcio-tools is a build-time code-generator, not a runtime dep.
+# Run: pip install grpcio-tools && bash generate_grpc.sh  (once, after cloning)
