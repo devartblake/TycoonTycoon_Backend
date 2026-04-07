@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Upload Intent</title>
+    <style>
+      body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 2rem; background: #0b1020; color: #f8fafc; }
+      .card { background: #121936; border-radius: 14px; padding: 1rem; border: 1px solid #1f2b54; margin-bottom: 1rem; }
+      .muted { color: #94a3b8; }
+      input { background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 8px; padding: 0.45rem 0.6rem; width: 100%; max-width: 420px; }
+      button { background: #1d4ed8; color: #fff; border: 0; border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; }
+      a { color: #93c5fd; }
+      pre { background: #0f172a; border-radius: 8px; padding: 0.75rem; overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Media Upload Intent</h1>
+    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout">Sign out</a></p>{% endif %}
+    <p><a href="/">← Back to dashboard</a></p>
+
+    <section class="card">
+      <form method="post">
+        {% csrf_token %}
+        <p><label>File name<br /><input type="text" name="fileName" placeholder="avatar.png" required /></label></p>
+        <p><label>Content type<br /><input type="text" name="contentType" placeholder="image/png" required /></label></p>
+        <p><label>Size bytes<br /><input type="number" name="sizeBytes" placeholder="12345" required /></label></p>
+        <button type="submit">Generate intent</button>
+      </form>
+    </section>
+
+    {% if intent %}
+    <section class="card">
+      <h2>Intent response</h2>
+      <pre>{{ intent|pprint }}</pre>
+    </section>
+    {% endif %}
+  </body>
+</html>
