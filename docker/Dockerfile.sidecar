@@ -4,6 +4,8 @@ FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+SHELL ["/bin/bash", "-c"]
+
 WORKDIR /app
 
 # ── Stage: deps ──────────────────────────────────────────────────────────────
@@ -15,6 +17,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # ── Stage: app ───────────────────────────────────────────────────────────────
 COPY Tycoon.Sidecar/app ./app
+COPY protos /protos
+
+RUN bash ./generate_grpc.sh \
+    && test -f ./app/grpc_generated/sidecar_pb2.py \
+    && test -f ./app/grpc_generated/sidecar_pb2_grpc.py
 
 # Run as non-root for security
 RUN addgroup --system sidecar \

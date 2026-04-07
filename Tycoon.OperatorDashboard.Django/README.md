@@ -33,15 +33,52 @@ Open http://localhost:8300.
 
 The main compose service now builds this dashboard with `docker/Dockerfile.dashboard-django` and serves it on container port `8200`.
 
+## Authentication
+
+The dashboard now uses session-based operator login:
+
+- `GET/POST /login` for admin auth against `DOTNET_API_BASE_URL/admin/auth/login`
+- `GET /logout` to clear operator session
+- Protected routes (`/`, `/api/operator/health`, `/api/operator/users`) require a valid operator session
+- Session middleware auto-attempts refresh via `/admin/auth/refresh` when access token is near expiry
+- API routes enforce permission checks from the operator profile (`users:read`, `users:write`)
+
+## Basic verification
+
+```bash
+python3 -m py_compile manage.py operator_dashboard/settings.py operator_dashboard/urls.py dashboard/views.py dashboard/services/api_clients.py
+python manage.py test dashboard.tests
+```
+
+## API endpoints
+
+- `/healthz` - container health endpoint for probes
+- `/api/operator/health` - aggregated upstream service status JSON payload (`.NET`, `FastAPI`, `MinIO`)
+- `/api/operator/audit/security` - security audit history endpoint (requires `events:read`)
+- `/api/operator/moderation/logs` - moderation log list endpoint (requires `events:read`)
+- `/api/operator/moderation/profile/{playerId}` - moderation profile endpoint (requires `events:read`)
+- `/api/operator/moderation/set-status` - moderation status action endpoint (requires `events:write`)
+- `/api/operator/media/intent` - media upload-intent endpoint (requires `questions:write`)
+- `/api/operator/minio/diagnostics` - MinIO diagnostics endpoint (requires `users:read`)
+- `/api/operator/users` - authenticated users list endpoint (requires `users:read`)
+- `/api/operator/users/{userId}` - user detail endpoint (requires `users:read`)
+- `/api/operator/users/{userId}/activity` - user activity endpoint (requires `users:read`)
+- `/api/operator/users/{userId}/update` - user update endpoint (requires `users:write`)
+- `/api/operator/users/{userId}/ban` - ban action endpoint (requires `users:write`)
+- `/api/operator/users/{userId}/unban` - unban action endpoint (requires `users:write`)
+
 ## Configuration
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `DOTNET_API_BASE_URL` | Base URL for ASP.NET API | `http://localhost:5000` |
 | `FASTAPI_BASE_URL` | Base URL for FastAPI sidecar | `http://localhost:8100` |
+| `MINIO_BASE_URL` | Base URL for MinIO | `http://localhost:9000` |
 | `API_REQUEST_TIMEOUT_SECONDS` | Timeout for status checks | `5` |
+| `ADMIN_OPS_KEY` | Optional value for `X-Admin-Ops-Key` on admin auth calls | `` |
 
 When running inside Docker Compose, these are overridden to:
 
 - `DOTNET_API_BASE_URL=http://backend-api:5000`
 - `FASTAPI_BASE_URL=http://sidecar:8100`
+- `MINIO_BASE_URL=http://minio:9000`
