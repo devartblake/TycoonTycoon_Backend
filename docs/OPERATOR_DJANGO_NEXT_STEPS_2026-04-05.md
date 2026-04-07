@@ -97,6 +97,11 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 - ✅ Added CSV export capabilities for moderation/audit workflows.
 - ✅ Added DB-backed + team-shared saved views for users triage.
 
+## Execution Update — April 7, 2026
+
+- ✅ Fixed Sidecar Docker build pathing so `generate_grpc.sh` is executed from a stable workspace location during image build.
+- ✅ Verified local gRPC stub generation script execution (`bash Tycoon.Sidecar/generate_grpc.sh`).
+
 ## Legacy Dashboard Deprecation Timeline
 
 - **Target deprecation date:** **May 15, 2026**
