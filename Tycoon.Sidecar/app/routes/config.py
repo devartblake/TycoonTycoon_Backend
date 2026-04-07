@@ -7,6 +7,7 @@ Routes:
 
 import logging
 from fastapi import APIRouter, Request, Response
+from app.config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -24,6 +25,10 @@ async def get_config(request: Request) -> Response:
     """
     client = request.app.state.backend
     headers: dict[str, str] = {}
+
+    # /admin/config is protected — pass the admin ops key if configured.
+    if settings.admin_ops_key:
+        headers["X-Admin-Ops-Key"] = settings.admin_ops_key
 
     cached_etag = getattr(request.app.state, _ETAG_KEY, None)
     cached_body = getattr(request.app.state, _CACHE_KEY, None)

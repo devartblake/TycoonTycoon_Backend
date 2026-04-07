@@ -2091,6 +2091,15 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AvatarItemType")
+                        .HasColumnType("text")
+                        .HasColumnName("avatar_item_type");
+
+                    b.Property<string>("EquippedCosmeticItemTypesCsv")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("equipped_cosmetic_item_types_csv");
+
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid")
                         .HasColumnName("player_id");
@@ -2528,6 +2537,15 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("media_key");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("StatusChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("status_changed_at_utc");
 
                     b.Property<string>("Text")
                         .IsRequired()

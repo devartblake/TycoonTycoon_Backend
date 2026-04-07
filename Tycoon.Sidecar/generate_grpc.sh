@@ -7,7 +7,7 @@
 #
 # Requires: pip install grpcio-tools (listed in requirements.txt)
 # ─────────────────────────────────────────────────────────────────────────────
-set -euo pipefail
+set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROTO_DIR="$(cd "${SCRIPT_DIR}/../protos" && pwd)"
