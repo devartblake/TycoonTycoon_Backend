@@ -56,3 +56,25 @@ class AdminAuthClientTests(SimpleTestCase):
         _, kwargs = mock_get.call_args
         self.assertEqual("Bearer at", kwargs["headers"]["Authorization"])
         self.assertEqual("abc123", kwargs["headers"]["X-Admin-Ops-Key"])
+
+    @override_settings(
+        DOTNET_API_BASE_URL="http://backend-api:5000",
+        ADMIN_OPS_HEADER="X-Custom-Ops",
+        ADMIN_OPS_KEY="custom-key",
+    )
+    @mock.patch("dashboard.services.admin_auth_client.httpx.post")
+    def test_admin_login_uses_custom_admin_ops_header_name(self, mock_post):
+        response = mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "accessToken": "at",
+            "refreshToken": "rt",
+            "expiresIn": 3600,
+            "admin": {"email": "ops@example.com"},
+        }
+        mock_post.return_value = response
+
+        admin_login("ops@example.com", "secret")
+
+        _, kwargs = mock_post.call_args
+        self.assertEqual("custom-key", kwargs["headers"]["X-Custom-Ops"])

@@ -23,7 +23,7 @@ def _headers(access_token: str | None = None) -> dict[str, str]:
     headers: dict[str, str] = {"Content-Type": "application/json"}
 
     if settings.ADMIN_OPS_KEY:
-        headers["X-Admin-Ops-Key"] = settings.ADMIN_OPS_KEY
+        headers[settings.ADMIN_OPS_HEADER] = settings.ADMIN_OPS_KEY
 
     if access_token:
         headers["Authorization"] = f"Bearer {access_token}"

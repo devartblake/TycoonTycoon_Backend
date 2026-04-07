@@ -85,10 +85,10 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 
 ## Recommended Immediate Sprint Scope (Next 3–5 Days)
 
-1. Add governance controls for team-shared saved views (ownership transfer, archive, and audit trail).
-2. Complete parity validation checklist before hard cutover.
-3. Add runbook-linked drill checklist and monthly incident rehearsal cadence.
-4. Add operator UX polish pass (table density, inline field validation, and safer destructive action defaults).
+1. Execute parity checklist in staging and collect operator sign-off notes.
+2. Run first monthly drill using `docs/OPERATOR_DASHBOARD_DRILL_CHECKLIST.md`.
+3. Add operator UX polish pass (table density and inline field validation).
+4. Add fine-grained audit views for saved-view governance events.
 
 ## Execution Update — April 6, 2026
 
@@ -101,6 +101,9 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 
 - ✅ Fixed Sidecar Docker build pathing so `generate_grpc.sh` is executed from a stable workspace location during image build.
 - ✅ Verified local gRPC stub generation script execution (`bash Tycoon.Sidecar/generate_grpc.sh`).
+- ✅ Added governance controls for team-shared saved views (archive + ownership transfer + audit events).
+- ✅ Added parity checklist doc (`docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md`).
+- ✅ Added drill checklist doc (`docs/OPERATOR_DASHBOARD_DRILL_CHECKLIST.md`).
 
 ## Legacy Dashboard Deprecation Timeline
 

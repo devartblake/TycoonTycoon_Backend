@@ -84,3 +84,7 @@ If dashboard incident exceeds SLO or blocks core operator operations:
 - **P0**: Complete operator outage or auth outage blocking all admin actions.
 - **P1**: One or more critical workflows unavailable (users/moderation/audit/media).
 - **P2**: Degraded non-critical diagnostics/UI behavior.
+
+## Drill Reference
+
+- Use `docs/OPERATOR_DASHBOARD_DRILL_CHECKLIST.md` for monthly tabletop and quarterly live rollback drills.

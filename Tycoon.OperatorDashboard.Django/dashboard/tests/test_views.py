@@ -296,6 +296,45 @@ class DashboardViewsTests(TestCase):
         self.assertEqual("true", call_query["isBanned"])
         self.assertEqual("updatedAt", call_query["sortBy"])
 
+    @mock.patch("dashboard.views._archive_named_view")
+    @mock.patch("dashboard.views._load_saved_views")
+    @mock.patch("dashboard.views.list_admin_users")
+    def test_operator_users_view_archive_saved_view(self, mock_list_admin_users, mock_load_saved_views, mock_archive_named_view):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_admin_users.return_value = {"items": [], "total": 0}
+        mock_load_saved_views.return_value = {}
+        mock_archive_named_view.return_value = True
+        response = self.client.post(reverse("operator-users-view"), data={"action": "archive_view", "viewName": "ops@example.com::Banned"})
+
+        self.assertEqual(200, response.status_code)
+        mock_archive_named_view.assert_called_once()
+
+    @mock.patch("dashboard.views._transfer_named_view")
+    @mock.patch("dashboard.views._load_saved_views")
+    @mock.patch("dashboard.views.list_admin_users")
+    def test_operator_users_view_transfer_saved_view(self, mock_list_admin_users, mock_load_saved_views, mock_transfer_named_view):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_admin_users.return_value = {"items": [], "total": 0}
+        mock_load_saved_views.return_value = {}
+        mock_transfer_named_view.return_value = True
+        response = self.client.post(
+            reverse("operator-users-view"),
+            data={"action": "transfer_view", "viewName": "ops@example.com::Banned", "newOwnerEmail": "next@example.com"},
+        )
+
+        self.assertEqual(200, response.status_code)
+        mock_transfer_named_view.assert_called_once()
+
     @mock.patch("dashboard.views.get_admin_user")
     def test_operator_user_detail(self, mock_get_admin_user):
         session = self.client.session

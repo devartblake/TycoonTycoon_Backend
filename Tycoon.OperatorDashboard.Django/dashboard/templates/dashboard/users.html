@@ -123,6 +123,18 @@
         <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
         <p class="muted">Selected saved view: <strong>{{ selected_saved_view }}</strong> <button type="submit">Delete saved view</button></p>
       </form>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="archive_view" />
+        <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
+        <p class="muted"><button type="submit">Archive saved view</button></p>
+      </form>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="transfer_view" />
+        <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
+        <p class="muted"><input type="text" name="newOwnerEmail" placeholder="new owner email" /> <button type="submit">Transfer ownership</button></p>
+      </form>
       {% endif %}
       <p class="muted">Showing {{ items|length }} records · total {{ total }} · page {{ page }}</p>
       <p class="muted">
@@ -147,7 +159,7 @@
             <option value="unban">unban</option>
           </select>
           <input type="text" name="reason" placeholder="reason for bulk ban" />
-          <label><input type="checkbox" name="dryRun" value="true" /> dry-run</label>
+          <label><input type="checkbox" name="dryRun" value="true" checked /> dry-run</label>
           <input type="text" name="confirm" placeholder="type YES to execute" />
           <button type="submit">Run on selected users</button>
         </p>

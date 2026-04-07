@@ -11,7 +11,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
-from .models import OperatorSavedView
+from .models import OperatorSavedView, OperatorSavedViewAuditEvent
 from .services.admin_audit_client import get_security_audit
 from .services.admin_auth_client import admin_login, admin_me, admin_refresh
 from .services.admin_media_client import create_upload_intent
@@ -49,7 +49,7 @@ def _saved_view_owner(request) -> str:
 def _load_saved_views(request) -> dict:
     owner = _saved_view_owner(request)
     try:
-        rows = OperatorSavedView.objects.filter(Q(owner_email=owner) | Q(is_shared=True)).values(
+        rows = OperatorSavedView.objects.filter((Q(owner_email=owner) | Q(is_shared=True)) & Q(is_archived=False)).values(
             "owner_email",
             "name",
             "query",
@@ -79,7 +79,14 @@ def _save_named_view(request, view_name: str, view_query: dict, is_shared: bool)
         OperatorSavedView.objects.update_or_create(
             owner_email=owner,
             name=view_name,
-            defaults={"query": view_query, "is_shared": is_shared},
+            defaults={"query": view_query, "is_shared": is_shared, "is_archived": False},
+        )
+        OperatorSavedViewAuditEvent.objects.create(
+            actor_email=owner,
+            owner_email=owner,
+            view_name=view_name,
+            action="save",
+            metadata={"is_shared": is_shared},
         )
     except DatabaseError:
         saved_views = request.session.get(SESSION_USERS_SAVED_VIEWS_KEY) or {}
@@ -95,6 +102,14 @@ def _delete_named_view(request, view_name: str):
         target_owner, target_name = view_name.split("::", 1)
     try:
         deleted, _ = OperatorSavedView.objects.filter(owner_email=target_owner, name=target_name).delete()
+        if deleted:
+            OperatorSavedViewAuditEvent.objects.create(
+                actor_email=owner,
+                owner_email=target_owner,
+                view_name=target_name,
+                action="delete",
+                metadata={},
+            )
         return deleted > 0
     except DatabaseError:
         saved_views = request.session.get(SESSION_USERS_SAVED_VIEWS_KEY) or {}
@@ -103,6 +118,42 @@ def _delete_named_view(request, view_name: str):
             saved_views.pop(target_name, None)
             _persist_saved_views_fallback(request, saved_views)
         return existed
+
+
+def _archive_named_view(request, view_name: str):
+    owner = _saved_view_owner(request)
+    target_owner, target_name = view_name.split("::", 1) if "::" in view_name else (owner, view_name)
+    try:
+        updated = OperatorSavedView.objects.filter(owner_email=target_owner, name=target_name).update(is_archived=True)
+        if updated:
+            OperatorSavedViewAuditEvent.objects.create(
+                actor_email=owner,
+                owner_email=target_owner,
+                view_name=target_name,
+                action="archive",
+                metadata={},
+            )
+        return updated > 0
+    except DatabaseError:
+        return False
+
+
+def _transfer_named_view(request, view_name: str, new_owner_email: str):
+    actor = _saved_view_owner(request)
+    target_owner, target_name = view_name.split("::", 1) if "::" in view_name else (actor, view_name)
+    try:
+        updated = OperatorSavedView.objects.filter(owner_email=target_owner, name=target_name).update(owner_email=new_owner_email)
+        if updated:
+            OperatorSavedViewAuditEvent.objects.create(
+                actor_email=actor,
+                owner_email=new_owner_email,
+                view_name=target_name,
+                action="transfer",
+                metadata={"from_owner": target_owner},
+            )
+        return updated > 0
+    except DatabaseError:
+        return False
 
 
 def _to_csv_response(rows: list[dict], fieldnames: list[str], filename: str):
@@ -273,6 +324,29 @@ def operator_users_view(request):
             elif view_name and _delete_named_view(request, view_name):
                 saved_views = _load_saved_views(request)
                 messages.success(request, f"Deleted users view '{view_name}'.")
+            else:
+                messages.error(request, "Saved view not found.")
+        elif action == "archive_view":
+            view_name = (request.POST.get("viewName") or "").strip()
+            owner_prefix = _saved_view_owner(request)
+            if "::" in view_name and not view_name.startswith(f"{owner_prefix}::"):
+                messages.error(request, "Only the owner can archive a shared saved view.")
+            elif view_name and _archive_named_view(request, view_name):
+                saved_views = _load_saved_views(request)
+                messages.success(request, f"Archived users view '{view_name}'.")
+            else:
+                messages.error(request, "Saved view not found.")
+        elif action == "transfer_view":
+            view_name = (request.POST.get("viewName") or "").strip()
+            owner_prefix = _saved_view_owner(request)
+            new_owner = (request.POST.get("newOwnerEmail") or "").strip().lower()
+            if "::" in view_name and not view_name.startswith(f"{owner_prefix}::"):
+                messages.error(request, "Only the owner can transfer a shared saved view.")
+            elif not new_owner:
+                messages.error(request, "New owner email is required for transfer.")
+            elif view_name and _transfer_named_view(request, view_name, new_owner):
+                saved_views = _load_saved_views(request)
+                messages.success(request, f"Transferred users view '{view_name}' to {new_owner}.")
             else:
                 messages.error(request, "Saved view not found.")
         else:
