@@ -28,6 +28,14 @@
           <a href="?preset=new_unverified">New unverified</a> ·
           <a href="?preset=admins">Admins</a>
         </p>
+        {% if saved_view_entries %}
+        <p class="muted">
+          Saved views:
+          {% for entry in saved_view_entries %}
+            <a href="?savedView={{ entry.key }}">{{ entry.name }}{% if entry.is_shared %} (shared){% endif %}</a>{% if not forloop.last %} · {% endif %}
+          {% endfor %}
+        </p>
+        {% endif %}
         <label>
           Search
           <input type="text" name="q" value="{{ query.q|default:'' }}" placeholder="email or username" />
@@ -90,6 +98,32 @@
         </label>
         <button type="submit">Refresh</button>
       </form>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_view" />
+        <input type="hidden" name="preset" value="{{ preset|default:'' }}" />
+        <input type="hidden" name="q" value="{{ query.q|default:'' }}" />
+        <input type="hidden" name="status" value="{{ query.status|default:'' }}" />
+        <input type="hidden" name="role" value="{{ query.role|default:'' }}" />
+        <input type="hidden" name="isVerified" value="{{ query.isVerified|default:'' }}" />
+        <input type="hidden" name="isBanned" value="{{ query.isBanned|default:'' }}" />
+        <input type="hidden" name="sortBy" value="{{ query.sortBy|default:'createdAt' }}" />
+        <input type="hidden" name="sortOrder" value="{{ query.sortOrder|default:'desc' }}" />
+        <input type="hidden" name="pageSize" value="{{ page_size }}" />
+        <p class="muted">
+          <input type="text" name="viewName" placeholder="view name" />
+          <label><input type="checkbox" name="isShared" value="true" /> share with team</label>
+          <button type="submit">Save current filters</button>
+        </p>
+      </form>
+      {% if selected_saved_view %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_view" />
+        <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
+        <p class="muted">Selected saved view: <strong>{{ selected_saved_view }}</strong> <button type="submit">Delete saved view</button></p>
+      </form>
+      {% endif %}
       <p class="muted">Showing {{ items|length }} records · total {{ total }} · page {{ page }}</p>
       <p class="muted">
         {% if has_prev %}
@@ -113,6 +147,8 @@
             <option value="unban">unban</option>
           </select>
           <input type="text" name="reason" placeholder="reason for bulk ban" />
+          <label><input type="checkbox" name="dryRun" value="true" /> dry-run</label>
+          <input type="text" name="confirm" placeholder="type YES to execute" />
           <button type="submit">Run on selected users</button>
         </p>
       {% endif %}
@@ -152,7 +188,7 @@
 
       {% if bulk_result %}
       <p class="muted">
-        Bulk {{ bulk_result.action }} → success: {{ bulk_result.succeeded|length }}, failed: {{ bulk_result.failed|length }}
+        {% if bulk_result.dry_run %}Dry-run{% else %}Bulk{% endif %} {{ bulk_result.action }} → success: {{ bulk_result.succeeded|length }}, failed: {{ bulk_result.failed|length }}
       </p>
       {% endif %}
     </section>

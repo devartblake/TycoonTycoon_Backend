@@ -71,11 +71,11 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 
 - [x] Admin authentication integrated and enforced in Django dashboard (validated by login/logout flow plus redirect-to-login tests on protected routes)
 - [x] Operator role/permission model connected to UI rendering and action guards (validated by permission-gated API + UI route tests)
-- [x] BFF proxy modules implemented: users + security-audit + moderation + media diagnostics, each with authenticated UI entry points (users now includes sort/filter presets + bulk-action affordance)
+- [x] BFF proxy modules implemented: users + security-audit + moderation + media diagnostics, each with authenticated UI entry points (users now includes sort/filter presets + bulk-action affordance + DB-backed/team-shared saved views)
 - [x] MinIO diagnostics endpoint + dedicated diagnostics UI page implemented
 - [x] CI pipeline includes Django lint (`ruff check`), Django system checks, and dashboard test execution (`dotnet-ci` workflow, `django-dashboard-tests` job)
-- [ ] Runbook updated for dashboard incident triage
-- [ ] Legacy dashboard deprecation date agreed and documented
+- [x] Runbook updated for dashboard incident triage (`docs/OPERATOR_DASHBOARD_INCIDENT_RUNBOOK.md`)
+- [x] Legacy dashboard deprecation date agreed and documented (target date: May 15, 2026; rollback window retained)
 
 ## Known Gaps / Risks
 
@@ -85,7 +85,21 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 
 ## Recommended Immediate Sprint Scope (Next 3–5 Days)
 
-1. Finalize runbook updates for dashboard incident triage.
-2. Agree and document the legacy dashboard deprecation timeline.
-3. Persist named/saved views for users triage workflows.
-4. Improve moderation/audit filtering presets (CSV export views are now available).
+1. Add governance controls for team-shared saved views (ownership transfer, archive, and audit trail).
+2. Complete parity validation checklist before hard cutover.
+3. Add runbook-linked drill checklist and monthly incident rehearsal cadence.
+4. Add operator UX polish pass (table density, inline field validation, and safer destructive action defaults).
+
+## Execution Update — April 6, 2026
+
+- ✅ Added moderation/audit quick filter presets in UI pages.
+- ✅ Added bulk-action guardrails for users workflows (`dry-run` and explicit `YES` confirmation for live execution).
+- ✅ Added CSV export capabilities for moderation/audit workflows.
+- ✅ Added DB-backed + team-shared saved views for users triage.
+
+## Legacy Dashboard Deprecation Timeline
+
+- **Target deprecation date:** **May 15, 2026**
+- **Soft freeze date for new Blazor dashboard changes:** **April 22, 2026**
+- **Parallel run window:** April 6, 2026 → May 14, 2026
+- **Rollback window retained:** through **June 12, 2026** (legacy service image preserved for emergency fallback)

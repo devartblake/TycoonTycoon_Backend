@@ -22,6 +22,11 @@
 
     <section class="card">
       <form method="get">
+        <p class="muted">
+          Quick presets:
+          <a href="?preset=login_failures_today">Login failures today</a> ·
+          <a href="?preset=login_success_today">Login successes today</a>
+        </p>
         <label>
           From (UTC)
           <input type="text" name="from" value="{{ query.from|default:'' }}" placeholder="2026-04-01T00:00:00Z" />

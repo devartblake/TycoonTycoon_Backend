@@ -22,6 +22,12 @@
 
     <section class="card">
       <form method="get">
+        <p class="muted">
+          Quick presets:
+          <a href="?preset=active">Active</a> ·
+          <a href="?preset=suspended">Suspended</a> ·
+          <a href="?preset=banned">Banned</a>
+        </p>
         <label>
           Player ID
           <input type="text" name="playerId" value="{{ query.playerId|default:'' }}" placeholder="player id" />

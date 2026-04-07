@@ -5,10 +5,13 @@ from time import time
 
 import httpx
 from django.contrib import messages
+from django.db import DatabaseError
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from .models import OperatorSavedView
 from .services.admin_audit_client import get_security_audit
 from .services.admin_auth_client import admin_login, admin_me, admin_refresh
 from .services.admin_media_client import create_upload_intent
@@ -35,6 +38,71 @@ SESSION_ACCESS_TOKEN_KEY = "operator_access_token"
 SESSION_REFRESH_TOKEN_KEY = "operator_refresh_token"
 SESSION_ADMIN_PROFILE_KEY = "operator_admin_profile"
 SESSION_ACCESS_EXP_KEY = "operator_access_expires_at"
+SESSION_USERS_SAVED_VIEWS_KEY = "operator_users_saved_views"
+
+
+def _saved_view_owner(request) -> str:
+    profile = request.session.get(SESSION_ADMIN_PROFILE_KEY) or {}
+    return (profile.get("email") or "operator@local").strip().lower()
+
+
+def _load_saved_views(request) -> dict:
+    owner = _saved_view_owner(request)
+    try:
+        rows = OperatorSavedView.objects.filter(Q(owner_email=owner) | Q(is_shared=True)).values(
+            "owner_email",
+            "name",
+            "query",
+            "is_shared",
+        )
+        result = {}
+        for row in rows:
+            key = f"{row['owner_email']}::{row['name']}"
+            result[key] = {
+                "name": row["name"],
+                "owner_email": row["owner_email"],
+                "is_shared": row["is_shared"],
+                "query": row.get("query") or {},
+            }
+        return result
+    except DatabaseError:
+        return request.session.get(SESSION_USERS_SAVED_VIEWS_KEY) or {}
+
+
+def _persist_saved_views_fallback(request, saved_views: dict):
+    request.session[SESSION_USERS_SAVED_VIEWS_KEY] = saved_views
+
+
+def _save_named_view(request, view_name: str, view_query: dict, is_shared: bool):
+    owner = _saved_view_owner(request)
+    try:
+        OperatorSavedView.objects.update_or_create(
+            owner_email=owner,
+            name=view_name,
+            defaults={"query": view_query, "is_shared": is_shared},
+        )
+    except DatabaseError:
+        saved_views = request.session.get(SESSION_USERS_SAVED_VIEWS_KEY) or {}
+        saved_views[view_name] = view_query
+        _persist_saved_views_fallback(request, saved_views)
+
+
+def _delete_named_view(request, view_name: str):
+    owner = _saved_view_owner(request)
+    target_owner = owner
+    target_name = view_name
+    if "::" in view_name:
+        target_owner, target_name = view_name.split("::", 1)
+    try:
+        deleted, _ = OperatorSavedView.objects.filter(owner_email=target_owner, name=target_name).delete()
+        return deleted > 0
+    except DatabaseError:
+        saved_views = request.session.get(SESSION_USERS_SAVED_VIEWS_KEY) or {}
+        existed = target_name in saved_views
+        if existed:
+            saved_views.pop(target_name, None)
+            _persist_saved_views_fallback(request, saved_views)
+        return existed
 
 
 def _to_csv_response(rows: list[dict], fieldnames: list[str], filename: str):
@@ -172,43 +240,89 @@ def operator_users(request):
 def operator_users_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     bulk_result = None
+    saved_views = _load_saved_views(request)
 
     if request.method == "POST":
-        if not _has_permission(request, "users:write"):
-            return JsonResponse({"code": "FORBIDDEN", "message": "Missing required permission: users:write"}, status=403)
-
         action = (request.POST.get("action") or "").strip().lower()
-        user_ids = [user_id.strip() for user_id in request.POST.getlist("userIds") if user_id.strip()]
-        reason = (request.POST.get("reason") or "Operator bulk action").strip()
 
-        if action not in {"ban", "unban"}:
-            messages.error(request, "Bulk action must be 'ban' or 'unban'.")
-        elif not user_ids:
-            messages.error(request, "Select at least one user for bulk action.")
-        else:
-            succeeded = []
-            failed = []
-            for user_id in user_ids:
-                try:
-                    if action == "ban":
-                        ban_admin_user(access_token, user_id, reason, None)
-                    else:
-                        unban_admin_user(access_token, user_id)
-                    succeeded.append(user_id)
-                except httpx.HTTPError:
-                    failed.append(user_id)
-
-            bulk_result = {
-                "action": action,
-                "succeeded": succeeded,
-                "failed": failed,
-            }
-            if failed:
-                messages.warning(request, f"Bulk {action} completed with {len(failed)} failures.")
+        if action == "save_view":
+            view_name = (request.POST.get("viewName") or "").strip()
+            if not view_name:
+                messages.error(request, "View name is required to save a users triage view.")
             else:
-                messages.success(request, f"Bulk {action} succeeded for {len(succeeded)} users.")
+                view_query = {
+                    "preset": request.POST.get("preset"),
+                    "q": request.POST.get("q"),
+                    "status": request.POST.get("status"),
+                    "role": request.POST.get("role"),
+                    "isVerified": request.POST.get("isVerified"),
+                    "isBanned": request.POST.get("isBanned"),
+                    "pageSize": request.POST.get("pageSize"),
+                    "sortBy": request.POST.get("sortBy"),
+                    "sortOrder": request.POST.get("sortOrder"),
+                }
+                is_shared = str(request.POST.get("isShared") or "").lower() in {"1", "true", "on", "yes"}
+                _save_named_view(request, view_name, view_query, is_shared)
+                saved_views = _load_saved_views(request)
+                messages.success(request, f"Saved users view '{view_name}'.")
+        elif action == "delete_view":
+            view_name = (request.POST.get("viewName") or "").strip()
+            owner_prefix = _saved_view_owner(request)
+            if "::" in view_name and not view_name.startswith(f"{owner_prefix}::"):
+                messages.error(request, "Only the owner can delete a shared saved view.")
+            elif view_name and _delete_named_view(request, view_name):
+                saved_views = _load_saved_views(request)
+                messages.success(request, f"Deleted users view '{view_name}'.")
+            else:
+                messages.error(request, "Saved view not found.")
+        else:
+            if not _has_permission(request, "users:write"):
+                return JsonResponse({"code": "FORBIDDEN", "message": "Missing required permission: users:write"}, status=403)
+
+            user_ids = [user_id.strip() for user_id in request.POST.getlist("userIds") if user_id.strip()]
+            reason = (request.POST.get("reason") or "Operator bulk action").strip()
+            dry_run = str(request.POST.get("dryRun") or "").lower() in {"1", "true", "on", "yes"}
+            confirmed = (request.POST.get("confirm") or "").strip().upper() == "YES"
+
+            if action not in {"ban", "unban"}:
+                messages.error(request, "Bulk action must be 'ban' or 'unban'.")
+            elif not user_ids:
+                messages.error(request, "Select at least one user for bulk action.")
+            elif not dry_run and not confirmed:
+                messages.error(request, "Type YES in confirmation to execute a live bulk action, or use dry-run.")
+            else:
+                succeeded = []
+                failed = []
+                if dry_run:
+                    succeeded = list(user_ids)
+                else:
+                    for user_id in user_ids:
+                        try:
+                            if action == "ban":
+                                ban_admin_user(access_token, user_id, reason, None)
+                            else:
+                                unban_admin_user(access_token, user_id)
+                            succeeded.append(user_id)
+                        except httpx.HTTPError:
+                            failed.append(user_id)
+
+                bulk_result = {
+                    "action": action,
+                    "succeeded": succeeded,
+                    "failed": failed,
+                    "dry_run": dry_run,
+                }
+                if dry_run:
+                    messages.warning(request, f"Dry-run: {len(succeeded)} users selected for bulk {action}.")
+                elif failed:
+                    messages.warning(request, f"Bulk {action} completed with {len(failed)} failures.")
+                else:
+                    messages.success(request, f"Bulk {action} succeeded for {len(succeeded)} users.")
 
     preset = (request.GET.get("preset") or "").strip()
+    selected_saved_view = (request.GET.get("savedView") or "").strip()
+    saved_entry = saved_views.get(selected_saved_view, {})
+    saved_query = saved_entry.get("query", saved_entry if isinstance(saved_entry, dict) else {})
     try:
         page = max(1, int(request.GET.get("page", 1) or 1))
     except ValueError:
@@ -219,15 +333,15 @@ def operator_users_view(request):
     except ValueError:
         page_size = 25
     query = {
-        "q": request.GET.get("q"),
-        "status": request.GET.get("status"),
-        "role": request.GET.get("role"),
-        "isVerified": request.GET.get("isVerified"),
-        "isBanned": request.GET.get("isBanned"),
+        "q": request.GET.get("q") or saved_query.get("q"),
+        "status": request.GET.get("status") or saved_query.get("status"),
+        "role": request.GET.get("role") or saved_query.get("role"),
+        "isVerified": request.GET.get("isVerified") or saved_query.get("isVerified"),
+        "isBanned": request.GET.get("isBanned") or saved_query.get("isBanned"),
         "page": page,
-        "pageSize": page_size,
-        "sortBy": request.GET.get("sortBy", "createdAt"),
-        "sortOrder": request.GET.get("sortOrder", "desc"),
+        "pageSize": request.GET.get("pageSize") or saved_query.get("pageSize") or page_size,
+        "sortBy": request.GET.get("sortBy") or saved_query.get("sortBy") or "createdAt",
+        "sortOrder": request.GET.get("sortOrder") or saved_query.get("sortOrder") or "desc",
     }
     if preset == "banned_recent":
         query["isBanned"] = "true"
@@ -257,6 +371,9 @@ def operator_users_view(request):
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
         "can_write_users": _has_permission(request, "users:write"),
         "bulk_result": bulk_result,
+        "saved_views": sorted(saved_views.keys()),
+        "saved_view_entries": [{"key": key, **value} for key, value in sorted(saved_views.items()) if isinstance(value, dict)],
+        "selected_saved_view": selected_saved_view,
     }
 
     try:
@@ -397,6 +514,8 @@ def operator_audit_security(request):
 @require_permission("events:read")
 def operator_audit_security_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    preset = (request.GET.get("preset") or "").strip()
+    now = timezone.now()
     query = {
         "from": request.GET.get("from"),
         "to": request.GET.get("to"),
@@ -404,6 +523,12 @@ def operator_audit_security_view(request):
         "page": request.GET.get("page", 1),
         "pageSize": request.GET.get("pageSize", 25),
     }
+    if preset == "login_failures_today":
+        query["status"] = "failure"
+        query["from"] = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    elif preset == "login_success_today":
+        query["status"] = "success"
+        query["from"] = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     query = {k: v for k, v in query.items() if v not in (None, "")}
 
     context = {
@@ -411,6 +536,7 @@ def operator_audit_security_view(request):
         "items": [],
         "page": 1,
         "total": 0,
+        "preset": preset,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
 
@@ -450,12 +576,19 @@ def operator_moderation_profile(request, player_id: str):
 @require_permission("events:read")
 def operator_moderation_logs_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    preset = (request.GET.get("preset") or "").strip()
     query = {
         "playerId": request.GET.get("playerId"),
         "status": request.GET.get("status"),
         "page": request.GET.get("page", 1),
         "pageSize": request.GET.get("pageSize", 25),
     }
+    if preset == "active":
+        query["status"] = "1"
+    elif preset == "suspended":
+        query["status"] = "2"
+    elif preset == "banned":
+        query["status"] = "3"
     query = {k: v for k, v in query.items() if v not in (None, "")}
 
     context = {
@@ -463,6 +596,7 @@ def operator_moderation_logs_view(request):
         "items": [],
         "page": 1,
         "total": 0,
+        "preset": preset,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
 
