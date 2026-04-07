@@ -76,3 +76,9 @@ MINIO_BASE_URL = os.getenv("MINIO_BASE_URL", "http://localhost:9000")
 
 ADMIN_OPS_KEY = os.getenv("ADMIN_OPS_KEY", "")
 LOGIN_URL = "/login"
+
+# Session hardening
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_AGE = 28800  # 8 hours
+SESSION_COOKIE_SECURE = os.getenv("DJANGO_SESSION_COOKIE_SECURE", "false").lower() == "true"
