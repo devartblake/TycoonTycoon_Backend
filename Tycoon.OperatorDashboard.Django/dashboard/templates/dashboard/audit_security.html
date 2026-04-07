@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Security Audit</title>
+    <style>
+      body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 2rem; background: #0b1020; color: #f8fafc; }
+      .card { background: #121936; border-radius: 14px; padding: 1rem; border: 1px solid #1f2b54; margin-bottom: 1rem; }
+      .muted { color: #94a3b8; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 0.5rem; border-bottom: 1px solid #1f2b54; text-align: left; }
+      input, select { background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 8px; padding: 0.45rem 0.6rem; }
+      button { background: #1d4ed8; color: #fff; border: 0; border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; }
+      a { color: #93c5fd; }
+    </style>
+  </head>
+  <body>
+    <h1>Security Audit</h1>
+    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout">Sign out</a></p>{% endif %}
+    <p><a href="/">← Back to dashboard</a></p>
+
+    <section class="card">
+      <form method="get">
+        <p class="muted">
+          Quick presets:
+          <a href="?preset=login_failures_today">Login failures today</a> ·
+          <a href="?preset=login_success_today">Login successes today</a>
+        </p>
+        <label>
+          From (UTC)
+          <input type="text" name="from" value="{{ query.from|default:'' }}" placeholder="2026-04-01T00:00:00Z" />
+        </label>
+        <label>
+          To (UTC)
+          <input type="text" name="to" value="{{ query.to|default:'' }}" placeholder="2026-04-06T23:59:59Z" />
+        </label>
+        <label>
+          Status
+          <select name="status">
+            <option value="">All</option>
+            <option value="success" {% if query.status == "success" %}selected{% endif %}>success</option>
+            <option value="failure" {% if query.status == "failure" %}selected{% endif %}>failure</option>
+          </select>
+        </label>
+        <button type="submit">Refresh</button>
+      </form>
+      <p class="muted">Showing {{ items|length }} records · total {{ total }} · page {{ page }}</p>
+      <p class="muted">
+        <a href="?from={{ query.from|default:'' }}&to={{ query.to|default:'' }}&status={{ query.status|default:'' }}&format=csv">Export CSV</a>
+      </p>
+    </section>
+
+    <section class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Status</th>
+            <th>Actor</th>
+            <th>IP</th>
+            <th>At (UTC)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in items %}
+          <tr>
+            <td>{{ row.event|default:"-" }}</td>
+            <td>{{ row.status|default:"-" }}</td>
+            <td>{{ row.actor|default:"-" }}</td>
+            <td>{{ row.ipAddress|default:"-" }}</td>
+            <td>{{ row.createdAtUtc|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="muted">No security audit events returned for this filter.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </body>
+</html>
