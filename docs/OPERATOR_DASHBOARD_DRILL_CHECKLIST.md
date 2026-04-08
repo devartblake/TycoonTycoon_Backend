@@ -31,4 +31,5 @@
 
 - Monthly tabletop checklist is ready and documented.
 - Quarterly live rollback drill is still pending execution in staging.
+- 🚧 Drill execution plan + artifact log template created (`docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`).
 - Next action: schedule drill owner + date, then attach the resulting artifact package to release notes.

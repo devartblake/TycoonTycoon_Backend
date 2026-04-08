@@ -112,6 +112,8 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
   - key fallback support for `AdminOps__Key` and `ADMIN_OPS_KEY`
 - ✅ Added targeted test coverage for custom admin ops header behavior.
 - ✅ Updated Django env docs to include `ADMIN_OPS_HEADER`.
+- 🚧 Started staging parallel-run execution package and evidence template (`docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md`).
+- 🚧 Started quarterly rollback drill plan + artifact log template (`docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`).
 
 ## Remaining Work (Actionable)
 
