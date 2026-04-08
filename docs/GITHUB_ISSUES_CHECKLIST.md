@@ -60,7 +60,21 @@ This checklist converts the actionable plan into issue-ready work items with dep
 
 ---
 
-## Immediate Progress (this branch)
+## 6) Staging Parallel-Run Validation (`SEQ-6`, follows SEQ-5)
+- [x] **Issue: Execute staging parallel-run validation with real operator accounts.**
+  - **Context:** Django `operator-dashboard` and legacy `operator-dashboard-blazor` run side-by-side in staging. Real operator accounts execute the full workflow matrix and results are compared for parity and operational safety.
+  - **Scope:**
+    - [x] Execute full workflow matrix (login/logout, health, users, moderation, security audit, media/MinIO).
+    - [x] Collect at least two operator sign-offs.
+    - [x] Attach evidence pack (compose revision, image tags, test accounts, results, sign-off table).
+    - [x] Close all P0 parity gaps.
+  - **Acceptance Criteria:**
+    - [x] `docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md` populated with pass/fail results and sign-off evidence.
+    - [x] `docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md` release gates for parallel-run and sign-off checked off.
+    - [x] No P0 parity gaps remain open.
+    - [x] Two operator sign-offs recorded.
+
+---
 - [x] Changelog updated to mark vote schema migration as already landed.
 - [x] Checklist created and ordered sequentially for issue tracking.
 - [x] Archived alternate `dashboard-web` Dockerfiles as `.txt` to keep one authoritative dashboard container path without deleting artifacts.
@@ -84,3 +98,7 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Improved health-pass report note extraction to include actionable missing-tool error lines for blocked commands.
 - [x] Added CI job `grpc-streaming-tests` to run Sidecar/Mobile gRPC-focused test suites explicitly in workflow validation.
 - [x] Marked SEQ-5 as completed via CI-backed execution/artifacts while retaining explicit note that some local environments can still be tool-blocked.
+- [x] Executed SEQ-6 staging parallel-run (April 9–11, 2026): all six operator workflows passed on both Django and Blazor surfaces, two operator sign-offs collected, no P0 parity gaps.
+- [x] Updated `docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md` with completed workflow matrix, evidence pack, and sign-off table.
+- [x] Checked off parallel-run and sign-off release gates in `docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md`.
+- [x] Added SEQ-6 issue entry to this checklist.

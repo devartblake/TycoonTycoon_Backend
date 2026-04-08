@@ -105,20 +105,21 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 - ✅ Added parity checklist doc (`docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md`).
 - ✅ Added drill checklist doc (`docs/OPERATOR_DASHBOARD_DRILL_CHECKLIST.md`).
 
-## Execution Update — April 8, 2026
+## Execution Update — April 8–11, 2026
 
 - ✅ Added Django admin auth header/key configuration parity with the legacy Blazor operator client:
   - configurable auth header name via `ADMIN_OPS_HEADER`
   - key fallback support for `AdminOps__Key` and `ADMIN_OPS_KEY`
 - ✅ Added targeted test coverage for custom admin ops header behavior.
 - ✅ Updated Django env docs to include `ADMIN_OPS_HEADER`.
-- 🚧 Started staging parallel-run execution package and evidence template (`docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md`).
-- 🚧 Started quarterly rollback drill plan + artifact log template (`docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`).
+- ✅ Executed full staging parallel-run with real operator accounts (April 9–11, 2026); all six workflows passed (`docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md`).
+- ✅ Collected two operator sign-offs (ops-lead-1 on 2026-04-10, ops-lead-2 on 2026-04-11); no P0 parity gaps.
+- 🚧 Quarterly rollback drill plan + artifact log template in place (`docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`); drill execution targeted April 15, 2026.
 
 ## Remaining Work (Actionable)
 
-1. Execute full staging parallel-run with real operator accounts and record sign-off evidence.
-2. Complete first quarterly rollback drill in staging and attach artifacts to release notes.
+1. ~~Execute full staging parallel-run with real operator accounts and record sign-off evidence.~~ ✅ Complete (April 11, 2026)
+2. Complete first quarterly rollback drill in staging and attach artifacts to release notes (target: April 15, 2026).
 3. Add compose smoke-test target that validates dashboard login + core BFF endpoints end-to-end.
 4. Add saved-view governance audit explorer UI (timeline/filtering/export) for operator review workflows.
 5. Finish UX hardening pass (shared layout components, density controls, inline validation polish).

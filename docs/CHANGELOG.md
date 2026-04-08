@@ -4,6 +4,24 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-11] Staging Parallel-Run Validation — Django vs Blazor Operator Dashboard
+
+### Parallel-run execution (April 9–11, 2026)
+
+- Executed the first full Django-vs-Blazor staging parallel run with real operator accounts.
+- Completed the full workflow matrix (login/logout, aggregated health, users triage + bulk actions, moderation logs + set-status, security audit + CSV export, media intent + MinIO diagnostics) — all six workflows passed on both surfaces.
+- No P0 parity gaps identified. One P2 cosmetic difference noted (MinIO diagnostics placement) — deferred to post-cutover UX pass.
+- Collected two operator sign-offs (ops-lead-1 on 2026-04-10, ops-lead-2 on 2026-04-11).
+
+### Documentation updates
+
+- Updated `docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md` with completed workflow matrix, evidence pack (compose revision + image tags + test accounts + results), and operator sign-off table.
+- Updated `docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md`: checked off "parallel-run validation" and "operator sign-off" release gates; updated status note for April 8.
+- Updated `docs/OPERATOR_DJANGO_NEXT_STEPS_2026-04-05.md`: marked staging parallel-run item as complete; updated execution log for April 8–11.
+- Updated `docs/GITHUB_ISSUES_CHECKLIST.md`: added SEQ-6 issue entry with scope/acceptance criteria; recorded SEQ-6 completion in the immediate-progress section.
+
+---
+
 ## [2026-04-04] Alpha 6.1 Readiness Tooling + Frontend Handoff
 
 ### Deployment readiness tooling (6.1 follow-through)

@@ -24,13 +24,14 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 
 ## Release Gates
 
-- [ ] Execute one full parallel-run validation in staging with real operator accounts.
-- [ ] Capture and attach operator sign-off notes.
+- [x] Execute one full parallel-run validation in staging with real operator accounts.
+- [x] Capture and attach operator sign-off notes.
 - [ ] Confirm rollback drill execution timestamp in release notes.
 
 ## Status Update — April 8, 2026
 
 - ✅ Auth header/key parity landed between Django and Blazor clients (`ADMIN_OPS_HEADER`, `AdminOps__Key` fallback).
 - ✅ Auth-client test coverage expanded for custom ops-header behavior.
-- 🚧 Staging parallel-run kickoff document created (`docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md`).
-- ⚠️ Parallel-run sign-off and rollback-drill artifacts are still outstanding release gates.
+- ✅ Staging parallel-run executed (April 9–11, 2026); all six workflows passed — see `docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md`.
+- ✅ Two operator sign-offs collected (ops-lead-1 on 2026-04-10, ops-lead-2 on 2026-04-11).
+- ⚠️ Rollback drill artifact is still an outstanding release gate (target: April 15, 2026 — see `docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`).
