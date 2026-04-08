@@ -75,10 +75,17 @@ python manage.py test dashboard.tests
 | `FASTAPI_BASE_URL` | Base URL for FastAPI sidecar | `http://localhost:8100` |
 | `MINIO_BASE_URL` | Base URL for MinIO | `http://localhost:9000` |
 | `API_REQUEST_TIMEOUT_SECONDS` | Timeout for status checks | `5` |
-| `ADMIN_OPS_KEY` | Optional value for `X-Admin-Ops-Key` on admin auth calls | `` |
+| `ADMIN_OPS_HEADER` | Optional header name for admin auth ops key | `X-Admin-Ops-Key` |
+| `ADMIN_OPS_KEY` | Optional ops key value for admin auth calls (fallbacks also support `AdminOps__Key`) | `` |
 
 When running inside Docker Compose, these are overridden to:
 
 - `DOTNET_API_BASE_URL=http://backend-api:5000`
 - `FASTAPI_BASE_URL=http://sidecar:8100`
 - `MINIO_BASE_URL=http://minio:9000`
+
+## Current Status (April 8, 2026)
+
+- Django remains the default operator dashboard service in Compose.
+- Admin auth calls now support configurable ops-key header names for deployment parity with the legacy Blazor dashboard.
+- Staging parallel-run sign-off and quarterly rollback drill execution remain open cutover gates.

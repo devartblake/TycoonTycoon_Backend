@@ -505,9 +505,6 @@ services:
       MINIO_BASE_URL: "http://minio:9000"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
       API_REQUEST_TIMEOUT_SECONDS: "5"
-      DJANGO_SESSION_COOKIE_SECURE: "false"
-    volumes:
-      - django_db_data:/app
     depends_on:
       backend-api:
         condition: service_healthy

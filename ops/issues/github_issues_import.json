@@ -1,0 +1,108 @@
+{
+  "github_import_format": "custom-planning-v1",
+  "generated_at_utc": "2026-04-08T00:00:00Z",
+  "project": "TycoonTycoon_Backend",
+  "labels": [
+    { "name": "area/operator-dashboard", "color": "1D76DB", "description": "Operator dashboard migration and parity work" },
+    { "name": "kind/parity", "color": "0E8A16", "description": "Parity validation and comparison work" },
+    { "name": "kind/drill", "color": "5319E7", "description": "Operational drill and rollback readiness" },
+    { "name": "kind/ci", "color": "FBCA04", "description": "CI/CD and automation" },
+    { "name": "kind/ux", "color": "C2E0C6", "description": "Operator UX polish" },
+    { "name": "kind/feature", "color": "0052CC", "description": "Feature implementation" },
+    { "name": "priority/P0", "color": "B60205", "description": "Highest priority" },
+    { "name": "priority/P1", "color": "D93F0B", "description": "High priority" },
+    { "name": "status/todo", "color": "D4C5F9", "description": "Not started" },
+    { "name": "status/in-progress", "color": "FBCA04", "description": "Actively in progress" }
+  ],
+  "milestones": [
+    {
+      "title": "Operator Dashboard Cutover Readiness",
+      "description": "Complete parity gates, drills, and operational evidence before hard cutover.",
+      "due_on": "2026-05-14"
+    },
+    {
+      "title": "Operator Dashboard Hardening Sprint",
+      "description": "Address quality-of-life and operational hardening tasks for steady-state support.",
+      "due_on": "2026-05-31"
+    }
+  ],
+  "sprints": [
+    {
+      "name": "Sprint 2026-04A",
+      "start_date": "2026-04-08",
+      "end_date": "2026-04-21",
+      "goal": "Close cutover readiness gates and gather sign-off artifacts."
+    },
+    {
+      "name": "Sprint 2026-04B",
+      "start_date": "2026-04-22",
+      "end_date": "2026-05-05",
+      "goal": "Complete smoke tests, audit explorer, and UX improvements."
+    }
+  ],
+  "issues": [
+    {
+      "title": "Execute staging parallel-run validation with real operator accounts",
+      "body": "Run the first full Django vs Blazor staging parallel run, complete workflow matrix, and collect at least two operator sign-offs. Attach evidence pack and close parity gaps.",
+      "labels": ["area/operator-dashboard", "kind/parity", "priority/P0", "status/in-progress"],
+      "milestone": "Operator Dashboard Cutover Readiness",
+      "sprint": "Sprint 2026-04A",
+      "assignees": [],
+      "estimate_points": 8
+    },
+    {
+      "title": "Execute quarterly staging rollback drill and publish artifacts",
+      "body": "Perform live failover from Django dashboard to Blazor fallback in staging, capture failover metrics, verify critical workflow continuity, and attach drill artifacts to release notes.",
+      "labels": ["area/operator-dashboard", "kind/drill", "priority/P0", "status/in-progress"],
+      "milestone": "Operator Dashboard Cutover Readiness",
+      "sprint": "Sprint 2026-04A",
+      "assignees": [],
+      "estimate_points": 8
+    },
+    {
+      "title": "Add compose smoke-test target for dashboard login + core BFF flows",
+      "body": "Create an automated smoke-test command (CI and local) that verifies operator login and key BFF endpoints against compose services.",
+      "labels": ["area/operator-dashboard", "kind/ci", "priority/P1", "status/todo"],
+      "milestone": "Operator Dashboard Cutover Readiness",
+      "sprint": "Sprint 2026-04A",
+      "assignees": [],
+      "estimate_points": 5
+    },
+    {
+      "title": "Build saved-view governance audit explorer UI",
+      "body": "Add operator-facing timeline/filter/export UI for saved-view governance audit events (archive, transfer ownership, and related metadata).",
+      "labels": ["area/operator-dashboard", "kind/feature", "priority/P1", "status/todo"],
+      "milestone": "Operator Dashboard Hardening Sprint",
+      "sprint": "Sprint 2026-04B",
+      "assignees": [],
+      "estimate_points": 5
+    },
+    {
+      "title": "Complete operator UX hardening pass",
+      "body": "Improve reusable layout components, table density controls, and inline form validation to reduce operator friction.",
+      "labels": ["area/operator-dashboard", "kind/ux", "priority/P1", "status/todo"],
+      "milestone": "Operator Dashboard Hardening Sprint",
+      "sprint": "Sprint 2026-04B",
+      "assignees": [],
+      "estimate_points": 3
+    },
+    {
+      "title": "Capture operator sign-off notes for cutover decision",
+      "body": "Collect and attach explicit operator sign-off records from staging parallel run to support go/no-go cutover review.",
+      "labels": ["area/operator-dashboard", "kind/parity", "priority/P0", "status/todo"],
+      "milestone": "Operator Dashboard Cutover Readiness",
+      "sprint": "Sprint 2026-04A",
+      "assignees": [],
+      "estimate_points": 2
+    },
+    {
+      "title": "Record rollback drill timestamp and release-note link",
+      "body": "Ensure rollback drill completion timestamp and release-note artifact link are added to migration docs and release checklist.",
+      "labels": ["area/operator-dashboard", "kind/drill", "priority/P0", "status/todo"],
+      "milestone": "Operator Dashboard Cutover Readiness",
+      "sprint": "Sprint 2026-04A",
+      "assignees": [],
+      "estimate_points": 2
+    }
+  ]
+}

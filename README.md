@@ -68,11 +68,12 @@ TycoonTycoon_Backend/
 
 ## 🧭 Operator Dashboard Migration Status
 
-As of **April 5, 2026**:
+As of **April 8, 2026**:
 - `Tycoon.OperatorDashboard.Django` is now the default operator dashboard service in Docker Compose.
 - `Tycoon.OperatorDashboard` (Blazor) is retained as a legacy comparison target (`operator-dashboard-blazor`).
 - `Tycoon.OperatorDashboard.Web` and `Tycoon.OperatorDashboard.Vue` remain migration reference implementations.
 - Active migration tracker: `docs/OPERATOR_DASHBOARD_MIGRATION_PLAN.md`.
+- Latest status + remaining work tracker: `docs/OPERATOR_DJANGO_NEXT_STEPS_2026-04-05.md`.
 
 ### Technology Stack
 

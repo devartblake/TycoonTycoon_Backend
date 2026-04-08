@@ -1,4 +1,4 @@
-# Operator Dashboard Parity Checklist (Django vs Legacy) — April 7, 2026
+# Operator Dashboard Parity Checklist (Django vs Legacy) — April 8, 2026
 
 ## Goal
 
@@ -28,3 +28,9 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [ ] Capture and attach operator sign-off notes.
 - [ ] Confirm rollback drill execution timestamp in release notes.
 
+## Status Update — April 8, 2026
+
+- ✅ Auth header/key parity landed between Django and Blazor clients (`ADMIN_OPS_HEADER`, `AdminOps__Key` fallback).
+- ✅ Auth-client test coverage expanded for custom ops-header behavior.
+- 🚧 Staging parallel-run kickoff document created (`docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md`).
+- ⚠️ Parallel-run sign-off and rollback-drill artifacts are still outstanding release gates.
