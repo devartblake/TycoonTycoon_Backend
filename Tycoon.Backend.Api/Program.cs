@@ -484,6 +484,11 @@ builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 
 var app = builder.Build();
 
+// Re-read after Build() so that test-host overrides (e.g. WebApplicationFactory
+// AddInMemoryCollection) are visible — they are applied during builder.Build().
+hangfireEnabled = app.Configuration.GetValue("Hangfire:Enabled", true)
+    && !app.Configuration.GetValue("Testing:UseInMemoryDb", false);
+
 // ✅ CORRECT MIDDLEWARE ORDER
 app.UseRouting();
 
