@@ -5,8 +5,8 @@ from typing import Dict, List, Optional
 
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 REPO_OWNER = "devartblake"
-REPO_NAME = "TheoreticalMinds"
-API_VERSION = "2026-03-10"
+REPO_NAME = "TycoonTycoon_Backend"
+API_VERSION = "2022-11-28"
 
 BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
 HEADERS = {
