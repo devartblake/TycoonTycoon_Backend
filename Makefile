@@ -1,4 +1,4 @@
-.PHONY: migrate migrate-reset migrate-status migrate-local migrate-local-reset build up down logs
+.PHONY: migrate migrate-reset migrate-status migrate-local migrate-local-reset build up down logs smoke smoke-live smoke-routes
 
 # ── Migration targets ────────────────────────────────────────────────────────
 
@@ -43,3 +43,20 @@ logs:
 ## Validate EF schema for drift (CI-friendly)
 validate-schema:
 	@./scripts/validate-ef-schema.sh
+
+# ── Smoke tests ──────────────────────────────────────────────────────────────
+
+## Compose smoke test: start stack, verify operator login + BFF flows, tear down
+smoke:
+	@chmod +x ./scripts/compose-smoke.sh
+	@./scripts/compose-smoke.sh
+
+## Compose smoke test against already-running stack (skip start/stop)
+smoke-live:
+	@chmod +x ./scripts/compose-smoke.sh
+	@STACK_RUNNING=true ./scripts/compose-smoke.sh
+
+## Static route smoke test (no live services required)
+smoke-routes:
+	@chmod +x ./scripts/alpha-p0-smoke.sh
+	@SMOKE_MODE=routes bash ./scripts/alpha-p0-smoke.sh

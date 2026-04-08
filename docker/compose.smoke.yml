@@ -1,0 +1,23 @@
+# compose.smoke.yml — docker compose override for compose smoke tests.
+#
+# Seeds a dedicated smoke-test super-admin account and allows that email
+# through the backend admin auth allowlist.
+#
+# Usage:
+#   docker compose -f docker/compose.yml -f docker/compose.smoke.yml up -d
+#   SMOKE_ADMIN_EMAIL=smoke-admin@tycoon.local \
+#   SMOKE_ADMIN_PASSWORD=SmokeTest123! \
+#   docker compose -f docker/compose.yml -f docker/compose.smoke.yml up -d
+
+services:
+  migration:
+    environment:
+      # Seed a dedicated smoke-test operator account (idempotent).
+      SuperAdmin__Email: "${SMOKE_ADMIN_EMAIL:-smoke-admin@tycoon.local}"
+      SuperAdmin__Password: "${SMOKE_ADMIN_PASSWORD:-SmokeTest123!}"
+      SuperAdmin__Handle: "${SMOKE_ADMIN_HANDLE:-smokeadmin}"
+
+  backend-api:
+    environment:
+      # Allow the smoke-test operator account to access the admin auth endpoints.
+      AdminAuth__AllowedEmails__0: "${SMOKE_ADMIN_EMAIL:-smoke-admin@tycoon.local}"

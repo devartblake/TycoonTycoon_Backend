@@ -1,0 +1,58 @@
+name: compose-smoke
+
+# Validates operator login and core BFF flows against the full compose stack.
+# Runs automatically on every push to main/master and can be triggered manually.
+on:
+  workflow_dispatch:
+    inputs:
+      keep_stack:
+        description: 'Keep the compose stack running after the test (useful for debugging)'
+        required: false
+        default: 'false'
+  push:
+    branches: [ main, master ]
+
+jobs:
+  compose-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      SMOKE_ADMIN_EMAIL: smoke-admin@tycoon.local
+      SMOKE_ADMIN_PASSWORD: SmokeTest123!
+      KEEP_STACK: ${{ github.event.inputs.keep_stack || 'false' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start compose stack (with smoke overrides)
+        run: |
+          docker compose -f docker/compose.yml -f docker/compose.smoke.yml up -d --build
+        env:
+          SMOKE_ADMIN_EMAIL: ${{ env.SMOKE_ADMIN_EMAIL }}
+          SMOKE_ADMIN_PASSWORD: ${{ env.SMOKE_ADMIN_PASSWORD }}
+
+      - name: Run compose smoke tests
+        run: |
+          chmod +x scripts/compose-smoke.sh
+          STACK_RUNNING=true bash scripts/compose-smoke.sh
+        env:
+          SMOKE_ADMIN_EMAIL: ${{ env.SMOKE_ADMIN_EMAIL }}
+          SMOKE_ADMIN_PASSWORD: ${{ env.SMOKE_ADMIN_PASSWORD }}
+          WAIT_TIMEOUT: '180'
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: |
+          echo "=== backend-api logs ===" && docker compose -f docker/compose.yml -f docker/compose.smoke.yml logs --tail=100 backend-api || true
+          echo "=== operator-dashboard logs ===" && docker compose -f docker/compose.yml -f docker/compose.smoke.yml logs --tail=100 operator-dashboard || true
+          echo "=== migration logs ===" && docker compose -f docker/compose.yml -f docker/compose.smoke.yml logs --tail=100 migration || true
+
+      - name: Tear down compose stack
+        if: always()
+        run: |
+          if [[ "${{ env.KEEP_STACK }}" != "true" ]]; then
+            docker compose -f docker/compose.yml -f docker/compose.smoke.yml down -v --remove-orphans
+          fi
