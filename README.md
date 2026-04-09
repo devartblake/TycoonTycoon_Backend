@@ -54,6 +54,7 @@ TycoonTycoon_Backend/
 ├── Tycoon.Backend.Migrations/       # EF Core migrations
 ├── Tycoon.MigrationService/         # Database migration runner service
 ├── Tycoon.OperatorDashboard/        # Blazor Server operator control panel (port 8200)
+├── Tycoon.OperatorDashboard.Django/ # Django operator dashboard (port 8300)
 ├── Tycoon.Sidecar/                  # FastAPI Python sidecar — ML, analytics, webhooks (port 8100)
 ├── Tycoon.AppHost/                  # .NET Aspire orchestration host
 ├── Tycoon.Shared/                   # Shared contracts, DTOs, utilities
@@ -62,22 +63,23 @@ TycoonTycoon_Backend/
 └── scripts/                         # Development automation scripts
 ```
 
-> Operator dashboard container source of truth: **Blazor (`Tycoon.OperatorDashboard`)**.
-> Alternate Next.js dashboard Dockerfiles are archived as `*.txt` and are not part of default compose builds.
+> Operator dashboard container source of truth: **Django (`Tycoon.OperatorDashboard.Django`)**.
+> Blazor dashboard remains available as `operator-dashboard-blazor` for side-by-side validation.
 
 ## 🧭 Operator Dashboard Migration Status
 
-As of **April 4, 2026**:
-- `Tycoon.OperatorDashboard` (Blazor) remains the authoritative production dashboard.
-- `Tycoon.OperatorDashboard.Web` has Wave A BFF foundations (health, proxy groups, typed Wave A endpoints, session bootstrap endpoint).
-- `Tycoon.OperatorDashboard.Vue` has Wave A routes and API-backed loading states for Dashboard, Audit Log, and Users.
+As of **April 8, 2026**:
+- `Tycoon.OperatorDashboard.Django` is now the default operator dashboard service in Docker Compose.
+- `Tycoon.OperatorDashboard` (Blazor) is retained as a legacy comparison target (`operator-dashboard-blazor`).
+- `Tycoon.OperatorDashboard.Web` and `Tycoon.OperatorDashboard.Vue` remain migration reference implementations.
 - Active migration tracker: `docs/OPERATOR_DASHBOARD_MIGRATION_PLAN.md`.
+- Latest status + remaining work tracker: `docs/OPERATOR_DJANGO_NEXT_STEPS_2026-04-05.md`.
 
 ### Technology Stack
 
 - **Runtime**: .NET 9
 - **Web Framework**: ASP.NET Core 9.0 (Minimal API)
-- **Operator Dashboard**: Blazor Server (.NET 9)
+- **Operator Dashboard**: Django 5.2 (primary), Blazor Server (.NET 9 legacy)
 - **ORM**: Entity Framework Core 9.0
 - **Databases**: PostgreSQL 16, MongoDB 7.0
 - **Cache**: Redis 7
@@ -727,6 +729,7 @@ GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs on every PR and
 ### Infrastructure & Setup
 - **[Docker.md](Docker.md)** - Detailed Docker setup and infrastructure guide
 - **[docs/minio-setup.md](docs/minio-setup.md)** - MinIO bucket setup (console, mc CLI, AWS CLI, .NET SDK)
+- **[docs/OPERATOR_DJANGO_NEXT_STEPS_2026-04-05.md](docs/OPERATOR_DJANGO_NEXT_STEPS_2026-04-05.md)** - Django operator dashboard status, next steps, and remaining work
 - **[docs/backend-migrations-analysis.md](docs/backend-migrations-analysis.md)** - Migration strategy and analysis
 
 ### Game Systems
