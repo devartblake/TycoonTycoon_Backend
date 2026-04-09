@@ -468,6 +468,8 @@ services:
       ELASTICSEARCH_USER: "elastic"
       ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD:-tycoon_elastic_password_123}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
+      # Passed through so the config proxy can authenticate against /admin/config
+      ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
     depends_on:
       backend-api:
         condition: service_healthy
@@ -477,7 +479,8 @@ services:
         condition: service_healthy
     networks: [tycoon-net]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      # python:3.12-slim has no curl — use Python stdlib instead
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -581,4 +584,5 @@ volumes:
   # `blazor_dp_keys` (for example `operator-dashboard-blazor`).
   blazor_dp_keys:
   sidecar_inference_data:
+  django_db_data:
   letsencrypt:

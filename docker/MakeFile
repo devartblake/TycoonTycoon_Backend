@@ -1,8 +1,9 @@
-.PHONY: help up up-dev up-prod down restart logs ps clean health migrate shell-postgres shell-mongo shell-redis shell-minio api-logs migration-logs
+.PHONY: help up up-dev up-prod down restart logs ps clean health migrate shell-postgres shell-mongo shell-redis shell-minio api-logs migration-logs smoke smoke-live
 
 # Docker Compose file paths
 COMPOSE = docker compose -f docker/compose.yml
 COMPOSE_DEV = docker compose -f docker/compose.yml -f docker/compose.dev.yml --profile dev
+COMPOSE_SMOKE = docker compose -f docker/compose.yml -f docker/compose.smoke.yml
 COMPOSE_PROD = docker compose -f docker/compose.yml -f docker/compose.prod.yml
 
 # Default target
@@ -37,6 +38,10 @@ help:
 	@echo ""
 	@echo "Production:"
 	@echo "  make up-prod            Start in production mode"
+	@echo ""
+	@echo "Smoke Tests:"
+	@echo "  make smoke              Start stack + run compose smoke tests + tear down"
+	@echo "  make smoke-live         Run smoke tests against already-running stack"
 
 # ===================================
 # Development Commands
@@ -228,3 +233,21 @@ quick-prod:
 	@echo ""
 	@echo "Access:"
 	@echo "  API: http://localhost:5000"
+
+# ===================================
+# Smoke Tests
+# ===================================
+
+## Start stack with smoke overrides, run compose smoke tests, then tear down
+smoke:
+	@echo "🔥 Running compose smoke tests..."
+	@chmod +x ../scripts/compose-smoke.sh
+	$(COMPOSE_SMOKE) up -d --build
+	@STACK_RUNNING=true COMPOSE_FILE=docker/compose.yml COMPOSE_SMOKE_FILE=docker/compose.smoke.yml bash ../scripts/compose-smoke.sh
+	$(COMPOSE_SMOKE) down -v --remove-orphans
+	@echo "✅ Smoke tests complete"
+
+## Run compose smoke tests against already-running stack (no start/stop)
+smoke-live:
+	@chmod +x ../scripts/compose-smoke.sh
+	@STACK_RUNNING=true bash ../scripts/compose-smoke.sh

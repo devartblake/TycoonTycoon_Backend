@@ -33,5 +33,9 @@ class Settings(BaseSettings):
     rebalance_rollout_max_dry_run_age_minutes: int = 180
     rebalance_rollout_max_delivery_age_minutes: int = 180
 
+    # Admin ops key — forwarded as X-Admin-Ops-Key when the sidecar calls
+    # protected .NET admin endpoints (e.g. GET /admin/config).
+    admin_ops_key: str = ""
+
 
 settings = Settings()
