@@ -33,4 +33,5 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - ✅ Auth header/key parity landed between Django and Blazor clients (`ADMIN_OPS_HEADER`, `AdminOps__Key` fallback).
 - ✅ Auth-client test coverage expanded for custom ops-header behavior.
 - 🚧 Staging parallel-run kickoff document created (`docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md`).
+- 🚧 Parallel-run evidence artifact initialized (`docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`).
 - ⚠️ Parallel-run sign-off and rollback-drill artifacts are still outstanding release gates.

@@ -114,6 +114,10 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 - ✅ Updated Django env docs to include `ADMIN_OPS_HEADER`.
 - 🚧 Started staging parallel-run execution package and evidence template (`docs/OPERATOR_PARALLEL_RUN_STAGING_2026-04-08.md`).
 - 🚧 Started quarterly rollback drill plan + artifact log template (`docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`).
+- 🚧 Added in-progress evidence/report artifacts for live execution:
+  - `docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`
+  - `docs/OPERATOR_ROLLBACK_DRILL_REPORT_2026-04-08.md`
+  - `docs/OPERATOR_RELEASE_ARTIFACTS_2026-04.md`
 
 ## Remaining Work (Actionable)
 

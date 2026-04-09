@@ -43,7 +43,7 @@
   "issues": [
     {
       "title": "Execute staging parallel-run validation with real operator accounts",
-      "body": "Run the first full Django vs Blazor staging parallel run, complete workflow matrix, and collect at least two operator sign-offs. Attach evidence pack and close parity gaps.",
+      "body": "Run the first full Django vs Blazor staging parallel run, complete workflow matrix, and collect at least two operator sign-offs. Attach evidence pack and close parity gaps. Note: execution docs and evidence template are already prepared; this issue tracks live staging completion.",
       "labels": ["area/operator-dashboard", "kind/parity", "priority/P0", "status/in-progress"],
       "milestone": "Operator Dashboard Cutover Readiness",
       "sprint": "Sprint 2026-04A",
@@ -52,7 +52,7 @@
     },
     {
       "title": "Execute quarterly staging rollback drill and publish artifacts",
-      "body": "Perform live failover from Django dashboard to Blazor fallback in staging, capture failover metrics, verify critical workflow continuity, and attach drill artifacts to release notes.",
+      "body": "Perform live failover from Django dashboard to Blazor fallback in staging, capture failover metrics, verify critical workflow continuity, and attach drill artifacts to release notes. Note: drill plan/report templates are prepared; this issue tracks live drill execution and artifact completion.",
       "labels": ["area/operator-dashboard", "kind/drill", "priority/P0", "status/in-progress"],
       "milestone": "Operator Dashboard Cutover Readiness",
       "sprint": "Sprint 2026-04A",
