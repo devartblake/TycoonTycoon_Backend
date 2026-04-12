@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using System.Globalization;
 using System.Text.Json;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Models;
@@ -315,7 +316,22 @@ namespace Tycoon.Backend.Api.Features.Analytics
             if (!TryGetString(src, key, out var raw))
                 return false;
 
-            return DateTime.TryParse(raw, out value);
+            if (DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dto))
+            {
+                value = dto.UtcDateTime;
+                return true;
+            }
+
+            if (!DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
+                return false;
+
+            value = parsed.Kind switch
+            {
+                DateTimeKind.Utc => parsed,
+                DateTimeKind.Local => parsed.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(parsed, DateTimeKind.Utc)
+            };
+            return true;
         }
     }
 }

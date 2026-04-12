@@ -3,9 +3,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.AdminStore;
 
@@ -15,10 +18,47 @@ public static class AdminStoreEndpoints
     {
         var g = admin.MapGroup("/store").WithTags("Admin/Store").WithOpenApi();
 
+        g.MapGet("/system/status", GetSystemStatus);
+        g.MapPatch("/system/status", UpdateSystemStatus);
         g.MapGet("/catalog", ListCatalog);
         g.MapPost("/catalog", CreateItem);
         g.MapPatch("/catalog/{id:guid}", UpdateItem);
         g.MapDelete("/catalog/{id:guid}", DeleteItem);
+    }
+
+    private static async Task<IResult> GetSystemStatus(
+        IAppDb db,
+        IConfiguration configuration,
+        CancellationToken ct)
+    {
+        var status = await StoreSystemStatusSupport.GetStatusAsync(db, configuration, ct);
+        return Results.Ok(status);
+    }
+
+    private static async Task<IResult> UpdateSystemStatus(
+        [FromBody] UpdateStoreSystemStatusRequest request,
+        IAppDb db,
+        IConfiguration configuration,
+        CancellationToken ct)
+    {
+        var config = await StoreSystemStatusSupport.GetOrCreateConfigAsync(db, ct);
+
+        Dictionary<string, bool> flags;
+        try
+        {
+            flags = JsonSerializer.Deserialize<Dictionary<string, bool>>(config.FeatureFlagsJson) ?? [];
+        }
+        catch
+        {
+            flags = [];
+        }
+
+        StoreSystemStatusSupport.ApplyUpdate(flags, request);
+        config.Update(enableLogging: null, featureFlagsJson: JsonSerializer.Serialize(flags));
+        await db.SaveChangesAsync(ct);
+
+        var status = await StoreSystemStatusSupport.GetStatusAsync(db, configuration, ct);
+        return Results.Ok(new UpdateStoreSystemStatusResponse(status, config.UpdatedAt));
     }
 
     private static async Task<IResult> ListCatalog(

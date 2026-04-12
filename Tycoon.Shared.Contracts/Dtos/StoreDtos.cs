@@ -150,4 +150,23 @@ namespace Tycoon.Shared.Contracts.Dtos
         string? StripeStatus = null,
         DateTimeOffset? CurrentPeriodEndUtc = null,
         bool CancelAtPeriodEnd = false);
+
+    public sealed record StoreSystemStatusDto(
+        bool StoreEnabled,
+        bool PaymentsEnabled,
+        bool StripeConfigured,
+        bool StripeEnabled,
+        bool PayPalConfigured,
+        bool PayPalEnabled,
+        string Message);
+
+    public sealed record UpdateStoreSystemStatusRequest(
+        bool? StoreEnabled = null,
+        bool? PaymentsEnabled = null,
+        bool? StripeEnabled = null,
+        bool? PayPalEnabled = null);
+
+    public sealed record UpdateStoreSystemStatusResponse(
+        StoreSystemStatusDto Status,
+        DateTimeOffset UpdatedAtUtc);
 }

@@ -28,6 +28,7 @@ namespace Tycoon.Backend.Api.Features.Store
 
             g.MapGet("/catalog", GetCatalog);
             g.MapGet("/catalog/{sku}", GetItem);
+            g.MapGet("/system/status", GetSystemStatus);
             g.MapGet("/inventory/{playerId:guid}", GetInventory).RequireAuthorization();
             g.MapGet("/subscription/status/{playerId:guid}", GetSubscriptionStatus).RequireAuthorization();
             g.MapPost("/subscription/activate", ActivateSubscription).RequireAuthorization();
@@ -68,6 +69,15 @@ namespace Tycoon.Backend.Api.Features.Store
             return Results.Ok(new StoreCatalogDto(items, items.Count));
         }
 
+        private static async Task<IResult> GetSystemStatus(
+            IAppDb db,
+            IConfiguration configuration,
+            CancellationToken ct)
+        {
+            var status = await StoreSystemStatusSupport.GetStatusAsync(db, configuration, ct);
+            return Results.Ok(status);
+        }
+
         private static async Task<IResult> GetItem(
             [FromRoute] string sku,
             IAppDb db,
@@ -90,9 +100,14 @@ namespace Tycoon.Backend.Api.Features.Store
         private static async Task<IResult> Purchase(
             [FromBody] StorePurchaseRequest req,
             IAppDb db,
+            IConfiguration configuration,
             PlayerTransactionService txnService,
             CancellationToken ct)
         {
+            var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);
+            if (storeEnabled is not null)
+                return storeEnabled;
+
             // Validate currency parameter
             var currency = req.Currency?.ToLowerInvariant();
             if (currency is not ("coins" or "diamonds"))
@@ -205,6 +220,10 @@ namespace Tycoon.Backend.Api.Features.Store
             IHttpClientFactory httpClientFactory,
             CancellationToken ct)
         {
+            var paymentsEnabled = await EnsurePaymentsEnabledAsync(db, cfg, ct);
+            if (paymentsEnabled is not null)
+                return paymentsEnabled;
+
             if (req.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(req.Platform) || string.IsNullOrWhiteSpace(req.Receipt))
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId, platform, and receipt are required.");
 
@@ -278,10 +297,15 @@ namespace Tycoon.Backend.Api.Features.Store
             [FromBody] CreateStripeCheckoutSessionRequest req,
             HttpContext httpContext,
             IAppDb db,
+            IConfiguration configuration,
             IStripePaymentGateway stripeGateway,
             IOptions<StripeOptions> stripeOptionsAccessor,
             CancellationToken ct)
         {
+            var stripeEnabled = await EnsureStripeEnabledAsync(db, configuration, ct);
+            if (stripeEnabled is not null)
+                return stripeEnabled;
+
             if (req.PlayerId == Guid.Empty)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
 
@@ -384,10 +408,15 @@ namespace Tycoon.Backend.Api.Features.Store
             [FromBody] CreatePayPalOrderRequest req,
             HttpContext httpContext,
             IAppDb db,
+            IConfiguration configuration,
             IPayPalPaymentGateway payPalGateway,
             IOptions<PayPalOptions> payPalOptionsAccessor,
             CancellationToken ct)
         {
+            var payPalEnabled = await EnsurePayPalEnabledAsync(db, configuration, ct);
+            if (payPalEnabled is not null)
+                return payPalEnabled;
+
             if (req.PlayerId == Guid.Empty)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
 
@@ -459,9 +488,14 @@ namespace Tycoon.Backend.Api.Features.Store
             [FromBody] CapturePayPalOrderRequest req,
             HttpContext httpContext,
             IAppDb db,
+            IConfiguration configuration,
             IPayPalPaymentGateway payPalGateway,
             CancellationToken ct)
         {
+            var payPalEnabled = await EnsurePayPalEnabledAsync(db, configuration, ct);
+            if (payPalEnabled is not null)
+                return payPalEnabled;
+
             if (req.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(req.OrderId))
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId and orderId are required.");
 
@@ -912,10 +946,15 @@ namespace Tycoon.Backend.Api.Features.Store
             [FromBody] CreateStripeSubscriptionCheckoutSessionRequest req,
             HttpContext httpContext,
             IAppDb db,
+            IConfiguration configuration,
             IStripePaymentGateway stripeGateway,
             IOptions<StripeOptions> stripeOptionsAccessor,
             CancellationToken ct)
         {
+            var stripeEnabled = await EnsureStripeEnabledAsync(db, configuration, ct);
+            if (stripeEnabled is not null)
+                return stripeEnabled;
+
             if (req.PlayerId == Guid.Empty)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
 
@@ -1031,10 +1070,15 @@ namespace Tycoon.Backend.Api.Features.Store
             [FromBody] CreatePayPalSubscriptionRequest req,
             HttpContext httpContext,
             IAppDb db,
+            IConfiguration configuration,
             IPayPalPaymentGateway payPalGateway,
             IOptions<PayPalOptions> payPalOptionsAccessor,
             CancellationToken ct)
         {
+            var payPalEnabled = await EnsurePayPalEnabledAsync(db, configuration, ct);
+            if (payPalEnabled is not null)
+                return payPalEnabled;
+
             if (req.PlayerId == Guid.Empty)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
 
@@ -1159,8 +1203,13 @@ namespace Tycoon.Backend.Api.Features.Store
         private static async Task<IResult> ActivateSubscription(
             [FromBody] ActivateSubscriptionRequest req,
             IAppDb db,
+            IConfiguration configuration,
             CancellationToken ct)
         {
+            var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);
+            if (storeEnabled is not null)
+                return storeEnabled;
+
             if (req.PlayerId == Guid.Empty)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
 
@@ -1235,6 +1284,87 @@ namespace Tycoon.Backend.Api.Features.Store
         {
             return Uri.TryCreate(value, UriKind.Absolute, out var uri)
                 && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        }
+
+        private static async Task<IResult?> EnsureStoreEnabledAsync(
+            IAppDb db,
+            IConfiguration configuration,
+            CancellationToken ct)
+        {
+            var status = await StoreSystemStatusSupport.GetStatusAsync(db, configuration, ct);
+            if (status.StoreEnabled)
+                return null;
+
+            return ApiResponses.Error(
+                StatusCodes.Status503ServiceUnavailable,
+                "STORE_DISABLED",
+                "Store transactions are currently disabled.",
+                status);
+        }
+
+        private static async Task<IResult?> EnsurePaymentsEnabledAsync(
+            IAppDb db,
+            IConfiguration configuration,
+            CancellationToken ct)
+        {
+            var status = await StoreSystemStatusSupport.GetStatusAsync(db, configuration, ct);
+            if (!status.StoreEnabled)
+            {
+                return ApiResponses.Error(
+                    StatusCodes.Status503ServiceUnavailable,
+                    "STORE_DISABLED",
+                    "Store transactions are currently disabled.",
+                    status);
+            }
+
+            if (status.PaymentsEnabled)
+                return null;
+
+            return ApiResponses.Error(
+                StatusCodes.Status503ServiceUnavailable,
+                "PAYMENTS_DISABLED",
+                "External payment flows are currently disabled.",
+                status);
+        }
+
+        private static async Task<IResult?> EnsureStripeEnabledAsync(
+            IAppDb db,
+            IConfiguration configuration,
+            CancellationToken ct)
+        {
+            var paymentsGate = await EnsurePaymentsEnabledAsync(db, configuration, ct);
+            if (paymentsGate is not null)
+                return paymentsGate;
+
+            var status = await StoreSystemStatusSupport.GetStatusAsync(db, configuration, ct);
+            if (status.StripeEnabled)
+                return null;
+
+            return ApiResponses.Error(
+                StatusCodes.Status503ServiceUnavailable,
+                "STRIPE_DISABLED",
+                "Stripe payments are currently unavailable.",
+                status);
+        }
+
+        private static async Task<IResult?> EnsurePayPalEnabledAsync(
+            IAppDb db,
+            IConfiguration configuration,
+            CancellationToken ct)
+        {
+            var paymentsGate = await EnsurePaymentsEnabledAsync(db, configuration, ct);
+            if (paymentsGate is not null)
+                return paymentsGate;
+
+            var status = await StoreSystemStatusSupport.GetStatusAsync(db, configuration, ct);
+            if (status.PayPalEnabled)
+                return null;
+
+            return ApiResponses.Error(
+                StatusCodes.Status503ServiceUnavailable,
+                "PAYPAL_DISABLED",
+                "PayPal payments are currently unavailable.",
+                status);
         }
 
         private static Guid CreateDeterministicGuid(string source)
