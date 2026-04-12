@@ -68,6 +68,8 @@ using Tycoon.Backend.Api.Features.Skills;
 using Tycoon.Backend.Api.Features.Users;
 using Tycoon.Backend.Api.Middleware;
 using Tycoon.Backend.Api.Observability;
+using Tycoon.Backend.Api.Payments.PayPal;
+using Tycoon.Backend.Api.Payments.Stripe;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application;
@@ -479,6 +481,10 @@ builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 // Ensure IHttpClientFactory is always available for minimal-API endpoints that
 // take it as a service dependency (avoids startup parameter-inference failures).
 builder.Services.AddHttpClient();
+builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection("PayPal"));
+builder.Services.AddSingleton<IPayPalPaymentGateway, PayPalPaymentGateway>();
+builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
+builder.Services.AddSingleton<IStripePaymentGateway, StripePaymentGateway>();
 
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 

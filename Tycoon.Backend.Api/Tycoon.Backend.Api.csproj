@@ -37,6 +37,7 @@
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Enrichers.Environment" />
+    <PackageReference Include="Stripe.net" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 

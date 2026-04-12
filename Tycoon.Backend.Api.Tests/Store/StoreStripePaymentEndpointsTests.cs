@@ -5,119 +5,125 @@ using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tycoon.Backend.Api.Payments.Stripe;
 using Tycoon.Backend.Api.Tests.TestHost;
+using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Infrastructure.Persistence;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Tests.Store;
 
-public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFactory>
+public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFactory>
 {
     private readonly TycoonApiFactory _factory;
 
-    public StoreSubscriptionEndpointTests(TycoonApiFactory factory)
+    public StoreStripePaymentEndpointsTests(TycoonApiFactory factory)
     {
         _factory = factory;
     }
 
     [Fact]
-    public async Task SubscriptionStatus_WithoutAuth_Returns401()
-    {
-        using var client = _factory.CreateClient();
-        var response = await client.GetAsync($"/store/subscription/status/{Guid.NewGuid()}");
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task ActivateSubscription_ThenStatus_ReturnsActiveSubscription()
-    {
-        using var client = _factory.CreateClient();
-
-        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
-            Email: $"sub-{Guid.NewGuid():N}@example.com",
-            Password: "Passw0rd!",
-            DeviceId: "ios-sim",
-            Username: $"sub_user_{Guid.NewGuid():N}"));
-        signupResp.EnsureSuccessStatusCode();
-
-        var signup = await signupResp.Content.ReadFromJsonAsync<SignupResponse>();
-        signup.Should().NotBeNull();
-        var playerId = Guid.Parse(signup!.UserId);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
-
-        var activate = await client.PostAsJsonAsync("/store/subscription/activate", new ActivateSubscriptionRequest(
-            PlayerId: playerId,
-            Tier: "premium",
-            BillingPeriod: "monthly",
-            ExternalTransactionId: "sub-tx-001"));
-        activate.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var status = await client.GetFromJsonAsync<SubscriptionStatusDto>($"/store/subscription/status/{playerId}");
-        status.Should().NotBeNull();
-        status!.IsActive.Should().BeTrue();
-        status.Tier.Should().Be("premium");
-        status.BillingPeriod.Should().Be("monthly");
-    }
-
-    [Fact]
-    public async Task SubscriptionCheckoutSession_WithAuthenticatedOwner_ReturnsStripeSession()
+    public async Task CreateCheckoutSession_WithAuthenticatedOwner_ReturnsSessionUrl()
     {
         var fakeGateway = new FakeStripePaymentGateway();
         using var factory = CreateFactory(fakeGateway);
         using var client = factory.CreateClient();
 
-        var signup = await SignupAsync(client, "sub-checkout");
-        var playerId = Guid.Parse(signup.UserId);
+        var signup = await SignupAsync(client, "stripe-session");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
 
+        var playerId = Guid.Parse(signup.UserId);
+        await SeedStoreItemAsync(factory, new StoreItem
+        {
+            Sku = "powerup:skip",
+            Name = "Skip Powerup",
+            Description = "Skip one question.",
+            ItemType = "powerup",
+            GrantQuantity = 1,
+            MaxPerPlayer = 0,
+            IsActive = true,
+            SortOrder = 1
+        });
+
         var response = await client.PostAsJsonAsync(
-            "/store/subscription/checkout/session",
-            new CreateStripeSubscriptionCheckoutSessionRequest(playerId, "premium", "monthly"));
+            "/store/payments/checkout/session",
+            new CreateStripeCheckoutSessionRequest(playerId, "powerup:skip", 2));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<CreateStripeSubscriptionCheckoutSessionResponse>();
-        body.Should().NotBeNull();
-        body!.SessionId.Should().Be("cs_sub_test_123");
-        body.PriceId.Should().Be("price_premium_monthly");
 
-        fakeGateway.LastSubscriptionCheckoutRequest.Should().NotBeNull();
-        fakeGateway.LastSubscriptionCheckoutRequest!.PlayerId.Should().Be(playerId);
-        fakeGateway.LastSubscriptionCheckoutRequest.Tier.Should().Be("premium");
-        fakeGateway.LastSubscriptionCheckoutRequest.BillingPeriod.Should().Be("monthly");
+        var body = await response.Content.ReadFromJsonAsync<CreateStripeCheckoutSessionResponse>();
+        body.Should().NotBeNull();
+        body!.SessionId.Should().Be("cs_test_123");
+        body.CheckoutUrl.Should().Be("https://checkout.stripe.test/session/cs_test_123");
+        body.UnitAmount.Should().Be(299);
+        body.TotalAmount.Should().Be(598);
+
+        fakeGateway.LastCheckoutRequest.Should().NotBeNull();
+        fakeGateway.LastCheckoutRequest!.PlayerId.Should().Be(playerId);
+        fakeGateway.LastCheckoutRequest.Sku.Should().Be("powerup:skip");
+        fakeGateway.LastCheckoutRequest.Quantity.Should().Be(2);
     }
 
     [Fact]
-    public async Task SubscriptionWebhook_ThenPortalSession_ReturnsCustomerPortalUrl()
+    public async Task CreateCheckoutSession_WithDifferentAuthenticatedPlayer_ReturnsForbidden()
+    {
+        var fakeGateway = new FakeStripePaymentGateway();
+        using var factory = CreateFactory(fakeGateway);
+        using var client = factory.CreateClient();
+
+        var signup = await SignupAsync(client, "stripe-forbidden");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
+
+        await SeedStoreItemAsync(factory, new StoreItem
+        {
+            Sku = "powerup:skip",
+            Name = "Skip Powerup",
+            Description = "Skip one question.",
+            ItemType = "powerup",
+            GrantQuantity = 1,
+            MaxPerPlayer = 0,
+            IsActive = true,
+            SortOrder = 1
+        });
+
+        var response = await client.PostAsJsonAsync(
+            "/store/payments/checkout/session",
+            new CreateStripeCheckoutSessionRequest(Guid.NewGuid(), "powerup:skip", 1));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await response.HasErrorCodeAsync("FORBIDDEN");
+    }
+
+    [Fact]
+    public async Task StripeWebhook_CompletedCheckout_AppliesTransactionOnce()
     {
         var fakeGateway = new FakeStripePaymentGateway
         {
             NextWebhookEvent = new StripeWebhookEvent(
-                "evt_sub_checkout",
+                "evt_test_checkout",
                 "checkout.session.completed",
                 new StripeWebhookCheckoutCompletedData(
-                    "cs_sub_completed_123",
-                    "subscription",
+                    "cs_completed_123",
+                    "payment",
                     "paid",
                     "usd",
-                    999,
-                    "sub@example.com",
+                    299,
+                    "player@example.com",
                     null,
-                    "sub_123",
-                    "cus_123",
-                    new Dictionary<string, string>()),
-                null)
+                    null,
+                    null,
+                    new Dictionary<string, string>()))
         };
 
         using var factory = CreateFactory(fakeGateway);
         using var client = factory.CreateClient();
 
-        var signup = await SignupAsync(client, "sub-portal");
+        var signup = await SignupAsync(client, "stripe-webhook");
         var playerId = Guid.Parse(signup.UserId);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
 
         fakeGateway.NextWebhookEvent = fakeGateway.NextWebhookEvent with
         {
@@ -126,37 +132,51 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
                 Metadata = new Dictionary<string, string>
                 {
                     ["player_id"] = playerId.ToString(),
-                    ["tier"] = "premium",
-                    ["billing_period"] = "monthly"
+                    ["sku"] = "powerup:skip",
+                    ["quantity"] = "2"
                 }
             }
         };
 
-        using var webhookContent = new StringContent(
-            JsonSerializer.Serialize(new { id = "evt_sub_checkout", type = "checkout.session.completed" }),
+        await SeedStoreItemAsync(factory, new StoreItem
+        {
+            Sku = "powerup:skip",
+            Name = "Skip Powerup",
+            Description = "Skip one question.",
+            ItemType = "powerup",
+            GrantQuantity = 3,
+            MaxPerPlayer = 0,
+            IsActive = true,
+            SortOrder = 1
+        });
+
+        using var content = new StringContent(
+            JsonSerializer.Serialize(new { id = "evt_test_checkout", type = "checkout.session.completed" }),
             Encoding.UTF8,
             "application/json");
 
-        var webhook = await client.PostAsync("/store/payments/webhook", webhookContent);
-        webhook.StatusCode.Should().Be(HttpStatusCode.OK);
+        var first = await client.PostAsync("/store/payments/webhook", content);
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var status = await client.GetFromJsonAsync<SubscriptionStatusDto>($"/store/subscription/status/{playerId}");
-        status.Should().NotBeNull();
-        status!.IsActive.Should().BeTrue();
-        status.StripeSubscriptionId.Should().Be("sub_123");
-        status.StripeCustomerId.Should().Be("cus_123");
+        using var duplicateContent = new StringContent(
+            JsonSerializer.Serialize(new { id = "evt_test_checkout", type = "checkout.session.completed" }),
+            Encoding.UTF8,
+            "application/json");
 
-        var portal = await client.PostAsJsonAsync(
-            "/store/subscription/portal/session",
-            new CreateStripeBillingPortalSessionRequest(playerId));
+        var second = await client.PostAsync("/store/payments/webhook", duplicateContent);
+        second.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        portal.StatusCode.Should().Be(HttpStatusCode.OK);
-        var portalBody = await portal.Content.ReadFromJsonAsync<CreateStripeBillingPortalSessionResponse>();
-        portalBody.Should().NotBeNull();
-        portalBody!.Url.Should().Be("https://billing.stripe.test/session/bps_test_123");
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+        var transactions = db.PlayerTransactions
+            .Include(t => t.Actors)
+            .Include(t => t.ItemChanges)
+            .Where(t => t.Kind == "stripe-checkout-payment")
+            .ToList();
 
-        fakeGateway.LastPortalRequest.Should().NotBeNull();
-        fakeGateway.LastPortalRequest!.CustomerId.Should().Be("cus_123");
+        transactions.Should().HaveCount(1);
+        transactions[0].Actors.Should().ContainSingle(a => a.PlayerId == playerId);
+        transactions[0].ItemChanges.Should().ContainSingle(i => i.ItemType == "powerup:skip" && i.Quantity == 6);
     }
 
     private WebApplicationFactory<Program> CreateFactory(FakeStripePaymentGateway fakeGateway)
@@ -174,6 +194,11 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
                     ["Stripe:SuccessUrl"] = "https://localhost:3000/store/success?session_id={CHECKOUT_SESSION_ID}",
                     ["Stripe:CancelUrl"] = "https://localhost:3000/store/cancel",
                     ["Stripe:PortalReturnUrl"] = "https://localhost:3000/store/subscription",
+                    ["Stripe:DefaultCurrency"] = "usd",
+                    ["Stripe:Catalog:0:Sku"] = "powerup:skip",
+                    ["Stripe:Catalog:0:UnitAmount"] = "299",
+                    ["Stripe:Catalog:0:Currency"] = "usd",
+                    ["Stripe:Catalog:0:ProductName"] = "Skip Powerup",
                     ["Stripe:SubscriptionPlans:0:Tier"] = "premium",
                     ["Stripe:SubscriptionPlans:0:BillingPeriod"] = "monthly",
                     ["Stripe:SubscriptionPlans:0:PriceId"] = "price_premium_monthly",
@@ -207,8 +232,18 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
         return signup!;
     }
 
+    private static async Task SeedStoreItemAsync(WebApplicationFactory<Program> factory, StoreItem item)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+        db.StoreItems.Add(item);
+        await db.SaveChangesAsync();
+    }
+
     private sealed class FakeStripePaymentGateway : IStripePaymentGateway
     {
+        public StripeCheckoutSessionCreateRequest? LastCheckoutRequest { get; private set; }
+
         public StripeSubscriptionCheckoutSessionCreateRequest? LastSubscriptionCheckoutRequest { get; private set; }
 
         public StripeBillingPortalSessionCreateRequest? LastPortalRequest { get; private set; }
@@ -220,7 +255,10 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
             StripeCheckoutSessionCreateRequest request,
             CancellationToken cancellationToken)
         {
-            throw new NotSupportedException();
+            LastCheckoutRequest = request;
+            return Task.FromResult(new StripeCheckoutSessionResult(
+                "cs_test_123",
+                "https://checkout.stripe.test/session/cs_test_123"));
         }
 
         public Task<StripeCheckoutSessionResult> CreateSubscriptionCheckoutSessionAsync(
