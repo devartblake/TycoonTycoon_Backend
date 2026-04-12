@@ -33,9 +33,8 @@ namespace Tycoon.Backend.Api.Features.Analytics
                 {
                     foreach (var item in body.EnumerateArray())
                     {
-                        if (TryMapQuestionAnsweredEvent(item, out var evt))
+                        if (await TryHandleIncomingEventAsync(item, writer, ct))
                         {
-                            await writer.UpsertQuestionAnsweredEventAsync(evt, ct);
                             accepted++;
                         }
                         else
@@ -46,9 +45,8 @@ namespace Tycoon.Backend.Api.Features.Analytics
                 }
                 else if (body.ValueKind == JsonValueKind.Object)
                 {
-                    if (TryMapQuestionAnsweredEvent(body, out var evt))
+                    if (await TryHandleIncomingEventAsync(body, writer, ct))
                     {
-                        await writer.UpsertQuestionAnsweredEventAsync(evt, ct);
                         accepted++;
                     }
                     else
@@ -69,6 +67,43 @@ namespace Tycoon.Backend.Api.Features.Analytics
                 });
             }).AllowAnonymous();
 
+            group.MapPost("/track", async (
+                [FromBody] JsonElement body,
+                IAnalyticsEventWriter writer,
+                CancellationToken ct) =>
+            {
+                if (body.ValueKind != JsonValueKind.Object)
+                {
+                    return Results.Accepted(value: new
+                    {
+                        accepted = 0,
+                        skipped = 1,
+                        message = "Analytics track request accepted."
+                    });
+                }
+
+                if (TryExtractTrackRequest(body, out var eventName, out var payload, out var timestampUtc) &&
+                    string.Equals(eventName, "question_answered", StringComparison.OrdinalIgnoreCase) &&
+                    TryMapQuestionAnsweredEvent(payload, timestampUtc, out var evt))
+                {
+                    await writer.UpsertQuestionAnsweredEventAsync(evt, ct);
+
+                    return Results.Accepted(value: new
+                    {
+                        accepted = 1,
+                        skipped = 0,
+                        message = "Analytics track event accepted."
+                    });
+                }
+
+                return Results.Accepted(value: new
+                {
+                    accepted = 0,
+                    skipped = 1,
+                    message = "Analytics track event accepted."
+                });
+            }).AllowAnonymous();
+
             // Frontend compatibility endpoint. Some clients post app startup telemetry to
             // /analytics/startup_event. We accept and no-op so clients don't fail noisily.
             group.MapPost("/startup_event", (
@@ -82,9 +117,102 @@ namespace Tycoon.Backend.Api.Features.Analytics
                     message = "Startup analytics event accepted."
                 });
             }).AllowAnonymous();
+
+            group.MapPost("/session_start", (
+                [FromBody] JsonElement body,
+                CancellationToken ct) =>
+            {
+                return Results.Accepted(value: new
+                {
+                    accepted = 0,
+                    skipped = 1,
+                    message = "Session analytics event accepted."
+                });
+            }).AllowAnonymous();
+        }
+
+        private static async Task<bool> TryHandleIncomingEventAsync(
+            JsonElement src,
+            IAnalyticsEventWriter writer,
+            CancellationToken ct)
+        {
+            if (TryMapQuestionAnsweredEvent(src, out var directEvent))
+            {
+                await writer.UpsertQuestionAnsweredEventAsync(directEvent, ct);
+                return true;
+            }
+
+            if (TryExtractEnvelopePayload(src, out var payload) &&
+                TryMapQuestionAnsweredEvent(payload, out var wrappedEvent))
+            {
+                await writer.UpsertQuestionAnsweredEventAsync(wrappedEvent, ct);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryExtractEnvelopePayload(JsonElement src, out JsonElement payload)
+        {
+            payload = default;
+
+            if (src.ValueKind != JsonValueKind.Object)
+                return false;
+
+            if (src.TryGetProperty("event", out var eventProp) &&
+                eventProp.ValueKind == JsonValueKind.String)
+            {
+                var eventName = eventProp.GetString();
+                if (!string.Equals(eventName, "question_answered", StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            if (!src.TryGetProperty("payload", out var payloadProp) ||
+                payloadProp.ValueKind != JsonValueKind.Object)
+            {
+                return false;
+            }
+
+            payload = payloadProp;
+            return true;
+        }
+
+        private static bool TryExtractTrackRequest(
+            JsonElement src,
+            out string eventName,
+            out JsonElement payload,
+            out DateTime? timestampUtc)
+        {
+            eventName = string.Empty;
+            payload = default;
+            timestampUtc = null;
+
+            if (src.ValueKind != JsonValueKind.Object)
+                return false;
+
+            if (!TryGetString(src, "eventName", out eventName))
+                return false;
+
+            if (!src.TryGetProperty("properties", out var properties) ||
+                properties.ValueKind != JsonValueKind.Object)
+            {
+                return false;
+            }
+
+            if (TryGetDateTime(src, "timestamp", out var parsedTimestamp))
+                timestampUtc = parsedTimestamp;
+
+            payload = properties;
+            return true;
         }
 
         private static bool TryMapQuestionAnsweredEvent(JsonElement src, out QuestionAnsweredAnalyticsEvent evt)
+            => TryMapQuestionAnsweredEvent(src, null, out evt);
+
+        private static bool TryMapQuestionAnsweredEvent(
+            JsonElement src,
+            DateTime? fallbackAnsweredAtUtc,
+            out QuestionAnsweredAnalyticsEvent evt)
         {
             evt = default!;
 
@@ -106,7 +234,7 @@ namespace Tycoon.Backend.Api.Features.Analytics
             var pointsAwarded = TryGetInt(src, "pointsAwarded", out var pointsAwardedValue) ? pointsAwardedValue : 0;
             var answeredAtUtc = TryGetDateTime(src, "answeredAtUtc", out var answeredAtUtcValue)
                 ? answeredAtUtcValue
-                : DateTime.UtcNow;
+                : (fallbackAnsweredAtUtc ?? DateTime.UtcNow);
 
             // ── Synaptix analytics dimensions (optional, nullable) ──
             var synaptixMode = TryGetString(src, "synaptixMode", out var synaptixModeValue) ? synaptixModeValue : null;
