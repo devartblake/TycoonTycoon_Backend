@@ -1,0 +1,24 @@
+# Web framework
+fastapi>=0.115
+uvicorn[standard]>=0.30
+httpx>=0.27
+pydantic-settings>=2.0
+
+# Background settlement worker
+apscheduler>=3.10
+
+# Database — settlement log
+motor>=3.3
+
+# Phase 1: Solana (SOL native + SNX SPL token)
+solders>=0.21
+solana>=0.34
+spl-token>=0.2
+base58>=2.1
+
+# Phase 1: XRP Ledger
+xrpl-py>=2.4
+
+# Phase 2: Ethereum / EVM — uncomment when implementing SHIB
+# web3>=7.0
+# eth-account>=0.10
