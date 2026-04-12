@@ -1,0 +1,5 @@
+[project]
+name = "synaptix-crypto-service"
+version = "0.1.0"
+description = "Multi-chain cryptocurrency settlement service for Synaptix — handles SOL, XRP, SHIB, and the native SNX token."
+requires-python = ">=3.12"

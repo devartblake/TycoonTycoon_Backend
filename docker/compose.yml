@@ -487,6 +487,50 @@ services:
       start_period: 20s
 
   # ================================
+  # Crypto Settlement Service (Python)
+  # ================================
+  crypto-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.crypto
+    container_name: tycoon_crypto_service
+    restart: unless-stopped
+    ports:
+      - "${CRYPTO_SERVICE_PORT:-8300}:8300"
+    environment:
+      BACKEND_BASE_URL: "http://backend-api:5000"
+      ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+      MONGO_URL: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
+      MONGO_DB: "tycoon_crypto"
+      # Solana (SOL native + SNX SPL token)
+      SOLANA_RPC_URL: "${SOLANA_RPC_URL:-https://api.devnet.solana.com}"
+      SOLANA_TREASURY_KEYPAIR_PATH: "/run/secrets/solana-treasury"
+      SNX_MINT_ADDRESS: "${SNX_MINT_ADDRESS:-}"
+      # XRP Ledger
+      XRPL_NODE_URL: "${XRPL_NODE_URL:-wss://s.altnet.rippletest.net:51233}"
+      XRPL_TREASURY_SEED: "${XRPL_TREASURY_SEED:-}"
+      # Ethereum / SHIB (Phase 2 — leave blank to disable)
+      ETHEREUM_RPC_URL: "${ETHEREUM_RPC_URL:-}"
+      # Settlement worker
+      SETTLEMENT_POLL_INTERVAL_SECONDS: "${SETTLEMENT_POLL_INTERVAL:-30}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+    volumes:
+      # Treasury keypair — NEVER bake into image; mount read-only from host secrets dir
+      - "${SOLANA_TREASURY_KEY_PATH:-./secrets/solana-treasury.json}:/run/secrets/solana-treasury:ro"
+    depends_on:
+      backend-api:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks: [tycoon-net]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8300/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ================================
   # Operator Dashboard (Django) — PRIMARY/AUTHORITATIVE TARGET
   # ================================
   operator-dashboard:
@@ -588,4 +632,5 @@ volumes:
   blazor_dp_keys:
   sidecar_inference_data:
   django_db_data:
+  crypto_settlement_data:
   letsencrypt:
