@@ -16,7 +16,7 @@ Usage:
 Output: mint address printed to stdout (store in SNX_MINT_ADDRESS env var).
 
 Prerequisites:
-    pip install solders solana spl-token base58
+    pip install solders solana base58
 """
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def main() -> None:
         from spl.token.constants import TOKEN_PROGRAM_ID
     except ImportError as exc:
         print(f"ERROR: missing dependencies — {exc}", file=sys.stderr)
-        print("Run: pip install solders solana spl-token", file=sys.stderr)
+        print("Run: pip install solders solana base58", file=sys.stderr)
         sys.exit(1)
 
     # Load treasury keypair

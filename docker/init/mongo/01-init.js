@@ -3,6 +3,10 @@ print('Starting MongoDB initialization...');
 const appDb = process.env.MONGO_APP_DB || 'tycoon_db';
 const appUser = process.env.MONGO_APP_USER || 'tycoon_app_user';
 const appPassword = process.env.MONGO_APP_PASSWORD || 'tycoon_app_password_123';
+const extraDbs = (process.env.MONGO_EXTRA_DBS || 'tycoon_analytics,tycoon_crypto')
+  .split(',')
+  .map(x => x.trim())
+  .filter(Boolean);
 
 db = db.getSiblingDB(appDb);
 
@@ -34,7 +38,12 @@ db.game_events.createIndex({ timestamp: -1 });
 db.createUser({
   user: appUser,
   pwd: appPassword,
-  roles: [{ role: 'readWrite', db: appDb }]
+  roles: [
+    { role: 'readWrite', db: appDb },
+    ...extraDbs
+      .filter(x => x !== appDb)
+      .map(x => ({ role: 'readWrite', db: x }))
+  ]
 });
 
-print(`MongoDB initialization completed successfully! DB=${appDb}, user=${appUser}`);
+print(`MongoDB initialization completed successfully! DB=${appDb}, extra=${extraDbs.join(',')}, user=${appUser}`);

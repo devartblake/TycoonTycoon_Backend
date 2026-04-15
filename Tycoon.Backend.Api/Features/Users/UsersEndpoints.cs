@@ -19,11 +19,37 @@ namespace Tycoon.Backend.Api.Features.Users
                 .RequireAuthorization();
 
             usersGroup.MapGet("/search", SearchUsers);
+            usersGroup.MapGet("/me", GetCurrentUserProfile);
             usersGroup.MapGet("/{userId:guid}/career-summary", GetCareerSummary);
             usersGroup.MapPatch("/me", UpdateCurrentUserProfile);
             usersGroup.MapGet("/me/wallet", GetMyWallet);
             usersGroup.MapGet("/me/transactions", GetMyTransactions);
             usersGroup.MapPost("/me/onboarding-reward", ClaimOnboardingReward);
+        }
+
+        private static async Task<IResult> GetCurrentUserProfile(
+            HttpContext httpContext,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            if (!TryGetUserId(httpContext, out var userId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            var currentUser = await database.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId, cancellation);
+
+            if (currentUser is null)
+                return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "User not found.");
+
+            return Results.Ok(new UserDto(
+                currentUser.Id,
+                currentUser.Handle,
+                currentUser.Email,
+                currentUser.Country,
+                currentUser.Tier,
+                currentUser.Mmr
+            ));
         }
 
         private static async Task<IResult> SearchUsers(

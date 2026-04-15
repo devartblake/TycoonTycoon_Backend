@@ -216,7 +216,24 @@ builder.Services.AddSwaggerGen(c =>
     c.UseInlineDefinitionsForEnums();
 });
 
-builder.Services.AddCors();
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins);
+        }
+    });
+});
 
 // Analytics
 var analyticsEnabled = builder.Configuration.GetValue("Analytics:Enabled", false);
@@ -507,15 +524,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
-var allowedOrigins = builder.Configuration
-    .GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-app.UseCors(c => c.AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials()
-                  .SetIsOriginAllowedToAllowWildcardSubdomains()
-                  .WithOrigins(allowedOrigins));
 app.UseWebSockets();
 app.UseRateLimiter();
 app.UseMiddleware<AdminOpsKeyMiddleware>();
@@ -626,23 +637,6 @@ app.MapGet("/health/ready", () =>
     };
     return Results.Ok(health);
 }).AllowAnonymous().WithTags("Health");
-
-app.MapGet("/users/me", (ClaimsPrincipal user) =>
-{
-    var subject = user.FindFirstValue(ClaimTypes.NameIdentifier)
-                  ?? user.FindFirstValue("sub")
-                  ?? user.Identity?.Name;
-
-    var email = user.FindFirstValue(ClaimTypes.Email);
-
-    return Results.Ok(new
-    {
-        subject,
-        email,
-        isAuthenticated = user.Identity?.IsAuthenticated ?? false,
-        claims = user.Claims.Select(c => new { c.Type, c.Value })
-    });
-}).RequireAuthorization().WithTags("Users").WithOpenApi();
 
 // ✅ Swagger test endpoint (for debugging)
 app.MapGet("/swagger-debug", () =>
