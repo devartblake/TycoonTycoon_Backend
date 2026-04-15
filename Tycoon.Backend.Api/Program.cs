@@ -2,6 +2,7 @@
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -18,6 +19,7 @@ using System.Net.WebSockets;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Tycoon.Backend.Api.Features.AdminAnalytics;
@@ -73,6 +75,7 @@ using Tycoon.Backend.Api.Payments.Stripe;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application;
+using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Writers;
 using Tycoon.Backend.Application.Auth;
@@ -489,6 +492,7 @@ builder.Services.AddSingleton<IMatchmakingNotifier, SignalRMatchmakingNotifier>(
 builder.Services.AddSingleton<IPartyMatchmakingNotifier, SignalRPartyMatchmakingNotifier>();
 builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
+builder.Services.AddSingleton<IPresenceSessionManager, PresenceSessionManager>();
 builder.Services.AddSingleton<IGameEventNotifier, SignalRGameEventNotifier>();
 builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
 builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
@@ -663,29 +667,111 @@ app.MapGet("/swagger-debug", () =>
     }
 }).AllowAnonymous().WithTags("Debug");
 
-// WebSocket endpoint
+// WebSocket endpoint — handles presence protocol
 app.Map("/ws", async context =>
 {
-    if (context.WebSockets.IsWebSocketRequest)
-    {
-        using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-
-        // Send welcome message
-        var welcomeMsg = Encoding.UTF8.GetBytes("{\"op\":\"hello\",\"ts\":" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + "}");
-        await webSocket.SendAsync(
-            new ArraySegment<byte>(welcomeMsg),
-            WebSocketMessageType.Text,
-            true,
-            CancellationToken.None
-        );
-
-        // Keep connection alive
-        await HandleWebSocket(webSocket);
-    }
-    else
+    if (!context.WebSockets.IsWebSocketRequest)
     {
         context.Response.StatusCode = 400;
         await context.Response.WriteAsync("WebSocket connection required");
+        return;
+    }
+
+    var presenceMgr = context.RequestServices.GetRequiredService<IPresenceSessionManager>();
+    var registry = context.RequestServices.GetRequiredService<IConnectionRegistry>();
+    var scopeFactory = context.RequestServices.GetRequiredService<IServiceScopeFactory>();
+
+    // Extract playerId from query string (same pattern as MatchHub)
+    var playerIdStr = context.Request.Query["playerId"].ToString();
+    Guid.TryParse(playerIdStr, out var playerId);
+
+    using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+    // Send hello
+    var helloBytes = Encoding.UTF8.GetBytes("{\"op\":\"hello\",\"ts\":" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + "}");
+    await webSocket.SendAsync(new ArraySegment<byte>(helloBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+
+    var connectedFriendIds = new List<Guid>();
+
+    if (playerId != Guid.Empty)
+    {
+        presenceMgr.Register(playerId, webSocket);
+        registry.Add(playerId, playerIdStr); // use playerIdStr as connectionId for registry compat
+
+        // Load friend IDs and send bulk presence snapshot
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IAppDb>();
+            connectedFriendIds = await db.FriendEdges
+                .Where(e => e.PlayerId == playerId)
+                .Select(e => e.FriendPlayerId)
+                .ToListAsync(CancellationToken.None);
+        }
+
+        // Send initial bulk snapshot of which friends are online
+        var onlineFriends = presenceMgr.GetConnectedPlayerIds()
+            .Where(id => connectedFriendIds.Contains(id))
+            .Select(id =>
+            {
+                var act = presenceMgr.GetActivity(id);
+                return new
+                {
+                    userId = id.ToString(),
+                    status = act?.Status ?? "online",
+                    activity = act?.Activity,
+                    lastSeen = DateTimeOffset.UtcNow
+                };
+            })
+            .ToList();
+
+        var bulkPayload = JsonSerializer.Serialize(new
+        {
+            op = "presence.bulk",
+            ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            data = new { presences = onlineFriends }
+        });
+        await webSocket.SendAsync(
+            new ArraySegment<byte>(Encoding.UTF8.GetBytes(bulkPayload)),
+            WebSocketMessageType.Text, true, CancellationToken.None);
+
+        // Notify each connected friend that this player is now online
+        var onlineNotify = JsonSerializer.Serialize(new
+        {
+            op = "presence.update",
+            ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            data = new { userId = playerId.ToString(), status = "online", lastSeen = DateTimeOffset.UtcNow }
+        });
+        foreach (var friendId in connectedFriendIds)
+            await presenceMgr.SendToPlayerAsync(friendId, onlineNotify, CancellationToken.None);
+    }
+
+    await HandleWebSocket(webSocket, playerId, connectedFriendIds, presenceMgr, registry, scopeFactory);
+
+    // Cleanup on disconnect
+    if (playerId != Guid.Empty)
+    {
+        presenceMgr.Unregister(playerId);
+        registry.Remove(playerId, playerIdStr);
+
+        // Notify friends this player went offline
+        List<Guid> friendIds2;
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IAppDb>();
+            friendIds2 = await db.FriendEdges
+                .Where(e => e.PlayerId == playerId)
+                .Select(e => e.FriendPlayerId)
+                .ToListAsync(CancellationToken.None);
+        }
+
+        var offlineMsg = JsonSerializer.Serialize(new
+        {
+            op = "presence.update",
+            ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            data = new { userId = playerId.ToString(), status = "offline", lastSeen = DateTimeOffset.UtcNow }
+        });
+        foreach (var friendId in friendIds2)
+            await presenceMgr.SendToPlayerAsync(friendId, offlineMsg, CancellationToken.None);
     }
 });
 
@@ -705,6 +791,7 @@ app.MapGrpcService<MobileMatchGrpcService>();
 AnalyticsEndpoints.Map(app);
 AuthEndpoints.Map(app);
 UsersEndpoints.Map(app);
+UserFriendsEndpoints.Map(app);
 PlayerPreferencesEndpoints.Map(app);
 PlayersEndpoints.Map(app);
 MatchesEndpoints.Map(app);
@@ -790,34 +877,145 @@ if (app.Environment.IsDevelopment())
 
 app.Run();
 
-async Task HandleWebSocket(WebSocket webSocket)
+async Task HandleWebSocket(
+    WebSocket webSocket,
+    Guid playerId,
+    List<Guid>? friendIds,
+    IPresenceSessionManager presenceMgr,
+    IConnectionRegistry registry,
+    IServiceScopeFactory scopeFactory)
 {
-    var buffer = new byte[1024 * 4];
+    var buffer = new byte[1024 * 16];
 
     while (webSocket.State == WebSocketState.Open)
     {
-        var result = await webSocket.ReceiveAsync(
-            new ArraySegment<byte>(buffer),
-            CancellationToken.None
-        );
+        WebSocketReceiveResult result;
+        try
+        {
+            result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        }
+        catch (WebSocketException)
+        {
+            break;
+        }
 
         if (result.MessageType == WebSocketMessageType.Close)
         {
-            await webSocket.CloseAsync(
-                WebSocketCloseStatus.NormalClosure,
-                "Closing",
-                CancellationToken.None
-            );
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+            break;
         }
-        else
+
+        if (result.MessageType != WebSocketMessageType.Text || playerId == Guid.Empty)
+            continue;
+
+        var msgText = Encoding.UTF8.GetString(buffer, 0, result.Count);
+
+        JsonDocument doc;
+        try { doc = JsonDocument.Parse(msgText); }
+        catch { continue; }
+
+        using (doc)
         {
-            // Echo back for testing
-            await webSocket.SendAsync(
-                new ArraySegment<byte>(buffer, 0, result.Count),
-                result.MessageType,
-                result.EndOfMessage,
-                CancellationToken.None
-            );
+            if (!doc.RootElement.TryGetProperty("op", out var opEl))
+                continue;
+
+            var op = opEl.GetString();
+
+            switch (op)
+            {
+                case "presence.subscribe":
+                {
+                    // Return a bulk snapshot for the requested userIds
+                    List<string> requestedIds = new();
+                    if (doc.RootElement.TryGetProperty("data", out var data) &&
+                        data.TryGetProperty("userIds", out var userIdsEl))
+                    {
+                        foreach (var el in userIdsEl.EnumerateArray())
+                        {
+                            var idStr = el.GetString();
+                            if (idStr is not null) requestedIds.Add(idStr);
+                        }
+                    }
+
+                    var presences = requestedIds
+                        .Where(id => Guid.TryParse(id, out _))
+                        .Select(id =>
+                        {
+                            var pid = Guid.Parse(id);
+                            var act = presenceMgr.GetActivity(pid);
+                            var isOnline = presenceMgr.GetConnectedPlayerIds().Contains(pid);
+                            return new
+                            {
+                                userId = id,
+                                status = isOnline ? (act?.Status ?? "online") : "offline",
+                                activity = act?.Activity,
+                                lastSeen = DateTimeOffset.UtcNow
+                            };
+                        })
+                        .ToList();
+
+                    var bulkResp = JsonSerializer.Serialize(new
+                    {
+                        op = "presence.bulk",
+                        ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        data = new { presences }
+                    });
+                    await webSocket.SendAsync(
+                        new ArraySegment<byte>(Encoding.UTF8.GetBytes(bulkResp)),
+                        WebSocketMessageType.Text, true, CancellationToken.None);
+                    break;
+                }
+
+                case "presence.update":
+                {
+                    // Update this player's activity and broadcast to friends
+                    if (!doc.RootElement.TryGetProperty("data", out var data))
+                        break;
+
+                    var status = data.TryGetProperty("status", out var statusEl) ? statusEl.GetString() : "online";
+                    var activity = data.TryGetProperty("activity", out var actEl) ? actEl.GetString() : null;
+                    JsonElement? gameActivity = data.TryGetProperty("gameActivity", out var gaEl) ? gaEl : null;
+
+                    presenceMgr.SetActivity(playerId, new PresenceActivity(
+                        status ?? "online",
+                        activity,
+                        gameActivity));
+
+                    // Broadcast to friends who are connected
+                    if (friendIds is null)
+                    {
+                        using var scope = scopeFactory.CreateScope();
+                        var db = scope.ServiceProvider.GetRequiredService<IAppDb>();
+                        friendIds = await db.FriendEdges
+                            .Where(e => e.PlayerId == playerId)
+                            .Select(e => e.FriendPlayerId)
+                            .ToListAsync(CancellationToken.None);
+                    }
+
+                    var updateMsg = JsonSerializer.Serialize(new
+                    {
+                        op = "presence.update",
+                        ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        data = new
+                        {
+                            userId = playerId.ToString(),
+                            status = status ?? "online",
+                            activity,
+                            gameActivity,
+                            lastSeen = DateTimeOffset.UtcNow
+                        }
+                    });
+
+                    foreach (var friendId in friendIds)
+                        await presenceMgr.SendToPlayerAsync(friendId, updateMsg, CancellationToken.None);
+
+                    break;
+                }
+
+                case "presence.unsubscribe":
+                    // No-op: server routes via friend graph, not per-subscription
+                    break;
+            }
         }
     }
 }

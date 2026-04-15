@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Realtime;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Social
 {
-    public sealed class FriendsService(IAppDb db)
+    public sealed class FriendsService(IAppDb db, IPresenceReader presenceReader)
     {
         public async Task<FriendRequestDto> SendRequestAsync(Guid fromPlayerId, Guid toPlayerId, CancellationToken ct)
         {
@@ -185,12 +186,96 @@ namespace Tycoon.Backend.Application.Social
 
             var total = await q.CountAsync(ct);
 
-            var items = await q.Skip((page - 1) * pageSize)
+            // Join with Users to get display names
+            var rows = await q.Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new FriendDto(x.FriendPlayerId, x.CreatedAtUtc))
+                .Join(db.Users.AsNoTracking(),
+                    edge => edge.FriendPlayerId,
+                    user => user.Id,
+                    (edge, user) => new
+                    {
+                        edge.FriendPlayerId,
+                        user.Handle,
+                        edge.CreatedAtUtc
+                    })
                 .ToListAsync(ct);
 
+            // Check online status for this page of friends
+            var friendIds = rows.Select(r => r.FriendPlayerId).ToList();
+            var onlineIds = await presenceReader.GetOnlineAsync(friendIds, ct);
+            var onlineSet = new HashSet<Guid>(onlineIds);
+
+            var items = rows.Select(r => new FriendDto(
+                FriendPlayerId: r.FriendPlayerId,
+                DisplayName: r.Handle,
+                Username: r.Handle,
+                AvatarUrl: null,
+                IsOnline: onlineSet.Contains(r.FriendPlayerId),
+                LastSeenUtc: null,
+                SinceUtc: r.CreatedAtUtc
+            )).ToList();
+
             return new FriendsListResponseDto(page, pageSize, total, items);
+        }
+
+        public async Task<FriendRequestsDetailListResponseDto> ListRequestsDetailAsync(
+            Guid playerId,
+            string box,
+            int page,
+            int pageSize,
+            CancellationToken ct)
+        {
+            if (playerId == Guid.Empty)
+                throw new ArgumentException("playerId cannot be empty.");
+
+            page = page <= 0 ? 1 : page;
+            pageSize = pageSize is <= 0 or > 200 ? 50 : pageSize;
+
+            var q = db.FriendRequests.AsNoTracking();
+
+            box = (box ?? "all").Trim().ToLowerInvariant();
+            q = box switch
+            {
+                "incoming" => q.Where(x => x.ToPlayerId == playerId && x.Status == "Pending"),
+                "outgoing" => q.Where(x => x.FromPlayerId == playerId),
+                _ => q.Where(x => x.ToPlayerId == playerId || x.FromPlayerId == playerId)
+            };
+
+            q = q.OrderBy(x => x.Status == "Pending" ? 0 : 1)
+                 .ThenByDescending(x => x.CreatedAtUtc);
+
+            var total = await q.CountAsync(ct);
+
+            var rows = await q.Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Join(db.Users.AsNoTracking(),
+                    req => req.FromPlayerId,
+                    user => user.Id,
+                    (req, user) => new
+                    {
+                        req.Id,
+                        req.FromPlayerId,
+                        SenderHandle = user.Handle,
+                        req.ToPlayerId,
+                        req.Status,
+                        req.CreatedAtUtc,
+                        req.RespondedAtUtc
+                    })
+                .ToListAsync(ct);
+
+            var items = rows.Select(r => new FriendRequestDetailDto(
+                RequestId: r.Id,
+                FromPlayerId: r.FromPlayerId,
+                SenderDisplayName: r.SenderHandle,
+                SenderUsername: r.SenderHandle,
+                SenderAvatarUrl: null,
+                ToPlayerId: r.ToPlayerId,
+                Status: r.Status,
+                CreatedAtUtc: r.CreatedAtUtc,
+                RespondedAtUtc: r.RespondedAtUtc
+            )).ToList();
+
+            return new FriendRequestsDetailListResponseDto(page, pageSize, total, items);
         }
 
         public async Task RemoveFriendAsync(Guid playerId, Guid friendPlayerId, CancellationToken ct)

@@ -13,9 +13,36 @@
         DateTimeOffset? RespondedAtUtc
     );
 
+    // Enriched request DTO — includes sender profile for display in the UI
+    public sealed record FriendRequestDetailDto(
+        Guid RequestId,
+        Guid FromPlayerId,
+        string SenderDisplayName,
+        string SenderUsername,
+        string? SenderAvatarUrl,
+        Guid ToPlayerId,
+        string Status,
+        DateTimeOffset CreatedAtUtc,
+        DateTimeOffset? RespondedAtUtc
+    );
+
     public sealed record FriendDto(
         Guid FriendPlayerId,
+        string DisplayName,
+        string Username,
+        string? AvatarUrl,
+        bool IsOnline,
+        DateTimeOffset? LastSeenUtc,
         DateTimeOffset SinceUtc
+    );
+
+    public sealed record FriendSuggestionDto(
+        Guid Id,
+        string DisplayName,
+        string Username,
+        string? AvatarUrl,
+        int MutualFriendCount,
+        string Reason
     );
 
     public sealed record FriendsListResponseDto(
@@ -30,6 +57,13 @@
         int PageSize,
         int Total,
         IReadOnlyList<FriendRequestDto> Items
+    );
+
+    public sealed record FriendRequestsDetailListResponseDto(
+        int Page,
+        int PageSize,
+        int Total,
+        IReadOnlyList<FriendRequestDetailDto> Items
     );
 
     // --- Party ---
