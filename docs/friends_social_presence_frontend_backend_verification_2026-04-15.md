@@ -4,6 +4,14 @@
 **Audience:** Backend / Platform Team  
 **Purpose:** Confirm that the Flutter frontend is now wired to the correct friends, social, and presence endpoints and aligned with the intended backend contracts.
 
+**Verification status:** Cross-checked against the backend route mappings and DTOs in:
+
+- `Tycoon.Backend.Api/Features/Users/UserFriendsEndpoints.cs`
+- `Tycoon.Backend.Api/Features/Friends/FriendsEndpoints.cs`
+- `Tycoon.Backend.Api/Features/Users/UsersEndpoints.cs`
+- `Tycoon.Shared.Contracts/Dtos/SocialDtos.cs`
+- `Tycoon.Backend.Api/Program.cs`
+
 ---
 
 ## Summary
@@ -111,6 +119,8 @@ Primary frontend files involved:
 
 **Expected response envelope**
 
+The backend now returns `page`, `pageSize`, `total`, `totalPages`, and `items`.
+
 ```json
 {
   "page": 1,
@@ -160,6 +170,8 @@ Primary frontend files involved:
 - `AddFriendByUsernameScreen`
 
 **Expected response envelope**
+
+The backend now returns `page`, `pageSize`, `total`, `totalPages`, and `items`.
 
 Same envelope and item shape as incoming requests.
 
@@ -231,7 +243,7 @@ The frontend also supports idempotent responses where `status` may already be `"
 
 **Expected response**
 
-Updated friend request DTO with `status: "Accepted"`.
+Updated base friend request DTO with `status: "Accepted"`.
 
 ---
 
@@ -255,7 +267,7 @@ Updated friend request DTO with `status: "Accepted"`.
 
 **Expected response**
 
-Updated friend request DTO with `status: "Declined"`.
+Updated base friend request DTO with `status: "Declined"`.
 
 ---
 
@@ -310,34 +322,29 @@ Bare JSON list:
 - `BackendProfileSocialService.removeFriend()`
 - `FriendsScreen`
 
-**Current request body sent by frontend**
+**Backend request body currently supported**
 
 ```json
 {
   "playerId": "current-user-guid",
-  "friendId": "friend-guid",
-  "targetUserId": "friend-guid",
   "friendPlayerId": "friend-guid"
 }
 ```
 
-**Why multiple field names are being sent**
+The backend canonical contract is `playerId` plus `friendPlayerId`.
 
-The frontend intentionally sends `friendId`, `targetUserId`, and `friendPlayerId` together as a temporary compatibility shim while the alpha contract settles. Earlier discussions and legacy code referenced different parameter names.
+For compatibility during the frontend transition, the backend also accepts:
 
-**Backend confirmation requested**
-
-Please confirm which single field name should remain long-term for the delete payload. The frontend can be tightened immediately once the canonical body shape is confirmed.
+- `friendId`
+- `targetUserId`
 
 **Accepted frontend success conditions**
 
-The current UI treats the request as successful when:
+The backend currently returns:
 
-- the response body is empty, or
-- `removed == true`, or
-- `success == true`
+- `204 No Content` on success
 
-If the backend intends a stricter success response, please confirm that as well.
+No `{ "removed": true }` or `{ "success": true }` response is currently implemented on this route.
 
 ---
 
@@ -352,29 +359,36 @@ If the backend intends a stricter success response, please confirm that as well.
 - `BackendProfileSocialService.searchUsers()`
 - `AddFriendByUsernameScreen`
 
-**Current frontend parsing fallback**
+**Backend response currently returned**
 
-The frontend accepts result arrays under any of these keys:
+The backend now returns a paged envelope:
 
-- `items`
-- `users`
-- `results`
-- `data`
+```json
+{
+  "page": 1,
+  "pageSize": 20,
+  "total": 1,
+  "totalPages": 1,
+  "items": [
+    {
+      "id": "guid",
+      "handle": "sarah_chen",
+      "displayName": "sarah_chen",
+      "username": "sarah_chen",
+      "country": "US",
+      "tier": "Bronze",
+      "mmr": 1200
+    }
+  ]
+}
+```
 
-Each item is then expected to contain:
+Canonical backend details today:
 
-- `id` or `userId`
-- `handle` or `username` or `userName`
-- optionally `displayName` or `name`
-
-**Backend confirmation requested**
-
-This route was already present in the codebase and is still being used for add-by-username. Please confirm:
-
-1. That `/users/search` is still the intended endpoint
+1. `/users/search` is implemented and requires authorization
 2. The canonical query parameter name is `handle`
-3. The canonical response envelope key for the result list
-4. The canonical user ID and username field names
+3. The canonical result envelope key is `items`
+4. The canonical field names are `id`, `handle`, `displayName`, and `username`
 
 ---
 
@@ -490,7 +504,9 @@ The core online UI treats these statuses as online-like:
 - `inGame`
 - `busy`
 
-If the backend will only ever emit `online`, `inGame`, and `offline`, that is still compatible.
+The backend explicitly emits `online` and `offline` on connect/disconnect, and otherwise relays whatever `status` the client sent in `presence.update`. There is no backend-only enum enforcement here today.
+
+The raw `presence.subscribe` handler is restricted to the current player and their friends, so snapshot reads now align with the friendship graph rather than arbitrary requested user IDs.
 
 ---
 
@@ -556,18 +572,15 @@ This means messaging recipient selection is now coupled to the live backend frie
 
 ## Contract Questions For Backend Team
 
-Please confirm the following so the frontend can remove temporary compatibility shims and finalize the integration:
+Confirmed from current backend implementation:
 
-1. Is `GET /users/search?handle=` the intended search route for add-by-username?
-2. What is the canonical result envelope for `/users/search`?
-3. For user search results, what are the canonical field names for:
-   `id`, `displayName`, `username`/`handle`?
-4. For unfriend, which exact request body should be supported long-term?
-   Current frontend sends `playerId`, `friendId`, `targetUserId`, and `friendPlayerId`.
-5. For `DELETE /friends`, should the success response be:
-   `204 No Content`, empty JSON, or `{ "success": true }`?
-6. For presence, should the backend ever emit `busy` or `away`, or should the frontend treat only `online`, `inGame`, and `offline` as the full enum?
-7. For friend list and request endpoints, are the current DTO field names now considered stable for alpha?
+1. `GET /users/search?handle=` is implemented and authorized
+2. `/users/search` returns a paged envelope with `items`
+3. User search result field names are `id`, `handle`, `displayName`, and `username`
+4. `DELETE /friends` canonically supports `playerId` and `friendPlayerId`, and also tolerates `friendId` and `targetUserId` as compatibility aliases
+5. `DELETE /friends` currently returns `204 No Content`
+6. Presence always emits `online` and `offline` from server-side lifecycle events; all other statuses are pass-through from client updates
+7. Friend list and friend-request DTO responses now include `totalPages`
 
 ---
 

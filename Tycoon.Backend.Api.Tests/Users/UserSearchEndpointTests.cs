@@ -1,22 +1,59 @@
 using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Tests.Users;
 
 public sealed class UserSearchEndpointTests : IClassFixture<TycoonApiFactory>
 {
-    private readonly HttpClient _http;
+    private readonly TycoonApiFactory _factory;
 
     public UserSearchEndpointTests(TycoonApiFactory factory)
     {
-        _http = factory.CreateClient();
+        _factory = factory;
     }
 
     [Fact]
     public async Task Search_WithoutAuth_Returns401()
     {
-        var response = await _http.GetAsync("/users/search?handle=ab");
+        using var client = _factory.CreateClient();
+        var response = await client.GetAsync("/users/search?handle=ab");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Search_WithAuth_ReturnsPagedEnvelope()
+    {
+        using var client = _factory.CreateClient();
+
+        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+            Email: $"search-{Guid.NewGuid():N}@example.com",
+            Password: "Passw0rd!",
+            DeviceId: "ios-sim",
+            Username: $"search_user_{Guid.NewGuid():N}"));
+        signupResp.EnsureSuccessStatusCode();
+
+        var signup = await signupResp.Content.ReadFromJsonAsync<SignupResponse>();
+        signup.Should().NotBeNull();
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup!.AccessToken);
+
+        var response = await client.GetFromJsonAsync<UserSearchResponseDto>("/users/search?handle=search_user&page=1&pageSize=10");
+
+        response.Should().NotBeNull();
+        response!.Page.Should().Be(1);
+        response.PageSize.Should().Be(10);
+        response.Total.Should().BeGreaterThan(0);
+        response.TotalPages.Should().BeGreaterThan(0);
+        response.Items.Should().NotBeEmpty();
+
+        var item = response.Items[0];
+        item.Id.Should().NotBe(Guid.Empty);
+        item.Handle.Should().NotBeNullOrWhiteSpace();
+        item.DisplayName.Should().Be(item.Handle);
+        item.Username.Should().Be(item.Handle);
     }
 }

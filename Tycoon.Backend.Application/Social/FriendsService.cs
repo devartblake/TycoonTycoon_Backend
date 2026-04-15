@@ -157,6 +157,7 @@ namespace Tycoon.Backend.Application.Social
                  .ThenByDescending(x => x.CreatedAtUtc);
 
             var total = await q.CountAsync(ct);
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
 
             var items = await q.Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -169,7 +170,7 @@ namespace Tycoon.Backend.Application.Social
                     x.RespondedAtUtc))
                 .ToListAsync(ct);
 
-            return new FriendRequestsListResponseDto(page, pageSize, total, items);
+            return new FriendRequestsListResponseDto(page, pageSize, total, totalPages, items);
         }
 
         public async Task<FriendsListResponseDto> ListFriendsAsync(Guid playerId, int page, int pageSize, CancellationToken ct)
@@ -185,6 +186,7 @@ namespace Tycoon.Backend.Application.Social
                 .OrderByDescending(x => x.CreatedAtUtc);
 
             var total = await q.CountAsync(ct);
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
 
             // Join with Users to get display names
             var rows = await q.Skip((page - 1) * pageSize)
@@ -215,7 +217,7 @@ namespace Tycoon.Backend.Application.Social
                 SinceUtc: r.CreatedAtUtc
             )).ToList();
 
-            return new FriendsListResponseDto(page, pageSize, total, items);
+            return new FriendsListResponseDto(page, pageSize, total, totalPages, items);
         }
 
         public async Task<FriendRequestsDetailListResponseDto> ListRequestsDetailAsync(
@@ -245,6 +247,7 @@ namespace Tycoon.Backend.Application.Social
                  .ThenByDescending(x => x.CreatedAtUtc);
 
             var total = await q.CountAsync(ct);
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
 
             var rows = await q.Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -275,7 +278,7 @@ namespace Tycoon.Backend.Application.Social
                 RespondedAtUtc: r.RespondedAtUtc
             )).ToList();
 
-            return new FriendRequestsDetailListResponseDto(page, pageSize, total, items);
+            return new FriendRequestsDetailListResponseDto(page, pageSize, total, totalPages, items);
         }
 
         public async Task RemoveFriendAsync(Guid playerId, Guid friendPlayerId, CancellationToken ct)

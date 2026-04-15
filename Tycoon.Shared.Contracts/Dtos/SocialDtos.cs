@@ -49,6 +49,7 @@
         int Page,
         int PageSize,
         int Total,
+        int TotalPages,
         IReadOnlyList<FriendDto> Items
     );
 
@@ -56,6 +57,7 @@
         int Page,
         int PageSize,
         int Total,
+        int TotalPages,
         IReadOnlyList<FriendRequestDto> Items
     );
 
@@ -63,6 +65,7 @@
         int Page,
         int PageSize,
         int Total,
+        int TotalPages,
         IReadOnlyList<FriendRequestDetailDto> Items
     );
 

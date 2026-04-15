@@ -42,6 +42,8 @@ namespace Tycoon.Shared.Contracts.Dtos
     public sealed record UserSearchResultDto(
         Guid Id,
         string Handle,
+        string DisplayName,
+        string Username,
         string? Country,
         string? Tier,
         int Mmr
@@ -51,6 +53,7 @@ namespace Tycoon.Shared.Contracts.Dtos
         int Page,
         int PageSize,
         int Total,
+        int TotalPages,
         IReadOnlyList<UserSearchResultDto> Items
     );
 

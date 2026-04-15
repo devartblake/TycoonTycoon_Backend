@@ -54,29 +54,42 @@ namespace Tycoon.Backend.Api.Features.Users
 
         private static async Task<IResult> SearchUsers(
             [FromQuery] string handle,
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
             IAppDb database,
             CancellationToken cancellation)
         {
             if (string.IsNullOrWhiteSpace(handle) || handle.Trim().Length < 2)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Query parameter 'handle' must be at least 2 characters.");
 
+            page = page <= 0 ? 1 : page;
+            pageSize = pageSize <= 0 ? 20 : Math.Clamp(pageSize, 1, 50);
+
             var normalizedHandle = handle.Trim().ToLowerInvariant();
 
-            var users = await database.Users
+            var query = database.Users
+                .AsNoTracking()
                 .Where(u => u.Handle.ToLower().Contains(normalizedHandle))
-                .OrderBy(u => u.Handle)
-                .Take(20)
-                .Select(u => new UserDto(
+                .OrderBy(u => u.Handle);
+
+            var total = await query.CountAsync(cancellation);
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
+
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserSearchResultDto(
                     u.Id,
                     u.Handle,
-                    u.Email,
+                    u.Handle,
+                    u.Handle,
                     u.Country,
                     u.Tier,
                     u.Mmr
                 ))
                 .ToListAsync(cancellation);
 
-            return Results.Ok(users);
+            return Results.Ok(new UserSearchResponseDto(page, pageSize, total, totalPages, users));
         }
 
         private static async Task<IResult> UpdateCurrentUserProfile(

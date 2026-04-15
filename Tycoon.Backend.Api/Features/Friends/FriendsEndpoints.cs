@@ -12,7 +12,16 @@ namespace Tycoon.Backend.Api.Features.Friends
     {
         public sealed record SendRequest(Guid FromPlayerId, Guid ToPlayerId);
         public sealed record RespondRequest(Guid PlayerId);
-        public sealed record RemoveFriend(Guid PlayerId, Guid FriendPlayerId);
+        public sealed record RemoveFriend
+        {
+            public Guid PlayerId { get; init; }
+            public Guid? FriendPlayerId { get; init; }
+            public Guid? FriendId { get; init; }
+            public Guid? TargetUserId { get; init; }
+
+            public Guid ResolveFriendPlayerId()
+                => FriendPlayerId ?? FriendId ?? TargetUserId ?? Guid.Empty;
+        }
 
         public static void Map(IEndpointRouteBuilder app)
         {
@@ -94,7 +103,7 @@ namespace Tycoon.Backend.Api.Features.Friends
             {
                 try
                 {
-                    await friends.RemoveFriendAsync(req.PlayerId, req.FriendPlayerId, ct);
+                    await friends.RemoveFriendAsync(req.PlayerId, req.ResolveFriendPlayerId(), ct);
                     return Results.NoContent();
                 }
                 catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }

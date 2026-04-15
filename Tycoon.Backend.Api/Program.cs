@@ -719,6 +719,7 @@ app.Map("/ws", async context =>
                     userId = id.ToString(),
                     status = act?.Status ?? "online",
                     activity = act?.Activity,
+                    gameActivity = act?.GameActivity,
                     lastSeen = DateTimeOffset.UtcNow
                 };
             })
@@ -937,8 +938,10 @@ async Task HandleWebSocket(
                         }
                     }
 
+                    var allowedIds = new HashSet<Guid>((friendIds ?? Enumerable.Empty<Guid>()).Append(playerId));
+
                     var presences = requestedIds
-                        .Where(id => Guid.TryParse(id, out _))
+                        .Where(id => Guid.TryParse(id, out var parsedId) && allowedIds.Contains(parsedId))
                         .Select(id =>
                         {
                             var pid = Guid.Parse(id);
@@ -949,6 +952,7 @@ async Task HandleWebSocket(
                                 userId = id,
                                 status = isOnline ? (act?.Status ?? "online") : "offline",
                                 activity = act?.Activity,
+                                gameActivity = act?.GameActivity,
                                 lastSeen = DateTimeOffset.UtcNow
                             };
                         })
