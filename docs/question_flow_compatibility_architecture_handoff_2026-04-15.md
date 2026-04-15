@@ -40,9 +40,12 @@ Why this is the recommended model:
 | REST/API | `GET /questions/set` | `canonical` | Current supported question retrieval route |
 | REST/API | `POST /questions/check` | `canonical` | Current supported single-answer grading route |
 | REST/API | `POST /questions/check-batch` | `canonical` | Current supported batch grading route |
-| REST/API | `/quiz/*` question routes | `unsupported` | Not implemented today unless explicitly added later as API aliases |
-| REST/API | `/questions/*/stats`, `/questions/mixed`, `/questions/datasets/info` | `unsupported` | Frontend must not assume these exist today |
-| API compatibility | Alternate request/response shims for frontend stability | `planned` | Add only minimal additive shims where they reduce breakage |
+| REST/API | `/quiz/play` question route | `unsupported` | Not implemented today; do not assume legacy play fallback exists |
+| REST/API | `GET /quiz/daily` | `compatibility` | Implemented as a compatibility retrieval alias with `items/questions/data + meta` |
+| REST/API | `GET /quiz/mixed` | `compatibility` | Implemented as a compatibility retrieval alias with `items/questions/data + meta` |
+| REST/API | `GET /questions/mixed` | `compatibility` | Implemented as a compatibility retrieval alias with `items/questions/data + meta` |
+| REST/API | `/questions/*/stats`, `/questions/datasets/info`, `/quiz/categories`, `/quiz/stats` | `unsupported` | Frontend must not assume these exist today |
+| API compatibility | Alternate grading request/response shims for frontend stability | `compatibility` | Text answer aliases are accepted in grading while option-ID remains canonical |
 | `Tycoon.Sidecar` | Mixed/daily curation helpers, normalization, inference | `planned` | Internal-only behind API if needed |
 | mobile gRPC | Live match/session streaming | `canonical` | Already the correct place for low-latency gameplay streaming |
 | mobile gRPC | Category browsing, daily discovery, dataset metadata | `unsupported` | Do not move repository/discovery flows here in this phase |
@@ -226,9 +229,6 @@ This section defines what the frontend can rely on immediately.
 The following are currently **unsupported** unless the API explicitly adds them later:
 
 - `GET /quiz/play`
-- `GET /quiz/mixed`
-- `GET /questions/mixed`
-- `GET /quiz/daily`
 - `GET /quiz/categories`
 - `GET /quiz/stats`
 - `GET /questions/stats`
@@ -245,6 +245,30 @@ Current disposition for these surfaces:
 - **do not** move them into sidecar as public endpoints
 - **do not** move them into mobile gRPC as discovery substitutes
 
+### Compatibility routes implemented in this phase
+
+The following compatibility routes are now available in the API:
+
+- `GET /quiz/daily`
+- `GET /quiz/mixed`
+- `GET /questions/mixed`
+
+These routes return a compatibility collection envelope:
+
+```json
+{
+  "items": [ ... ],
+  "questions": [ ... ],
+  "data": [ ... ],
+  "meta": {
+    "source": "backend",
+    "count": 10
+  }
+}
+```
+
+These are compatibility surfaces, not the long-term canonical question contract.
+
 ### Planned compatibility-only additions
 
 If compatibility shims are added, they should be:
@@ -258,6 +282,12 @@ Good examples:
 - accepting alternate grading field names temporarily
 - adding optional metadata fields without changing canonical fields
 - adding a small alias route that maps to canonical question retrieval if that reduces immediate frontend churn
+
+Implemented in this phase:
+
+- `POST /questions/check` accepts `selectedOptionId` as canonical and also tolerates `selectedAnswer` / `answer`
+- `POST /questions/check-batch` accepts the same per-answer compatibility fields
+- grading responses now include `correctAnswer` and `source` in addition to canonical option-ID fields
 
 Bad examples:
 
