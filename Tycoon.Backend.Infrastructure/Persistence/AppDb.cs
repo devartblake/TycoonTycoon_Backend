@@ -90,6 +90,9 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<PlayerTransactionItem> PlayerTransactionItems => Set<PlayerTransactionItem>();
         public DbSet<PlayerPreferences> PlayerPreferences => Set<PlayerPreferences>();
         public DbSet<StoreItem> StoreItems => Set<StoreItem>();
+        public DbSet<LearningModule> LearningModules => Set<LearningModule>();
+        public DbSet<ModuleLesson> ModuleLessons => Set<ModuleLesson>();
+        public DbSet<ModuleCompletion> ModuleCompletions => Set<ModuleCompletion>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
