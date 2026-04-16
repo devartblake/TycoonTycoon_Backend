@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Shared.Contracts.Dtos;
@@ -11,35 +10,13 @@ namespace Tycoon.Backend.Api.Features.Questions
 {
     public static class QuestionsEndpoints
     {
-        private sealed record CheckAnswerCompatibilityRequest(
-            Guid QuestionId,
-            string? SelectedOptionId,
-            string? SelectedAnswer,
-            string? Answer);
-
-        private sealed record CheckAnswersBatchCompatibilityRequest(
-            IReadOnlyList<CheckAnswerCompatibilityRequest>? Answers);
-
         public static void Map(WebApplication app)
         {
             var g = app.MapGroup("/questions").WithTags("Questions").WithOpenApi();
 
             g.MapGet("/set", GetQuestionSet);
-            g.MapGet("/mixed", GetMixedQuestionSetCompatibility);
-            g.MapGet("/categories", GetCategoriesCompatibility);
-            g.MapGet("/stats", GetQuestionStatsCompatibility);
-            g.MapGet("/categories/{categorySlug}/stats", GetCategoryStatsCompatibility);
-            g.MapGet("/datasets/info", GetDatasetInfoCompatibility);
             g.MapPost("/check", CheckAnswer);
             g.MapPost("/check-batch", CheckAnswersBatch);
-
-            var quiz = app.MapGroup("/quiz").WithTags("Quiz Compatibility").WithOpenApi();
-            quiz.MapGet("/daily", GetDailyQuestionSetCompatibility);
-            quiz.MapGet("/mixed", GetMixedQuestionSetCompatibility);
-            quiz.MapGet("/categories", GetCategoriesCompatibility);
-            quiz.MapGet("/stats", GetQuestionStatsCompatibility);
-            quiz.MapGet("/categories/{categorySlug}/stats", GetCategoryStatsCompatibility);
-            quiz.MapGet("/datasets/info", GetDatasetInfoCompatibility);
         }
 
         /// <summary>
@@ -63,297 +40,73 @@ namespace Tycoon.Backend.Api.Features.Questions
             return Results.Ok(new QuestionSetDto(dtos, dtos.Count));
         }
 
-        private static async Task<IResult> GetMixedQuestionSetCompatibility(
-            [FromQuery] string? categories,
-            [FromQuery] string? difficulties,
-            [FromQuery] int count,
-            [FromQuery] bool? balanceDifficulties,
-            IAppDb db,
-            CancellationToken ct)
-        {
-            var categoryFilters = SplitCsv(categories);
-            var difficultyFilters = ParseDifficultyCsv(difficulties);
-
-            var dtos = await QueryGameplayQuestionsAsync(
-                db,
-                count,
-                categoryFilters,
-                difficultyFilters,
-                ct);
-
-            return Results.Ok(new
-            {
-                items = dtos,
-                questions = dtos,
-                data = dtos,
-                meta = new
-                {
-                    source = "backend",
-                    count = dtos.Count,
-                    balanceDifficulties = balanceDifficulties ?? false,
-                    mode = "mixed"
-                }
-            });
-        }
-
-        private static async Task<IResult> GetDailyQuestionSetCompatibility(
-            [FromQuery] int count,
-            IAppDb db,
-            CancellationToken ct)
-        {
-            var dtos = await QueryGameplayQuestionsAsync(db, count, null, null, ct);
-
-            return Results.Ok(new
-            {
-                items = dtos,
-                questions = dtos,
-                data = dtos,
-                meta = new
-                {
-                    source = "backend",
-                    count = dtos.Count,
-                    mode = "daily"
-                }
-            });
-        }
-
-        private static async Task<IResult> GetCategoriesCompatibility(
-            IAppDb db,
-            CancellationToken ct)
-        {
-            var categories = await db.Questions
-                .AsNoTracking()
-                .Where(q => q.Status == "Approved")
-                .Select(q => q.Category)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToListAsync(ct);
-
-            var categoryObjects = categories.Select(x => new { name = x, slug = x, category = x }).ToList();
-
-            return Results.Ok(new
-            {
-                items = categoryObjects,
-                categories = categoryObjects,
-                data = categoryObjects,
-                total = categoryObjects.Count,
-                source = "backend"
-            });
-        }
-
-        private static async Task<IResult> GetQuestionStatsCompatibility(
-            IAppDb db,
-            CancellationToken ct)
-        {
-            var approved = db.Questions
-                .AsNoTracking()
-                .Where(q => q.Status == "Approved");
-
-            var totalQuestions = await approved.CountAsync(ct);
-            var categories = await approved
-                .Select(q => q.Category)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToListAsync(ct);
-
-            return Results.Ok(new
-            {
-                totalQuestions,
-                questionCount = totalQuestions,
-                total = totalQuestions,
-                categoryCount = categories.Count,
-                totalCategories = categories.Count,
-                categories,
-                source = "backend"
-            });
-        }
-
-        private static async Task<IResult> GetCategoryStatsCompatibility(
-            [FromRoute] string categorySlug,
-            IAppDb db,
-            CancellationToken ct)
-        {
-            var category = categorySlug?.Trim() ?? string.Empty;
-            var query = db.Questions
-                .AsNoTracking()
-                .Where(q => q.Status == "Approved" && q.Category == category);
-
-            var totalQuestions = await query.CountAsync(ct);
-            var difficulty = await query
-                .GroupBy(q => q.Difficulty)
-                .Select(g => new { difficulty = g.Key.ToString(), count = g.Count() })
-                .OrderBy(x => x.difficulty)
-                .ToDictionaryAsync(x => x.difficulty, x => x.count, ct);
-
-            return Results.Ok(new
-            {
-                category,
-                questionCount = totalQuestions,
-                totalQuestions,
-                total = totalQuestions,
-                difficulty,
-                source = "backend"
-            });
-        }
-
-        private static async Task<IResult> GetDatasetInfoCompatibility(
-            IAppDb db,
-            CancellationToken ct)
-        {
-            var totalQuestions = await db.Questions
-                .AsNoTracking()
-                .CountAsync(q => q.Status == "Approved", ct);
-
-            return Results.Ok(new
-            {
-                name = "Synaptix Question Bank",
-                datasetName = "Synaptix Question Bank",
-                version = "api-current",
-                questionCount = totalQuestions,
-                totalQuestions,
-                source = "backend",
-                meta = new
-                {
-                    source = "backend"
-                }
-            });
-        }
-
         /// <summary>
         /// Check a single answer server-side. Returns whether the selected option is correct.
         /// </summary>
         private static async Task<IResult> CheckAnswer(
-            [FromBody] CheckAnswerCompatibilityRequest req,
+            [FromBody] CheckAnswerRequest req,
             IAppDb db,
             CancellationToken ct)
         {
             var question = await db.Questions
                 .AsNoTracking()
-                .Include(q => q.Options)
                 .FirstOrDefaultAsync(q => q.Id == req.QuestionId, ct);
 
             if (question is null)
                 return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Question not found.");
 
-            var selectedOptionId = ResolveSelectedOptionId(question, req);
-            var correctAnswer = question.Options
-                .FirstOrDefault(o => string.Equals(o.OptionId, question.CorrectOptionId, StringComparison.OrdinalIgnoreCase))
-                ?.Text ?? string.Empty;
+            var isCorrect = string.Equals(question.CorrectOptionId, req.SelectedOptionId, StringComparison.OrdinalIgnoreCase);
 
-            var isCorrect = string.Equals(question.CorrectOptionId, selectedOptionId, StringComparison.OrdinalIgnoreCase);
-
-            return Results.Ok(new
-            {
-                questionId = req.QuestionId,
-                selectedOptionId,
-                correctOptionId = question.CorrectOptionId,
-                isCorrect,
-                correctAnswer,
-                expectedAnswer = correctAnswer,
-                source = "backend"
-            });
+            return Results.Ok(new CheckAnswerResponse(
+                req.QuestionId,
+                req.SelectedOptionId,
+                question.CorrectOptionId,
+                isCorrect));
         }
 
         /// <summary>
         /// Batch check answers for a full round/match. Returns per-question results and totals.
         /// </summary>
         private static async Task<IResult> CheckAnswersBatch(
-            [FromBody] CheckAnswersBatchCompatibilityRequest req,
+            [FromBody] CheckAnswersBatchRequest req,
             IAppDb db,
             CancellationToken ct)
         {
-            var answers = req.Answers ?? Array.Empty<CheckAnswerCompatibilityRequest>();
-
-            if (answers.Count == 0)
+            if (req.Answers.Count == 0)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "At least one answer is required.");
 
-            if (answers.Count > 50)
+            if (req.Answers.Count > 50)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Maximum 50 answers per batch.");
 
-            var questionIds = answers.Select(a => a.QuestionId).Distinct().ToList();
+            var questionIds = req.Answers.Select(a => a.QuestionId).Distinct().ToList();
 
             var questions = await db.Questions
                 .AsNoTracking()
-                .Include(q => q.Options)
                 .Where(q => questionIds.Contains(q.Id))
                 .ToDictionaryAsync(q => q.Id, ct);
 
-            var results = new List<object>(answers.Count);
+            var results = new List<CheckAnswerResponse>(req.Answers.Count);
             var correct = 0;
 
-            foreach (var answer in answers)
+            foreach (var answer in req.Answers)
             {
                 if (!questions.TryGetValue(answer.QuestionId, out var question))
                 {
-                    results.Add(new
-                    {
-                        questionId = answer.QuestionId,
-                        selectedOptionId = answer.SelectedOptionId ?? string.Empty,
-                        correctOptionId = string.Empty,
-                        isCorrect = false,
-                        correctAnswer = string.Empty,
-                        source = "backend"
-                    });
+                    results.Add(new CheckAnswerResponse(answer.QuestionId, answer.SelectedOptionId, "", false));
                     continue;
                 }
 
-                var selectedOptionId = ResolveSelectedOptionId(question, answer);
-                var correctAnswer = question.Options
-                    .FirstOrDefault(o => string.Equals(o.OptionId, question.CorrectOptionId, StringComparison.OrdinalIgnoreCase))
-                    ?.Text ?? string.Empty;
-
-                var isCorrect = string.Equals(question.CorrectOptionId, selectedOptionId, StringComparison.OrdinalIgnoreCase);
+                var isCorrect = string.Equals(question.CorrectOptionId, answer.SelectedOptionId, StringComparison.OrdinalIgnoreCase);
                 if (isCorrect) correct++;
 
-                results.Add(new
-                {
-                    questionId = answer.QuestionId,
-                    selectedOptionId,
-                    correctOptionId = question.CorrectOptionId,
-                    isCorrect,
-                    correctAnswer,
-                    expectedAnswer = correctAnswer,
-                    source = "backend"
-                });
+                results.Add(new CheckAnswerResponse(
+                    answer.QuestionId,
+                    answer.SelectedOptionId,
+                    question.CorrectOptionId,
+                    isCorrect));
             }
 
-            return Results.Ok(new
-            {
-                results,
-                items = results,
-                answers = results,
-                data = results,
-                total = results.Count,
-                correct,
-                source = "backend"
-            });
-        }
-
-        private static IQueryable<Question> BuildApprovedQuestionsQuery(
-            IAppDb db,
-            IEnumerable<string>? categories,
-            IEnumerable<QuestionDifficulty>? difficulties)
-        {
-            var query = db.Questions
-                .AsNoTracking()
-                .Include(q => q.Options)
-                .Where(q => q.Status == "Approved")
-                .AsQueryable();
-
-            var categoryFilters = categories?
-                .Where(c => !string.IsNullOrWhiteSpace(c))
-                .Select(c => c.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            if (categoryFilters is { Length: > 0 })
-                query = query.Where(q => categoryFilters.Contains(q.Category));
-
-            var difficultyFilters = difficulties?.Distinct().ToArray();
-            if (difficultyFilters is { Length: > 0 })
-                query = query.Where(q => difficultyFilters.Contains(q.Difficulty));
-
-            return query;
+            return Results.Ok(new CheckAnswersBatchResponse(results, results.Count, correct));
         }
 
         private static async Task<List<GameplayQuestionDto>> QueryGameplayQuestionsAsync(
@@ -380,54 +133,31 @@ namespace Tycoon.Backend.Api.Features.Questions
             )).ToList();
         }
 
-        private static string ResolveSelectedOptionId(Question question, CheckAnswerCompatibilityRequest req)
+        private static IQueryable<Domain.Entities.Question> BuildApprovedQuestionsQuery(
+            IAppDb db,
+            IEnumerable<string>? categories,
+            IEnumerable<QuestionDifficulty>? difficulties)
         {
-            if (!string.IsNullOrWhiteSpace(req.SelectedOptionId))
-                return req.SelectedOptionId.Trim();
+            var query = db.Questions
+                .AsNoTracking()
+                .Include(q => q.Options)
+                .Where(q => q.Status == "Approved")
+                .AsQueryable();
 
-            var answerText = req.SelectedAnswer ?? req.Answer;
-            if (string.IsNullOrWhiteSpace(answerText))
-                return string.Empty;
+            var categoryFilters = categories?
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
-            var normalized = answerText.Trim();
+            if (categoryFilters is { Length: > 0 })
+                query = query.Where(q => categoryFilters.Contains(q.Category));
 
-            var option = question.Options.FirstOrDefault(o =>
-                string.Equals(o.OptionId, normalized, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(o.Text, normalized, StringComparison.OrdinalIgnoreCase));
+            var difficultyFilters = difficulties?.Distinct().ToArray();
+            if (difficultyFilters is { Length: > 0 })
+                query = query.Where(q => difficultyFilters.Contains(q.Difficulty));
 
-            return option?.OptionId ?? string.Empty;
-        }
-
-        private static IReadOnlyList<string>? SplitCsv(string? value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                return null;
-
-            var tokens = value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            return tokens.Length == 0 ? null : tokens;
-        }
-
-        private static IReadOnlyList<QuestionDifficulty>? ParseDifficultyCsv(string? value)
-        {
-            var tokens = SplitCsv(value);
-            if (tokens is null)
-                return null;
-
-            var parsed = new List<QuestionDifficulty>();
-
-            foreach (var token in tokens)
-            {
-                if (Enum.TryParse<QuestionDifficulty>(token, ignoreCase: true, out var byName))
-                {
-                    parsed.Add(byName);
-                    continue;
-                }
-
-                if (int.TryParse(token, out var raw) && Enum.IsDefined(typeof(QuestionDifficulty), raw))
-                    parsed.Add((QuestionDifficulty)raw);
-            }
-
-            return parsed.Count == 0 ? null : parsed;
+            return query;
         }
     }
 }

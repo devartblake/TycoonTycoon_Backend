@@ -4,6 +4,8 @@
 **Audience:** Frontend Team, Backend/API Team, Platform Team  
 **Purpose:** Define the supported architecture and contract boundary for question flows so the frontend can integrate against stable question APIs without depending on undocumented fallback behavior.
 
+> **Status update:** Training-oriented frontend work is now pivoting to learning modules. Use [LEARNING_MODULES_API_HANDOFF.md](/c:/Users/lmxbl/Documents/TycoonTycoon_Backend/docs/LEARNING_MODULES_API_HANDOFF.md) as the primary frontend handoff for guided study/training flows. This document remains relevant only for competitive `/questions/*` gameplay endpoints.
+
 ---
 
 ## 1. Purpose and Contract Status
