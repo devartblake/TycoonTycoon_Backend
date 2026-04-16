@@ -30,7 +30,7 @@ namespace Tycoon.Backend.Application.LearningModules
             _db.LearningModules.Add(module);
             await _db.SaveChangesAsync(ct);
 
-            return ToDto(module, lessonCount: 0);
+            return LearningModuleAdminHelpers.ToDto(module, lessonCount: 0);
         }
     }
 
@@ -61,7 +61,7 @@ namespace Tycoon.Backend.Application.LearningModules
                 req.Difficulty, req.RewardXp, req.RewardCoins);
 
             await _db.SaveChangesAsync(ct);
-            return ToDto(module, module.Lessons.Count);
+            return LearningModuleAdminHelpers.ToDto(module, module.Lessons.Count);
         }
     }
 
@@ -231,8 +231,11 @@ namespace Tycoon.Backend.Application.LearningModules
 
     // ── Shared helper ─────────────────────────────────────────────────────────────
 
-    internal static AdminLearningModuleListItemDto ToDto(LearningModule m, int lessonCount) =>
-        new(m.Id, m.Title, m.Category, m.Difficulty,
-            lessonCount, m.RewardXp, m.RewardCoins,
-            m.IsPublished, m.CreatedAtUtc, m.UpdatedAtUtc);
+    internal static class LearningModuleAdminHelpers
+    {
+        internal static AdminLearningModuleListItemDto ToDto(LearningModule m, int lessonCount) =>
+            new(m.Id, m.Title, m.Category, m.Difficulty,
+                lessonCount, m.RewardXp, m.RewardCoins,
+                m.IsPublished, m.CreatedAtUtc, m.UpdatedAtUtc);
+    }
 }
