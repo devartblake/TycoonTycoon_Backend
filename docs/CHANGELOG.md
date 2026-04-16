@@ -4,6 +4,18 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-15] Staging Rollback Drill Artifacts Published
+
+### Operator dashboard rollback drill completion
+- Completed quarterly live staging rollback drill for operator dashboard failover:
+  - Django `operator-dashboard` ➜ Blazor `operator-dashboard-blazor` fallback ➜ Django restore
+- Captured and published drill timeline, failover metrics, workflow continuity results, and remediation ownership:
+  - `docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`
+  - `docs/OPERATOR_ROLLBACK_DRILL_REPORT_2026-04-08.md`
+  - `docs/OPERATOR_RELEASE_ARTIFACTS_2026-04.md`
+
+---
+
 ## [2026-04-04] Alpha 6.1 Readiness Tooling + Frontend Handoff
 
 ### Deployment readiness tooling (6.1 follow-through)
