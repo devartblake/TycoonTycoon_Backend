@@ -26,12 +26,20 @@ namespace Tycoon.Backend.Api.Features.Questions
 
             g.MapGet("/set", GetQuestionSet);
             g.MapGet("/mixed", GetMixedQuestionSetCompatibility);
+            g.MapGet("/categories", GetCategoriesCompatibility);
+            g.MapGet("/stats", GetQuestionStatsCompatibility);
+            g.MapGet("/categories/{categorySlug}/stats", GetCategoryStatsCompatibility);
+            g.MapGet("/datasets/info", GetDatasetInfoCompatibility);
             g.MapPost("/check", CheckAnswer);
             g.MapPost("/check-batch", CheckAnswersBatch);
 
             var quiz = app.MapGroup("/quiz").WithTags("Quiz Compatibility").WithOpenApi();
             quiz.MapGet("/daily", GetDailyQuestionSetCompatibility);
             quiz.MapGet("/mixed", GetMixedQuestionSetCompatibility);
+            quiz.MapGet("/categories", GetCategoriesCompatibility);
+            quiz.MapGet("/stats", GetQuestionStatsCompatibility);
+            quiz.MapGet("/categories/{categorySlug}/stats", GetCategoryStatsCompatibility);
+            quiz.MapGet("/datasets/info", GetDatasetInfoCompatibility);
         }
 
         /// <summary>
@@ -52,12 +60,7 @@ namespace Tycoon.Backend.Api.Features.Questions
                 difficulty.HasValue ? new[] { difficulty.Value } : null,
                 ct);
 
-            return Results.Ok(new
-            {
-                questions = dtos,
-                count = dtos.Count,
-                source = "backend"
-            });
+            return Results.Ok(new QuestionSetDto(dtos, dtos.Count));
         }
 
         private static async Task<IResult> GetMixedQuestionSetCompatibility(
@@ -110,6 +113,108 @@ namespace Tycoon.Backend.Api.Features.Questions
                     source = "backend",
                     count = dtos.Count,
                     mode = "daily"
+                }
+            });
+        }
+
+        private static async Task<IResult> GetCategoriesCompatibility(
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var categories = await db.Questions
+                .AsNoTracking()
+                .Where(q => q.Status == "Approved")
+                .Select(q => q.Category)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync(ct);
+
+            var categoryObjects = categories.Select(x => new { name = x, slug = x, category = x }).ToList();
+
+            return Results.Ok(new
+            {
+                items = categoryObjects,
+                categories = categoryObjects,
+                data = categoryObjects,
+                total = categoryObjects.Count,
+                source = "backend"
+            });
+        }
+
+        private static async Task<IResult> GetQuestionStatsCompatibility(
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var approved = db.Questions
+                .AsNoTracking()
+                .Where(q => q.Status == "Approved");
+
+            var totalQuestions = await approved.CountAsync(ct);
+            var categories = await approved
+                .Select(q => q.Category)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync(ct);
+
+            return Results.Ok(new
+            {
+                totalQuestions,
+                questionCount = totalQuestions,
+                total = totalQuestions,
+                categoryCount = categories.Count,
+                totalCategories = categories.Count,
+                categories,
+                source = "backend"
+            });
+        }
+
+        private static async Task<IResult> GetCategoryStatsCompatibility(
+            [FromRoute] string categorySlug,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var category = categorySlug?.Trim() ?? string.Empty;
+            var query = db.Questions
+                .AsNoTracking()
+                .Where(q => q.Status == "Approved" && q.Category == category);
+
+            var totalQuestions = await query.CountAsync(ct);
+            var difficulty = await query
+                .GroupBy(q => q.Difficulty)
+                .Select(g => new { difficulty = g.Key.ToString(), count = g.Count() })
+                .OrderBy(x => x.difficulty)
+                .ToDictionaryAsync(x => x.difficulty, x => x.count, ct);
+
+            return Results.Ok(new
+            {
+                category,
+                questionCount = totalQuestions,
+                totalQuestions,
+                total = totalQuestions,
+                difficulty,
+                source = "backend"
+            });
+        }
+
+        private static async Task<IResult> GetDatasetInfoCompatibility(
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var totalQuestions = await db.Questions
+                .AsNoTracking()
+                .CountAsync(q => q.Status == "Approved", ct);
+
+            return Results.Ok(new
+            {
+                name = "Synaptix Question Bank",
+                datasetName = "Synaptix Question Bank",
+                version = "api-current",
+                questionCount = totalQuestions,
+                totalQuestions,
+                source = "backend",
+                meta = new
+                {
+                    source = "backend"
                 }
             });
         }

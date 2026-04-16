@@ -104,6 +104,75 @@ public sealed class QuestionCompatibilityContractTests : IClassFixture<TycoonApi
         results[0].GetProperty("correctAnswer").GetString().Should().Be("Paris");
     }
 
+    [Fact]
+    public async Task QuizCategories_ReturnsCompatibilityCollections()
+    {
+        await SeedApprovedQuestionAsync("Science category", "Science", Tycoon.Shared.Contracts.Dtos.QuestionDifficulty.Easy);
+        await SeedApprovedQuestionAsync("History category", "History", Tycoon.Shared.Contracts.Dtos.QuestionDifficulty.Easy);
+
+        var response = await _http.GetAsync("/quiz/categories");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var json = await System.Text.Json.JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        var root = json.RootElement;
+        root.TryGetProperty("items", out var items).Should().BeTrue();
+        root.TryGetProperty("categories", out var categories).Should().BeTrue();
+        root.TryGetProperty("data", out var data).Should().BeTrue();
+        items.GetArrayLength().Should().BeGreaterThanOrEqualTo(2);
+        categories.GetArrayLength().Should().Be(items.GetArrayLength());
+        data.GetArrayLength().Should().Be(items.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task QuizStats_ReturnsGlobalQuestionCounts()
+    {
+        await SeedApprovedQuestionAsync("Stats science", "Science", Tycoon.Shared.Contracts.Dtos.QuestionDifficulty.Easy);
+        await SeedApprovedQuestionAsync("Stats history", "History", Tycoon.Shared.Contracts.Dtos.QuestionDifficulty.Hard);
+
+        var response = await _http.GetAsync("/quiz/stats");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var json = await System.Text.Json.JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        var root = json.RootElement;
+        root.GetProperty("totalQuestions").GetInt32().Should().BeGreaterThanOrEqualTo(2);
+        root.GetProperty("questionCount").GetInt32().Should().Be(root.GetProperty("totalQuestions").GetInt32());
+        root.GetProperty("categoryCount").GetInt32().Should().BeGreaterThanOrEqualTo(2);
+        root.GetProperty("source").GetString().Should().Be("backend");
+    }
+
+    [Fact]
+    public async Task QuestionCategoryStats_ReturnsCategoryDifficultyBreakdown()
+    {
+        await SeedApprovedQuestionAsync("Science stat easy", "Science", Tycoon.Shared.Contracts.Dtos.QuestionDifficulty.Easy);
+        await SeedApprovedQuestionAsync("Science stat hard", "Science", Tycoon.Shared.Contracts.Dtos.QuestionDifficulty.Hard);
+
+        var response = await _http.GetAsync("/questions/categories/Science/stats");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var json = await System.Text.Json.JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        var root = json.RootElement;
+        root.GetProperty("category").GetString().Should().Be("Science");
+        root.GetProperty("questionCount").GetInt32().Should().BeGreaterThanOrEqualTo(2);
+        root.GetProperty("difficulty").TryGetProperty("Easy", out _).Should().BeTrue();
+        root.GetProperty("difficulty").TryGetProperty("Hard", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task QuestionDatasetInfo_ReturnsDatasetMetadata()
+    {
+        await SeedApprovedQuestionAsync("Dataset info q", "Science", Tycoon.Shared.Contracts.Dtos.QuestionDifficulty.Easy);
+
+        var response = await _http.GetAsync("/questions/datasets/info");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var json = await System.Text.Json.JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        var root = json.RootElement;
+        root.GetProperty("name").GetString().Should().NotBeNullOrWhiteSpace();
+        root.GetProperty("datasetName").GetString().Should().NotBeNullOrWhiteSpace();
+        root.GetProperty("version").GetString().Should().Be("api-current");
+        root.GetProperty("questionCount").GetInt32().Should().BeGreaterThan(0);
+    }
+
     private async Task<Guid> SeedApprovedQuestionAsync(string text, string category, Tycoon.Shared.Contracts.Dtos.QuestionDifficulty difficulty)
     {
         await using var scope = _factory.Services.CreateAsyncScope();

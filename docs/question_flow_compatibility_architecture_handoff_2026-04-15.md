@@ -44,7 +44,11 @@ Why this is the recommended model:
 | REST/API | `GET /quiz/daily` | `compatibility` | Implemented as a compatibility retrieval alias with `items/questions/data + meta` |
 | REST/API | `GET /quiz/mixed` | `compatibility` | Implemented as a compatibility retrieval alias with `items/questions/data + meta` |
 | REST/API | `GET /questions/mixed` | `compatibility` | Implemented as a compatibility retrieval alias with `items/questions/data + meta` |
-| REST/API | `/questions/*/stats`, `/questions/datasets/info`, `/quiz/categories`, `/quiz/stats` | `unsupported` | Frontend must not assume these exist today |
+| REST/API | `GET /quiz/categories` | `compatibility` | Implemented as a compatibility discovery surface with `items/categories/data` |
+| REST/API | `GET /quiz/stats` and `GET /questions/stats` | `compatibility` | Implemented as lightweight global question stats |
+| REST/API | `GET /quiz/categories/{slug}/stats` and `GET /questions/categories/{slug}/stats` | `compatibility` | Implemented as lightweight category stats |
+| REST/API | `GET /quiz/datasets/info` and `GET /questions/datasets/info` | `compatibility` | Implemented as lightweight dataset metadata |
+| REST/API | `/quiz/classes/{classId}/stats`, `/questions/classes/{classId}/stats` | `unsupported` | Frontend must not assume class stats exist today |
 | API compatibility | Alternate grading request/response shims for frontend stability | `compatibility` | Text answer aliases are accepted in grading while option-ID remains canonical |
 | `Tycoon.Sidecar` | Mixed/daily curation helpers, normalization, inference | `planned` | Internal-only behind API if needed |
 | mobile gRPC | Live match/session streaming | `canonical` | Already the correct place for low-latency gameplay streaming |
@@ -229,15 +233,8 @@ This section defines what the frontend can rely on immediately.
 The following are currently **unsupported** unless the API explicitly adds them later:
 
 - `GET /quiz/play`
-- `GET /quiz/categories`
-- `GET /quiz/stats`
-- `GET /questions/stats`
-- `GET /quiz/categories/{slug}/stats`
-- `GET /questions/categories/{slug}/stats`
 - `GET /quiz/classes/{classId}/stats`
 - `GET /questions/classes/{classId}/stats`
-- `GET /quiz/datasets/info`
-- `GET /questions/datasets/info`
 
 Current disposition for these surfaces:
 
@@ -252,6 +249,13 @@ The following compatibility routes are now available in the API:
 - `GET /quiz/daily`
 - `GET /quiz/mixed`
 - `GET /questions/mixed`
+- `GET /quiz/categories`
+- `GET /quiz/stats`
+- `GET /questions/stats`
+- `GET /quiz/categories/{slug}/stats`
+- `GET /questions/categories/{slug}/stats`
+- `GET /quiz/datasets/info`
+- `GET /questions/datasets/info`
 
 These routes return a compatibility collection envelope:
 
@@ -268,6 +272,13 @@ These routes return a compatibility collection envelope:
 ```
 
 These are compatibility surfaces, not the long-term canonical question contract.
+
+For discovery/object-style compatibility routes, the API now returns lightweight frontend-friendly objects:
+
+- `/quiz/categories` with `items`, `categories`, `data`
+- `/quiz/stats` and `/questions/stats` with `totalQuestions`, `questionCount`, `total`, category counts, and `source`
+- `/quiz/categories/{slug}/stats` and `/questions/categories/{slug}/stats` with `questionCount`, `totalQuestions`, `total`, `difficulty`, and `source`
+- `/quiz/datasets/info` and `/questions/datasets/info` with `name`, `datasetName`, `version`, question totals, and `source`
 
 ### Planned compatibility-only additions
 
@@ -363,10 +374,7 @@ Temporary compatibility should:
 
 Until implemented in API, the frontend should continue to treat these as local-fallback-only concerns:
 
-- category discovery if no API route exists
 - class stats/category assumptions
-- daily or mixed discovery if no API route exists
-- dataset metadata
 - any parser assumptions based on legacy `/quiz/*` routes that do not exist in the backend
 
 ### Logging and banner guidance
