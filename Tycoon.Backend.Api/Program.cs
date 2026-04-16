@@ -57,6 +57,8 @@ using Tycoon.Backend.Api.Features.Party;
 using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
 using Tycoon.Backend.Api.Features.Qr;
+using Tycoon.Backend.Api.Features.LearningModules;
+using Tycoon.Backend.Api.Features.AdminLearningModules;
 using Tycoon.Backend.Api.Features.Questions;
 using Tycoon.Backend.Api.Features.Crypto;
 using Tycoon.Backend.Api.Features.Store;
@@ -809,6 +811,7 @@ PartyEndpoints.Map(app);
 RankedLeaderboardsEndpoints.Map(app);
 SeasonRewardsEndpoints.Map(app);
 QuestionsEndpoints.Map(app);
+LearningModulesEndpoints.Map(app);
 VoteEndpoints.Map(app);
 StoreEndpoints.Map(app);
 CryptoEconomyEndpoints.Map(app);
@@ -860,6 +863,7 @@ AdminSeasonLifecycleEndpoints.Map(admin);
 AdminSeasonPointsEndpoints.Map(admin);
 AdminEmailAclEndpoints.Map(admin);
 AdminStoreEndpoints.Map(admin);
+AdminLearningModulesEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Tycoon Backend API starting...");
