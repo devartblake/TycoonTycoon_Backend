@@ -71,7 +71,7 @@ public sealed class AdminPowerupsEndpointsTests : IClassFixture<TycoonApiFactory
 
         resp.IsSuccessStatusCode.Should().BeTrue();
 
-        var dto = await resp.Content.ReadFromJsonAsync<PowerupStateDto>();
+        var dto = await resp.Content.ReadFromJsonAsync<PowerupStateDto>(TestJson.Default);
         dto.Should().NotBeNull();
         dto!.PlayerId.Should().Be(playerId);
         dto.Powerups.Should().BeEmpty();
@@ -89,7 +89,7 @@ public sealed class AdminPowerupsEndpointsTests : IClassFixture<TycoonApiFactory
         var stateResp = await _http.GetAsync($"/admin/powerups/state/{playerId}");
         stateResp.IsSuccessStatusCode.Should().BeTrue();
 
-        var state = await stateResp.Content.ReadFromJsonAsync<PowerupStateDto>();
+        var state = await stateResp.Content.ReadFromJsonAsync<PowerupStateDto>(TestJson.Default);
         state!.PlayerId.Should().Be(playerId);
         state.Powerups.Should().Contain(p => p.Type == PowerupType.Skip && p.Quantity >= 3);
     }
@@ -105,7 +105,7 @@ public sealed class AdminPowerupsEndpointsTests : IClassFixture<TycoonApiFactory
         var resp = await _http.GetAsync($"/admin/powerups/state/{playerId}");
         resp.IsSuccessStatusCode.Should().BeTrue();
 
-        var state = await resp.Content.ReadFromJsonAsync<PowerupStateDto>();
+        var state = await resp.Content.ReadFromJsonAsync<PowerupStateDto>(TestJson.Default);
         state!.Powerups.Should().Contain(p => p.Type == PowerupType.FiftyFifty && p.Quantity >= 2);
         state.Powerups.Should().Contain(p => p.Type == PowerupType.DoublePoints && p.Quantity >= 1);
     }
@@ -119,7 +119,7 @@ public sealed class AdminPowerupsEndpointsTests : IClassFixture<TycoonApiFactory
         await _http.PostAsJsonAsync("/admin/powerups/grant", BuildGrantRequest(playerId, PowerupType.ExtraTime, 3));
 
         var resp = await _http.GetAsync($"/admin/powerups/state/{playerId}");
-        var state = await resp.Content.ReadFromJsonAsync<PowerupStateDto>();
+        var state = await resp.Content.ReadFromJsonAsync<PowerupStateDto>(TestJson.Default);
 
         state!.Powerups.Should().Contain(p => p.Type == PowerupType.ExtraTime && p.Quantity >= 5);
     }
