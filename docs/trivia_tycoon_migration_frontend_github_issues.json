@@ -1,26 +1,27 @@
 {
+  "source_file": "docs/trivia_tycoon_migration_github_issues.json",
+  "scope": "frontend",
   "notes": [
-    "This source issue bundle reflects option 2 of the migration decision.",
-    "/quiz/* is removed from the backend API and should not be restored as a compatibility shim."
+    "This file contains frontend-owned issues plus frontend-relevant views of cross-stack issues.",
+    "Cross-stack issues keep their original ids so planning can stay aligned across teams.",
+    "This file reflects option 2 of the migration decision: /quiz/* is removed from the backend API and should not be restored as a compatibility shim."
   ],
   "status_update": {
     "updated_on": "2026-04-16",
     "summary": [
-      "Backend option 2 baseline is in place: /questions/* remains the gameplay contract, /modules/* remains the learning contract, and /quiz/* is retired from the backend API.",
-      "Migration planning docs and split issue JSON files have been updated to reflect the removed backend /quiz surface.",
-      "Focused backend contract tests now cover learning-module public/admin flows and guard against accidental reintroduction of key /quiz routes."
+      "Backend option 2 groundwork is complete, so frontend work should now assume /quiz/* is not available from the API.",
+      "Frontend-facing planning artifacts have been updated to reflect Play + Questions for gameplay and Learn + Modules for guided training.",
+      "The remaining work in this file is primarily frontend cleanup, routing cleanup, and transport cleanup."
     ],
     "completed_work": [
-      "Restored the backend question API to the canonical surface: GET /questions/set, POST /questions/check, POST /questions/check-batch.",
-      "Removed backend /quiz compatibility endpoint work and added retirement contract tests for representative /quiz routes.",
-      "Added and verified public and admin learning-module contract tests.",
-      "Updated migration markdown and issue planning artifacts to reflect option 2."
+      "Split migration issue planning into frontend and backend JSON bundles.",
+      "Updated frontend issue wording so it no longer assumes a live backend /quiz compatibility surface."
     ],
     "remaining_work": [
-      "Clean up older handoff and compatibility docs that still describe /quiz/* as active backend endpoints.",
-      "Update frontend transport, routing, and fallback logic so no frontend flow depends on retired backend /quiz routes.",
-      "Continue the Play / Learn / Study naming cleanup in frontend-facing docs and code.",
-      "Optionally resolve remaining nullable warnings in learning-module test files."
+      "Remove direct /quiz/* transport calls from frontend services.",
+      "Remove or quarantine stale fallback logic that assumes backend quiz routes still exist.",
+      "Continue Play / Learn / Study route and naming cleanup.",
+      "Retire ambiguous quiz-first UI flows once replacement Play and Study flows are in place."
     ]
   },
   "issues": [
@@ -150,6 +151,7 @@
       "id": "TT-MIG-005",
       "title": "Harden QuestionHubService as the canonical gameplay question orchestrator",
       "type": "cross-stack",
+      "scope_view": "frontend",
       "status": "pending",
       "priority": "P0",
       "sprint": "Sprint 1",
@@ -174,69 +176,6 @@
       ],
       "dependencies": [
         "TT-MIG-001"
-      ]
-    },
-    {
-      "id": "TT-MIG-006",
-      "title": "Formalize backend endpoint roles for Questions, Learning Modules, and removed legacy Quiz",
-      "type": "backend",
-      "status": "completed",
-      "priority": "P0",
-      "sprint": "Sprint 1",
-      "effort": "S",
-      "owner": "backend",
-      "labels": [
-        "backend",
-        "api-contract",
-        "architecture"
-      ],
-      "milestone": "Quiz/Question/Learning Migration",
-      "summary": "Document and enforce the role of /questions for gameplay content, /modules for learning content, and /quiz as a removed legacy backend surface rather than an active contract.",
-      "acceptance_criteria": [
-        "Endpoint intent is documented in code comments and API docs.",
-        "/questions remains the gameplay content API and /modules remains the learning API.",
-        "/quiz is explicitly marked removed from the backend API, with no ambiguous ownership."
-      ],
-      "files": [
-        "Tycoon.Backend.Api/Features/Questions/QuestionsEndpoints.cs",
-        "Tycoon.Backend.Api/Features/LearningModules/LearningModulesEndpoints.cs",
-        "Tycoon.Backend.Api/Program.cs"
-      ],
-      "completed_notes": [
-        "Added route-ownership comments in QuestionsEndpoints, LearningModulesEndpoints, and Program.cs.",
-        "Aligned migration planning docs and issue bundles with the removed backend /quiz contract."
-      ],
-      "dependencies": []
-    },
-    {
-      "id": "TT-MIG-007",
-      "title": "Add backend study-set surface for Quizlet-like behavior",
-      "type": "backend",
-      "status": "pending",
-      "priority": "P1",
-      "sprint": "Sprint 2",
-      "effort": "L",
-      "owner": "backend",
-      "labels": [
-        "backend",
-        "study",
-        "new-feature",
-        "api"
-      ],
-      "milestone": "Quiz/Question/Learning Migration",
-      "summary": "Introduce a dedicated study surface for flashcards, self-test sessions, or custom sets instead of overloading gameplay quiz endpoints.",
-      "acceptance_criteria": [
-        "A new route family exists for study sets or study sessions.",
-        "Study responses may expose answer/explanation data appropriate for self-paced practice.",
-        "Gameplay and study APIs no longer share ambiguous naming."
-      ],
-      "files": [
-        "Tycoon.Backend.Api/Features/StudySets/*",
-        "Tycoon.Backend.Application/*Study*",
-        "Tycoon.Shared.Contracts.Dtos/*Study*"
-      ],
-      "dependencies": [
-        "TT-MIG-006"
       ]
     },
     {
@@ -275,6 +214,7 @@
       "id": "TT-MIG-009",
       "title": "Align DTOs and mappers across gameplay and learning question shapes",
       "type": "cross-stack",
+      "scope_view": "frontend",
       "status": "pending",
       "priority": "P1",
       "sprint": "Sprint 2",
@@ -294,7 +234,9 @@
       ],
       "files": [
         "lib/core/dto/learning_dto.dart",
-        "lib/game/models/*question*",
+        "lib/game/models/*question*"
+      ],
+      "shared_backend_files": [
         "Tycoon.Shared.Contracts.Dtos/*Question*",
         "Tycoon.Shared.Contracts.Dtos/*Learning*"
       ],
@@ -306,6 +248,7 @@
       "id": "TT-MIG-010",
       "title": "Add telemetry for route usage, fallback activation, and mode entry",
       "type": "cross-stack",
+      "scope_view": "frontend",
       "status": "pending",
       "priority": "P1",
       "sprint": "Sprint 2",
@@ -325,7 +268,9 @@
       ],
       "files": [
         "lib/game/services/question_hub_service.dart",
-        "lib/core/manager/analytics/analytics_stream_manager.dart",
+        "lib/core/manager/analytics/analytics_stream_manager.dart"
+      ],
+      "shared_backend_files": [
         "Tycoon.Backend.Api/*analytics*"
       ],
       "dependencies": [
@@ -362,45 +307,6 @@
       "dependencies": [
         "TT-MIG-008",
         "TT-MIG-010"
-      ]
-    },
-    {
-      "id": "TT-MIG-012",
-      "title": "Confirm backend /quiz retirement and remove stale references",
-      "type": "backend",
-      "status": "in_progress",
-      "priority": "P2",
-      "sprint": "Sprint 3",
-      "effort": "M",
-      "owner": "backend",
-      "labels": [
-        "backend",
-        "deprecation",
-        "legacy"
-      ],
-      "milestone": "Quiz/Question/Learning Migration",
-      "summary": "Since frontend dependency has crossed the migration threshold, confirm backend /quiz retirement and remove stale docs, tests, and assumptions that still describe it as live.",
-      "acceptance_criteria": [
-        "No production gameplay depends on /quiz endpoints.",
-        "Docs and handoffs no longer imply /quiz is an active backend contract.",
-        "Backend tests cover the final supported semantics: /questions/* for gameplay and /modules/* for learning."
-      ],
-      "files": [
-        "docs/*migration*",
-        "Tycoon.Backend.Api/Program.cs",
-        "integration tests"
-      ],
-      "completed_notes": [
-        "Backend /quiz retirement is enforced by contract tests for representative retired routes.",
-        "Source and split migration issue JSON files now reflect option 2."
-      ],
-      "remaining_notes": [
-        "Older handoff and compatibility docs still need cleanup where they describe /quiz/* as active backend endpoints.",
-        "A broader repo cleanup is still needed for stale frontend-facing quiz-route assumptions."
-      ],
-      "dependencies": [
-        "TT-MIG-010",
-        "TT-MIG-011"
       ]
     }
   ]

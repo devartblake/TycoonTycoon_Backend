@@ -791,6 +791,10 @@ app.MapGrpcService<SidecarGrpcService>();
 app.MapGrpcService<MobileMatchGrpcService>();
 
 // Feature endpoints
+// Route ownership note:
+// - /questions/* = gameplay-safe question retrieval and grading
+// - /modules/* = learning and mastery flows
+// - /quiz/* is intentionally not mapped in this backend
 AnalyticsEndpoints.Map(app);
 AuthEndpoints.Map(app);
 UsersEndpoints.Map(app);

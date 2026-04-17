@@ -4,12 +4,24 @@
 
 This migration plan turns the current backend/frontend pivot into an executable path. It is designed to help you:
 
-- preserve the legacy **quiz** surface without letting it remain the primary gameplay contract,
-- stabilize **questions** as the canonical question-content API,
+- retire the legacy backend **quiz** surface without letting it re-enter the architecture,
+- stabilize **questions** as the canonical gameplay content API,
 - keep **learning modules** as the mastery path,
 - introduce a future **study / Quizlet-like** surface cleanly,
 - reduce frontend contract drift,
-- and refactor in phases without breaking your current playable flows.
+- and refactor in phases without breaking current playable flows.
+
+## Status update
+
+The backend has already crossed the migration threshold:
+
+- `QuestionsEndpoints.Map(app)` and `LearningModulesEndpoints.Map(app)` are the active public content surfaces
+- `/questions/*` is the live gameplay question contract
+- `/modules/*` is the live learning contract
+- `/quiz/*` is no longer mapped in `Tycoon.Backend.Api`
+
+From this point forward, the plan assumes **option 2**:
+do not restore a backend `/quiz` shim. Remove stale dependencies instead.
 
 ---
 
@@ -19,30 +31,32 @@ This migration plan turns the current backend/frontend pivot into an executable 
 
 Use four distinct layers going forward:
 
-1. **Questions** = canonical content layer  
+1. **Questions** = canonical content layer
    Reusable source of question sets, answer checking, and category/difficulty filtering.
 
-2. **Play** = formal gameplay layer  
+2. **Play** = formal gameplay layer
    Competitive quiz matches, sessions, rounds, scoring, rewards, matchmaking, ranked/casual flows.
 
-3. **Learn** = guided mastery layer  
+3. **Learn** = guided mastery layer
    Modules, ordered lessons, explanations, completion rewards, progressive educational flow.
 
-4. **Study** = Quizlet-like rehearsal layer  
+4. **Study** = Quizlet-like rehearsal layer
    Flashcards, self-test decks, favorites, weak-area review, custom sets, practice bundles.
 
 ### What should change conceptually
 
-- **Do not let “quiz” remain the catch-all term** for gameplay, learning, and study.
-- **Questions** should be the shared backend data surface.
-- **Play** should become the user-facing formal game mode.
-- **Learn** should remain module-driven and explanation-friendly.
-- **Study** should become the future Quizlet-style area instead of mutating the main gameplay contract.
+- Do not let `quiz` remain the catch-all term for gameplay, learning, and study.
+- `Questions` should be the shared backend data surface.
+- `Play` should become the user-facing formal game mode.
+- `Learn` should remain module-driven and explanation-friendly.
+- `Study` should become the future Quizlet-style area instead of mutating the main gameplay contract.
 
-### Transitional rule
+### Updated transitional rule
 
-Keep the existing `/quiz/*` behavior **only as a legacy adapter** during migration.  
-Do not keep expanding it as the long-term source of truth.
+The backend legacy `/quiz/*` bridge is considered finished.
+
+- Do not reintroduce `/quiz/*` as a backend compatibility layer unless a new ADR explicitly approves it.
+- Treat any remaining `/quiz/*` references as frontend cleanup debt or documentation debt.
 
 ---
 
@@ -50,20 +64,20 @@ Do not keep expanding it as the long-term source of truth.
 
 ## Backend
 
-The backend is already moving in the correct direction:
+The backend endpoint separation is already in the correct state:
 
-- `QuestionsEndpoints.Map(app)` and `LearningModulesEndpoints.Map(app)` are both registered in `Program.cs`, meaning the app already exposes them as first-class surfaces.
-- `QuestionsEndpoints` exposes a grouped `/questions` route with:
+- `QuestionsEndpoints` exposes:
   - `GET /questions/set`
   - `POST /questions/check`
   - `POST /questions/check-batch`
-- The question set endpoint is explicitly described as gameplay-safe and **does not expose correct answers**.
-- `LearningModulesEndpoints` exposes a grouped `/modules` route with:
+- The question set endpoint is gameplay-safe and does not expose correct answers.
+- `LearningModulesEndpoints` exposes:
   - `GET /modules`
   - `GET /modules/{id}`
   - `GET /modules/{id}/lessons`
   - `POST /modules/{id}/complete`
-- The lessons endpoint explicitly exposes lesson questions with correct answers in a **learning context**.
+- The lessons endpoint intentionally exposes correct answers in a learning context.
+- `/quiz/*` is not exposed by the backend API anymore.
 
 ## Frontend
 
@@ -77,24 +91,24 @@ The frontend is only partially aligned with that backend shape.
 
 ### Main problems
 
-1. **Legacy contract still alive in transport layer**
-   - `ApiService.fetchQuestions()` still calls `/quiz/play`.
-   - `TycoonApiClient.getQuizQuestions()` still calls `/quiz/play`.
-   - `QuestionHubService` still falls back to the legacy transport.
+1. **Legacy contract assumptions still exist in the transport layer**
+   - `ApiService.fetchQuestions()` may still call `/quiz/play`.
+   - `TycoonApiClient.getQuizQuestions()` may still call `/quiz/play`.
+   - `QuestionHubService` may still carry legacy fallback assumptions.
 
-2. **UI naming still says “quiz” even where it now means play**
-   - Primary routes still use `/quiz/play`.
-   - Category/class/daily/monthly flows launch `/quiz/play`.
-   - Multiplayer matchmaking also pushes `/quiz/play`.
+2. **UI naming still says `quiz` even where it now means play**
+   - Primary routes may still use quiz-first naming.
+   - Category/class/daily/monthly flows may still launch quiz-named routes.
+   - Multiplayer matchmaking may still push quiz-named route builders.
 
 3. **Duplicate adapted question screen implementations**
    - `lib/screens/question/adapted_question_screen.dart`
    - `lib/screens/question/question_view_screen.dart`
    Both define `AdaptedQuestionScreen`, which creates cleanup and routing ambiguity.
 
-4. **Mode boundaries are unclear**
+4. **Mode boundaries are still unclear**
    - Formal play, question retrieval, and legacy quiz naming are still mixed together.
-   - Learn already has a separate surface, but the overall information architecture still feels “quiz-centric.”
+   - Learn already has a separate surface, but the overall information architecture can still feel quiz-centric.
 
 ---
 
@@ -148,11 +162,11 @@ Use for:
 
 ## 4. Backend endpoint map
 
-This map separates **canonical**, **transitional**, and **future** surfaces.
+This map separates **canonical** and **future** surfaces. The previous transitional `/quiz` backend surface is now retired.
 
 ## 4.1 Canonical backend surfaces
 
-### Questions (canonical content surface)
+### Questions (canonical gameplay content surface)
 
 #### Keep and standardize
 - `GET /questions/set`
@@ -209,28 +223,16 @@ This map separates **canonical**, **transitional**, and **future** surfaces.
 - `POST /modules/{id}/lesson/{lessonId}/checkpoint`
   - lesson progress checkpoint if you want granular saves later
 
-## 4.2 Transitional legacy surface
+## 4.2 Removed legacy backend surface
 
-### Quiz (legacy compatibility only)
+### Quiz
 
-#### Keep temporarily
-- `/quiz/play`
+- `/quiz/*` is not part of the supported backend API
+- do not add new gameplay features there
+- do not document it as a still-live compatibility surface
+- do not make Study depend on reviving the old quiz contract shape
 
-#### Required rule
-Treat `/quiz/play` as one of these only:
-- **Option A:** backward-compatible alias to the new question retrieval contract, or
-- **Option B:** temporary facade until all frontend callers move to `QuestionHubService`
-
-#### Do not do
-- do not add new gameplay features here
-- do not make it the primary API for new screens
-- do not make study/learning and gameplay both depend on it long-term
-
-#### Sunset recommendation
-Once the migration is complete:
-- return deprecation headers from `/quiz/play`
-- log callers still using it
-- remove it after all clients have been migrated and verified
+If a future Study product needs its own API, give it its own route family.
 
 ## 4.3 Future study surface
 
@@ -252,7 +254,8 @@ Alternative naming if preferred:
 - `/practice-sets/*`
 
 ### Recommendation
-Use **`/study-sets`** if you want the broadest flexibility.  
+
+Use **`/study-sets`** if you want the broadest flexibility.
 It supports flashcards, review bundles, and self-test sets without locking the feature into one interaction pattern.
 
 ## 4.4 Formal play lifecycle surface
@@ -267,7 +270,7 @@ Recommended long-term play endpoints:
 - `GET /play/sessions/{id}/results`
 - `POST /play/matchmaking/enqueue`
 
-You may already cover parts of this with matches/matchmaking features.  
+You may already cover parts of this with matches/matchmaking features.
 If so, the frontend naming should still change to **Play** even if the backend is backed by `matches` instead of `play`.
 
 ---
@@ -297,11 +300,11 @@ Optional supporting destinations:
 Formal gameplay and challenge entry.
 
 #### Current likely screens involved
-- `QuestionScreen` (quiz hub / play hub candidate)
-- `PlayQuizScreen`
+- `QuestionScreen` as a play hub candidate
+- `PlayQuizScreen` or its renamed successor
 - `AdaptedQuestionScreen`
-- category/class/daily/monthly quiz launch screens
-- multiplayer matchmaking -> launch flow
+- category/class/daily/monthly launch screens
+- multiplayer matchmaking launch flow
 
 #### Recommended target routes
 - `/play`
@@ -311,13 +314,9 @@ Formal gameplay and challenge entry.
 - `/play/class/:classLevel`
 - `/play/session/:mode`
 
-#### Transitional route aliases
-Keep temporarily:
-- `/quiz`
-- `/quiz/play`
-- `/quiz/start/:gameMode`
-
-But internally redirect them into Play-oriented builders/services.
+#### Legacy route policy
+- Do not depend on backend `/quiz/*`
+- Frontend route aliases may exist temporarily, but they should resolve into Play-oriented builders and services
 
 ### Learn
 
@@ -329,12 +328,6 @@ But internally redirect them into Play-oriented builders/services.
 
 #### Recommendation
 Keep these and strengthen them as the official mastery surface.
-
-Optional rename later if you rebrand UX:
-- `/learn`
-- `/learn/module/:moduleId`
-- `/learn/module/:moduleId/lessons`
-- `/learn/module/:moduleId/complete`
 
 ### Study
 
@@ -348,7 +341,6 @@ Recommended routes:
 - `/study/weak-areas`
 
 #### First release scope
-You do not need full custom deck authoring on day one.
 Start with:
 - favorites review
 - weak-area review
@@ -366,7 +358,7 @@ Start with:
 
 #### Action
 - keep as primary retrieval path
-- remove legacy fallback as final step, not first step
+- remove legacy backend `/quiz` fallback
 - expand it into the single entry point for question-set loading
 
 ### `lib/core/repositories/learning_repository.dart`
@@ -381,12 +373,12 @@ Start with:
 
 #### Action
 - keep and polish
-- do not merge into quiz/play screens
+- do not merge into play or study screens
 
 ## 6.2 Refactor or deprecate
 
 ### `lib/core/services/api_service.dart`
-**Problem:** direct `fetchQuestions()` still points to `/quiz/play`
+**Problem:** direct `fetchQuestions()` may still point to `/quiz/play`
 
 #### Action
 - deprecate `fetchQuestions()`
@@ -394,12 +386,12 @@ Start with:
 - route question retrieval through `QuestionHubService` or a dedicated question API client
 
 ### `lib/core/networking/tycoon_api_client.dart`
-**Problem:** `getQuizQuestions()` still points to `/quiz/play`
+**Problem:** `getQuizQuestions()` may still point to `/quiz/play`
 
 #### Action
 - deprecate or rename to `getQuestionSet()`
 - update path to `/questions/set`
-- keep temporary adapter only if another legacy consumer still depends on the current signature
+- remove backend `/quiz` adapter assumptions
 
 ### `lib/screens/question/question_view_screen.dart`
 ### `lib/screens/question/adapted_question_screen.dart`
@@ -411,25 +403,11 @@ Start with:
 - remove duplicate export/import path usage
 - update router imports to point to one class only
 
-## 6.3 Rename for clarity
-
-### Current route-driven naming to rethink
-- `QuestionScreen` -> could become `PlayHubScreen`
-- `PlayQuizScreen` -> could become `PlaySessionLauncherScreen` or stay temporary
-- `FavoritesQuizScreen` -> likely becomes `FavoriteStudySetScreen` or `FavoriteQuestionsScreen`, depending on UX intent
-
-### Rule of thumb
-- If the screen is about **competition**, name it **play**.
-- If it is about **repetition or mastery**, name it **learn** or **study**.
-- If it is about raw content, reserve **question** for internal/service/domain naming.
-
 ---
 
 ## 7. Detailed phased refactor checklist
 
-This checklist is designed to avoid destabilizing the current app.
-
-## Phase 0 — Freeze semantics and contracts
+## Phase 0 - Freeze semantics and contracts
 
 ### Goal
 Stop the architecture from drifting further while you refactor.
@@ -441,18 +419,16 @@ Stop the architecture from drifting further while you refactor.
   - [ ] **Study** = Quizlet-like review
   - [ ] **Questions** = canonical content layer
 - [ ] Write a short backend/frontend contract note in the repo docs.
-- [ ] Mark `/quiz/play` as **legacy** in code comments and internal docs.
+- [ ] Mark `/quiz/*` as removed from backend contracts in code comments and internal docs.
 - [ ] Mark `QuestionHubService` as the preferred gameplay question source.
-- [ ] Identify every frontend caller still using `/quiz/play` directly.
+- [ ] Identify every frontend caller still using `/quiz/*` directly.
 
 ### Deliverables
 - migration glossary
 - route naming standard
 - short ADR / architecture note
 
----
-
-## Phase 1 — Stabilize backend contracts
+## Phase 1 - Stabilize backend contracts
 
 ### Goal
 Make backend intent explicit before frontend cleanup.
@@ -463,18 +439,15 @@ Make backend intent explicit before frontend cleanup.
 - [ ] Add response documentation/comments clarifying:
   - [ ] questions endpoint does not expose correct answers
   - [ ] learning lessons may expose correct answers
-- [ ] Add deprecation comments or response headers to `/quiz/play`.
-- [ ] Add telemetry/logging for legacy `/quiz/play` usage.
-- [ ] Decide whether `/quiz/play` returns the same shape as `/questions/set` or remains a transformed legacy shape.
+- [ ] Remove stale docs or code comments that still imply `/quiz/play` exists.
+- [ ] Remove telemetry assumptions that depend on live backend `/quiz` traffic.
 
 ### Deliverables
 - stable DTO contract list
-- deprecation policy for legacy quiz endpoint
-- API usage telemetry for legacy callers
+- clear route ownership
+- backend comments that match implemented reality
 
----
-
-## Phase 2 — Unify frontend question loading
+## Phase 2 - Unify frontend question loading
 
 ### Goal
 Make one service the canonical gameplay question pipeline.
@@ -487,17 +460,14 @@ Make one service the canonical gameplay question pipeline.
 - [ ] Replace direct `/quiz/play` usage in multiplayer prefetch/launch flows.
 - [ ] Make fallback order explicit:
   1. `/questions/set`
-  2. optional legacy adapter (temporary)
-  3. local bundled question source
+  2. local bundled question source or explicit non-backend fallback
 
 ### Deliverables
 - single gameplay question retrieval pipeline
 - reduced transport-layer duplication
-- no new direct `/quiz/play` usage
+- no direct backend `/quiz` usage
 
----
-
-## Phase 3 — Clean up play routing and screen ownership
+## Phase 3 - Clean up play routing and screen ownership
 
 ### Goal
 Make the UI read like product surfaces instead of legacy implementation details.
@@ -506,8 +476,8 @@ Make the UI read like product surfaces instead of legacy implementation details.
 - [ ] Introduce new route aliases for play:
   - [ ] `/play`
   - [ ] `/play/...`
-- [ ] Keep `/quiz/*` as temporary redirects or aliases.
-- [ ] Update menu labels from “Quiz” to “Play” where the user is entering competitive gameplay.
+- [ ] Remove or redirect frontend `/quiz/*` routes where safe.
+- [ ] Update menu labels from `Quiz` to `Play` where the user is entering competitive gameplay.
 - [ ] Consolidate `AdaptedQuestionScreen` into one canonical implementation.
 - [ ] Make one launcher/orchestrator screen responsible for converting route params into question session state.
 - [ ] Remove ambiguous duplicate imports in the router.
@@ -517,9 +487,7 @@ Make the UI read like product surfaces instead of legacy implementation details.
 - one canonical gameplay question screen
 - fewer duplicate builders and launch branches
 
----
-
-## Phase 4 — Harden the Learn domain
+## Phase 4 - Harden the Learn domain
 
 ### Goal
 Turn learning into a polished, explicitly separate product area.
@@ -528,18 +496,11 @@ Turn learning into a polished, explicitly separate product area.
 - [ ] Keep `learn-hub` visually separate from Play.
 - [ ] Add learning progress summary to hub cards or module detail.
 - [ ] Add recommended module logic.
-- [ ] Add “continue learning” CTA from menu/home.
-- [ ] Add reward transparency (XP/coins/gems, if applicable).
+- [ ] Add "continue learning" CTA from menu/home.
+- [ ] Add reward transparency.
 - [ ] Ensure lesson completion and module completion flows are idempotent and safe on retries.
 
-### Deliverables
-- stronger educational identity for Learn
-- progress continuity
-- better retention hooks
-
----
-
-## Phase 5 — Introduce Study / Quizlet-like surface
+## Phase 5 - Introduce Study / Quizlet-like surface
 
 ### Goal
 Create the new self-test and recall experience without corrupting gameplay architecture.
@@ -557,24 +518,17 @@ Create the new self-test and recall experience without corrupting gameplay archi
 - [ ] decide whether MVP study sets are generated from existing questions or stored as explicit entities
 - [ ] create a minimal `study-sets` contract if needed
 
-### Deliverables
-- first Quizlet-like surface
-- clear distinction between Play and Study
-
----
-
-## Phase 6 — Remove legacy quiz dependence
+## Phase 6 - Remove legacy quiz dependence
 
 ### Goal
-Finish the migration without breaking old clients unexpectedly.
+Finish the migration without reintroducing removed backend contracts.
 
 ### Tasks
-- [ ] verify no mobile/frontend flows call `/quiz/play` directly anymore
-- [ ] verify analytics show no significant live usage of legacy endpoint
+- [ ] verify no frontend/mobile flows call `/quiz/*` backend endpoints anymore
 - [ ] remove fallback in `QuestionHubService`
 - [ ] remove deprecated methods in `ApiService` and `TycoonApiClient`
-- [ ] convert `/quiz/play` into redirect/shim or remove it entirely
 - [ ] update docs, tests, and route maps
+- [ ] reserve Study for any future rehearsal API instead of reviving quiz-first naming
 
 ### Deliverables
 - questions-backed gameplay pipeline only
@@ -583,76 +537,14 @@ Finish the migration without breaking old clients unexpectedly.
 
 ---
 
-## 8. Detailed file-by-file refactor backlog
-
-## Backend backlog
-
-### A. Contracts and documentation
-- [ ] Document `/questions/*` DTOs and response guarantees
-- [ ] Document `/modules/*` DTOs and response guarantees
-- [ ] Add deprecation notice for `/quiz/play`
-
-### B. Legacy adapter
-- [ ] If `/quiz/play` must remain, implement it as a thin adapter over canonical question retrieval
-- [ ] Add deprecation header or server log event on each call
-
-### C. Future study API
-- [ ] Scaffold `StudySetsEndpoints`
-- [ ] Add DTOs for study set summary, study item, study session progress
-- [ ] Define whether study uses server-stored sets or generated views over question bank
-
-## Frontend backlog
-
-### A. Networking and services
-- [ ] `QuestionHubService` becomes the only approved gameplay question source
-- [ ] remove direct question fetch from `ApiService`
-- [ ] remove or rename `getQuizQuestions()` in `TycoonApiClient`
-
-### B. Routing
-- [ ] add `/play` aliases
-- [ ] redirect old `/quiz/*` routes where safe
-- [ ] keep `/learn-hub` intact for now
-- [ ] add `/study` when MVP starts
-
-### C. UI cleanup
-- [ ] merge duplicate `AdaptedQuestionScreen`
-- [ ] rename labels/buttons that still say “quiz” but mean “play”
-- [ ] separate play visual identity from learn/study identity
-
-### D. Menu and discoverability
-- [ ] expose Play / Learn / Study from home/menu
-- [ ] add recommendation cards: next play mode, continue module, review weak areas
-
----
-
-## 9. Recommended migration order by impact
-
-## Highest impact / lowest regret
-1. Standardize terminology
-2. Make `/questions/*` the canonical gameplay contract everywhere
-3. Consolidate gameplay question loading into one service
-4. Clean router/screen duplication
-5. Preserve `/modules/*` as a distinct learning path
-
-## Medium-term
-6. Shift user-facing labels from Quiz -> Play where appropriate
-7. Add Play route aliases and deprecate quiz-first routing
-8. Improve Learn progress UX
-
-## Strategic next expansion
-9. Build Study / Quizlet-like surface as a separate mode
-10. Sunset legacy `/quiz/play`
-
----
-
-## 10. Acceptance criteria
+## 8. Acceptance criteria
 
 The migration should be considered successful when all of the following are true:
 
 ### Backend
 - [ ] `/questions/*` is the canonical gameplay content surface
 - [ ] `/modules/*` is the canonical learning surface
-- [ ] `/quiz/play` is either deprecated, shimmed, or removed
+- [ ] `/quiz/*` is absent from the supported backend contract
 - [ ] study endpoints are separated if introduced
 
 ### Frontend
@@ -664,26 +556,27 @@ The migration should be considered successful when all of the following are true
 ### Product clarity
 - [ ] players understand where to compete, where to learn, and where to review
 - [ ] backend contracts match those expectations
-- [ ] future features can be added without overloading “quiz” again
+- [ ] future features can be added without overloading `quiz` again
 
 ---
 
-## 11. Suggested implementation note for your repo
+## 9. Suggested implementation note for your repo
 
 Use this as the short internal rule:
 
-> **Questions are the shared content layer. Play is competitive. Learn is guided mastery. Study is flexible rehearsal. Quiz is legacy terminology and should not be expanded as a long-term domain.**
+> **Questions are the shared content layer. Play is competitive. Learn is guided mastery. Study is flexible rehearsal. Quiz is legacy terminology and is not part of the supported backend contract.**
 
 ---
 
-## 12. Final recommendation
+## 10. Final recommendation
 
-Do **not** delete the quiz concept abruptly.  
+Do not restore `/quiz/*` just because the legacy name still appears in frontend code or docs.
+
 Instead:
 
-- keep it as a migration bridge,
-- move gameplay to **Play + Questions**,
-- keep education in **Learn + Modules**,
-- and launch the Quizlet-style idea as **Study**, not as another overloaded version of quiz.
+- keep gameplay on **Questions + Play**
+- keep education on **Learn + Modules**
+- launch the Quizlet-style idea as **Study**
+- and remove remaining stale quiz-route assumptions as cleanup work
 
-That gives you a much cleaner long-term foundation for Synaptix / Trivia Tycoon while protecting the work you already did on both backend and frontend.
+That gives you a cleaner long-term foundation for Synaptix / Trivia Tycoon while preserving the separation you already established in the backend.

@@ -1,6 +1,15 @@
-# Trivia Tycoon / Synaptix Migration Package — GitHub Issues Bundle
+# Trivia Tycoon / Synaptix Migration Package - GitHub Issues Bundle
 
 This package converts the migration recommendation into ready-to-create issue records.
+
+## Status update
+The backend migration threshold has been reached:
+
+- `/questions/*` is the live gameplay question contract
+- `/modules/*` is the live learning contract
+- `/quiz/*` is no longer exposed by the backend API
+
+The issues below should therefore be interpreted as cleanup and forward-migration work, not a recommendation to restore a backend `/quiz` shim.
 
 ## Recommended milestones
 - **Quiz/Question/Learning Migration**
@@ -10,11 +19,11 @@ This package converts the migration recommendation into ready-to-create issue re
 ## Suggested sprint framing
 - **Sprint 1:** Stabilize canonical contracts and remove ambiguous frontend usage.
 - **Sprint 2:** Introduce Study surface and align DTOs/telemetry.
-- **Sprint 3:** Sunset or repurpose legacy quiz flows.
+- **Sprint 3:** Sunset remaining legacy quiz references and frontend route debt.
 
 ## Issues
 
-### TT-MIG-001 — Deprecate direct /quiz/play usage in frontend transport layer
+### TT-MIG-001 - Deprecate direct /quiz/play usage in frontend transport layer
 - Type: frontend
 - Priority: P0
 - Sprint: Sprint 1
@@ -24,17 +33,17 @@ This package converts the migration recommendation into ready-to-create issue re
 - Labels: migration, frontend, api-contract, legacy-cleanup
 - Summary: Remove direct legacy gameplay fetches from ApiService and TycoonApiClient so QuestionHubService becomes the canonical gameplay question transport.
 - Acceptance criteria:
-  - No new gameplay screen calls /quiz/play directly through ApiService or TycoonApiClient.
+  - No new gameplay screen calls `/quiz/play` directly through ApiService or TycoonApiClient.
   - QuestionHubService remains the only approved gameplay question fetch path.
-  - Legacy fallback is isolated behind a clearly named compatibility adapter or feature flag.
-  - Telemetry differentiates /questions/set success vs legacy fallback activation.
+  - Any legacy fallback code is removed or explicitly marked for deletion.
+  - Telemetry differentiates `/questions/set` success from local fallback or stale-route handling if still present.
 - Target files:
   - `lib/core/services/api_service.dart`
   - `lib/core/networking/tycoon_api_client.dart`
   - `lib/game/services/question_hub_service.dart`
 - Dependencies: None
 
-### TT-MIG-002 — Create explicit frontend route taxonomy for Play, Learn, and Study
+### TT-MIG-002 - Create explicit frontend route taxonomy for Play, Learn, and Study
 - Type: frontend
 - Priority: P0
 - Sprint: Sprint 1
@@ -46,13 +55,13 @@ This package converts the migration recommendation into ready-to-create issue re
 - Acceptance criteria:
   - Router distinguishes gameplay routes from learning routes and legacy quiz routes.
   - Primary entry points use Play/Learn/Study language instead of overloading Quiz.
-  - Legacy routes continue to resolve during migration but are marked transitional in code comments and analytics.
+  - Legacy quiz naming is removed or clearly marked transitional in frontend-only code paths.
 - Target files:
   - `lib/core/navigation/app_router.dart`
   - `lib/screens/menu/game_menu_screen.dart`
 - Dependencies: TT-MIG-001
 
-### TT-MIG-003 — Unify duplicated AdaptedQuestionScreen implementations
+### TT-MIG-003 - Unify duplicated AdaptedQuestionScreen implementations
 - Type: frontend
 - Priority: P0
 - Sprint: Sprint 1
@@ -63,7 +72,7 @@ This package converts the migration recommendation into ready-to-create issue re
 - Summary: Collapse the two AdaptedQuestionScreen definitions into a single canonical screen and keep one import path.
 - Acceptance criteria:
   - Only one canonical AdaptedQuestionScreen class remains.
-  - app_router.dart references a single screen file.
+  - `app_router.dart` references a single screen file.
   - No duplicate symbols or drift between question presentation variants.
 - Target files:
   - `lib/screens/question/adapted_question_screen.dart`
@@ -71,7 +80,7 @@ This package converts the migration recommendation into ready-to-create issue re
   - `lib/core/navigation/app_router.dart`
 - Dependencies: None
 
-### TT-MIG-004 — Refactor gameplay launchers to use canonical play flow
+### TT-MIG-004 - Refactor gameplay launchers to use canonical play flow
 - Type: frontend
 - Priority: P0
 - Sprint: Sprint 1
@@ -93,7 +102,7 @@ This package converts the migration recommendation into ready-to-create issue re
   - `lib/screens/multiplayer/multiplayer_game_matchmaking_screen.dart`
 - Dependencies: TT-MIG-002, TT-MIG-003
 
-### TT-MIG-005 — Harden QuestionHubService as the canonical gameplay question orchestrator
+### TT-MIG-005 - Harden QuestionHubService as the canonical gameplay question orchestrator
 - Type: cross-stack
 - Priority: P0
 - Sprint: Sprint 1
@@ -101,10 +110,10 @@ This package converts the migration recommendation into ready-to-create issue re
 - Owner: frontend+backend
 - Milestone: Quiz/Question/Learning Migration
 - Labels: cross-stack, questions, service-layer
-- Summary: Make QuestionHubService the only orchestrator for gameplay question retrieval, normalization, telemetry, and legacy fallback handling.
+- Summary: Make QuestionHubService the only orchestrator for gameplay question retrieval, normalization, and telemetry, with no backend `/quiz` dependency.
 - Acceptance criteria:
-  - QuestionHubService normalizes /questions/set responses for all play modes.
-  - Fallback logic is centralized and logged with source metadata.
+  - QuestionHubService normalizes `/questions/set` responses for all play modes.
+  - Any remaining fallback logic is explicit, temporary, and does not depend on backend `/quiz` routes.
   - Repository/provider layer consumes only the canonical service interface.
 - Target files:
   - `lib/game/services/question_hub_service.dart`
@@ -112,7 +121,7 @@ This package converts the migration recommendation into ready-to-create issue re
   - `lib/game/providers/question_providers.dart`
 - Dependencies: TT-MIG-001
 
-### TT-MIG-006 — Formalize backend endpoint roles for Questions, Learning Modules, and legacy Quiz
+### TT-MIG-006 - Formalize backend endpoint roles for Questions, Learning Modules, and removed legacy Quiz
 - Type: backend
 - Priority: P0
 - Sprint: Sprint 1
@@ -120,18 +129,18 @@ This package converts the migration recommendation into ready-to-create issue re
 - Owner: backend
 - Milestone: Quiz/Question/Learning Migration
 - Labels: backend, api-contract, architecture
-- Summary: Document and enforce the role of /questions for gameplay content, /modules for learning content, and /quiz as temporary compatibility or future study surface only.
+- Summary: Document and enforce the role of `/questions` for gameplay content, `/modules` for learning content, and `/quiz` as removed legacy backend surface rather than an active contract.
 - Acceptance criteria:
   - Endpoint intent is documented in code comments and API docs.
-  - /questions remains the gameplay content API and /modules remains the learning API.
-  - /quiz is explicitly marked deprecated or repurposed with no ambiguous ownership.
+  - `/questions` remains the gameplay content API and `/modules` remains the learning API.
+  - `/quiz` is explicitly marked removed from the backend API, with no ambiguous ownership.
 - Target files:
   - `Tycoon.Backend.Api/Features/Questions/QuestionsEndpoints.cs`
   - `Tycoon.Backend.Api/Features/LearningModules/LearningModulesEndpoints.cs`
   - `Tycoon.Backend.Api/Program.cs`
 - Dependencies: None
 
-### TT-MIG-007 — Add backend study-set surface for Quizlet-like behavior
+### TT-MIG-007 - Add backend study-set surface for Quizlet-like behavior
 - Type: backend
 - Priority: P1
 - Sprint: Sprint 2
@@ -150,7 +159,7 @@ This package converts the migration recommendation into ready-to-create issue re
   - `Tycoon.Shared.Contracts.Dtos/*Study*`
 - Dependencies: TT-MIG-006
 
-### TT-MIG-008 — Create frontend Study hub and placeholder deck flows
+### TT-MIG-008 - Create frontend Study hub and placeholder deck flows
 - Type: frontend
 - Priority: P1
 - Sprint: Sprint 2
@@ -169,7 +178,7 @@ This package converts the migration recommendation into ready-to-create issue re
   - `lib/screens/menu/game_menu_screen.dart`
 - Dependencies: TT-MIG-002, TT-MIG-007
 
-### TT-MIG-009 — Align DTOs and mappers across gameplay and learning question shapes
+### TT-MIG-009 - Align DTOs and mappers across gameplay and learning question shapes
 - Type: cross-stack
 - Priority: P1
 - Sprint: Sprint 2
@@ -189,7 +198,7 @@ This package converts the migration recommendation into ready-to-create issue re
   - `Tycoon.Shared.Contracts.Dtos/*Learning*`
 - Dependencies: TT-MIG-006
 
-### TT-MIG-010 — Add telemetry for route usage, fallback activation, and mode entry
+### TT-MIG-010 - Add telemetry for route usage, fallback activation, and mode entry
 - Type: cross-stack
 - Priority: P1
 - Sprint: Sprint 2
@@ -197,18 +206,18 @@ This package converts the migration recommendation into ready-to-create issue re
 - Owner: frontend+backend
 - Milestone: Quiz/Question/Learning Migration
 - Labels: analytics, cross-stack, migration
-- Summary: Instrument the migration so you can observe what percentage of traffic still depends on legacy quiz semantics and where users enter Play, Learn, and Study.
+- Summary: Instrument the migration so you can observe remaining frontend legacy semantics and where users enter Play, Learn, and Study.
 - Acceptance criteria:
   - Frontend emits entry events for Play, Learn, and Study.
-  - QuestionHubService records legacy fallback activations.
-  - Backend usage dashboards can distinguish /questions, /modules, and /quiz traffic.
+  - QuestionHubService records stale-route or local-fallback activations if they still exist.
+  - Backend usage dashboards can distinguish `/questions`, `/modules`, and future study traffic without implying `/quiz` is still live.
 - Target files:
   - `lib/game/services/question_hub_service.dart`
   - `lib/core/manager/analytics/analytics_stream_manager.dart`
   - `Tycoon.Backend.Api/*analytics*`
 - Dependencies: TT-MIG-001, TT-MIG-006
 
-### TT-MIG-011 — Remove or redirect legacy quiz UI after migration cutoff
+### TT-MIG-011 - Remove or redirect legacy quiz UI after migration cutoff
 - Type: frontend
 - Priority: P2
 - Sprint: Sprint 3
@@ -227,7 +236,7 @@ This package converts the migration recommendation into ready-to-create issue re
   - `lib/screens/study_hub/*`
 - Dependencies: TT-MIG-008, TT-MIG-010
 
-### TT-MIG-012 — Retire backend /quiz contract or freeze it as study compatibility facade
+### TT-MIG-012 - Confirm backend /quiz retirement and remove stale references
 - Type: backend
 - Priority: P2
 - Sprint: Sprint 3
@@ -235,13 +244,13 @@ This package converts the migration recommendation into ready-to-create issue re
 - Owner: backend
 - Milestone: Quiz/Question/Learning Migration
 - Labels: backend, deprecation, legacy
-- Summary: Once frontend traffic is off the old contract, either remove the legacy /quiz surface or formally reassign it to study compatibility only.
+- Summary: Since frontend dependency has crossed the migration threshold, confirm backend `/quiz` retirement and remove stale docs, tests, and assumptions that still describe it as live.
 - Acceptance criteria:
-  - No production gameplay depends on /quiz endpoints.
-  - Deprecation policy is documented and communicated.
-  - Backend tests cover the final supported semantics.
+  - No production gameplay depends on `/quiz` endpoints.
+  - Docs and handoffs no longer imply `/quiz` is an active backend contract.
+  - Backend tests cover the final supported semantics: `/questions/*` for gameplay and `/modules/*` for learning.
 - Target files:
-  - `Tycoon.Backend.Api/Features/*Quiz*`
+  - `docs/*migration*`
   - `Tycoon.Backend.Api/Program.cs`
   - `integration tests`
 - Dependencies: TT-MIG-010, TT-MIG-011

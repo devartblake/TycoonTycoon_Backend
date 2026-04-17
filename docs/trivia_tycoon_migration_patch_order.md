@@ -2,6 +2,16 @@
 
 This patch order is sequenced to reduce breakage while you move from legacy quiz semantics toward a clean Play / Learn / Study split.
 
+## Status update
+The backend has now passed the migration threshold for legacy quiz transport:
+
+- `/questions/*` is the supported gameplay question API
+- `/modules/*` is the supported learning API
+- `/quiz/*` is no longer mapped in the backend API
+
+From this point forward, patches should assume **option 2** from the migration decision:
+remove remaining frontend and documentation dependence on `/quiz/*` rather than restoring a backend compatibility shim.
+
 ## Guiding rule
 Patch transport and routing seams first, then screen launchers, then new surfaces, then deprecations.
 
@@ -15,7 +25,7 @@ Patch transport and routing seams first, then screen launchers, then new surface
 **Patch goal**
 - Add explicit comments that `/questions` is the gameplay question API.
 - Add explicit comments that `/modules` is the learning API.
-- Mark `/quiz` as legacy compatibility or future study facade only.
+- Mark `/quiz` as removed from the backend and reserved only as legacy terminology in docs/frontend cleanup.
 
 **Why first**
 - It prevents future frontend code from reintroducing ambiguity.
@@ -38,7 +48,7 @@ Patch transport and routing seams first, then screen launchers, then new surface
 
 **Patch goal**
 - Keep `/questions/set` as the primary path.
-- Isolate fallback to legacy `/quiz/play` in one place only.
+- Remove legacy `/quiz/play` fallback entirely or quarantine it behind a dead-code cleanup path scheduled for deletion.
 - Normalize response mapping and add source telemetry.
 
 **Exit criterion**
@@ -69,7 +79,7 @@ Patch transport and routing seams first, then screen launchers, then new surface
 - `lib/core/navigation/app_router.dart`
 
 **Patch goal**
-- Keep existing legacy routes alive.
+- Add canonical routes such as `/play`, `/play/question`, or `/play/start/:gameMode`.
 - Add canonical routes such as `/play`, `/play/question`, or `/play/start/:gameMode`.
 - Leave `/learn-hub/...` intact.
 - Reserve `/study` or `/study-hub` for the Quizlet-like flow.
@@ -93,7 +103,7 @@ Patch transport and routing seams first, then screen launchers, then new surface
 - `lib/screens/multiplayer/multiplayer_game_matchmaking_screen.dart`
 
 **Patch goal**
-- Replace direct pushes/go calls to `/quiz/play` with the canonical play route.
+- Replace any remaining direct pushes/go calls to `/quiz/play` with the canonical play route.
 - Pass one consistent launch payload shape for category, difficulty, count, and mode.
 
 **Exit criterion**
@@ -144,13 +154,13 @@ Patch transport and routing seams first, then screen launchers, then new surface
 
 **Patch goal**
 - Log mode entry: Play, Learn, Study.
-- Log fallback usage when legacy `/quiz/play` is hit.
+- Log any stale frontend attempt to use removed legacy quiz flows if client-side telemetry still exists.
 
 ### 7.2 Backend telemetry
 - analytics or logging pipeline in the backend
 
 **Patch goal**
-- Measure traffic split across `/questions`, `/modules`, and `/quiz`.
+- Measure traffic split across `/questions`, `/modules`, and future `/study-*` surfaces.
 
 ## Phase 8 — Deprecate legacy quiz surfaces
 
@@ -161,12 +171,13 @@ Patch transport and routing seams first, then screen launchers, then new surface
 **Patch goal**
 - Redirect or remove ambiguous quiz entry points once telemetry shows safe adoption.
 
-### 8.2 Backend deprecation or reassignment
-- legacy quiz endpoint files
+### 8.2 Backend cleanup confirmation
 - `Tycoon.Backend.Api/Program.cs`
+- question/learning contract docs
 
 **Patch goal**
-- Either remove `/quiz` from supported gameplay or formally keep it as a study compatibility facade.
+- Keep `/quiz` removed from supported backend gameplay contracts.
+- Prevent docs or comments from implying a still-supported backend compatibility facade unless a future study surface is intentionally introduced there.
 
 ## Patch order summary
 1. Backend comments and route intent annotations
@@ -178,7 +189,7 @@ Patch transport and routing seams first, then screen launchers, then new surface
 7. DTO and mapping alignment
 8. Study hub backend + frontend scaffolding
 9. telemetry
-10. legacy quiz sunset
+10. legacy quiz reference sunset
 
 ## Highest-risk files
 - `lib/core/navigation/app_router.dart`
@@ -189,7 +200,7 @@ Patch transport and routing seams first, then screen launchers, then new surface
 - `lib/screens/question/question_view_screen.dart`
 
 ## Suggested guardrails
-- Do not remove `/quiz/play` until telemetry confirms near-zero gameplay dependency.
-- Keep fallback logic in one service only.
+- Do not reintroduce `/quiz/play` unless a new explicit ADR chooses a compatibility facade.
+- Remove fallback logic rather than preserving it indefinitely.
 - Avoid renaming DTOs and routes in the same commit as major UI restructuring.
 - Land router changes before broad launcher rewrites so redirects can protect older screens.
