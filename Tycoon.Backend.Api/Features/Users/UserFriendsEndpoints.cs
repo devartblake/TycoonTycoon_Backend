@@ -166,7 +166,7 @@ namespace Tycoon.Backend.Api.Features.Users
                         u.Id,
                         u.Handle,
                         u.Handle,
-                        null,
+                        u.AvatarUrl,
                         0,
                         "New to Synaptix"
                     ))

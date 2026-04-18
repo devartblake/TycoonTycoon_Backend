@@ -31,6 +31,28 @@ namespace Tycoon.Backend.Api.Features.LearningModules
                 return Results.Ok(list);
             });
 
+            // Recommended published modules for a player or anonymous learner.
+            // Optional: ?playerId={guid}&count=5
+            g.MapGet("/recommended", async (
+                [FromQuery] Guid? playerId,
+                [FromQuery] int count,
+                IMediator mediator,
+                CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new GetRecommendedLearningModules(playerId, count), ct);
+                return Results.Ok(dto);
+            });
+
+            // Progress summary across the published learning catalog for one player.
+            g.MapGet("/progress/{playerId:guid}", async (
+                Guid playerId,
+                IMediator mediator,
+                CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new GetLearningModuleProgress(playerId), ct);
+                return Results.Ok(dto);
+            });
+
             // Module overview (public)
             g.MapGet("/{id:guid}", async (Guid id, IMediator mediator, CancellationToken ct) =>
             {

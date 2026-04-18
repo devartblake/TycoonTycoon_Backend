@@ -80,6 +80,56 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
     }
 
     [Fact]
+    public async Task GetRecommendedModules_ExcludesCompletedModules_WhenPlayerIdProvided()
+    {
+        var playerId = Guid.NewGuid();
+        var completed = await SeedPublishedModuleAsync("Completed Recommendation", "Science", QuestionDifficulty.Easy);
+        var next = await SeedPublishedModuleAsync("Next Recommendation", "Science", QuestionDifficulty.Medium);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+            db.ModuleCompletions.Add(new ModuleCompletion(playerId, completed.Id));
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _http.GetFromJsonAsync<RecommendedLearningModulesResponseDto>(
+            $"/modules/recommended?playerId={playerId}&count=10", JsonOptions);
+
+        response.Should().NotBeNull();
+        response!.Items.Should().Contain(x => x.Id == next.Id);
+        response.Items.Should().NotContain(x => x.Id == completed.Id);
+    }
+
+    [Fact]
+    public async Task GetModuleProgress_ReturnsPublishedCatalogSummary_ForPlayer()
+    {
+        var playerId = Guid.NewGuid();
+        var completed = await SeedPublishedModuleAsync("Completed Progress", "Science", QuestionDifficulty.Easy);
+        var incomplete = await SeedPublishedModuleAsync("Incomplete Progress", "History", QuestionDifficulty.Hard);
+        await SeedUnpublishedModuleAsync("Hidden Progress", "Science", QuestionDifficulty.Medium);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+            db.ModuleCompletions.Add(new ModuleCompletion(playerId, completed.Id));
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _http.GetFromJsonAsync<LearningModuleProgressDto>(
+            $"/modules/progress/{playerId}", JsonOptions);
+
+        response.Should().NotBeNull();
+        response!.PlayerId.Should().Be(playerId);
+        response.CompletedModules.Should().BeGreaterThanOrEqualTo(1);
+        response.CompletedModuleIds.Should().Contain(completed.Id);
+        response.CompletedModuleIds.Should().NotContain(incomplete.Id);
+        response.TotalPublishedModules.Should().BeGreaterThanOrEqualTo(2);
+        response.RemainingModules.Should().Be(response.TotalPublishedModules - response.CompletedModules);
+        response.CompletionRate.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
     public async Task GetModule_ReturnsNotFound_ForUnpublishedModule()
     {
         var module = await SeedUnpublishedModuleAsync("Hidden", "Science", QuestionDifficulty.Easy);

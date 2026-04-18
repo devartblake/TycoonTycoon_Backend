@@ -1,7 +1,7 @@
 # Question Flow Frontend/Backend Handoff
 
 **Date:** 2026-04-15  
-**Status Updated:** 2026-04-17  
+**Status Updated:** 2026-04-18  
 **Audience:** Backend / Platform Team / Frontend Team  
 **Purpose:** Align the current Flutter question flow with the backend contracts after the option 2 migration decision: `/quiz/*` is retired from the backend API, `/questions/*` is the gameplay contract, and learning/training should use learning modules instead of legacy quiz-style endpoints.
 
@@ -17,7 +17,8 @@ Current backend contract reality:
 - `/modules/*` is the supported guided learning API
 - `/quiz/*` is **not** mapped in the backend API
 
-Use [LEARNING_MODULES_API_HANDOFF.md](/c:/Users/lmxbl/Documents/TycoonTycoon_Backend/docs/LEARNING_MODULES_API_HANDOFF.md) as the source of truth for study/training/module flows.
+Use [LEARNING_MODULES_API_HANDOFF.md](/c:/Users/lmxbl/Documents/TycoonTycoon_Backend/docs/LEARNING_MODULES_API_HANDOFF.md) as the source of truth for guided learning/module flows.
+Use [study_frontend_backend_handoff_2026-04-18.md](/C:/Users/lmxbl/Documents/TycoonTycoon_Backend/docs/study_frontend_backend_handoff_2026-04-18.md) as the source of truth for the dedicated Study surface.
 
 ---
 
@@ -48,6 +49,9 @@ The frontend may still support **local fallback**, but the backend team should n
 The supported gameplay routes are:
 
 - `GET /questions/set`
+- `GET /questions/categories`
+- `GET /questions/metadata`
+- `POST /questions/preview-set`
 - `POST /questions/check`
 - `POST /questions/check-batch`
 
@@ -63,6 +67,23 @@ Training/study modules are handled separately through:
 - `POST /modules/{id}/complete`
 
 These routes intentionally support learning-specific behavior such as correct-answer exposure inside lesson content.
+
+### Dedicated Study surface
+
+Rehearsal and self-paced review are now handled separately through:
+
+- `GET /study-sets`
+- `GET /study-sets/{id}`
+- `GET /study-sets/recommended`
+- `POST /study-sets`
+- `PATCH /study-sets/{id}`
+- `POST /study-sets/favorites/{questionId}`
+- `DELETE /study-sets/favorites/{questionId}`
+- `POST /study-sessions`
+- `POST /study-sessions/{id}/progress`
+- `GET /study-sessions/{id}/summary`
+
+These routes are the supported backend path for Study/Quizlet-like behavior. They should not be conflated with competitive gameplay or guided learning modules.
 
 ### Retired backend routes
 
@@ -153,6 +174,12 @@ Backend-supported gameplay fields are conceptually:
 - `difficulty`
 - `options`
 - optional `mediaKey`
+
+Backend-supported gameplay discovery fields are conceptually:
+
+- categories with counts via `GET /questions/categories`
+- categories + supported difficulties via `GET /questions/metadata`
+- answer-safe filtered previews via `POST /questions/preview-set`
 
 The backend does **not** expose:
 
@@ -295,6 +322,12 @@ Keep `/questions/set` stable and simple:
 }
 ```
 
+Keep discovery surfaces answer-safe as well:
+
+- `GET /questions/categories` should expose approved categories only
+- `GET /questions/metadata` should expose filter metadata, not answers
+- `POST /questions/preview-set` should return gameplay-safe question DTOs, not learning-style explanations or correct-answer fields
+
 ### Gameplay grading
 
 Keep `/questions/check` and `/questions/check-batch` aligned to option IDs:
@@ -333,11 +366,20 @@ Keep module lessons learning-oriented and explicit:
 ## Backend Validation Checklist
 
 - Confirm `GET /questions/set` remains the preferred canonical gameplay retrieval route.
+- Confirm `GET /questions/categories`, `GET /questions/metadata`, and `POST /questions/preview-set` remain answer-safe discovery surfaces.
 - Confirm `POST /questions/check` and `POST /questions/check-batch` remain stable.
 - Confirm learning/training flows use `/modules/*`, not retired `/quiz/*`.
 - Confirm retired `/quiz/*` routes remain absent from the backend API.
 - Confirm gameplay payloads do not expose correct answers.
 - Confirm learning lesson payloads may expose correct answers and explanations intentionally.
+
+Status in this backend repo:
+
+- `GET /questions/set` is implemented as the canonical gameplay retrieval route.
+- `GET /questions/categories`, `GET /questions/metadata`, and `POST /questions/preview-set` are implemented as canonical discovery/preview routes.
+- `POST /questions/check` and `POST /questions/check-batch` are implemented as the canonical grading routes.
+- Representative `/quiz/*` route contract tests assert `404 Not Found`.
+- Gameplay contract tests verify the retrieval payload omits `correctOptionId`.
 
 ---
 

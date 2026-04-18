@@ -2782,6 +2782,110 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.ToTable("question_tags", (string)null);
                 });
 
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.QuestionStudyFavorite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_question_study_favorites");
+
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_question_study_favorites_player_id");
+
+                    b.HasIndex("QuestionId")
+                        .HasDatabaseName("ix_question_study_favorites_question_id");
+
+                    b.HasIndex("PlayerId", "QuestionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_question_study_favorites_player_id_question_id");
+
+                    b.ToTable("question_study_favorites", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.StudyCardState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("EaseFactor")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("ease_factor");
+
+                    b.Property<string>("LastMode")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("last_mode");
+
+                    b.Property<string>("LastOutcome")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("last_outcome");
+
+                    b.Property<int?>("LastConfidence")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_confidence");
+
+                    b.Property<DateTimeOffset?>("LastReviewedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reviewed_at_utc");
+
+                    b.Property<DateTimeOffset?>("NextReviewAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_review_at_utc");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
+
+                    b.Property<int>("ReviewCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("review_count");
+
+                    b.Property<int>("SuccessStreak")
+                        .HasColumnType("integer")
+                        .HasColumnName("success_streak");
+
+                    b.HasKey("Id")
+                        .HasName("pk_study_card_states");
+
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_study_card_states_player_id");
+
+                    b.HasIndex("QuestionId")
+                        .HasDatabaseName("ix_study_card_states_question_id");
+
+                    b.HasIndex("PlayerId", "NextReviewAtUtc")
+                        .HasDatabaseName("ix_study_card_states_player_id_next_review_at_utc");
+
+                    b.HasIndex("PlayerId", "QuestionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_study_card_states_player_id_question_id");
+
+                    b.ToTable("study_card_states", (string)null);
+                });
+
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.ReferralCode", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3310,6 +3414,184 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.ToTable("store_items", (string)null);
                 });
 
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.StudySession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AnswerKeyJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("answer_key_json");
+
+                    b.Property<int>("AnsweredCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("answered_count");
+
+                    b.Property<string>("AnsweredResultsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("answered_results_json");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("category");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<int>("CorrectCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("correct_count");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("CurrentQuestionIndex")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_question_index");
+
+                    b.Property<string>("InteractionStatesJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("interaction_states_json");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("mode");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<int>("QuestionCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("question_count");
+
+                    b.Property<string>("QuestionIdsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("question_ids_json");
+
+                    b.Property<string>("StudySetId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("study_set_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_study_sessions");
+
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_study_sessions_player_id");
+
+                    b.HasIndex("PlayerId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_study_sessions_player_id_created_at_utc");
+
+                    b.HasIndex("PlayerId", "StudySetId", "CompletedAtUtc")
+                        .HasDatabaseName("ix_study_sessions_player_id_study_set_id_completed_at_utc");
+
+                    b.ToTable("study_sessions", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.StudySet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_study_sets");
+
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_study_sets_player_id");
+
+                    b.HasIndex("PlayerId", "UpdatedAtUtc")
+                        .HasDatabaseName("ix_study_sets_player_id_updated_at_utc");
+
+                    b.ToTable("study_sets", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.StudySetItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer")
+                        .HasColumnName("order");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
+
+                    b.Property<Guid>("StudySetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("study_set_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_study_set_items");
+
+                    b.HasIndex("StudySetId")
+                        .HasDatabaseName("ix_study_set_items_study_set_id");
+
+                    b.HasIndex("StudySetId", "Order")
+                        .IsUnique()
+                        .HasDatabaseName("ix_study_set_items_study_set_id_order");
+
+                    b.ToTable("study_set_items", (string)null);
+                });
+
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.TerritoryDuel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3518,6 +3800,10 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .HasColumnType("character varying(2)")
                         .HasColumnName("country");
 
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("avatar_url");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -3702,6 +3988,16 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .HasConstraintName("fk_question_tags_questions_question_id");
                 });
 
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.StudySetItem", b =>
+                {
+                    b.HasOne("Tycoon.Backend.Domain.Entities.StudySet", null)
+                        .WithMany("Items")
+                        .HasForeignKey("StudySetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_study_set_items_study_sets_study_set_id");
+                });
+
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.EconomyTransaction", b =>
                 {
                     b.Navigation("Lines");
@@ -3720,6 +4016,11 @@ namespace Tycoon.Backend.Migrations.Migrations
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.MatchResult", b =>
                 {
                     b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.StudySet", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.PlayerTransaction", b =>

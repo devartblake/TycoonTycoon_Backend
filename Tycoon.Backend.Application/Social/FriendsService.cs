@@ -198,6 +198,7 @@ namespace Tycoon.Backend.Application.Social
                     {
                         edge.FriendPlayerId,
                         user.Handle,
+                        user.AvatarUrl,
                         edge.CreatedAtUtc
                     })
                 .ToListAsync(ct);
@@ -211,7 +212,7 @@ namespace Tycoon.Backend.Application.Social
                 FriendPlayerId: r.FriendPlayerId,
                 DisplayName: r.Handle,
                 Username: r.Handle,
-                AvatarUrl: null,
+                AvatarUrl: r.AvatarUrl,
                 IsOnline: onlineSet.Contains(r.FriendPlayerId),
                 LastSeenUtc: null,
                 SinceUtc: r.CreatedAtUtc
@@ -259,6 +260,7 @@ namespace Tycoon.Backend.Application.Social
                         req.Id,
                         req.FromPlayerId,
                         SenderHandle = user.Handle,
+                        user.AvatarUrl,
                         req.ToPlayerId,
                         req.Status,
                         req.CreatedAtUtc,
@@ -271,7 +273,7 @@ namespace Tycoon.Backend.Application.Social
                 FromPlayerId: r.FromPlayerId,
                 SenderDisplayName: r.SenderHandle,
                 SenderUsername: r.SenderHandle,
-                SenderAvatarUrl: null,
+                SenderAvatarUrl: r.AvatarUrl,
                 ToPlayerId: r.ToPlayerId,
                 Status: r.Status,
                 CreatedAtUtc: r.CreatedAtUtc,

@@ -18,6 +18,9 @@ namespace Tycoon.Backend.Api.Features.Questions
             var g = app.MapGroup("/questions").WithTags("Questions").WithOpenApi();
 
             g.MapGet("/set", GetQuestionSet);
+            g.MapGet("/categories", GetCategories);
+            g.MapGet("/metadata", GetMetadata);
+            g.MapPost("/preview-set", PreviewQuestionSet);
             g.MapPost("/check", CheckAnswer);
             g.MapPost("/check-batch", CheckAnswersBatch);
         }
@@ -38,6 +41,77 @@ namespace Tycoon.Backend.Api.Features.Questions
                 count,
                 string.IsNullOrWhiteSpace(category) ? null : new[] { category.Trim() },
                 difficulty.HasValue ? new[] { difficulty.Value } : null,
+                ct);
+
+            return Results.Ok(new QuestionSetDto(dtos, dtos.Count));
+        }
+
+        /// <summary>
+        /// Returns the approved gameplay category catalog with counts.
+        /// This is a discovery surface for filters, not a grading or answer-reveal endpoint.
+        /// </summary>
+        private static async Task<IResult> GetCategories(
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var rows = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
+                .GroupBy(q => q.Category)
+                .Select(g => new { Key = g.Key, Count = g.Count() })
+                .OrderBy(x => x.Key)
+                .ToListAsync(ct);
+
+            var categories = rows
+                .Select(x => new FacetCountDto(x.Key, x.Count))
+                .ToList();
+
+            return Results.Ok(new QuestionCategoriesResponseDto(categories));
+        }
+
+        /// <summary>
+        /// Returns supported discovery metadata for the gameplay question surface.
+        /// Gameplay retrieval remains answer-safe; correct answers are not exposed here.
+        /// </summary>
+        private static async Task<IResult> GetMetadata(
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var categoryRows = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
+                .GroupBy(q => q.Category)
+                .Select(g => new { Key = g.Key, Count = g.Count() })
+                .OrderBy(x => x.Key)
+                .ToListAsync(ct);
+
+            var categories = categoryRows
+                .Select(x => new FacetCountDto(x.Key, x.Count))
+                .ToList();
+
+            var difficulties = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
+                .Select(q => q.Difficulty)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync(ct);
+
+            return Results.Ok(new QuestionMetadataResponseDto(
+                categories,
+                difficulties,
+                DefaultCount: 10,
+                MaxCount: 50));
+        }
+
+        /// <summary>
+        /// Returns an answer-safe preview of a question set using explicit category/difficulty filters.
+        /// This is intended for discovery workflows and future study-set builders, not grading.
+        /// </summary>
+        private static async Task<IResult> PreviewQuestionSet(
+            [FromBody] PreviewQuestionSetRequest req,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var dtos = await QueryGameplayQuestionsAsync(
+                db,
+                req.Count,
+                req.Categories,
+                req.Difficulties,
                 ct);
 
             return Results.Ok(new QuestionSetDto(dtos, dtos.Count));

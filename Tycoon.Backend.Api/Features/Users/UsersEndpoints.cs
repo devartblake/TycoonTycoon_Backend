@@ -6,6 +6,7 @@ using System.Security.Claims;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.Media;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.Users
@@ -21,6 +22,7 @@ namespace Tycoon.Backend.Api.Features.Users
             usersGroup.MapGet("/search", SearchUsers);
             usersGroup.MapGet("/me", GetCurrentUserProfile);
             usersGroup.MapGet("/{userId:guid}/career-summary", GetCareerSummary);
+            usersGroup.MapPost("/me/avatar/upload-url", CreateAvatarUploadUrl);
             usersGroup.MapPatch("/me", UpdateCurrentUserProfile);
             usersGroup.MapGet("/me/wallet", GetMyWallet);
             usersGroup.MapGet("/me/transactions", GetMyTransactions);
@@ -47,6 +49,7 @@ namespace Tycoon.Backend.Api.Features.Users
                 currentUser.Handle,
                 currentUser.Email,
                 currentUser.Country,
+                currentUser.AvatarUrl,
                 currentUser.Tier,
                 currentUser.Mmr
             ));
@@ -83,6 +86,7 @@ namespace Tycoon.Backend.Api.Features.Users
                     u.Handle,
                     u.Handle,
                     u.Handle,
+                    u.AvatarUrl,
                     u.Country,
                     u.Tier,
                     u.Mmr
@@ -92,18 +96,43 @@ namespace Tycoon.Backend.Api.Features.Users
             return Results.Ok(new UserSearchResponseDto(page, pageSize, total, totalPages, users));
         }
 
+        private static async Task<IResult> CreateAvatarUploadUrl(
+            [FromBody] AvatarUploadUrlRequest request,
+            HttpContext httpContext,
+            MediaService mediaService,
+            CancellationToken cancellation)
+        {
+            if (!TryGetUserId(httpContext, out var userId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            if (string.IsNullOrWhiteSpace(request.FileName))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "fileName is required.");
+
+            if (string.IsNullOrWhiteSpace(request.ContentType))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "contentType is required.");
+
+            if (request.ContentLength <= 0)
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "contentLength must be greater than zero.");
+
+            var sanitizedFileName = request.FileName.Trim();
+            var objectKey = $"avatars/{userId:D}/{DateTimeOffset.UtcNow:yyyyMMdd}/{Guid.NewGuid():N}_{sanitizedFileName}";
+            var intent = await mediaService.CreateUploadIntentForAssetKeyAsync(
+                objectKey,
+                request.ContentType.Trim(),
+                cancellation);
+
+            var publicUrl = mediaService.GetPublicUrl(intent.AssetKey);
+            return Results.Ok(new AvatarUploadUrlResponse(intent.UploadUrl, intent.AssetKey, publicUrl));
+        }
+
         private static async Task<IResult> UpdateCurrentUserProfile(
             [FromBody] UpdateProfileRequest request,
             HttpContext httpContext,
             IAppDb database,
             CancellationToken cancellation)
         {
-            var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userIdClaim?.Value))
+            if (!TryGetUserId(httpContext, out var parsedUserId))
                 return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
-
-            if (!Guid.TryParse(userIdClaim.Value, out var parsedUserId))
-                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Invalid authenticated user identifier.");
 
             var currentUser = await database.Users
                 .FirstOrDefaultAsync(u => u.Id == parsedUserId, cancellation);
@@ -111,7 +140,7 @@ namespace Tycoon.Backend.Api.Features.Users
             if (currentUser is null)
                 return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "User not found.");
 
-            currentUser.UpdateProfile(request.Handle, request.Country);
+            currentUser.UpdateProfile(request.Handle, request.Country, request.AvatarUrl);
             await database.SaveChangesAsync(cancellation);
 
             var updatedProfile = new UserDto(
@@ -119,6 +148,7 @@ namespace Tycoon.Backend.Api.Features.Users
                 currentUser.Handle,
                 currentUser.Email,
                 currentUser.Country,
+                currentUser.AvatarUrl,
                 currentUser.Tier,
                 currentUser.Mmr
             );

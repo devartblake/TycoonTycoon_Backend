@@ -240,6 +240,7 @@ namespace Tycoon.Backend.Application.Auth
                 user.Handle,
                 user.Email,
                 user.Country,
+                user.AvatarUrl,
                 user.Tier,
                 user.Mmr
             );

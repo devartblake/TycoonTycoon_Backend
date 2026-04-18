@@ -24,6 +24,10 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<Question> Questions { get; }
         DbSet<QuestionOption> QuestionOptions { get; }
         DbSet<QuestionTag> QuestionTags { get; }
+        DbSet<QuestionStudyFavorite> QuestionStudyFavorites { get; }
+        DbSet<StudySet> StudySets { get; }
+        DbSet<StudySetItem> StudySetItems { get; }
+        DbSet<StudyCardState> StudyCardStates { get; }
         DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents { get; }
         DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups { get; }
         DbSet<QuestionAnsweredPlayerDailyRollup> QuestionAnsweredPlayerDailyRollups { get; }
@@ -76,6 +80,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<LearningModule> LearningModules { get; }
         DbSet<ModuleLesson> ModuleLessons { get; }
         DbSet<ModuleCompletion> ModuleCompletions { get; }
+        DbSet<StudySession> StudySessions { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);

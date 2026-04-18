@@ -23,6 +23,21 @@ The backend has already crossed the migration threshold:
 From this point forward, the plan assumes **option 2**:
 do not restore a backend `/quiz` shim. Remove stale dependencies instead.
 
+### Backend implementation status for this plan
+
+Backend Phase 0 and Phase 1 intent are now established in code and handoff docs:
+
+- `/questions/*` is documented and tested as the canonical gameplay content surface
+- `/modules/*` is documented as the canonical learning surface
+- representative `/quiz/*` routes are covered by negative contract tests and remain absent from the API
+- backend comments and handoff docs now treat `/quiz/*` as retired, not as a pending compatibility gap
+
+The remaining migration work in this plan is primarily:
+
+- frontend transport/routing cleanup
+- frontend Study hub/routes and user-facing IA cleanup
+- observability and runtime validation once frontend Study is consuming the new backend contracts
+
 ---
 
 ## 1. Executive recommendation
@@ -92,9 +107,9 @@ The frontend is only partially aligned with that backend shape.
 ### Main problems
 
 1. **Legacy contract assumptions still exist in the transport layer**
-   - `ApiService.fetchQuestions()` may still call `/quiz/play`.
-   - `TycoonApiClient.getQuizQuestions()` may still call `/quiz/play`.
-   - `QuestionHubService` may still carry legacy fallback assumptions.
+   - Frontend `ApiService.fetchQuestions()` may still call `/quiz/play`.
+   - Frontend `TycoonApiClient.getQuizQuestions()` may still call `/quiz/play`.
+   - Frontend `QuestionHubService` may still carry legacy fallback assumptions.
 
 2. **UI naming still says `quiz` even where it now means play**
    - Primary routes may still use quiz-first naming.
@@ -215,10 +230,11 @@ This map separates **canonical** and **future** surfaces. The previous transitio
 
 #### Recommended additions
 - `GET /modules/recommended`
-  - personalized next modules
+  - implemented as a lightweight next-module surface over published modules
+  - excludes completed modules when `playerId` is provided
 
 - `GET /modules/progress/{playerId}`
-  - module progress summary
+  - implemented as published-catalog progress summary for one player
 
 - `POST /modules/{id}/lesson/{lessonId}/checkpoint`
   - lesson progress checkpoint if you want granular saves later
@@ -257,6 +273,36 @@ Alternative naming if preferred:
 
 Use **`/study-sets`** if you want the broadest flexibility.
 It supports flashcards, review bundles, and self-test sets without locking the feature into one interaction pattern.
+
+### Backend Study surface now implemented
+
+The backend now exposes a substantial Study contract:
+
+- `GET /study-sets`
+- `GET /study-sets/{id}`
+- `GET /study-sets/recommended`
+- `POST /study-sets`
+- `PATCH /study-sets/{id}`
+- `POST /study-sets/favorites/{questionId}`
+- `DELETE /study-sets/favorites/{questionId}`
+- `POST /study-sessions`
+- `POST /study-sessions/{id}/progress`
+- `GET /study-sessions/{id}/summary`
+
+Current constraints:
+
+- sets are generated from existing approved questions rather than stored as explicit entities
+- category-based sets are available without player state
+- weak-area recommendations are derived from player answer rollups when `playerId` is provided
+- authenticated users can now build a generated `favorites` study set by bookmarking approved questions
+- authenticated users can now create and update custom saved study sets under the `study-sets` route family
+- study recommendations can now include a spaced-repetition driven `due-review` set based on persisted per-player card state
+- study sessions are durable per-player snapshots over generated and custom sets
+- study sessions persist `Flashcard` vs `SelfTest` mode
+- study progress persists explicit flashcard interaction state per question
+- spaced review is now driven by persisted `StudyCardState`, not only same-day weak-area rollups
+- a dedicated frontend/backend Study handoff now exists:
+  - `docs/study_frontend_backend_handoff_2026-04-18.md`
 
 ## 4.4 Formal play lifecycle surface
 
@@ -413,13 +459,13 @@ Start with:
 Stop the architecture from drifting further while you refactor.
 
 ### Tasks
-- [ ] Decide final terminology:
-  - [ ] **Play** = formal gameplay
-  - [ ] **Learn** = modules/lessons
-  - [ ] **Study** = Quizlet-like review
-  - [ ] **Questions** = canonical content layer
-- [ ] Write a short backend/frontend contract note in the repo docs.
-- [ ] Mark `/quiz/*` as removed from backend contracts in code comments and internal docs.
+- [x] Decide final terminology:
+  - [x] **Play** = formal gameplay
+  - [x] **Learn** = modules/lessons
+  - [x] **Study** = Quizlet-like review
+  - [x] **Questions** = canonical content layer
+- [x] Write a short backend/frontend contract note in the repo docs.
+- [x] Mark `/quiz/*` as removed from backend contracts in code comments and internal docs.
 - [ ] Mark `QuestionHubService` as the preferred gameplay question source.
 - [ ] Identify every frontend caller still using `/quiz/*` directly.
 
@@ -434,18 +480,25 @@ Stop the architecture from drifting further while you refactor.
 Make backend intent explicit before frontend cleanup.
 
 ### Tasks
-- [ ] Confirm `/questions/set`, `/questions/check`, `/questions/check-batch` payload contracts.
-- [ ] Confirm `/modules`, `/modules/{id}`, `/modules/{id}/lessons`, `/modules/{id}/complete` payload contracts.
-- [ ] Add response documentation/comments clarifying:
-  - [ ] questions endpoint does not expose correct answers
-  - [ ] learning lessons may expose correct answers
-- [ ] Remove stale docs or code comments that still imply `/quiz/play` exists.
-- [ ] Remove telemetry assumptions that depend on live backend `/quiz` traffic.
+- [x] Confirm `/questions/set`, `/questions/check`, `/questions/check-batch` payload contracts.
+- [x] Confirm `/modules`, `/modules/{id}`, `/modules/{id}/lessons`, `/modules/{id}/complete` payload contracts.
+- [x] Add response documentation/comments clarifying:
+  - [x] questions endpoint does not expose correct answers
+  - [x] learning lessons may expose correct answers
+- [x] Remove stale backend docs or code comments that imply `/quiz/play` is a live backend route.
+- [x] Remove backend telemetry assumptions that depend on live `/quiz/*` traffic.
 
 ### Deliverables
 - stable DTO contract list
 - clear route ownership
 - backend comments that match implemented reality
+
+### Completion note
+
+Phase 1 is complete for the backend repo.
+
+- Remaining `/quiz/*` references in this file and related migration docs are intentionally historical or frontend-cleanup notes.
+- Future backend observability should measure `/questions/*`, `/modules/*`, and future `/study-*` usage rather than assuming any live `/quiz/*` traffic.
 
 ## Phase 2 - Unify frontend question loading
 
@@ -508,15 +561,20 @@ Create the new self-test and recall experience without corrupting gameplay archi
 ### MVP scope
 - [ ] create `StudyHubScreen`
 - [ ] create starter routes under `/study`
-- [ ] support favorites-based review set
-- [ ] support weak-area review set
-- [ ] support category-based study set
-- [ ] create flashcard mode
-- [ ] create self-test mode
+- [ ] support favorites-based review set in the UI
+- [ ] support weak-area review set in the UI
+- [ ] support category-based study set in the UI
+- [ ] create flashcard mode in the UI
+- [ ] create self-test mode in the UI
 
 ### Backend preparation
-- [ ] decide whether MVP study sets are generated from existing questions or stored as explicit entities
-- [ ] create a minimal `study-sets` contract if needed
+- [x] decide whether MVP study sets are generated from existing questions or stored as explicit entities
+- [x] create a minimal `study-sets` contract if needed
+- [x] add favorites-backed generated study sets
+- [x] add custom saved study sets
+- [x] add `Flashcard` / `SelfTest` session mode persistence
+- [x] add explicit flashcard interaction state persistence
+- [x] add spaced-review-backed `due-review` recommendations
 
 ## Phase 6 - Remove legacy quiz dependence
 
@@ -542,10 +600,10 @@ Finish the migration without reintroducing removed backend contracts.
 The migration should be considered successful when all of the following are true:
 
 ### Backend
-- [ ] `/questions/*` is the canonical gameplay content surface
-- [ ] `/modules/*` is the canonical learning surface
-- [ ] `/quiz/*` is absent from the supported backend contract
-- [ ] study endpoints are separated if introduced
+- [x] `/questions/*` is the canonical gameplay content surface
+- [x] `/modules/*` is the canonical learning surface
+- [x] `/quiz/*` is absent from the supported backend contract
+- [x] study endpoints are separated if introduced
 
 ### Frontend
 - [ ] all gameplay question retrieval flows use the same canonical service

@@ -7,6 +7,7 @@ The backend has now passed the migration threshold for legacy quiz transport:
 
 - `/questions/*` is the supported gameplay question API
 - `/modules/*` is the supported learning API
+- `/study-sets/*` and `/study-sessions/*` now exist as the dedicated Study API family
 - `/quiz/*` is no longer mapped in the backend API
 
 From this point forward, patches should assume **option 2** from the migration decision:
@@ -137,6 +138,15 @@ Patch transport and routing seams first, then screen launchers, then new surface
 **Patch goal**
 - Create a dedicated surface for flashcards, self-test, favorites, weak-area practice, or custom sets.
 
+**Status update**
+- Backend Study scaffolding is now in place and includes:
+  - generated category / weak-area / favorites / due-review sets
+  - custom saved study sets
+  - resumable study sessions
+  - flashcard/self-test session mode persistence
+  - explicit flashcard interaction state persistence
+- Remaining work in this phase is frontend Study hub and route adoption.
+
 ### 6.2 Frontend Study hub scaffolding
 - `lib/screens/study_hub/*`
 - `lib/core/navigation/app_router.dart`
@@ -154,13 +164,14 @@ Patch transport and routing seams first, then screen launchers, then new surface
 
 **Patch goal**
 - Log mode entry: Play, Learn, Study.
-- Log any stale frontend attempt to use removed legacy quiz flows if client-side telemetry still exists.
+- Log any stale frontend attempt to use removed legacy quiz flows as client-side migration debt, not as a live backend route family.
 
 ### 7.2 Backend telemetry
 - analytics or logging pipeline in the backend
 
 **Patch goal**
 - Measure traffic split across `/questions`, `/modules`, and future `/study-*` surfaces.
+- Do not model `/quiz/*` as an active backend traffic family in dashboards or route ownership notes.
 
 ## Phase 8 — Deprecate legacy quiz surfaces
 
@@ -177,7 +188,7 @@ Patch transport and routing seams first, then screen launchers, then new surface
 
 **Patch goal**
 - Keep `/quiz` removed from supported backend gameplay contracts.
-- Prevent docs or comments from implying a still-supported backend compatibility facade unless a future study surface is intentionally introduced there.
+- Prevent docs or comments from implying a still-supported backend compatibility facade unless a future Study surface is intentionally introduced under its own route family.
 
 ## Patch order summary
 1. Backend comments and route intent annotations

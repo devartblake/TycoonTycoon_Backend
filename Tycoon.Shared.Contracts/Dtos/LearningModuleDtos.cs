@@ -27,6 +27,21 @@ namespace Tycoon.Shared.Contracts.Dtos
         int RewardCoins
     );
 
+    // Recommended modules for a player or anonymous learner.
+    public sealed record RecommendedLearningModulesResponseDto(
+        IReadOnlyList<LearningModuleListItemDto> Items
+    );
+
+    // Progress summary across the published learning catalog for one player.
+    public sealed record LearningModuleProgressDto(
+        Guid PlayerId,
+        int TotalPublishedModules,
+        int CompletedModules,
+        int RemainingModules,
+        decimal CompletionRate,
+        IReadOnlyList<Guid> CompletedModuleIds
+    );
+
     // ── Lesson (learning screen) ─────────────────────────────────────────────────
     // CorrectOptionId is intentionally exposed — this is a learning context,
     // not a competitive gameplay context.

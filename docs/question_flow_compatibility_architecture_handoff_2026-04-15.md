@@ -1,11 +1,12 @@
 # Question Flow Compatibility Architecture Handoff
 
 **Date:** 2026-04-15  
-**Status Updated:** 2026-04-17  
+**Status Updated:** 2026-04-18  
 **Audience:** Frontend Team, Backend/API Team, Platform Team  
 **Purpose:** Define the supported architecture and contract boundary for question flows after the option 2 migration decision. The backend no longer exposes `/quiz/*`; gameplay uses `/questions/*`, guided training uses `/modules/*`, and future rehearsal work should use a dedicated Study surface rather than reviving legacy quiz endpoints.
 
 > **Primary training handoff:** Use [LEARNING_MODULES_API_HANDOFF.md](/c:/Users/lmxbl/Documents/TycoonTycoon_Backend/docs/LEARNING_MODULES_API_HANDOFF.md) for guided study/training flows.
+> **Primary Study handoff:** Use [study_frontend_backend_handoff_2026-04-18.md](/C:/Users/lmxbl/Documents/TycoonTycoon_Backend/docs/study_frontend_backend_handoff_2026-04-18.md) for flashcards, self-test, favorites, custom sets, and due-review flows.
 
 ---
 
@@ -31,8 +32,10 @@ Core decisions:
 | REST/API | `GET /modules/{id}` | `canonical` | Supported learning module detail route |
 | REST/API | `GET /modules/{id}/lessons` | `canonical` | Supported ordered lesson content route |
 | REST/API | `POST /modules/{id}/complete` | `canonical` | Supported module completion/reward route |
+| REST/API | `/study-sets/*` | `canonical` | Supported rehearsal/study-set discovery, favorites, custom sets, and due-review routes |
+| REST/API | `/study-sessions/*` | `canonical` | Supported resumable flashcard/self-test session routes |
 | REST/API | `/quiz/*` backend routes | `retired` | Not mapped in the backend API; do not assume legacy compatibility exists |
-| REST/API | question discovery/stats routes beyond `/questions/set` | `planned` | Introduce only through a new canonical `/questions/*` or future Study decision |
+| REST/API | question discovery/stats routes beyond `/questions/set` | `implemented` | `GET /questions/categories`, `GET /questions/metadata`, and `POST /questions/preview-set` are available |
 | `Tycoon.Sidecar` | enrichment, inference, curation helpers | `planned` | Internal-only behind API if and when profiling justifies offload |
 | mobile gRPC | live match/session streaming | `canonical` | Correct place for low-latency gameplay flows |
 | mobile gRPC | repository/discovery/training flows | `unsupported` | Do not move question discovery or module browsing here in this phase |

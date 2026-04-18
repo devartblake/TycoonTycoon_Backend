@@ -40,6 +40,10 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<Question> Questions => Set<Question>();
         public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
         public DbSet<QuestionTag> QuestionTags => Set<QuestionTag>();
+        public DbSet<QuestionStudyFavorite> QuestionStudyFavorites => Set<QuestionStudyFavorite>();
+        public DbSet<StudySet> StudySets => Set<StudySet>();
+        public DbSet<StudySetItem> StudySetItems => Set<StudySetItem>();
+        public DbSet<StudyCardState> StudyCardStates => Set<StudyCardState>();
         public DbSet<PlayerWallet> PlayerWallets => Set<PlayerWallet>();
         public DbSet<EconomyTransaction> EconomyTransactions => Set<EconomyTransaction>();
         public DbSet<EconomyTransactionLine> EconomyTransactionLines => Set<EconomyTransactionLine>();
@@ -93,6 +97,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<LearningModule> LearningModules => Set<LearningModule>();
         public DbSet<ModuleLesson> ModuleLessons => Set<ModuleLesson>();
         public DbSet<ModuleCompletion> ModuleCompletions => Set<ModuleCompletion>();
+        public DbSet<StudySession> StudySessions => Set<StudySession>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

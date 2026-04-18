@@ -5,6 +5,11 @@
 > **Base URL:** `http(s)://<host>:5000`  
 > **OpenAPI docs:** `/swagger` (dev only)
 
+> **Scope note:** This document is only for guided learning modules.
+> For the dedicated Study surface covering favorites, flashcards, self-test sessions,
+> custom sets, and due-review flows, use
+> [study_frontend_backend_handoff_2026-04-18.md](/C:/Users/lmxbl/Documents/TycoonTycoon_Backend/docs/study_frontend_backend_handoff_2026-04-18.md).
+
 ---
 
 ## Overview

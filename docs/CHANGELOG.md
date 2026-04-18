@@ -4,6 +4,51 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-18] Study Surface Deepening + Frontend Handoff
+
+### Backend Study API expansion
+- Added a dedicated Study frontend/backend handoff:
+  - `docs/study_frontend_backend_handoff_2026-04-18.md`
+- Added a lightweight Study status snapshot:
+  - `docs/study_frontend_backend_status_2026-04-18.md`
+
+### Study contract status
+- Study route family now includes:
+  - `GET /study-sets`
+  - `GET /study-sets/{id}`
+  - `GET /study-sets/recommended`
+  - `POST /study-sets`
+  - `PATCH /study-sets/{id}`
+  - `POST /study-sets/favorites/{questionId}`
+  - `DELETE /study-sets/favorites/{questionId}`
+  - `POST /study-sessions`
+  - `POST /study-sessions/{id}/progress`
+  - `GET /study-sessions/{id}/summary`
+- Study discovery now supports:
+  - generated category sets
+  - weak-area sets
+  - favorites sets
+  - due-review sets
+  - custom saved study sets
+
+### Session and review deepening
+- Study sessions now persist:
+  - `Flashcard` vs `SelfTest` mode
+  - ordered session question snapshots
+  - explicit flashcard interaction state
+  - per-question reveal/confidence/action data for resume flows
+- Added persisted `StudyCardState` to support due-review recommendations beyond same-day weak-area rollups.
+
+### Documentation/status updates
+- Updated:
+  - `docs/trivia_tycoon_quiz_question_learning_migration_plan.md`
+  - `docs/trivia_tycoon_migration_patch_order.md`
+  - `docs/question_flow_frontend_backend_handoff_2026-04-15.md`
+  - `docs/question_flow_compatibility_architecture_handoff_2026-04-15.md`
+  - `docs/REMAINING_TASKS.md`
+
+---
+
 ## [2026-04-15] Staging Rollback Drill Artifacts Published
 
 ### Operator dashboard rollback drill completion
