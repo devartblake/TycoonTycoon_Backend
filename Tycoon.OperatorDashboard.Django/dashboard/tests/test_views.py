@@ -4,6 +4,8 @@ import httpx
 from django.test import TestCase
 from django.urls import reverse
 
+from dashboard.models import OperatorSavedViewAuditEvent
+
 
 class DashboardViewsTests(TestCase):
     @mock.patch("dashboard.views.list_service_statuses")
@@ -334,6 +336,61 @@ class DashboardViewsTests(TestCase):
 
         self.assertEqual(200, response.status_code)
         mock_transfer_named_view.assert_called_once()
+
+    @mock.patch("dashboard.views.list_admin_users")
+    def test_operator_users_view_saved_view_governance_audit_filters(self, mock_list_admin_users):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        OperatorSavedViewAuditEvent.objects.create(
+            actor_email="ops@example.com",
+            owner_email="ops@example.com",
+            view_name="Banned",
+            action="archive",
+            metadata={"source": "users"},
+        )
+        OperatorSavedViewAuditEvent.objects.create(
+            actor_email="ops@example.com",
+            owner_email="ops@example.com",
+            view_name="Banned",
+            action="transfer",
+            metadata={"from_owner": "ops@example.com"},
+        )
+
+        mock_list_admin_users.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("operator-users-view"), {"savedViewAuditAction": "archive"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Saved-view governance audit timeline")
+        self.assertContains(response, "<td>archive</td>", html=True)
+        self.assertNotContains(response, "<td>transfer</td>", html=True)
+
+    @mock.patch("dashboard.views.list_admin_users")
+    def test_operator_users_view_saved_view_governance_audit_exports_csv(self, mock_list_admin_users):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        OperatorSavedViewAuditEvent.objects.create(
+            actor_email="ops@example.com",
+            owner_email="next@example.com",
+            view_name="Risk",
+            action="transfer",
+            metadata={"from_owner": "ops@example.com"},
+        )
+
+        mock_list_admin_users.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("operator-users-view"), {"savedViewAuditFormat": "csv"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("text/csv; charset=utf-8", response["Content-Type"])
+        self.assertIn("transfer", response.content.decode())
+        self.assertIn("from_owner", response.content.decode())
 
     @mock.patch("dashboard.views.get_admin_user")
     def test_operator_user_detail(self, mock_get_admin_user):
