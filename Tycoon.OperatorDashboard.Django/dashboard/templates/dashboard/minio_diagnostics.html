@@ -1,60 +1,78 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MinIO Diagnostics</title>
-    <style>
-      body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 2rem; background: #0b1020; color: #f8fafc; }
-      .card { background: #121936; border-radius: 14px; padding: 1rem; border: 1px solid #1f2b54; margin-bottom: 1rem; }
-      .pill { display: inline-block; margin-bottom: 0.5rem; font-size: 0.8rem; border-radius: 999px; padding: 0.2rem 0.6rem; }
-      .status-healthy { background: #14532d; }
-      .status-degraded { background: #78350f; }
-      .status-offline { background: #7f1d1d; }
-      .muted { color: #94a3b8; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 0.5rem; border-bottom: 1px solid #1f2b54; text-align: left; }
-      a { color: #93c5fd; }
-    </style>
-  </head>
-  <body>
-    <h1>MinIO Diagnostics</h1>
-    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout">Sign out</a></p>{% endif %}
-    <p><a href="/">← Back to dashboard</a></p>
+{% extends "dashboard/base.html" %}
 
-    <section class="card">
-      <span class="pill status-{{ overall_status }}">{{ overall_status|upper }}</span>
-      <p class="muted">Base URL: <code>{{ diagnostics.baseUrl }}</code></p>
-      <h2>Recommended actions</h2>
-      <ul>
-        {% for item in guidance %}
-        <li>{{ item }}</li>
-        {% endfor %}
-      </ul>
-    </section>
+{% block title %}MinIO Diagnostics{% endblock %}
 
-    <section class="card">
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Storage health</p>
+    <h1 class="page-title">MinIO diagnostics</h1>
+    <p class="page-subtitle">Inspect the current storage posture, review probe health, and follow the recommended incident guidance for the observed state.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="status-pill {{ overall_status }}">{{ overall_status|upper }}</span>
+  </div>
+</section>
+
+<section class="split">
+  <article class="card">
+    <div class="section-header">
+      <div>
+        <h2>Storage posture</h2>
+        <p class="section-copy">These diagnostics are generated against the configured MinIO base URL.</p>
+      </div>
+    </div>
+    <p class="helper-text">Base URL: <code>{{ diagnostics.baseUrl }}</code></p>
+    <div class="status-grid">
+      {% for item in guidance %}
+      <div class="surface-note">{{ item }}</div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="section-header">
+      <div>
+        <h2>Operator guidance</h2>
+        <p class="section-copy">Suggested next actions based on the current storage status.</p>
+      </div>
+    </div>
+    <ul class="list">
+      <li>Confirm the object-storage service is reachable from the dashboard runtime.</li>
+      <li>Correlate any degraded probe with recent upload-intent failures or policy changes.</li>
+      <li>Escalate quickly when the status is offline and operator upload workflows are blocked.</li>
+    </ul>
+  </article>
+</section>
+
+<section class="card" style="margin-top: 18px;">
+  <div class="section-header">
+    <div>
       <h2>Probe results</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Probe</th>
-            <th>Status</th>
-            <th>HTTP</th>
-            <th>Latency (ms)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for name, check in diagnostics.checks.items %}
-          <tr>
-            <td>{{ name }}</td>
-            <td>{{ check.status }}</td>
-            <td>{{ check.httpStatus|default:"-" }}</td>
-            <td>{{ check.latencyMs }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </section>
-  </body>
-</html>
+      <p class="section-copy">Each probe result includes status, HTTP code, and latency for quick diagnosis.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Probe</th>
+          <th>Status</th>
+          <th>HTTP</th>
+          <th>Latency (ms)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for name, check in diagnostics.checks.items %}
+        <tr>
+          <td>{{ name }}</td>
+          <td><span class="chip {% if check.status == 'healthy' %}success{% elif check.status == 'offline' %}danger{% else %}warning{% endif %}">{{ check.status }}</span></td>
+          <td>{{ check.httpStatus|default:"-" }}</td>
+          <td>{{ check.latencyMs }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

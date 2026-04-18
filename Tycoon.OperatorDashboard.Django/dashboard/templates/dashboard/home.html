@@ -1,98 +1,104 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Operator Dashboard</title>
-    <style>
-      body {
-        font-family: Inter, system-ui, -apple-system, sans-serif;
-        margin: 0;
-        padding: 2rem;
-        background: #0b1020;
-        color: #f8fafc;
-      }
+{% extends "dashboard/base.html" %}
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1rem;
-      }
+{% block title %}Synaptix Command{% endblock %}
 
-      .card {
-        background: #121936;
-        border-radius: 14px;
-        padding: 1rem;
-        border: 1px solid #1f2b54;
-      }
-
-      .pill {
-        display: inline-block;
-        margin-bottom: 0.5rem;
-        font-size: 0.8rem;
-        border-radius: 999px;
-        padding: 0.2rem 0.6rem;
-      }
-
-      .status-ok {
-        background: #14532d;
-      }
-
-      .status-warn {
-        background: #78350f;
-      }
-
-      .status-bad {
-        background: #7f1d1d;
-      }
-
-      .status-unknown {
-        background: #334155;
-      }
-
-      code {
-        font-size: 0.8rem;
-        color: #cbd5e1;
-      }
-
-      pre {
-        background: #0f172a;
-        border-radius: 8px;
-        padding: 0.75rem;
-        overflow-x: auto;
-      }
-
-      .muted {
-        color: #94a3b8;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Tycoon Operator Dashboard</h1>
-    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout" style="color:#93c5fd">Sign out</a></p>{% endif %}
-    <p>
-      Overall Status:
-      <span class="pill status-{% if overall_status == 'healthy' %}ok{% elif overall_status == 'degraded' %}warn{% else %}bad{% endif %}">
-        {{ overall_status|upper }}
-      </span>
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Operator overview</p>
+    <h1 class="page-title">Command center</h1>
+    <p class="page-subtitle">
+      Monitor upstream health, jump into common operator workflows, and spot degraded dependencies before they turn into incidents.
     </p>
-    <p class="muted">Generated at: {{ generated_at }}</p>
-    <p class="muted">JSON endpoints: <code>/api/operator/health</code> · <code>/api/operator/users</code> · <code>/api/operator/users/{id}</code></p>
-    <p class="muted">Operator workflows: <a href="/users" style="color:#93c5fd">Users module</a> · <a href="/moderation/logs" style="color:#93c5fd">Moderation logs</a> · <a href="/audit/security" style="color:#93c5fd">Security audit</a> · <a href="/media/intent" style="color:#93c5fd">Media intent</a></p>
-    <p class="muted">Diagnostics: <a href="/minio/diagnostics" style="color:#93c5fd">MinIO diagnostics page</a></p>
+  </div>
+  <div class="topbar-actions">
+    <span class="status-pill {{ overall_status }}">{{ overall_status|upper }}</span>
+    <a class="button secondary" href="{% url 'operator-health' %}">Health JSON</a>
+  </div>
+</section>
 
-    <div class="grid">
-      {% for service in services %}
-      <section class="card">
-        <span class="pill {{ service.css_class }}">{{ service.status|upper }}</span>
-        <h2>{{ service.service_name }}</h2>
-        <p><code>{{ service.base_url }}</code></p>
-        <p>{{ service.detail }}</p>
-        {% if service.payload %}
-        <pre>{{ service.payload|pprint }}</pre>
-        {% endif %}
-      </section>
-      {% endfor %}
+<section class="hero-card">
+  <div class="section-header">
+    <div>
+      <h2>Operational posture</h2>
+      <p class="section-copy">Generated at {{ generated_at }} UTC. The cards below mirror the current service aggregation response used by operator automation.</p>
     </div>
-  </body>
-</html>
+  </div>
+  <div class="metric-grid">
+    <article class="metric-card">
+      <span class="metric-label">Overall status</span>
+      <span class="metric-value">{{ overall_status|upper }}</span>
+      <span class="metric-note">Aggregated across .NET API, FastAPI sidecar, and MinIO probes.</span>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">Connected services</span>
+      <span class="metric-value">{{ services|length }}</span>
+      <span class="metric-note">Each probe is rendered from the same service layer used by `/api/operator/health`.</span>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">Operator routes</span>
+      <span class="metric-value">5</span>
+      <span class="metric-note">Users, moderation, security audit, media intent, and MinIO diagnostics are live in Django.</span>
+    </article>
+  </div>
+</section>
+
+<section class="card-grid" style="margin-top: 18px;">
+  <article class="card">
+    <div class="section-header">
+      <div>
+        <h2>Quick actions</h2>
+        <p class="section-copy">Use the most common operator workflows without hunting through routes.</p>
+      </div>
+    </div>
+    <div class="page-actions">
+      <a class="button" href="{% url 'operator-users-view' %}">Open users triage</a>
+      <a class="button secondary" href="{% url 'operator-moderation-logs-view' %}">Review moderation</a>
+      <a class="button ghost" href="{% url 'operator-audit-security-view' %}">Inspect audit history</a>
+      <a class="button ghost" href="{% url 'operator-minio-diagnostics-view' %}">Check MinIO</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="section-header">
+      <div>
+        <h2>Backend surfaces</h2>
+        <p class="section-copy">Useful API endpoints backing this interface.</p>
+      </div>
+    </div>
+    <ul class="list">
+      <li><code>/api/operator/health</code> for the aggregated health payload.</li>
+      <li><code>/api/operator/users</code> and related user workflow routes.</li>
+      <li><code>/api/operator/moderation/*</code> and <code>/api/operator/audit/security</code> for enforcement and audit review.</li>
+    </ul>
+  </article>
+</section>
+
+<section class="card" style="margin-top: 18px;">
+  <div class="section-header">
+    <div>
+      <h2>Service probes</h2>
+      <p class="section-copy">Detailed upstream status cards with the latest probe payload and endpoint targeting.</p>
+    </div>
+  </div>
+  <div class="card-grid">
+    {% for service in services %}
+    <article class="card">
+      <div class="section-header">
+        <div>
+          <h3>{{ service.service_name }}</h3>
+          <p class="section-copy"><code>{{ service.base_url }}</code></p>
+        </div>
+        <span class="status-pill {{ service.status }}">{{ service.status|upper }}</span>
+      </div>
+      <p class="helper-text">{{ service.detail }}</p>
+      {% if service.payload %}
+      <div class="surface-note" style="margin-top: 16px;">
+        <pre>{{ service.payload|pprint }}</pre>
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

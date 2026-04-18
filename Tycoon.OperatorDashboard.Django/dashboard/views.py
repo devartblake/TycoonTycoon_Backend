@@ -505,6 +505,11 @@ def operator_users_view(request):
         "selected_saved_view": selected_saved_view,
         "saved_view_audit_query": governance_query,
         "saved_view_audit_rows": governance_rows,
+        "user_preset_links": [
+            {"href": "?preset=banned_recent", "label": "Banned recent"},
+            {"href": "?preset=new_unverified", "label": "New unverified"},
+            {"href": "?preset=admins", "label": "Admins"},
+        ],
     }
 
     try:
@@ -669,6 +674,10 @@ def operator_audit_security_view(request):
         "total": 0,
         "preset": preset,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "audit_preset_links": [
+            {"href": "?preset=login_failures_today", "label": "Login failures today"},
+            {"href": "?preset=login_success_today", "label": "Login successes today"},
+        ],
     }
 
     try:
@@ -729,6 +738,11 @@ def operator_moderation_logs_view(request):
         "total": 0,
         "preset": preset,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "moderation_preset_links": [
+            {"href": "?preset=active", "label": "Active"},
+            {"href": "?preset=suspended", "label": "Suspended"},
+            {"href": "?preset=banned", "label": "Banned"},
+        ],
     }
 
     try:

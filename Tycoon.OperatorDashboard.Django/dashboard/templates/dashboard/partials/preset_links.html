@@ -1,0 +1,7 @@
+{% if links %}
+<div class="toolbar-actions">
+  {% for link in links %}
+  <a class="button ghost" href="{{ link.href }}">{{ link.label }}</a>
+  {% endfor %}
+</div>
+{% endif %}
