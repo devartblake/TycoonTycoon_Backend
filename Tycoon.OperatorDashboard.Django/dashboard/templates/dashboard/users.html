@@ -149,6 +149,74 @@
     </section>
 
     <section class="card">
+      <h2>Saved-view governance audit timeline</h2>
+      <form method="get">
+        <label>
+          Action
+          <select name="savedViewAuditAction">
+            <option value="">All</option>
+            <option value="save" {% if saved_view_audit_query.action == "save" %}selected{% endif %}>save</option>
+            <option value="delete" {% if saved_view_audit_query.action == "delete" %}selected{% endif %}>delete</option>
+            <option value="archive" {% if saved_view_audit_query.action == "archive" %}selected{% endif %}>archive</option>
+            <option value="transfer" {% if saved_view_audit_query.action == "transfer" %}selected{% endif %}>transfer</option>
+          </select>
+        </label>
+        <label>
+          Actor email
+          <input type="text" name="savedViewAuditActorEmail" value="{{ saved_view_audit_query.actorEmail|default:'' }}" placeholder="actor@example.com" />
+        </label>
+        <label>
+          Owner email
+          <input type="text" name="savedViewAuditOwnerEmail" value="{{ saved_view_audit_query.ownerEmail|default:'' }}" placeholder="owner@example.com" />
+        </label>
+        <label>
+          View name
+          <input type="text" name="savedViewAuditViewName" value="{{ saved_view_audit_query.viewName|default:'' }}" placeholder="Banned users" />
+        </label>
+        <label>
+          From (ISO)
+          <input type="text" name="savedViewAuditFrom" value="{{ saved_view_audit_query.from|default:'' }}" placeholder="2026-04-01T00:00:00Z" />
+        </label>
+        <label>
+          To (ISO)
+          <input type="text" name="savedViewAuditTo" value="{{ saved_view_audit_query.to|default:'' }}" placeholder="2026-04-01T23:59:59Z" />
+        </label>
+        <button type="submit">Apply audit filters</button>
+      </form>
+      <p class="muted">
+        <a href="?savedViewAuditAction={{ saved_view_audit_query.action|default:'' }}&savedViewAuditActorEmail={{ saved_view_audit_query.actorEmail|default:'' }}&savedViewAuditOwnerEmail={{ saved_view_audit_query.ownerEmail|default:'' }}&savedViewAuditViewName={{ saved_view_audit_query.viewName|default:'' }}&savedViewAuditFrom={{ saved_view_audit_query.from|default:'' }}&savedViewAuditTo={{ saved_view_audit_query.to|default:'' }}&savedViewAuditFormat=csv">Export CSV</a>
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>At (UTC)</th>
+            <th>Action</th>
+            <th>Actor</th>
+            <th>Owner</th>
+            <th>View</th>
+            <th>Metadata</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in saved_view_audit_rows %}
+          <tr>
+            <td>{{ row.createdAtUtc }}</td>
+            <td>{{ row.action }}</td>
+            <td>{{ row.actorEmail }}</td>
+            <td>{{ row.ownerEmail }}</td>
+            <td>{{ row.viewName }}</td>
+            <td>{{ row.metadata }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="muted">No saved-view governance audit events for this filter.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
       {% if can_write_users %}
       <form method="post">
         {% csrf_token %}
