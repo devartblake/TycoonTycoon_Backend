@@ -4,6 +4,37 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-19] Premium Store Backend Fast-Track + Growth Planning
+
+### Premium store backend baseline
+- Added authenticated premium store endpoints:
+  - `GET /store/premium`
+  - `GET /store/rewards/{playerId}`
+  - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- Premium catalog is now served from config-backed `StorePremiumOptions` with a short-lived in-memory cache.
+- Reward claiming now reuses existing `PlayerTransactionService` and `PlayerWallet` infrastructure instead of introducing new persistence in v1.
+- Implemented UTC-based claim windows for:
+  - `daily-checkin`
+  - `watch-ad`
+
+### Premium store contract coverage
+- Added typed premium store DTOs to `Tycoon.Shared.Contracts/Dtos/StoreDtos.cs`.
+- Added focused contract tests in `Tycoon.Backend.Api.Tests/Store/PremiumStoreEndpointsTests.cs` covering:
+  - auth requirements
+  - self-only reward access
+  - reward-state defaults
+  - daily-checkin duplicate prevention
+  - watch-ad cap enforcement
+
+### Frontend coordination docs
+- Added `docs/premium_store_growth_plan_2026-04-19.md` with a multi-phase long-term growth plan for premium catalog, rewards, entitlements, analytics, and admin tooling.
+- Updated `docs/premium_store_backend_handoff_2026-04-20.md` with:
+  - current implementation status
+  - explicit note that the premium store baseline is live
+  - correction that the shipped error envelope is the nested backend-standard `error.code` / `error.message` shape
+
+---
+
 ## [2026-04-18] Study Surface Deepening + Frontend Handoff
 
 ### Backend Study API expansion

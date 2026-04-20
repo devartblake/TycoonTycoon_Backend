@@ -8,6 +8,33 @@
 
 ---
 
+## Status Update (Implemented Backend Baseline)
+
+The backend baseline for this premium store handoff is now implemented.
+
+Routes currently live:
+
+- `GET /store/premium`
+- `GET /store/rewards/{playerId}`
+- `POST /store/rewards/{playerId}/claim/{rewardId}`
+
+Current implementation characteristics:
+
+- premium catalog content is config-backed
+- `/store/premium` uses a short-lived in-memory cache
+- reward claims reuse `PlayerTransaction` + `PlayerWallet`
+- reward reset semantics are UTC-day based
+- implemented reward IDs are:
+  - `daily-checkin`
+  - `watch-ad`
+
+Important frontend note:
+
+- `saleInfo` is explicitly `null` when no sale is active
+- premium store errors currently use the backend-standard nested `error.code` / `error.message` envelope
+
+---
+
 ## Overview
 
 The Premium Store (`StoreSecondaryScreen`) is the exclusive content hub of the game. It surfaces four sections:
@@ -362,6 +389,20 @@ final playerRewardsProvider = FutureProvider<RewardCenterData>((ref) async {
 ---
 
 ## Error Handling Contract
+
+> **Correction for frontend integration:** The currently shipped premium-store endpoints use the backend-standard nested error envelope:
+>
+> ```json
+> {
+>   "error": {
+>     "code": "already_claimed",
+>     "message": "Daily check-in has already been claimed for today.",
+>     "details": {}
+>   }
+> }
+> ```
+>
+> Frontend code should parse `error.code`, `error.message`, and `error.details`. The older flat `{ "error": "...", "message": "..." }` example below reflects an earlier draft, not the current backend implementation.
 
 All endpoints should return errors in this shape (consistent with the rest of the API):
 

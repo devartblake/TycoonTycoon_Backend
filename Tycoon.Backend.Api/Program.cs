@@ -504,7 +504,9 @@ builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 
 // Ensure IHttpClientFactory is always available for minimal-API endpoints that
 // take it as a service dependency (avoids startup parameter-inference failures).
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
+builder.Services.Configure<StorePremiumOptions>(builder.Configuration.GetSection("StorePremium"));
 builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection("PayPal"));
 builder.Services.AddSingleton<IPayPalPaymentGateway, PayPalPaymentGateway>();
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
