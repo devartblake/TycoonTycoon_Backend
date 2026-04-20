@@ -28,15 +28,15 @@ Current alignment status with frontend is:
 
 - premium catalog and reward flows: aligned
 - premium reward claiming: aligned
-- premium purchase CTA route: **not fully aligned yet**
+- premium purchase CTA route: aligned
 
 Reason:
 
-- the current Flutter purchase CTA path can still navigate to `/offers`
-- that screen requests `GET /store/offers`
-- this backend does not currently expose `GET /store/offers`
+- the Flutter premium purchase flow now launches the existing subscription endpoints directly from premium-store plan data
+- the legacy `/offers` frontend route now redirects to `/store-premium`
+- the backend does not need a dedicated `GET /store/offers` route for premium-store integration
 
-So the premium-store baseline routes are correct, but the full premium purchase journey still has one transitional frontend/backend gap.
+So the premium-store baseline routes are correct, and the premium purchase journey is now aligned to the existing subscription route family.
 
 ---
 
@@ -69,13 +69,18 @@ There is currently **no** implemented backend route for:
 
 - `GET /store/offers`
 
-So the frontend team should treat `/store/offers` as a transitional legacy path, not as the canonical premium purchase backend contract.
+Important distinction:
+
+- `/offers` remains only as a legacy **frontend navigation route**
+- `GET /store/offers` would be a separate **backend API route**
+
+The frontend no longer depends on that backend API route for premium purchase flow.
 
 ---
 
 ## Premium Purchase Routing
 
-This section is the concrete backend routing map the frontend team should use when replacing the current `/offers` dependency.
+This section is the concrete backend routing map the frontend team should use for premium purchase flow.
 
 ### Recommended frontend routing model
 
@@ -240,46 +245,41 @@ Use this as the post-checkout hydration endpoint for:
 - provider status
 - renewal/cancel state
 
-### What frontend should change now
+### Current frontend behavior
 
-To fully align premium purchase routing with the backend:
+The current Flutter app now follows this routing model:
 
-1. Stop treating `/store/offers` as the canonical premium purchase entry point.
-2. Read premium plan selection from `GET /store/premium`.
-3. Map the selected plan to `tier` + `billingPeriod`.
-4. Launch either:
+1. Read premium plan selection from `GET /store/premium`.
+2. Map the selected plan to `tier` + `billingPeriod`.
+3. Launch either:
    - `POST /store/subscription/checkout/session` for Stripe
    - `POST /store/subscription/paypal/create` for PayPal
-5. Refresh `GET /store/subscription/status/{playerId}` after checkout return.
+4. Refresh `GET /store/subscription/status/{playerId}` after checkout return.
+5. Redirect any legacy `/offers` navigation to `/store-premium`.
 
 ### Important backend/frontend truth
 
-The premium-store-specific backend endpoints are aligned for catalog and rewards.
+The premium-store-specific backend endpoints are aligned for catalog, rewards, and purchase-path routing.
 
-The only remaining routing mismatch is that the current app build can still try to enter premium purchase flow through `/store/offers`, which is not a supported backend route in this repo.
+### Backend team note: `/store/offers` is no longer required for premium-store integration
 
-### Backend team note: current frontend still touches `/store/offers`
+As of the frontend cleanup on **April 20, 2026**, the premium-store flow no longer calls `GET /store/offers`.
 
-Runtime verification from the Flutter client on **April 20, 2026** showed this log path:
+Current behavior:
 
-- premium-store CTAs currently navigate to `context.push('/offers')`
-- `OffersScreen` loads `storeOffersProvider`
-- `storeOffersProvider` calls `StoreService.getOffers()`
-- `StoreService.getOffers()` calls `GET /store/offers`
-- when that route is missing, the app logs a `404` and falls back to `StoreOffersData.fallback`
+- premium-store CTAs launch the existing subscription checkout endpoints directly
+- player reward cards use `GET /store/rewards/{playerId}`
+- reward claims use `POST /store/rewards/{playerId}/claim/{rewardId}`
+- the legacy `/offers` frontend route redirects into `/store-premium`
 
-This means the current frontend has a **transitional dependency** on `/store/offers` even though the premium-store-specific backend handoff only requires:
+Backend should therefore treat the premium-store contract as:
 
 - `GET /store/premium`
 - `GET /store/rewards/{playerId}`
 - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- existing `/store/subscription/*` routes for checkout and status
 
-For backend planning, there are two valid resolutions:
-
-1. Keep `/store/offers` implemented and populated so the existing premium CTA route continues to work without fallback.
-2. Coordinate a frontend follow-up that bypasses `OffersScreen` for premium CTAs and launches the subscription checkout flow directly from premium-store data.
-
-Until one of those is done, a `404` on `/store/offers` is expected in the current app build and does **not** mean the premium-store baseline routes are broken.
+No dedicated `/store/offers` backend endpoint is required for the premium-store flow.
 
 ---
 
@@ -601,9 +601,7 @@ Use:
 
 ### Purchase-path clarification
 
-The premium-store contract itself does not require a dedicated new purchase endpoint beyond the existing subscription route family. However, the current Flutter implementation still routes premium purchase taps through `/offers`, and that screen requests `GET /store/offers`.
-
-Backend should therefore interpret `/store/offers` as a **current integration dependency of the app build**, even though it is not part of the minimal premium-store API baseline.
+The premium-store contract does not require a dedicated new purchase endpoint beyond the existing subscription route family. The current Flutter implementation now routes premium purchase taps directly through those subscription endpoints, and the legacy `/offers` path is only a frontend redirect for backward navigation compatibility.
 
 ### Claim flow
 

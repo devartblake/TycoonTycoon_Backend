@@ -59,18 +59,23 @@ The backend and frontend are **partially aligned** today:
   - `GET /store/premium`
   - `GET /store/rewards/{playerId}`
   - `POST /store/rewards/{playerId}/claim/{rewardId}`
-- not fully aligned:
-  - premium purchase CTA flow still has a transitional dependency on `GET /store/offers`
+- aligned:
+  - premium purchase CTA flow now uses the existing subscription endpoints directly
 
-That means the premium-store API baseline is correct, but the premium purchase path is not yet fully decoupled from the older offers flow.
+That means the premium-store API baseline and the premium purchase path are now aligned to the intended backend contract.
 
 ### Current frontend runtime note
 
-There is one important integration nuance from the current Flutter client:
+There is one important legacy-routing note from the current Flutter client:
 
-- premium-store purchase CTAs currently navigate to `/offers`
-- `OffersScreen` calls `GET /store/offers`
-- if `/store/offers` is absent, the app logs a `404` and falls back to local `StoreOffersData.fallback`
+- premium-store purchase CTAs now launch the subscription checkout flow directly
+- the legacy `/offers` frontend route redirects to `/store-premium`
+- the premium-store flow no longer depends on `GET /store/offers`
+
+Important distinction:
+
+- `/offers` is a frontend route inside the Flutter app
+- `GET /store/offers` would be a backend API endpoint
 
 So while the premium-store baseline is correctly centered on:
 
@@ -78,7 +83,7 @@ So while the premium-store baseline is correctly centered on:
 - `GET /store/rewards/{playerId}`
 - `POST /store/rewards/{playerId}/claim/{rewardId}`
 
-the shipped client still has a transitional dependency on `/store/offers` for purchase-path UX.
+the shipped client keeps `/offers` only as a backward-compatible frontend redirect, not as a backend integration dependency.
 
 ### Current supported replacement path
 
@@ -98,7 +103,7 @@ Current premium plan mapping from `/store/premium` is:
   - `tier = premium`
   - `billingPeriod = seasonal`
 
-So the backend already exposes a concrete purchase path for premium plans; the remaining work is frontend routing alignment, not new premium purchase endpoint invention.
+So the backend already exposes the concrete purchase path for premium plans, and the frontend is now aligned to it without needing a `/store/offers` API.
 
 ---
 
@@ -140,7 +145,7 @@ The fast-track release is intentionally not the final system. Current constraint
 - no dedicated premium analytics/event stream exists yet
 - no A/B testing or segmentation exists for pricing, sale copy, or reward-center variants
 - no admin UX yet exists for premium-specific curation
-- premium purchase taps still rely on the generic offers surface, so premium purchase routing is not yet isolated from `/store/offers`
+- legacy `/offers` navigation still exists only as a frontend redirect for compatibility
 
 ---
 
@@ -159,7 +164,7 @@ Make the current premium store safe to build against and easy to operate without
   - `daily-checkin`
   - `watch-ad`
 - Preserve idempotent claim behavior using deterministic transaction event IDs.
-- Either keep `/store/offers` available for the current app build or coordinate a frontend change that bypasses `OffersScreen` for premium CTAs.
+- Keep `/store/premium`, `/store/rewards/{playerId}`, reward-claim routes, and the existing subscription checkout/status routes as the supported premium contract.
 - Expand tests to cover:
   - cache behavior
   - config ordering
@@ -185,7 +190,7 @@ Make the current premium store safe to build against and easy to operate without
 - frontend no longer depends on hardcoded premium catalog defaults for normal flows
 - reward-center claim actions fully refresh from backend state
 - error parsing matches the shipped API envelope
-- premium CTA behavior is no longer ambiguous when `/store/offers` is unavailable
+- premium CTA behavior is deterministic and does not depend on `/store/offers`
 
 ---
 
@@ -527,7 +532,7 @@ If the client already has a generic error parser for other endpoints, it should 
 If we want the best ROI after the fast-track release, the next backend work should be:
 
 1. Add premium-specific analytics events and basic observability.
-2. Decide whether `/store/offers` remains a supported dependency for premium purchase routing or whether premium CTAs should move to direct subscription checkout.
+2. Keep legacy `/offers` as a frontend-only redirect if backward navigation compatibility is still useful, but do not treat `/store/offers` as part of the backend premium contract.
 3. Add a premium entitlement/status layer so ad-free access becomes a first-class backend concept.
 4. Move premium catalog and sale content from config to admin-managed data.
 5. Add admin UX for premium plans, campaigns, and reward definitions.
