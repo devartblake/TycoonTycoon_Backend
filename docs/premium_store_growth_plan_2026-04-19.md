@@ -27,6 +27,81 @@ This document lays out a multi-phase approach for getting there without throwing
 
 ---
 
+## Verified Backend Baseline
+
+The current backend baseline has been verified against both route registration and the premium-store endpoint test suite.
+
+Confirmed implemented routes:
+
+- `GET /store/premium`
+- `GET /store/rewards/{playerId}`
+- `POST /store/rewards/{playerId}/claim/{rewardId}`
+
+Confirmed existing supporting purchase routes:
+
+- `GET /store/subscription/status/{playerId}`
+- `POST /store/subscription/activate`
+- `POST /store/subscription/checkout/session`
+- `POST /store/subscription/portal/session`
+- `POST /store/subscription/paypal/create`
+- `POST /store/subscription/paypal/cancel`
+
+Validation run on **April 20, 2026**:
+
+- `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter PremiumStoreEndpointsTests`
+- Result: `Passed (9/9)`
+
+### Current alignment conclusion
+
+The backend and frontend are **partially aligned** today:
+
+- aligned:
+  - `GET /store/premium`
+  - `GET /store/rewards/{playerId}`
+  - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- not fully aligned:
+  - premium purchase CTA flow still has a transitional dependency on `GET /store/offers`
+
+That means the premium-store API baseline is correct, but the premium purchase path is not yet fully decoupled from the older offers flow.
+
+### Current frontend runtime note
+
+There is one important integration nuance from the current Flutter client:
+
+- premium-store purchase CTAs currently navigate to `/offers`
+- `OffersScreen` calls `GET /store/offers`
+- if `/store/offers` is absent, the app logs a `404` and falls back to local `StoreOffersData.fallback`
+
+So while the premium-store baseline is correctly centered on:
+
+- `GET /store/premium`
+- `GET /store/rewards/{playerId}`
+- `POST /store/rewards/{playerId}/claim/{rewardId}`
+
+the shipped client still has a transitional dependency on `/store/offers` for purchase-path UX.
+
+### Current supported replacement path
+
+The supported backend replacement for premium purchase routing is the existing subscription route family:
+
+- `POST /store/subscription/checkout/session`
+- `POST /store/subscription/paypal/create`
+- `GET /store/subscription/status/{playerId}`
+- `POST /store/subscription/portal/session`
+
+Current premium plan mapping from `/store/premium` is:
+
+- `premium-monthly` / `sub:premium:monthly`
+  - `tier = premium`
+  - `billingPeriod = monthly`
+- `premium-seasonal` / `sub:premium:seasonal`
+  - `tier = premium`
+  - `billingPeriod = seasonal`
+
+So the backend already exposes a concrete purchase path for premium plans; the remaining work is frontend routing alignment, not new premium purchase endpoint invention.
+
+---
+
 ## What We Have Today
 
 ### Shipped backend systems
@@ -65,6 +140,7 @@ The fast-track release is intentionally not the final system. Current constraint
 - no dedicated premium analytics/event stream exists yet
 - no A/B testing or segmentation exists for pricing, sale copy, or reward-center variants
 - no admin UX yet exists for premium-specific curation
+- premium purchase taps still rely on the generic offers surface, so premium purchase routing is not yet isolated from `/store/offers`
 
 ---
 
@@ -83,6 +159,7 @@ Make the current premium store safe to build against and easy to operate without
   - `daily-checkin`
   - `watch-ad`
 - Preserve idempotent claim behavior using deterministic transaction event IDs.
+- Either keep `/store/offers` available for the current app build or coordinate a frontend change that bypasses `OffersScreen` for premium CTAs.
 - Expand tests to cover:
   - cache behavior
   - config ordering
@@ -108,6 +185,7 @@ Make the current premium store safe to build against and easy to operate without
 - frontend no longer depends on hardcoded premium catalog defaults for normal flows
 - reward-center claim actions fully refresh from backend state
 - error parsing matches the shipped API envelope
+- premium CTA behavior is no longer ambiguous when `/store/offers` is unavailable
 
 ---
 
@@ -449,8 +527,9 @@ If the client already has a generic error parser for other endpoints, it should 
 If we want the best ROI after the fast-track release, the next backend work should be:
 
 1. Add premium-specific analytics events and basic observability.
-2. Add a premium entitlement/status layer so ad-free access becomes a first-class backend concept.
-3. Move premium catalog and sale content from config to admin-managed data.
-4. Add admin UX for premium plans, campaigns, and reward definitions.
+2. Decide whether `/store/offers` remains a supported dependency for premium purchase routing or whether premium CTAs should move to direct subscription checkout.
+3. Add a premium entitlement/status layer so ad-free access becomes a first-class backend concept.
+4. Move premium catalog and sale content from config to admin-managed data.
+5. Add admin UX for premium plans, campaigns, and reward definitions.
 
 That order keeps the current release stable while building toward a system that can scale beyond one screen and two reward IDs.

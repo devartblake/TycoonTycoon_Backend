@@ -30,8 +30,29 @@ All notable changes to this project.
 - Added `docs/premium_store_growth_plan_2026-04-19.md` with a multi-phase long-term growth plan for premium catalog, rewards, entitlements, analytics, and admin tooling.
 - Updated `docs/premium_store_backend_handoff_2026-04-20.md` with:
   - current implementation status
-  - explicit note that the premium store baseline is live
+  - an explicit verified route matrix for the implemented premium store endpoints
+  - actual shipped DTO field names and example payloads
   - correction that the shipped error envelope is the nested backend-standard `error.code` / `error.message` shape
+- Updated `docs/premium_store_growth_plan_2026-04-19.md` with a verified backend-baseline section covering the currently implemented routes and supporting subscription routes.
+
+### Endpoint verification
+- Re-ran `PremiumStoreEndpointsTests` on 2026-04-20 and confirmed the premium endpoint slice is passing:
+  - `GET /store/premium`
+  - `GET /store/rewards/{playerId}`
+  - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- Re-analysis of premium-store/frontend alignment confirmed one remaining transitional gap:
+  - the current frontend purchase CTA path can still request `GET /store/offers`
+  - this route is not part of the implemented premium-store backend baseline
+
+### Premium purchase-routing guidance
+- Expanded premium-store documentation to give frontend a concrete backend-supported replacement for `/store/offers`:
+  - `POST /store/subscription/checkout/session`
+  - `POST /store/subscription/paypal/create`
+  - `GET /store/subscription/status/{playerId}`
+  - `POST /store/subscription/portal/session`
+- Documented the current premium plan mapping for frontend routing:
+  - `premium-monthly` / `sub:premium:monthly` → `tier=premium`, `billingPeriod=monthly`
+  - `premium-seasonal` / `sub:premium:seasonal` → `tier=premium`, `billingPeriod=seasonal`
 
 ---
 

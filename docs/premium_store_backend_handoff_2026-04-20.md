@@ -1,428 +1,640 @@
-# Premium Store — Backend API Handoff
+# Premium Store Backend API Handoff
 
-> **Audience:** Backend team  
+> **Audience:** Frontend team  
 > **Date:** 2026-04-20  
-> **Flutter branch:** `claude/fix-nullability-warnings-aszut`  
 > **Base URL:** `http(s)://<host>:5000`  
 > **OpenAPI docs:** `/swagger` (dev only)
 
 ---
 
-## Status Update (Implemented Backend Baseline)
+## Status
 
-The backend baseline for this premium store handoff is now implemented.
+The premium store backend baseline is now live and verified in the backend test suite.
 
-Routes currently live:
+Implemented routes:
 
 - `GET /store/premium`
 - `GET /store/rewards/{playerId}`
 - `POST /store/rewards/{playerId}/claim/{rewardId}`
 
-Current implementation characteristics:
+Validation run on **April 20, 2026**:
+
+- `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter PremiumStoreEndpointsTests`
+- Result: `Passed (9/9)`
+
+### Alignment summary
+
+Current alignment status with frontend is:
+
+- premium catalog and reward flows: aligned
+- premium reward claiming: aligned
+- premium purchase CTA route: **not fully aligned yet**
+
+Reason:
+
+- the current Flutter purchase CTA path can still navigate to `/offers`
+- that screen requests `GET /store/offers`
+- this backend does not currently expose `GET /store/offers`
+
+So the premium-store baseline routes are correct, but the full premium purchase journey still has one transitional frontend/backend gap.
+
+---
+
+## Route Matrix
+
+| Flutter surface | Endpoint | Method | Status |
+|---|---|---|---|
+| `premium_store.dart` | `/store/premium` | `GET` | Implemented |
+| `reward_center.dart` | `/store/rewards/{playerId}` | `GET` | Implemented |
+| `reward_center.dart` claim action | `/store/rewards/{playerId}/claim/{rewardId}` | `POST` | Implemented |
+| Ad-free purchase CTA | existing `/store/subscription/*` flows | mixed | Existing route family |
+| Flash-sale purchase CTA | existing `/store/subscription/*` flows | mixed | Existing route family |
+
+### Existing purchase routes already available
+
+These were already in the store surface and remain the right purchase path:
+
+- `GET /store/subscription/status/{playerId}`
+- `POST /store/subscription/activate`
+- `POST /store/subscription/checkout/session`
+- `POST /store/subscription/portal/session`
+- `POST /store/subscription/paypal/create`
+- `POST /store/subscription/paypal/cancel`
+
+### Purchase-routing conclusion
+
+For premium purchases, the backend-supported route family is the subscription surface above.
+
+There is currently **no** implemented backend route for:
+
+- `GET /store/offers`
+
+So the frontend team should treat `/store/offers` as a transitional legacy path, not as the canonical premium purchase backend contract.
+
+---
+
+## Premium Purchase Routing
+
+This section is the concrete backend routing map the frontend team should use when replacing the current `/offers` dependency.
+
+### Recommended frontend routing model
+
+Map premium plan selection directly from `/store/premium` plan data into the existing subscription checkout endpoints.
+
+Current recommended mapping:
+
+- `premium-monthly` or `sku: sub:premium:monthly`
+  - `tier = premium`
+  - `billingPeriod = monthly`
+- `premium-seasonal` or `sku: sub:premium:seasonal`
+  - `tier = premium`
+  - `billingPeriod = seasonal`
+
+If frontend later introduces elite-tier premium cards, those should map to:
+
+- `tier = elite`
+- `billingPeriod = monthly` or `seasonal`
+
+based on the selected plan.
+
+### Stripe checkout path
+
+Endpoint:
+
+- `POST /store/subscription/checkout/session`
+
+Request DTO:
+
+```json
+{
+  "playerId": "00000000-0000-0000-0000-000000000000",
+  "tier": "premium",
+  "billingPeriod": "monthly",
+  "successUrl": "https://your-app.example/success",
+  "cancelUrl": "https://your-app.example/cancel"
+}
+```
+
+Request notes:
+
+- `tier` must be `premium` or `elite`
+- `billingPeriod` must be `monthly` or `seasonal`
+- `playerId` must match the authenticated player
+- `successUrl` and `cancelUrl` are optional if backend config already supplies them
+
+Response DTO:
+
+```json
+{
+  "sessionId": "cs_sub_test_123",
+  "checkoutUrl": "https://checkout.stripe.com/...",
+  "priceId": "price_premium_monthly",
+  "tier": "premium",
+  "billingPeriod": "monthly",
+  "publishableKey": "pk_test_123"
+}
+```
+
+Frontend action:
+
+- open `checkoutUrl`
+- after return, refresh `GET /store/subscription/status/{playerId}`
+
+### Stripe customer portal path
+
+Endpoint:
+
+- `POST /store/subscription/portal/session`
+
+Request DTO:
+
+```json
+{
+  "playerId": "00000000-0000-0000-0000-000000000000",
+  "returnUrl": "https://your-app.example/subscription"
+}
+```
+
+Response DTO:
+
+```json
+{
+  "sessionId": "bps_test_123",
+  "url": "https://billing.stripe.com/..."
+}
+```
+
+Use this for:
+
+- manage subscription
+- billing portal deep link
+- cancellation/plan management from an account settings area
+
+### PayPal subscription path
+
+Endpoint:
+
+- `POST /store/subscription/paypal/create`
+
+Request DTO:
+
+```json
+{
+  "playerId": "00000000-0000-0000-0000-000000000000",
+  "tier": "premium",
+  "billingPeriod": "monthly",
+  "returnUrl": "https://your-app.example/paypal/return",
+  "cancelUrl": "https://your-app.example/paypal/cancel"
+}
+```
+
+Response DTO:
+
+```json
+{
+  "subscriptionId": "I-TEST123",
+  "status": "APPROVAL_PENDING",
+  "approveUrl": "https://www.paypal.com/checkoutnow?...",
+  "planId": "plan_premium_monthly",
+  "tier": "premium",
+  "billingPeriod": "monthly",
+  "clientId": "paypal-client-id"
+}
+```
+
+Frontend action:
+
+- open `approveUrl`
+- after return, refresh `GET /store/subscription/status/{playerId}`
+
+### Subscription status path
+
+Endpoint:
+
+- `GET /store/subscription/status/{playerId}`
+
+Response DTO:
+
+```json
+{
+  "playerId": "00000000-0000-0000-0000-000000000000",
+  "isActive": true,
+  "tier": "premium",
+  "billingPeriod": "monthly",
+  "activatedAtUtc": "2026-04-20T15:00:00Z",
+  "provider": "stripe",
+  "providerSubscriptionId": "sub_123",
+  "providerCustomerId": "cus_123",
+  "providerStatus": "active",
+  "stripeSubscriptionId": "sub_123",
+  "stripeCustomerId": "cus_123",
+  "stripeStatus": "active",
+  "currentPeriodEndUtc": "2026-05-20T15:00:00Z",
+  "cancelAtPeriodEnd": false
+}
+```
+
+Use this as the post-checkout hydration endpoint for:
+
+- active premium state
+- provider status
+- renewal/cancel state
+
+### What frontend should change now
+
+To fully align premium purchase routing with the backend:
+
+1. Stop treating `/store/offers` as the canonical premium purchase entry point.
+2. Read premium plan selection from `GET /store/premium`.
+3. Map the selected plan to `tier` + `billingPeriod`.
+4. Launch either:
+   - `POST /store/subscription/checkout/session` for Stripe
+   - `POST /store/subscription/paypal/create` for PayPal
+5. Refresh `GET /store/subscription/status/{playerId}` after checkout return.
+
+### Important backend/frontend truth
+
+The premium-store-specific backend endpoints are aligned for catalog and rewards.
+
+The only remaining routing mismatch is that the current app build can still try to enter premium purchase flow through `/store/offers`, which is not a supported backend route in this repo.
+
+### Backend team note: current frontend still touches `/store/offers`
+
+Runtime verification from the Flutter client on **April 20, 2026** showed this log path:
+
+- premium-store CTAs currently navigate to `context.push('/offers')`
+- `OffersScreen` loads `storeOffersProvider`
+- `storeOffersProvider` calls `StoreService.getOffers()`
+- `StoreService.getOffers()` calls `GET /store/offers`
+- when that route is missing, the app logs a `404` and falls back to `StoreOffersData.fallback`
+
+This means the current frontend has a **transitional dependency** on `/store/offers` even though the premium-store-specific backend handoff only requires:
+
+- `GET /store/premium`
+- `GET /store/rewards/{playerId}`
+- `POST /store/rewards/{playerId}/claim/{rewardId}`
+
+For backend planning, there are two valid resolutions:
+
+1. Keep `/store/offers` implemented and populated so the existing premium CTA route continues to work without fallback.
+2. Coordinate a frontend follow-up that bypasses `OffersScreen` for premium CTAs and launches the subscription checkout flow directly from premium-store data.
+
+Until one of those is done, a `404` on `/store/offers` is expected in the current app build and does **not** mean the premium-store baseline routes are broken.
+
+---
+
+## Current Backend Shape
+
+The current premium store implementation is intentionally lightweight:
 
 - premium catalog content is config-backed
 - `/store/premium` uses a short-lived in-memory cache
-- reward claims reuse `PlayerTransaction` + `PlayerWallet`
+- reward claims reuse existing `PlayerTransaction` and `PlayerWallet`
 - reward reset semantics are UTC-day based
-- implemented reward IDs are:
+- the current reward IDs are:
   - `daily-checkin`
   - `watch-ad`
 
-Important frontend note:
+### Current default premium catalog values
 
-- `saleInfo` is explicitly `null` when no sale is active
-- premium store errors currently use the backend-standard nested `error.code` / `error.message` envelope
+Current config-backed defaults in `appsettings.json` are:
 
----
-
-## Overview
-
-The Premium Store (`StoreSecondaryScreen`) is the exclusive content hub of the game. It surfaces four sections:
-
-| Section | Content type | Data source needed |
-|---|---|---|
-| **Remove Ads** | Ad-removal subscription plans | `GET /store/premium` |
-| **3D Avatar** | Static widget (local asset) | None — no API needed |
-| **Special Offers** | Flash sale with countdown | `GET /store/premium` |
-| **Reward Center** | Daily player rewards | `GET /store/rewards/{playerId}` + `POST /store/rewards/{playerId}/claim/{rewardId}` |
-
-The Flutter models, fallback data, and provider wiring are already in place. The app renders correctly using hardcoded fallbacks today. These endpoints replace that fallback data with live, player-aware content.
+- Ad-free plans:
+  - `premium-monthly`
+  - `premium-seasonal`
+- Reward labels:
+  - `daily-checkin` → `+25 coins`
+  - `watch-ad` → `+15 coins`
+- Watch-ad daily cap:
+  - `3`
+- Flash sale:
+  - disabled by default, so `saleInfo` currently returns `null`
 
 ---
 
-## Screen → Endpoint Mapping
+## Endpoint 1: `GET /store/premium`
 
-| Flutter file | Endpoint | Method |
-|---|---|---|
-| `premium_store.dart` (whole screen) | `/store/premium` | `GET` |
-| `reward_center.dart` (player state) | `/store/rewards/{playerId}` | `GET` |
-| `reward_center.dart` (claim button) | `/store/rewards/{playerId}/claim/{rewardId}` | `POST` |
-| `ad_remove_options.dart` (purchase) | Routes to `/offers` checkout — **no new endpoint needed** |
-| `sale_info.dart` (purchase) | Routes through existing subscription checkout — **no new endpoint needed** |
+Returns the shared premium catalog content for the premium screen.
 
----
+### Auth
 
-## Endpoint 1 — `GET /store/premium`
+Bearer auth required.
 
-Returns the non-player-specific catalog for the premium store: ad-removal plans and the current flash sale. This response is the **same for all players** and can be cached aggressively (suggested TTL: 15 minutes).
+### Response DTO
 
-**Auth:** Valid session token required (standard Bearer header).
-
-**Query params:** None.
-
-**Response `200 OK`:**
+`PremiumStoreDto`
 
 ```json
 {
   "adFree": {
+    "title": "Ad-Free Plans",
+    "subtitle": "Choose a lighter, uninterrupted Tycoon experience.",
+    "benefits": [
+      "Removes gameplay interstitial ads",
+      "Keeps reward center and progression access",
+      "Applies across supported mobile sessions"
+    ],
     "plans": [
       {
-        "id": "ad-free-365",
-        "durationLabel": "365 DAYS",
-        "price": "$5.99",
-        "badge": "Best Value - Save 70%",
-        "accentColor": "#10B981",
-        "isBestValue": true
+        "id": "premium-monthly",
+        "title": "Monthly Ad-Free",
+        "subtitle": "Best for trying premium access",
+        "priceLabel": "$4.99 / month",
+        "badge": "Popular",
+        "accentColor": "#0F766E",
+        "isBestValue": false,
+        "sku": "sub:premium:monthly"
       },
       {
-        "id": "ad-free-28",
-        "durationLabel": "28 DAYS",
-        "price": "$3.99",
-        "badge": "Popular Choice",
-        "accentColor": "#6366F1",
-        "isBestValue": false
-      },
-      {
-        "id": "ad-free-7",
-        "durationLabel": "7 DAYS",
-        "price": "$1.99",
-        "badge": "Trial Period",
-        "accentColor": "#8B5CF6",
-        "isBestValue": false
-      }
-    ],
-    "benefits": [
-      "Uninterrupted gameplay",
-      "Faster loading times",
-      "Less battery usage",
-      "Premium experience"
-    ]
-  },
-  "saleInfo": {
-    "badgeText": "FLASH SALE",
-    "discount": "80% OFF",
-    "originalPrice": "$10",
-    "salePrice": "$1.99",
-    "expiresAt": "2026-04-21T12:00:00Z",
-    "buttonText": "Claim This Deal",
-    "benefits": [
-      {
-        "icon": "verified",
-        "value": "5",
-        "label": "Premium\nFeatures",
-        "color": "#10B981"
-      },
-      {
-        "icon": "monetization_on",
-        "value": "3400",
-        "label": "Bonus\nCoins",
-        "color": "#F59E0B"
-      },
-      {
-        "icon": "confirmation_number",
-        "value": "400",
-        "label": "Special\nTickets",
-        "color": "#8B5CF6"
+        "id": "premium-seasonal",
+        "title": "Seasonal Ad-Free",
+        "subtitle": "Three months of uninterrupted play",
+        "priceLabel": "$11.99 / season",
+        "badge": "Best Value",
+        "accentColor": "#1D4ED8",
+        "isBestValue": true,
+        "sku": "sub:premium:seasonal"
       }
     ]
   },
+  "saleInfo": null,
   "rewardCenter": {
+    "title": "Reward Center",
+    "subtitle": "Pick up daily bonuses and bonus coin drops.",
     "cards": [
       {
-        "id": "daily-checkin",
-        "title": "Daily Check-in",
-        "subtitle": "Day 1 of 7",
-        "gradient": ["#10B981", "#059669"],
-        "reward": "500 Coins",
-        "progress": null,
-        "isAvailable": true
+        "rewardId": "daily-checkin",
+        "title": "Daily Check-In",
+        "subtitle": "Claim once per UTC day.",
+        "rewardLabel": "+25 coins",
+        "availability": "available",
+        "gradientStart": "#0EA5E9",
+        "gradientEnd": "#2563EB",
+        "progress": 0,
+        "isClaimAvailable": true,
+        "remainingClaims": null,
+        "dailyCap": null,
+        "nextAvailableAtUtc": null
       },
       {
-        "id": "watch-ad",
-        "title": "Watch Ad",
-        "subtitle": "3 available today",
-        "gradient": ["#8B5CF6", "#7C3AED"],
-        "reward": "200 Coins",
-        "progress": null,
-        "isAvailable": true
+        "rewardId": "watch-ad",
+        "title": "Watch an Ad",
+        "subtitle": "Claim up to the daily cap.",
+        "rewardLabel": "+15 coins",
+        "availability": "available",
+        "gradientStart": "#F59E0B",
+        "gradientEnd": "#EF4444",
+        "progress": 0,
+        "isClaimAvailable": true,
+        "remainingClaims": 3,
+        "dailyCap": 3,
+        "nextAvailableAtUtc": null
       }
-    ],
-    "completedCount": 0,
-    "totalCount": 2
+    ]
   }
 }
 ```
 
-> **Important:** `saleInfo` must be `null` (not omitted — explicitly `null`) when no flash sale is currently active. The Flutter screen conditionally hides the Special Offers section when this field is `null`.
+### Important notes
 
-### Field Reference — `adFree`
-
-| Field | Type | Description |
-|---|---|---|
-| `plans` | `array` | Ordered list of ad-removal plans; rendered top-to-bottom (first plan is full-width, rest in a row) |
-| `plans[].id` | `string` | Stable identifier used for purchase routing |
-| `plans[].durationLabel` | `string` | Display string shown on the card (e.g. `"365 DAYS"`) |
-| `plans[].price` | `string` | Display price string including currency symbol (e.g. `"$5.99"`) |
-| `plans[].badge` | `string` | Short label on the coloured badge chip |
-| `plans[].accentColor` | `string` | Hex colour for border and button (e.g. `"#10B981"`) |
-| `plans[].isBestValue` | `bool` | When `true`, card renders full-width with a thicker green border |
-| `benefits` | `array<string>` | Bullet points shown in the "What you get with ad-free" box |
-
-### Field Reference — `saleInfo`
-
-| Field | Type | Description |
-|---|---|---|
-| `badgeText` | `string` | Text inside the top badge chip (e.g. `"FLASH SALE"`) |
-| `discount` | `string` | Large headline discount string (e.g. `"80% OFF"`) |
-| `originalPrice` | `string` | Struck-through original price (e.g. `"$10"`) |
-| `salePrice` | `string` | Highlighted sale price (e.g. `"$1.99"`) |
-| `expiresAt` | `string (ISO 8601)` | UTC expiry datetime; Flutter renders a countdown from this |
-| `buttonText` | `string` | CTA button label (default: `"Claim This Deal"`) |
-| `benefits[].icon` | `string` | Icon name resolved by Flutter's `resolveIcon()` helper — see icon name table below |
-| `benefits[].value` | `string` | Large number shown on the benefit tile (e.g. `"3400"`) |
-| `benefits[].label` | `string` | Small label below the number; use `\n` for line breaks |
-| `benefits[].color` | `string` | Hex colour for the benefit tile border/tint |
-
-### Field Reference — `rewardCenter` (non-player version)
-
-> **Note:** This section within `GET /store/premium` returns the **catalog definition** of reward cards — the tile structure, gradient, and reward amounts. It does **not** contain player-specific state (`isAvailable`, `progress`, `subtitle`). Those come from `GET /store/rewards/{playerId}` (Endpoint 2). Until Endpoint 2 is implemented, include player-state fields here as a temporary measure using static defaults.
-
-| Field | Type | Description |
-|---|---|---|
-| `cards[].id` | `string` | Stable reward identifier (`"daily-checkin"`, `"watch-ad"`) |
-| `cards[].title` | `string` | Card heading |
-| `cards[].subtitle` | `string` | Secondary line — player-specific when coming from Endpoint 2 |
-| `cards[].gradient` | `array<string>` | Two hex colours for the card's gradient |
-| `cards[].reward` | `string` | Reward label shown on the chip (e.g. `"500 Coins"`) |
-| `cards[].progress` | `number \| null` | Float `0.0–1.0` for the progress bar; `null` hides it |
-| `cards[].isAvailable` | `bool` | `true` = Claim button is active; `false` = greyed out |
-| `completedCount` | `int` | Number of rewards claimed today (shown in progress summary) |
-| `totalCount` | `int` | Total rewards available today |
-
-### Valid Icon Names (for `saleInfo.benefits[].icon`)
-
-Flutter's `resolveIcon()` maps these strings to `Icons.*`:
-
-| String | Flutter icon |
-|---|---|
-| `"store"` | `Icons.store` |
-| `"local_offer"` | `Icons.local_offer` |
-| `"card_giftcard"` | `Icons.card_giftcard` |
-| `"workspace_premium"` | `Icons.workspace_premium` |
-| `"star"` | `Icons.star` |
-| `"monetization_on"` | `Icons.monetization_on` |
-| `"flash_on"` | `Icons.flash_on` |
-| `"trending_up"` | `Icons.trending_up` |
-| `"diamond"` | `Icons.diamond` |
-| `"emoji_events"` | `Icons.emoji_events` |
-| `"auto_awesome"` | `Icons.auto_awesome` |
-| `"storefront"` | `Icons.storefront` |
-| `"favorite"` | `Icons.favorite` |
-| `"auto_fix_high"` | `Icons.auto_fix_high` |
-| `"bolt"` | `Icons.bolt` |
-| `"local_fire_department"` | `Icons.local_fire_department` |
-| `"verified"` | `Icons.verified` |
-| `"confirmation_number"` | `Icons.confirmation_number` |
-
-Any unrecognised string falls back to `Icons.star`.
+- `saleInfo` is explicitly `null` when no sale is active.
+- `rewardCenter` here is still useful to frontend as presentation metadata.
+- This endpoint is shared/non-player-specific, so it is the right source for:
+  - ad-free plan cards
+  - flash-sale visibility
+  - reward card titles, labels, and gradients
 
 ---
 
-## Endpoint 2 — `GET /store/rewards/{playerId}`
+## Endpoint 2: `GET /store/rewards/{playerId}`
 
-Returns the **player-specific** reward state for today. This response differs per player and should not be cached (or use a very short TTL, e.g. 30 seconds).
+Returns player-specific reward state for the current UTC day.
 
-**Auth:** Valid session token required. The authenticated player must match `{playerId}` — reject with `403` otherwise.
+### Auth
 
-**Path params:**
+- Bearer auth required
+- authenticated user must match `{playerId}`
 
-| Param | Type | Description |
-|---|---|---|
-| `playerId` | `uuid` | The player's unique ID |
+### Response DTO
 
-**Response `200 OK`:**
+`RewardCenterDto`
 
 ```json
 {
+  "title": "Reward Center",
+  "subtitle": "Pick up daily bonuses and bonus coin drops.",
   "cards": [
     {
-      "id": "daily-checkin",
-      "title": "Daily Check-in",
-      "subtitle": "Day 3 of 7",
-      "gradient": ["#10B981", "#059669"],
-      "reward": "500 Coins",
-      "progress": 0.43,
-      "isAvailable": true
+      "rewardId": "daily-checkin",
+      "title": "Daily Check-In",
+      "subtitle": "Day 1 reward is ready to claim.",
+      "rewardLabel": "+25 coins",
+      "availability": "available",
+      "gradientStart": "#0EA5E9",
+      "gradientEnd": "#2563EB",
+      "progress": 0.0,
+      "isClaimAvailable": true,
+      "remainingClaims": null,
+      "dailyCap": 7,
+      "nextAvailableAtUtc": null
     },
     {
-      "id": "watch-ad",
-      "title": "Watch Ad",
-      "subtitle": "2 available today",
-      "gradient": ["#8B5CF6", "#7C3AED"],
-      "reward": "200 Coins",
-      "progress": null,
-      "isAvailable": true
+      "rewardId": "watch-ad",
+      "title": "Watch an Ad",
+      "subtitle": "3 of 3 claims remaining today.",
+      "rewardLabel": "+15 coins",
+      "availability": "available",
+      "gradientStart": "#F59E0B",
+      "gradientEnd": "#EF4444",
+      "progress": 0.0,
+      "isClaimAvailable": true,
+      "remainingClaims": 3,
+      "dailyCap": 3,
+      "nextAvailableAtUtc": null
     }
-  ],
-  "completedCount": 1,
-  "totalCount": 2
+  ]
 }
 ```
 
-### Player-state field details
+### Status semantics
 
-| Field | How to compute |
-|---|---|
-| `daily-checkin.subtitle` | `"Day {currentStreak} of 7"` — resets to Day 1 if missed yesterday |
-| `daily-checkin.progress` | `currentStreak / 7.0` — e.g. Day 3 → `0.43` |
-| `daily-checkin.isAvailable` | `true` if the player has not yet claimed today's check-in |
-| `watch-ad.subtitle` | `"{remainingToday} available today"` — daily cap configured server-side (default: 3) |
-| `watch-ad.isAvailable` | `true` if `remainingToday > 0` |
-| `completedCount` | Count of reward IDs claimed today by this player |
-| `totalCount` | Count of reward IDs available to this player today |
+For `daily-checkin`:
 
-**Response `404 Not Found`:** Player ID does not exist.  
-**Response `403 Forbidden`:** Authenticated user does not match `{playerId}`.
+- `subtitle` is backend-computed from streak state
+- `progress` is a `0.0` to `1.0` ratio
+- `isClaimAvailable` is `false` after the day is claimed
+- `nextAvailableAtUtc` is populated after same-day claim
+
+For `watch-ad`:
+
+- `remainingClaims` counts remaining slots for the current UTC day
+- `dailyCap` is currently `3`
+- `progress` reflects usage against the cap
+- `nextAvailableAtUtc` is currently `null` in the response shape
+
+### Error cases
+
+- `401` if unauthenticated
+- `403` if player mismatch
+- `404` if the player is not found
 
 ---
 
-## Endpoint 3 — `POST /store/rewards/{playerId}/claim/{rewardId}`
+## Endpoint 3: `POST /store/rewards/{playerId}/claim/{rewardId}`
 
-Called when the player taps the **"Claim"** button on a reward card. Currently this button only shows a confirmation dialog — no coins are actually credited. This endpoint closes that gap.
+Claims a reward and credits coins through the existing wallet/transaction infrastructure.
 
-**Auth:** Valid session token required. Authenticated player must match `{playerId}`.
+### Auth
 
-**Path params:**
+- Bearer auth required
+- authenticated user must match `{playerId}`
 
-| Param | Type | Description |
-|---|---|---|
-| `playerId` | `uuid` | The player's unique ID |
-| `rewardId` | `string` | Reward card ID from the cards array (e.g. `"daily-checkin"`, `"watch-ad"`) |
+### Supported reward IDs
 
-**Request body:** None.
+- `daily-checkin`
+- `watch-ad`
 
-**Response `200 OK`:**
+### Response DTO
+
+`ClaimStoreRewardResponseDto`
+
+Example for `daily-checkin`:
 
 ```json
 {
-  "success": true,
   "rewardId": "daily-checkin",
-  "coinsAwarded": 500,
-  "newBalance": 1940,
-  "nextAvailableAt": null
+  "coinsAwarded": 25,
+  "newBalance": 25,
+  "status": "claimed",
+  "claimedAtUtc": "2026-04-20T14:30:00Z",
+  "nextAvailableAtUtc": "2026-04-21T00:00:00Z",
+  "currentStreak": 1,
+  "remainingClaims": null
 }
 ```
 
-| Field | Type | Description |
-|---|---|---|
-| `success` | `bool` | Always `true` on a 200 response |
-| `rewardId` | `string` | Echo of the claimed reward ID |
-| `coinsAwarded` | `int` | Coins credited to the player's account |
-| `newBalance` | `int` | Player's updated coin balance after the credit |
-| `nextAvailableAt` | `string (ISO 8601) \| null` | When this reward becomes claimable again; `null` means "tomorrow at reset time" |
+Example for `watch-ad`:
 
-**Response `409 Conflict`:** Reward already claimed today.
+```json
+{
+  "rewardId": "watch-ad",
+  "coinsAwarded": 15,
+  "newBalance": 40,
+  "status": "claimed",
+  "claimedAtUtc": "2026-04-20T14:35:00Z",
+  "nextAvailableAtUtc": null,
+  "currentStreak": null,
+  "remainingClaims": 2
+}
+```
+
+### Claim rules
+
+`daily-checkin`
+
+- one successful claim per UTC day
+- streak increments only if the prior successful claim was yesterday UTC
+- otherwise streak resets to day 1
+
+`watch-ad`
+
+- max 3 successful claims per UTC day
+- fourth claim attempt returns conflict
+
+### Error cases
+
+- `401` if unauthenticated
+- `403` if player mismatch
+- `404` for unknown reward ID
+- `409` if reward is already exhausted for the current claim window
+
+---
+
+## Error Envelope
+
+These premium store endpoints currently use the shared backend standard:
+
+```json
+{
+  "error": {
+    "code": "already_claimed",
+    "message": "Daily check-in has already been claimed for today.",
+    "details": {}
+  }
+}
+```
+
+Frontend should parse:
+
+- `error.code`
+- `error.message`
+- `error.details`
+
+Do not assume a flat body like:
 
 ```json
 {
   "error": "already_claimed",
-  "message": "This reward has already been claimed today.",
-  "nextAvailableAt": "2026-04-21T00:00:00Z"
+  "message": "This reward has already been claimed today."
 }
 ```
 
-**Response `404 Not Found`:** Unknown `rewardId`.  
-**Response `403 Forbidden`:** Player mismatch.
+That older flat shape appeared in an earlier handoff draft, but it is not the currently shipped backend format.
 
 ---
 
-## Endpoints NOT Required
+## Frontend Integration Guidance
 
-The following purchase actions in the Premium Store already route through existing checkout infrastructure — no new backend endpoints are needed:
+### Recommended source-of-truth split
 
-| Action | How it's handled |
-|---|---|
-| Ad-removal plan purchase | Tapping any plan card redirects to `/offers` via `context.push('/offers')`. The Special Offers screen handles the full checkout flow via `_startSubscriptionCheckout()` with the existing `/store/subscription` endpoints. |
-| Flash sale "Claim This Deal" | The `SaleInfo` widget shows a confirmation dialog. On confirm, this can route through the same `_startSubscriptionCheckout()` path in `OffersScreen`. Backend just needs to ensure the matching offer SKU exists in the offers catalog. |
+Use:
 
----
+- `/store/premium` for:
+  - ad-free catalog
+  - flash-sale visibility/content
+  - reward card presentation metadata
+- `/store/rewards/{playerId}` for:
+  - player-specific reward state
+  - streak text
+  - remaining claims
+  - claim availability
 
-## Flutter Integration Notes
+### Purchase-path clarification
 
-These notes describe what the Flutter team will do once the backend endpoints are live. Included here so the backend team understands the client's expectations.
+The premium-store contract itself does not require a dedicated new purchase endpoint beyond the existing subscription route family. However, the current Flutter implementation still routes premium purchase taps through `/offers`, and that screen requests `GET /store/offers`.
 
-### Step 1 — Split `premiumStoreProvider` into two
+Backend should therefore interpret `/store/offers` as a **current integration dependency of the app build**, even though it is not part of the minimal premium-store API baseline.
 
-Currently a single `FutureProvider<PremiumStoreData>` calls `GET /store/premium`. Once Endpoint 2 is live, `rewardCenter` data will move to a separate provider:
+### Claim flow
 
-```dart
-// Existing — stays as-is for adFree + saleInfo
-final premiumStoreProvider = FutureProvider<PremiumStoreData>(...);
+When a claim succeeds:
 
-// New — player-specific reward state
-final playerRewardsProvider = FutureProvider<RewardCenterData>((ref) async {
-  final playerId = await ref.watch(currentUserIdProvider.future);
-  return ref.read(storeServiceProvider).getPlayerRewards(playerId);
-});
-```
+1. update local coin balance from `newBalance`
+2. invalidate or refetch `GET /store/rewards/{playerId}`
+3. optionally keep `/store/premium` cached longer since it is shared content
 
-### Step 2 — Wire the claim button
+### Safe assumptions
 
-`RewardCenter._handleRewardClaim()` will call `POST /store/rewards/{playerId}/claim/{rewardId}`, then:
-1. Update `coinBalanceProvider` with the returned `newBalance`
-2. Call `ref.invalidate(playerRewardsProvider)` to refresh the card states
+- `saleInfo` may be `null`
+- current reward IDs are only `daily-checkin` and `watch-ad`
+- the backend is the source of truth for reward availability
+- premium store errors use the nested backend-standard error envelope
 
-### Step 3 — Expiry countdown in `SaleInfo`
+### Unsafe assumptions
 
-`SaleInfoData.expiresAt` is already parsed to `DateTime?` in the Flutter model. The `SaleInfo` widget needs a `Timer` that ticks every second and formats `expiresAt.difference(DateTime.now())` into `HH:MM:SS`. The hardcoded `"23:45:12"` in `OffersScreen` will be replaced by the same pattern.
-
----
-
-## Error Handling Contract
-
-> **Correction for frontend integration:** The currently shipped premium-store endpoints use the backend-standard nested error envelope:
->
-> ```json
-> {
->   "error": {
->     "code": "already_claimed",
->     "message": "Daily check-in has already been claimed for today.",
->     "details": {}
->   }
-> }
-> ```
->
-> Frontend code should parse `error.code`, `error.message`, and `error.details`. The older flat `{ "error": "...", "message": "..." }` example below reflects an earlier draft, not the current backend implementation.
-
-All endpoints should return errors in this shape (consistent with the rest of the API):
-
-```json
-{
-  "error": "snake_case_code",
-  "message": "Human-readable description"
-}
-```
-
-Flutter catches any non-2xx response, logs it via `LogManager.debug()`, and falls back to the last known good state (or the static fallback if no prior data exists). No user-visible error is shown for catalog failures — the screen silently uses fallback data.
-
-For claim failures (`409 Conflict`), the Flutter dialog will display the `message` field directly to the player.
+- do not assume the old handoff field names such as `durationLabel`, `price`, `gradient`, `reward`, or `isAvailable`
+- do not assume reward claims return `success: true`
+- do not assume `watch-ad` will always remain coin-only forever
 
 ---
 
-## Suggested Implementation Order
+## Backend Notes For Future Expansion
 
-| Priority | Endpoint | Reason |
-|---|---|---|
-| 1 | `GET /store/premium` | Unblocks ad-free plans + flash sale display; low complexity, no player state |
-| 2 | `GET /store/rewards/{playerId}` | Makes check-in streak and ad-watch count live per player |
-| 3 | `POST /store/rewards/{playerId}/claim/{rewardId}` | Closes the coin-credit gap; depends on reward state endpoint |
+The current implementation is intentionally v1:
+
+- config-backed catalog content
+- transaction-derived reward state
+- no dedicated premium entitlement model yet
+- no admin-managed premium campaign storage yet
+
+Frontend should treat this contract as stable for current integration, but not assume today’s config-backed implementation is the permanent storage model.
