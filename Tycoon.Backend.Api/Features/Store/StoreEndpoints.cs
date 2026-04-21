@@ -52,14 +52,19 @@ namespace Tycoon.Backend.Api.Features.Store
         private static async Task<IResult> GetCatalog(
             [FromQuery] string? itemType,
             IAppDb db,
+            IOptions<StorePremiumOptions> premiumOptionsAccessor,
             CancellationToken ct)
         {
+            var normalizedItemType = string.IsNullOrWhiteSpace(itemType)
+                ? null
+                : itemType.Trim();
+
             var query = db.StoreItems
                 .AsNoTracking()
                 .Where(i => i.IsActive);
 
-            if (!string.IsNullOrWhiteSpace(itemType))
-                query = query.Where(i => i.ItemType == itemType);
+            if (!string.IsNullOrWhiteSpace(normalizedItemType))
+                query = query.Where(i => i.ItemType == normalizedItemType);
 
             var items = await query
                 .OrderBy(i => i.SortOrder)
@@ -69,6 +74,16 @@ namespace Tycoon.Backend.Api.Features.Store
                     i.PriceCoins, i.PriceDiamonds, i.GrantQuantity,
                     i.MaxPerPlayer, i.MediaKey, i.SortOrder))
                 .ToListAsync(ct);
+
+            items.AddRange(BuildPremiumCatalogFallbackItems(
+                premiumOptionsAccessor.Value,
+                normalizedItemType,
+                items.Select(i => i.Sku).ToHashSet(StringComparer.OrdinalIgnoreCase)));
+
+            items = items
+                .OrderBy(i => i.SortOrder)
+                .ThenBy(i => i.Name)
+                .ToList();
 
             return Results.Ok(new StoreCatalogDto(items, items.Count));
         }
@@ -1407,6 +1422,69 @@ namespace Tycoon.Backend.Api.Features.Store
                         rewardId == "watch-ad" ? options.RewardPolicies.WatchAdDailyCap : null,
                         null);
                     }).ToList()));
+        }
+
+        private static IReadOnlyList<StoreItemDto> BuildPremiumCatalogFallbackItems(
+            StorePremiumOptions options,
+            string? requestedItemType,
+            HashSet<string> existingSkus)
+        {
+            if (!ShouldIncludePremiumCatalogFallback(requestedItemType))
+                return Array.Empty<StoreItemDto>();
+
+            var plans = options.AdFree?.Plans ?? new List<StorePremiumPlanOptions>();
+            var result = new List<StoreItemDto>();
+
+            for (var i = 0; i < plans.Count; i++)
+            {
+                var plan = plans[i];
+                var sku = string.IsNullOrWhiteSpace(plan.Sku) ? plan.Id : plan.Sku;
+                if (string.IsNullOrWhiteSpace(sku) || existingSkus.Contains(sku))
+                    continue;
+
+                result.Add(new StoreItemDto(
+                    Id: CreateDeterministicGuid($"store-catalog:premium:{sku}"),
+                    Sku: sku.Trim(),
+                    Name: string.IsNullOrWhiteSpace(plan.Title) ? plan.Id : plan.Title.Trim(),
+                    Description: BuildPremiumCatalogDescription(plan),
+                    ItemType: "premium-subscription",
+                    PriceCoins: 0,
+                    PriceDiamonds: 0,
+                    GrantQuantity: 1,
+                    MaxPerPlayer: 0,
+                    MediaKey: null,
+                    SortOrder: 10_000 + i));
+            }
+
+            return result;
+        }
+
+        private static bool ShouldIncludePremiumCatalogFallback(string? requestedItemType)
+        {
+            if (string.IsNullOrWhiteSpace(requestedItemType))
+                return true;
+
+            return requestedItemType.Equals("premium", StringComparison.OrdinalIgnoreCase)
+                   || requestedItemType.Equals("premium-subscription", StringComparison.OrdinalIgnoreCase)
+                   || requestedItemType.Equals("subscription", StringComparison.OrdinalIgnoreCase)
+                   || requestedItemType.Equals("ad-free", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildPremiumCatalogDescription(StorePremiumPlanOptions plan)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(plan.Subtitle))
+                parts.Add(plan.Subtitle.Trim());
+
+            if (!string.IsNullOrWhiteSpace(plan.PriceLabel))
+                parts.Add(plan.PriceLabel.Trim());
+
+            if (!string.IsNullOrWhiteSpace(plan.Badge))
+                parts.Add(plan.Badge.Trim());
+
+            return parts.Count == 0
+                ? "Premium subscription plan."
+                : string.Join(" ", parts);
         }
 
         private static async Task<RewardCenterDto> BuildRewardCenterAsync(

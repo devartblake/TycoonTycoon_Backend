@@ -117,9 +117,11 @@ Current backend status:
 
 - Premium Store v1 backend baseline is complete and verified.
 - Implemented premium routes remain:
+  - `GET /store/catalog`
   - `GET /store/premium`
   - `GET /store/rewards/{playerId}`
   - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- `GET /store/catalog` now includes config-backed premium subscription fallback entries for client compatibility.
 - Existing subscription routes remain the supported premium purchase path.
 - No backend `GET /store/offers` endpoint is required for the premium-store flow.
 - Premium catalog content is still config-backed by design.
@@ -143,7 +145,7 @@ Backend remaining work:
 Latest backend verification:
 
 - `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter PremiumStoreEndpointsTests`
-- Result: `Passed (9/9)`
+- Result: `Passed (12/12)`
 
 ---
 

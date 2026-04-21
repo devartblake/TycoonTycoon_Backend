@@ -4,6 +4,31 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-21] Store Catalog Premium Compatibility
+
+### Store catalog compatibility
+- Updated `GET /store/catalog` so the general catalog remains available to frontend clients even when `StoreItem` rows are not seeded.
+- The endpoint still returns the existing `StoreCatalogDto` envelope.
+- Active DB-backed `StoreItem` rows remain primary.
+- Premium subscription fallback rows are appended from `StorePremiumOptions.AdFree.Plans` when their SKUs are not already present.
+- Supported premium fallback filters now include:
+  - omitted `itemType`
+  - `itemType=premium`
+  - `itemType=premium-subscription`
+  - `itemType=subscription`
+  - `itemType=ad-free`
+- Unrelated catalog filters such as `itemType=powerup` do not include premium fallback rows.
+
+### Verification
+- Added Premium Store endpoint tests covering `/store/catalog` fallback behavior.
+- Verified with:
+  - `dotnet build Tycoon.Backend.Api\Tycoon.Backend.Api.csproj`
+  - `dotnet build Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-restore`
+  - `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter PremiumStoreEndpointsTests`
+- Result: `Passed (12/12)`
+
+---
+
 ## [2026-04-20] Player Notifications + Direct Messaging v1
 
 ### Player notifications backend
@@ -61,8 +86,6 @@ All notable changes to this project.
 - Re-ran focused backend tests:
   - `PlayerNotificationsEndpointsTests|MessagesEndpointsTests` passed `8/8`
   - `PremiumStoreEndpointsTests` passed `9/9`
-
----
 
 ## [2026-04-19] Premium Store Backend Fast-Track + Growth Planning
 

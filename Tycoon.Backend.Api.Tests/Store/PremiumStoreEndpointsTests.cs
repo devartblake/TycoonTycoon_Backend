@@ -36,6 +36,43 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
     }
 
     [Fact]
+    public async Task Catalog_ReturnsPremiumPlansAsCompatibilityFallback()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/store/catalog");
+
+        response.Should().NotBeNull();
+        response!.Items.Should().Contain(x => x.Sku == "sub:premium:monthly" && x.ItemType == "premium-subscription");
+        response.Items.Should().Contain(x => x.Sku == "sub:premium:seasonal" && x.ItemType == "premium-subscription");
+        response.Count.Should().Be(response.Items.Count);
+    }
+
+    [Fact]
+    public async Task Catalog_SubscriptionFilter_ReturnsPremiumFallbackPlans()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/store/catalog?itemType=subscription");
+
+        response.Should().NotBeNull();
+        response!.Items.Should().OnlyContain(x => x.ItemType == "premium-subscription");
+        response.Items.Should().Contain(x => x.Sku == "sub:premium:monthly");
+        response.Items.Should().Contain(x => x.Sku == "sub:premium:seasonal");
+    }
+
+    [Fact]
+    public async Task Catalog_UnrelatedFilter_DoesNotReturnPremiumFallbackPlans()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/store/catalog?itemType=powerup");
+
+        response.Should().NotBeNull();
+        response!.Items.Should().NotContain(x => x.ItemType == "premium-subscription");
+    }
+
+    [Fact]
     public async Task Premium_WithAuth_ReturnsConfiguredCatalogAndNullSaleInfo()
     {
         using var client = _factory.CreateClient();

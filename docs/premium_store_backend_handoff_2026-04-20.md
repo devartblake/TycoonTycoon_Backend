@@ -50,9 +50,11 @@ Current backend status:
 
 - Premium Store v1 backend contract is implemented and test-covered.
 - Supported premium-store endpoints are:
+  - `GET /store/catalog`
   - `GET /store/premium`
   - `GET /store/rewards/{playerId}`
   - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- `GET /store/catalog` now includes config-backed premium subscription entries as a compatibility fallback when matching DB-backed catalog rows are not present.
 - Supported purchase routing uses existing subscription endpoints:
   - `POST /store/subscription/checkout/session`
   - `POST /store/subscription/paypal/create`
@@ -79,7 +81,7 @@ Backend remaining work:
 Latest backend verification:
 
 - `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter PremiumStoreEndpointsTests`
-- Result: `Passed (9/9)`
+- Result: `Passed (12/12)`
 
 ---
 
@@ -87,6 +89,7 @@ Latest backend verification:
 
 | Flutter surface | Endpoint | Method | Status |
 |---|---|---|---|
+| Legacy/general store catalog | `/store/catalog` | `GET` | Implemented with premium compatibility fallback |
 | `premium_store.dart` | `/store/premium` | `GET` | Implemented |
 | `reward_center.dart` | `/store/rewards/{playerId}` | `GET` | Implemented |
 | `reward_center.dart` claim action | `/store/rewards/{playerId}/claim/{rewardId}` | `POST` | Implemented |
@@ -330,6 +333,7 @@ No dedicated `/store/offers` backend endpoint is required for the premium-store 
 
 The current premium store implementation is intentionally lightweight:
 
+- `/store/catalog` returns active DB-backed `StoreItem` rows and appends premium subscription fallback rows from `StorePremiumOptions` when those SKUs are not already present
 - premium catalog content is config-backed
 - `/store/premium` uses a short-lived in-memory cache
 - reward claims reuse existing `PlayerTransaction` and `PlayerWallet`
@@ -352,6 +356,62 @@ Current config-backed defaults in `appsettings.json` are:
   - `3`
 - Flash sale:
   - disabled by default, so `saleInfo` currently returns `null`
+
+---
+
+## Endpoint 0: `GET /store/catalog`
+
+Returns the general store catalog envelope used by legacy/general store clients.
+
+### Auth
+
+No bearer auth required.
+
+### Query
+
+- `itemType` is optional.
+
+Supported premium fallback filters:
+
+- omitted `itemType`
+- `itemType=premium`
+- `itemType=premium-subscription`
+- `itemType=subscription`
+- `itemType=ad-free`
+
+Unrelated filters such as `itemType=powerup` do not include the premium fallback rows.
+
+### Response DTO
+
+`StoreCatalogDto`
+
+```json
+{
+  "items": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "sku": "sub:premium:monthly",
+      "name": "Monthly Ad-Free",
+      "description": "Best for trying premium access $4.99 / month Popular",
+      "itemType": "premium-subscription",
+      "priceCoins": 0,
+      "priceDiamonds": 0,
+      "grantQuantity": 1,
+      "maxPerPlayer": 0,
+      "mediaKey": null,
+      "sortOrder": 10000
+    }
+  ],
+  "count": 1
+}
+```
+
+### Compatibility behavior
+
+- DB-backed `StoreItem` rows remain the primary source for the general catalog.
+- Premium fallback rows are derived from `StorePremiumOptions.AdFree.Plans`.
+- If a DB-backed item already exists with the same SKU, the DB-backed row wins and no fallback duplicate is added.
+- This endpoint does not replace `GET /store/premium`; premium UI surfaces should still use `/store/premium` for rich ad-free, sale, and reward metadata.
 
 ---
 
