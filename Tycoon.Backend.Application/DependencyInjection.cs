@@ -81,9 +81,13 @@ namespace Tycoon.Backend.Application
             services.AddScoped<Social.PartyLifecycleService>();
             services.TryAddSingleton<Social.IPartyMatchmakingNotifier, Social.NullPartyMatchmakingNotifier>();
             services.AddScoped<Social.PartyIntegrityService>();
+            services.AddScoped<Notifications.PlayerInboxService>();
+            services.AddScoped<Messaging.DirectMessagingService>();
 
             // Realtime
             services.TryAddSingleton<IPresenceReader, NullPresenceReader>();
+            services.TryAddSingleton<IPlayerNotificationNotifier, NullPlayerNotificationNotifier>();
+            services.TryAddSingleton<IDirectMessageNotifier, NullDirectMessageNotifier>();
 
             // Feature Flags
             services.AddScoped<FeatureFlagService>();

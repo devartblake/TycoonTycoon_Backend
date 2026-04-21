@@ -2,6 +2,7 @@
 using Tycoon.Shared.Contracts.Realtime.GameEvents;
 using Tycoon.Shared.Contracts.Realtime.Guardians;
 using Tycoon.Shared.Contracts.Realtime.Missions;
+using Tycoon.Shared.Contracts.Realtime.Notifications;
 using Tycoon.Shared.Contracts.Realtime.Territory;
 using Tycoon.Shared.Contracts.Realtime.Votes;
 
@@ -22,5 +23,9 @@ namespace Tycoon.Backend.Api.Realtime.Clients
         Task GuardianChanged(GuardianChangedMessage message);
 
         Task TerritoryCapture(TerritoryCaptureMesage message);
+
+        Task NotificationInboxUpdated(NotificationInboxUpdatedMessage message);
+
+        Task DirectMessagesUpdated(DirectMessagesUpdatedMessage message);
     }
 }

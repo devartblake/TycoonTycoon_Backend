@@ -46,6 +46,10 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<ModerationActionLog> ModerationActionLogs { get; }
         DbSet<FriendRequest> FriendRequests { get; }
         DbSet<FriendEdge> FriendEdges { get; }
+        DbSet<PlayerNotification> PlayerNotifications { get; }
+        DbSet<DirectMessageConversation> DirectMessageConversations { get; }
+        DbSet<DirectMessageConversationParticipant> DirectMessageConversationParticipants { get; }
+        DbSet<DirectMessage> DirectMessages { get; }
         DbSet<Party> Parties { get; }
         DbSet<PartyMember> PartyMembers { get; }
         DbSet<PartyInvite> PartyInvites { get; }

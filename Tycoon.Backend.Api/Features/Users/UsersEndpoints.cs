@@ -7,6 +7,7 @@ using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
 using Tycoon.Backend.Application.Media;
+using Tycoon.Backend.Application.Notifications;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.Users
@@ -240,6 +241,7 @@ namespace Tycoon.Backend.Api.Features.Users
             HttpContext httpContext,
             IAppDb database,
             EconomyService economyService,
+            PlayerInboxService inboxService,
             CancellationToken cancellation)
         {
             if (!TryGetUserId(httpContext, out var userId))
@@ -270,6 +272,22 @@ namespace Tycoon.Backend.Api.Features.Users
 
             if (result.Status == EconomyTxnStatus.Duplicate)
                 return ApiResponses.Error(StatusCodes.Status409Conflict, "ALREADY_CLAIMED", "Onboarding reward has already been claimed.");
+
+            await inboxService.CreateAsync(
+                userId,
+                "system",
+                "Onboarding reward claimed",
+                "Your starter Credits and Neural XP are now available in your wallet.",
+                "/wallet",
+                new Dictionary<string, object?>
+                {
+                    ["kind"] = "onboarding-reward",
+                    ["creditsGranted"] = 500,
+                    ["neuralXpGranted"] = 100
+                },
+                "redeem",
+                null,
+                cancellation);
 
             return Results.Ok(new OnboardingRewardDto(
                 PlayerId: userId,

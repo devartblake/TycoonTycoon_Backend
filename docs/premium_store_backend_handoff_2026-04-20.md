@@ -40,6 +40,49 @@ So the premium-store baseline routes are correct, and the premium purchase journ
 
 ---
 
+## Backend Team Status Updates
+
+> Future backend implementation notes for this handoff should be appended here.
+
+### April 20, 2026
+
+Current backend status:
+
+- Premium Store v1 backend contract is implemented and test-covered.
+- Supported premium-store endpoints are:
+  - `GET /store/premium`
+  - `GET /store/rewards/{playerId}`
+  - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- Supported purchase routing uses existing subscription endpoints:
+  - `POST /store/subscription/checkout/session`
+  - `POST /store/subscription/paypal/create`
+  - `GET /store/subscription/status/{playerId}`
+  - `POST /store/subscription/portal/session`
+- Backend should continue treating `GET /store/offers` as out of contract for premium-store integration.
+
+Frontend status interpreted from this handoff:
+
+- Premium catalog, reward state, reward claim, sale visibility, sale countdown, premium status, and checkout mapping are backend-backed in the frontend.
+- The frontend no longer calls `GET /store/offers` for premium purchase flow.
+- Remaining frontend work is validation-focused: Flutter test execution, device checkout smoke tests, UTC reset verification, and cleanup decision for the legacy `OffersScreen`.
+
+Backend remaining work:
+
+- No additional v1 premium-store endpoint is required right now.
+- Keep premium v1 stable while frontend completes live/device validation.
+- Future backend work belongs to the growth plan:
+  - premium analytics
+  - durable/admin-managed premium catalog and campaign storage
+  - explicit premium entitlement records
+  - broader reward definitions
+
+Latest backend verification:
+
+- `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter PremiumStoreEndpointsTests`
+- Result: `Passed (9/9)`
+
+---
+
 ## Route Matrix
 
 | Flutter surface | Endpoint | Method | Status |
@@ -636,3 +679,30 @@ The current implementation is intentionally v1:
 - no admin-managed premium campaign storage yet
 
 Frontend should treat this contract as stable for current integration, but not assume today’s config-backed implementation is the permanent storage model.
+
+---
+
+## Frontend Implementation Status - April 20, 2026
+
+### Completed
+
+- Premium catalog hydration is wired to `GET /store/premium`.
+- Player-specific reward state is wired to `GET /store/rewards/{playerId}`.
+- Reward claims are wired to `POST /store/rewards/{playerId}/claim/{rewardId}`.
+- Successful claims update local coin balance from backend `newBalance` and invalidate reward state.
+- Backend conflict/error messages are surfaced through the shared `ApiRequestException.message` path.
+- Sale content hides when `saleInfo` is `null`.
+- Sale countdown renders from `SaleInfoData.expiresAt` and shows an ended state for expired offers.
+- Premium access state is derived from backend subscription status rather than the old hardcoded premium placeholder.
+- Premium purchase CTAs launch the existing Stripe/PayPal subscription checkout flows directly from premium plan data.
+- Legacy `/offers` frontend navigation redirects to `/store-premium`.
+- The frontend no longer calls `GET /store/offers` for premium-store flow.
+- Service/widget coverage was added for premium DTO parsing, reward claim success/conflict, sale hiding, sale expiry, reward endpoints, and checkout mapping.
+
+### Remaining Frontend Work
+
+- Run the full Flutter test suite in an environment where `flutter` and `dart` are available on PATH.
+- Perform device-level checkout smoke tests for Stripe and PayPal return flows against the active backend environment.
+- Validate live reward reset behavior across UTC day boundaries with real player accounts.
+- Decide whether the unused legacy `OffersScreen` file should be removed entirely or kept as a local-only compatibility screen.
+- Future growth-plan work remains separate from v1 integration: premium analytics, admin-managed premium catalog/campaigns, explicit premium entitlement records, and broader reward definitions.

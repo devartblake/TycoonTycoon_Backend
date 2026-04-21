@@ -107,6 +107,46 @@ So the backend already exposes the concrete purchase path for premium plans, and
 
 ---
 
+## Backend Team Status Updates
+
+> Future backend implementation notes for this workstream should be appended here.
+
+### April 20, 2026
+
+Current backend status:
+
+- Premium Store v1 backend baseline is complete and verified.
+- Implemented premium routes remain:
+  - `GET /store/premium`
+  - `GET /store/rewards/{playerId}`
+  - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- Existing subscription routes remain the supported premium purchase path.
+- No backend `GET /store/offers` endpoint is required for the premium-store flow.
+- Premium catalog content is still config-backed by design.
+- Reward state is still transaction-derived by design.
+
+Frontend status interpreted from the latest handoff notes:
+
+- Frontend has completed v1 premium-store integration against the backend contract.
+- Frontend purchase CTAs now route directly into subscription checkout flows.
+- Legacy `/offers` is now a frontend redirect to `/store-premium`, not a backend API dependency.
+- Frontend still needs runtime/device-level verification for full Flutter test execution, checkout return flows, and UTC reward reset behavior.
+
+Backend remaining work:
+
+- No urgent v1 premium-store backend endpoint work remains.
+- Add premium-specific analytics and observability when we start the growth-plan phase work.
+- Add an explicit premium entitlement/status layer if product needs ad-free access state outside the existing subscription status DTO.
+- Move premium catalog, sale, and reward definitions from config to admin-managed durable storage in a future phase.
+- Add premium admin UX and operational tooling after durable premium catalog/campaign models exist.
+
+Latest backend verification:
+
+- `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter PremiumStoreEndpointsTests`
+- Result: `Passed (9/9)`
+
+---
+
 ## What We Have Today
 
 ### Shipped backend systems
@@ -538,3 +578,31 @@ If we want the best ROI after the fast-track release, the next backend work shou
 5. Add admin UX for premium plans, campaigns, and reward definitions.
 
 That order keeps the current release stable while building toward a system that can scale beyond one screen and two reward IDs.
+
+---
+
+## Frontend Status Update - April 20, 2026
+
+### Completed Since This Growth Plan
+
+- The v1 premium-store frontend integration is complete against the current backend handoff.
+- Premium catalog, reward state, reward claims, sale visibility/countdown, premium access status, and premium checkout routing are backend-backed.
+- The legacy `/offers` dependency has been removed from the premium purchase path and now redirects to `/store-premium`.
+- New backend-first frontend groundwork has started for the next two systems:
+  - player notifications inbox + unread count
+  - direct-message core
+- Separate backend handoff docs now exist for notifications and direct messaging:
+  - `docs/notifications_backend_handoff_2026-04-20.md`
+  - `docs/messaging_backend_handoff_2026-04-20.md`
+
+### Frontend Work Still Remaining
+
+- Premium store growth-plan phases beyond v1 are not complete:
+  - durable/admin-managed premium catalog storage
+  - premium campaign scheduling
+  - explicit premium entitlement records
+  - premium analytics and experimentation
+  - premium-specific admin tooling
+- Notifications still need full widget/integration coverage and real backend websocket smoke testing.
+- Direct messaging still needs full widget/integration coverage, real backend auth/error smoke testing, and follow-up decisions on typing, read receipts, groups, attachments, reactions, and pagination.
+- Flutter test execution remains blocked in this environment because `flutter` and `dart` are not available on PATH.

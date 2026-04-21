@@ -46,6 +46,7 @@ using Tycoon.Backend.Api.Features.Friends;
 using Tycoon.Backend.Api.Features.Leaderboards;
 using Tycoon.Backend.Api.Features.Matches;
 using Tycoon.Backend.Api.Features.Matchmaking;
+using Tycoon.Backend.Api.Features.Messages;
 using Tycoon.Backend.Api.Features.Missions;
 using Tycoon.Backend.Api.Features.Ml;
 using Tycoon.Backend.Api.Features.Mobile.Matches;
@@ -53,6 +54,7 @@ using Tycoon.Backend.Api.Features.Mobile.Seasons;
 using Tycoon.Backend.Api.Features.Mobile.Players;
 using Tycoon.Backend.Api.Features.Mobile.Leaderboards;
 using Tycoon.Backend.Api.Features.Mobile.Economy;
+using Tycoon.Backend.Api.Features.Notifications;
 using Tycoon.Backend.Api.Features.Party;
 using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
@@ -499,6 +501,8 @@ builder.Services.AddSingleton<IPresenceSessionManager, PresenceSessionManager>()
 builder.Services.AddSingleton<IGameEventNotifier, SignalRGameEventNotifier>();
 builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
 builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
+builder.Services.AddSingleton<IPlayerNotificationNotifier, SignalRPlayerNotificationNotifier>();
+builder.Services.AddSingleton<IDirectMessageNotifier, SignalRDirectMessageNotifier>();
 
 builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 
@@ -814,6 +818,8 @@ SkillsEndpoints.Map(app);
 PowerupsEndpoints.Map(app);
 SeasonsEndpoints.Map(app);
 FriendsEndpoints.Map(app);
+PlayerNotificationsEndpoints.Map(app);
+MessagesEndpoints.Map(app);
 PartyEndpoints.Map(app);
 RankedLeaderboardsEndpoints.Map(app);
 SeasonRewardsEndpoints.Map(app);

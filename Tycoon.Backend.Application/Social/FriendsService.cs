@@ -6,7 +6,7 @@ using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Social
 {
-    public sealed class FriendsService(IAppDb db, IPresenceReader presenceReader)
+    public sealed class FriendsService(IAppDb db, IPresenceReader presenceReader, Notifications.PlayerInboxService inboxService)
     {
         public async Task<FriendRequestDto> SendRequestAsync(Guid fromPlayerId, Guid toPlayerId, CancellationToken ct)
         {
@@ -50,6 +50,26 @@ namespace Tycoon.Backend.Application.Social
             db.FriendRequests.Add(req);
             await db.SaveChangesAsync(ct);
 
+            var sender = await db.Users.AsNoTracking()
+                .Where(x => x.Id == fromPlayerId)
+                .Select(x => new { x.Handle, x.AvatarUrl })
+                .FirstOrDefaultAsync(ct);
+
+            await inboxService.CreateAsync(
+                toPlayerId,
+                "friend",
+                "New friend request",
+                $"{sender?.Handle ?? "A player"} sent you a friend request.",
+                "/friends",
+                new Dictionary<string, object?>
+                {
+                    ["requestId"] = req.Id,
+                    ["fromPlayerId"] = fromPlayerId
+                },
+                "person_add",
+                sender?.AvatarUrl,
+                ct);
+
             return ToDto(req);
         }
 
@@ -58,21 +78,30 @@ namespace Tycoon.Backend.Application.Social
             if (requestId == Guid.Empty || actingPlayerId == Guid.Empty)
                 throw new ArgumentException("Ids cannot be empty.");
 
-            await using var tx = await ((DbContext)db).Database.BeginTransactionAsync(ct);
+            var dbContext = (DbContext)db;
+            var useTransaction = !string.Equals(
+                dbContext.Database.ProviderName,
+                "Microsoft.EntityFrameworkCore.InMemory",
+                StringComparison.OrdinalIgnoreCase);
+            await using var tx = useTransaction
+                ? await dbContext.Database.BeginTransactionAsync(ct)
+                : null;
 
             var req = await db.FriendRequests
                 .FirstOrDefaultAsync(x => x.Id == requestId, ct);
 
             if (req is null)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null)
+                    await tx.RollbackAsync(ct);
                 return null;
             }
 
             // Only the recipient can accept
             if (req.ToPlayerId != actingPlayerId)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null)
+                    await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Only the recipient can accept this friend request.");
             }
 
@@ -80,13 +109,15 @@ namespace Tycoon.Backend.Application.Social
             if (req.Status == "Accepted")
             {
                 await EnsureEdgesAsync(req.FromPlayerId, req.ToPlayerId, ct);
-                await tx.CommitAsync(ct);
+                if (tx is not null)
+                    await tx.CommitAsync(ct);
                 return ToDto(req);
             }
 
             if (req.Status != "Pending")
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null)
+                    await tx.RollbackAsync(ct);
                 throw new InvalidOperationException($"Cannot accept a request in status '{req.Status}'.");
             }
 
@@ -95,7 +126,28 @@ namespace Tycoon.Backend.Application.Social
             await EnsureEdgesAsync(req.FromPlayerId, req.ToPlayerId, ct);
 
             await db.SaveChangesAsync(ct);
-            await tx.CommitAsync(ct);
+            if (tx is not null)
+                await tx.CommitAsync(ct);
+
+            var accepter = await db.Users.AsNoTracking()
+                .Where(x => x.Id == actingPlayerId)
+                .Select(x => new { x.Handle, x.AvatarUrl })
+                .FirstOrDefaultAsync(ct);
+
+            await inboxService.CreateAsync(
+                req.FromPlayerId,
+                "friend",
+                "Friend request accepted",
+                $"{accepter?.Handle ?? "A player"} accepted your friend request.",
+                "/friends",
+                new Dictionary<string, object?>
+                {
+                    ["requestId"] = req.Id,
+                    ["friendPlayerId"] = req.ToPlayerId
+                },
+                "group",
+                accepter?.AvatarUrl,
+                ct);
 
             return ToDto(req);
         }

@@ -4,6 +4,66 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-20] Player Notifications + Direct Messaging v1
+
+### Player notifications backend
+- Added authenticated player inbox endpoints:
+  - `GET /notifications/inbox`
+  - `GET /notifications/unread-count`
+  - `POST /notifications/{notificationId}/read`
+  - `POST /notifications/read-all`
+  - `DELETE /notifications/{notificationId}`
+- Added a dedicated `PlayerNotification` persistence model instead of reusing admin notification history.
+- Added `PlayerInboxService`-driven inbox query and mutation flow with JSON-backed payload storage.
+- Wired friend-request received and friend-request accepted flows into the new player inbox.
+- Added a simple system notification source by creating an inbox entry after onboarding reward claim.
+
+### Direct messaging backend
+- Added direct messaging endpoints:
+  - `GET /messages/conversations`
+  - `POST /messages/conversations/direct`
+  - `GET /messages/conversations/{conversationId}/messages`
+  - `POST /messages/conversations/{conversationId}/messages`
+  - `POST /messages/conversations/{conversationId}/read`
+  - `GET /messages/unread-count`
+- Added dedicated persistence for:
+  - `DirectMessageConversation`
+  - `DirectMessageConversationParticipant`
+  - `DirectMessage`
+- Added `DirectMessagingService` with:
+  - idempotent direct-conversation creation
+  - sender-scoped `clientMessageId` idempotency
+  - unread-count derivation from participant read state
+  - membership enforcement for read/send/history operations
+
+### Lightweight realtime refresh
+- Extended the existing `/ws/notify` SignalR contract with refresh-style player events:
+  - `NotificationInboxUpdated`
+  - `DirectMessagesUpdated`
+- Added SignalR notifier implementations so inbox and DM updates can trigger client refresh without introducing full live-chat transport.
+
+### Contract hardening and test coverage
+- Added focused backend tests:
+  - `Tycoon.Backend.Api.Tests/Notifications/PlayerNotificationsEndpointsTests.cs`
+  - `Tycoon.Backend.Api.Tests/Messaging/MessagesEndpointsTests.cs`
+- Verified the new notifications and messaging slice on **2026-04-20** with:
+  - `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter "PlayerNotificationsEndpointsTests|MessagesEndpointsTests"`
+- Fixed two integration bugs uncovered during test pass:
+  - optional pagination defaults for inbox/conversation list endpoints
+  - friend-accept transaction handling under the in-memory test provider
+
+### Documentation updates
+- Rewrote `docs/notifications_backend_handoff_2026-04-20.md` to reflect the live player-inbox contract, current source integrations, realtime refresh behavior, and backend-standard error envelope.
+- Rewrote `docs/messaging_backend_handoff_2026-04-20.md` to reflect the live DM contract, idempotency behavior, refresh events, and current v1 limits.
+- Added and verified the relational migration for notifications and messaging:
+  - `20260420231724_AddNotificationMessageing`
+- Confirmed EF reports no pending model changes after the notifications/messaging migration.
+- Re-ran focused backend tests:
+  - `PlayerNotificationsEndpointsTests|MessagesEndpointsTests` passed `8/8`
+  - `PremiumStoreEndpointsTests` passed `9/9`
+
+---
+
 ## [2026-04-19] Premium Store Backend Fast-Track + Growth Planning
 
 ### Premium store backend baseline
