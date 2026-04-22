@@ -62,6 +62,27 @@ namespace Tycoon.Backend.Infrastructure.Storage
             return internalUrl;
         }
 
+        public async Task<Stream?> GetAsync(string key, CancellationToken ct = default)
+        {
+            await EnsureBucketExistsAsync(ct);
+            var ms = new MemoryStream();
+            try
+            {
+                var args = new GetObjectArgs()
+                    .WithBucket(_options.Bucket)
+                    .WithObject(key)
+                    .WithCallbackStream(async stream => await stream.CopyToAsync(ms, ct));
+                await _client.GetObjectAsync(args, ct);
+                ms.Position = 0;
+                return ms;
+            }
+            catch (Exception ex) when (ex.Message.Contains("NoSuchKey") || ex.Message.Contains("Not Found") || ex.GetType().Name.Contains("ObjectNotFound"))
+            {
+                await ms.DisposeAsync();
+                return null;
+            }
+        }
+
         public async Task<string> GetPresignedGetUrlAsync(string key, TimeSpan expiry, CancellationToken ct = default)
         {
             await EnsureBucketExistsAsync(ct);

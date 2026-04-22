@@ -29,6 +29,7 @@
     <ProjectReference Include="..\Tycoon.Backend.Migrations\Tycoon.Backend.Migrations.csproj" />
     <ProjectReference Include="..\Tycoon.ServiceDefaults\Tycoon.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Tycoon.Shared\Tycoon.Shared.csproj" />
+    <ProjectReference Include="..\Tycoon.Shared.Contracts\Tycoon.Shared.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

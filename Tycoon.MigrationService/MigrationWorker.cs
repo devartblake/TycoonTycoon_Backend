@@ -144,6 +144,19 @@ public sealed class MigrationWorker : BackgroundService
                 await seeder.SeedAsync(db, stoppingToken);
                 _log.Information("Seeding completed successfully");
 
+                _log.Information("Seeding catalog data from MinIO (idempotent)…");
+                try
+                {
+                    var minioSeeder = scope.ServiceProvider.GetRequiredService<MinioSeeder>();
+                    await minioSeeder.SeedAsync(db, stoppingToken);
+                    _log.Information("MinIO catalog seeding completed");
+                }
+                catch (Exception ex)
+                {
+                    _log.Warning(ex, "MinIO catalog seeding failed (non-fatal). " +
+                        "Ensure MinIO is running and seed files exist at seeds/*.json.");
+                }
+
                 _log.Information("Resetting Daily/Weekly mission claims (idempotent)…");
                 var reset = scope.ServiceProvider.GetRequiredService<MissionResetService>();
                 await reset.ResetAsync(db, stoppingToken);
