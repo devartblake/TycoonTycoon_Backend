@@ -68,6 +68,8 @@ namespace Tycoon.Backend.Api.Features.Store
                 return Results.Ok(new { items = catalog.Items });
             }
 
+            var normalizedItemType = string.IsNullOrWhiteSpace(itemType) ? null : itemType.Trim();
+
             var query = db.StoreItems
                 .AsNoTracking()
                 .Where(i => i.IsActive);
