@@ -11,13 +11,19 @@ namespace Tycoon.Backend.Application.Media
         {
             var now = DateTimeOffset.UtcNow;
             var assetKey = $"uploads/{now:yyyyMMdd}/{Guid.NewGuid():N}_{Sanitize(req.FileName)}";
+            return await CreateUploadIntentForAssetKeyAsync(assetKey, req.ContentType, ct);
+        }
+
+        public async Task<UploadIntentDto> CreateUploadIntentForAssetKeyAsync(string assetKey, string contentType, CancellationToken ct = default)
+        {
+            var now = DateTimeOffset.UtcNow;
 
             string uploadUrl;
             if (storage is IPresignedStorage presigned)
             {
                 // MinIO (or any S3-compatible backend): browser uploads directly,
                 // bypassing the API. The URL expires in UploadExpiry.
-                uploadUrl = await presigned.GetPresignedPutUrlAsync(assetKey, req.ContentType, UploadExpiry, ct);
+                uploadUrl = await presigned.GetPresignedPutUrlAsync(assetKey, contentType, UploadExpiry, ct);
             }
             else
             {
@@ -27,6 +33,8 @@ namespace Tycoon.Backend.Application.Media
 
             return new UploadIntentDto(assetKey, uploadUrl, now.Add(UploadExpiry));
         }
+
+        public string GetPublicUrl(string assetKey) => storage.GetPublicUrl(assetKey);
 
         private static string Sanitize(string name)
         {

@@ -1,72 +1,56 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Operator Login</title>
-    <style>
-      body {
-        font-family: Inter, system-ui, -apple-system, sans-serif;
-        background: #0b1020;
-        color: #f8fafc;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        margin: 0;
-      }
-      .card {
-        width: min(420px, 90vw);
-        background: #121936;
-        border-radius: 12px;
-        border: 1px solid #1f2b54;
-        padding: 1.25rem;
-      }
-      input {
-        width: 100%;
-        box-sizing: border-box;
-        margin-top: 0.35rem;
-        margin-bottom: 0.85rem;
-        border-radius: 8px;
-        border: 1px solid #334155;
-        background: #0f172a;
-        color: #f8fafc;
-        padding: 0.55rem 0.7rem;
-      }
-      button {
-        width: 100%;
-        border: 0;
-        border-radius: 8px;
-        background: #2563eb;
-        color: white;
-        padding: 0.6rem;
-        font-weight: 600;
-      }
-      .error {
-        background: #7f1d1d;
-        border-radius: 8px;
-        padding: 0.5rem 0.65rem;
-        margin-bottom: 0.8rem;
-      }
-    </style>
-  </head>
-  <body>
-    <form class="card" method="post" action="/login">
-      {% csrf_token %}
-      <h1>Operator Login</h1>
+{% extends "dashboard/auth_base.html" %}
 
-      {% if messages %}
-      {% for message in messages %}
-      <div class="error">{{ message }}</div>
-      {% endfor %}
-      {% endif %}
+{% block title %}Operator Login{% endblock %}
 
-      <label>Email</label>
-      <input type="email" name="email" required />
+{% block content %}
+<main class="auth-shell">
+  <section class="auth-card">
+    <div class="auth-hero">
+      <p class="auth-kicker">Operator access</p>
+      <h1 class="auth-title">Synaptix Command</h1>
+      <p class="auth-copy">
+        Secure entry into the operator dashboard for user triage, moderation review, audit history, and storage diagnostics.
+      </p>
 
-      <label>Password</label>
-      <input type="password" name="password" required />
+      <div class="auth-feature-list">
+        <div class="auth-feature">
+          <strong>Session-backed access</strong>
+          Login flows through the backend admin auth endpoints and automatically refreshes near token expiry.
+        </div>
+        <div class="auth-feature">
+          <strong>Permission-aware workflows</strong>
+          Read and write actions stay aligned with the operator profile returned by the backend.
+        </div>
+        <div class="auth-feature">
+          <strong>Incident-first surface</strong>
+          Health, audit, moderation, and storage diagnostics stay one click away after sign-in.
+        </div>
+      </div>
+    </div>
 
-      <button type="submit">Sign in</button>
-    </form>
-  </body>
-</html>
+    <div class="auth-panel">
+      <div>
+        <h2>Sign in</h2>
+        <p>Use your approved operator account to continue into the Django dashboard.</p>
+      </div>
+
+      {% include "dashboard/partials/messages.html" %}
+
+      <form class="auth-form" method="post" action="{% url 'operator-login' %}">
+        {% csrf_token %}
+        <label>
+          Email
+          <input type="email" name="email" autocomplete="email" required />
+        </label>
+
+        <label>
+          Password
+          <input type="password" name="password" autocomplete="current-password" required />
+        </label>
+
+        <button type="submit">Sign in to command</button>
+      </form>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -137,6 +137,18 @@ namespace Tycoon.Backend.Application.LearningModules
             if (!questionExists)
                 return new AdminAddLessonResult(false, "Question not found.", null);
 
+            var orderExists = await _db.ModuleLessons
+                .AsNoTracking()
+                .AnyAsync(
+                    l => l.ModuleId == request.ModuleId && l.Order == request.Request.Order,
+                    ct);
+
+            if (orderExists)
+                return new AdminAddLessonResult(
+                    false,
+                    $"A lesson at order {request.Request.Order} already exists in this module.",
+                    null);
+
             var lesson = new ModuleLesson(
                 request.ModuleId,
                 request.Request.QuestionId,

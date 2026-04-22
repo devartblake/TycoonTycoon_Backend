@@ -1,4 +1,6 @@
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Tycoon.Backend.Api.Tests.TestHost;
@@ -10,6 +12,11 @@ namespace Tycoon.Backend.Api.Tests.Questions;
 
 public sealed class QuestionsApprovalContractTests : IClassFixture<TycoonApiFactory>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
 
@@ -57,7 +64,7 @@ public sealed class QuestionsApprovalContractTests : IClassFixture<TycoonApiFact
             await db.SaveChangesAsync();
         }
 
-        var response = await _http.GetFromJsonAsync<QuestionSetDto>("/questions/set?count=20");
+        var response = await _http.GetFromJsonAsync<QuestionSetDto>("/questions/set?count=20", JsonOptions);
         response.Should().NotBeNull();
         response!.Questions.Should().Contain(q => q.Text.Contains("Approved question"));
         response.Questions.Should().NotContain(q => q.Text.Contains("Draft question"));

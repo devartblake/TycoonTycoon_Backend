@@ -1,0 +1,313 @@
+{
+  "source_file": "docs/trivia_tycoon_migration_github_issues.json",
+  "scope": "frontend",
+  "notes": [
+    "This file contains frontend-owned issues plus frontend-relevant views of cross-stack issues.",
+    "Cross-stack issues keep their original ids so planning can stay aligned across teams.",
+    "This file reflects option 2 of the migration decision: /quiz/* is removed from the backend API and should not be restored as a compatibility shim."
+  ],
+  "status_update": {
+    "updated_on": "2026-04-16",
+    "summary": [
+      "Backend option 2 groundwork is complete, so frontend work should now assume /quiz/* is not available from the API.",
+      "Frontend-facing planning artifacts have been updated to reflect Play + Questions for gameplay and Learn + Modules for guided training.",
+      "The remaining work in this file is primarily frontend cleanup, routing cleanup, and transport cleanup."
+    ],
+    "completed_work": [
+      "Split migration issue planning into frontend and backend JSON bundles.",
+      "Updated frontend issue wording so it no longer assumes a live backend /quiz compatibility surface."
+    ],
+    "remaining_work": [
+      "Remove direct /quiz/* transport calls from frontend services.",
+      "Remove or quarantine stale fallback logic that assumes backend quiz routes still exist.",
+      "Continue Play / Learn / Study route and naming cleanup.",
+      "Retire ambiguous quiz-first UI flows once replacement Play and Study flows are in place."
+    ]
+  },
+  "issues": [
+    {
+      "id": "TT-MIG-001",
+      "title": "Remove direct /quiz/play usage from frontend transport layer",
+      "type": "frontend",
+      "status": "pending",
+      "priority": "P0",
+      "sprint": "Sprint 1",
+      "effort": "M",
+      "owner": "frontend",
+      "labels": [
+        "migration",
+        "frontend",
+        "api-contract",
+        "legacy-cleanup"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "Remove direct legacy gameplay fetches from ApiService and TycoonApiClient so QuestionHubService becomes the canonical gameplay question transport without any backend /quiz dependency.",
+      "acceptance_criteria": [
+        "No new gameplay screen calls /quiz/play directly through ApiService or TycoonApiClient.",
+        "QuestionHubService remains the only approved gameplay question fetch path.",
+        "Any legacy fallback code is removed or explicitly marked for deletion.",
+        "Telemetry differentiates /questions/set success from local fallback or stale-route handling if still present."
+      ],
+      "files": [
+        "lib/core/services/api_service.dart",
+        "lib/core/networking/tycoon_api_client.dart",
+        "lib/game/services/question_hub_service.dart"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "TT-MIG-002",
+      "title": "Create explicit frontend route taxonomy for Play, Learn, and Study",
+      "type": "frontend",
+      "status": "pending",
+      "priority": "P0",
+      "sprint": "Sprint 1",
+      "effort": "M",
+      "owner": "frontend",
+      "labels": [
+        "navigation",
+        "frontend",
+        "ux",
+        "migration"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "Rename player-facing navigation so formal gameplay is presented as Play, learning stays Learn, and Quizlet-like behavior moves toward Study.",
+      "acceptance_criteria": [
+        "Router distinguishes gameplay routes from learning routes and legacy quiz routes.",
+        "Primary entry points use Play/Learn/Study language instead of overloading Quiz.",
+        "Legacy quiz naming is removed or clearly marked transitional in frontend-only code paths."
+      ],
+      "files": [
+        "lib/core/navigation/app_router.dart",
+        "lib/screens/menu/game_menu_screen.dart"
+      ],
+      "dependencies": [
+        "TT-MIG-001"
+      ]
+    },
+    {
+      "id": "TT-MIG-003",
+      "title": "Unify duplicated AdaptedQuestionScreen implementations",
+      "type": "frontend",
+      "status": "pending",
+      "priority": "P0",
+      "sprint": "Sprint 1",
+      "effort": "S",
+      "owner": "frontend",
+      "labels": [
+        "frontend",
+        "cleanup",
+        "question-flow"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "Collapse the two AdaptedQuestionScreen definitions into a single canonical screen and keep one import path.",
+      "acceptance_criteria": [
+        "Only one canonical AdaptedQuestionScreen class remains.",
+        "app_router.dart references a single screen file.",
+        "No duplicate symbols or drift between question presentation variants."
+      ],
+      "files": [
+        "lib/screens/question/adapted_question_screen.dart",
+        "lib/screens/question/question_view_screen.dart",
+        "lib/core/navigation/app_router.dart"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "TT-MIG-004",
+      "title": "Refactor gameplay launchers to use canonical play flow",
+      "type": "frontend",
+      "status": "pending",
+      "priority": "P0",
+      "sprint": "Sprint 1",
+      "effort": "M",
+      "owner": "frontend",
+      "labels": [
+        "frontend",
+        "play-mode",
+        "routing"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "Update all category, class, daily, and summary launchers so they enter the new play flow rather than hardcoding legacy quiz play routes.",
+      "acceptance_criteria": [
+        "Category, class, daily, multiplayer, and replay actions all resolve through the canonical play route.",
+        "Launcher screens pass consistent payloads for category, difficulty, count, and mode.",
+        "No launcher directly depends on legacy naming semantics."
+      ],
+      "files": [
+        "lib/screens/question/question_screen.dart",
+        "lib/screens/question/categories/category_quiz_screen.dart",
+        "lib/screens/question/categories/class_quiz_screen.dart",
+        "lib/screens/question/categories/daily_quiz_screen.dart",
+        "lib/screens/question/score_summary_screen.dart",
+        "lib/screens/multiplayer/multiplayer_game_matchmaking_screen.dart"
+      ],
+      "dependencies": [
+        "TT-MIG-002",
+        "TT-MIG-003"
+      ]
+    },
+    {
+      "id": "TT-MIG-005",
+      "title": "Harden QuestionHubService as the canonical gameplay question orchestrator",
+      "type": "cross-stack",
+      "scope_view": "frontend",
+      "status": "pending",
+      "priority": "P0",
+      "sprint": "Sprint 1",
+      "effort": "M",
+      "owner": "frontend+backend",
+      "labels": [
+        "cross-stack",
+        "questions",
+        "service-layer"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "Make QuestionHubService the only orchestrator for gameplay question retrieval, normalization, and telemetry, with no backend /quiz dependency.",
+      "acceptance_criteria": [
+        "QuestionHubService normalizes /questions/set responses for all play modes.",
+        "Any remaining fallback logic is explicit, temporary, and does not depend on backend /quiz routes.",
+        "Repository/provider layer consumes only the canonical service interface."
+      ],
+      "files": [
+        "lib/game/services/question_hub_service.dart",
+        "lib/game/repositories/question_repository_impl.dart",
+        "lib/game/providers/question_providers.dart"
+      ],
+      "dependencies": [
+        "TT-MIG-001"
+      ]
+    },
+    {
+      "id": "TT-MIG-008",
+      "title": "Create frontend Study hub and placeholder deck flows",
+      "type": "frontend",
+      "status": "pending",
+      "priority": "P1",
+      "sprint": "Sprint 2",
+      "effort": "L",
+      "owner": "frontend",
+      "labels": [
+        "frontend",
+        "study",
+        "new-feature",
+        "ux"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "Add a dedicated Study surface for future flashcards, custom sets, favorites, and weak-area practice.",
+      "acceptance_criteria": [
+        "App router exposes Study entry points separately from Play and Learn.",
+        "UI scaffolding supports future study-set browsing and session launch.",
+        "Legacy quiz discovery screens are either redirected, renamed, or clearly labeled as transitional."
+      ],
+      "files": [
+        "lib/core/navigation/app_router.dart",
+        "lib/screens/study_hub/*",
+        "lib/screens/menu/game_menu_screen.dart"
+      ],
+      "dependencies": [
+        "TT-MIG-002",
+        "TT-MIG-007"
+      ]
+    },
+    {
+      "id": "TT-MIG-009",
+      "title": "Align DTOs and mappers across gameplay and learning question shapes",
+      "type": "cross-stack",
+      "scope_view": "frontend",
+      "status": "pending",
+      "priority": "P1",
+      "sprint": "Sprint 2",
+      "effort": "M",
+      "owner": "frontend+backend",
+      "labels": [
+        "cross-stack",
+        "dto",
+        "contracts"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "Ensure the frontend has distinct but compatible models for gameplay questions versus learning lesson questions with explanations and answers exposed.",
+      "acceptance_criteria": [
+        "Gameplay DTOs do not require correct answers in payloads.",
+        "Learning DTOs support correct answers, explanations, and ordering.",
+        "Frontend mapping layer makes the mode distinction explicit."
+      ],
+      "files": [
+        "lib/core/dto/learning_dto.dart",
+        "lib/game/models/*question*"
+      ],
+      "shared_backend_files": [
+        "Tycoon.Shared.Contracts.Dtos/*Question*",
+        "Tycoon.Shared.Contracts.Dtos/*Learning*"
+      ],
+      "dependencies": [
+        "TT-MIG-006"
+      ]
+    },
+    {
+      "id": "TT-MIG-010",
+      "title": "Add telemetry for route usage, fallback activation, and mode entry",
+      "type": "cross-stack",
+      "scope_view": "frontend",
+      "status": "pending",
+      "priority": "P1",
+      "sprint": "Sprint 2",
+      "effort": "S",
+      "owner": "frontend+backend",
+      "labels": [
+        "analytics",
+        "cross-stack",
+        "migration"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "Instrument the migration so you can observe remaining frontend legacy semantics and where users enter Play, Learn, and Study.",
+      "acceptance_criteria": [
+        "Frontend emits entry events for Play, Learn, and Study.",
+        "QuestionHubService records stale-route or local-fallback activations if they still exist.",
+        "Backend usage dashboards can distinguish /questions, /modules, and future study traffic without implying /quiz is still live."
+      ],
+      "files": [
+        "lib/game/services/question_hub_service.dart",
+        "lib/core/manager/analytics/analytics_stream_manager.dart"
+      ],
+      "shared_backend_files": [
+        "Tycoon.Backend.Api/*analytics*"
+      ],
+      "dependencies": [
+        "TT-MIG-001",
+        "TT-MIG-006"
+      ]
+    },
+    {
+      "id": "TT-MIG-011",
+      "title": "Remove or redirect legacy quiz UI after migration cutoff",
+      "type": "frontend",
+      "status": "pending",
+      "priority": "P2",
+      "sprint": "Sprint 3",
+      "effort": "M",
+      "owner": "frontend",
+      "labels": [
+        "frontend",
+        "deprecation",
+        "cleanup"
+      ],
+      "milestone": "Quiz/Question/Learning Migration",
+      "summary": "After telemetry and new surfaces are stable, retire ambiguous quiz-first UI entry points and redirect users to Play or Study equivalents.",
+      "acceptance_criteria": [
+        "Legacy quiz routes either redirect or are removed.",
+        "User-facing labels no longer rely on overloaded quiz terminology.",
+        "Regression tests confirm preserved gameplay and learning access."
+      ],
+      "files": [
+        "lib/core/navigation/app_router.dart",
+        "lib/screens/question/*",
+        "lib/screens/study_hub/*"
+      ],
+      "dependencies": [
+        "TT-MIG-008",
+        "TT-MIG-010"
+      ]
+    }
+  ]
+}
