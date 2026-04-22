@@ -10,10 +10,12 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using MediatR;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Api.Payments.PayPal;
 using Tycoon.Backend.Api.Payments.Stripe;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Avatars;
 using Tycoon.Backend.Application.PlayerTransactions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
@@ -47,9 +49,20 @@ namespace Tycoon.Backend.Api.Features.Store
 
         private static async Task<IResult> GetCatalog(
             [FromQuery] string? itemType,
+            [FromQuery] string? category,
+            HttpContext httpContext,
+            IMediator mediator,
             IAppDb db,
             CancellationToken ct)
         {
+            if (string.Equals(category, "avatar", StringComparison.OrdinalIgnoreCase))
+            {
+                TryGetAuthenticatedPlayerId(httpContext.User, out var playerId);
+                var catalog = await mediator.Send(
+                    new GetAvatarCatalog(playerId == Guid.Empty ? null : playerId), ct);
+                return Results.Ok(new { items = catalog.Items });
+            }
+
             var query = db.StoreItems
                 .AsNoTracking()
                 .Where(i => i.IsActive);

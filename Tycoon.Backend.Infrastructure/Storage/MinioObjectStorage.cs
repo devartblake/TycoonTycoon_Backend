@@ -62,6 +62,29 @@ namespace Tycoon.Backend.Infrastructure.Storage
             return internalUrl;
         }
 
+        public async Task<string> GetPresignedGetUrlAsync(string key, TimeSpan expiry, CancellationToken ct = default)
+        {
+            await EnsureBucketExistsAsync(ct);
+
+            var args = new PresignedGetObjectArgs()
+                .WithBucket(_options.Bucket)
+                .WithObject(key)
+                .WithExpiry((int)expiry.TotalSeconds);
+
+            var internalUrl = await _client.PresignedGetObjectAsync(args);
+
+            if (!string.IsNullOrWhiteSpace(_options.PublicEndpoint) &&
+                Uri.TryCreate(internalUrl, UriKind.Absolute, out var parsed))
+            {
+                var publicScheme = _options.UseSSL ? "https" : "http";
+                internalUrl = internalUrl.Replace(
+                    $"{parsed.Scheme}://{parsed.Host}:{parsed.Port}",
+                    $"{publicScheme}://{_options.PublicEndpoint}");
+            }
+
+            return internalUrl;
+        }
+
         private async Task EnsureBucketExistsAsync(CancellationToken ct)
         {
             var exists = await _client.BucketExistsAsync(

@@ -41,6 +41,10 @@ namespace Tycoon.Backend.Domain.Entities
         /// <summary>Optional media/image key for the item.</summary>
         public string? MediaKey { get; set; }
 
+        public string? ThumbnailUrl { get; set; }
+        public bool IsFeatured { get; set; }
+        public string? Version { get; set; }
+
         public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
     }

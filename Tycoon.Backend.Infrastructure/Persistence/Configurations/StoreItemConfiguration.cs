@@ -17,6 +17,9 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Description).HasMaxLength(1024);
             builder.Property(x => x.ItemType).HasMaxLength(64).IsRequired();
             builder.Property(x => x.MediaKey).HasMaxLength(512);
+            builder.Property(x => x.ThumbnailUrl).HasMaxLength(500);
+            builder.Property(x => x.IsFeatured).HasDefaultValue(false);
+            builder.Property(x => x.Version).HasMaxLength(20);
         }
     }
 }
