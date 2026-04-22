@@ -37,7 +37,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
         // Check state
         var s1 = await _admin.GetAsync($"/admin/powerups/state/{playerId}");
         s1.EnsureSuccessStatusCode();
-        var state1 = await s1.Content.ReadFromJsonAsync<PowerupStateDto>();
+        var state1 = await s1.Content.ReadFromJsonAsync<PowerupStateDto>(TestJson.Default);
 
         state1!.Powerups.Should().Contain(p => p.Type == PowerupType.Skip && p.Quantity >= 2);
 
@@ -47,7 +47,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
 
         var u1 = await _public.PostAsJsonAsync("/powerups/use", useReq);
         u1.EnsureSuccessStatusCode();
-        var used1 = await u1.Content.ReadFromJsonAsync<UsePowerupResultDto>();
+        var used1 = await u1.Content.ReadFromJsonAsync<UsePowerupResultDto>(TestJson.Default);
 
         used1!.Status.Should().Be("Used");
         used1.Remaining.Should().BeGreaterThanOrEqualTo(1);
@@ -55,7 +55,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
         // Same use request again => Duplicate (idempotent)
         var u2 = await _public.PostAsJsonAsync("/powerups/use", useReq);
         u2.EnsureSuccessStatusCode();
-        var used2 = await u2.Content.ReadFromJsonAsync<UsePowerupResultDto>();
+        var used2 = await u2.Content.ReadFromJsonAsync<UsePowerupResultDto>(TestJson.Default);
 
         used2!.Status.Should().Be("Duplicate");
     }
@@ -74,7 +74,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
         var use1 = await _public.PostAsJsonAsync("/powerups/use",
             new UsePowerupRequest(Guid.NewGuid(), playerId, PowerupType.FiftyFifty));
         use1.EnsureSuccessStatusCode();
-        var r1 = await use1.Content.ReadFromJsonAsync<UsePowerupResultDto>();
+        var r1 = await use1.Content.ReadFromJsonAsync<UsePowerupResultDto>(TestJson.Default);
         r1!.Status.Should().Be("Used");
 
         // Grant another so quantity >0, but cooldown still active
@@ -86,7 +86,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
         var use2 = await _public.PostAsJsonAsync("/powerups/use",
             new UsePowerupRequest(Guid.NewGuid(), playerId, PowerupType.FiftyFifty));
         use2.EnsureSuccessStatusCode();
-        var r2 = await use2.Content.ReadFromJsonAsync<UsePowerupResultDto>();
+        var r2 = await use2.Content.ReadFromJsonAsync<UsePowerupResultDto>(TestJson.Default);
         r2!.Status.Should().Be("Cooldown");
         r2.CooldownUntilUtc.Should().NotBeNull();
     }

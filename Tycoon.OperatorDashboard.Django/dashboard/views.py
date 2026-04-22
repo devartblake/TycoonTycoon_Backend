@@ -1,4 +1,5 @@
 import csv
+import json
 from functools import wraps
 from io import StringIO
 from time import time
@@ -9,6 +10,7 @@ from django.db import DatabaseError
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
 from .models import OperatorSavedView, OperatorSavedViewAuditEvent
@@ -292,6 +294,15 @@ def operator_users_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     bulk_result = None
     saved_views = _load_saved_views(request)
+    governance_query = {
+        "from": (request.GET.get("savedViewAuditFrom") or "").strip(),
+        "to": (request.GET.get("savedViewAuditTo") or "").strip(),
+        "action": (request.GET.get("savedViewAuditAction") or "").strip(),
+        "actorEmail": (request.GET.get("savedViewAuditActorEmail") or "").strip().lower(),
+        "ownerEmail": (request.GET.get("savedViewAuditOwnerEmail") or "").strip().lower(),
+        "viewName": (request.GET.get("savedViewAuditViewName") or "").strip(),
+    }
+    governance_rows: list[dict] = []
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip().lower()
@@ -431,6 +442,50 @@ def operator_users_view(request):
         query["sortOrder"] = "desc"
     query = {k: v for k, v in query.items() if v not in (None, "")}
 
+    audit_filters = Q()
+    if governance_query["action"]:
+        audit_filters &= Q(action=governance_query["action"])
+    if governance_query["actorEmail"]:
+        audit_filters &= Q(actor_email__iexact=governance_query["actorEmail"])
+    if governance_query["ownerEmail"]:
+        audit_filters &= Q(owner_email__iexact=governance_query["ownerEmail"])
+    if governance_query["viewName"]:
+        audit_filters &= Q(view_name__icontains=governance_query["viewName"])
+
+    audit_from = parse_datetime(governance_query["from"]) if governance_query["from"] else None
+    if audit_from is not None and timezone.is_naive(audit_from):
+        audit_from = timezone.make_aware(audit_from, timezone.get_current_timezone())
+    if audit_from is not None:
+        audit_filters &= Q(created_at__gte=audit_from)
+
+    audit_to = parse_datetime(governance_query["to"]) if governance_query["to"] else None
+    if audit_to is not None and timezone.is_naive(audit_to):
+        audit_to = timezone.make_aware(audit_to, timezone.get_current_timezone())
+    if audit_to is not None:
+        audit_filters &= Q(created_at__lte=audit_to)
+
+    try:
+        governance_events = OperatorSavedViewAuditEvent.objects.filter(audit_filters).order_by("-created_at")[:100]
+        for event in governance_events:
+            governance_rows.append(
+                {
+                    "createdAtUtc": event.created_at.isoformat(),
+                    "actorEmail": event.actor_email,
+                    "ownerEmail": event.owner_email,
+                    "viewName": event.view_name,
+                    "action": event.action,
+                    "metadata": json.dumps(event.metadata or {}, sort_keys=True),
+                }
+            )
+        if request.GET.get("savedViewAuditFormat") == "csv":
+            return _to_csv_response(
+                governance_rows,
+                ["createdAtUtc", "actorEmail", "ownerEmail", "viewName", "action", "metadata"],
+                "saved_view_governance_audit.csv",
+            )
+    except DatabaseError:
+        messages.error(request, "Saved-view governance audit history is unavailable right now.")
+
     context = {
         "query": query,
         "preset": preset,
@@ -448,6 +503,13 @@ def operator_users_view(request):
         "saved_views": sorted(saved_views.keys()),
         "saved_view_entries": [{"key": key, **value} for key, value in sorted(saved_views.items()) if isinstance(value, dict)],
         "selected_saved_view": selected_saved_view,
+        "saved_view_audit_query": governance_query,
+        "saved_view_audit_rows": governance_rows,
+        "user_preset_links": [
+            {"href": "?preset=banned_recent", "label": "Banned recent"},
+            {"href": "?preset=new_unverified", "label": "New unverified"},
+            {"href": "?preset=admins", "label": "Admins"},
+        ],
     }
 
     try:
@@ -612,6 +674,10 @@ def operator_audit_security_view(request):
         "total": 0,
         "preset": preset,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "audit_preset_links": [
+            {"href": "?preset=login_failures_today", "label": "Login failures today"},
+            {"href": "?preset=login_success_today", "label": "Login successes today"},
+        ],
     }
 
     try:
@@ -672,6 +738,11 @@ def operator_moderation_logs_view(request):
         "total": 0,
         "preset": preset,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "moderation_preset_links": [
+            {"href": "?preset=active", "label": "Active"},
+            {"href": "?preset=suspended", "label": "Suspended"},
+            {"href": "?preset=banned", "label": "Banned"},
+        ],
     }
 
     try:

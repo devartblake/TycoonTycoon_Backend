@@ -1,81 +1,81 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Moderation Logs</title>
-    <style>
-      body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 2rem; background: #0b1020; color: #f8fafc; }
-      .card { background: #121936; border-radius: 14px; padding: 1rem; border: 1px solid #1f2b54; margin-bottom: 1rem; }
-      .muted { color: #94a3b8; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 0.5rem; border-bottom: 1px solid #1f2b54; text-align: left; }
-      input, select { background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 8px; padding: 0.45rem 0.6rem; }
-      button { background: #1d4ed8; color: #fff; border: 0; border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; }
-      a { color: #93c5fd; }
-    </style>
-  </head>
-  <body>
-    <h1>Moderation Logs</h1>
-    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout">Sign out</a></p>{% endif %}
-    <p><a href="/">← Back to dashboard</a></p>
+{% extends "dashboard/base.html" %}
 
-    <section class="card">
-      <form method="get">
-        <p class="muted">
-          Quick presets:
-          <a href="?preset=active">Active</a> ·
-          <a href="?preset=suspended">Suspended</a> ·
-          <a href="?preset=banned">Banned</a>
-        </p>
-        <label>
-          Player ID
-          <input type="text" name="playerId" value="{{ query.playerId|default:'' }}" placeholder="player id" />
-        </label>
-        <label>
-          Status
-          <select name="status">
-            <option value="">All</option>
-            <option value="1" {% if query.status == "1" %}selected{% endif %}>active</option>
-            <option value="2" {% if query.status == "2" %}selected{% endif %}>suspended</option>
-            <option value="3" {% if query.status == "3" %}selected{% endif %}>banned</option>
-          </select>
-        </label>
-        <button type="submit">Refresh</button>
-      </form>
-      <p class="muted">Showing {{ items|length }} records · total {{ total }} · page {{ page }}</p>
-      <p class="muted">
-        <a href="?playerId={{ query.playerId|default:'' }}&status={{ query.status|default:'' }}&format=csv">Export CSV</a>
-      </p>
-    </section>
+{% block title %}Moderation Logs{% endblock %}
 
-    <section class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Status</th>
-            <th>Reason</th>
-            <th>Applied By</th>
-            <th>At (UTC)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for log in items %}
-          <tr>
-            <td>{{ log.playerId|default:"-" }}</td>
-            <td>{{ log.status|default:"-" }}</td>
-            <td>{{ log.reason|default:"-" }}</td>
-            <td>{{ log.appliedBy|default:"-" }}</td>
-            <td>{{ log.createdAtUtc|default:"-" }}</td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" class="muted">No moderation logs returned for this filter.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </section>
-  </body>
-</html>
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Moderation</p>
+    <h1 class="page-title">Enforcement history</h1>
+    <p class="page-subtitle">Track moderation actions by player or status, then export the current view for review and escalation follow-up.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="?playerId={{ query.playerId|default:'' }}&status={{ query.status|default:'' }}&format=csv">Export CSV</a>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Filters" copy="Jump to common enforcement states or narrow to a single player identifier." %}
+  <form method="get" class="stack">
+    {% include "dashboard/partials/preset_links.html" with links=moderation_preset_links %}
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ query.playerId|default:'' }}" placeholder="player id" />
+      </label>
+      <label>
+        Status
+        <select name="status">
+          <option value="">All</option>
+          <option value="1" {% if query.status == "1" %}selected{% endif %}>active</option>
+          <option value="2" {% if query.status == "2" %}selected{% endif %}>suspended</option>
+          <option value="3" {% if query.status == "3" %}selected{% endif %}>banned</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Refresh moderation view</button>
+      <span class="helper-text">Showing {{ items|length }} records, total {{ total }}, page {{ page }}.</span>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Moderation entries" copy="Read-only log output from the backend moderation endpoints." %}
+  <div class="table-meta">
+    <span class="helper-text">Statuses are color-coded for quicker scanning during enforcement review.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Status</th>
+          <th>Reason</th>
+          <th>Applied By</th>
+          <th>At (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in items %}
+        <tr>
+          <td>{{ log.playerId|default:"-" }}</td>
+          <td>
+            <span class="chip {% if log.status == 3 or log.status == '3' %}danger{% elif log.status == 2 or log.status == '2' %}warning{% else %}success{% endif %}">
+              {{ log.status|default:"-" }}
+            </span>
+          </td>
+          <td>{{ log.reason|default:"-" }}</td>
+          <td>{{ log.appliedBy|default:"-" }}</td>
+          <td>{{ log.createdAtUtc|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="helper-text">No moderation logs returned for this filter.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

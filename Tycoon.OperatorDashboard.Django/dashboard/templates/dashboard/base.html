@@ -1,0 +1,76 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Operator Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'dashboard/operator.css' %}" />
+  </head>
+  <body>
+    <div class="operator-shell">
+      <aside class="operator-sidebar">
+        <div class="operator-brand">
+          <div class="operator-brand-mark">SC</div>
+          <div>
+            <h1>Synaptix Command</h1>
+            <p>Operator workflows, incident visibility, and backend control surfaces in one place.</p>
+          </div>
+        </div>
+
+        <nav class="operator-nav" aria-label="Primary navigation">
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Overview</div>
+            <a class="operator-nav-link {% if request.path == '/' %}is-active{% endif %}" href="{% url 'dashboard-home' %}">
+              <span>Command center</span>
+              <span class="operator-nav-caption">Health</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Operations</div>
+            <a class="operator-nav-link {% if '/users' in request.path %}is-active{% endif %}" href="{% url 'operator-users-view' %}">
+              <span>Users</span>
+              <span class="operator-nav-caption">Triage</span>
+            </a>
+            <a class="operator-nav-link {% if '/moderation/' in request.path %}is-active{% endif %}" href="{% url 'operator-moderation-logs-view' %}">
+              <span>Moderation</span>
+              <span class="operator-nav-caption">Enforcement</span>
+            </a>
+            <a class="operator-nav-link {% if '/audit/' in request.path %}is-active{% endif %}" href="{% url 'operator-audit-security-view' %}">
+              <span>Security audit</span>
+              <span class="operator-nav-caption">History</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Storage</div>
+            <a class="operator-nav-link {% if '/media/' in request.path %}is-active{% endif %}" href="{% url 'operator-media-intent-view' %}">
+              <span>Media intents</span>
+              <span class="operator-nav-caption">Upload prep</span>
+            </a>
+            <a class="operator-nav-link {% if '/minio/' in request.path %}is-active{% endif %}" href="{% url 'operator-minio-diagnostics-view' %}">
+              <span>MinIO diagnostics</span>
+              <span class="operator-nav-caption">Storage health</span>
+            </a>
+          </div>
+        </nav>
+
+        <div class="operator-sidebar-footer">
+          {% if admin_profile %}
+          <strong>{{ admin_profile.email }}</strong><br />
+          Session-backed operator access is active.<br />
+          <a href="{% url 'operator-logout' %}">Sign out</a>
+          {% else %}
+          Authenticated pages inherit the current operator session and permission-gated actions.
+          {% endif %}
+        </div>
+      </aside>
+
+      <main class="operator-content">
+        {% include "dashboard/partials/messages.html" %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </body>
+</html>

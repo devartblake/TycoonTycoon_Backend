@@ -9,6 +9,7 @@ namespace Tycoon.Backend.Domain.Entities
         public string Handle { get; private set; }
         public string PasswordHash { get; private set; }
         public string? Country { get; private set; }
+        public string? AvatarUrl { get; private set; }
         public string? Tier { get; private set; }
         public int Mmr { get; private set; }
         public Dictionary<string, object> Flags { get; private set; }
@@ -38,10 +39,11 @@ namespace Tycoon.Backend.Domain.Entities
             IsActive = true;
         }
 
-        public void UpdateProfile(string? handle, string? country)
+        public void UpdateProfile(string? handle, string? country, string? avatarUrl = null)
         {
             if (!string.IsNullOrWhiteSpace(handle)) Handle = handle;
             if (!string.IsNullOrWhiteSpace(country)) Country = country;
+            if (avatarUrl is not null) AvatarUrl = string.IsNullOrWhiteSpace(avatarUrl) ? null : avatarUrl.Trim();
         }
 
         public void RecordLogin()

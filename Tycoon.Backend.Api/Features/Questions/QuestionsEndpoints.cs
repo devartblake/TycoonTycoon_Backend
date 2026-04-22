@@ -12,9 +12,15 @@ namespace Tycoon.Backend.Api.Features.Questions
     {
         public static void Map(WebApplication app)
         {
+            // Public gameplay question contract.
+            // /questions is the supported backend surface for play-oriented retrieval and grading.
+            // Legacy /quiz routes are intentionally not mapped here.
             var g = app.MapGroup("/questions").WithTags("Questions").WithOpenApi();
 
             g.MapGet("/set", GetQuestionSet);
+            g.MapGet("/categories", GetCategories);
+            g.MapGet("/metadata", GetMetadata);
+            g.MapPost("/preview-set", PreviewQuestionSet);
             g.MapPost("/check", CheckAnswer);
             g.MapPost("/check-batch", CheckAnswersBatch);
         }
@@ -30,37 +36,83 @@ namespace Tycoon.Backend.Api.Features.Questions
             IAppDb db,
             CancellationToken ct)
         {
-            var clampedCount = count <= 0 ? 10 : Math.Clamp(count, 1, 50);
+            var dtos = await QueryGameplayQuestionsAsync(
+                db,
+                count,
+                string.IsNullOrWhiteSpace(category) ? null : new[] { category.Trim() },
+                difficulty.HasValue ? new[] { difficulty.Value } : null,
+                ct);
 
-            var query = db.Questions
-                .AsNoTracking()
-                .Include(q => q.Options)
-                .Where(q => q.Status == "Approved")
-                .AsQueryable();
+            return Results.Ok(new QuestionSetDto(dtos, dtos.Count));
+        }
 
-            if (!string.IsNullOrWhiteSpace(category))
-                query = query.Where(q => q.Category == category);
-
-            if (difficulty.HasValue)
-                query = query.Where(q => q.Difficulty == difficulty.Value);
-
-            // Random selection via OrderBy(Guid.NewGuid()) — works on PostgreSQL
-            var questions = await query
-                .OrderBy(_ => EF.Functions.Random())
-                .Take(clampedCount)
+        /// <summary>
+        /// Returns the approved gameplay category catalog with counts.
+        /// This is a discovery surface for filters, not a grading or answer-reveal endpoint.
+        /// </summary>
+        private static async Task<IResult> GetCategories(
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var rows = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
+                .GroupBy(q => q.Category)
+                .Select(g => new { Key = g.Key, Count = g.Count() })
+                .OrderBy(x => x.Key)
                 .ToListAsync(ct);
 
-            if (questions.Count == 0)
-                return Results.Ok(new QuestionSetDto(Array.Empty<GameplayQuestionDto>(), 0));
+            var categories = rows
+                .Select(x => new FacetCountDto(x.Key, x.Count))
+                .ToList();
 
-            var dtos = questions.Select(q => new GameplayQuestionDto(
-                q.Id,
-                q.Text,
-                q.Category,
-                q.Difficulty,
-                q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
-                q.MediaKey
-            )).ToList();
+            return Results.Ok(new QuestionCategoriesResponseDto(categories));
+        }
+
+        /// <summary>
+        /// Returns supported discovery metadata for the gameplay question surface.
+        /// Gameplay retrieval remains answer-safe; correct answers are not exposed here.
+        /// </summary>
+        private static async Task<IResult> GetMetadata(
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var categoryRows = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
+                .GroupBy(q => q.Category)
+                .Select(g => new { Key = g.Key, Count = g.Count() })
+                .OrderBy(x => x.Key)
+                .ToListAsync(ct);
+
+            var categories = categoryRows
+                .Select(x => new FacetCountDto(x.Key, x.Count))
+                .ToList();
+
+            var difficulties = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
+                .Select(q => q.Difficulty)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync(ct);
+
+            return Results.Ok(new QuestionMetadataResponseDto(
+                categories,
+                difficulties,
+                DefaultCount: 10,
+                MaxCount: 50));
+        }
+
+        /// <summary>
+        /// Returns an answer-safe preview of a question set using explicit category/difficulty filters.
+        /// This is intended for discovery workflows and future study-set builders, not grading.
+        /// </summary>
+        private static async Task<IResult> PreviewQuestionSet(
+            [FromBody] PreviewQuestionSetRequest req,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var dtos = await QueryGameplayQuestionsAsync(
+                db,
+                req.Count,
+                req.Categories,
+                req.Difficulties,
+                ct);
 
             return Results.Ok(new QuestionSetDto(dtos, dtos.Count));
         }
@@ -132,6 +184,57 @@ namespace Tycoon.Backend.Api.Features.Questions
             }
 
             return Results.Ok(new CheckAnswersBatchResponse(results, results.Count, correct));
+        }
+
+        private static async Task<List<GameplayQuestionDto>> QueryGameplayQuestionsAsync(
+            IAppDb db,
+            int count,
+            IEnumerable<string>? categories,
+            IEnumerable<QuestionDifficulty>? difficulties,
+            CancellationToken ct)
+        {
+            var clampedCount = count <= 0 ? 10 : Math.Clamp(count, 1, 50);
+
+            var questions = await BuildApprovedQuestionsQuery(db, categories, difficulties)
+                .OrderBy(_ => EF.Functions.Random())
+                .Take(clampedCount)
+                .ToListAsync(ct);
+
+            return questions.Select(q => new GameplayQuestionDto(
+                q.Id,
+                q.Text,
+                q.Category,
+                q.Difficulty,
+                q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
+                q.MediaKey
+            )).ToList();
+        }
+
+        private static IQueryable<Domain.Entities.Question> BuildApprovedQuestionsQuery(
+            IAppDb db,
+            IEnumerable<string>? categories,
+            IEnumerable<QuestionDifficulty>? difficulties)
+        {
+            var query = db.Questions
+                .AsNoTracking()
+                .Include(q => q.Options)
+                .Where(q => q.Status == "Approved")
+                .AsQueryable();
+
+            var categoryFilters = categories?
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (categoryFilters is { Length: > 0 })
+                query = query.Where(q => categoryFilters.Contains(q.Category));
+
+            var difficultyFilters = difficulties?.Distinct().ToArray();
+            if (difficultyFilters is { Length: > 0 })
+                query = query.Where(q => difficultyFilters.Contains(q.Difficulty));
+
+            return query;
         }
     }
 }

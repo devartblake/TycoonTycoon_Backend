@@ -119,13 +119,20 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
   - `docs/OPERATOR_ROLLBACK_DRILL_REPORT_2026-04-08.md`
   - `docs/OPERATOR_RELEASE_ARTIFACTS_2026-04.md`
 
+## Execution Update — April 15, 2026
+
+- ✅ Executed quarterly staging rollback drill (Django ➜ Blazor failover ➜ Django restore).
+- ✅ Captured failover metrics and continuity verification in `docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`.
+- ✅ Published completed drill report and release artifact linkage:
+  - `docs/OPERATOR_ROLLBACK_DRILL_REPORT_2026-04-08.md`
+  - `docs/OPERATOR_RELEASE_ARTIFACTS_2026-04.md`
+
 ## Remaining Work (Actionable)
 
 1. Execute full staging parallel-run with real operator accounts and record sign-off evidence.
-2. Complete first quarterly rollback drill in staging and attach artifacts to release notes.
-3. Add compose smoke-test target that validates dashboard login + core BFF endpoints end-to-end.
-4. Add saved-view governance audit explorer UI (timeline/filtering/export) for operator review workflows.
-5. Finish UX hardening pass (shared layout components, density controls, inline validation polish).
+2. Add compose smoke-test target that validates dashboard login + core BFF endpoints end-to-end.
+3. Add saved-view governance audit explorer UI (timeline/filtering/export) for operator review workflows.
+4. Finish UX hardening pass (shared layout components, density controls, inline validation polish).
 
 ## Legacy Dashboard Deprecation Timeline
 

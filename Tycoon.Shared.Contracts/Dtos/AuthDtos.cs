@@ -22,6 +22,7 @@ namespace Tycoon.Shared.Contracts.Dtos
         string Handle,
         string Email,
         string? Country,
+        string? AvatarUrl,
         string? Tier,
         int Mmr
     );
@@ -35,13 +36,28 @@ namespace Tycoon.Shared.Contracts.Dtos
         decimal WinRate
     );
 
-    public record UpdateProfileRequest(string? Handle, string? Country);
+    public record UpdateProfileRequest(string? Handle, string? Country, string? AvatarUrl = null);
+
+    public sealed record AvatarUploadUrlRequest(
+        string FileName,
+        string ContentType,
+        long ContentLength
+    );
+
+    public sealed record AvatarUploadUrlResponse(
+        string UploadUrl,
+        string ObjectKey,
+        string PublicUrl
+    );
 
     // ===== User Search DTOs =====
 
     public sealed record UserSearchResultDto(
         Guid Id,
         string Handle,
+        string DisplayName,
+        string Username,
+        string? AvatarUrl,
         string? Country,
         string? Tier,
         int Mmr
@@ -51,6 +67,7 @@ namespace Tycoon.Shared.Contracts.Dtos
         int Page,
         int PageSize,
         int Total,
+        int TotalPages,
         IReadOnlyList<UserSearchResultDto> Items
     );
 

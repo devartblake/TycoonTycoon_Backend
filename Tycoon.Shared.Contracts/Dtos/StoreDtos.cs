@@ -17,6 +17,65 @@ namespace Tycoon.Shared.Contracts.Dtos
         IReadOnlyList<StoreItemDto> Items,
         int Count);
 
+    public sealed record PremiumStoreDto(
+        PremiumAdFreeDto AdFree,
+        PremiumSaleInfoDto? SaleInfo,
+        RewardCenterDto RewardCenter);
+
+    public sealed record PremiumAdFreeDto(
+        string Title,
+        string Subtitle,
+        IReadOnlyList<string> Benefits,
+        IReadOnlyList<PremiumAdFreePlanDto> Plans);
+
+    public sealed record PremiumAdFreePlanDto(
+        string Id,
+        string Title,
+        string Subtitle,
+        string PriceLabel,
+        string? Badge,
+        string AccentColor,
+        bool IsBestValue,
+        string? Sku);
+
+    public sealed record PremiumSaleInfoDto(
+        string Badge,
+        string Title,
+        string Subtitle,
+        string CtaLabel,
+        string GradientStart,
+        string GradientEnd,
+        IReadOnlyList<string> Benefits);
+
+    public sealed record RewardCenterDto(
+        string Title,
+        string Subtitle,
+        IReadOnlyList<RewardCardDto> Cards);
+
+    public sealed record RewardCardDto(
+        string RewardId,
+        string Title,
+        string Subtitle,
+        string RewardLabel,
+        string Availability,
+        string GradientStart,
+        string GradientEnd,
+        double Progress,
+        bool IsClaimAvailable,
+        int? RemainingClaims,
+        int? DailyCap,
+        DateTimeOffset? NextAvailableAtUtc);
+
+    public sealed record ClaimStoreRewardResponseDto(
+        string RewardId,
+        int CoinsAwarded,
+        int NewBalance,
+        string Status,
+        DateTimeOffset ClaimedAtUtc,
+        DateTimeOffset? NextAvailableAtUtc,
+        int? CurrentStreak,
+        int? RemainingClaims);
+
     public sealed record StorePurchaseRequest(
         Guid PlayerId,
         string Sku,

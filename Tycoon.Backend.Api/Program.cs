@@ -46,6 +46,7 @@ using Tycoon.Backend.Api.Features.Friends;
 using Tycoon.Backend.Api.Features.Leaderboards;
 using Tycoon.Backend.Api.Features.Matches;
 using Tycoon.Backend.Api.Features.Matchmaking;
+using Tycoon.Backend.Api.Features.Messages;
 using Tycoon.Backend.Api.Features.Missions;
 using Tycoon.Backend.Api.Features.Ml;
 using Tycoon.Backend.Api.Features.Mobile.Matches;
@@ -53,6 +54,7 @@ using Tycoon.Backend.Api.Features.Mobile.Seasons;
 using Tycoon.Backend.Api.Features.Mobile.Players;
 using Tycoon.Backend.Api.Features.Mobile.Leaderboards;
 using Tycoon.Backend.Api.Features.Mobile.Economy;
+using Tycoon.Backend.Api.Features.Notifications;
 using Tycoon.Backend.Api.Features.Party;
 using Tycoon.Backend.Api.Features.Players;
 using Tycoon.Backend.Api.Features.Powerups;
@@ -70,6 +72,7 @@ using Tycoon.Backend.Api.Features.Territory;
 using Tycoon.Backend.Api.Features.Votes;
 using Tycoon.Backend.Api.Features.Seasons;
 using Tycoon.Backend.Api.Features.Skills;
+using Tycoon.Backend.Api.Features.Study;
 using Tycoon.Backend.Api.Features.Users;
 using Tycoon.Backend.Api.Middleware;
 using Tycoon.Backend.Api.Observability;
@@ -499,12 +502,16 @@ builder.Services.AddSingleton<IPresenceSessionManager, PresenceSessionManager>()
 builder.Services.AddSingleton<IGameEventNotifier, SignalRGameEventNotifier>();
 builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
 builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
+builder.Services.AddSingleton<IPlayerNotificationNotifier, SignalRPlayerNotificationNotifier>();
+builder.Services.AddSingleton<IDirectMessageNotifier, SignalRDirectMessageNotifier>();
 
 builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 
 // Ensure IHttpClientFactory is always available for minimal-API endpoints that
 // take it as a service dependency (avoids startup parameter-inference failures).
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
+builder.Services.Configure<StorePremiumOptions>(builder.Configuration.GetSection("StorePremium"));
 builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection("PayPal"));
 builder.Services.AddSingleton<IPayPalPaymentGateway, PayPalPaymentGateway>();
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
@@ -722,6 +729,7 @@ app.Map("/ws", async context =>
                     userId = id.ToString(),
                     status = act?.Status ?? "online",
                     activity = act?.Activity,
+                    gameActivity = act?.GameActivity,
                     lastSeen = DateTimeOffset.UtcNow
                 };
             })
@@ -791,6 +799,10 @@ app.MapGrpcService<SidecarGrpcService>();
 app.MapGrpcService<MobileMatchGrpcService>();
 
 // Feature endpoints
+// Route ownership note:
+// - /questions/* = gameplay-safe question retrieval and grading
+// - /modules/* = learning and mastery flows
+// - /quiz/* is intentionally not mapped in this backend
 AnalyticsEndpoints.Map(app);
 AuthEndpoints.Map(app);
 UsersEndpoints.Map(app);
@@ -807,11 +819,15 @@ SkillsEndpoints.Map(app);
 PowerupsEndpoints.Map(app);
 SeasonsEndpoints.Map(app);
 FriendsEndpoints.Map(app);
+PlayerNotificationsEndpoints.Map(app);
+MessagesEndpoints.Map(app);
 PartyEndpoints.Map(app);
 RankedLeaderboardsEndpoints.Map(app);
 SeasonRewardsEndpoints.Map(app);
 QuestionsEndpoints.Map(app);
 LearningModulesEndpoints.Map(app);
+StudySetsEndpoints.Map(app);
+StudySessionsEndpoints.Map(app);
 VoteEndpoints.Map(app);
 StoreEndpoints.Map(app);
 AvatarEndpoints.Map(app);
@@ -943,8 +959,10 @@ async Task HandleWebSocket(
                         }
                     }
 
+                    var allowedIds = new HashSet<Guid>((friendIds ?? Enumerable.Empty<Guid>()).Append(playerId));
+
                     var presences = requestedIds
-                        .Where(id => Guid.TryParse(id, out _))
+                        .Where(id => Guid.TryParse(id, out var parsedId) && allowedIds.Contains(parsedId))
                         .Select(id =>
                         {
                             var pid = Guid.Parse(id);
@@ -955,6 +973,7 @@ async Task HandleWebSocket(
                                 userId = id,
                                 status = isOnline ? (act?.Status ?? "online") : "offline",
                                 activity = act?.Activity,
+                                gameActivity = act?.GameActivity,
                                 lastSeen = DateTimeOffset.UtcNow
                             };
                         })

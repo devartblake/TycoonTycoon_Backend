@@ -4,6 +4,198 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-21] Store Catalog Premium Compatibility
+
+### Store catalog compatibility
+- Updated `GET /store/catalog` so the general catalog remains available to frontend clients even when `StoreItem` rows are not seeded.
+- The endpoint still returns the existing `StoreCatalogDto` envelope.
+- Active DB-backed `StoreItem` rows remain primary.
+- Premium subscription fallback rows are appended from `StorePremiumOptions.AdFree.Plans` when their SKUs are not already present.
+- Supported premium fallback filters now include:
+  - omitted `itemType`
+  - `itemType=premium`
+  - `itemType=premium-subscription`
+  - `itemType=subscription`
+  - `itemType=ad-free`
+- Unrelated catalog filters such as `itemType=powerup` do not include premium fallback rows.
+
+### Verification
+- Added Premium Store endpoint tests covering `/store/catalog` fallback behavior.
+- Verified with:
+  - `dotnet build Tycoon.Backend.Api\Tycoon.Backend.Api.csproj`
+  - `dotnet build Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-restore`
+  - `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter PremiumStoreEndpointsTests`
+- Result: `Passed (12/12)`
+
+---
+
+## [2026-04-20] Player Notifications + Direct Messaging v1
+
+### Player notifications backend
+- Added authenticated player inbox endpoints:
+  - `GET /notifications/inbox`
+  - `GET /notifications/unread-count`
+  - `POST /notifications/{notificationId}/read`
+  - `POST /notifications/read-all`
+  - `DELETE /notifications/{notificationId}`
+- Added a dedicated `PlayerNotification` persistence model instead of reusing admin notification history.
+- Added `PlayerInboxService`-driven inbox query and mutation flow with JSON-backed payload storage.
+- Wired friend-request received and friend-request accepted flows into the new player inbox.
+- Added a simple system notification source by creating an inbox entry after onboarding reward claim.
+
+### Direct messaging backend
+- Added direct messaging endpoints:
+  - `GET /messages/conversations`
+  - `POST /messages/conversations/direct`
+  - `GET /messages/conversations/{conversationId}/messages`
+  - `POST /messages/conversations/{conversationId}/messages`
+  - `POST /messages/conversations/{conversationId}/read`
+  - `GET /messages/unread-count`
+- Added dedicated persistence for:
+  - `DirectMessageConversation`
+  - `DirectMessageConversationParticipant`
+  - `DirectMessage`
+- Added `DirectMessagingService` with:
+  - idempotent direct-conversation creation
+  - sender-scoped `clientMessageId` idempotency
+  - unread-count derivation from participant read state
+  - membership enforcement for read/send/history operations
+
+### Lightweight realtime refresh
+- Extended the existing `/ws/notify` SignalR contract with refresh-style player events:
+  - `NotificationInboxUpdated`
+  - `DirectMessagesUpdated`
+- Added SignalR notifier implementations so inbox and DM updates can trigger client refresh without introducing full live-chat transport.
+
+### Contract hardening and test coverage
+- Added focused backend tests:
+  - `Tycoon.Backend.Api.Tests/Notifications/PlayerNotificationsEndpointsTests.cs`
+  - `Tycoon.Backend.Api.Tests/Messaging/MessagesEndpointsTests.cs`
+- Verified the new notifications and messaging slice on **2026-04-20** with:
+  - `dotnet test Tycoon.Backend.Api.Tests\Tycoon.Backend.Api.Tests.csproj --no-build --no-restore --filter "PlayerNotificationsEndpointsTests|MessagesEndpointsTests"`
+- Fixed two integration bugs uncovered during test pass:
+  - optional pagination defaults for inbox/conversation list endpoints
+  - friend-accept transaction handling under the in-memory test provider
+
+### Documentation updates
+- Rewrote `docs/notifications_backend_handoff_2026-04-20.md` to reflect the live player-inbox contract, current source integrations, realtime refresh behavior, and backend-standard error envelope.
+- Rewrote `docs/messaging_backend_handoff_2026-04-20.md` to reflect the live DM contract, idempotency behavior, refresh events, and current v1 limits.
+- Added and verified the relational migration for notifications and messaging:
+  - `20260420231724_AddNotificationMessageing`
+- Confirmed EF reports no pending model changes after the notifications/messaging migration.
+- Re-ran focused backend tests:
+  - `PlayerNotificationsEndpointsTests|MessagesEndpointsTests` passed `8/8`
+  - `PremiumStoreEndpointsTests` passed `9/9`
+
+## [2026-04-19] Premium Store Backend Fast-Track + Growth Planning
+
+### Premium store backend baseline
+- Added authenticated premium store endpoints:
+  - `GET /store/premium`
+  - `GET /store/rewards/{playerId}`
+  - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- Premium catalog is now served from config-backed `StorePremiumOptions` with a short-lived in-memory cache.
+- Reward claiming now reuses existing `PlayerTransactionService` and `PlayerWallet` infrastructure instead of introducing new persistence in v1.
+- Implemented UTC-based claim windows for:
+  - `daily-checkin`
+  - `watch-ad`
+
+### Premium store contract coverage
+- Added typed premium store DTOs to `Tycoon.Shared.Contracts/Dtos/StoreDtos.cs`.
+- Added focused contract tests in `Tycoon.Backend.Api.Tests/Store/PremiumStoreEndpointsTests.cs` covering:
+  - auth requirements
+  - self-only reward access
+  - reward-state defaults
+  - daily-checkin duplicate prevention
+  - watch-ad cap enforcement
+
+### Frontend coordination docs
+- Added `docs/premium_store_growth_plan_2026-04-19.md` with a multi-phase long-term growth plan for premium catalog, rewards, entitlements, analytics, and admin tooling.
+- Updated `docs/premium_store_backend_handoff_2026-04-20.md` with:
+  - current implementation status
+  - an explicit verified route matrix for the implemented premium store endpoints
+  - actual shipped DTO field names and example payloads
+  - correction that the shipped error envelope is the nested backend-standard `error.code` / `error.message` shape
+- Updated `docs/premium_store_growth_plan_2026-04-19.md` with a verified backend-baseline section covering the currently implemented routes and supporting subscription routes.
+
+### Endpoint verification
+- Re-ran `PremiumStoreEndpointsTests` on 2026-04-20 and confirmed the premium endpoint slice is passing:
+  - `GET /store/premium`
+  - `GET /store/rewards/{playerId}`
+  - `POST /store/rewards/{playerId}/claim/{rewardId}`
+- Re-analysis of premium-store/frontend alignment confirmed one remaining transitional gap:
+  - the current frontend purchase CTA path can still request `GET /store/offers`
+  - this route is not part of the implemented premium-store backend baseline
+
+### Premium purchase-routing guidance
+- Expanded premium-store documentation to give frontend a concrete backend-supported replacement for `/store/offers`:
+  - `POST /store/subscription/checkout/session`
+  - `POST /store/subscription/paypal/create`
+  - `GET /store/subscription/status/{playerId}`
+  - `POST /store/subscription/portal/session`
+- Documented the current premium plan mapping for frontend routing:
+  - `premium-monthly` / `sub:premium:monthly` → `tier=premium`, `billingPeriod=monthly`
+  - `premium-seasonal` / `sub:premium:seasonal` → `tier=premium`, `billingPeriod=seasonal`
+
+---
+
+## [2026-04-18] Study Surface Deepening + Frontend Handoff
+
+### Backend Study API expansion
+- Added a dedicated Study frontend/backend handoff:
+  - `docs/study_frontend_backend_handoff_2026-04-18.md`
+- Added a lightweight Study status snapshot:
+  - `docs/study_frontend_backend_status_2026-04-18.md`
+
+### Study contract status
+- Study route family now includes:
+  - `GET /study-sets`
+  - `GET /study-sets/{id}`
+  - `GET /study-sets/recommended`
+  - `POST /study-sets`
+  - `PATCH /study-sets/{id}`
+  - `POST /study-sets/favorites/{questionId}`
+  - `DELETE /study-sets/favorites/{questionId}`
+  - `POST /study-sessions`
+  - `POST /study-sessions/{id}/progress`
+  - `GET /study-sessions/{id}/summary`
+- Study discovery now supports:
+  - generated category sets
+  - weak-area sets
+  - favorites sets
+  - due-review sets
+  - custom saved study sets
+
+### Session and review deepening
+- Study sessions now persist:
+  - `Flashcard` vs `SelfTest` mode
+  - ordered session question snapshots
+  - explicit flashcard interaction state
+  - per-question reveal/confidence/action data for resume flows
+- Added persisted `StudyCardState` to support due-review recommendations beyond same-day weak-area rollups.
+
+### Documentation/status updates
+- Updated:
+  - `docs/trivia_tycoon_quiz_question_learning_migration_plan.md`
+  - `docs/trivia_tycoon_migration_patch_order.md`
+  - `docs/question_flow_frontend_backend_handoff_2026-04-15.md`
+  - `docs/question_flow_compatibility_architecture_handoff_2026-04-15.md`
+  - `docs/REMAINING_TASKS.md`
+
+---
+
+## [2026-04-15] Staging Rollback Drill Artifacts Published
+
+### Operator dashboard rollback drill completion
+- Completed quarterly live staging rollback drill for operator dashboard failover:
+  - Django `operator-dashboard` ➜ Blazor `operator-dashboard-blazor` fallback ➜ Django restore
+- Captured and published drill timeline, failover metrics, workflow continuity results, and remediation ownership:
+  - `docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`
+  - `docs/OPERATOR_ROLLBACK_DRILL_REPORT_2026-04-08.md`
+  - `docs/OPERATOR_RELEASE_ARTIFACTS_2026-04.md`
+
+---
+
 ## [2026-04-04] Alpha 6.1 Readiness Tooling + Frontend Handoff
 
 ### Deployment readiness tooling (6.1 follow-through)

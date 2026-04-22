@@ -1,170 +1,274 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Operator Users</title>
-    <style>
-      body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 2rem; background: #0b1020; color: #f8fafc; }
-      .card { background: #121936; border-radius: 14px; padding: 1rem; border: 1px solid #1f2b54; margin-bottom: 1rem; }
-      .muted { color: #94a3b8; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 0.5rem; border-bottom: 1px solid #1f2b54; text-align: left; }
-      input, select { background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 8px; padding: 0.45rem 0.6rem; }
-      button { background: #1d4ed8; color: #fff; border: 0; border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; }
-      a { color: #93c5fd; }
-    </style>
-  </head>
-  <body>
-    <h1>Operator Users</h1>
-    {% if admin_profile %}<p class="muted">Signed in as {{ admin_profile.email }} · <a href="/logout">Sign out</a></p>{% endif %}
-    <p><a href="/">← Back to dashboard</a></p>
+{% extends "dashboard/base.html" %}
 
-    <section class="card">
-      <form method="get">
-        <p class="muted">
-          Quick presets:
-          <a href="?preset=banned_recent">Banned recent</a> ·
-          <a href="?preset=new_unverified">New unverified</a> ·
-          <a href="?preset=admins">Admins</a>
-        </p>
-        {% if saved_view_entries %}
-        <p class="muted">
-          Saved views:
-          {% for entry in saved_view_entries %}
-            <a href="?savedView={{ entry.key }}">{{ entry.name }}{% if entry.is_shared %} (shared){% endif %}</a>{% if not forloop.last %} · {% endif %}
-          {% endfor %}
-        </p>
-        {% endif %}
-        <label>
-          Search
-          <input type="text" name="q" value="{{ query.q|default:'' }}" placeholder="email or username" />
-        </label>
-        <label>
-          Status
-          <select name="status">
-            <option value="">All</option>
-            <option value="active" {% if query.status == "active" %}selected{% endif %}>active</option>
-            <option value="suspended" {% if query.status == "suspended" %}selected{% endif %}>suspended</option>
-          </select>
-        </label>
-        <label>
-          Role
-          <select name="role">
-            <option value="">Any</option>
-            <option value="admin" {% if query.role == "admin" %}selected{% endif %}>admin</option>
-            <option value="moderator" {% if query.role == "moderator" %}selected{% endif %}>moderator</option>
-            <option value="player" {% if query.role == "player" %}selected{% endif %}>player</option>
-          </select>
-        </label>
-        <label>
-          Verified
-          <select name="isVerified">
-            <option value="">Any</option>
-            <option value="true" {% if query.isVerified == "true" %}selected{% endif %}>yes</option>
-            <option value="false" {% if query.isVerified == "false" %}selected{% endif %}>no</option>
-          </select>
-        </label>
-        <label>
-          Banned
-          <select name="isBanned">
-            <option value="">Any</option>
-            <option value="true" {% if query.isBanned == "true" %}selected{% endif %}>yes</option>
-            <option value="false" {% if query.isBanned == "false" %}selected{% endif %}>no</option>
-          </select>
-        </label>
-        <label>
-          Sort by
-          <select name="sortBy">
-            <option value="createdAt" {% if query.sortBy == "createdAt" %}selected{% endif %}>createdAt</option>
-            <option value="updatedAt" {% if query.sortBy == "updatedAt" %}selected{% endif %}>updatedAt</option>
-            <option value="email" {% if query.sortBy == "email" %}selected{% endif %}>email</option>
-          </select>
-        </label>
-        <label>
-          Sort order
-          <select name="sortOrder">
-            <option value="desc" {% if query.sortOrder == "desc" %}selected{% endif %}>desc</option>
-            <option value="asc" {% if query.sortOrder == "asc" %}selected{% endif %}>asc</option>
-          </select>
-        </label>
-        <label>
-          Page size
-          <select name="pageSize">
-            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
-            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
-            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
-          </select>
-        </label>
-        <button type="submit">Refresh</button>
-      </form>
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="save_view" />
-        <input type="hidden" name="preset" value="{{ preset|default:'' }}" />
-        <input type="hidden" name="q" value="{{ query.q|default:'' }}" />
-        <input type="hidden" name="status" value="{{ query.status|default:'' }}" />
-        <input type="hidden" name="role" value="{{ query.role|default:'' }}" />
-        <input type="hidden" name="isVerified" value="{{ query.isVerified|default:'' }}" />
-        <input type="hidden" name="isBanned" value="{{ query.isBanned|default:'' }}" />
-        <input type="hidden" name="sortBy" value="{{ query.sortBy|default:'createdAt' }}" />
-        <input type="hidden" name="sortOrder" value="{{ query.sortOrder|default:'desc' }}" />
-        <input type="hidden" name="pageSize" value="{{ page_size }}" />
-        <p class="muted">
-          <input type="text" name="viewName" placeholder="view name" />
-          <label><input type="checkbox" name="isShared" value="true" /> share with team</label>
-          <button type="submit">Save current filters</button>
-        </p>
-      </form>
-      {% if selected_saved_view %}
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="delete_view" />
-        <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
-        <p class="muted">Selected saved view: <strong>{{ selected_saved_view }}</strong> <button type="submit">Delete saved view</button></p>
-      </form>
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="archive_view" />
-        <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
-        <p class="muted"><button type="submit">Archive saved view</button></p>
-      </form>
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="transfer_view" />
-        <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
-        <p class="muted"><input type="text" name="newOwnerEmail" placeholder="new owner email" /> <button type="submit">Transfer ownership</button></p>
-      </form>
-      {% endif %}
-      <p class="muted">Showing {{ items|length }} records · total {{ total }} · page {{ page }}</p>
-      <p class="muted">
-        {% if has_prev %}
-          <a href="?preset={{ preset|default:'' }}&q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&role={{ query.role|default:'' }}&isVerified={{ query.isVerified|default:'' }}&isBanned={{ query.isBanned|default:'' }}&sortBy={{ query.sortBy|default:'createdAt' }}&sortOrder={{ query.sortOrder|default:'desc' }}&page={{ prev_page }}&pageSize={{ page_size }}">← Previous</a>
-        {% endif %}
-        {% if has_prev and has_next %} · {% endif %}
-        {% if has_next %}
-          <a href="?preset={{ preset|default:'' }}&q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&role={{ query.role|default:'' }}&isVerified={{ query.isVerified|default:'' }}&isBanned={{ query.isBanned|default:'' }}&sortBy={{ query.sortBy|default:'createdAt' }}&sortOrder={{ query.sortOrder|default:'desc' }}&page={{ next_page }}&pageSize={{ page_size }}">Next →</a>
-        {% endif %}
-      </p>
-    </section>
+{% block title %}Users Triage{% endblock %}
 
-    <section class="card">
-      {% if can_write_users %}
-      <form method="post">
-        {% csrf_token %}
-        <p class="muted">
-          Bulk actions:
-          <select name="action">
-            <option value="ban">ban</option>
-            <option value="unban">unban</option>
-          </select>
-          <input type="text" name="reason" placeholder="reason for bulk ban" />
-          <label><input type="checkbox" name="dryRun" value="true" checked /> dry-run</label>
-          <input type="text" name="confirm" placeholder="type YES to execute" />
-          <button type="submit">Run on selected users</button>
-        </p>
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">User operations</p>
+    <h1 class="page-title">Users triage</h1>
+    <p class="page-subtitle">Filter accounts, work through saved views, review governance history, and run guarded bulk actions from a single operator surface.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="chip neutral">Total {{ total }}</span>
+    <span class="chip neutral">Page {{ page }}</span>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Filters and saved views" copy="Preset triage flows for common cohorts, with shared saved views to keep investigations consistent across the team." %}
+  <form method="get" class="stack">
+    {% include "dashboard/partials/preset_links.html" with links=user_preset_links %}
+    {% if saved_view_entries %}
+    <div class="surface-note">
+      Saved views:
+      {% for entry in saved_view_entries %}
+        <a href="?savedView={{ entry.key }}">{{ entry.name }}{% if entry.is_shared %} (shared){% endif %}</a>{% if not forloop.last %} | {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="form-grid">
+      <label>
+        Search
+        <input type="text" name="q" value="{{ query.q|default:'' }}" placeholder="email or username" />
+      </label>
+      <label>
+        Status
+        <select name="status">
+          <option value="">All</option>
+          <option value="active" {% if query.status == "active" %}selected{% endif %}>active</option>
+          <option value="suspended" {% if query.status == "suspended" %}selected{% endif %}>suspended</option>
+        </select>
+      </label>
+      <label>
+        Role
+        <select name="role">
+          <option value="">Any</option>
+          <option value="admin" {% if query.role == "admin" %}selected{% endif %}>admin</option>
+          <option value="moderator" {% if query.role == "moderator" %}selected{% endif %}>moderator</option>
+          <option value="player" {% if query.role == "player" %}selected{% endif %}>player</option>
+        </select>
+      </label>
+      <label>
+        Verified
+        <select name="isVerified">
+          <option value="">Any</option>
+          <option value="true" {% if query.isVerified == "true" %}selected{% endif %}>yes</option>
+          <option value="false" {% if query.isVerified == "false" %}selected{% endif %}>no</option>
+        </select>
+      </label>
+      <label>
+        Banned
+        <select name="isBanned">
+          <option value="">Any</option>
+          <option value="true" {% if query.isBanned == "true" %}selected{% endif %}>yes</option>
+          <option value="false" {% if query.isBanned == "false" %}selected{% endif %}>no</option>
+        </select>
+      </label>
+      <label>
+        Sort by
+        <select name="sortBy">
+          <option value="createdAt" {% if query.sortBy == "createdAt" %}selected{% endif %}>createdAt</option>
+          <option value="updatedAt" {% if query.sortBy == "updatedAt" %}selected{% endif %}>updatedAt</option>
+          <option value="email" {% if query.sortBy == "email" %}selected{% endif %}>email</option>
+        </select>
+      </label>
+      <label>
+        Sort order
+        <select name="sortOrder">
+          <option value="desc" {% if query.sortOrder == "desc" %}selected{% endif %}>desc</option>
+          <option value="asc" {% if query.sortOrder == "asc" %}selected{% endif %}>asc</option>
+        </select>
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+          <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+          <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Refresh triage view</button>
+      <span class="helper-text">Showing {{ items|length }} records, total {{ total }}, page {{ page }}.</span>
+      {% if has_prev %}
+      <a class="button secondary" href="?preset={{ preset|default:'' }}&q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&role={{ query.role|default:'' }}&isVerified={{ query.isVerified|default:'' }}&isBanned={{ query.isBanned|default:'' }}&sortBy={{ query.sortBy|default:'createdAt' }}&sortOrder={{ query.sortOrder|default:'desc' }}&page={{ prev_page }}&pageSize={{ page_size }}">Previous</a>
       {% endif %}
-      <table>
+      {% if has_next %}
+      <a class="button secondary" href="?preset={{ preset|default:'' }}&q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&role={{ query.role|default:'' }}&isVerified={{ query.isVerified|default:'' }}&isBanned={{ query.isBanned|default:'' }}&sortBy={{ query.sortBy|default:'createdAt' }}&sortOrder={{ query.sortOrder|default:'desc' }}&page={{ next_page }}&pageSize={{ page_size }}">Next</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <form method="post" class="stack" style="margin-top: 18px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_view" />
+    <input type="hidden" name="preset" value="{{ preset|default:'' }}" />
+    <input type="hidden" name="q" value="{{ query.q|default:'' }}" />
+    <input type="hidden" name="status" value="{{ query.status|default:'' }}" />
+    <input type="hidden" name="role" value="{{ query.role|default:'' }}" />
+    <input type="hidden" name="isVerified" value="{{ query.isVerified|default:'' }}" />
+    <input type="hidden" name="isBanned" value="{{ query.isBanned|default:'' }}" />
+    <input type="hidden" name="sortBy" value="{{ query.sortBy|default:'createdAt' }}" />
+    <input type="hidden" name="sortOrder" value="{{ query.sortOrder|default:'desc' }}" />
+    <input type="hidden" name="pageSize" value="{{ page_size }}" />
+    <div class="form-grid">
+      <label>
+        Save current filter as
+        <input type="text" name="viewName" placeholder="view name" />
+      </label>
+      <label>
+        Shared visibility
+        <select name="isShared">
+          <option value="false">private</option>
+          <option value="true">shared with team</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Save current filters</button>
+    </div>
+  </form>
+
+  {% if selected_saved_view %}
+  <div class="surface-note" style="margin-top: 18px;">Selected saved view: <strong>{{ selected_saved_view }}</strong></div>
+  <div class="toolbar-actions" style="margin-top: 14px;">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete_view" />
+      <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
+      <button type="submit" class="button ghost">Delete saved view</button>
+    </form>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="archive_view" />
+      <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
+      <button type="submit" class="button ghost">Archive view</button>
+    </form>
+    <form method="post" class="toolbar-actions">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="transfer_view" />
+      <input type="hidden" name="viewName" value="{{ selected_saved_view }}" />
+      <input type="text" name="newOwnerEmail" placeholder="new owner email" />
+      <button type="submit" class="button ghost">Transfer ownership</button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+
+<section class="card" style="margin-top: 18px;">
+  {% include "dashboard/partials/section_intro.html" with title="Saved-view governance audit" copy="Track save, archive, delete, and transfer actions for team-shared triage views." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Action
+        <select name="savedViewAuditAction">
+          <option value="">All</option>
+          <option value="save" {% if saved_view_audit_query.action == "save" %}selected{% endif %}>save</option>
+          <option value="delete" {% if saved_view_audit_query.action == "delete" %}selected{% endif %}>delete</option>
+          <option value="archive" {% if saved_view_audit_query.action == "archive" %}selected{% endif %}>archive</option>
+          <option value="transfer" {% if saved_view_audit_query.action == "transfer" %}selected{% endif %}>transfer</option>
+        </select>
+      </label>
+      <label>
+        Actor email
+        <input type="text" name="savedViewAuditActorEmail" value="{{ saved_view_audit_query.actorEmail|default:'' }}" placeholder="actor@example.com" />
+      </label>
+      <label>
+        Owner email
+        <input type="text" name="savedViewAuditOwnerEmail" value="{{ saved_view_audit_query.ownerEmail|default:'' }}" placeholder="owner@example.com" />
+      </label>
+      <label>
+        View name
+        <input type="text" name="savedViewAuditViewName" value="{{ saved_view_audit_query.viewName|default:'' }}" placeholder="Banned users" />
+      </label>
+      <label>
+        From (ISO)
+        <input type="text" name="savedViewAuditFrom" value="{{ saved_view_audit_query.from|default:'' }}" placeholder="2026-04-01T00:00:00Z" />
+      </label>
+      <label>
+        To (ISO)
+        <input type="text" name="savedViewAuditTo" value="{{ saved_view_audit_query.to|default:'' }}" placeholder="2026-04-01T23:59:59Z" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Apply audit filters</button>
+    </div>
+  </form>
+  <div class="table-meta">
+    <a class="button secondary" href="?savedViewAuditAction={{ saved_view_audit_query.action|default:'' }}&savedViewAuditActorEmail={{ saved_view_audit_query.actorEmail|default:'' }}&savedViewAuditOwnerEmail={{ saved_view_audit_query.ownerEmail|default:'' }}&savedViewAuditViewName={{ saved_view_audit_query.viewName|default:'' }}&savedViewAuditFrom={{ saved_view_audit_query.from|default:'' }}&savedViewAuditTo={{ saved_view_audit_query.to|default:'' }}&savedViewAuditFormat=csv">Export CSV</a>
+    <span class="helper-text">Review the latest 100 governance events matching the current filter.</span>
+  </div>
+  <div class="table-wrap" style="margin-top: 18px;">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>At (UTC)</th>
+          <th>Action</th>
+          <th>Actor</th>
+          <th>Owner</th>
+          <th>View</th>
+          <th>Metadata</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in saved_view_audit_rows %}
+        <tr>
+          <td>{{ row.createdAtUtc }}</td>
+          <td><span class="chip neutral">{{ row.action }}</span></td>
+          <td>{{ row.actorEmail }}</td>
+          <td>{{ row.ownerEmail }}</td>
+          <td>{{ row.viewName }}</td>
+          <td>{{ row.metadata }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="helper-text">No saved-view governance audit events for this filter.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 18px;">
+  {% include "dashboard/partials/section_intro.html" with title="Users table" copy="This view remains backed by the authenticated Django operator route and existing bulk-action guardrails." %}
+  {% if can_write_users %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Bulk action
+        <select name="action">
+          <option value="ban">ban</option>
+          <option value="unban">unban</option>
+        </select>
+      </label>
+      <label>
+        Reason
+        <input type="text" name="reason" placeholder="reason for bulk ban" />
+      </label>
+      <label>
+        Execution mode
+        <select name="dryRun">
+          <option value="true">dry-run</option>
+          <option value="">live execution</option>
+        </select>
+      </label>
+      <label>
+        Confirmation
+        <input type="text" name="confirm" placeholder="type YES to execute" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Run on selected users</button>
+      <span class="helper-text">Dry-run is the default safety path. Live execution still requires typing YES.</span>
+    </div>
+  {% endif %}
+
+    <div class="table-wrap">
+      <table class="dense-table">
         <thead>
           <tr>
             {% if can_write_users %}<th>Select</th>{% endif %}
@@ -183,26 +287,26 @@
             <td>{{ user.id }}</td>
             <td>{{ user.email|default:"-" }}</td>
             <td>{{ user.username|default:"-" }}</td>
-            <td>{{ user.role|default:"-" }}</td>
-            <td>{{ user.isVerified|yesno:"yes,no,-" }}</td>
-            <td>{{ user.isBanned|yesno:"yes,no,-" }}</td>
+            <td><span class="chip neutral">{{ user.role|default:"-" }}</span></td>
+            <td><span class="chip {% if user.isVerified %}success{% else %}warning{% endif %}">{{ user.isVerified|yesno:"yes,no,-" }}</span></td>
+            <td><span class="chip {% if user.isBanned %}danger{% else %}success{% endif %}">{{ user.isBanned|yesno:"yes,no,-" }}</span></td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="{% if can_write_users %}7{% else %}6{% endif %}" class="muted">No users returned for this filter.</td>
+            <td colspan="{% if can_write_users %}7{% else %}6{% endif %}" class="helper-text">No users returned for this filter.</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
-      {% if can_write_users %}
-      </form>
-      {% endif %}
+    </div>
+  {% if can_write_users %}
+  </form>
+  {% endif %}
 
-      {% if bulk_result %}
-      <p class="muted">
-        {% if bulk_result.dry_run %}Dry-run{% else %}Bulk{% endif %} {{ bulk_result.action }} → success: {{ bulk_result.succeeded|length }}, failed: {{ bulk_result.failed|length }}
-      </p>
-      {% endif %}
-    </section>
-  </body>
-</html>
+  {% if bulk_result %}
+  <div class="surface-note" style="margin-top: 18px;">
+    {% if bulk_result.dry_run %}Dry-run{% else %}Bulk{% endif %} {{ bulk_result.action }} -> success: {{ bulk_result.succeeded|length }}, failed: {{ bulk_result.failed|length }}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

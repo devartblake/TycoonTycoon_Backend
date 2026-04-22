@@ -18,6 +18,16 @@ namespace Tycoon.Backend.Application.Auth
         private readonly JwtSettings _jwt;
         private readonly ILogger<AuthService> _logger;
 
+        private sealed record AuthUserSnapshot(
+            Guid Id,
+            string Email,
+            string Handle,
+            string PasswordHash,
+            string? Country,
+            string? Tier,
+            int Mmr,
+            bool IsActive);
+
         public AuthService(IAppDb database, IOptions<JwtSettings> jwtOptions, ILogger<AuthService> logger)
         {
             _database = database;
@@ -83,7 +93,18 @@ namespace Tycoon.Backend.Application.Auth
             var normalizedEmail = email.ToLowerInvariant();
 
             var authenticatedUser = await _database.Users
-                .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+                .AsNoTracking()
+                .Where(u => u.Email == normalizedEmail)
+                .Select(u => new AuthUserSnapshot(
+                    u.Id,
+                    u.Email,
+                    u.Handle,
+                    u.PasswordHash,
+                    u.Country,
+                    u.Tier,
+                    u.Mmr,
+                    u.IsActive))
+                .FirstOrDefaultAsync();
 
             if (authenticatedUser == null)
                 throw new UnauthorizedAccessException("Authentication failed");
@@ -94,7 +115,10 @@ namespace Tycoon.Backend.Application.Auth
             if (!authenticatedUser.IsActive)
                 throw new UnauthorizedAccessException("User account is not active");
 
-            authenticatedUser.RecordLogin();
+            await _database.Users
+                .Where(u => u.Id == authenticatedUser.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(u => u.LastLoginAt, _ => DateTimeOffset.UtcNow));
 
             // Look up ACL role for admin logins to grant elevated scopes
             AdminRole? aclRole = null;
@@ -118,7 +142,7 @@ namespace Tycoon.Backend.Application.Auth
 
             await _database.SaveChangesAsync();
 
-            return BuildAuthResult(authenticatedUser, jwtToken, deviceRefreshToken);
+            return BuildAuthResult(authenticatedUser, jwtToken, refreshToken: deviceRefreshToken);
         }
 
         private async Task<AuthResult> RefreshInternalAsync(
@@ -135,7 +159,18 @@ namespace Tycoon.Backend.Application.Auth
                 throw new UnauthorizedAccessException("Token refresh failed");
 
             var tokenOwner = await _database.Users
-                .FirstOrDefaultAsync(u => u.Id == storedToken.UserId);
+                .AsNoTracking()
+                .Where(u => u.Id == storedToken.UserId)
+                .Select(u => new AuthUserSnapshot(
+                    u.Id,
+                    u.Email,
+                    u.Handle,
+                    u.PasswordHash,
+                    u.Country,
+                    u.Tier,
+                    u.Mmr,
+                    u.IsActive))
+                .FirstOrDefaultAsync();
 
             if (tokenOwner == null || !tokenOwner.IsActive)
                 throw new UnauthorizedAccessException("Token refresh failed");
@@ -164,12 +199,12 @@ namespace Tycoon.Backend.Application.Auth
 
             await _database.SaveChangesAsync();
 
-            return BuildAuthResult(tokenOwner, newJwtToken, newDeviceToken);
+            return BuildAuthResult(tokenOwner, newJwtToken, refreshToken: newDeviceToken);
         }
 
         // ── Token helpers ─────────────────────────────────────────────────────
 
-        private string CreateJwtToken(User user, string clientType, AdminRole? aclRole = null)
+        private string CreateJwtToken(AuthUserSnapshot user, string clientType, AdminRole? aclRole = null)
         {
             var isAdmin = clientType.Equals("admin", StringComparison.OrdinalIgnoreCase);
 
@@ -233,13 +268,14 @@ namespace Tycoon.Backend.Application.Auth
 
         // ── Result builder ────────────────────────────────────────────────────
 
-        private AuthResult BuildAuthResult(User user, string jwtToken, string refreshToken)
+        private AuthResult BuildAuthResult(AuthUserSnapshot user, string jwtToken, string refreshToken)
         {
             var userProfile = new UserDto(
                 user.Id,
                 user.Handle,
                 user.Email,
                 user.Country,
+                AvatarUrl: null,
                 user.Tier,
                 user.Mmr
             );

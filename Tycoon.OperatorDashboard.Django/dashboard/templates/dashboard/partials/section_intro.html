@@ -1,0 +1,9 @@
+<div class="section-header">
+  <div>
+    <h2>{{ title }}</h2>
+    <p class="section-copy">{{ copy }}</p>
+  </div>
+  {% if action_href and action_label %}
+  <a class="button secondary" href="{{ action_href }}">{{ action_label }}</a>
+  {% endif %}
+</div>

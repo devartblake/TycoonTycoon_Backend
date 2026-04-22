@@ -12,6 +12,8 @@ namespace Tycoon.Backend.Api.Features.LearningModules
     {
         public static void Map(WebApplication app)
         {
+            // Public learning contract.
+            // /modules is the supported backend surface for guided mastery and lesson progression.
             var g = app.MapGroup("/modules").WithTags("LearningModules").WithOpenApi();
 
             // Browse published modules (public)
@@ -27,6 +29,28 @@ namespace Tycoon.Backend.Api.Features.LearningModules
                 var list = await mediator.Send(
                     new ListLearningModules(playerId, category, difficulty), ct);
                 return Results.Ok(list);
+            });
+
+            // Recommended published modules for a player or anonymous learner.
+            // Optional: ?playerId={guid}&count=5
+            g.MapGet("/recommended", async (
+                [FromQuery] Guid? playerId,
+                [FromQuery] int count,
+                IMediator mediator,
+                CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new GetRecommendedLearningModules(playerId, count), ct);
+                return Results.Ok(dto);
+            });
+
+            // Progress summary across the published learning catalog for one player.
+            g.MapGet("/progress/{playerId:guid}", async (
+                Guid playerId,
+                IMediator mediator,
+                CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new GetLearningModuleProgress(playerId), ct);
+                return Results.Ok(dto);
             });
 
             // Module overview (public)

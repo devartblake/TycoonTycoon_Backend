@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -30,6 +31,9 @@ namespace Tycoon.Backend.Api.Features.Store
 
             g.MapGet("/catalog", GetCatalog);
             g.MapGet("/catalog/{sku}", GetItem);
+            g.MapGet("/premium", GetPremium).RequireAuthorization();
+            g.MapGet("/rewards/{playerId:guid}", GetRewards).RequireAuthorization();
+            g.MapPost("/rewards/{playerId:guid}/claim/{rewardId}", ClaimReward).RequireAuthorization();
             g.MapGet("/system/status", GetSystemStatus);
             g.MapGet("/inventory/{playerId:guid}", GetInventory).RequireAuthorization();
             g.MapGet("/subscription/status/{playerId:guid}", GetSubscriptionStatus).RequireAuthorization();
@@ -53,6 +57,7 @@ namespace Tycoon.Backend.Api.Features.Store
             HttpContext httpContext,
             IMediator mediator,
             IAppDb db,
+            IOptions<StorePremiumOptions> premiumOptionsAccessor,
             CancellationToken ct)
         {
             if (string.Equals(category, "avatar", StringComparison.OrdinalIgnoreCase))
@@ -67,8 +72,8 @@ namespace Tycoon.Backend.Api.Features.Store
                 .AsNoTracking()
                 .Where(i => i.IsActive);
 
-            if (!string.IsNullOrWhiteSpace(itemType))
-                query = query.Where(i => i.ItemType == itemType);
+            if (!string.IsNullOrWhiteSpace(normalizedItemType))
+                query = query.Where(i => i.ItemType == normalizedItemType);
 
             var items = await query
                 .OrderBy(i => i.SortOrder)
@@ -78,6 +83,16 @@ namespace Tycoon.Backend.Api.Features.Store
                     i.PriceCoins, i.PriceDiamonds, i.GrantQuantity,
                     i.MaxPerPlayer, i.MediaKey, i.SortOrder))
                 .ToListAsync(ct);
+
+            items.AddRange(BuildPremiumCatalogFallbackItems(
+                premiumOptionsAccessor.Value,
+                normalizedItemType,
+                items.Select(i => i.Sku).ToHashSet(StringComparer.OrdinalIgnoreCase)));
+
+            items = items
+                .OrderBy(i => i.SortOrder)
+                .ThenBy(i => i.Name)
+                .ToList();
 
             return Results.Ok(new StoreCatalogDto(items, items.Count));
         }
@@ -108,6 +123,88 @@ namespace Tycoon.Backend.Api.Features.Store
             return item is null
                 ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Store item not found.")
                 : Results.Ok(item);
+        }
+
+        private static IResult GetPremium(
+            IMemoryCache cache,
+            IOptions<StorePremiumOptions> premiumOptionsAccessor)
+        {
+            const string cacheKey = "store:premium:v1";
+
+            var payload = cache.GetOrCreate(cacheKey, entry =>
+            {
+                var options = premiumOptionsAccessor.Value;
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(Math.Max(1, options.CacheMinutes));
+                return BuildPremiumStoreDto(options);
+            });
+
+            return Results.Ok(payload);
+        }
+
+        private static async Task<IResult> GetRewards(
+            [FromRoute] Guid playerId,
+            HttpContext httpContext,
+            IAppDb db,
+            IOptions<StorePremiumOptions> premiumOptionsAccessor,
+            CancellationToken ct)
+        {
+            var ownershipGate = await EnsureRewardAccessAsync(playerId, httpContext.User, db, ct);
+            if (ownershipGate is not null)
+                return ownershipGate;
+
+            var rewardCenter = await BuildRewardCenterAsync(
+                playerId,
+                db,
+                premiumOptionsAccessor.Value,
+                DateTimeOffset.UtcNow,
+                ct);
+
+            return Results.Ok(rewardCenter);
+        }
+
+        private static async Task<IResult> ClaimReward(
+            [FromRoute] Guid playerId,
+            [FromRoute] string rewardId,
+            HttpContext httpContext,
+            IAppDb db,
+            PlayerTransactionService txnService,
+            IOptions<StorePremiumOptions> premiumOptionsAccessor,
+            CancellationToken ct)
+        {
+            var ownershipGate = await EnsureRewardAccessAsync(playerId, httpContext.User, db, ct);
+            if (ownershipGate is not null)
+                return ownershipGate;
+
+            var now = DateTimeOffset.UtcNow;
+            var dayStartUtc = StartOfUtcDay(now);
+            var nextResetUtc = dayStartUtc.AddDays(1);
+            var premiumOptions = premiumOptionsAccessor.Value;
+            var rewardPolicies = premiumOptions.RewardPolicies ?? new StorePremiumRewardPolicyOptions();
+            var normalizedRewardId = (rewardId ?? string.Empty).Trim().ToLowerInvariant();
+
+            return normalizedRewardId switch
+            {
+                "daily-checkin" => await ClaimDailyCheckinAsync(
+                    playerId,
+                    db,
+                    txnService,
+                    rewardPolicies,
+                    dayStartUtc,
+                    nextResetUtc,
+                    ct),
+                "watch-ad" => await ClaimWatchAdAsync(
+                    playerId,
+                    db,
+                    txnService,
+                    rewardPolicies,
+                    dayStartUtc,
+                    now,
+                    ct),
+                _ => ApiResponses.Error(
+                    StatusCodes.Status404NotFound,
+                    "not_found",
+                    $"Reward '{rewardId}' was not found.")
+            };
         }
 
         private static async Task<IResult> Purchase(
@@ -1284,6 +1381,503 @@ namespace Tycoon.Backend.Api.Features.Store
             return Results.Ok(latest);
         }
 
+        private static PremiumStoreDto BuildPremiumStoreDto(StorePremiumOptions options)
+        {
+            var adFree = options.AdFree ?? new StorePremiumAdFreeOptions();
+            var rewardCenter = options.RewardCenter ?? new StorePremiumRewardCenterOptions();
+            var sale = options.FlashSale;
+
+            return new PremiumStoreDto(
+                new PremiumAdFreeDto(
+                    adFree.Title,
+                    adFree.Subtitle,
+                    adFree.Benefits,
+                    adFree.Plans.Select(plan => new PremiumAdFreePlanDto(
+                        plan.Id,
+                        plan.Title,
+                        plan.Subtitle,
+                        plan.PriceLabel,
+                        plan.Badge,
+                        plan.AccentColor,
+                        plan.IsBestValue,
+                        plan.Sku)).ToList()),
+                sale is not null && sale.IsActive
+                    ? new PremiumSaleInfoDto(
+                        sale.Badge,
+                        sale.Title,
+                        sale.Subtitle,
+                        sale.CtaLabel,
+                        sale.GradientStart,
+                        sale.GradientEnd,
+                        sale.Benefits)
+                    : null,
+                new RewardCenterDto(
+                    rewardCenter.Title,
+                    rewardCenter.Subtitle,
+                    rewardCenter.Cards.Select(card =>
+                    {
+                        var rewardId = string.IsNullOrWhiteSpace(card.RewardId) ? "unknown" : card.RewardId;
+                        return new RewardCardDto(
+                        rewardId,
+                        card.Title,
+                        BuildDefaultRewardSubtitle(rewardId),
+                        card.RewardLabel,
+                        "available",
+                        card.GradientStart,
+                        card.GradientEnd,
+                        0,
+                        rewardId == "daily-checkin" || rewardId == "watch-ad",
+                        rewardId == "watch-ad" ? options.RewardPolicies.WatchAdDailyCap : null,
+                        rewardId == "watch-ad" ? options.RewardPolicies.WatchAdDailyCap : null,
+                        null);
+                    }).ToList()));
+        }
+
+        private static IReadOnlyList<StoreItemDto> BuildPremiumCatalogFallbackItems(
+            StorePremiumOptions options,
+            string? requestedItemType,
+            HashSet<string> existingSkus)
+        {
+            if (!ShouldIncludePremiumCatalogFallback(requestedItemType))
+                return Array.Empty<StoreItemDto>();
+
+            var plans = options.AdFree?.Plans ?? new List<StorePremiumPlanOptions>();
+            var result = new List<StoreItemDto>();
+
+            for (var i = 0; i < plans.Count; i++)
+            {
+                var plan = plans[i];
+                var sku = string.IsNullOrWhiteSpace(plan.Sku) ? plan.Id : plan.Sku;
+                if (string.IsNullOrWhiteSpace(sku) || existingSkus.Contains(sku))
+                    continue;
+
+                result.Add(new StoreItemDto(
+                    Id: CreateDeterministicGuid($"store-catalog:premium:{sku}"),
+                    Sku: sku.Trim(),
+                    Name: string.IsNullOrWhiteSpace(plan.Title) ? plan.Id : plan.Title.Trim(),
+                    Description: BuildPremiumCatalogDescription(plan),
+                    ItemType: "premium-subscription",
+                    PriceCoins: 0,
+                    PriceDiamonds: 0,
+                    GrantQuantity: 1,
+                    MaxPerPlayer: 0,
+                    MediaKey: null,
+                    SortOrder: 10_000 + i));
+            }
+
+            return result;
+        }
+
+        private static bool ShouldIncludePremiumCatalogFallback(string? requestedItemType)
+        {
+            if (string.IsNullOrWhiteSpace(requestedItemType))
+                return true;
+
+            return requestedItemType.Equals("premium", StringComparison.OrdinalIgnoreCase)
+                   || requestedItemType.Equals("premium-subscription", StringComparison.OrdinalIgnoreCase)
+                   || requestedItemType.Equals("subscription", StringComparison.OrdinalIgnoreCase)
+                   || requestedItemType.Equals("ad-free", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildPremiumCatalogDescription(StorePremiumPlanOptions plan)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(plan.Subtitle))
+                parts.Add(plan.Subtitle.Trim());
+
+            if (!string.IsNullOrWhiteSpace(plan.PriceLabel))
+                parts.Add(plan.PriceLabel.Trim());
+
+            if (!string.IsNullOrWhiteSpace(plan.Badge))
+                parts.Add(plan.Badge.Trim());
+
+            return parts.Count == 0
+                ? "Premium subscription plan."
+                : string.Join(" ", parts);
+        }
+
+        private static async Task<RewardCenterDto> BuildRewardCenterAsync(
+            Guid playerId,
+            IAppDb db,
+            StorePremiumOptions premiumOptions,
+            DateTimeOffset now,
+            CancellationToken ct)
+        {
+            var options = premiumOptions.RewardCenter ?? new StorePremiumRewardCenterOptions();
+            var policies = premiumOptions.RewardPolicies ?? new StorePremiumRewardPolicyOptions();
+            var claimRows = await db.PlayerTransactions
+                .AsNoTracking()
+                .Where(t =>
+                    t.Status == PlayerTransactionStatus.Applied
+                    && t.Actors.Any(a => a.PlayerId == playerId)
+                    && (t.Kind == DailyCheckinTransactionKind || t.Kind == WatchAdTransactionKind))
+                .Select(t => new RewardClaimHistoryRow(
+                    t.Kind,
+                    t.CompletedAtUtc ?? t.CreatedAtUtc))
+                .ToListAsync(ct);
+
+            var dailyCheckinClaimDates = claimRows
+                .Where(x => x.Kind == DailyCheckinTransactionKind)
+                .Select(x => StartOfUtcDay(x.OccurredAtUtc))
+                .Distinct()
+                .OrderByDescending(x => x)
+                .ToList();
+
+            var dailyCheckinState = BuildDailyCheckinState(
+                dailyCheckinClaimDates,
+                policies,
+                now);
+
+            var watchAdClaimsToday = claimRows.Count(x =>
+                x.Kind == WatchAdTransactionKind
+                && x.OccurredAtUtc >= StartOfUtcDay(now)
+                && x.OccurredAtUtc < StartOfUtcDay(now).AddDays(1));
+
+            var watchAdState = BuildWatchAdState(watchAdClaimsToday, policies);
+
+            var cards = options.Cards.Select(card =>
+            {
+                var rewardId = string.IsNullOrWhiteSpace(card.RewardId) ? "unknown" : card.RewardId;
+                var normalizedRewardId = rewardId.Trim().ToLowerInvariant();
+                return normalizedRewardId switch
+                {
+                    "daily-checkin" => new RewardCardDto(
+                        rewardId,
+                        card.Title,
+                        dailyCheckinState.Subtitle,
+                        card.RewardLabel,
+                        dailyCheckinState.Availability,
+                        card.GradientStart,
+                        card.GradientEnd,
+                        dailyCheckinState.Progress,
+                        dailyCheckinState.IsClaimAvailable,
+                        null,
+                        7,
+                        dailyCheckinState.NextAvailableAtUtc),
+                    "watch-ad" => new RewardCardDto(
+                        rewardId,
+                        card.Title,
+                        watchAdState.Subtitle,
+                        card.RewardLabel,
+                        watchAdState.Availability,
+                        card.GradientStart,
+                        card.GradientEnd,
+                        watchAdState.Progress,
+                        watchAdState.IsClaimAvailable,
+                        watchAdState.RemainingClaims,
+                        policies.WatchAdDailyCap,
+                        watchAdState.NextAvailableAtUtc),
+                    _ => new RewardCardDto(
+                        rewardId,
+                        card.Title,
+                        BuildDefaultRewardSubtitle(rewardId),
+                        card.RewardLabel,
+                        "unavailable",
+                        card.GradientStart,
+                        card.GradientEnd,
+                        0,
+                        false,
+                        null,
+                        null,
+                        null)
+                };
+            }).ToList();
+
+            return new RewardCenterDto(options.Title, options.Subtitle, cards);
+        }
+
+        private static async Task<IResult> ClaimDailyCheckinAsync(
+            Guid playerId,
+            IAppDb db,
+            PlayerTransactionService txnService,
+            StorePremiumRewardPolicyOptions policies,
+            DateTimeOffset dayStartUtc,
+            DateTimeOffset nextResetUtc,
+            CancellationToken ct)
+        {
+            var claimedToday = await db.PlayerTransactions
+                .AsNoTracking()
+                .AnyAsync(t =>
+                    t.Status == PlayerTransactionStatus.Applied
+                    && t.Kind == DailyCheckinTransactionKind
+                    && t.Actors.Any(a => a.PlayerId == playerId)
+                    && (t.CompletedAtUtc ?? t.CreatedAtUtc) >= dayStartUtc
+                    && (t.CompletedAtUtc ?? t.CreatedAtUtc) < nextResetUtc,
+                    ct);
+
+            if (claimedToday)
+            {
+                return ApiResponses.Error(
+                    StatusCodes.Status409Conflict,
+                    "already_claimed",
+                    "Daily check-in has already been claimed for today.");
+            }
+
+            var claimDates = await db.PlayerTransactions
+                .AsNoTracking()
+                .Where(t =>
+                    t.Status == PlayerTransactionStatus.Applied
+                    && t.Kind == DailyCheckinTransactionKind
+                    && t.Actors.Any(a => a.PlayerId == playerId))
+                .Select(t => t.CompletedAtUtc ?? t.CreatedAtUtc)
+                .ToListAsync(ct);
+
+            var distinctClaimDays = claimDates
+                .Select(StartOfUtcDay)
+                .Distinct()
+                .OrderByDescending(x => x)
+                .ToList();
+
+            var currentState = BuildDailyCheckinState(distinctClaimDays, policies, dayStartUtc);
+            var newStreak = currentState.LastClaimDateUtc == dayStartUtc.AddDays(-1)
+                ? currentState.CurrentStreak + 1
+                : 1;
+
+            var eventId = CreateDeterministicGuid($"store-reward:{playerId}:daily-checkin:{dayStartUtc:yyyyMMdd}");
+            var result = await txnService.ExecuteAsync(
+                new CreatePlayerTransactionRequest(
+                    EventId: eventId,
+                    Kind: DailyCheckinTransactionKind,
+                    Receipt: JsonSerializer.Serialize(new
+                    {
+                        rewardId = "daily-checkin",
+                        claimDateUtc = dayStartUtc,
+                        streak = newStreak
+                    }),
+                    Actors: new[]
+                    {
+                        new PlayerTransactionActorDto(playerId, "recipient")
+                    },
+                    CurrencyChanges: new[]
+                    {
+                        new PlayerTransactionCurrencyDto(
+                            playerId,
+                            new[]
+                            {
+                                new EconomyLineDto(CurrencyType.Coins, policies.DailyCheckinCoins)
+                            })
+                    },
+                    Note: $"Premium reward claim: daily-checkin day {newStreak}"),
+                ct);
+
+            if (result.Status is not "Applied")
+            {
+                return ApiResponses.Error(
+                    StatusCodes.Status409Conflict,
+                    "already_claimed",
+                    "Daily check-in has already been claimed for today.");
+            }
+
+            var newBalance = result.EconomyResults.FirstOrDefault()?.BalanceCoins ?? 0;
+            return Results.Ok(new ClaimStoreRewardResponseDto(
+                RewardId: "daily-checkin",
+                CoinsAwarded: policies.DailyCheckinCoins,
+                NewBalance: newBalance,
+                Status: "claimed",
+                ClaimedAtUtc: DateTimeOffset.UtcNow,
+                NextAvailableAtUtc: nextResetUtc,
+                CurrentStreak: newStreak,
+                RemainingClaims: null));
+        }
+
+        private static async Task<IResult> ClaimWatchAdAsync(
+            Guid playerId,
+            IAppDb db,
+            PlayerTransactionService txnService,
+            StorePremiumRewardPolicyOptions policies,
+            DateTimeOffset dayStartUtc,
+            DateTimeOffset now,
+            CancellationToken ct)
+        {
+            var nextResetUtc = dayStartUtc.AddDays(1);
+            var claimsToday = await db.PlayerTransactions
+                .AsNoTracking()
+                .CountAsync(t =>
+                    t.Status == PlayerTransactionStatus.Applied
+                    && t.Kind == WatchAdTransactionKind
+                    && t.Actors.Any(a => a.PlayerId == playerId)
+                    && (t.CompletedAtUtc ?? t.CreatedAtUtc) >= dayStartUtc
+                    && (t.CompletedAtUtc ?? t.CreatedAtUtc) < nextResetUtc,
+                    ct);
+
+            if (claimsToday >= policies.WatchAdDailyCap)
+            {
+                return ApiResponses.Error(
+                    StatusCodes.Status409Conflict,
+                    "already_claimed",
+                    "The watch-ad reward has reached its daily claim cap.");
+            }
+
+            var claimOrdinal = claimsToday + 1;
+            var eventId = CreateDeterministicGuid($"store-reward:{playerId}:watch-ad:{dayStartUtc:yyyyMMdd}:{claimOrdinal}");
+            var result = await txnService.ExecuteAsync(
+                new CreatePlayerTransactionRequest(
+                    EventId: eventId,
+                    Kind: WatchAdTransactionKind,
+                    Receipt: JsonSerializer.Serialize(new
+                    {
+                        rewardId = "watch-ad",
+                        claimDateUtc = dayStartUtc,
+                        ordinal = claimOrdinal
+                    }),
+                    Actors: new[]
+                    {
+                        new PlayerTransactionActorDto(playerId, "recipient")
+                    },
+                    CurrencyChanges: new[]
+                    {
+                        new PlayerTransactionCurrencyDto(
+                            playerId,
+                            new[]
+                            {
+                                new EconomyLineDto(CurrencyType.Coins, policies.WatchAdCoins)
+                            })
+                    },
+                    Note: $"Premium reward claim: watch-ad #{claimOrdinal}"),
+                ct);
+
+            if (result.Status is not "Applied")
+            {
+                return ApiResponses.Error(
+                    StatusCodes.Status409Conflict,
+                    "already_claimed",
+                    "The watch-ad reward has already been claimed for this slot.");
+            }
+
+            var newBalance = result.EconomyResults.FirstOrDefault()?.BalanceCoins ?? 0;
+            var remainingClaims = Math.Max(0, policies.WatchAdDailyCap - claimOrdinal);
+            return Results.Ok(new ClaimStoreRewardResponseDto(
+                RewardId: "watch-ad",
+                CoinsAwarded: policies.WatchAdCoins,
+                NewBalance: newBalance,
+                Status: "claimed",
+                ClaimedAtUtc: now,
+                NextAvailableAtUtc: null,
+                CurrentStreak: null,
+                RemainingClaims: remainingClaims));
+        }
+
+        private static async Task<IResult?> EnsureRewardAccessAsync(
+            Guid playerId,
+            ClaimsPrincipal user,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            if (playerId == Guid.Empty)
+            {
+                return ApiResponses.Error(
+                    StatusCodes.Status400BadRequest,
+                    "validation_error",
+                    "playerId cannot be empty.");
+            }
+
+            if (!TryGetAuthenticatedPlayerId(user, out var authenticatedPlayerId))
+            {
+                return ApiResponses.Error(
+                    StatusCodes.Status401Unauthorized,
+                    "unauthorized",
+                    "A valid bearer token is required.");
+            }
+
+            if (authenticatedPlayerId != playerId)
+            {
+                return ApiResponses.Error(
+                    StatusCodes.Status403Forbidden,
+                    "forbidden",
+                    "You can only access rewards for your own player account.");
+            }
+
+            var playerExists = await db.Users
+                .AsNoTracking()
+                .AnyAsync(u => u.Id == playerId, ct);
+
+            return !playerExists
+                ? ApiResponses.Error(StatusCodes.Status404NotFound, "not_found", "Player not found.")
+                : null;
+        }
+
+        private static DailyCheckinRewardState BuildDailyCheckinState(
+            IReadOnlyList<DateTimeOffset> claimDaysUtc,
+            StorePremiumRewardPolicyOptions policies,
+            DateTimeOffset now)
+        {
+            var today = StartOfUtcDay(now);
+            var currentStreak = CountConsecutiveDays(claimDaysUtc);
+            var claimedToday = claimDaysUtc.Count > 0 && claimDaysUtc[0] == today;
+            var lastClaimDateUtc = claimDaysUtc.FirstOrDefault();
+            var nextDayNumber = claimedToday
+                ? Math.Min(currentStreak + 1, 7)
+                : Math.Min((currentStreak > 0 && lastClaimDateUtc == today.AddDays(-1)) ? currentStreak + 1 : 1, 7);
+
+            var subtitle = claimedToday
+                ? $"Checked in for day {Math.Min(currentStreak, 7)}. Come back tomorrow."
+                : $"Day {nextDayNumber} reward is ready to claim.";
+
+            return new DailyCheckinRewardState(
+                CurrentStreak: currentStreak,
+                Subtitle: subtitle,
+                Availability: claimedToday ? "claimed" : "available",
+                Progress: Math.Min(1d, currentStreak / 7d),
+                IsClaimAvailable: !claimedToday,
+                NextAvailableAtUtc: claimedToday ? today.AddDays(1) : null,
+                LastClaimDateUtc: lastClaimDateUtc == default ? null : lastClaimDateUtc,
+                CoinsAwarded: policies.DailyCheckinCoins);
+        }
+
+        private static WatchAdRewardState BuildWatchAdState(
+            int claimsToday,
+            StorePremiumRewardPolicyOptions policies)
+        {
+            var remaining = Math.Max(0, policies.WatchAdDailyCap - claimsToday);
+            var subtitle = remaining > 0
+                ? $"{remaining} of {policies.WatchAdDailyCap} claims remaining today."
+                : "Daily watch-ad claim cap reached for today.";
+
+            return new WatchAdRewardState(
+                RemainingClaims: remaining,
+                Subtitle: subtitle,
+                Availability: remaining > 0 ? "available" : "claimed",
+                Progress: policies.WatchAdDailyCap <= 0 ? 0 : (double)claimsToday / policies.WatchAdDailyCap,
+                IsClaimAvailable: remaining > 0,
+                NextAvailableAtUtc: null,
+                CoinsAwarded: policies.WatchAdCoins);
+        }
+
+        private static int CountConsecutiveDays(IReadOnlyList<DateTimeOffset> claimDaysUtc)
+        {
+            if (claimDaysUtc.Count == 0)
+                return 0;
+
+            var streak = 1;
+            var previous = claimDaysUtc[0];
+            for (var i = 1; i < claimDaysUtc.Count; i++)
+            {
+                if (claimDaysUtc[i] == previous.AddDays(-1))
+                {
+                    streak++;
+                    previous = claimDaysUtc[i];
+                    continue;
+                }
+
+                break;
+            }
+
+            return streak;
+        }
+
+        private static DateTimeOffset StartOfUtcDay(DateTimeOffset value)
+            => new(value.UtcDateTime.Date, TimeSpan.Zero);
+
+        private static string BuildDefaultRewardSubtitle(string rewardId)
+        {
+            return rewardId switch
+            {
+                "daily-checkin" => "Claim once per UTC day.",
+                "watch-ad" => "Claim up to the daily cap.",
+                _ => "Reward details unavailable."
+            };
+        }
+
         private static bool TryGetAuthenticatedPlayerId(ClaimsPrincipal user, out Guid playerId)
         {
             playerId = Guid.Empty;
@@ -1547,6 +2141,31 @@ namespace Tycoon.Backend.Api.Features.Store
         private sealed record PayPalOrderMetadata(Guid PlayerId, string Sku, int Quantity);
 
         private sealed record PayPalSubscriptionMetadata(Guid PlayerId, string Tier, string BillingPeriod);
+
+        private const string DailyCheckinTransactionKind = "store-reward-daily-checkin";
+
+        private const string WatchAdTransactionKind = "store-reward-watch-ad";
+
+        private sealed record RewardClaimHistoryRow(string Kind, DateTimeOffset OccurredAtUtc);
+
+        private sealed record DailyCheckinRewardState(
+            int CurrentStreak,
+            string Subtitle,
+            string Availability,
+            double Progress,
+            bool IsClaimAvailable,
+            DateTimeOffset? NextAvailableAtUtc,
+            DateTimeOffset? LastClaimDateUtc,
+            int CoinsAwarded);
+
+        private sealed record WatchAdRewardState(
+            int RemainingClaims,
+            string Subtitle,
+            string Availability,
+            double Progress,
+            bool IsClaimAvailable,
+            DateTimeOffset? NextAvailableAtUtc,
+            int CoinsAwarded);
 
         public sealed record IapReceiptValidationRequest(
             Guid PlayerId,

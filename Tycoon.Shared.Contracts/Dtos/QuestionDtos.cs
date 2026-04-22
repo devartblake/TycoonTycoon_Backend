@@ -133,6 +133,26 @@
         int Count
     );
 
+    /// <summary>Canonical category catalog for gameplay, learning, and future study filters.</summary>
+    public sealed record QuestionCategoriesResponseDto(
+        IReadOnlyList<FacetCountDto> Categories
+    );
+
+    /// <summary>High-level question-surface metadata for clients building filters and discovery UIs.</summary>
+    public sealed record QuestionMetadataResponseDto(
+        IReadOnlyList<FacetCountDto> Categories,
+        IReadOnlyList<QuestionDifficulty> Difficulties,
+        int DefaultCount,
+        int MaxCount
+    );
+
+    /// <summary>Preview request for question discovery and future study-set builders.</summary>
+    public sealed record PreviewQuestionSetRequest(
+        IReadOnlyList<string>? Categories,
+        IReadOnlyList<QuestionDifficulty>? Difficulties,
+        int Count
+    );
+
     /// <summary>Request to check an answer server-side.</summary>
     public sealed record CheckAnswerRequest(Guid QuestionId, string SelectedOptionId);
 

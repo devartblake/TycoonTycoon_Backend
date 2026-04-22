@@ -3,9 +3,9 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Tycoon.Backend.Infrastructure.Persistence;
 using Tycoon.Backend.Api.Tests.TestHost;
-using Tycoon.Shared.Contracts.Dtos;
+using Tycoon.Backend.Domain.Entities;
+using Tycoon.Backend.Infrastructure.Persistence;
 
 namespace Tycoon.Backend.Api.Tests.Friends;
 
@@ -43,13 +43,7 @@ public sealed class UnfriendEndpointContractTests : IClassFixture<TycoonApiFacto
         var from = Guid.NewGuid();
         var to = Guid.NewGuid();
 
-        var send = await _http.PostAsJsonAsync("/friends/request", new { FromPlayerId = from, ToPlayerId = to });
-        send.EnsureSuccessStatusCode();
-        var req = await send.Content.ReadFromJsonAsync<FriendRequestDto>();
-        req.Should().NotBeNull();
-
-        var accept = await _http.PostAsJsonAsync($"/friends/request/{req!.RequestId}/accept", new { PlayerId = to });
-        accept.EnsureSuccessStatusCode();
+        await CreateFriendshipAsync(from, to);
 
         var removeRequest = new HttpRequestMessage(HttpMethod.Delete, "/friends")
         {
@@ -66,5 +60,42 @@ public sealed class UnfriendEndpointContractTests : IClassFixture<TycoonApiFacto
             .CountAsync();
 
         remaining.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Unfriend_WithFriendIdAlias_RemovesBothEdges()
+    {
+        var from = Guid.NewGuid();
+        var to = Guid.NewGuid();
+
+        await CreateFriendshipAsync(from, to);
+
+        var removeRequest = new HttpRequestMessage(HttpMethod.Delete, "/friends")
+        {
+            Content = JsonContent.Create(new { PlayerId = from, FriendId = to })
+        };
+        var remove = await _http.SendAsync(removeRequest);
+        remove.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+
+        var remaining = await db.FriendEdges
+            .Where(x => (x.PlayerId == from && x.FriendPlayerId == to) || (x.PlayerId == to && x.FriendPlayerId == from))
+            .CountAsync();
+
+        remaining.Should().Be(0);
+    }
+
+    private async Task CreateFriendshipAsync(Guid from, Guid to)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+
+        db.FriendEdges.AddRange(
+            new FriendEdge(from, to),
+            new FriendEdge(to, from));
+
+        await db.SaveChangesAsync();
     }
 }

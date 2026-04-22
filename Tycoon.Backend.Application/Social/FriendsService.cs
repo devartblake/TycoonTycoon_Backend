@@ -6,7 +6,7 @@ using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Social
 {
-    public sealed class FriendsService(IAppDb db, IPresenceReader presenceReader)
+    public sealed class FriendsService(IAppDb db, IPresenceReader presenceReader, Notifications.PlayerInboxService inboxService)
     {
         public async Task<FriendRequestDto> SendRequestAsync(Guid fromPlayerId, Guid toPlayerId, CancellationToken ct)
         {
@@ -50,6 +50,26 @@ namespace Tycoon.Backend.Application.Social
             db.FriendRequests.Add(req);
             await db.SaveChangesAsync(ct);
 
+            var sender = await db.Users.AsNoTracking()
+                .Where(x => x.Id == fromPlayerId)
+                .Select(x => new { x.Handle, x.AvatarUrl })
+                .FirstOrDefaultAsync(ct);
+
+            await inboxService.CreateAsync(
+                toPlayerId,
+                "friend",
+                "New friend request",
+                $"{sender?.Handle ?? "A player"} sent you a friend request.",
+                "/friends",
+                new Dictionary<string, object?>
+                {
+                    ["requestId"] = req.Id,
+                    ["fromPlayerId"] = fromPlayerId
+                },
+                "person_add",
+                sender?.AvatarUrl,
+                ct);
+
             return ToDto(req);
         }
 
@@ -58,21 +78,30 @@ namespace Tycoon.Backend.Application.Social
             if (requestId == Guid.Empty || actingPlayerId == Guid.Empty)
                 throw new ArgumentException("Ids cannot be empty.");
 
-            await using var tx = await ((DbContext)db).Database.BeginTransactionAsync(ct);
+            var dbContext = (DbContext)db;
+            var useTransaction = !string.Equals(
+                dbContext.Database.ProviderName,
+                "Microsoft.EntityFrameworkCore.InMemory",
+                StringComparison.OrdinalIgnoreCase);
+            await using var tx = useTransaction
+                ? await dbContext.Database.BeginTransactionAsync(ct)
+                : null;
 
             var req = await db.FriendRequests
                 .FirstOrDefaultAsync(x => x.Id == requestId, ct);
 
             if (req is null)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null)
+                    await tx.RollbackAsync(ct);
                 return null;
             }
 
             // Only the recipient can accept
             if (req.ToPlayerId != actingPlayerId)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null)
+                    await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Only the recipient can accept this friend request.");
             }
 
@@ -80,13 +109,15 @@ namespace Tycoon.Backend.Application.Social
             if (req.Status == "Accepted")
             {
                 await EnsureEdgesAsync(req.FromPlayerId, req.ToPlayerId, ct);
-                await tx.CommitAsync(ct);
+                if (tx is not null)
+                    await tx.CommitAsync(ct);
                 return ToDto(req);
             }
 
             if (req.Status != "Pending")
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null)
+                    await tx.RollbackAsync(ct);
                 throw new InvalidOperationException($"Cannot accept a request in status '{req.Status}'.");
             }
 
@@ -95,7 +126,28 @@ namespace Tycoon.Backend.Application.Social
             await EnsureEdgesAsync(req.FromPlayerId, req.ToPlayerId, ct);
 
             await db.SaveChangesAsync(ct);
-            await tx.CommitAsync(ct);
+            if (tx is not null)
+                await tx.CommitAsync(ct);
+
+            var accepter = await db.Users.AsNoTracking()
+                .Where(x => x.Id == actingPlayerId)
+                .Select(x => new { x.Handle, x.AvatarUrl })
+                .FirstOrDefaultAsync(ct);
+
+            await inboxService.CreateAsync(
+                req.FromPlayerId,
+                "friend",
+                "Friend request accepted",
+                $"{accepter?.Handle ?? "A player"} accepted your friend request.",
+                "/friends",
+                new Dictionary<string, object?>
+                {
+                    ["requestId"] = req.Id,
+                    ["friendPlayerId"] = req.ToPlayerId
+                },
+                "group",
+                accepter?.AvatarUrl,
+                ct);
 
             return ToDto(req);
         }
@@ -157,6 +209,7 @@ namespace Tycoon.Backend.Application.Social
                  .ThenByDescending(x => x.CreatedAtUtc);
 
             var total = await q.CountAsync(ct);
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
 
             var items = await q.Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -169,7 +222,7 @@ namespace Tycoon.Backend.Application.Social
                     x.RespondedAtUtc))
                 .ToListAsync(ct);
 
-            return new FriendRequestsListResponseDto(page, pageSize, total, items);
+            return new FriendRequestsListResponseDto(page, pageSize, total, totalPages, items);
         }
 
         public async Task<FriendsListResponseDto> ListFriendsAsync(Guid playerId, int page, int pageSize, CancellationToken ct)
@@ -185,6 +238,7 @@ namespace Tycoon.Backend.Application.Social
                 .OrderByDescending(x => x.CreatedAtUtc);
 
             var total = await q.CountAsync(ct);
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
 
             // Join with Users to get display names
             var rows = await q.Skip((page - 1) * pageSize)
@@ -196,6 +250,7 @@ namespace Tycoon.Backend.Application.Social
                     {
                         edge.FriendPlayerId,
                         user.Handle,
+                        user.AvatarUrl,
                         edge.CreatedAtUtc
                     })
                 .ToListAsync(ct);
@@ -209,13 +264,13 @@ namespace Tycoon.Backend.Application.Social
                 FriendPlayerId: r.FriendPlayerId,
                 DisplayName: r.Handle,
                 Username: r.Handle,
-                AvatarUrl: null,
+                AvatarUrl: r.AvatarUrl,
                 IsOnline: onlineSet.Contains(r.FriendPlayerId),
                 LastSeenUtc: null,
                 SinceUtc: r.CreatedAtUtc
             )).ToList();
 
-            return new FriendsListResponseDto(page, pageSize, total, items);
+            return new FriendsListResponseDto(page, pageSize, total, totalPages, items);
         }
 
         public async Task<FriendRequestsDetailListResponseDto> ListRequestsDetailAsync(
@@ -245,6 +300,7 @@ namespace Tycoon.Backend.Application.Social
                  .ThenByDescending(x => x.CreatedAtUtc);
 
             var total = await q.CountAsync(ct);
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
 
             var rows = await q.Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -256,6 +312,7 @@ namespace Tycoon.Backend.Application.Social
                         req.Id,
                         req.FromPlayerId,
                         SenderHandle = user.Handle,
+                        user.AvatarUrl,
                         req.ToPlayerId,
                         req.Status,
                         req.CreatedAtUtc,
@@ -268,14 +325,14 @@ namespace Tycoon.Backend.Application.Social
                 FromPlayerId: r.FromPlayerId,
                 SenderDisplayName: r.SenderHandle,
                 SenderUsername: r.SenderHandle,
-                SenderAvatarUrl: null,
+                SenderAvatarUrl: r.AvatarUrl,
                 ToPlayerId: r.ToPlayerId,
                 Status: r.Status,
                 CreatedAtUtc: r.CreatedAtUtc,
                 RespondedAtUtc: r.RespondedAtUtc
             )).ToList();
 
-            return new FriendRequestsDetailListResponseDto(page, pageSize, total, items);
+            return new FriendRequestsDetailListResponseDto(page, pageSize, total, totalPages, items);
         }
 
         public async Task RemoveFriendAsync(Guid playerId, Guid friendPlayerId, CancellationToken ct)
