@@ -12,5 +12,11 @@ namespace Tycoon.Backend.Application.Abstractions
         /// the bytes through the API server.
         /// </summary>
         Task<string> GetPresignedPutUrlAsync(string key, string contentType, TimeSpan expiry, CancellationToken ct = default);
+
+        /// <summary>
+        /// Generates a presigned HTTP GET URL that allows a client to download an object
+        /// directly from storage without routing the bytes through the API server.
+        /// </summary>
+        Task<string> GetPresignedGetUrlAsync(string key, TimeSpan expiry, CancellationToken ct = default);
     }
 }
