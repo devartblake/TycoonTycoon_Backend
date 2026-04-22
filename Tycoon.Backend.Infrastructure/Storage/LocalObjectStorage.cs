@@ -25,5 +25,14 @@ namespace Tycoon.Backend.Infrastructure.Storage
         }
 
         public string GetPublicUrl(string key) => $"/{key}";
+
+        public Task<Stream?> GetAsync(string key, CancellationToken ct = default)
+        {
+            var fullPath = Path.Combine(_root, key.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(fullPath))
+                return Task.FromResult<Stream?>(null);
+
+            return Task.FromResult<Stream?>(File.OpenRead(fullPath));
+        }
     }
 }

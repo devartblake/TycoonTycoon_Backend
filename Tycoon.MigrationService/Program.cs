@@ -42,6 +42,7 @@ try
             // Seeder + reset services
             services.AddTransient<AppSeeder>();
             services.AddTransient<MissionResetService>();
+            services.AddTransient<MinioSeeder>();
 
             // Worker
             services.AddHostedService<MigrationWorker>();
