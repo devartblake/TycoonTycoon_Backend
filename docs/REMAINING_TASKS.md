@@ -1,6 +1,6 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-04-18 (updated: backend Study surface handoff, custom study sets, flashcard/self-test session state, and due-review recommendations)_
+_Last updated: 2026-04-23 (updated: avatar purchase path complete, MinIO catalog seeders complete, store stock P0/P1/P2 backlog added)_
 
 > This file is the canonical "what is left to do" reference.
 > For completed work, see [`docs/ALPHA_TASK_AUDIT.md`](ALPHA_TASK_AUDIT.md).
@@ -14,6 +14,12 @@ _Last updated: 2026-04-18 (updated: backend Study surface handoff, custom study 
 | Area | Priority | Status | Blocked? |
 |------|----------|--------|----------|
 | Frontend/backend alpha handoff | High | Store, profile/social, question gameplay complete; crypto + ML remain | No |
+| **3D Avatar purchase path (Browse → Buy → Download)** | **High** | **Complete** | **No** |
+| **MinIO catalog seeders (StoreItems, SkillNodes, SeasonRewards, Questions)** | **High** | **Complete** | **No** |
+| **SeasonRewardRule EF migration** | **High** | **Pending — user must run AddSeasonRewardRules** | **No** |
+| Store stock system P0 (daily store + stock enforcement) | High | Not started | No |
+| Store stock system P1 (player catalog + hub + special offers) | High | Not started | No |
+| Store stock system P2 (admin policies + flash sales + analytics) | Medium | Not started | No |
 | Phase 2 - Crash recovery stubs | High | Code complete; device validation pending | No |
 | Phase 3 - Test coverage (remaining gaps) | Medium | ~4.1% -> 40% target | No |
 | Phase 4 - Dependency audit | Medium | Partial | No |
@@ -252,6 +258,53 @@ _Last updated: 2026-04-18 (updated: backend Study surface handoff, custom study 
 - `lib/screens/question/`
 - `test/core/services/ml/`
 - `test/game/providers/ml_providers_test.dart`
+
+---
+
+## 11. Store Stock System (P0 / P1 / P2)
+
+Full design: `docs/store_stock_backend_implementation_and_schema.md`
+API contracts: `docs/store_admin_backend_handoff_2026-04-23.md`
+
+### Prerequisite — SeasonRewardRule EF Migration
+
+The `season_reward_rules` table does not yet have an EF Core migration. Run this before adding the stock system migrations:
+
+```bash
+dotnet ef migrations add AddSeasonRewardRules \
+  --project Tycoon.Backend.Migrations \
+  --startup-project Tycoon.Backend.Api
+dotnet ef database update \
+  --project Tycoon.Backend.Migrations \
+  --startup-project Tycoon.Backend.Api
+```
+
+### 11a. P0 — Daily Store + Stock Enforcement
+
+- [ ] Create domain entities: `StoreStockPolicy`, `PlayerStoreStockState` (see §6.2 of design doc)
+- [ ] Add EF Core configurations + migration `AddStoreStockSystem`
+- [ ] Implement `IStoreStockService`: lazy reset algorithm, availability check, stock consumption
+- [ ] Add `GET /store/daily` endpoint (daily rotating items with per-player stock)
+- [ ] Extend `POST /store/purchase` to check and decrement `PlayerStoreStockState`
+- [ ] Add `store_item_out_of_stock` (409) and `store_item_unavailable` (409) error codes
+
+### 11b. P1 — Player-Specific Catalog + Hub Surface
+
+- [ ] Create domain entities: `PlayerStorePurchase`, `PlayerStoreInventoryItem`
+- [ ] Add `GET /store/catalog/{playerId}` with `StoreStockState` and `StoreAvailabilityState`
+- [ ] Add `GET /store/hub` (featured, daily, categories)
+- [ ] Add `GET /store/special-offers` (active flash sales + limited-time offers)
+- [ ] Create `FlashSale` entity + EF config
+- [ ] Wire FastAPI personalization as opt-in via `IStorePersonalizationService` (fail-open)
+
+### 11c. P2 — Admin Stock Management
+
+- [ ] `GET /admin/store/stock-policies` + `PUT /admin/store/stock-policies/{sku}`
+- [ ] `POST /admin/store/stock-policies/bulk-reset`
+- [ ] `GET /admin/store/player-stock/{playerId}` + `POST /admin/store/player-stock/{playerId}/override`
+- [ ] Flash sale CRUD: `GET`, `POST /admin/store/flash-sales`, `DELETE /admin/store/flash-sales/{id}`
+- [ ] Reward limit management: `GET` + `PUT /admin/store/reward-limits/{rewardId}`
+- [ ] Analytics: `GET /admin/store/analytics/purchases` + `GET /admin/store/analytics/stock-resets`
 
 ---
 
