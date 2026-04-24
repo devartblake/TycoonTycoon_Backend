@@ -4,6 +4,71 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-23] MinIO Catalog Seeders + Store/Admin Store Handoff
+
+### MinIO-backed database seeders
+
+- Added `MinioSeeder` to `Tycoon.MigrationService` — reads JSON seed files from MinIO at startup and upserts them idempotently into the database.
+- Supports four seed files: `seeds/store-items.json`, `seeds/skill-nodes.json`, `seeds/season-rewards.json`, `seeds/questions.json`.
+- Missing seed files are silently skipped — only upload the files you want to seed.
+- All four entity seeders follow a bulk-fetch pattern (single `WHERE IN` query per type, no N+1 loops).
+- MinIO reads for all four files are issued concurrently via `Task.WhenAll` before any DB writes.
+- `GetAsync(string key, CancellationToken ct)` added to `IObjectStorage` and implemented in both `MinioObjectStorage` (with `MemoryStream` callback + precise `ObjectNotFoundException`/`NoSuchKey` error guard) and `LocalObjectStorage` (file-stream from `wwwroot`).
+- `EnsureBucketExistsAsync` result is cached on the singleton via a `_bucketEnsured` flag to avoid repeated network round-trips.
+- `MinioSeeder` is registered as `Transient` in `MigrationService/Program.cs` and called from `MigrationWorker` with a non-fatal try/catch (MinIO unavailability is logged as a warning, not a crash).
+
+### SeasonRewardRule persistence
+
+- Added `DbSet<SeasonRewardRule> SeasonRewardRules` to `IAppDb` and `AppDb`.
+- Added `SeasonRewardRuleConfiguration` EF entity configuration with a unique composite index on `(Tier, MaxTierRank)`.
+- **Action required:** run `dotnet ef migrations add AddSeasonRewardRules --project Tycoon.Backend.Migrations --startup-project Tycoon.Backend.Api` before next deploy.
+
+### Simplify cleanup (seeder)
+
+- Eliminated all N+1 query patterns: bulk-fetch existing records into `Dictionary<key, entity>` before looping.
+- Extracted `ApplyStoreItemFields` and `ApplyQuestionRelations` static helpers to remove field-mapping duplication.
+- Questions load existing rows with `Include(q => q.Options).Include(q => q.Tags)` in a single query.
+- SeasonRewardRules use a `HashSet<(int Tier, int MaxTierRank)>` for O(1) existence checks.
+- Replaced stringly-typed exception filter with `IsObjectNotFoundError()` static helper (precise type-name check + stable S3 `NoSuchKey` error code).
+- Added `Tycoon.Shared.Contracts` as an explicit `ProjectReference` in `Tycoon.MigrationService.csproj`.
+
+### Documentation
+
+- Added `docs/minio-seed-data-format.md` — JSON schema examples for all four seed file types with field notes and `mc` upload commands.
+- Added `docs/store_admin_backend_handoff_2026-04-23.md` — full API contract for P0/P1/P2 store stock system and admin store endpoints.
+- Updated `docs/REMAINING_TASKS.md` — avatar purchase path and MinIO seeders marked complete; SeasonRewardRule migration and store stock P0/P1/P2 backlog added as section 11.
+
+---
+
+## [2026-04-21] 3D Avatar Purchase Path
+
+### New endpoints
+
+- `GET /store/catalog?category=avatar` — avatar-specific catalog with `owned` flag per item (anonymous returns `owned: false`).
+- `POST /store/avatars/{avatarId}/purchase` — buy avatar with coins; returns `{success, avatarId, coinsDeducted, newBalance}`; JWT player must match request body.
+- `GET /v1/assets/avatars/{avatarId}` — returns a presigned MinIO GET URL for the `.zip` archive; owner-only.
+
+### Storage
+
+- Added `GetPresignedGetUrlAsync(string key, TimeSpan expiry, CancellationToken ct)` to `IPresignedStorage` and implemented in `MinioObjectStorage` with the same internal→public URL rewriting as the PUT method.
+
+### Domain
+
+- Added `ThumbnailUrl` (string?, max 500), `IsFeatured` (bool, default false), and `Version` (string?, max 20) to `StoreItem`.
+- Added EF column mappings in `StoreItemConfig`.
+
+### Application handlers
+
+- `GetAvatarCatalog(Guid? PlayerId)` — queries active avatar items, optionally resolves ownership via `PlayerTransaction` aggregation.
+- `PurchaseAvatar(Guid PlayerId, string AvatarId)` — validates ownership, balance, and delegates to `PlayerTransactionService`; returns structured error codes (`avatar_not_found`, `already_owned`, `insufficient_funds`).
+- `GetAvatarAsset(Guid PlayerId, string AvatarId)` — validates ownership, generates 15-minute presigned GET URL for the archive.
+
+### Shared DTOs
+
+- Added `AvatarCatalogItemDto`, `AvatarCatalogDto`, `PurchaseAvatarRequest`, `PurchaseAvatarResultDto`, `AvatarAssetResponseDto` to `Tycoon.Shared.Contracts`.
+
+---
+
 ## [2026-04-21] Store Catalog Premium Compatibility
 
 ### Store catalog compatibility
