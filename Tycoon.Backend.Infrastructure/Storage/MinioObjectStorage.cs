@@ -8,6 +8,7 @@ namespace Tycoon.Backend.Infrastructure.Storage
     {
         private readonly IMinioClient _client;
         private readonly MinioOptions _options;
+        private bool _bucketEnsured;
 
         public MinioObjectStorage(IMinioClient client, MinioOptions options)
         {
@@ -76,7 +77,7 @@ namespace Tycoon.Backend.Infrastructure.Storage
                 ms.Position = 0;
                 return ms;
             }
-            catch (Exception ex) when (ex.Message.Contains("NoSuchKey") || ex.Message.Contains("Not Found") || ex.GetType().Name.Contains("ObjectNotFound"))
+            catch (Exception ex) when (IsObjectNotFoundError(ex))
             {
                 await ms.DisposeAsync();
                 return null;
@@ -108,12 +109,22 @@ namespace Tycoon.Backend.Infrastructure.Storage
 
         private async Task EnsureBucketExistsAsync(CancellationToken ct)
         {
+            if (_bucketEnsured) return;
+
             var exists = await _client.BucketExistsAsync(
                 new BucketExistsArgs().WithBucket(_options.Bucket), ct);
 
             if (!exists)
                 await _client.MakeBucketAsync(
                     new MakeBucketArgs().WithBucket(_options.Bucket), ct);
+
+            _bucketEnsured = true;
         }
+
+        // Minio SDK v6 throws ObjectNotFoundException (S3 NoSuchKey) for missing objects.
+        // Guard against the specific S3 error code as a stable secondary check.
+        private static bool IsObjectNotFoundError(Exception ex) =>
+            ex.GetType().Name is "ObjectNotFoundException" or "BucketNotFoundException" ||
+            ex.Message.Contains("NoSuchKey", StringComparison.OrdinalIgnoreCase);
     }
 }
