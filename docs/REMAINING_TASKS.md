@@ -17,8 +17,8 @@ _Last updated: 2026-04-23 (updated: avatar purchase path complete, MinIO catalog
 | **3D Avatar purchase path (Browse → Buy → Download)** | **High** | **Complete** | **No** |
 | **MinIO catalog seeders (StoreItems, SkillNodes, SeasonRewards, Questions)** | **High** | **Complete** | **No** |
 | **SeasonRewardRule EF migration** | **High** | **Pending — user must run AddSeasonRewardRules** | **No** |
-| Store stock system P0 (daily store + stock enforcement) | High | Not started | No |
-| Store stock system P1 (player catalog + hub + special offers) | High | Not started | No |
+| Store stock system P0 (daily store + stock enforcement) | High | **Complete** | No |
+| Store stock system P1 (player catalog + hub + special offers) | High | **Complete** | No |
 | Store stock system P2 (admin policies + flash sales + analytics) | Medium | Not started | No |
 | Phase 2 - Crash recovery stubs | High | Code complete; device validation pending | No |
 | Phase 3 - Test coverage (remaining gaps) | Medium | ~4.1% -> 40% target | No |
@@ -279,23 +279,23 @@ dotnet ef database update \
   --startup-project Tycoon.Backend.Api
 ```
 
-### 11a. P0 — Daily Store + Stock Enforcement
+### 11a. P0 — Daily Store + Stock Enforcement ✅ COMPLETE
 
-- [ ] Create domain entities: `StoreStockPolicy`, `PlayerStoreStockState` (see §6.2 of design doc)
-- [ ] Add EF Core configurations + migration `AddStoreStockSystem`
-- [ ] Implement `IStoreStockService`: lazy reset algorithm, availability check, stock consumption
-- [ ] Add `GET /store/daily` endpoint (daily rotating items with per-player stock)
-- [ ] Extend `POST /store/purchase` to check and decrement `PlayerStoreStockState`
-- [ ] Add `store_item_out_of_stock` (409) and `store_item_unavailable` (409) error codes
+- [x] `StoreStockPolicy` + `PlayerStoreStockState` domain entities
+- [x] EF configs + migration `20260425130000_AddStoreStockSystem`
+- [x] `IStoreStockService` / `StoreStockService`: lazy reset, check, consume, daily items
+- [x] `GET /store/daily` — stock-policy items with per-player remaining qty + reset time
+- [x] `POST /store/purchase` extended: stock check before transaction, consume on success
+- [x] `409 store_item_out_of_stock` error code
 
-### 11b. P1 — Player-Specific Catalog + Hub Surface
+### 11b. P1 — Player-Specific Catalog + Hub Surface ✅ COMPLETE
 
-- [ ] Create domain entities: `PlayerStorePurchase`, `PlayerStoreInventoryItem`
-- [ ] Add `GET /store/catalog/{playerId}` with `StoreStockState` and `StoreAvailabilityState`
-- [ ] Add `GET /store/hub` (featured, daily, categories)
-- [ ] Add `GET /store/special-offers` (active flash sales + limited-time offers)
-- [ ] Create `FlashSale` entity + EF config
-- [ ] Wire FastAPI personalization as opt-in via `IStorePersonalizationService` (fail-open)
+- [x] `FlashSale` entity + EF config + migration `20260425140000_AddFlashSale`
+- [x] `GET /store/catalog/{playerId}` — full catalog with per-player stock state, ownership, discounts
+- [x] `GET /store/hub` — featured items, daily stock items, category list
+- [x] `GET /store/special-offers` — active flash sales joined with catalog items
+- [x] `PlayerStoreCatalogItemDto` with `availabilityState` + `stockState` fields
+- [x] Concurrent data loading (policies, stock states, flash sales, ownership) via `Task.WhenAll`
 
 ### 11c. P2 — Admin Stock Management
 

@@ -11,6 +11,8 @@ namespace Tycoon.Backend.Application.Store
 
         public StoreStockService(IAppDb db) => _db = db;
 
+        // ── P0: check + consume ───────────────────────────────────────────────
+
         public async Task<string?> CheckStockAsync(Guid playerId, string sku, int quantity, CancellationToken ct)
         {
             var policy = await _db.StoreStockPolicies
@@ -55,6 +57,8 @@ namespace Tycoon.Backend.Application.Store
             state.Consume(quantity);
             await _db.SaveChangesAsync(ct);
         }
+
+        // ── P0: daily store ───────────────────────────────────────────────────
 
         public async Task<IReadOnlyList<DailyStoreItemDto>> GetDailyItemsAsync(Guid playerId, CancellationToken ct)
         {
@@ -123,6 +127,198 @@ namespace Tycoon.Backend.Application.Store
                     NextResetAt: nextResetAt
                 );
             }).ToList();
+        }
+
+        // ── P1: player catalog ────────────────────────────────────────────────
+
+        public async Task<PlayerStoreCatalogResponseDto> GetCatalogForPlayerAsync(
+            Guid playerId, string? itemType, string? category, CancellationToken ct)
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            var query = _db.StoreItems.AsNoTracking().Where(i => i.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(itemType))
+                query = query.Where(i => i.ItemType == itemType);
+
+            if (!string.IsNullOrWhiteSpace(category))
+                query = query.Where(i => i.ItemType == category || i.ItemType.StartsWith(category + ":"));
+
+            var items = await query.OrderBy(i => i.SortOrder).ToListAsync(ct);
+
+            if (items.Count == 0)
+                return new PlayerStoreCatalogResponseDto(playerId, now, Array.Empty<PlayerStoreCatalogItemDto>());
+
+            var skus = items.Select(i => i.Sku).ToList();
+
+            var (policies, stockStates, activeSales, ownedSkus) = await LoadPlayerCatalogDataAsync(playerId, skus, now, ct);
+
+            var result = items.Select(item =>
+                MapToCatalogItem(item, policies, stockStates, activeSales, ownedSkus, now)
+            ).ToList();
+
+            return new PlayerStoreCatalogResponseDto(playerId, now, result);
+        }
+
+        // ── P1: hub ───────────────────────────────────────────────────────────
+
+        public async Task<StoreHubResponseDto> GetHubAsync(Guid playerId, CancellationToken ct)
+        {
+            var catalog = await GetCatalogForPlayerAsync(playerId, null, null, ct);
+            var daily   = await GetDailyItemsAsync(playerId, ct);
+
+            var featured   = catalog.Items.Where(i => i.IsFeatured).ToList();
+            var categories = catalog.Items.Select(i => i.ItemType).Distinct().OrderBy(x => x).ToList();
+
+            return new StoreHubResponseDto(featured, daily, categories);
+        }
+
+        // ── P1: special offers ────────────────────────────────────────────────
+
+        public async Task<IReadOnlyList<SpecialOfferDto>> GetSpecialOffersAsync(CancellationToken ct)
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            var sales = await _db.FlashSales
+                .AsNoTracking()
+                .Where(f => f.IsActive && f.StartsAtUtc <= now && f.EndsAtUtc >= now)
+                .OrderBy(f => f.EndsAtUtc)
+                .ToListAsync(ct);
+
+            if (sales.Count == 0) return Array.Empty<SpecialOfferDto>();
+
+            var skus = sales.Select(f => f.Sku).ToHashSet();
+            var itemMap = await _db.StoreItems
+                .AsNoTracking()
+                .Where(i => i.IsActive && skus.Contains(i.Sku))
+                .ToDictionaryAsync(i => i.Sku, ct);
+
+            return sales
+                .Where(f => itemMap.ContainsKey(f.Sku))
+                .Select(f =>
+                {
+                    var item = itemMap[f.Sku];
+                    var salePrice = item.PriceCoins - item.PriceCoins * f.DiscountPercent / 100;
+                    return new SpecialOfferDto(
+                        Sku: item.Sku,
+                        Name: item.Name,
+                        Description: item.Description,
+                        OriginalPriceCoins: item.PriceCoins,
+                        SalePriceCoins: salePrice,
+                        DiscountPercent: f.DiscountPercent,
+                        EndsAt: f.EndsAtUtc
+                    );
+                })
+                .ToList();
+        }
+
+        // ── helpers ───────────────────────────────────────────────────────────
+
+        private async Task<(
+            Dictionary<string, StoreStockPolicy> policies,
+            Dictionary<string, PlayerStoreStockState> stockStates,
+            Dictionary<string, FlashSale> activeSales,
+            HashSet<string> ownedSkus)>
+            LoadPlayerCatalogDataAsync(Guid playerId, List<string> skus, DateTimeOffset now, CancellationToken ct)
+        {
+            var policiesTask = _db.StoreStockPolicies
+                .AsNoTracking()
+                .Where(p => p.IsActive && skus.Contains(p.Sku))
+                .ToDictionaryAsync(p => p.Sku, ct);
+
+            var stockTask = _db.PlayerStoreStockStates
+                .AsNoTracking()
+                .Where(s => s.PlayerId == playerId && skus.Contains(s.Sku))
+                .ToDictionaryAsync(s => s.Sku, ct);
+
+            var salesTask = _db.FlashSales
+                .AsNoTracking()
+                .Where(f => f.IsActive && f.StartsAtUtc <= now && f.EndsAtUtc >= now && skus.Contains(f.Sku))
+                .ToDictionaryAsync(f => f.Sku, ct);
+
+            var ownedTask = _db.PlayerTransactions
+                .AsNoTracking()
+                .Where(t => t.Kind == "store-purchase"
+                            && t.Status == PlayerTransactionStatus.Applied
+                            && t.Actors.Any(a => a.PlayerId == playerId))
+                .SelectMany(t => t.ItemChanges)
+                .Select(i => i.ItemType)
+                .Distinct()
+                .ToListAsync(ct);
+
+            await Task.WhenAll(policiesTask, stockTask, salesTask, ownedTask);
+
+            return (await policiesTask, await stockTask, await salesTask, (await ownedTask).ToHashSet());
+        }
+
+        private static PlayerStoreCatalogItemDto MapToCatalogItem(
+            StoreItem item,
+            Dictionary<string, StoreStockPolicy> policies,
+            Dictionary<string, PlayerStoreStockState> stockStates,
+            Dictionary<string, FlashSale> activeSales,
+            HashSet<string> ownedSkus,
+            DateTimeOffset now)
+        {
+            policies.TryGetValue(item.Sku, out var policy);
+            stockStates.TryGetValue(item.Sku, out var state);
+            activeSales.TryGetValue(item.Sku, out var sale);
+
+            var owned = ownedSkus.Contains(item.Sku);
+
+            int remaining;
+            DateTimeOffset? nextResetAt = null;
+            DateTimeOffset? lastResetAt = null;
+
+            if (policy is null || policy.MaxQuantityPerUser == 0)
+            {
+                remaining = -1;
+            }
+            else if (state is null)
+            {
+                remaining = policy.MaxQuantityPerUser;
+                nextResetAt = policy.CalculateNextReset(now);
+            }
+            else
+            {
+                var expired = state.NextResetAtUtc <= now;
+                remaining = expired ? policy.MaxQuantityPerUser : state.GetRemaining(policy);
+                nextResetAt = expired ? policy.CalculateNextReset(now) : state.NextResetAtUtc;
+                lastResetAt = state.LastResetAtUtc;
+            }
+
+            var alreadyOwned = owned && item.MaxPerPlayer == 1;
+            var soldOut = remaining == 0;
+
+            var availabilityState = alreadyOwned ? "already_owned"
+                : soldOut ? "sold_out"
+                : "available";
+
+            var stockState = remaining == -1 ? "unlimited"
+                : remaining == 0 ? "out_of_stock"
+                : remaining == 1 ? "low_stock"
+                : "in_stock";
+
+            return new PlayerStoreCatalogItemDto(
+                Sku: item.Sku,
+                Name: item.Name,
+                Description: item.Description,
+                ItemType: item.ItemType,
+                PriceCoins: item.PriceCoins,
+                PriceDiamonds: item.PriceDiamonds,
+                IsAvailable: availabilityState == "available",
+                RemainingQuantity: remaining,
+                MaxQuantity: policy?.MaxQuantityPerUser ?? -1,
+                ResetInterval: policy?.ResetInterval,
+                LastResetAt: lastResetAt,
+                NextResetAt: nextResetAt,
+                SoldOut: soldOut,
+                DiscountPercent: sale?.DiscountPercent ?? 0,
+                Owned: owned,
+                AvailabilityState: availabilityState,
+                StockState: stockState,
+                ThumbnailUrl: item.ThumbnailUrl,
+                IsFeatured: item.IsFeatured
+            );
         }
     }
 }

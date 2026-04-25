@@ -4,6 +4,42 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-25] Store Stock System P0 + P1
+
+### P0 — Daily Store + Stock Enforcement
+
+- Added `StoreStockPolicy` domain entity (per-SKU rules: `MaxQuantityPerUser`, `ResetInterval` = "daily"/"weekly"/"none").
+- Added `PlayerStoreStockState` domain entity (per-player tracking with lazy reset on `ConsumeStockAsync`).
+- Added EF configurations and migration `20260425130000_AddStoreStockSystem` creating `store_stock_policies` and `player_store_stock_states` tables.
+- Added `IStoreStockService` / `StoreStockService` in `Tycoon.Backend.Application/Store`:
+  - `CheckStockAsync` — read-only quota check; returns `"store_item_out_of_stock"` or null.
+  - `ConsumeStockAsync` — lazy reset + increment; no-ops when no policy.
+  - `GetDailyItemsAsync` — returns policy-backed items enriched with player stock state.
+- Added `GET /store/daily` (auth required) — daily rotating store items with remaining qty, reset time, sold-out flag.
+- Extended `POST /store/purchase` — stock check before transaction; consume on success; `409 store_item_out_of_stock` when quota exhausted.
+- Added `DailyStoreItemDto` + `DailyStoreResponseDto` to `Tycoon.Shared.Contracts`.
+
+### P1 — Player-Specific Catalog + Hub + Special Offers
+
+- Added `FlashSale` domain entity (Sku, DiscountPercent, StartsAtUtc, EndsAtUtc, IsActive, Reason).
+- Added `FlashSaleConfiguration` and migration `20260425140000_AddFlashSale` creating `flash_sales` table.
+- Extended `IStoreStockService` with three new methods:
+  - `GetCatalogForPlayerAsync` — full catalog resolved per-player with stock state, ownership, availability state (`available`/`sold_out`/`already_owned`), stock state (`in_stock`/`low_stock`/`out_of_stock`/`unlimited`), and flash-sale discounts. All auxiliary data (policies, states, sales, ownership) loaded concurrently via `Task.WhenAll`.
+  - `GetHubAsync` — featured items + daily items + category list; reuses existing methods.
+  - `GetSpecialOffersAsync` — active flash sales joined with catalog items; returns sale price, original price, discount, end time.
+- Added three new endpoints:
+  - `GET /store/catalog/{playerId:guid}` (auth required, self-only) — player-specific catalog with optional `?itemType=` and `?category=` filters.
+  - `GET /store/hub` (auth required) — store hub surface.
+  - `GET /store/special-offers` (auth required) — active flash sales.
+- Added `PlayerStoreCatalogItemDto`, `PlayerStoreCatalogResponseDto`, `StoreHubResponseDto`, `SpecialOfferDto`, `SpecialOffersResponseDto` to `Tycoon.Shared.Contracts`.
+
+### Documentation
+
+- Added `docs/store_stock_frontend_handoff_2026-04-25.md` — full frontend integration guide for all P0 + P1 store stock endpoints.
+- Updated `docs/REMAINING_TASKS.md` — P0 and P1 marked complete; P2 backlog unchanged.
+
+---
+
 ## [2026-04-23] MinIO Catalog Seeders + Store/Admin Store Handoff
 
 ### MinIO-backed database seeders

@@ -23,5 +23,24 @@ namespace Tycoon.Backend.Application.Store
         /// calling player's current stock state (remaining quantity, reset time, sold-out flag).
         /// </summary>
         Task<IReadOnlyList<DailyStoreItemDto>> GetDailyItemsAsync(Guid playerId, CancellationToken ct);
+
+        /// <summary>
+        /// Returns the full store catalog resolved for a specific player, including per-player stock
+        /// state, ownership, availability, and any active flash-sale discounts.
+        /// Optionally filtered by <paramref name="itemType"/> or <paramref name="category"/> prefix.
+        /// </summary>
+        Task<PlayerStoreCatalogResponseDto> GetCatalogForPlayerAsync(
+            Guid playerId, string? itemType, string? category, CancellationToken ct);
+
+        /// <summary>
+        /// Returns the store hub surface: featured items (enriched), daily stock items, and a
+        /// deduplicated list of item-type categories drawn from the active catalog.
+        /// </summary>
+        Task<StoreHubResponseDto> GetHubAsync(Guid playerId, CancellationToken ct);
+
+        /// <summary>
+        /// Returns currently active flash sales joined with the matching catalog items.
+        /// </summary>
+        Task<IReadOnlyList<SpecialOfferDto>> GetSpecialOffersAsync(CancellationToken ct);
     }
 }
