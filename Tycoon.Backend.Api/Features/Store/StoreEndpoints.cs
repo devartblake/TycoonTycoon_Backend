@@ -44,6 +44,9 @@ namespace Tycoon.Backend.Api.Features.Store
             g.MapPost("/subscription/paypal/create", CreatePayPalSubscription).RequireAuthorization();
             g.MapPost("/subscription/paypal/cancel", CancelPayPalSubscription).RequireAuthorization();
             g.MapGet("/daily", GetDailyStore).RequireAuthorization();
+            g.MapGet("/hub", GetStoreHub).RequireAuthorization();
+            g.MapGet("/special-offers", GetSpecialOffers).RequireAuthorization();
+            g.MapGet("/catalog/{playerId:guid}", GetPlayerCatalog).RequireAuthorization();
             g.MapPost("/purchase", Purchase).RequireAuthorization();
             g.MapPost("/payments/checkout/session", CreateStripeCheckoutSession).RequireAuthorization();
             g.MapPost("/payments/paypal/order", CreatePayPalOrder).RequireAuthorization();
@@ -209,6 +212,43 @@ namespace Tycoon.Backend.Api.Features.Store
                     "not_found",
                     $"Reward '{rewardId}' was not found.")
             };
+        }
+
+        private static async Task<IResult> GetPlayerCatalog(
+            [FromRoute] Guid playerId,
+            [FromQuery] string? itemType,
+            [FromQuery] string? category,
+            HttpContext httpContext,
+            IStoreStockService stockService,
+            CancellationToken ct)
+        {
+            if (!TryGetAuthenticatedPlayerId(httpContext.User, out var jwtPlayerId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+            if (jwtPlayerId != playerId)
+                return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Cannot view another player's catalog.");
+
+            var catalog = await stockService.GetCatalogForPlayerAsync(playerId, itemType, category, ct);
+            return Results.Ok(catalog);
+        }
+
+        private static async Task<IResult> GetStoreHub(
+            HttpContext httpContext,
+            IStoreStockService stockService,
+            CancellationToken ct)
+        {
+            if (!TryGetAuthenticatedPlayerId(httpContext.User, out var playerId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            var hub = await stockService.GetHubAsync(playerId, ct);
+            return Results.Ok(hub);
+        }
+
+        private static async Task<IResult> GetSpecialOffers(
+            IStoreStockService stockService,
+            CancellationToken ct)
+        {
+            var offers = await stockService.GetSpecialOffersAsync(ct);
+            return Results.Ok(new SpecialOffersResponseDto(offers));
         }
 
         private static async Task<IResult> GetDailyStore(
