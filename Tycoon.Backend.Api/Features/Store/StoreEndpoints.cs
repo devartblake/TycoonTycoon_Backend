@@ -18,6 +18,7 @@ using Tycoon.Backend.Api.Payments.Stripe;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Avatars;
 using Tycoon.Backend.Application.PlayerTransactions;
+using Tycoon.Backend.Application.Store;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -42,6 +43,10 @@ namespace Tycoon.Backend.Api.Features.Store
             g.MapPost("/subscription/portal/session", CreateStripeBillingPortalSession).RequireAuthorization();
             g.MapPost("/subscription/paypal/create", CreatePayPalSubscription).RequireAuthorization();
             g.MapPost("/subscription/paypal/cancel", CancelPayPalSubscription).RequireAuthorization();
+            g.MapGet("/daily", GetDailyStore).RequireAuthorization();
+            g.MapGet("/hub", GetStoreHub).RequireAuthorization();
+            g.MapGet("/special-offers", GetSpecialOffers).RequireAuthorization();
+            g.MapGet("/catalog/{playerId:guid}", GetPlayerCatalog).RequireAuthorization();
             g.MapPost("/purchase", Purchase).RequireAuthorization();
             g.MapPost("/payments/checkout/session", CreateStripeCheckoutSession).RequireAuthorization();
             g.MapPost("/payments/paypal/order", CreatePayPalOrder).RequireAuthorization();
@@ -209,11 +214,64 @@ namespace Tycoon.Backend.Api.Features.Store
             };
         }
 
+        private static async Task<IResult> GetPlayerCatalog(
+            [FromRoute] Guid playerId,
+            [FromQuery] string? itemType,
+            [FromQuery] string? category,
+            HttpContext httpContext,
+            IStoreStockService stockService,
+            CancellationToken ct)
+        {
+            if (!TryGetAuthenticatedPlayerId(httpContext.User, out var jwtPlayerId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+            if (jwtPlayerId != playerId)
+                return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Cannot view another player's catalog.");
+
+            var catalog = await stockService.GetCatalogForPlayerAsync(playerId, itemType, category, ct);
+            return Results.Ok(catalog);
+        }
+
+        private static async Task<IResult> GetStoreHub(
+            HttpContext httpContext,
+            IStoreStockService stockService,
+            CancellationToken ct)
+        {
+            if (!TryGetAuthenticatedPlayerId(httpContext.User, out var playerId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            var hub = await stockService.GetHubAsync(playerId, ct);
+            return Results.Ok(hub);
+        }
+
+        private static async Task<IResult> GetSpecialOffers(
+            IStoreStockService stockService,
+            CancellationToken ct)
+        {
+            var offers = await stockService.GetSpecialOffersAsync(ct);
+            return Results.Ok(new SpecialOffersResponseDto(offers));
+        }
+
+        private static async Task<IResult> GetDailyStore(
+            HttpContext httpContext,
+            IStoreStockService stockService,
+            CancellationToken ct)
+        {
+            if (!TryGetAuthenticatedPlayerId(httpContext.User, out var playerId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            var items = await stockService.GetDailyItemsAsync(playerId, ct);
+            var now = DateTimeOffset.UtcNow;
+            var resetsAt = new DateTimeOffset(now.UtcDateTime.Date.AddDays(1), TimeSpan.Zero);
+            return Results.Ok(new DailyStoreResponseDto(now, resetsAt, items));
+        }
+
         private static async Task<IResult> Purchase(
             [FromBody] StorePurchaseRequest req,
+            HttpContext httpContext,
             IAppDb db,
             IConfiguration configuration,
             PlayerTransactionService txnService,
+            IStoreStockService stockService,
             CancellationToken ct)
         {
             var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);
@@ -264,6 +322,12 @@ namespace Tycoon.Backend.Api.Features.Store
                         $"Purchase limit of {storeItem.MaxPerPlayer} reached for this item.");
             }
 
+            // Check stock policy — returns "store_item_out_of_stock" if the player has exhausted their quota
+            var stockError = await stockService.CheckStockAsync(req.PlayerId, req.Sku, req.Quantity, ct);
+            if (stockError is not null)
+                return ApiResponses.Error(StatusCodes.Status409Conflict, stockError,
+                    "This item is out of stock for the current period.");
+
             // Build the player transaction request
             var eventId = Guid.NewGuid();
             var currencyType = currency == "coins" ? CurrencyType.Coins : CurrencyType.Diamonds;
@@ -286,6 +350,9 @@ namespace Tycoon.Backend.Api.Features.Store
             );
 
             var result = await txnService.ExecuteAsync(ptxnReq, ct);
+
+            if (result.Status == "Applied")
+                await stockService.ConsumeStockAsync(req.PlayerId, req.Sku, req.Quantity, ct);
 
             // Map to store-specific response
             var balanceResult = result.EconomyResults.FirstOrDefault();
