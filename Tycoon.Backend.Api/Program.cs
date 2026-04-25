@@ -137,6 +137,8 @@ builder.Services
 // Register IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminNotificationDispatchJob>();
+builder.Services.AddScoped<Tycoon.Backend.Application.Store.IStoreStockService,
+    Tycoon.Backend.Application.Store.StoreStockService>();
 
 // Observability + Serilog + OTEL
 builder.AddObservability();
