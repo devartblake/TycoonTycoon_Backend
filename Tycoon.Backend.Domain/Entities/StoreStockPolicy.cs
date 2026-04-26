@@ -26,6 +26,14 @@ namespace Tycoon.Backend.Domain.Entities
             ResetInterval = resetInterval;
         }
 
+        public void Update(int maxQuantityPerUser, string resetInterval, bool? isActive = null)
+        {
+            MaxQuantityPerUser = maxQuantityPerUser;
+            ResetInterval = resetInterval;
+            if (isActive.HasValue) IsActive = isActive.Value;
+            UpdatedAtUtc = DateTimeOffset.UtcNow;
+        }
+
         public DateTimeOffset CalculateNextReset(DateTimeOffset from)
         {
             var todayUtc = from.UtcDateTime.Date;

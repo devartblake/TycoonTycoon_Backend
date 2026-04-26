@@ -4,6 +4,44 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-26] Store Stock System P2 — Admin Stock Management
+
+### New endpoints (`X-Admin-Ops-Key` required)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/admin/store/stock-policies` | List all stock policies (`?activeOnly`, `?sku`) |
+| `PUT` | `/admin/store/stock-policies/{sku}` | Upsert policy — creates or updates `maxQuantityPerUser`, `resetInterval` |
+| `POST` | `/admin/store/stock-policies/bulk-reset` | Reset `QuantityUsed=0` for all players on given SKU list |
+| `GET` | `/admin/store/player-stock/{playerId}` | View player's per-SKU stock states including override |
+| `POST` | `/admin/store/player-stock/{playerId}/override` | Set `EffectiveMaxQuantity` for a player+SKU (null clears) |
+| `GET` | `/admin/store/flash-sales` | List active + scheduled flash sales |
+| `POST` | `/admin/store/flash-sales` | Create flash sale (overlap guard, SKU existence check) |
+| `DELETE` | `/admin/store/flash-sales/{id}` | Soft-cancel a flash sale (`IsActive=false`) |
+| `GET` | `/admin/store/reward-limits/{rewardId}` | Get reward claim rule |
+| `PUT` | `/admin/store/reward-limits/{rewardId}` | Upsert reward claim rule (`maxClaimsPerInterval`, `resetInterval`) |
+| `GET` | `/admin/store/analytics/purchases` | Aggregate purchase stats — `totalPurchases`, `totalCoinsSpent`, `topSkus` with optional date + SKU filters |
+| `GET` | `/admin/store/analytics/stock-resets` | Paginated reset history from `PlayerStoreStockState.LastResetAtUtc` |
+
+### New entities
+
+- **`RewardClaimRule`** — per-reward claim-frequency cap (`RewardId`, `MaxClaimsPerInterval`, `ResetInterval`, `IsActive`)
+- **`EffectiveMaxQuantity`** added to `PlayerStoreStockState` — admin-controlled per-player ceiling that overrides the policy default; `null` = use policy default
+
+### New migrations
+
+- `20260426100000_AddRewardClaimRule` — creates `reward_claim_rules` table with unique index on `reward_id`
+- `20260426110000_AddEffectiveMaxQuantity` — adds nullable `effective_max_quantity` column to `player_store_stock_states`
+
+### Domain changes
+
+- `PlayerStoreStockState.SetOverride(int?)` — sets/clears `EffectiveMaxQuantity`
+- `PlayerStoreStockState.BulkReset(policy, now)` — admin bulk reset, respects `ResetInterval == "none"`
+- `PlayerStoreStockState.GetRemaining()` — now uses `EffectiveMaxQuantity` when set, falling back to policy default
+- `StoreStockPolicy.Update(maxQty, interval, isActive?)` — mutable update method for upsert path
+
+---
+
 ## [2026-04-25] Store Stock System P0 + P1
 
 ### P0 — Daily Store + Stock Enforcement

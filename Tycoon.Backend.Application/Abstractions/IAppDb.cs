@@ -84,6 +84,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<StoreStockPolicy> StoreStockPolicies { get; }
         DbSet<PlayerStoreStockState> PlayerStoreStockStates { get; }
         DbSet<FlashSale> FlashSales { get; }
+        DbSet<RewardClaimRule> RewardClaimRules { get; }
         DbSet<SeasonRewardRule> SeasonRewardRules { get; }
         DbSet<LearningModule> LearningModules { get; }
         DbSet<ModuleLesson> ModuleLessons { get; }
