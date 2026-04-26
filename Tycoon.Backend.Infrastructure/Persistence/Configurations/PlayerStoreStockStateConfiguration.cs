@@ -15,6 +15,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence.Configurations
             builder.Property(x => x.PlayerId).IsRequired();
             builder.Property(x => x.Sku).HasMaxLength(128).IsRequired();
             builder.Property(x => x.QuantityUsed).IsRequired();
+            builder.Property(x => x.EffectiveMaxQuantity).IsRequired(false);
             builder.Property(x => x.UpdatedAtUtc).IsRequired();
         }
     }

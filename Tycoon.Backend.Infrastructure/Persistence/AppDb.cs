@@ -101,6 +101,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<StoreStockPolicy> StoreStockPolicies => Set<StoreStockPolicy>();
         public DbSet<PlayerStoreStockState> PlayerStoreStockStates => Set<PlayerStoreStockState>();
         public DbSet<FlashSale> FlashSales => Set<FlashSale>();
+        public DbSet<RewardClaimRule> RewardClaimRules => Set<RewardClaimRule>();
         public DbSet<SeasonRewardRule> SeasonRewardRules => Set<SeasonRewardRule>();
         public DbSet<LearningModule> LearningModules => Set<LearningModule>();
         public DbSet<ModuleLesson> ModuleLessons => Set<ModuleLesson>();

@@ -297,14 +297,16 @@ dotnet ef database update \
 - [x] `PlayerStoreCatalogItemDto` with `availabilityState` + `stockState` fields
 - [x] Concurrent data loading (policies, stock states, flash sales, ownership) via `Task.WhenAll`
 
-### 11c. P2 — Admin Stock Management
+### 11c. P2 — Admin Stock Management ✅ COMPLETE
 
-- [ ] `GET /admin/store/stock-policies` + `PUT /admin/store/stock-policies/{sku}`
-- [ ] `POST /admin/store/stock-policies/bulk-reset`
-- [ ] `GET /admin/store/player-stock/{playerId}` + `POST /admin/store/player-stock/{playerId}/override`
-- [ ] Flash sale CRUD: `GET`, `POST /admin/store/flash-sales`, `DELETE /admin/store/flash-sales/{id}`
-- [ ] Reward limit management: `GET` + `PUT /admin/store/reward-limits/{rewardId}`
-- [ ] Analytics: `GET /admin/store/analytics/purchases` + `GET /admin/store/analytics/stock-resets`
+- [x] `GET /admin/store/stock-policies` + `PUT /admin/store/stock-policies/{sku}` — list + upsert (creates or updates)
+- [x] `POST /admin/store/stock-policies/bulk-reset` — resets all players for a given list of SKUs
+- [x] `GET /admin/store/player-stock/{playerId}` + `POST /admin/store/player-stock/{playerId}/override` — view + set `EffectiveMaxQuantity`
+- [x] Flash sale CRUD: `GET /admin/store/flash-sales`, `POST /admin/store/flash-sales`, `DELETE /admin/store/flash-sales/{id}` (soft cancel)
+- [x] Reward limit management: `GET /admin/store/reward-limits/{rewardId}` + `PUT` (upsert `RewardClaimRule` entity)
+- [x] Analytics: `GET /admin/store/analytics/purchases` (aggregates + date filter) + `GET /admin/store/analytics/stock-resets` (paginated reset history)
+- [x] `RewardClaimRule` entity + EF config + migration `20260426100000_AddRewardClaimRule`
+- [x] `EffectiveMaxQuantity` column on `PlayerStoreStockState` + migration `20260426110000_AddEffectiveMaxQuantity`
 
 ---
 

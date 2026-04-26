@@ -6,6 +6,7 @@ namespace Tycoon.Backend.Domain.Entities
         public Guid PlayerId { get; private set; }
         public string Sku { get; private set; } = string.Empty;
         public int QuantityUsed { get; private set; }
+        public int? EffectiveMaxQuantity { get; private set; }
         public DateTimeOffset? LastResetAtUtc { get; private set; }
         public DateTimeOffset? NextResetAtUtc { get; private set; }
         public DateTimeOffset UpdatedAtUtc { get; private set; } = DateTimeOffset.UtcNow;
@@ -42,9 +43,24 @@ namespace Tycoon.Backend.Domain.Entities
             UpdatedAtUtc = DateTimeOffset.UtcNow;
         }
 
+        public void BulkReset(StoreStockPolicy policy, DateTimeOffset now)
+        {
+            QuantityUsed = 0;
+            LastResetAtUtc = now;
+            NextResetAtUtc = policy.ResetInterval == "none" ? null : policy.CalculateNextReset(now);
+            UpdatedAtUtc = now;
+        }
+
+        public void SetOverride(int? effectiveMaxQuantity)
+        {
+            EffectiveMaxQuantity = effectiveMaxQuantity;
+            UpdatedAtUtc = DateTimeOffset.UtcNow;
+        }
+
         public int GetRemaining(StoreStockPolicy policy)
-            => policy.MaxQuantityPerUser == 0
-                ? int.MaxValue
-                : Math.Max(0, policy.MaxQuantityPerUser - QuantityUsed);
+        {
+            var cap = EffectiveMaxQuantity ?? policy.MaxQuantityPerUser;
+            return cap == 0 ? int.MaxValue : Math.Max(0, cap - QuantityUsed);
+        }
     }
 }
