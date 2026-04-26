@@ -4,6 +4,33 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-26] Full Session Summary
+
+### Completed this session
+- Store Stock System P2 — Admin Stock Management (12 new endpoints, 2 new entities, 2 migrations)
+- Swagger duplicate middleware fix (`UseSwagger`/`UseSwaggerUI` called twice — removed bare pair)
+- Full task audit across all markdown files — 27 backend items complete, 10 in progress, 18 not started
+- `REMAINING_TASKS.md` summary table updated to reflect current state
+- Frontend handoff doc created: `docs/frontend_handoff_2026-04-26.md`
+  - Admin store P2 endpoint contracts
+  - Crypto economy endpoints (all 10 — previously undocumented)
+  - Wallet endpoint clarification (`GET /users/me/wallet`)
+  - Full matrix of frontend-pending vs backend-pending items
+  - Pending migrations action list for DevOps
+
+### Verified already complete (no code change needed)
+- Synaptix branding: Swagger title = "Synaptix API", dashboards = "Synaptix Command" ✅
+- Auth `/auth/signup` vs `/auth/register` distinction documented for frontend ✅
+
+### Remaining backend work identified
+- Operator Dashboard migration Wave B (Questions, Events, Seasons) — not started
+- Operator Dashboard migration Wave C (Moderation, Notifications, Economy, Anti-cheat) — not started
+- `GET /v1/assets/audio/{category}/{filename}` — not started (P2 future)
+- Game balance migration apply — requires `dotnet ef database update` in live environment
+- gRPC integration tests — pending tooling environment
+
+---
+
 ## [2026-04-26] Store Stock System P2 — Admin Stock Management
 
 ### New endpoints (`X-Admin-Ops-Key` required)

@@ -1,6 +1,6 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-04-23 (updated: avatar purchase path complete, MinIO catalog seeders complete, store stock P0/P1/P2 backlog added)_
+_Last updated: 2026-04-26 (store stock P2 complete; admin store P2 + crypto handoff added)_
 
 > This file is the canonical "what is left to do" reference.
 > For completed work, see [`docs/ALPHA_TASK_AUDIT.md`](ALPHA_TASK_AUDIT.md).
@@ -16,17 +16,20 @@ _Last updated: 2026-04-23 (updated: avatar purchase path complete, MinIO catalog
 | Frontend/backend alpha handoff | High | Store, profile/social, question gameplay complete; crypto + ML remain | No |
 | **3D Avatar purchase path (Browse → Buy → Download)** | **High** | **Complete** | **No** |
 | **MinIO catalog seeders (StoreItems, SkillNodes, SeasonRewards, Questions)** | **High** | **Complete** | **No** |
-| **SeasonRewardRule EF migration** | **High** | **Pending — user must run AddSeasonRewardRules** | **No** |
+| **SeasonRewardRule EF migration** | **High** | **Pending — user must run `dotnet ef database update`** | **No** |
 | Store stock system P0 (daily store + stock enforcement) | High | **Complete** | No |
 | Store stock system P1 (player catalog + hub + special offers) | High | **Complete** | No |
-| Store stock system P2 (admin policies + flash sales + analytics) | Medium | Not started | No |
-| Phase 2 - Crash recovery stubs | High | Code complete; device validation pending | No |
-| Phase 3 - Test coverage (remaining gaps) | Medium | ~4.1% -> 40% target | No |
+| **Store stock system P2 (admin policies + flash sales + analytics)** | Medium | **Complete** | No |
+| Operator Dashboard Wave B (Questions, Events, Seasons) | Medium | Not started | No |
+| Operator Dashboard Wave C (Moderation, Notifications, Economy, Anti-cheat) | Medium | Not started | No |
+| Operator Dashboard Wave D (Cutover + Blazor decommission) | Low | Not started | Depends on B+C |
+| Phase 2 - Crash recovery stubs | High | Code complete; device validation pending | Yes — needs device |
+| Phase 3 - Test coverage (remaining gaps) | Medium | ~4.1% → 40% target | No |
 | Phase 4 - Dependency audit | Medium | Partial | No |
-| Sprint 1 - Auth/profile integration verification | Medium | Partially improved; live backend verification still needed | No |
-| Sprint 2 - Networking layer | High | Not started | No |
-| Synaptix runtime validation | Medium | Blocked | Yes, needs device + backend |
-| Backend Packet E | Deferred | Not started | Intentional deferral |
+| Sprint 1 - Auth/profile integration verification | Medium | Partially improved; live backend verification still needed | Yes — needs live server |
+| Sprint 2 - Networking layer (Flutter) | High | Not started | No |
+| Synaptix runtime validation | Medium | Blocked | Yes — needs device + backend |
+| Backend Packet E (namespace rename) | Deferred | Not started | Intentional deferral |
 
 ---
 
