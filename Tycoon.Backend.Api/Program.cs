@@ -534,8 +534,6 @@ app.UseRouting();
 // ✅ Show detailed errors in development
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
     app.UseDeveloperExceptionPage();
 }
 
