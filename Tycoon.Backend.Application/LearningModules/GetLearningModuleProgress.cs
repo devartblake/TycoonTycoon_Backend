@@ -19,20 +19,21 @@ namespace Tycoon.Backend.Application.LearningModules
             GetLearningModuleProgress request,
             CancellationToken ct)
         {
-            var publishedModuleIds = await _db.LearningModules
+            // COUNT avoids loading all IDs into memory; JOIN avoids large IN (...) parameter list.
+            var total = await _db.LearningModules
                 .AsNoTracking()
-                .Where(m => m.IsPublished)
-                .Select(m => m.Id)
-                .ToListAsync(ct);
+                .CountAsync(m => m.IsPublished, ct);
 
             var completedModuleIds = await _db.ModuleCompletions
                 .AsNoTracking()
-                .Where(c => c.PlayerId == request.PlayerId && publishedModuleIds.Contains(c.ModuleId))
-                .Select(c => c.ModuleId)
+                .Where(c => c.PlayerId == request.PlayerId)
+                .Join(
+                    _db.LearningModules.Where(m => m.IsPublished),
+                    c => c.ModuleId,
+                    m => m.Id,
+                    (c, m) => c.ModuleId)
                 .Distinct()
                 .ToListAsync(ct);
-
-            var total = publishedModuleIds.Count;
             var completed = completedModuleIds.Count;
             var remaining = Math.Max(0, total - completed);
             var completionRate = total == 0
