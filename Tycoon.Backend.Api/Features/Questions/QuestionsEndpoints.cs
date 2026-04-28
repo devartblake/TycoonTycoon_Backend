@@ -54,7 +54,7 @@ namespace Tycoon.Backend.Api.Features.Questions
             IAppDb db,
             CancellationToken ct)
         {
-            var rows = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
+            var rows = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null, includeOptions: false)
                 .GroupBy(q => q.Category)
                 .Select(g => new { Key = g.Key, Count = g.Count() })
                 .OrderBy(x => x.Key)
@@ -75,21 +75,22 @@ namespace Tycoon.Backend.Api.Features.Questions
             IAppDb db,
             CancellationToken ct)
         {
-            var categoryRows = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
-                .GroupBy(q => q.Category)
-                .Select(g => new { Key = g.Key, Count = g.Count() })
-                .OrderBy(x => x.Key)
+            // Single query — fetch only Category+Difficulty columns, compute both facets in memory.
+            var rawData = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null, includeOptions: false)
+                .Select(q => new { q.Category, q.Difficulty })
                 .ToListAsync(ct);
 
-            var categories = categoryRows
-                .Select(x => new FacetCountDto(x.Key, x.Count))
+            var categories = rawData
+                .GroupBy(x => x.Category)
+                .OrderBy(g => g.Key)
+                .Select(g => new FacetCountDto(g.Key, g.Count()))
                 .ToList();
 
-            var difficulties = await BuildApprovedQuestionsQuery(db, categories: null, difficulties: null)
-                .Select(q => q.Difficulty)
+            var difficulties = rawData
+                .Select(x => x.Difficulty)
                 .Distinct()
                 .OrderBy(x => x)
-                .ToListAsync(ct);
+                .ToList();
 
             return Results.Ok(new QuestionMetadataResponseDto(
                 categories,
@@ -195,8 +196,17 @@ namespace Tycoon.Backend.Api.Features.Questions
         {
             var clampedCount = count <= 0 ? 10 : Math.Clamp(count, 1, 50);
 
-            var questions = await BuildApprovedQuestionsQuery(db, categories, difficulties)
-                .OrderBy(_ => EF.Functions.Random())
+            var baseQuery = BuildApprovedQuestionsQuery(db, categories, difficulties);
+            var totalCount = await baseQuery.CountAsync(ct);
+            if (totalCount == 0)
+                return new List<GameplayQuestionDto>();
+
+            // Count+skip avoids ORDER BY RANDOM() full-table sort on PostgreSQL.
+            var skip = totalCount <= clampedCount ? 0 : Random.Shared.Next(0, totalCount - clampedCount);
+
+            var questions = await baseQuery
+                .OrderBy(q => q.Id)
+                .Skip(skip)
                 .Take(clampedCount)
                 .ToListAsync(ct);
 
@@ -213,13 +223,16 @@ namespace Tycoon.Backend.Api.Features.Questions
         private static IQueryable<Domain.Entities.Question> BuildApprovedQuestionsQuery(
             IAppDb db,
             IEnumerable<string>? categories,
-            IEnumerable<QuestionDifficulty>? difficulties)
+            IEnumerable<QuestionDifficulty>? difficulties,
+            bool includeOptions = true)
         {
             var query = db.Questions
                 .AsNoTracking()
-                .Include(q => q.Options)
                 .Where(q => q.Status == "Approved")
                 .AsQueryable();
+
+            if (includeOptions)
+                query = query.Include(q => q.Options);
 
             var categoryFilters = categories?
                 .Where(c => !string.IsNullOrWhiteSpace(c))
