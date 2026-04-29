@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Tycoon.Backend.Application.Analytics.Models;
 using Tycoon.Backend.Domain.Entities;
+using Tycoon.Backend.Domain.Experiments;
 using Tycoon.Backend.Domain.Personalization;
 
 namespace Tycoon.Backend.Application.Abstractions
@@ -97,6 +98,11 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<PlayerBehaviorEvent> PlayerBehaviorEvents { get; }
         DbSet<PersonalizationRecommendation> PersonalizationRecommendations { get; }
         DbSet<PersonalizationRule> PersonalizationRules { get; }
+
+        // A/B Experiments
+        DbSet<Experiment> Experiments { get; }
+        DbSet<ExperimentVariant> ExperimentVariants { get; }
+        DbSet<ExperimentAssignment> ExperimentAssignments { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);
