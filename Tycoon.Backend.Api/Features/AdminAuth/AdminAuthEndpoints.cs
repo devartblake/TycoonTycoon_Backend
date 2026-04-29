@@ -24,7 +24,19 @@ public static class AdminAuthEndpoints
         "questions:read",
         "questions:write",
         "events:read",
-        "events:write"
+        "events:write",
+        "store:read",
+        "store:write",
+        "economy:read",
+        "economy:write",
+        "anticheat:read",
+        "anticheat:write",
+        "notifications:read",
+        "notifications:write",
+        "seasons:read",
+        "seasons:write",
+        "eventqueue:read",
+        "eventqueue:write"
     ];
 
     public static void Map(RouteGroupBuilder admin)

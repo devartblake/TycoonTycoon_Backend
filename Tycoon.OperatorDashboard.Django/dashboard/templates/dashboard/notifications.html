@@ -1,0 +1,117 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Operations</p>
+    <h1 class="page-title">Notifications</h1>
+    <p class="page-subtitle">Send push notifications, view send history, and replay dead-letter failures.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Send notification" copy="Dispatches immediately to the selected channel." %}
+  <form method="post" action="{% url 'notifications-send' %}" class="stack">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Channel
+        <select name="channelKey" required>
+          {% for ch in channels %}
+          <option value="{{ ch.key }}">{{ ch.name }} ({{ ch.key }})</option>
+          {% empty %}
+          <option value="" disabled>No channels available</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Title
+        <input type="text" name="title" placeholder="Notification title" required />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit" onclick="return confirm('Send this notification to all channel subscribers?')">Send now</button>
+    </div>
+  </form>
+</section>
+
+{% if history %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Send history" copy="Most-recent dispatches." %}
+  <div class="table-meta">
+    <span class="helper-text">{{ history.items|length }} of {{ history.totalItems|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Job ID</th>
+          <th>Channel</th>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Sent (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in history.items %}
+        <tr>
+          <td class="helper-text">{{ item.id|default:"-" }}</td>
+          <td>{{ item.channelKey|default:"-" }}</td>
+          <td>{{ item.title|default:"-" }}</td>
+          <td><span class="status-badge">{{ item.status|default:"-" }}</span></td>
+          <td>{{ item.createdAt|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="helper-text">No send history.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if dead_letter %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Dead-letter queue" copy="Failed scheduled notifications. Replay to re-queue." %}
+  <div class="table-meta">
+    <span class="helper-text">{{ dead_letter.items|length }} of {{ dead_letter.totalItems|default:0 }} failed records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Schedule ID</th>
+          <th>Channel</th>
+          <th>Title</th>
+          <th>Scheduled (UTC)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in dead_letter.items %}
+        <tr>
+          <td class="helper-text">{{ item.scheduleId|default:"-" }}</td>
+          <td>{{ item.channelKey|default:"-" }}</td>
+          <td>{{ item.title|default:"-" }}</td>
+          <td>{{ item.scheduledAt|default:"-" }}</td>
+          <td>
+            <form method="post" action="{% url 'notifications-dead-letter-replay' item.scheduleId %}">{% csrf_token %}
+              <button class="btn-inline" type="submit" onclick="return confirm('Re-queue this notification?')">Replay</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="helper-text">Dead-letter queue is empty.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -76,6 +76,34 @@
           </div>
 
           <div class="operator-nav-group">
+            <div class="operator-nav-label">Events</div>
+            <a class="operator-nav-link {% if '/events/game-events' in request.path %}is-active{% endif %}" href="{% url 'game-events-view' %}">
+              <span>Game events</span>
+              <span class="operator-nav-caption">Lifecycle control</span>
+            </a>
+            <a class="operator-nav-link {% if '/operations/seasons' in request.path %}is-active{% endif %}" href="{% url 'seasons-view' %}">
+              <span>Seasons</span>
+              <span class="operator-nav-caption">Activate / close</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Security</div>
+            <a class="operator-nav-link {% if '/security/anticheat' in request.path %}is-active{% endif %}" href="{% url 'anticheat-flags-view' %}">
+              <span>Anti-cheat flags</span>
+              <span class="operator-nav-caption">Review &amp; annotate</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Notifications</div>
+            <a class="operator-nav-link {% if '/operations/notifications' in request.path %}is-active{% endif %}" href="{% url 'notifications-view' %}">
+              <span>Notifications</span>
+              <span class="operator-nav-caption">Send &amp; dead-letter</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
             <div class="operator-nav-label">Storage</div>
             <a class="operator-nav-link {% if '/media/' in request.path %}is-active{% endif %}" href="{% url 'operator-media-intent-view' %}">
               <span>Media intents</span>

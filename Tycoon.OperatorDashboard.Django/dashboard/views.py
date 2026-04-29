@@ -26,6 +26,27 @@ from .services.admin_store_client import (
     get_purchase_analytics,
     get_stock_policies,
 )
+from .services.admin_game_events_client import (
+    close_game_event,
+    list_game_events,
+    open_game_event,
+    start_game_event,
+)
+from .services.admin_anticheat_client import list_anticheat_flags, review_anticheat_flag
+from .services.admin_seasons_client import (
+    activate_season,
+    close_season,
+    get_season_leaderboard,
+    list_seasons,
+    recompute_season_tiers,
+)
+from .services.admin_notifications_client import (
+    get_dead_letter,
+    get_notification_history,
+    list_channels,
+    replay_dead_letter,
+    send_notification,
+)
 from .services.admin_users_client import (
     ban_admin_user,
     get_admin_user,
@@ -1184,3 +1205,295 @@ def economy_grant(request):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend economy endpoint.")
     return redirect(f"/economy/player?playerId={payload.get('playerId', '')}")
+
+
+# ---------------------------------------------------------------------------
+# Game Events
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("events:read")
+def game_events_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "status": request.GET.get("status"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 20),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+    context = {
+        "events": None,
+        "query": query,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["events"] = list_game_events(access_token, query)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load game events (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend game events endpoint.")
+    return render(request, "dashboard/game_events.html", context)
+
+
+@operator_login_required
+@require_permission("events:write")
+def game_event_open(request, event_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        open_game_event(access_token, event_id)
+        messages.success(request, f"Event {event_id} opened.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Open failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/events/game-events")
+
+
+@operator_login_required
+@require_permission("events:write")
+def game_event_start(request, event_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        start_game_event(access_token, event_id)
+        messages.success(request, f"Event {event_id} started.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Start failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/events/game-events")
+
+
+@operator_login_required
+@require_permission("events:write")
+def game_event_close(request, event_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        close_game_event(access_token, event_id)
+        messages.success(request, f"Event {event_id} closed and prizes distributed.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Close failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/events/game-events")
+
+
+# ---------------------------------------------------------------------------
+# Anti-Cheat
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("anticheat:read")
+def anticheat_flags_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "severity": request.GET.get("severity"),
+        "playerId": request.GET.get("playerId"),
+        "unreviewedOnly": request.GET.get("unreviewedOnly"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+    context = {
+        "flags": None,
+        "query": query,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["flags"] = list_anticheat_flags(access_token, query)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load flags (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend anti-cheat endpoint.")
+    return render(request, "dashboard/anticheat_flags.html", context)
+
+
+@operator_login_required
+@require_permission("anticheat:write")
+def anticheat_flag_review(request, flag_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    profile = request.session.get(SESSION_ADMIN_PROFILE_KEY) or {}
+    reviewed_by = profile.get("email") or "operator"
+    note = request.POST.get("note", "").strip()
+    try:
+        review_anticheat_flag(access_token, flag_id, reviewed_by, note)
+        messages.success(request, f"Flag {flag_id} marked as reviewed.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Review failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    next_url = request.POST.get("next") or "/security/anticheat"
+    return redirect(next_url)
+
+
+# ---------------------------------------------------------------------------
+# Seasons
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("seasons:read")
+def seasons_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    season_id = request.GET.get("seasonId")
+    context = {
+        "seasons": None,
+        "leaderboard": None,
+        "season_id": season_id,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["seasons"] = list_seasons(access_token, {"page": request.GET.get("page", 1), "pageSize": 50})
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load seasons (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend seasons endpoint.")
+    return render(request, "dashboard/seasons.html", context)
+
+
+@operator_login_required
+@require_permission("seasons:read")
+def seasons_leaderboard(request, season_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "seasons": None,
+        "leaderboard": None,
+        "season_id": season_id,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["seasons"] = list_seasons(access_token, {"page": 1, "pageSize": 50})
+        context["leaderboard"] = get_season_leaderboard(
+            access_token, season_id,
+            {"page": request.GET.get("page", 1), "pageSize": request.GET.get("pageSize", 50)},
+        )
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load leaderboard (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend seasons endpoint.")
+    return render(request, "dashboard/seasons.html", context)
+
+
+@operator_login_required
+@require_permission("seasons:write")
+def seasons_activate(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    season_id = request.POST.get("seasonId", "").strip()
+    try:
+        activate_season(access_token, season_id)
+        messages.success(request, f"Season {season_id} activated.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Activate failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/operations/seasons")
+
+
+@operator_login_required
+@require_permission("seasons:write")
+def seasons_close(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    season_id = request.POST.get("seasonId", "").strip()
+    try:
+        close_season(access_token, season_id)
+        messages.success(request, f"Season {season_id} closed.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Close failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/operations/seasons")
+
+
+@operator_login_required
+@require_permission("seasons:write")
+def seasons_recompute(request, season_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        recompute_season_tiers(access_token, season_id)
+        messages.success(request, f"Tier recompute triggered for season {season_id}.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Recompute failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/operations/seasons")
+
+
+# ---------------------------------------------------------------------------
+# Notifications
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("notifications:read")
+def notifications_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "channels": [],
+        "history": None,
+        "dead_letter": None,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["channels"] = list_channels(access_token)
+    except (httpx.HTTPStatusError, httpx.RequestError):
+        messages.error(request, "Failed to load notification channels.")
+    try:
+        context["history"] = get_notification_history(access_token, {"page": 1, "pageSize": 25})
+    except (httpx.HTTPStatusError, httpx.RequestError):
+        pass
+    try:
+        context["dead_letter"] = get_dead_letter(access_token, {"page": 1, "pageSize": 25})
+    except (httpx.HTTPStatusError, httpx.RequestError):
+        pass
+    return render(request, "dashboard/notifications.html", context)
+
+
+@operator_login_required
+@require_permission("notifications:write")
+def notifications_send(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    payload = {
+        "channelKey": request.POST.get("channelKey"),
+        "title": request.POST.get("title"),
+    }
+    missing = [k for k, v in payload.items() if not v]
+    if missing:
+        messages.error(request, f"Missing required fields: {', '.join(missing)}.")
+        return redirect("/operations/notifications")
+    try:
+        send_notification(access_token, payload)
+        messages.success(request, f"Notification queued on channel '{payload['channelKey']}'.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Send failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend notifications endpoint.")
+    return redirect("/operations/notifications")
+
+
+@operator_login_required
+@require_permission("notifications:write")
+def notifications_dead_letter_replay(request, schedule_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        replay_dead_letter(access_token, schedule_id)
+        messages.success(request, f"Schedule {schedule_id} re-queued.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Replay failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/operations/notifications")

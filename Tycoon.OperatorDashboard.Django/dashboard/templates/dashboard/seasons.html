@@ -1,0 +1,107 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Seasons{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Operations</p>
+    <h1 class="page-title">Seasons</h1>
+    <p class="page-subtitle">Manage competitive seasons — activate, close, and inspect leaderboards.</p>
+  </div>
+</section>
+
+{% if seasons %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Season list" copy="All seasons ordered by creation date." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Starts (UTC)</th>
+          <th>Ends (UTC)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in seasons.items %}
+        <tr>
+          <td class="helper-text">{{ s.id|default:"-" }}</td>
+          <td>{{ s.name|default:"-" }}</td>
+          <td><span class="status-badge">{{ s.status|default:"-" }}</span></td>
+          <td>{{ s.startsAtUtc|default:"-" }}</td>
+          <td>{{ s.endsAtUtc|default:"-" }}</td>
+          <td>
+            <div class="row-actions">
+              {% if s.status == "Scheduled" %}
+              <form method="post" action="{% url 'seasons-activate' %}">{% csrf_token %}
+                <input type="hidden" name="seasonId" value="{{ s.id }}" />
+                <button class="btn-inline" type="submit" onclick="return confirm('Activate season {{ s.name }}?')">Activate</button>
+              </form>
+              {% endif %}
+              {% if s.status == "Active" %}
+              <form method="post" action="{% url 'seasons-close' %}">{% csrf_token %}
+                <input type="hidden" name="seasonId" value="{{ s.id }}" />
+                <button class="btn-inline btn-danger" type="submit" onclick="return confirm('Close season {{ s.name }}? This is irreversible.')">Close</button>
+              </form>
+              <form method="post" action="{% url 'seasons-recompute' s.id %}">{% csrf_token %}
+                <button class="btn-inline" type="submit">Recompute tiers</button>
+              </form>
+              {% endif %}
+              <a class="btn-inline" href="{% url 'seasons-leaderboard' s.id %}">Leaderboard</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="helper-text">No seasons found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if leaderboard %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Leaderboard" copy="Season {{ season_id }} — ranked players." %}
+  <div class="table-meta">
+    <span class="helper-text">{{ leaderboard.items|length }} of {{ leaderboard.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Player ID</th>
+          <th>Tier</th>
+          <th>Tier rank</th>
+          <th>Rank pts</th>
+          <th>W / L / D</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in leaderboard.items %}
+        <tr>
+          <td>{{ row.seasonRank|default:"-" }}</td>
+          <td class="helper-text">{{ row.playerId|default:"-" }}</td>
+          <td>{{ row.tier|default:"-" }}</td>
+          <td>{{ row.tierRank|default:"-" }}</td>
+          <td>{{ row.rankPoints|default:"0" }}</td>
+          <td>{{ row.wins|default:"0" }} / {{ row.losses|default:"0" }} / {{ row.draws|default:"0" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="helper-text">No leaderboard data.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

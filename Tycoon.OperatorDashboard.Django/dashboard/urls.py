@@ -32,6 +32,20 @@ from .views import (
     questions_reject,
     economy_player_view,
     economy_grant,
+    game_events_view,
+    game_event_open,
+    game_event_start,
+    game_event_close,
+    anticheat_flags_view,
+    anticheat_flag_review,
+    seasons_view,
+    seasons_leaderboard,
+    seasons_activate,
+    seasons_close,
+    seasons_recompute,
+    notifications_view,
+    notifications_send,
+    notifications_dead_letter_replay,
 )
 
 urlpatterns = [
@@ -68,5 +82,23 @@ urlpatterns = [
     # Economy
     path("economy/player", economy_player_view, name="economy-player-view"),
     path("economy/grant", economy_grant, name="economy-grant"),
+    # Events
+    path("events/game-events", game_events_view, name="game-events-view"),
+    path("events/game-events/<str:event_id>/open", game_event_open, name="game-event-open"),
+    path("events/game-events/<str:event_id>/start", game_event_start, name="game-event-start"),
+    path("events/game-events/<str:event_id>/close", game_event_close, name="game-event-close"),
+    # Anti-Cheat
+    path("security/anticheat", anticheat_flags_view, name="anticheat-flags-view"),
+    path("security/anticheat/<str:flag_id>/review", anticheat_flag_review, name="anticheat-flag-review"),
+    # Seasons
+    path("operations/seasons", seasons_view, name="seasons-view"),
+    path("operations/seasons/<str:season_id>/leaderboard", seasons_leaderboard, name="seasons-leaderboard"),
+    path("operations/seasons/activate", seasons_activate, name="seasons-activate"),
+    path("operations/seasons/close", seasons_close, name="seasons-close"),
+    path("operations/seasons/<str:season_id>/recompute", seasons_recompute, name="seasons-recompute"),
+    # Notifications
+    path("operations/notifications", notifications_view, name="notifications-view"),
+    path("operations/notifications/send", notifications_send, name="notifications-send"),
+    path("operations/notifications/dead-letter/<str:schedule_id>/replay", notifications_dead_letter_replay, name="notifications-dead-letter-replay"),
     path("healthz", healthz, name="dashboard-healthz"),
 ]

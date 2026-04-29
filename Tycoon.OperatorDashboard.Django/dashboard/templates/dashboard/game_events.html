@@ -1,0 +1,103 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Game Events{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Operations</p>
+    <h1 class="page-title">Game events</h1>
+    <p class="page-subtitle">View and manage scheduled, open, and live game events.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Filter events" copy="Filter by status." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Status
+        <select name="status">
+          <option value="">All</option>
+          <option value="Scheduled" {% if query.status == "Scheduled" %}selected{% endif %}>Scheduled</option>
+          <option value="Open" {% if query.status == "Open" %}selected{% endif %}>Open</option>
+          <option value="Live" {% if query.status == "Live" %}selected{% endif %}>Live</option>
+          <option value="Closed" {% if query.status == "Closed" %}selected{% endif %}>Closed</option>
+        </select>
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="20" {% if query.pageSize == "20" or not query.pageSize %}selected{% endif %}>20</option>
+          <option value="50" {% if query.pageSize == "50" %}selected{% endif %}>50</option>
+          <option value="100" {% if query.pageSize == "100" %}selected{% endif %}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Apply</button>
+    </div>
+  </form>
+</section>
+
+{% if events %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Event list" copy="Most-recent events first." %}
+  <div class="table-meta">
+    <span class="helper-text">Page {{ events.page|default:1 }} — {{ events.items|length }} of {{ events.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Kind</th>
+          <th>Tier</th>
+          <th>Status</th>
+          <th>Scheduled (UTC)</th>
+          <th>Entry fee</th>
+          <th>Max players</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in events.items %}
+        <tr>
+          <td class="helper-text">{{ ev.id|default:"-" }}</td>
+          <td>{{ ev.kind|default:"-" }}</td>
+          <td>{{ ev.tierId|default:"-" }}</td>
+          <td><span class="status-badge status-{{ ev.status|lower|default:'unknown' }}">{{ ev.status|default:"-" }}</span></td>
+          <td>{{ ev.scheduledAtUtc|default:"-" }}</td>
+          <td>{{ ev.entryFeeCoins|default:"0" }}</td>
+          <td>{{ ev.maxParticipants|default:"-" }}</td>
+          <td>
+            <div class="row-actions">
+              {% if ev.status == "Scheduled" or ev.status == 2 %}
+              <form method="post" action="{% url 'game-event-open' ev.id %}">{% csrf_token %}
+                <button class="btn-inline" type="submit" onclick="return confirm('Open event {{ ev.id }}?')">Open</button>
+              </form>
+              {% endif %}
+              {% if ev.status == "Open" or ev.status == 3 %}
+              <form method="post" action="{% url 'game-event-start' ev.id %}">{% csrf_token %}
+                <button class="btn-inline" type="submit" onclick="return confirm('Start event {{ ev.id }}?')">Start</button>
+              </form>
+              {% endif %}
+              {% if ev.status == "Live" or ev.status == 4 %}
+              <form method="post" action="{% url 'game-event-close' ev.id %}">{% csrf_token %}
+                <button class="btn-inline btn-danger" type="submit" onclick="return confirm('Close and distribute prizes for event {{ ev.id }}?')">Close</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="helper-text">No game events found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
