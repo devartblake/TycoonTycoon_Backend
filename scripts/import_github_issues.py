@@ -15,7 +15,7 @@ HEADERS = {
     "X-GitHub-Api-Version": API_VERSION,
 }
 
-JSON_FILE = os.path.join(os.path.dirname(__file__), "..", "ops", "issues", "github_issues_import.json")
+JSON_FILE = os.path.join(os.path.dirname(__file__), "..", "ops", "issues", "unified_personalization_github_issues.json")
 
 
 def gh_get(url: str):
