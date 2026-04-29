@@ -1,5 +1,9 @@
 # 3D Avatar Purchase Path — Backend Handoff
 
+> **STATUS: COMPLETE — 2026-04-29**
+> All three endpoints are implemented, registered, and covered by 18 unit tests (`Tycoon.Backend.Application.Tests/Avatars/AvatarHandlerTests.cs`).
+> `GET /store/catalog?category=avatar` ✅ | `POST /store/avatars/{sku}/purchase` ✅ | `GET /v1/assets/avatars/{sku}` ✅
+
 > **Audience:** Backend team
 > **Date:** 2026-04-21
 > **Base URL:** `http(s)://<host>:5000`

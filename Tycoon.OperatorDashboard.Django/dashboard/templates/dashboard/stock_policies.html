@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Stock Policies{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store</p>
+    <h1 class="page-title">Stock policies</h1>
+    <p class="page-subtitle">Per-SKU purchase limits and reset intervals. Policies define how many units a player may buy per interval.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Filters" copy="Narrow to a specific SKU or show only active policies." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        SKU
+        <input type="text" name="sku" value="{{ query.sku|default:'' }}" placeholder="e.g. powerup:skip" />
+      </label>
+      <label>
+        Active only
+        <select name="activeOnly">
+          <option value="">All</option>
+          <option value="true" {% if query.activeOnly == "true" %}selected{% endif %}>Active</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Filter</button>
+      <span class="helper-text">{{ policies|length }} polic{{ policies|length|pluralize:"y,ies" }} returned.</span>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Policies" copy="0 = unlimited. Edit policies via the backend admin API or CLI." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Max qty / user</th>
+          <th>Reset interval</th>
+          <th>Status</th>
+          <th>Updated (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for policy in policies %}
+        <tr>
+          <td>{{ policy.sku|default:"-" }}</td>
+          <td>{% if policy.maxQuantityPerUser == 0 %}unlimited{% else %}{{ policy.maxQuantityPerUser }}{% endif %}</td>
+          <td>{{ policy.resetInterval|default:"-" }}</td>
+          <td>
+            <span class="chip {% if policy.isActive %}success{% else %}warning{% endif %}">
+              {% if policy.isActive %}active{% else %}inactive{% endif %}
+            </span>
+          </td>
+          <td>{{ policy.updatedAtUtc|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="helper-text">No stock policies found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

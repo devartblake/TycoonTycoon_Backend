@@ -1,0 +1,109 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Anti-Cheat Flags{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Security</p>
+    <h1 class="page-title">Anti-cheat flags</h1>
+    <p class="page-subtitle">Review flagged players and annotate investigative outcomes.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Filter flags" copy="Filter by severity, player, or review status." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Severity
+        <select name="severity">
+          <option value="">All</option>
+          <option value="1" {% if query.severity == "1" %}selected{% endif %}>1 — Low</option>
+          <option value="2" {% if query.severity == "2" %}selected{% endif %}>2 — Medium</option>
+          <option value="3" {% if query.severity == "3" %}selected{% endif %}>3 — High</option>
+          <option value="4" {% if query.severity == "4" %}selected{% endif %}>4 — Critical</option>
+        </select>
+      </label>
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ query.playerId|default:'' }}" placeholder="uuid" />
+      </label>
+      <label>
+        Unreviewed only
+        <select name="unreviewedOnly">
+          <option value="">All</option>
+          <option value="true" {% if query.unreviewedOnly == "true" %}selected{% endif %}>Yes</option>
+        </select>
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="25" {% if query.pageSize == "25" or not query.pageSize %}selected{% endif %}>25</option>
+          <option value="50" {% if query.pageSize == "50" %}selected{% endif %}>50</option>
+          <option value="100" {% if query.pageSize == "100" %}selected{% endif %}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Apply</button>
+    </div>
+  </form>
+</section>
+
+{% if flags %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Flagged events" copy="Most-recent flags first. Submit review to annotate a flag." %}
+  <div class="table-meta">
+    <span class="helper-text">Page {{ flags.page|default:1 }} — {{ flags.items|length }} of {{ flags.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Player</th>
+          <th>Rule</th>
+          <th>Sev</th>
+          <th>Action</th>
+          <th>Message</th>
+          <th>Flagged (UTC)</th>
+          <th>Reviewed by</th>
+          <th>Review</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for flag in flags.items %}
+        <tr>
+          <td class="helper-text">{{ flag.id|default:"-" }}</td>
+          <td class="helper-text">{{ flag.playerId|default:"-" }}</td>
+          <td>{{ flag.ruleKey|default:"-" }}</td>
+          <td>{{ flag.severity|default:"-" }}</td>
+          <td>{{ flag.action|default:"-" }}</td>
+          <td>{{ flag.message|default:"-" }}</td>
+          <td>{{ flag.createdAtUtc|default:"-" }}</td>
+          <td>{{ flag.reviewedBy|default:"—" }}</td>
+          <td>
+            {% if not flag.reviewedAtUtc %}
+            <form method="post" action="{% url 'anticheat-flag-review' flag.id %}" class="inline-form">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+              <input type="text" name="note" placeholder="Review note" required style="width:140px" />
+              <button class="btn-inline" type="submit">Mark reviewed</button>
+            </form>
+            {% else %}
+            <span class="helper-text">{{ flag.reviewNote|default:"reviewed" }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="helper-text">No flags found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

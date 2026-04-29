@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Event Queue{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Operations</p>
+    <h1 class="page-title">Event queue</h1>
+    <p class="page-subtitle">Trigger reprocessing of stuck or failed domain events by scope. Bulk uploads require the raw API.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Reprocess events" copy="Re-queues pending/failed events matching the given scope. Use with caution — events may produce side effects." %}
+  <form method="post" action="{% url 'event-queue-reprocess' %}" class="stack"
+        onsubmit="return confirm('Reprocess up to ' + document.querySelector('[name=limit]').value + ' events in scope \'' + document.querySelector('[name=scope]').value + '\'?');">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Scope
+        <input type="text" name="scope" placeholder="e.g. player-economy or * for all" required />
+      </label>
+      <label>
+        Limit
+        <input type="number" name="limit" value="100" min="1" max="5000" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Reprocess</button>
+    </div>
+  </form>
+</section>
+
+{% if job_result %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Job queued" copy="Reprocess job accepted by the backend." %}
+  <dl class="stat-grid">
+    <div class="stat-item">
+      <dt class="helper-text">Job ID</dt>
+      <dd>{{ job_result.jobId|default:"-" }}</dd>
+    </div>
+    <div class="stat-item">
+      <dt class="helper-text">Status</dt>
+      <dd>{{ job_result.status|default:"-" }}</dd>
+    </div>
+  </dl>
+</section>
+{% endif %}
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Bulk upload" copy="Uploading raw event payloads is an API-only operation. Use POST /admin/event-queue/upload with a JSON body containing source, exportedAt, playerId, and an events array." %}
+  <p class="helper-text">This surface is intentionally not exposed here to prevent accidental data import through the UI.</p>
+</section>
+{% endblock %}
