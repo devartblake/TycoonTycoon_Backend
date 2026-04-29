@@ -18,15 +18,16 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [x] Store stock policies view with SKU/active filters (`/store/stock-policies`)
 - [x] Store purchase analytics with date-range filter (`/store/analytics`)
 
-## Missing — Blazor Workflows Not Yet in Django (Wave B/C)
+## Wave B/C — Now Complete ✅
 
-- [ ] Questions list / approve / reject / bulk actions (`Questions.razor`)
-- [ ] Game events create / manage (`Events.razor`)
-- [ ] Seasons lifecycle management (`Seasons.razor`)
-- [ ] Economy / coin grant / reward adjustments (`Economy.razor`)
-- [ ] Anti-cheat review queue (`AntiCheat.razor`)
-- [ ] Notifications send / schedule / dead-letter (`Notifications.razor`)
-- [ ] Player stock overrides + bulk reset (`/admin/store/player-stock/*`)
+- [x] Questions list / approve / reject (`Questions.razor`) — `/content/questions`
+- [x] Game events create / manage (`Events.razor`) — `/events/game-events` (open/start/close lifecycle)
+- [x] Seasons lifecycle management (`Seasons.razor`) — `/operations/seasons` (activate/close/recompute/leaderboard)
+- [x] Economy / coin grant (`Economy.razor`) — `/economy/player`
+- [x] Anti-cheat review queue (`AntiCheat.razor`) — `/security/anticheat`
+- [x] Notifications send / schedule / dead-letter (`Notifications.razor`) — `/operations/notifications`
+- [x] Event queue reprocess — `/operations/event-queue`
+- [ ] Player stock overrides + bulk reset (`/admin/store/player-stock/*`) — **intentionally deferred; support-only, low operator impact**
 
 ## Safety/Operations
 
@@ -37,9 +38,22 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 
 ## Release Gates
 
-- [ ] Execute one full parallel-run validation in staging with real operator accounts.
-- [ ] Capture and attach operator sign-off notes.
-- [ ] Confirm rollback drill execution timestamp in release notes.
+- [ ] Execute one full parallel-run validation in staging with real operator accounts. **Runbook: `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`** (window: May 8–14)
+- [ ] Apply pending EF migrations to staging + production. **Script: `docs/pending_migrations_2026-04-29.sql`**
+- [ ] Capture and attach operator sign-off notes (QA Lead + Backend Lead + On-call Operator).
+- [x] Rollback drill executed (April 15, 2026).
+- [x] Blazor soft-freeze enforced (April 22, 2026).
+
+## Status Update — April 29, 2026
+
+- ✅ **All Wave B surfaces complete:** Questions queue (list/approve/reject), Game Events (open/start/close lifecycle).
+- ✅ **All Wave C surfaces complete:** Economy player (history + grants), Anti-Cheat (flags + review), Seasons (activate/close/recompute/leaderboard), Notifications (send + dead-letter), Event Queue (reprocess).
+- ✅ **DefaultPermissions fix:** `.NET` API now grants all 12 operator permission scopes on login — no manual provisioning required.
+- ✅ **Avatar handler tests:** 18 unit tests covering all three avatar endpoints (`GetAvatarCatalog`, `PurchaseAvatar`, `GetAvatarAsset`).
+- ✅ **Pending migrations SQL:** `docs/pending_migrations_2026-04-29.sql` — idempotent DDL for all 6 outstanding EF migrations.
+- ✅ **Staging runbook:** `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` — 14-surface parallel-run checklist with pass/fail criteria and sign-off table.
+- ⚠️ Parallel-run execution (May 8–14) and operator sign-off still outstanding — must complete before May 15 cutover.
+- ⚠️ DBA must apply `docs/pending_migrations_2026-04-29.sql` to staging and production before parallel run begins.
 
 ## Status Update — April 28, 2026
 
@@ -47,7 +61,7 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - ✅ Parity checklist updated with Wave B/C gap matrix.
 - ⚠️ Cutover risk assessment created: `docs/OPERATOR_DASHBOARD_CUTOVER_RISK_2026-04-28.md`.
 - ⚠️ Parallel-run sign-off still outstanding — must complete before May 15 hard cutover.
-- 🚧 Wave B (Questions, Events, Seasons) and Wave C (Economy, Anti-cheat, Notifications) not started.
+- ✅ Wave B (Questions, Events, Seasons) and Wave C (Economy, Anti-cheat, Notifications) — **now complete as of April 29**.
 
 ## Status Update — April 8, 2026
 

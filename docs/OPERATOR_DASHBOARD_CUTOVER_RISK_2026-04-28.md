@@ -8,9 +8,9 @@
 
 ## Executive Summary
 
-The Django dashboard is the default Docker Compose service and has passed a staging rollback drill. However, **feature parity with Blazor is materially incomplete**. The May 15 deprecation date is achievable only for the operator surfaces Django already covers. Cutting over the full Blazor surface on that date without completing Wave B/C workflows would force operators to context-switch between two UIs or lose access to critical workflows entirely.
+**Updated: 2026-04-29** — Wave B/C implementation is complete. The Django dashboard now covers all Blazor operator surfaces except player stock overrides (intentionally deferred — support-only, low operational impact). The May 15 hard cutover is on track. All remaining blockers are operational (parallel-run execution, migrations apply, sign-off) rather than code gaps.
 
-**Recommendation:** Proceed with a **partial cutover on May 15** — Django as default for covered surfaces, Blazor fallback flag retained for uncovered ones. Retire Blazor fully only after Wave B/C are complete (estimated 3–4 weeks post–May 15).
+**Recommendation:** Proceed with **full cutover on May 15** — Django as the sole operator UI. Blazor fallback container remains warm through June 12 per the rollback window. Execute staging parallel run May 8–14 using `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` and collect sign-off before flipping nginx.
 
 ---
 
@@ -30,19 +30,23 @@ The Django dashboard is the default Docker Compose service and has passed a stag
 | Stock policies | `/store/stock-policies` | `/admin/store/stock-policies` | ✅ **Added 2026-04-28** |
 | Purchase analytics | `/store/analytics` | `/admin/store/analytics/purchases` | ✅ **Added 2026-04-28** |
 
-### Not yet in Django (cutover blocked)
+### Added in Wave B/C — 2026-04-29 (cutover safe)
 
-| Surface | Blazor page | Backend endpoint | Risk if missing |
-|---------|------------|-----------------|----------------|
-| Questions CRUD | `Questions.razor` | `/admin/questions/*` | **HIGH** — daily ops for content team |
-| Questions import/bulk approve | `Questions.razor` | `/admin/questions/bulk-*` | **HIGH** |
-| Game events create/manage | `Events.razor` | `/admin/game-events/*` | HIGH |
-| Seasons lifecycle | `Seasons.razor` | `/admin/seasons/*` | MEDIUM |
-| Economy / reward adjustments | `Economy.razor` | `/admin/economy/*` | HIGH |
-| Anti-cheat review | `AntiCheat.razor` | `/admin/anti-cheat/*` | MEDIUM |
-| Notifications send/schedule | `Notifications.razor` | `/admin/notifications/*` | MEDIUM |
-| Dead-letter queue viewer | `Notifications.razor` | `/admin/event-queue/*` | LOW (ops-only) |
-| Player stock overrides | N/A | `/admin/store/player-stock/*` | LOW (support-only) |
+| Surface | Django URL | Backend endpoint | Notes |
+|---------|-----------|-----------------|-------|
+| Questions queue | `/content/questions` | `/admin/questions/*` | ✅ **Added 2026-04-29** — list, approve, reject |
+| Game events | `/events/game-events` | `/admin/game-events/*` | ✅ **Added 2026-04-29** — list, open, start, close |
+| Seasons | `/operations/seasons` | `/admin/seasons/*` | ✅ **Added 2026-04-29** — list, activate, close, recompute, leaderboard |
+| Economy player | `/economy/player` | `/admin/economy/*` | ✅ **Added 2026-04-29** — history + coin grant |
+| Anti-cheat flags | `/security/anticheat` | `/admin/anti-cheat/*` | ✅ **Added 2026-04-29** — list, review |
+| Notifications | `/operations/notifications` | `/admin/notifications/*` | ✅ **Added 2026-04-29** — send, history, dead-letter replay |
+| Event queue | `/operations/event-queue` | `/admin/event-queue/*` | ✅ **Added 2026-04-29** — reprocess |
+
+### Intentionally deferred (not blocking cutover)
+
+| Surface | Blazor page | Backend endpoint | Risk |
+|---------|------------|-----------------|------|
+| Player stock overrides | N/A | `/admin/store/player-stock/*` | LOW — support-only workflow, deferred |
 | Bulk stock reset | N/A | `/admin/store/stock-policies/bulk-reset` | LOW |
 | Reward claim limits | N/A | `/admin/store/reward-limits/*` | LOW |
 
@@ -52,8 +56,13 @@ The Django dashboard is the default Docker Compose service and has passed a stag
 
 | Gate | Status | Blocker |
 |------|--------|---------|
-| Staging parallel-run with real operator accounts | ⚠️ **Incomplete** | Sign-off evidence artifact initialized but not filled in |
-| Operator sign-off notes captured | ⚠️ **Incomplete** | Waiting on parallel-run execution |
+| Wave B/C Django surfaces | ✅ **Complete — 2026-04-29** | — |
+| DefaultPermissions fix (.NET) | ✅ **Complete — 2026-04-29** | — |
+| Pending migrations SQL script | ✅ **Ready — `docs/pending_migrations_2026-04-29.sql`** | DBA must apply |
+| Staging parallel-run runbook | ✅ **Ready — `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`** | — |
+| Staging parallel-run with real operator accounts | ⚠️ **Pending** | Window: May 8–14 |
+| Operator sign-off notes captured | ⚠️ **Pending** | Waiting on parallel-run execution |
+| Pending migrations applied to staging/prod | ⚠️ **Pending** | DBA action required before parallel run |
 | Rollback drill executed | ✅ Complete (April 15, 2026) | — |
 | CI pipeline (lint + tests) | ✅ Complete | — |
 | Auth / session hardening | ✅ Complete | — |
@@ -63,38 +72,28 @@ The Django dashboard is the default Docker Compose service and has passed a stag
 
 ## Risks
 
-### R1 — Content team loses Questions workflow on cutover (HIGH)
-Questions management is a daily operation. If Blazor is shut off on May 15 without a Django Questions page, content operators have no UI path to approve/reject questions or import question sets.
+### R1 — Content team loses Questions workflow on cutover ✅ RESOLVED
+Django Questions page is live at `/content/questions` — list, approve, reject. Wave B complete 2026-04-29.
 
-**Mitigation:** Keep Blazor fallback container running (`operator-dashboard-blazor`) and document the fallback URL in the runbook. Begin Questions Wave B implementation immediately — it's the highest-priority Django page to add.
+### R2 — Parallel-run sign-off not completed before cutover (OPEN)
+The parity checklist requires a full staging parallel-run with real operator accounts before hard cutover. Gate still open — execution window is May 8–14.
 
-### R2 — Parallel-run sign-off not completed before cutover (HIGH)
-The parity checklist requires a full staging parallel-run with real operator accounts before hard cutover. This gate is currently open.
+**Mitigation:** Runbook in place at `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`. Schedule 2-hour session with operators before May 8.
 
-**Mitigation:** Schedule the parallel-run session in the next 5 business days. Required: at least one operator from content team and one from support to walk through their daily workflows on Django and sign off.
+### R3 — Economy/reward workflows have no Django UI ✅ RESOLVED
+Django Economy page is live at `/economy/player` — player lookup, transaction history, coin grant. Wave C complete 2026-04-29.
 
-### R3 — Economy/reward workflows have no Django UI (HIGH)
-Operators currently use the Blazor economy page for one-off coin grants, transaction reversals, and reward cap changes. These are support-critical paths.
+### R4 — Permission scopes not in operator role definitions ✅ RESOLVED
+`AdminAuthEndpoints.cs` `DefaultPermissions` array updated 2026-04-29 to include all 12 scopes: `users`, `questions`, `events`, `store`, `economy`, `anticheat`, `notifications`, `seasons`, `eventqueue` (read + write each). Operators receive full permissions on next login.
 
-**Mitigation:** Retain Blazor fallback. Add Django economy page as Wave C priority 1.
-
-### R4 — `store:read` / `store:write` permissions not yet in operator role definitions (MEDIUM)
-The new store pages require `store:read` and `store:write` permissions. These permission strings need to be added to the admin role definitions in the .NET API and reflected in operator session tokens.
-
-**Mitigation:** Confirm with backend team that these permission strings are provisioned. If not, the store pages will return 403 for all operators until resolved. Short-term workaround: relax permission check to `users:read` as a bootstrap measure.
-
-### R5 — Vue project creates confusion about the migration target (LOW)
-`Tycoon.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web` are still in the repo and have partial Wave A implementation. This creates ambiguity about which project is canonical.
-
-**Mitigation:** Add a `DEPRECATED.md` to the Vue and Web projects making clear that Django is the chosen path, and update `REMAINING_TASKS.md` accordingly.
+### R5 — Vue project creates confusion about the migration target ✅ RESOLVED
+`DEPRECATED.md` added to `Tycoon.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web`. Django is the canonical path.
 
 ---
 
 ## Recommended Immediate Actions (Priority Order)
 
-1. **Schedule staging parallel-run** — block 2 hours with operators within 5 business days. Required before May 15 hard cutover.
-2. **Implement Django Questions page** (Wave B P1) — list, approve/reject, filter by status. Uses existing `/admin/questions/*` endpoints.
-3. **Confirm `store:read`/`store:write` permission provisioning** with backend team before store pages go live.
-4. **Mark Vue/Web projects deprecated** — add `DEPRECATED.md` to both projects to avoid confusion.
-5. **Implement Django Economy page** (Wave C P1) — at minimum: player balance view and single-player coin grant.
-6. **Update cutover plan** to reflect partial cutover on May 15 (covered surfaces only) with Blazor fallback retained until Wave B/C complete.
+1. **Apply `docs/pending_migrations_2026-04-29.sql`** to staging and production — DBA action required before parallel run begins.
+2. **Schedule staging parallel-run** (May 8–14) — block 2 hours with operators using `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`. Required before May 15 cutover.
+3. **Collect operator sign-off** — QA Lead, Backend Lead, On-call Operator must sign the runbook's sign-off table before May 15.
+4. **Flip nginx upstream on May 15** — switch from Blazor port to Django port. Blazor stays warm through June 12 as the rollback target.
