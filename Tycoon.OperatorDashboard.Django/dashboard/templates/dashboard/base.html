@@ -44,6 +44,70 @@
           </div>
 
           <div class="operator-nav-group">
+            <div class="operator-nav-label">Content</div>
+            <a class="operator-nav-link {% if '/content/questions' in request.path %}is-active{% endif %}" href="{% url 'questions-queue-view' %}">
+              <span>Questions</span>
+              <span class="operator-nav-caption">Approve / reject</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Economy</div>
+            <a class="operator-nav-link {% if '/economy/player' in request.path %}is-active{% endif %}" href="{% url 'economy-player-view' %}">
+              <span>Player economy</span>
+              <span class="operator-nav-caption">History &amp; grants</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Store</div>
+            <a class="operator-nav-link {% if '/store/flash-sales' in request.path %}is-active{% endif %}" href="{% url 'store-flash-sales-view' %}">
+              <span>Flash sales</span>
+              <span class="operator-nav-caption">Active promos</span>
+            </a>
+            <a class="operator-nav-link {% if '/store/stock-policies' in request.path %}is-active{% endif %}" href="{% url 'store-stock-policies-view' %}">
+              <span>Stock policies</span>
+              <span class="operator-nav-caption">Purchase limits</span>
+            </a>
+            <a class="operator-nav-link {% if '/store/analytics' in request.path %}is-active{% endif %}" href="{% url 'store-analytics-view' %}">
+              <span>Purchase analytics</span>
+              <span class="operator-nav-caption">Revenue signals</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Events</div>
+            <a class="operator-nav-link {% if '/events/game-events' in request.path %}is-active{% endif %}" href="{% url 'game-events-view' %}">
+              <span>Game events</span>
+              <span class="operator-nav-caption">Lifecycle control</span>
+            </a>
+            <a class="operator-nav-link {% if '/operations/seasons' in request.path %}is-active{% endif %}" href="{% url 'seasons-view' %}">
+              <span>Seasons</span>
+              <span class="operator-nav-caption">Activate / close</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Security</div>
+            <a class="operator-nav-link {% if '/security/anticheat' in request.path %}is-active{% endif %}" href="{% url 'anticheat-flags-view' %}">
+              <span>Anti-cheat flags</span>
+              <span class="operator-nav-caption">Review &amp; annotate</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Notifications</div>
+            <a class="operator-nav-link {% if '/operations/notifications' in request.path %}is-active{% endif %}" href="{% url 'notifications-view' %}">
+              <span>Notifications</span>
+              <span class="operator-nav-caption">Send &amp; dead-letter</span>
+            </a>
+            <a class="operator-nav-link {% if '/operations/event-queue' in request.path %}is-active{% endif %}" href="{% url 'event-queue-view' %}">
+              <span>Event queue</span>
+              <span class="operator-nav-caption">Reprocess</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
             <div class="operator-nav-label">Storage</div>
             <a class="operator-nav-link {% if '/media/' in request.path %}is-active{% endif %}" href="{% url 'operator-media-intent-view' %}">
               <span>Media intents</span>

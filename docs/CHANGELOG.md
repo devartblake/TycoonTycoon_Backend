@@ -4,6 +4,32 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-29] Full Session Summary
+
+### Completed this session
+
+- **DefaultPermissions fix (.NET)** — `AdminAuthEndpoints.cs` now grants all 12 permission scopes (`users`, `questions`, `events`, `store`, `economy`, `anticheat`, `notifications`, `seasons`, `eventqueue` — read + write) to every operator on next login. Resolves 403s on all Wave B/C surfaces.
+- **Django Wave B — Questions** — `questions_queue_view`, `questions_approve`, `questions_reject` views + URL patterns + `questions_queue.html` template already in place; service client `admin_questions_client.py` complete.
+- **Django Wave B — Game Events** — `admin_game_events_client.py`, views (`game_events_view`, `game_event_open`, `game_event_start`, `game_event_close`), URL patterns, `game_events.html` template (status filter, lifecycle action buttons).
+- **Django Wave C — Economy** — `admin_economy_client.py`, `economy_player_view` / `economy_grant` views, URL patterns, `economy_player.html` template already in place.
+- **Django Wave C — Anti-Cheat** — `admin_anticheat_client.py`, views (`anticheat_flags_view`, `anticheat_flag_review`), URL patterns, `anticheat_flags.html` template (severity/playerId/unreviewedOnly filters, inline review form).
+- **Django Wave C — Seasons** — `admin_seasons_client.py`, views (list, activate, close, recompute, leaderboard), URL patterns, `seasons.html` template.
+- **Django Wave C — Notifications** — `admin_notifications_client.py`, views (list, send, dead-letter/replay), URL patterns, `notifications.html` template.
+- **Django Wave C — Event Queue** — `admin_event_queue_client.py`, views (view, reprocess), URL patterns, `event_queue.html` template (intentional: upload endpoint not exposed — API-only card added).
+- **Django base.html nav** — Events, Security, Notifications, Event Queue groups added to sidebar.
+- **Vue/Web deprecated** — `DEPRECATED.md` added to both `Tycoon.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web`.
+- **Avatar handler tests** — 18 xUnit tests in `Tycoon.Backend.Application.Tests/Avatars/AvatarHandlerTests.cs` covering `GetAvatarCatalog` (7), `PurchaseAvatar` (6), `GetAvatarAsset` (5). Correct seeding via `EconomyService.ApplyAsync` and `PlayerTransaction.MarkApplied()`.
+- **Pending migrations SQL** — `docs/pending_migrations_2026-04-29.sql`: idempotent PostgreSQL DDL for all 6 pending EF migrations (`AddStoreItemAvatarFields`, `AddSeasonRewardRules`, `AddStoreStockSystem`, `AddFlashSale`, `AddRewardClaimRule`, `AddEffectiveMaxQuantity`). Wrapped in `BEGIN/COMMIT`. Safe to re-run.
+- **Staging parallel-run runbook** — `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`: 14 surface checklists (Django vs Blazor), avatar API curl tests, pass/fail/rollback criteria, sign-off table.
+
+### Remaining (operational — no code changes needed)
+
+- Execute staging parallel-run (May 8–14) using `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` with real operator accounts.
+- Apply `docs/pending_migrations_2026-04-29.sql` to staging and production databases.
+- Obtain QA Lead + Backend Lead + On-call Operator sign-off before May 15 cutover.
+
+---
+
 ## [2026-04-26] Full Session Summary
 
 ### Completed this session

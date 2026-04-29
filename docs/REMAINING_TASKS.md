@@ -1,6 +1,6 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-04-26 (store stock P2 complete; admin store P2 + crypto handoff added)_
+_Last updated: 2026-04-29 (Wave B/C Django surfaces complete; avatar tests + pending migrations SQL + staging runbook added)_
 
 > This file is the canonical "what is left to do" reference.
 > For completed work, see [`docs/ALPHA_TASK_AUDIT.md`](ALPHA_TASK_AUDIT.md).
@@ -15,14 +15,16 @@ _Last updated: 2026-04-26 (store stock P2 complete; admin store P2 + crypto hand
 |------|----------|--------|----------|
 | Frontend/backend alpha handoff | High | Store, profile/social, question gameplay complete; crypto + ML remain | No |
 | **3D Avatar purchase path (Browse → Buy → Download)** | **High** | **Complete** | **No** |
+| **Avatar handler unit tests (18 tests)** | **High** | **Complete — `Tycoon.Backend.Application.Tests/Avatars/AvatarHandlerTests.cs`** | **No** |
 | **MinIO catalog seeders (StoreItems, SkillNodes, SeasonRewards, Questions)** | **High** | **Complete** | **No** |
-| **SeasonRewardRule EF migration** | **High** | **Pending — user must run `dotnet ef database update`** | **No** |
+| **Pending EF migrations (6 total)** | **High** | **SQL script ready — `docs/pending_migrations_2026-04-29.sql`; DBA must apply to staging + prod** | **No** |
 | Store stock system P0 (daily store + stock enforcement) | High | **Complete** | No |
 | Store stock system P1 (player catalog + hub + special offers) | High | **Complete** | No |
 | **Store stock system P2 (admin policies + flash sales + analytics)** | Medium | **Complete** | No |
-| Operator Dashboard Wave B (Questions, Events, Seasons) | Medium | Not started | No |
-| Operator Dashboard Wave C (Moderation, Notifications, Economy, Anti-cheat) | Medium | Not started | No |
-| Operator Dashboard Wave D (Cutover + Blazor decommission) | Low | Not started | Depends on B+C |
+| **Operator Dashboard Wave B (Questions, Events, Seasons)** | Medium | **Complete — 2026-04-29** | No |
+| **Operator Dashboard Wave C (Moderation, Notifications, Economy, Anti-cheat, Event Queue)** | Medium | **Complete — 2026-04-29** | No |
+| **Django DefaultPermissions fix** | Medium | **Complete — all 12 scopes now granted on login** | No |
+| Operator Dashboard Wave D (Cutover + Blazor decommission) | Low | Staging parallel-run pending (May 8–14); cutover May 15 | Depends on sign-off |
 | Phase 2 - Crash recovery stubs | High | Code complete; device validation pending | Yes — needs device |
 | Phase 3 - Test coverage (remaining gaps) | Medium | ~4.1% → 40% target | No |
 | Phase 4 - Dependency audit | Medium | Partial | No |

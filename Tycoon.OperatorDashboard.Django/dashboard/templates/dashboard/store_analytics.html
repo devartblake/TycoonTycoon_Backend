@@ -1,0 +1,90 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Purchase Analytics{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store</p>
+    <h1 class="page-title">Purchase analytics</h1>
+    <p class="page-subtitle">Aggregate purchase statistics across the store. Filter by date range or SKU to narrow the view.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Filters" copy="All filters are optional. Leave blank for all-time totals." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        From (UTC)
+        <input type="datetime-local" name="from" value="{{ query.from|default:'' }}" />
+      </label>
+      <label>
+        To (UTC)
+        <input type="datetime-local" name="to" value="{{ query.to|default:'' }}" />
+      </label>
+      <label>
+        SKU
+        <input type="text" name="sku" value="{{ query.sku|default:'' }}" placeholder="e.g. powerup:hint" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Run report</button>
+    </div>
+  </form>
+</section>
+
+{% if analytics %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Summary" copy="Totals for the selected window." %}
+  <div class="form-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total purchases</div>
+      <div class="stat-value">{{ analytics.totalPurchases|default:"0" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total coins spent</div>
+      <div class="stat-value">{{ analytics.totalCoinsSpent|default:"0" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Window from</div>
+      <div class="stat-value">{{ analytics.from|default:"—" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Window to</div>
+      <div class="stat-value">{{ analytics.to|default:"—" }}</div>
+    </div>
+  </div>
+</section>
+
+{% if analytics.topSkus %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Top SKUs" copy="Most-purchased items in the selected window." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>SKU</th>
+          <th>Purchases</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in analytics.topSkus %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ item.sku }}</td>
+          <td>{{ item.purchaseCount }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% else %}
+<section class="card">
+  <p class="helper-text">Run the report above to see analytics.</p>
+</section>
+{% endif %}
+{% endblock %}

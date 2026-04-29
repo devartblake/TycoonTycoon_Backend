@@ -23,6 +23,31 @@ from .views import (
     operator_user_update,
     operator_users_view,
     operator_users,
+    store_analytics_view,
+    store_flash_sale_cancel,
+    store_flash_sales_view,
+    store_stock_policies_view,
+    questions_queue_view,
+    questions_approve,
+    questions_reject,
+    economy_player_view,
+    economy_grant,
+    game_events_view,
+    game_event_open,
+    game_event_start,
+    game_event_close,
+    anticheat_flags_view,
+    anticheat_flag_review,
+    seasons_view,
+    seasons_leaderboard,
+    seasons_activate,
+    seasons_close,
+    seasons_recompute,
+    notifications_view,
+    notifications_send,
+    notifications_dead_letter_replay,
+    event_queue_view,
+    event_queue_reprocess,
 )
 
 urlpatterns = [
@@ -47,5 +72,38 @@ urlpatterns = [
     path("api/operator/users/<str:user_id>/update", operator_user_update, name="operator-user-update"),
     path("api/operator/users/<str:user_id>/ban", operator_user_ban, name="operator-user-ban"),
     path("api/operator/users/<str:user_id>/unban", operator_user_unban, name="operator-user-unban"),
+    # Store
+    path("store/flash-sales", store_flash_sales_view, name="store-flash-sales-view"),
+    path("store/flash-sales/<str:sale_id>/cancel", store_flash_sale_cancel, name="store-flash-sale-cancel"),
+    path("store/stock-policies", store_stock_policies_view, name="store-stock-policies-view"),
+    path("store/analytics", store_analytics_view, name="store-analytics-view"),
+    # Questions
+    path("content/questions", questions_queue_view, name="questions-queue-view"),
+    path("content/questions/<str:question_id>/approve", questions_approve, name="questions-approve"),
+    path("content/questions/<str:question_id>/reject", questions_reject, name="questions-reject"),
+    # Economy
+    path("economy/player", economy_player_view, name="economy-player-view"),
+    path("economy/grant", economy_grant, name="economy-grant"),
+    # Events
+    path("events/game-events", game_events_view, name="game-events-view"),
+    path("events/game-events/<str:event_id>/open", game_event_open, name="game-event-open"),
+    path("events/game-events/<str:event_id>/start", game_event_start, name="game-event-start"),
+    path("events/game-events/<str:event_id>/close", game_event_close, name="game-event-close"),
+    # Anti-Cheat
+    path("security/anticheat", anticheat_flags_view, name="anticheat-flags-view"),
+    path("security/anticheat/<str:flag_id>/review", anticheat_flag_review, name="anticheat-flag-review"),
+    # Seasons
+    path("operations/seasons", seasons_view, name="seasons-view"),
+    path("operations/seasons/<str:season_id>/leaderboard", seasons_leaderboard, name="seasons-leaderboard"),
+    path("operations/seasons/activate", seasons_activate, name="seasons-activate"),
+    path("operations/seasons/close", seasons_close, name="seasons-close"),
+    path("operations/seasons/<str:season_id>/recompute", seasons_recompute, name="seasons-recompute"),
+    # Notifications
+    path("operations/notifications", notifications_view, name="notifications-view"),
+    path("operations/notifications/send", notifications_send, name="notifications-send"),
+    path("operations/notifications/dead-letter/<str:schedule_id>/replay", notifications_dead_letter_replay, name="notifications-dead-letter-replay"),
+    # Event Queue
+    path("operations/event-queue", event_queue_view, name="event-queue-view"),
+    path("operations/event-queue/reprocess", event_queue_reprocess, name="event-queue-reprocess"),
     path("healthz", healthz, name="dashboard-healthz"),
 ]
