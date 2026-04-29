@@ -18,6 +18,12 @@ from .services.admin_audit_client import get_security_audit
 from .services.admin_auth_client import admin_login, admin_me, admin_refresh
 from .services.admin_media_client import create_upload_intent
 from .services.admin_moderation_client import get_moderation_logs, get_moderation_profile, set_moderation_status
+from .services.admin_store_client import (
+    cancel_flash_sale,
+    get_flash_sales,
+    get_purchase_analytics,
+    get_stock_policies,
+)
 from .services.admin_users_client import (
     ban_admin_user,
     get_admin_user,
@@ -963,3 +969,95 @@ def logout_view(request):
 
 def healthz(request):
     return JsonResponse({"status": "ok"})
+
+
+# ---------------------------------------------------------------------------
+# Store — Flash Sales
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("store:read")
+def store_flash_sales_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "sales": [],
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        payload = get_flash_sales(access_token)
+        context["sales"] = payload.get("sales", [])
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Flash sales lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend flash sales endpoint.")
+    return render(request, "dashboard/flash_sales.html", context)
+
+
+@operator_login_required
+@require_permission("store:write")
+def store_flash_sale_cancel(request, sale_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        cancel_flash_sale(access_token, sale_id)
+        messages.success(request, f"Flash sale {sale_id} cancelled.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Cancel failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend to cancel flash sale.")
+    return redirect("store-flash-sales-view")
+
+
+# ---------------------------------------------------------------------------
+# Store — Stock Policies
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("store:read")
+def store_stock_policies_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    params = {
+        "activeOnly": request.GET.get("activeOnly"),
+        "sku": request.GET.get("sku"),
+    }
+    context = {
+        "policies": [],
+        "query": {k: v for k, v in params.items() if v not in (None, "")},
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        payload = get_stock_policies(access_token, params)
+        context["policies"] = payload.get("policies", [])
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Stock policies lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend stock policies endpoint.")
+    return render(request, "dashboard/stock_policies.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Store — Purchase Analytics
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("store:read")
+def store_analytics_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    params = {
+        "from": request.GET.get("from"),
+        "to": request.GET.get("to"),
+        "sku": request.GET.get("sku"),
+    }
+    context = {
+        "analytics": None,
+        "query": {k: v for k, v in params.items() if v not in (None, "")},
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["analytics"] = get_purchase_analytics(access_token, params)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Analytics lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend analytics endpoint.")
+    return render(request, "dashboard/store_analytics.html", context)

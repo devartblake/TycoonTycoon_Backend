@@ -14,6 +14,19 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [x] Security audit view + CSV export
 - [x] Media intent workflow page
 - [x] MinIO diagnostics view
+- [x] Store flash sales view + cancel action (`/store/flash-sales`)
+- [x] Store stock policies view with SKU/active filters (`/store/stock-policies`)
+- [x] Store purchase analytics with date-range filter (`/store/analytics`)
+
+## Missing — Blazor Workflows Not Yet in Django (Wave B/C)
+
+- [ ] Questions list / approve / reject / bulk actions (`Questions.razor`)
+- [ ] Game events create / manage (`Events.razor`)
+- [ ] Seasons lifecycle management (`Seasons.razor`)
+- [ ] Economy / coin grant / reward adjustments (`Economy.razor`)
+- [ ] Anti-cheat review queue (`AntiCheat.razor`)
+- [ ] Notifications send / schedule / dead-letter (`Notifications.razor`)
+- [ ] Player stock overrides + bulk reset (`/admin/store/player-stock/*`)
 
 ## Safety/Operations
 
@@ -27,6 +40,14 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [ ] Execute one full parallel-run validation in staging with real operator accounts.
 - [ ] Capture and attach operator sign-off notes.
 - [ ] Confirm rollback drill execution timestamp in release notes.
+
+## Status Update — April 28, 2026
+
+- ✅ Store section added: Flash Sales, Stock Policies, Purchase Analytics (backed by admin store P2 endpoints).
+- ✅ Parity checklist updated with Wave B/C gap matrix.
+- ⚠️ Cutover risk assessment created: `docs/OPERATOR_DASHBOARD_CUTOVER_RISK_2026-04-28.md`.
+- ⚠️ Parallel-run sign-off still outstanding — must complete before May 15 hard cutover.
+- 🚧 Wave B (Questions, Events, Seasons) and Wave C (Economy, Anti-cheat, Notifications) not started.
 
 ## Status Update — April 8, 2026
 

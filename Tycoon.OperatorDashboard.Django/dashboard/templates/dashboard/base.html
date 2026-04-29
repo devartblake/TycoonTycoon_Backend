@@ -44,6 +44,22 @@
           </div>
 
           <div class="operator-nav-group">
+            <div class="operator-nav-label">Store</div>
+            <a class="operator-nav-link {% if '/store/flash-sales' in request.path %}is-active{% endif %}" href="{% url 'store-flash-sales-view' %}">
+              <span>Flash sales</span>
+              <span class="operator-nav-caption">Active promos</span>
+            </a>
+            <a class="operator-nav-link {% if '/store/stock-policies' in request.path %}is-active{% endif %}" href="{% url 'store-stock-policies-view' %}">
+              <span>Stock policies</span>
+              <span class="operator-nav-caption">Purchase limits</span>
+            </a>
+            <a class="operator-nav-link {% if '/store/analytics' in request.path %}is-active{% endif %}" href="{% url 'store-analytics-view' %}">
+              <span>Purchase analytics</span>
+              <span class="operator-nav-caption">Revenue signals</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
             <div class="operator-nav-label">Storage</div>
             <a class="operator-nav-link {% if '/media/' in request.path %}is-active{% endif %}" href="{% url 'operator-media-intent-view' %}">
               <span>Media intents</span>

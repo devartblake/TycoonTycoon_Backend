@@ -23,6 +23,10 @@ from .views import (
     operator_user_update,
     operator_users_view,
     operator_users,
+    store_analytics_view,
+    store_flash_sale_cancel,
+    store_flash_sales_view,
+    store_stock_policies_view,
 )
 
 urlpatterns = [
@@ -47,5 +51,10 @@ urlpatterns = [
     path("api/operator/users/<str:user_id>/update", operator_user_update, name="operator-user-update"),
     path("api/operator/users/<str:user_id>/ban", operator_user_ban, name="operator-user-ban"),
     path("api/operator/users/<str:user_id>/unban", operator_user_unban, name="operator-user-unban"),
+    # Store
+    path("store/flash-sales", store_flash_sales_view, name="store-flash-sales-view"),
+    path("store/flash-sales/<str:sale_id>/cancel", store_flash_sale_cancel, name="store-flash-sale-cancel"),
+    path("store/stock-policies", store_stock_policies_view, name="store-stock-policies-view"),
+    path("store/analytics", store_analytics_view, name="store-analytics-view"),
     path("healthz", healthz, name="dashboard-healthz"),
 ]

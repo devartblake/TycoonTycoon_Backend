@@ -1,0 +1,58 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Flash Sales{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store</p>
+    <h1 class="page-title">Flash sales</h1>
+    <p class="page-subtitle">Active and scheduled promotional discounts. Cancel a sale to remove it from the player-facing store immediately.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Active & scheduled sales" copy="Only active and scheduled sales are shown. Cancelled and expired sales are excluded." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Discount</th>
+          <th>Starts (UTC)</th>
+          <th>Ends (UTC)</th>
+          <th>Status</th>
+          <th>Reason</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sale in sales %}
+        <tr>
+          <td>{{ sale.sku|default:"-" }}</td>
+          <td>{{ sale.discountPercent|default:"-" }}%</td>
+          <td>{{ sale.startsAtUtc|default:"-" }}</td>
+          <td>{{ sale.endsAtUtc|default:"-" }}</td>
+          <td>
+            <span class="chip {% if sale.isActive %}success{% else %}warning{% endif %}">
+              {% if sale.isActive %}active{% else %}scheduled{% endif %}
+            </span>
+          </td>
+          <td>{{ sale.reason|default:"-" }}</td>
+          <td>
+            <form method="post" action="{% url 'store-flash-sale-cancel' sale.id %}" onsubmit="return confirm('Cancel sale for {{ sale.sku }}?');">
+              {% csrf_token %}
+              <button type="submit" class="button danger small">Cancel</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="helper-text">No active or scheduled flash sales.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
