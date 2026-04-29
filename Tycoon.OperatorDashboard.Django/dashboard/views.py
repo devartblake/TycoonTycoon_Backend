@@ -47,6 +47,7 @@ from .services.admin_notifications_client import (
     replay_dead_letter,
     send_notification,
 )
+from .services.admin_event_queue_client import reprocess_event_queue
 from .services.admin_users_client import (
     ban_admin_user,
     get_admin_user,
@@ -1497,3 +1498,45 @@ def notifications_dead_letter_replay(request, schedule_id: str):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend.")
     return redirect("/operations/notifications")
+
+
+# ---------------------------------------------------------------------------
+# Event Queue
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("eventqueue:read")
+def event_queue_view(request):
+    return render(request, "dashboard/event_queue.html", {
+        "job_result": None,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    })
+
+
+@operator_login_required
+@require_permission("eventqueue:write")
+def event_queue_reprocess(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    scope = request.POST.get("scope", "").strip()
+    limit_raw = request.POST.get("limit", "100")
+    try:
+        limit = int(limit_raw)
+    except ValueError:
+        limit = 100
+    if not scope:
+        messages.error(request, "Scope is required.")
+        return redirect("/operations/event-queue")
+    try:
+        result = reprocess_event_queue(access_token, scope, limit)
+        messages.success(request, f"Reprocess job queued: {result.get('jobId', '?')} ({result.get('status', '?')}).")
+        return render(request, "dashboard/event_queue.html", {
+            "job_result": result,
+            "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        })
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Reprocess failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend event queue endpoint.")
+    return redirect("/operations/event-queue")

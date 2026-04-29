@@ -46,6 +46,8 @@ from .views import (
     notifications_view,
     notifications_send,
     notifications_dead_letter_replay,
+    event_queue_view,
+    event_queue_reprocess,
 )
 
 urlpatterns = [
@@ -100,5 +102,8 @@ urlpatterns = [
     path("operations/notifications", notifications_view, name="notifications-view"),
     path("operations/notifications/send", notifications_send, name="notifications-send"),
     path("operations/notifications/dead-letter/<str:schedule_id>/replay", notifications_dead_letter_replay, name="notifications-dead-letter-replay"),
+    # Event Queue
+    path("operations/event-queue", event_queue_view, name="event-queue-view"),
+    path("operations/event-queue/reprocess", event_queue_reprocess, name="event-queue-reprocess"),
     path("healthz", healthz, name="dashboard-healthz"),
 ]

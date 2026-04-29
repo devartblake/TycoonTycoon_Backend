@@ -101,6 +101,10 @@
               <span>Notifications</span>
               <span class="operator-nav-caption">Send &amp; dead-letter</span>
             </a>
+            <a class="operator-nav-link {% if '/operations/event-queue' in request.path %}is-active{% endif %}" href="{% url 'event-queue-view' %}">
+              <span>Event queue</span>
+              <span class="operator-nav-caption">Reprocess</span>
+            </a>
           </div>
 
           <div class="operator-nav-group">
