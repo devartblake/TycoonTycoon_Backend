@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Tycoon.Backend.Application.Analytics.Models;
 using Tycoon.Backend.Domain.Entities;
+using Tycoon.Backend.Domain.Personalization;
 
 namespace Tycoon.Backend.Application.Abstractions
 {
@@ -90,6 +91,12 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<ModuleLesson> ModuleLessons { get; }
         DbSet<ModuleCompletion> ModuleCompletions { get; }
         DbSet<StudySession> StudySessions { get; }
+
+        // Personalization
+        DbSet<PlayerMindProfile> PlayerMindProfiles { get; }
+        DbSet<PlayerBehaviorEvent> PlayerBehaviorEvents { get; }
+        DbSet<PersonalizationRecommendation> PersonalizationRecommendations { get; }
+        DbSet<PersonalizationRule> PersonalizationRules { get; }
 
         Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);

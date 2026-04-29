@@ -10,7 +10,7 @@ from pymongo.errors import OperationFailure
 
 from app.config import settings
 from app.grpc_client import GrpcClientManager
-from app.routers import analytics, ml, utilities, webhooks
+from app.routers import analytics, ml, utilities, webhooks, personalization as personalization_router
 from app.routes import auth as auth_routes, config as config_routes
 
 # Normalize .NET-style log level names (Information, Warning, Critical) to Python equivalents
@@ -94,12 +94,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.include_router(ml.router,               prefix="/ml",        tags=["ML"])
-app.include_router(analytics.router,        prefix="/analytics", tags=["Analytics"])
-app.include_router(webhooks.router,         prefix="/webhooks",  tags=["Webhooks"])
-app.include_router(utilities.router,        prefix="/utilities", tags=["Utilities"])
-app.include_router(auth_routes.router,      prefix="/auth",      tags=["Auth"])
-app.include_router(config_routes.router,    prefix="/config",    tags=["Config"])
+app.include_router(ml.router,                          prefix="/ml",             tags=["ML"])
+app.include_router(analytics.router,                   prefix="/analytics",      tags=["Analytics"])
+app.include_router(webhooks.router,                    prefix="/webhooks",       tags=["Webhooks"])
+app.include_router(utilities.router,                   prefix="/utilities",      tags=["Utilities"])
+app.include_router(auth_routes.router,                 prefix="/auth",           tags=["Auth"])
+app.include_router(config_routes.router,               prefix="/config",         tags=["Config"])
+app.include_router(personalization_router.router,      tags=["Personalization"])
 
 
 @app.get("/health", tags=["Health"])
