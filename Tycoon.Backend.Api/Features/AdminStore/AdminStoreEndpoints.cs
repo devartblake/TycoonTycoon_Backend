@@ -9,6 +9,7 @@ using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Api.Features.Store;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.AdminStore;
 
