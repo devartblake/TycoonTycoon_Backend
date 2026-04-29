@@ -118,6 +118,11 @@ namespace Tycoon.Backend.Application
             services.AddScoped<SeasonRewardJob>();
             services.AddScoped<SeasonCloseOrchestrator>();
 
+            // Personalization
+            services.AddScoped<Personalization.IPlayerMindProfileService, Personalization.PlayerMindProfileService>();
+            services.AddScoped<Personalization.IPersonalizationService, Personalization.PersonalizationService>();
+            services.AddScoped<Personalization.IPersonalizationGuardrailService, Personalization.PersonalizationGuardrailService>();
+
             return services;
         }
     }

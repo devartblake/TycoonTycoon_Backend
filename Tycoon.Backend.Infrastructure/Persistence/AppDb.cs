@@ -5,6 +5,7 @@ using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Analytics.Models;
 using Tycoon.Backend.Domain.Abstractions;
 using Tycoon.Backend.Domain.Entities;
+using Tycoon.Backend.Domain.Personalization;
 using Tycoon.Backend.Infrastructure.Events;
 using Tycoon.Backend.Infrastructure.Persistence.Configurations;
 
@@ -107,6 +108,12 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<ModuleLesson> ModuleLessons => Set<ModuleLesson>();
         public DbSet<ModuleCompletion> ModuleCompletions => Set<ModuleCompletion>();
         public DbSet<StudySession> StudySessions => Set<StudySession>();
+
+        // Personalization
+        public DbSet<PlayerMindProfile> PlayerMindProfiles => Set<PlayerMindProfile>();
+        public DbSet<PlayerBehaviorEvent> PlayerBehaviorEvents => Set<PlayerBehaviorEvent>();
+        public DbSet<PersonalizationRecommendation> PersonalizationRecommendations => Set<PersonalizationRecommendation>();
+        public DbSet<PersonalizationRule> PersonalizationRules => Set<PersonalizationRule>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

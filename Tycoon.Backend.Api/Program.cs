@@ -62,6 +62,8 @@ using Tycoon.Backend.Api.Features.Qr;
 using Tycoon.Backend.Api.Features.LearningModules;
 using Tycoon.Backend.Api.Features.AdminLearningModules;
 using Tycoon.Backend.Api.Features.Avatars;
+using Tycoon.Backend.Api.Features.Personalization;
+using Tycoon.Backend.Api.Features.Coach;
 using Tycoon.Backend.Api.Features.Questions;
 using Tycoon.Backend.Api.Features.Crypto;
 using Tycoon.Backend.Api.Features.Store;
@@ -96,6 +98,7 @@ using Tycoon.Backend.Infrastructure;
 using Tycoon.Backend.Infrastructure.Persistence.Extensions;
 using Tycoon.Backend.Infrastructure.Persistence.HealthChecks;
 using Tycoon.Backend.Infrastructure.Persistence.Startup;
+using Tycoon.Backend.Infrastructure.SidecarClient;
 using Tycoon.Shared.Contracts.Dtos;
 using Tycoon.Shared.Observability;
 using Tycoon.Backend.Api.Grpc;
@@ -513,6 +516,12 @@ builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 // take it as a service dependency (avoids startup parameter-inference failures).
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<IPersonalizationSidecarClient, PersonalizationSidecarClient>(client =>
+{
+    var baseUrl = builder.Configuration["SidecarPersonalization:BaseUrl"] ?? "http://localhost:8001";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
 builder.Services.Configure<StorePremiumOptions>(builder.Configuration.GetSection("StorePremium"));
 builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection("PayPal"));
 builder.Services.AddSingleton<IPayPalPaymentGateway, PayPalPaymentGateway>();
@@ -831,6 +840,8 @@ StudySessionsEndpoints.Map(app);
 VoteEndpoints.Map(app);
 StoreEndpoints.Map(app);
 AvatarEndpoints.Map(app);
+PersonalizationEndpoints.Map(app);
+CoachEndpoints.Map(app);
 CryptoEconomyEndpoints.Map(app);
 MlScoringEndpoints.Map(app);
 GameEventsEndpoints.Map(app);
