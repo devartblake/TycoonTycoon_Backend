@@ -1,0 +1,165 @@
+{
+  "project": "Synaptix Unified Personalization Layer",
+  "repository": "devartblake/TycoonTycoon_Backend",
+  "generated_for": "automation_import",
+  "issues": [
+    {
+      "title": "Add personalization database tables and EF entities",
+      "labels": [
+        "backend",
+        "personalization",
+        "database",
+        "ef-core"
+      ],
+      "priority": "P0",
+      "body": "## Goal\nAdd persistence for the Unified Personalization Layer.\n\n## Scope\nCreate:\n- `player_mind_profiles`\n- `player_behavior_events`\n- `personalization_recommendations`\n- `personalization_rules`\n\n## Backend files\n- `Tycoon.Backend.Domain/Personalization/PlayerMindProfile.cs`\n- `Tycoon.Backend.Domain/Personalization/PlayerBehaviorEvent.cs`\n- `Tycoon.Backend.Domain/Personalization/PersonalizationRecommendation.cs`\n- `Tycoon.Backend.Infrastructure/Persistence/Configurations/*Personalization*.cs`\n- EF migration for the new tables\n\n## Acceptance Criteria\n- Migration creates all tables and indexes.\n- EF model maps JSONB columns correctly.\n- App starts with schema gate enabled.\n- No behavior changes to gameplay yet.\n"
+    },
+    {
+      "title": "Implement PlayerMindProfileService and behavior event ingestion",
+      "labels": [
+        "backend",
+        "personalization",
+        "application-service"
+      ],
+      "priority": "P0",
+      "body": "## Goal\nCreate the service responsible for profile creation, behavior event recording, and profile recalculation.\n\n## Scope\nAdd:\n- `IPlayerMindProfileService`\n- `PlayerMindProfileService`\n- DTOs for profile and behavior events\n\n## Acceptance Criteria\n- `GetOrCreateAsync(playerId)` creates default profile if missing.\n- `RecordEventAsync(playerId, event)` stores behavior event.\n- `RecalculateAsync(playerId)` updates profile fields using local rules first.\n- Service is registered in DI.\n"
+    },
+    {
+      "title": "Add public personalization API endpoints",
+      "labels": [
+        "backend",
+        "api",
+        "personalization"
+      ],
+      "priority": "P0",
+      "body": "## Goal\nExpose player-facing personalization endpoints.\n\n## Routes\n- `GET /personalization/profile/{playerId}`\n- `POST /personalization/profile/{playerId}/event`\n- `POST /personalization/profile/{playerId}/recalculate`\n- `GET /personalization/home/{playerId}`\n- `GET /personalization/recommendations/{playerId}`\n- `POST /personalization/recommendations/{recommendationId}/accept`\n- `POST /personalization/recommendations/{recommendationId}/dismiss`\n\n## Acceptance Criteria\n- Endpoints require auth.\n- Event ingestion returns 202.\n- Home endpoint returns recommendations and coach brief shell.\n- Accept/dismiss updates recommendation record.\n"
+    },
+    {
+      "title": "Implement PersonalizationGuardrailService",
+      "labels": [
+        "backend",
+        "personalization",
+        "guardrails",
+        "safety"
+      ],
+      "priority": "P0",
+      "body": "## Goal\nAdd production safety rules around ToM personalization.\n\n## Required rules\n- Suppress paid offers when frustration risk is high.\n- Suppress notifications when notification fatigue is high.\n- Block ranked difficulty manipulation.\n- Prevent Sidecar from directly granting rewards.\n- Respect personalization opt-out.\n\n## Acceptance Criteria\n- Guardrail service returns allow/block decisions.\n- Applied rules are included in recommendation guardrail payload.\n- Unit tests cover blocked store offer, blocked notification, and ranked fairness lock.\n"
+    },
+    {
+      "title": "Add FastAPI Sidecar personalization scoring endpoints",
+      "labels": [
+        "sidecar",
+        "fastapi",
+        "ml",
+        "personalization"
+      ],
+      "priority": "P1",
+      "body": "## Goal\nAdd Sidecar endpoints that score player behavior and return recommendation candidates.\n\n## Routes\n- `POST /personalization/score-player`\n- `POST /personalization/recommendation-candidates`\n- `POST /personalization/category-profile`\n- `POST /personalization/notification-score`\n- `POST /personalization/mission-fit`\n\n## Acceptance Criteria\n- Pydantic schemas validate all request/response bodies.\n- Scoring endpoint returns churn/frustration/confidence/archetype.\n- Candidate endpoint returns typed recommendation candidates.\n- Sidecar never mutates backend state directly.\n"
+    },
+    {
+      "title": "Implement .NET PersonalizationSidecarClient",
+      "labels": [
+        "backend",
+        "sidecar",
+        "http-client",
+        "personalization"
+      ],
+      "priority": "P1",
+      "body": "## Goal\nConnect the .NET backend to the FastAPI Sidecar.\n\n## Scope\nAdd:\n- `IPersonalizationSidecarClient`\n- `PersonalizationSidecarClient`\n- options config: `SidecarPersonalization:BaseUrl`, timeout, enabled flag\n\n## Acceptance Criteria\n- Uses IHttpClientFactory.\n- Has timeout and fallback behavior.\n- If Sidecar fails, backend falls back to local rules.\n- Sidecar output is stored in `sidecar_scores_json`.\n"
+    },
+    {
+      "title": "Implement PersonalizationService home and recommendations payload",
+      "labels": [
+        "backend",
+        "personalization",
+        "api"
+      ],
+      "priority": "P1",
+      "body": "## Goal\nBuild the main orchestrator that returns safe recommendations to the frontend.\n\n## Scope\n- Load PlayerMindProfile.\n- Ask Sidecar for candidate recommendations when enabled.\n- Apply guardrails.\n- Persist active recommendations.\n- Return home payload.\n\n## Acceptance Criteria\n- `GET /personalization/home/{playerId}` returns recommended mode, category, recommendations, coach brief, and guardrails.\n- Paid offers are not returned when suppressed by guardrails.\n- Recommendations include source and score.\n"
+    },
+    {
+      "title": "Add Coach API daily brief",
+      "labels": [
+        "backend",
+        "coach",
+        "personalization"
+      ],
+      "priority": "P1",
+      "body": "## Goal\nCreate lightweight coach recommendations based on the personalization profile.\n\n## Routes\n- `GET /coach/{playerId}/daily-brief`\n- `POST /coach/{playerId}/feedback`\n\n## Acceptance Criteria\n- Daily brief returns title, message, action, route, and tone.\n- Feedback is stored as a behavior event.\n- Coach tone respects low-pressure/high-frustration guardrails.\n"
+    },
+    {
+      "title": "Integrate personalization into Questions, Learning, and Study recommendations",
+      "labels": [
+        "backend",
+        "questions",
+        "learning",
+        "study",
+        "personalization"
+      ],
+      "priority": "P2",
+      "body": "## Goal\nUse personalization to recommend content without breaking gameplay fairness.\n\n## Scope\n- Questions: add adaptive strategy input for non-ranked play.\n- Learning: recommend modules based on weak categories.\n- Study: recommend study sets/flashcards from missed topics.\n\n## Acceptance Criteria\n- Ranked fairness is unchanged.\n- Non-ranked/practice question sets can use adaptive strategy.\n- Recommendation payload can include learning module and study set targets.\n"
+    },
+    {
+      "title": "Integrate personalization into Missions",
+      "labels": [
+        "backend",
+        "missions",
+        "personalization"
+      ],
+      "priority": "P2",
+      "body": "## Goal\nRecommend missions based on player archetypes and recent behavior.\n\n## Mission archetypes\n- Confidence Builder\n- Streak Seeker\n- Explorer\n- Comeback Player\n- Collector\n- Risk Taker\n- Social Challenger\n- Mastery Path\n\n## Acceptance Criteria\n- Mission recommendations appear in `/personalization/home/{playerId}`.\n- High-frustration players receive low-pressure missions.\n- Mission completion is tracked back into behavior events.\n"
+    },
+    {
+      "title": "Integrate personalization into Store with monetization guardrails",
+      "labels": [
+        "backend",
+        "store",
+        "monetization",
+        "guardrails"
+      ],
+      "priority": "P2",
+      "body": "## Goal\nPersonalize store recommendations safely.\n\n## Rules\n- Do not increase difficulty to sell power-ups.\n- Do not target frustrated players with aggressive paid offers.\n- Prefer free/low-cost support offers for struggling players.\n- Log guardrails for every store recommendation.\n\n## Acceptance Criteria\n- Store recommendations can be generated as recommendation candidates.\n- Guardrail service can suppress paid offers.\n- Store offer recommendations include reason and applied guardrails.\n"
+    },
+    {
+      "title": "Integrate personalization into Notifications",
+      "labels": [
+        "backend",
+        "notifications",
+        "personalization"
+      ],
+      "priority": "P2",
+      "body": "## Goal\nUse personalization for notification tone, timing, and suppression.\n\n## Scope\n- Add notification tone to recommendation payload.\n- Respect fatigue score.\n- Record notification open/dismiss events.\n\n## Acceptance Criteria\n- High-fatigue players receive fewer notification recommendations.\n- Notification recommendation includes tone and intent.\n- Notification interactions feed behavior events.\n"
+    },
+    {
+      "title": "Add Admin Personalization endpoints",
+      "labels": [
+        "backend",
+        "admin",
+        "personalization",
+        "analytics"
+      ],
+      "priority": "P2",
+      "body": "## Goal\nProvide operator visibility and tuning controls.\n\n## Routes\n- `GET /admin/personalization/summary`\n- `GET /admin/personalization/archetypes`\n- `GET /admin/personalization/recommendations/performance`\n- `GET /admin/personalization/player/{playerId}`\n- `POST /admin/personalization/player/{playerId}/recalculate`\n- `POST /admin/personalization/player/{playerId}/reset`\n- `GET /admin/personalization/rules`\n- `PUT /admin/personalization/rules`\n\n## Acceptance Criteria\n- Admin endpoints require admin ops key + admin role.\n- Summary returns archetype counts and risk bands.\n- Rules can be viewed and updated.\n"
+    },
+    {
+      "title": "Add Flutter personalization providers and UI hooks",
+      "labels": [
+        "frontend",
+        "flutter",
+        "personalization"
+      ],
+      "priority": "P3",
+      "body": "## Goal\nExpose backend-approved personalization in Flutter.\n\n## Frontend API calls\n- `GET /personalization/home/{playerId}`\n- `GET /personalization/recommendations/{playerId}`\n- `GET /coach/{playerId}/daily-brief`\n- `POST /personalization/recommendations/{recommendationId}/accept`\n- `POST /personalization/recommendations/{recommendationId}/dismiss`\n\n## Acceptance Criteria\n- Frontend does not implement ToM logic directly.\n- UI renders recommendations, coach brief, and suggested actions.\n- Accept/dismiss actions are sent back to backend.\n"
+    },
+    {
+      "title": "Add tests for personalization guardrails and Sidecar fallback",
+      "labels": [
+        "tests",
+        "backend",
+        "personalization"
+      ],
+      "priority": "P1",
+      "body": "## Goal\nAdd automated coverage for safety-critical paths.\n\n## Test cases\n- High-frustration player suppresses paid store offer.\n- High notification fatigue suppresses notification recommendation.\n- Ranked difficulty candidate is blocked.\n- Sidecar timeout falls back to local rules.\n- Accept/dismiss recommendation updates timestamps.\n\n## Acceptance Criteria\n- Tests run in CI.\n- Guardrail decisions are deterministic.\n- Sidecar failure does not break personalization endpoint.\n"
+    }
+  ]
+}
