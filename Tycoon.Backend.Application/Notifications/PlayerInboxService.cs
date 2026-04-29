@@ -1,12 +1,16 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Application.Realtime;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Notifications
 {
-    public sealed class PlayerInboxService(IAppDb db, IPlayerNotificationNotifier notifier)
+    public sealed class PlayerInboxService(
+        IAppDb db,
+        IPlayerNotificationNotifier notifier,
+        IPlayerMindProfileService? mindProfiles = null)
     {
         public async Task<PlayerNotificationsInboxResponseDto> GetInboxAsync(Guid playerId, int page, int pageSize, CancellationToken ct)
         {
@@ -58,6 +62,21 @@ namespace Tycoon.Backend.Application.Notifications
             notification.MarkRead();
             await db.SaveChangesAsync(ct);
             await NotifyUnreadCountChangedAsync(playerId, "read", ct);
+            if (mindProfiles is not null)
+            {
+                try
+                {
+                    await mindProfiles.RecordEventAsync(playerId, new PlayerBehaviorEventDto(
+                        EventType: "notification_opened",
+                        EventSource: "inbox",
+                        Category: notification.Type,
+                        Difficulty: null,
+                        Mode: null,
+                        Metadata: null,
+                        OccurredAt: DateTimeOffset.UtcNow), ct);
+                }
+                catch { }
+            }
             return null;
         }
 
@@ -89,6 +108,21 @@ namespace Tycoon.Backend.Application.Notifications
             db.PlayerNotifications.Remove(notification);
             await db.SaveChangesAsync(ct);
             await NotifyUnreadCountChangedAsync(playerId, "deleted", ct);
+            if (mindProfiles is not null)
+            {
+                try
+                {
+                    await mindProfiles.RecordEventAsync(playerId, new PlayerBehaviorEventDto(
+                        EventType: "notification_dismissed",
+                        EventSource: "inbox",
+                        Category: notification.Type,
+                        Difficulty: null,
+                        Mode: null,
+                        Metadata: null,
+                        OccurredAt: DateTimeOffset.UtcNow), ct);
+                }
+                catch { }
+            }
             return null;
         }
 

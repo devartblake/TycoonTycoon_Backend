@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -15,11 +16,13 @@ namespace Tycoon.Backend.Application.LearningModules
     {
         private readonly IAppDb _db;
         private readonly EconomyService _economy;
+        private readonly IPlayerMindProfileService? _mindProfiles;
 
-        public CompleteModuleHandler(IAppDb db, EconomyService economy)
+        public CompleteModuleHandler(IAppDb db, EconomyService economy, IPlayerMindProfileService? mindProfiles = null)
         {
             _db = db;
             _economy = economy;
+            _mindProfiles = mindProfiles;
         }
 
         public async Task<CompleteModuleResultDto> Handle(
@@ -94,6 +97,26 @@ namespace Tycoon.Backend.Application.LearningModules
                     Note: $"Module: {module.Title}"
                 ),
                 ct);
+
+            if (_mindProfiles is not null)
+            {
+                try
+                {
+                    await _mindProfiles.RecordEventAsync(request.PlayerId, new PlayerBehaviorEventDto(
+                        EventType: "learning_module_completed",
+                        EventSource: "learning",
+                        Category: module.Category,
+                        Difficulty: module.Difficulty?.ToString(),
+                        Mode: "study",
+                        Metadata: new Dictionary<string, object>
+                        {
+                            ["moduleId"] = request.ModuleId,
+                            ["title"] = module.Title
+                        },
+                        OccurredAt: DateTimeOffset.UtcNow), ct);
+                }
+                catch { /* personalization must never break module completion */ }
+            }
 
             return new CompleteModuleResultDto(
                 request.ModuleId, request.PlayerId,

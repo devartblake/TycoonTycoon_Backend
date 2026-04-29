@@ -3,8 +3,10 @@ using System.Reflection;
 using Tycoon.Backend.Application.Analytics;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Models;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Missions.Jobs
 {
@@ -15,19 +17,22 @@ namespace Tycoon.Backend.Application.Missions.Jobs
         private readonly IAnalyticsEventWriter _eventWriter;
         private readonly IRollupStore _rollups;
         private readonly IRollupIndexer? _indexer;
+        private readonly IPlayerMindProfileService? _mindProfiles;
 
         public QuestionAnsweredMissionJob(
             IAppDb db,
             MissionProgressService missions,
             IAnalyticsEventWriter eventWriter,
             IRollupStore rollups,
-            IRollupIndexer? indexer = null)
+            IRollupIndexer? indexer = null,
+            IPlayerMindProfileService? mindProfiles = null)
         {
             _db = db;
             _missions = missions;
             _eventWriter = eventWriter;
             _rollups = rollups;
             _indexer = indexer;
+            _mindProfiles = mindProfiles;
         }
 
         public async Task RunAsync(
@@ -101,6 +106,26 @@ namespace Tycoon.Backend.Application.Missions.Jobs
             }
 
             await _db.SaveChangesAsync(ct);
+
+            if (_mindProfiles is not null)
+            {
+                try
+                {
+                    await _mindProfiles.RecordEventAsync(playerId, new PlayerBehaviorEventDto(
+                        EventType: "question_answered",
+                        EventSource: "match",
+                        Category: category,
+                        Difficulty: difficulty.ToString(),
+                        Mode: mode,
+                        Metadata: new Dictionary<string, object>
+                        {
+                            ["correct"] = isCorrect,
+                            ["answerTimeMs"] = answerTimeMs
+                        },
+                        OccurredAt: DateTimeOffset.UtcNow), ct);
+                }
+                catch { /* personalization must never break gameplay */ }
+            }
         }
 
         private async Task AddProgressSafeAsync(

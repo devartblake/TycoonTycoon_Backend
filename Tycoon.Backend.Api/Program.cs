@@ -38,6 +38,7 @@ using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminStore;
 using Tycoon.Backend.Api.Features.AdminSeasons;
+using Tycoon.Backend.Api.Features.AdminPersonalization;
 using Tycoon.Backend.Api.Features.AdminSkills;
 using Tycoon.Backend.Api.Features.AdminUsers;
 using Tycoon.Backend.Api.Features.Analytics;
@@ -892,6 +893,7 @@ AdminSeasonPointsEndpoints.Map(admin);
 AdminEmailAclEndpoints.Map(admin);
 AdminStoreEndpoints.Map(admin);
 AdminLearningModulesEndpoints.Map(admin);
+AdminPersonalizationEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Tycoon Backend API starting...");

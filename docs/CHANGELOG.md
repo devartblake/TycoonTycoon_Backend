@@ -4,6 +4,33 @@ All notable changes to this project.
 
 ---
 
+## [2026-04-29] Unified Personalization Layer — Gameplay Hooks + Admin Endpoints
+
+### Completed this session
+
+- **Admin Personalization Endpoints (Issue 13)** — 8 routes under `GET|POST /admin/personalization/*`:
+  - `GET /admin/personalization/summary` — total profiles, archetype distribution, high churn/frustration counts
+  - `GET /admin/personalization/archetypes` — grouped counts ordered by frequency
+  - `GET /admin/personalization/recommendations/performance` — acceptance/dismissal rates per recommendation type
+  - `GET /admin/personalization/player/{playerId}` — full profile snapshot
+  - `POST /admin/personalization/player/{playerId}/recalculate` — trigger sidecar recalculation
+  - `POST /admin/personalization/player/{playerId}/reset` — reset all scores to safe defaults
+  - `GET /admin/personalization/rules` — list all guardrail rules
+  - `PUT /admin/personalization/rules/{ruleKey}` — upsert a guardrail rule (enable/disable, update payload)
+- **Question-answered hook (Issue 9)** — `QuestionAnsweredMissionJob.RunAsync` now records a `question_answered` behavior event (category, difficulty, mode, correct, answerTimeMs) into `PlayerBehaviorEvents` after every answer, enabling real-time ML scoring.
+- **Learning-module hook (Issue 9)** — `CompleteModuleHandler.Handle` records a `learning_module_completed` event (category, difficulty, moduleId, title) on first successful completion.
+- **Match-completed hook (Issue 10)** — `MissionProgressService.ApplyMatchCompletedAsync` records a `match_completed` event (isWin, correctAnswers, totalQuestions, durationSeconds) after every match.
+- **Store guardrail + purchase hook (Issue 11)** — `GET /store/special-offers` suppresses offers when `frustrationRiskScore >= 0.75` (guardrail: `suppress_paid_offers_when_frustrated`); `POST /store/purchase` records a `store_item_purchased` event (sku, quantity, currency, totalPrice) on successful purchase.
+- **Notification hooks (Issue 12)** — `PlayerInboxService.MarkReadAsync` records `notification_opened`; `DeleteAsync` records `notification_dismissed` — feeds notification fatigue score accumulation in the sidecar.
+- All behavior event hooks are wrapped in `try/catch` — personalization failures never affect gameplay, purchases, or notifications.
+
+### Architecture
+- `IPlayerMindProfileService` injected as optional (`= null`) in all job/service constructors — zero risk of DI failure in existing tests.
+- `IPlayerMindProfileService` injected as required parameter in `StoreEndpoints.Purchase` — always available since it's registered in `DependencyInjection.cs`.
+- Guardrail check in `GetSpecialOffers` uses a direct scalar projection (`Select(p => (decimal?)p.FrustrationRiskScore)`) — one lightweight DB round-trip, no full profile hydration.
+
+---
+
 ## [2026-04-29] Full Session Summary
 
 ### Completed this session
