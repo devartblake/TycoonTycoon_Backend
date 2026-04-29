@@ -17,9 +17,11 @@ using Tycoon.Backend.Api.Payments.PayPal;
 using Tycoon.Backend.Api.Payments.Stripe;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Avatars;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Application.PlayerTransactions;
 using Tycoon.Backend.Application.Store;
 using Tycoon.Backend.Domain.Entities;
+using Tycoon.Backend.Domain.Personalization;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.Store
@@ -244,9 +246,23 @@ namespace Tycoon.Backend.Api.Features.Store
         }
 
         private static async Task<IResult> GetSpecialOffers(
+            HttpContext httpContext,
             IStoreStockService stockService,
+            IAppDb db,
             CancellationToken ct)
         {
+            if (TryGetAuthenticatedPlayerId(httpContext.User, out var playerId))
+            {
+                var frustration = await db.PlayerMindProfiles
+                    .AsNoTracking()
+                    .Where(p => p.PlayerId == playerId)
+                    .Select(p => (decimal?)p.FrustrationRiskScore)
+                    .FirstOrDefaultAsync(ct);
+
+                if (frustration >= 0.75m)
+                    return Results.Ok(new SpecialOffersResponseDto([]));
+            }
+
             var offers = await stockService.GetSpecialOffersAsync(ct);
             return Results.Ok(new SpecialOffersResponseDto(offers));
         }
@@ -272,6 +288,7 @@ namespace Tycoon.Backend.Api.Features.Store
             IConfiguration configuration,
             PlayerTransactionService txnService,
             IStoreStockService stockService,
+            IPlayerMindProfileService mindProfiles,
             CancellationToken ct)
         {
             var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);
@@ -352,7 +369,27 @@ namespace Tycoon.Backend.Api.Features.Store
             var result = await txnService.ExecuteAsync(ptxnReq, ct);
 
             if (result.Status == "Applied")
+            {
                 await stockService.ConsumeStockAsync(req.PlayerId, req.Sku, req.Quantity, ct);
+                try
+                {
+                    await mindProfiles.RecordEventAsync(req.PlayerId, new PlayerBehaviorEventDto(
+                        EventType: "store_item_purchased",
+                        EventSource: "store",
+                        Category: storeItem.ItemType,
+                        Difficulty: null,
+                        Mode: null,
+                        Metadata: new Dictionary<string, object>
+                        {
+                            ["sku"] = req.Sku,
+                            ["quantity"] = req.Quantity,
+                            ["currency"] = currency!,
+                            ["totalPrice"] = totalPrice
+                        },
+                        OccurredAt: DateTimeOffset.UtcNow), ct);
+                }
+                catch { /* personalization must never break purchase flow */ }
+            }
 
             // Map to store-specific response
             var balanceResult = result.EconomyResults.FirstOrDefault();

@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Missions
 {
@@ -11,10 +13,12 @@ namespace Tycoon.Backend.Application.Missions
     public sealed class MissionProgressService
     {
         private readonly IAppDb _db;
+        private readonly IPlayerMindProfileService? _mindProfiles;
 
-        public MissionProgressService(IAppDb db)
+        public MissionProgressService(IAppDb db, IPlayerMindProfileService? mindProfiles = null)
         {
             _db = db;
+            _mindProfiles = mindProfiles;
         }
 
         public async Task ApplyMatchCompletedAsync(
@@ -55,6 +59,28 @@ namespace Tycoon.Backend.Application.Missions
             }
 
             await _db.SaveChangesAsync(ct);
+
+            if (_mindProfiles is not null)
+            {
+                try
+                {
+                    await _mindProfiles.RecordEventAsync(playerId, new PlayerBehaviorEventDto(
+                        EventType: "match_completed",
+                        EventSource: "match",
+                        Category: null,
+                        Difficulty: null,
+                        Mode: null,
+                        Metadata: new Dictionary<string, object>
+                        {
+                            ["isWin"] = isWin,
+                            ["correctAnswers"] = correctAnswers,
+                            ["totalQuestions"] = totalQuestions,
+                            ["durationSeconds"] = durationSeconds
+                        },
+                        OccurredAt: DateTimeOffset.UtcNow), ct);
+                }
+                catch { /* personalization must never break match completion */ }
+            }
         }
 
         public async Task ApplyGameEventCompletedAsync(

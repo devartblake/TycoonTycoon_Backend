@@ -44,8 +44,23 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [x] Rollback drill executed (April 15, 2026).
 - [x] Blazor soft-freeze enforced (April 22, 2026).
 
+## Personalization Admin Surface (Backend API — no Django UI yet)
+
+Backend API endpoints are complete and available at `/admin/personalization/*`:
+
+- [x] `GET /admin/personalization/summary` — archetype distribution, churn/frustration counts
+- [x] `GET /admin/personalization/archetypes` — archetype frequency breakdown
+- [x] `GET /admin/personalization/recommendations/performance` — acceptance/dismissal rates
+- [x] `GET /admin/personalization/player/{playerId}` — full player mind profile
+- [x] `POST /admin/personalization/player/{playerId}/recalculate` — trigger sidecar recalculation
+- [x] `POST /admin/personalization/player/{playerId}/reset` — reset to safe defaults
+- [x] `GET /admin/personalization/rules` — list guardrail rules
+- [x] `PUT /admin/personalization/rules/{ruleKey}` — upsert a guardrail rule
+- [ ] Django operator dashboard UI for personalization — **not started; P2 post-cutover**
+
 ## Status Update — April 29, 2026
 
+- ✅ **Unified Personalization Layer complete:** Core services (PRs 1–5), admin endpoints (Issue 13), gameplay/store/notification hooks (Issues 9–12).
 - ✅ **All Wave B surfaces complete:** Questions queue (list/approve/reject), Game Events (open/start/close lifecycle).
 - ✅ **All Wave C surfaces complete:** Economy player (history + grants), Anti-Cheat (flags + review), Seasons (activate/close/recompute/leaderboard), Notifications (send + dead-letter), Event Queue (reprocess).
 - ✅ **DefaultPermissions fix:** `.NET` API now grants all 12 operator permission scopes on login — no manual provisioning required.
