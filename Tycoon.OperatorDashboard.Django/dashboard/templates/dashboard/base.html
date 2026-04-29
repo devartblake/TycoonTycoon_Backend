@@ -44,6 +44,22 @@
           </div>
 
           <div class="operator-nav-group">
+            <div class="operator-nav-label">Content</div>
+            <a class="operator-nav-link {% if '/content/questions' in request.path %}is-active{% endif %}" href="{% url 'questions-queue-view' %}">
+              <span>Questions</span>
+              <span class="operator-nav-caption">Approve / reject</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
+            <div class="operator-nav-label">Economy</div>
+            <a class="operator-nav-link {% if '/economy/player' in request.path %}is-active{% endif %}" href="{% url 'economy-player-view' %}">
+              <span>Player economy</span>
+              <span class="operator-nav-caption">History &amp; grants</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
             <div class="operator-nav-label">Store</div>
             <a class="operator-nav-link {% if '/store/flash-sales' in request.path %}is-active{% endif %}" href="{% url 'store-flash-sales-view' %}">
               <span>Flash sales</span>

@@ -1,0 +1,103 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Economy — Player{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Economy</p>
+    <h1 class="page-title">Player economy</h1>
+    <p class="page-subtitle">Look up a player's transaction history and apply manual coin grants or deductions for support cases.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Player lookup" copy="Enter a player ID to load their economy history." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="uuid" />
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="25" {% if query.pageSize == "25" %}selected{% endif %}>25</option>
+          <option value="50" {% if query.pageSize == "50" or not query.pageSize %}selected{% endif %}>50</option>
+          <option value="100" {% if query.pageSize == "100" %}selected{% endif %}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Load history</button>
+    </div>
+  </form>
+</section>
+
+{% if player_id %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Manual transaction" copy="Grants and deductions are permanent. Use a support ticket reference as the reason." %}
+  <form method="post" action="{% url 'economy-grant' %}" class="stack" onsubmit="return confirm('Apply this transaction to player {{ player_id }}?');">
+    {% csrf_token %}
+    <input type="hidden" name="playerId" value="{{ player_id }}" />
+    <div class="form-grid">
+      <label>
+        Type
+        <select name="type">
+          <option value="grant">Grant (add coins)</option>
+          <option value="deduction">Deduction (remove coins)</option>
+        </select>
+      </label>
+      <label>
+        Amount
+        <input type="number" name="amount" min="1" placeholder="e.g. 100" required />
+      </label>
+    </div>
+    <label>
+      Reason (required)
+      <input type="text" name="reason" placeholder="e.g. support ticket #4421" required />
+    </label>
+    <div class="toolbar-actions">
+      <button type="submit">Apply transaction</button>
+    </div>
+  </form>
+</section>
+
+{% if history %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Transaction history" copy="Most-recent transactions for this player." %}
+  <div class="table-meta">
+    <span class="helper-text">Page {{ history.page|default:1 }} — {{ history.items|length }} of {{ history.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Reason</th>
+          <th>Applied by</th>
+          <th>At (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in history.items %}
+        <tr>
+          <td>{{ tx.type|default:"-" }}</td>
+          <td>{{ tx.amount|default:"-" }}</td>
+          <td>{{ tx.reason|default:"-" }}</td>
+          <td>{{ tx.appliedBy|default:"-" }}</td>
+          <td>{{ tx.createdAtUtc|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="helper-text">No transactions found for this player.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

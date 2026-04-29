@@ -27,6 +27,11 @@ from .views import (
     store_flash_sale_cancel,
     store_flash_sales_view,
     store_stock_policies_view,
+    questions_queue_view,
+    questions_approve,
+    questions_reject,
+    economy_player_view,
+    economy_grant,
 )
 
 urlpatterns = [
@@ -56,5 +61,12 @@ urlpatterns = [
     path("store/flash-sales/<str:sale_id>/cancel", store_flash_sale_cancel, name="store-flash-sale-cancel"),
     path("store/stock-policies", store_stock_policies_view, name="store-stock-policies-view"),
     path("store/analytics", store_analytics_view, name="store-analytics-view"),
+    # Questions
+    path("content/questions", questions_queue_view, name="questions-queue-view"),
+    path("content/questions/<str:question_id>/approve", questions_approve, name="questions-approve"),
+    path("content/questions/<str:question_id>/reject", questions_reject, name="questions-reject"),
+    # Economy
+    path("economy/player", economy_player_view, name="economy-player-view"),
+    path("economy/grant", economy_grant, name="economy-grant"),
     path("healthz", healthz, name="dashboard-healthz"),
 ]

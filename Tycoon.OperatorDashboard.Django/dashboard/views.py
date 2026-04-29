@@ -18,6 +18,8 @@ from .services.admin_audit_client import get_security_audit
 from .services.admin_auth_client import admin_login, admin_me, admin_refresh
 from .services.admin_media_client import create_upload_intent
 from .services.admin_moderation_client import get_moderation_logs, get_moderation_profile, set_moderation_status
+from .services.admin_economy_client import create_economy_transaction, get_economy_history
+from .services.admin_questions_client import approve_question, list_questions, reject_question
 from .services.admin_store_client import (
     cancel_flash_sale,
     get_flash_sales,
@@ -1061,3 +1063,124 @@ def store_analytics_view(request):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend analytics endpoint.")
     return render(request, "dashboard/store_analytics.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Questions queue
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("questions:read")
+def questions_queue_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    params = {
+        "q": request.GET.get("q"),
+        "status": request.GET.get("status", "Pending"),
+        "category": request.GET.get("category"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
+    context = {
+        "items": [],
+        "page": 1,
+        "total": 0,
+        "query": {k: v for k, v in params.items() if v not in (None, "")},
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        payload = list_questions(access_token, params)
+        context["items"] = payload.get("items", [])
+        context["page"] = payload.get("page", 1)
+        context["total"] = payload.get("total", 0)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Questions lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend questions endpoint.")
+    return render(request, "dashboard/questions_queue.html", context)
+
+
+@operator_login_required
+@require_permission("questions:write")
+def questions_approve(request, question_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        approve_question(access_token, question_id)
+        messages.success(request, f"Question {question_id} approved.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Approve failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend to approve question.")
+    return redirect(request.META.get("HTTP_REFERER", "questions-queue-view"))
+
+
+@operator_login_required
+@require_permission("questions:write")
+def questions_reject(request, question_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        reject_question(access_token, question_id)
+        messages.success(request, f"Question {question_id} rejected.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Reject failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend to reject question.")
+    return redirect(request.META.get("HTTP_REFERER", "questions-queue-view"))
+
+
+# ---------------------------------------------------------------------------
+# Economy — player history + coin grant
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("economy:read")
+def economy_player_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    player_id = (request.GET.get("playerId") or "").strip()
+    params = {
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 50),
+    }
+    context = {
+        "player_id": player_id,
+        "history": None,
+        "query": params,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    if player_id:
+        try:
+            context["history"] = get_economy_history(access_token, player_id, params)
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"History lookup failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend economy endpoint.")
+    return render(request, "dashboard/economy_player.html", context)
+
+
+@operator_login_required
+@require_permission("economy:write")
+def economy_grant(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    payload = {
+        "playerId": request.POST.get("playerId"),
+        "amount": request.POST.get("amount"),
+        "type": request.POST.get("type", "grant"),
+        "reason": request.POST.get("reason"),
+    }
+    missing = [k for k, v in payload.items() if not v]
+    if missing:
+        messages.error(request, f"Missing required fields: {', '.join(missing)}.")
+        return redirect(f"economy-player-view?playerId={payload.get('playerId', '')}")
+    try:
+        create_economy_transaction(access_token, payload)
+        messages.success(request, f"Transaction applied for player {payload['playerId']}.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Transaction failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend economy endpoint.")
+    return redirect(f"/economy/player?playerId={payload.get('playerId', '')}")

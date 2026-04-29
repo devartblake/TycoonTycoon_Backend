@@ -1,0 +1,104 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Questions Queue{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Content</p>
+    <h1 class="page-title">Questions queue</h1>
+    <p class="page-subtitle">Review pending questions and approve or reject them for gameplay use.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Filters" copy="Filter by status, category, or free-text search." %}
+  <form method="get" class="stack">
+    {% include "dashboard/partials/preset_links.html" with links=preset_links %}
+    <div class="form-grid">
+      <label>
+        Search
+        <input type="text" name="q" value="{{ query.q|default:'' }}" placeholder="question text or ID" />
+      </label>
+      <label>
+        Status
+        <select name="status">
+          <option value="">All</option>
+          <option value="Pending" {% if query.status == "Pending" %}selected{% endif %}>Pending</option>
+          <option value="Approved" {% if query.status == "Approved" %}selected{% endif %}>Approved</option>
+          <option value="Rejected" {% if query.status == "Rejected" %}selected{% endif %}>Rejected</option>
+        </select>
+      </label>
+      <label>
+        Category
+        <input type="text" name="category" value="{{ query.category|default:'' }}" placeholder="e.g. science" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Filter</button>
+      <span class="helper-text">{{ items|length }} of {{ total }} questions, page {{ page }}.</span>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Questions" copy="Approve or reject individual questions. Approved questions become available for gameplay." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Text</th>
+          <th>Category</th>
+          <th>Difficulty</th>
+          <th>Status</th>
+          <th>Updated (UTC)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in items %}
+        <tr>
+          <td>{{ q.text|default:"-"|truncatechars:80 }}</td>
+          <td>{{ q.category|default:"-" }}</td>
+          <td>{{ q.difficulty|default:"-" }}</td>
+          <td>
+            <span class="chip {% if q.status == 'Approved' %}success{% elif q.status == 'Rejected' %}danger{% else %}warning{% endif %}">
+              {{ q.status|default:"-" }}
+            </span>
+          </td>
+          <td>{{ q.updatedAtUtc|default:"-" }}</td>
+          <td>
+            <div style="display:flex;gap:4px;">
+              {% if q.status != 'Approved' %}
+              <form method="post" action="{% url 'questions-approve' q.id %}">
+                {% csrf_token %}
+                <button type="submit" class="button small">Approve</button>
+              </form>
+              {% endif %}
+              {% if q.status != 'Rejected' %}
+              <form method="post" action="{% url 'questions-reject' q.id %}" onsubmit="return confirm('Reject this question?');">
+                {% csrf_token %}
+                <button type="submit" class="button danger small">Reject</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="helper-text">No questions match the current filter.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if total > items|length %}
+  <div class="toolbar-actions" style="margin-top:8px;">
+    {% if page > 1 %}
+    <a class="button secondary small" href="?{{ query|urlencode }}&page={{ page|add:'-1' }}">← Previous</a>
+    {% endif %}
+    <a class="button secondary small" href="?{{ query|urlencode }}&page={{ page|add:'1' }}">Next →</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
