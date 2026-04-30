@@ -87,6 +87,7 @@ using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Writers;
 using Tycoon.Backend.Application.Auth;
@@ -511,6 +512,9 @@ builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 // take it as a service dependency (avoids startup parameter-inference failures).
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
+builder.Services.Configure<PersonalizationOptions>(
+    builder.Configuration.GetSection("Personalization"));
+
 builder.Services.AddHttpClient<IPersonalizationSidecarClient, PersonalizationSidecarClient>(client =>
 {
     var baseUrl = builder.Configuration["SidecarPersonalization:BaseUrl"] ?? "http://localhost:8001";

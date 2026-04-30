@@ -115,6 +115,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<PlayerBehaviorEvent> PlayerBehaviorEvents => Set<PlayerBehaviorEvent>();
         public DbSet<PersonalizationRecommendation> PersonalizationRecommendations => Set<PersonalizationRecommendation>();
         public DbSet<PersonalizationRule> PersonalizationRules => Set<PersonalizationRule>();
+        public DbSet<PersonalizationAuditLog> PersonalizationAuditLogs => Set<PersonalizationAuditLog>();
 
         // A/B Experiments
         public DbSet<Experiment> Experiments => Set<Experiment>();
