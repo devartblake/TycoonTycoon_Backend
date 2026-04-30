@@ -182,7 +182,7 @@ public sealed class StripePaymentGateway : IStripePaymentGateway
 
         if ((stripeEvent.Type == EventTypes.CustomerSubscriptionUpdated
             || stripeEvent.Type == EventTypes.CustomerSubscriptionDeleted)
-            && stripeEvent.Data.Object is Subscription subscription)
+            && stripeEvent.Data.Object is global::Stripe.Subscription subscription)
         {
             return new StripeWebhookEvent(
                 stripeEvent.Id,
@@ -193,7 +193,7 @@ public sealed class StripePaymentGateway : IStripePaymentGateway
                     subscription.CustomerId,
                     subscription.Status,
                     subscription.CancelAtPeriodEnd,
-                    subscription.CurrentPeriodEndAt,
+                    subscription.CurrentPeriodEnd,
                     subscription.Metadata ?? new Dictionary<string, string>()));
         }
 
