@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Security.Claims;
@@ -158,15 +158,15 @@ builder.Services.AddEndpointsApiExplorer();
 // ✅ IMPROVED SWAGGER CONFIGURATION
 builder.Services.AddSwaggerGen(c =>
 {
-    c.MapType<DateOnly>(() => new Microsoft.OpenApi.Models.OpenApiSchema
+    c.MapType<DateOnly>(() => new OpenApiSchema
     {
-        Type = "string",
+        Type = JsonSchemaType.String,
         Format = "date"
     });
 
-    c.MapType<TimeOnly>(() => new Microsoft.OpenApi.Models.OpenApiSchema
+    c.MapType<TimeOnly>(() => new OpenApiSchema
     {
-        Type = "string",
+        Type = JsonSchemaType.String,
         Format = "time"
     });
 
@@ -191,19 +191,9 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer"
     });
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+        { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() }
     });
 
     // ✅ Try to load XML documentation (with error handling)
