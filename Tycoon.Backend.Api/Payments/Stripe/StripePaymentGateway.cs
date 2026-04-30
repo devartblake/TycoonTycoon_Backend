@@ -160,7 +160,7 @@ public sealed class StripePaymentGateway : IStripePaymentGateway
             stripeEvent = EventUtility.ParseEvent(payload);
         }
 
-        if (stripeEvent.Type == Events.CheckoutSessionCompleted
+        if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted
             && stripeEvent.Data.Object is global::Stripe.Checkout.Session session)
         {
             return new StripeWebhookEvent(
@@ -180,8 +180,8 @@ public sealed class StripePaymentGateway : IStripePaymentGateway
                 null);
         }
 
-        if ((stripeEvent.Type == Events.CustomerSubscriptionUpdated
-            || stripeEvent.Type == Events.CustomerSubscriptionDeleted)
+        if ((stripeEvent.Type == EventTypes.CustomerSubscriptionUpdated
+            || stripeEvent.Type == EventTypes.CustomerSubscriptionDeleted)
             && stripeEvent.Data.Object is Subscription subscription)
         {
             return new StripeWebhookEvent(
@@ -193,7 +193,7 @@ public sealed class StripePaymentGateway : IStripePaymentGateway
                     subscription.CustomerId,
                     subscription.Status,
                     subscription.CancelAtPeriodEnd,
-                    subscription.CurrentPeriodEnd,
+                    subscription.CurrentPeriodEndAt,
                     subscription.Metadata ?? new Dictionary<string, string>()));
         }
 

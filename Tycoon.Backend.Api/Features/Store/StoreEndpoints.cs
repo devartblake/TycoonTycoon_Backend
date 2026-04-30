@@ -939,8 +939,8 @@ namespace Tycoon.Backend.Api.Features.Store
                 return ApiResponses.Error(StatusCodes.Status503ServiceUnavailable, "STRIPE_NOT_READY", ex.Message);
             }
 
-            if (string.Equals(webhookEvent.EventType, global::Stripe.Events.CustomerSubscriptionUpdated, StringComparison.Ordinal)
-                || string.Equals(webhookEvent.EventType, global::Stripe.Events.CustomerSubscriptionDeleted, StringComparison.Ordinal))
+            if (string.Equals(webhookEvent.EventType, global::Stripe.EventTypes.CustomerSubscriptionUpdated, StringComparison.Ordinal)
+                || string.Equals(webhookEvent.EventType, global::Stripe.EventTypes.CustomerSubscriptionDeleted, StringComparison.Ordinal))
             {
                 var subEvent = webhookEvent.SubscriptionChanged;
                 if (subEvent is null)
@@ -980,7 +980,7 @@ namespace Tycoon.Backend.Api.Features.Store
                 return Results.Ok(new { received = true, applied = true, eventType = webhookEvent.EventType });
             }
 
-            if (!string.Equals(webhookEvent.EventType, global::Stripe.Events.CheckoutSessionCompleted, StringComparison.Ordinal))
+            if (!string.Equals(webhookEvent.EventType, global::Stripe.EventTypes.CheckoutSessionCompleted, StringComparison.Ordinal))
                 return Results.Ok(new { received = true, ignored = true, eventType = webhookEvent.EventType });
 
             var completed = webhookEvent.CheckoutCompleted;
