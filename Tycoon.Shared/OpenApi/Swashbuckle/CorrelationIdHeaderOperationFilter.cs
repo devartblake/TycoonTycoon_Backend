@@ -10,7 +10,7 @@ public class CorrelationIdHeaderOperationFilter : IOperationFilter
 
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        operation.Parameters ??= new List<OpenApiParameter>();
+        operation.Parameters ??= new List<IOpenApiParameter>();
 
         // Add the Correlation ID header to the operation parameters
         operation.Parameters.Add(
@@ -22,7 +22,7 @@ public class CorrelationIdHeaderOperationFilter : IOperationFilter
                 Required = false, // Set to true if the header is mandatory
                 Schema = new OpenApiSchema
                 {
-                    Type = "string",
+                    Type = JsonSchemaType.String,
                     Example = JsonValue.Create("123e4567-e89b-12d3-a456-426614174000"), // Example GUID
                 },
             }

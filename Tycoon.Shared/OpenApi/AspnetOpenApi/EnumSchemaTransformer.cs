@@ -25,7 +25,7 @@ public class EnumSchemaTransformer : IOpenApiSchemaTransformer
         Enum.GetNames(enumType).ToList().ForEach(name => schema.Enum.Add(JsonValue.Create(name)!));
 
         // Set the schema type explicitly to "string"
-        schema.Type = "string";
+        schema.Type = JsonSchemaType.String;
 
         return Task.CompletedTask;
     }
