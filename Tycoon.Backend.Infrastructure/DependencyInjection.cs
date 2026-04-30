@@ -213,11 +213,11 @@ namespace Tycoon.Backend.Infrastructure
                 cfg.GetSection("MinIO").Bind(minioOptions);
                 services.AddSingleton(minioOptions);
 
+                // MinIO 7: .Build() removed from the fluent chain inside AddMinio
                 services.AddMinio(client => client
                     .WithEndpoint(minioOptions.Endpoint)
                     .WithCredentials(minioOptions.AccessKey, minioOptions.SecretKey)
-                    .WithSSL(minioOptions.UseSSL)
-                    .Build());
+                    .WithSSL(minioOptions.UseSSL));
 
                 services.AddSingleton<IObjectStorage, MinioObjectStorage>();
             }

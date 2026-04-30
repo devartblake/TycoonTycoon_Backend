@@ -121,10 +121,11 @@ namespace Tycoon.Backend.Infrastructure.Storage
             _bucketEnsured = true;
         }
 
-        // Minio SDK v6 throws ObjectNotFoundException (S3 NoSuchKey) for missing objects.
-        // Guard against the specific S3 error code as a stable secondary check.
+        // MinIO SDK v7 uses ObjectNotFoundException for missing objects/keys (NoSuchKey).
+        // The S3 error code check is retained as a stable fallback.
         private static bool IsObjectNotFoundError(Exception ex) =>
-            ex.GetType().Name is "ObjectNotFoundException" or "BucketNotFoundException" ||
-            ex.Message.Contains("NoSuchKey", StringComparison.OrdinalIgnoreCase);
+            ex.GetType().Name is "ObjectNotFoundException" or "MinioException" ||
+            ex.Message.Contains("NoSuchKey", StringComparison.OrdinalIgnoreCase) ||
+            ex.Message.Contains("NoSuchBucket", StringComparison.OrdinalIgnoreCase);
     }
 }

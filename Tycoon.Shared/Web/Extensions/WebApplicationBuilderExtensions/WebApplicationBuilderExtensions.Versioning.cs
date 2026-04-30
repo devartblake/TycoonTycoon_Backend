@@ -48,8 +48,8 @@ public static partial class WebApplicationBuilderExtensions
                 // note: this option is only necessary when versioning by url segment. the SubstitutionFormat
                 // can also be used to control the format of the API version in route templates
                 options.SubstituteApiVersionInUrl = true;
-            })
-            .EnableApiVersionBinding(); // this enables binding ApiVersion as a endpoint callback parameter. if you don't use it, then you should remove this configuration.
+            });
+            // EnableApiVersionBinding() was removed in Asp.Versioning 9 — binding is always on.
 
         return builder;
     }
