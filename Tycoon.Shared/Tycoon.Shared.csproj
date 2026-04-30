@@ -97,7 +97,6 @@
     <PackageReference Include="Swashbuckle.AspNetCore.ReDoc" />
     <PackageReference Include="System.Linq.Async" />
     <PackageReference Include="System.Linq.Async.Queryable" />
-    <PackageReference Include="System.Net.Http.Json" />
   </ItemGroup>
 
 </Project>
