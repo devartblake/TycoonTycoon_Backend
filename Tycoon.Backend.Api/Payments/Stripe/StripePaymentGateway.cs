@@ -193,7 +193,10 @@ public sealed class StripePaymentGateway : IStripePaymentGateway
                     subscription.CustomerId,
                     subscription.Status,
                     subscription.CancelAtPeriodEnd,
-                    subscription.CurrentPeriodEnd,
+                    // Stripe.net v48: CurrentPeriodEnd moved from Subscription to SubscriptionItem.
+                    subscription.Items?.Data?.FirstOrDefault()?.CurrentPeriodEnd is { } periodEnd
+                        ? new DateTimeOffset(periodEnd, TimeSpan.Zero)
+                        : (DateTimeOffset?)null,
                     subscription.Metadata ?? new Dictionary<string, string>()));
         }
 
