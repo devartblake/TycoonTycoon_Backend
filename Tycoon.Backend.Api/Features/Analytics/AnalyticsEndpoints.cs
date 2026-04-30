@@ -13,8 +13,8 @@ namespace Tycoon.Backend.Api.Features.Analytics
     {
         public static void Map(WebApplication app)
         {
-            var analytics = app.MapGroup("/analytics").WithTags("Analytics").WithOpenApi();
-            var analyticsV1 = app.MapGroup("/api/v1/analytics").WithTags("Analytics").WithOpenApi();
+            var analytics = app.MapGroup("/analytics").WithTags("Analytics");
+            var analyticsV1 = app.MapGroup("/api/v1/analytics").WithTags("Analytics");
 
             MapIngestionRoutes(analytics);
             MapIngestionRoutes(analyticsV1);

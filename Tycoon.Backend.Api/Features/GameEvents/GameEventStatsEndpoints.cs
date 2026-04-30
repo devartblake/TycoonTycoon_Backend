@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Api.Features.GameEvents
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/game-events").WithTags("GameEventStats").WithOpenApi();
+            var g = app.MapGroup("/game-events").WithTags("GameEventStats");
 
             // Ranked leaderboard for a specific closed game event
             g.MapGet("/{gameEventId:guid}/leaderboard", async (
@@ -60,7 +60,7 @@ namespace Tycoon.Backend.Api.Features.GameEvents
 
         public static void MapTerritory(WebApplication app)
         {
-            var g = app.MapGroup("/territory").WithTags("TerritoryStats").WithOpenApi();
+            var g = app.MapGroup("/territory").WithTags("TerritoryStats");
 
             // Territory dominance leaderboard for a tier
             g.MapGet("/{seasonId:guid}/{tierNumber:int}/dominance", async (

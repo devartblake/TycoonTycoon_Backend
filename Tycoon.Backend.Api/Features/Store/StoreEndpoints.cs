@@ -30,7 +30,7 @@ namespace Tycoon.Backend.Api.Features.Store
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/store").WithTags("Store").WithOpenApi();
+            var g = app.MapGroup("/store").WithTags("Store");
 
             g.MapGet("/catalog", GetCatalog);
             g.MapGet("/catalog/{sku}", GetItem);

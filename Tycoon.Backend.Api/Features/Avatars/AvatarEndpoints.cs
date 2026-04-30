@@ -15,14 +15,14 @@ namespace Tycoon.Backend.Api.Features.Avatars
         {
             var purchaseGroup = app.MapGroup("/store/avatars")
                 .WithTags("Avatars")
-                .WithOpenApi()
+                
                 .RequireAuthorization();
 
             purchaseGroup.MapPost("/{avatarId}/purchase", PurchaseAvatar);
 
             var assetsGroup = app.MapGroup("/v1/assets/avatars")
                 .WithTags("AvatarAssets")
-                .WithOpenApi()
+                
                 .RequireAuthorization();
 
             assetsGroup.MapGet("/{avatarId}", GetAvatarAsset);

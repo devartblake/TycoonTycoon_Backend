@@ -19,7 +19,7 @@ namespace Tycoon.Backend.Api.Features.Users
         {
             var g = app.MapGroup("/users/me/friends")
                 .WithTags("Friends")
-                .WithOpenApi()
+                
                 .RequireAuthorization();
 
             // GET /users/me/friends

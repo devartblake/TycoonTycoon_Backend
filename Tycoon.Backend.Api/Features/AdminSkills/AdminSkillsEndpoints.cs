@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Api.Features.AdminSkills
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/skills").WithTags("Admin/Skills").WithOpenApi();
+            var g = admin.MapGroup("/skills").WithTags("Admin/Skills");
 
             g.MapPost("/seed", async ([FromBody] SkillTreeCatalogDto req, SkillTreeService svc, CancellationToken ct) =>
             {

@@ -16,7 +16,7 @@ namespace Tycoon.Backend.Api.Features.AdminModeration
 
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/moderation").WithTags("Admin/Moderation").WithOpenApi();
+            var g = admin.MapGroup("/moderation").WithTags("Admin/Moderation");
 
             g.MapGet("/profile/{playerId:guid}", async (
                 [FromRoute] Guid playerId,

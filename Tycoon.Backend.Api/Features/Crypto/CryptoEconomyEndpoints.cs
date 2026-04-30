@@ -14,7 +14,7 @@ public static class CryptoEconomyEndpoints
 {
     public static void Map(WebApplication app)
     {
-        var g = app.MapGroup("/crypto").WithTags("Crypto Economy").WithOpenApi();
+        var g = app.MapGroup("/crypto").WithTags("Crypto Economy");
 
         g.MapPost("/link-wallet", LinkWallet).RequireAuthorization();
         g.MapGet("/balance/{playerId:guid}", GetBalance).RequireAuthorization();

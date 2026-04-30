@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Api.Features.Guardians
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/guardians").WithTags("Guardians").WithOpenApi();
+            var g = app.MapGroup("/guardians").WithTags("Guardians");
 
             g.MapGet("/{tierNumber:int}", async (
                 [FromRoute] int tierNumber,

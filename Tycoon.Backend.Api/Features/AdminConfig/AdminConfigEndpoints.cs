@@ -14,7 +14,7 @@ public static class AdminConfigEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/config").WithTags("Admin/Config").WithOpenApi();
+        var g = admin.MapGroup("/config").WithTags("Admin/Config");
 
         g.MapGet("", async (IAppDb db, CancellationToken ct) =>
         {

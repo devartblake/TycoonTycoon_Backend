@@ -15,7 +15,7 @@ namespace Tycoon.Backend.Api.Features.Questions
             // Public gameplay question contract.
             // /questions is the supported backend surface for play-oriented retrieval and grading.
             // Legacy /quiz routes are intentionally not mapped here.
-            var g = app.MapGroup("/questions").WithTags("Questions").WithOpenApi();
+            var g = app.MapGroup("/questions").WithTags("Questions");
 
             g.MapGet("/set", GetQuestionSet);
             g.MapGet("/categories", GetCategories);

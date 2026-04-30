@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Api.Features.AdminPlayerTransactions
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/player-transactions").WithTags("Admin/PlayerTransactions").WithOpenApi();
+            var g = admin.MapGroup("/player-transactions").WithTags("Admin/PlayerTransactions");
 
             // Create / execute a composite player transaction
             g.MapPost("", async ([FromBody] CreatePlayerTransactionRequest req, PlayerTransactionService svc, CancellationToken ct) =>

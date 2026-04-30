@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Api.Features.Votes
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/votes").WithTags("Votes").WithOpenApi();
+            var g = app.MapGroup("/votes").WithTags("Votes");
 
             // POST /votes
             g.MapPost("/", async (

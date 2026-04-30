@@ -16,7 +16,7 @@ namespace Tycoon.Backend.Api.Features.Missions
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/missions").WithTags("Missions").WithOpenApi();
+            var g = app.MapGroup("/missions").WithTags("Missions");
 
             g.MapGet("/", async ([FromQuery] string? type, IMediator mediator, CancellationToken ct) =>
             {

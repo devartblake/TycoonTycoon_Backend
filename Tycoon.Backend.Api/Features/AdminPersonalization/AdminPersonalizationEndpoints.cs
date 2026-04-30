@@ -17,7 +17,7 @@ public static class AdminPersonalizationEndpoints
 
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/personalization").WithTags("Admin/Personalization").WithOpenApi();
+        var g = admin.MapGroup("/personalization").WithTags("Admin/Personalization");
 
         g.MapGet("/summary", GetSummary);
         g.MapGet("/archetypes", GetArchetypes);

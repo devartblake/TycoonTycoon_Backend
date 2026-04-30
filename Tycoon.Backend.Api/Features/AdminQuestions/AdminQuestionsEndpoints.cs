@@ -17,10 +17,10 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
         public static void Map(RouteGroupBuilder admin)
         {
             // Contract-compliant route surface: /admin/questions
-            var g = admin.MapGroup("/questions").WithTags("Admin/Questions").WithOpenApi();
+            var g = admin.MapGroup("/questions").WithTags("Admin/Questions");
 
             // Backward-compatible legacy route surface: /admin/admin/questions
-            var legacy = admin.MapGroup("/admin/questions").WithTags("Admin/Questions (Legacy)").WithOpenApi();
+            var legacy = admin.MapGroup("/admin/questions").WithTags("Admin/Questions (Legacy)");
 
             MapRoutes(g);
             MapRoutes(legacy);

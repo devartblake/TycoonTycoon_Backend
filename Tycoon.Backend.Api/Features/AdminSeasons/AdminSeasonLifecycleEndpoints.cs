@@ -10,7 +10,7 @@ public static class AdminSeasonLifecycleEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/seasons").WithTags("Admin/Seasons").WithOpenApi();
+        var g = admin.MapGroup("/seasons").WithTags("Admin/Seasons");
 
         g.MapPost("/{seasonId:guid}/close", async (
             Guid seasonId,

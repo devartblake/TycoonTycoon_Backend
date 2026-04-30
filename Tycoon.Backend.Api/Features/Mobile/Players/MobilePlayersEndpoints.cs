@@ -16,7 +16,7 @@ namespace Tycoon.Backend.Api.Features.Mobile.Players
         {
             var g = mobile.MapGroup("/players")
                 .WithTags("Mobile/Players")
-                .WithOpenApi();
+                ;
 
             g.MapPost("/", async ([FromBody] CreatePlayerRequest req, AppDb db, CancellationToken ct) =>
             {

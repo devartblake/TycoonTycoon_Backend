@@ -16,7 +16,7 @@ public static class AdminExperimentEndpoints
 
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/experiments").WithTags("Admin/Experiments").WithOpenApi();
+        var g = admin.MapGroup("/experiments").WithTags("Admin/Experiments");
 
         g.MapGet("/", ListExperiments);
         g.MapGet("/{id:guid}", GetExperiment);

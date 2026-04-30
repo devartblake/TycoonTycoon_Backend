@@ -14,7 +14,7 @@ namespace Tycoon.Backend.Api.Features.AdminEconomy
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/economy").WithTags("Admin/Economy").WithOpenApi();
+            var g = admin.MapGroup("/economy").WithTags("Admin/Economy");
 
             g.MapPost("/transactions", async ([FromBody] CreateEconomyTxnRequest req, EconomyService econ, CancellationToken ct) =>
             {
