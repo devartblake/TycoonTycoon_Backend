@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Api.Features.AdminSeasons
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/season-points").WithTags("Admin/SeasonPoints").WithOpenApi();
+            var g = admin.MapGroup("/season-points").WithTags("Admin/SeasonPoints");
 
             g.MapPost("/transactions", async ([FromBody] ApplySeasonPointsRequest req, SeasonPointsService svc, CancellationToken ct) =>
             {

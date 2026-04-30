@@ -10,7 +10,7 @@ namespace Tycoon.Backend.Api.Features.Skills
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/skills").WithTags("Skills").WithOpenApi();
+            var g = app.MapGroup("/skills").WithTags("Skills");
 
             g.MapGet("/tree", async (SkillTreeService svc, CancellationToken ct) =>
             {

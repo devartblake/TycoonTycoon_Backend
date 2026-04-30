@@ -12,7 +12,7 @@ public static class AdminSeasonRewardsEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/seasons/rewards").WithTags("Admin/Seasons/Rewards").WithOpenApi();
+        var g = admin.MapGroup("/seasons/rewards").WithTags("Admin/Seasons/Rewards");
 
         // Audit claims
         g.MapGet("/claims", async (

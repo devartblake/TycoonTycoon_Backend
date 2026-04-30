@@ -15,7 +15,7 @@ namespace Tycoon.Backend.Api.Features.Study
         {
             // Public study contract.
             // /study-sets is the dedicated backend surface for rehearsal-style study flows.
-            var g = app.MapGroup("/study-sets").WithTags("StudySets").WithOpenApi();
+            var g = app.MapGroup("/study-sets").WithTags("StudySets");
 
             g.MapGet("", async (
                 [FromQuery] Guid? playerId,

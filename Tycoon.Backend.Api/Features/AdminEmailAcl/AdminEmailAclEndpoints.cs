@@ -15,7 +15,7 @@ public static class AdminEmailAclEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/email-acl").WithTags("Admin/EmailAcl").WithOpenApi();
+        var g = admin.MapGroup("/email-acl").WithTags("Admin/EmailAcl");
 
         // List all ACL entries (paginated, filterable by list type)
         g.MapGet("/", async (

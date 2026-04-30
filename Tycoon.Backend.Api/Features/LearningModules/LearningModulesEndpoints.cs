@@ -14,7 +14,7 @@ namespace Tycoon.Backend.Api.Features.LearningModules
         {
             // Public learning contract.
             // /modules is the supported backend surface for guided mastery and lesson progression.
-            var g = app.MapGroup("/modules").WithTags("LearningModules").WithOpenApi();
+            var g = app.MapGroup("/modules").WithTags("LearningModules");
 
             // Browse published modules (public)
             // Optional: ?playerId={guid} populates isCompleted per module

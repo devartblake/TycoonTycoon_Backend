@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Api.Features.Mobile.Leaderboards
         {
             var g = mobile.MapGroup("/leaderboards")
                 .WithTags("Mobile/Leaderboards")
-                .WithOpenApi();
+                ;
 
             g.MapGet("/me/{playerId:guid}", async (Guid playerId, IMediator mediator, CancellationToken ct) =>
             {

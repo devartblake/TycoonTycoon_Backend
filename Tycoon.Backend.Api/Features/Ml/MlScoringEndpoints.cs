@@ -11,7 +11,7 @@ public static class MlScoringEndpoints
 {
     public static void Map(WebApplication app)
     {
-        var g = app.MapGroup("/ml").WithTags("ML").WithOpenApi().RequireAuthorization();
+        var g = app.MapGroup("/ml").WithTags("ML").RequireAuthorization();
         g.MapPost("/churn-risk", EstimateChurnRisk);
         g.MapPost("/match-quality", EstimateMatchQuality);
     }

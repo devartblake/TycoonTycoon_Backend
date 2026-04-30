@@ -11,7 +11,7 @@ public static class MobileEconomyEndpoints
 {
     public static void Map(RouteGroupBuilder mobile)
     {
-        var g = mobile.MapGroup("/economy").WithTags("Mobile/Economy").WithOpenApi();
+        var g = mobile.MapGroup("/economy").WithTags("Mobile/Economy");
 
         g.MapGet("/state", async (IGameBalancePolicyService policy, CancellationToken ct) =>
         {

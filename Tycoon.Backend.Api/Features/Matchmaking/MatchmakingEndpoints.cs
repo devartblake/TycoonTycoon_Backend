@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Api.Features.Matchmaking
         public sealed record CancelRequest(Guid PlayerId);
         public static void Map(IEndpointRouteBuilder app)
         {
-            var g = app.MapGroup("/matchmaking").WithTags("Matchmaking").WithOpenApi();
+            var g = app.MapGroup("/matchmaking").WithTags("Matchmaking");
 
             g.MapPost("/enqueue", async (
                 [FromBody] EnqueueRequest req,

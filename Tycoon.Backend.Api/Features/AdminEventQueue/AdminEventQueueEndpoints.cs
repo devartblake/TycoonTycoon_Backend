@@ -13,7 +13,7 @@ public static class AdminEventQueueEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/event-queue").WithTags("Admin/EventQueue").WithOpenApi();
+        var g = admin.MapGroup("/event-queue").WithTags("Admin/EventQueue");
 
         g.MapPost("/upload", Upload);
         g.MapPost("/reprocess", Reprocess);

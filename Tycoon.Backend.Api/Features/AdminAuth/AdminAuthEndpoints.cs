@@ -41,7 +41,7 @@ public static class AdminAuthEndpoints
 
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/auth").WithTags("Admin/Auth").WithOpenApi();
+        var g = admin.MapGroup("/auth").WithTags("Admin/Auth");
 
         g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login");
         g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh");

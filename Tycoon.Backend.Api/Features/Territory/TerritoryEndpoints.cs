@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Api.Features.Territory
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/territory").WithTags("Territory").WithOpenApi();
+            var g = app.MapGroup("/territory").WithTags("Territory");
 
             g.MapGet("/{seasonId:guid}/{tierNumber:int}", async (
                 [FromRoute] Guid seasonId,

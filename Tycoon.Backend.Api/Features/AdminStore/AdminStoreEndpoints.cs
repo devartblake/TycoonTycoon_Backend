@@ -17,7 +17,7 @@ public static class AdminStoreEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/store").WithTags("Admin/Store").WithOpenApi();
+        var g = admin.MapGroup("/store").WithTags("Admin/Store");
 
         // Catalog + system status (existing)
         g.MapGet("/system/status", GetSystemStatus);

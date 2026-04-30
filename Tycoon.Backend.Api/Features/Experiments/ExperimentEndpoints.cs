@@ -10,7 +10,7 @@ public static class ExperimentEndpoints
         var g = app.MapGroup("/experiments")
             .WithTags("Experiments")
             .RequireAuthorization()
-            .WithOpenApi();
+            ;
 
         // Bootstrap all active experiment assignments for a player at session start
         g.MapGet("/player/{playerId:guid}", GetAllAssignments);

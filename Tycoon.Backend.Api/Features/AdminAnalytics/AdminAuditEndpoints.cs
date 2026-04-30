@@ -13,7 +13,7 @@ public static class AdminAuditEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/audit").WithTags("Admin/Audit").WithOpenApi();
+        var g = admin.MapGroup("/audit").WithTags("Admin/Audit");
 
         g.MapGet("/security", async (
             [FromQuery] DateTimeOffset? from,

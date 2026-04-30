@@ -15,7 +15,7 @@ namespace Tycoon.Backend.Api.Features.Mobile.Seasons
         {
             var g = mobile.MapGroup("/seasons")
                 .WithTags("Mobile/Seasons")
-                .WithOpenApi();
+                ;
 
             g.MapGet("/active", async (SeasonService svc, CancellationToken ct) =>
             {

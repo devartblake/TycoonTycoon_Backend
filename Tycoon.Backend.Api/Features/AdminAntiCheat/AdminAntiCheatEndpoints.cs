@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Api.Features.AdminAntiCheat
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/anti-cheat").WithTags("Admin/AntiCheat").WithOpenApi();
+            var g = admin.MapGroup("/anti-cheat").WithTags("Admin/AntiCheat");
 
             g.MapGet("/flags", async (
                 [FromQuery] int page,

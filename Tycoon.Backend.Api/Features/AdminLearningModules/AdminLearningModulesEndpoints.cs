@@ -13,7 +13,7 @@ namespace Tycoon.Backend.Api.Features.AdminLearningModules
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/modules").WithTags("Admin/LearningModules").WithOpenApi();
+            var g = admin.MapGroup("/modules").WithTags("Admin/LearningModules");
 
             // List all modules (including unpublished)
             g.MapGet("", async (

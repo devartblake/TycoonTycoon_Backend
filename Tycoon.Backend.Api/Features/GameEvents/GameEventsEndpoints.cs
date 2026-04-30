@@ -12,7 +12,7 @@ namespace Tycoon.Backend.Api.Features.GameEvents
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/game-events").WithTags("GameEvents").WithOpenApi();
+            var g = app.MapGroup("/game-events").WithTags("GameEvents");
 
             g.MapPost("/enter", async (
                 [FromBody] EnterGameEventRequest req,

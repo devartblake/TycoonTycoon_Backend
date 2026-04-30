@@ -13,7 +13,7 @@ public static class AdminUsersEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/users").WithTags("Admin/Users").WithOpenApi();
+        var g = admin.MapGroup("/users").WithTags("Admin/Users");
 
         g.MapGet("", ListUsers);
         g.MapGet("/{userId}", GetUser);

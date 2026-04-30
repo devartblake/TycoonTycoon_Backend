@@ -20,7 +20,7 @@ namespace Tycoon.Backend.Api.Features.Party
         public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/party")
-                .WithTags("Party").WithOpenApi();
+                .WithTags("Party");
 
             // POST /party
             g.MapPost("", async (

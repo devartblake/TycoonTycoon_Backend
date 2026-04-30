@@ -15,7 +15,7 @@ namespace Tycoon.Backend.Api.Features.Study
         {
             var g = app.MapGroup("/study-sessions")
                 .WithTags("StudySessions")
-                .WithOpenApi()
+                
                 .RequireAuthorization();
 
             g.MapPost("", async (

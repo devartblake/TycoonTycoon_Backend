@@ -332,13 +332,15 @@ if (hangfireEnabled)
             cfg.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                .UseSimpleAssemblyNameTypeSerializer()
                .UseRecommendedSerializerSettings()
-               .UsePostgreSqlStorage(hangfireDb, new PostgreSqlStorageOptions
-               {
-                   QueuePollInterval = TimeSpan.FromSeconds(5),
-                   InvisibilityTimeout = TimeSpan.FromMinutes(5),
-                   PrepareSchemaIfNecessary = true,
-                   SchemaName = "hangfire"
-               }));
+               .UsePostgreSqlStorage(
+                   opts => opts.UseNpgsqlConnection(hangfireDb),
+                   new PostgreSqlStorageOptions
+                   {
+                       QueuePollInterval = TimeSpan.FromSeconds(5),
+                       InvisibilityTimeout = TimeSpan.FromMinutes(5),
+                       PrepareSchemaIfNecessary = true,
+                       SchemaName = "hangfire"
+                   }));
 
         builder.Services.AddHangfireServer(options =>
         {
@@ -845,7 +847,7 @@ GuardiansEndpoints.Map(app);
 TerritoryEndpoints.Map(app);
 
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
-var mobile = app.MapGroup("/mobile").WithTags("Mobile").WithOpenApi();
+var mobile = app.MapGroup("/mobile").WithTags("Mobile");
 MobileMatchesEndpoints.Map(mobile);
 MobilePlayersEndpoints.Map(mobile);
 MobileLeaderboardsEndpoints.Map(mobile);

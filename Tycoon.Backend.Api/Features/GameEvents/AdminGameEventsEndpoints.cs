@@ -16,7 +16,7 @@ namespace Tycoon.Backend.Api.Features.GameEvents
     {
         public static void Map(RouteGroupBuilder admin)
         {
-            var g = admin.MapGroup("/game-events").WithTags("Admin/GameEvents").WithOpenApi();
+            var g = admin.MapGroup("/game-events").WithTags("Admin/GameEvents");
 
             g.MapGet("/", async (
                 [FromQuery] int page,

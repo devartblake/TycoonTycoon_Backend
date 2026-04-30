@@ -25,7 +25,7 @@ namespace Tycoon.Backend.Api.Features.Mobile.Matches
         {
             var g = mobile.MapGroup("/matches")
                 .WithTags("Mobile/Matches")
-                .WithOpenApi();
+                ;
 
             g.MapPost("/start", async (
                 [FromBody] StartMatchRequest req,

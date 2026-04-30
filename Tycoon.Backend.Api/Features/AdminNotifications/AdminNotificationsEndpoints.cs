@@ -18,7 +18,7 @@ public static class AdminNotificationsEndpoints
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        var g = admin.MapGroup("/notifications").WithTags("Admin/Notifications").WithOpenApi();
+        var g = admin.MapGroup("/notifications").WithTags("Admin/Notifications");
 
         g.MapGet("/channels", async (IAppDb db, CancellationToken ct) =>
         {

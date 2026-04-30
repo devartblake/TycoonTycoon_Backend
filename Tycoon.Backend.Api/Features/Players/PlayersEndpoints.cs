@@ -16,7 +16,7 @@ namespace Tycoon.Backend.Api.Features.Players
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/players").WithTags("Players").WithOpenApi();
+            var g = app.MapGroup("/players").WithTags("Players");
 
             g.MapPost("/", async ([FromBody] CreatePlayerRequest req, AppDb db, CancellationToken ct) =>
             {
@@ -34,7 +34,7 @@ namespace Tycoon.Backend.Api.Features.Players
                 return dto is null ? Results.NotFound() : Results.Ok(dto);
             });
 
-            g.MapGet("/{id:guid}/stats", GetCareerStats).WithOpenApi();
+            g.MapGet("/{id:guid}/stats", GetCareerStats);
         }
 
         private static async Task<IResult> GetCareerStats(

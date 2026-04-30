@@ -14,11 +14,11 @@ namespace Tycoon.Backend.Api.Features.Leaderboards
     {
         public static void Map(WebApplication app)
         {
-            var g = app.MapGroup("/leaderboards").WithTags("Leaderboards").WithOpenApi();
+            var g = app.MapGroup("/leaderboards").WithTags("Leaderboards");
 
             // Frontend compatibility route(s): some clients call singular /leaderboard.
-            MapLegacyLeaderboard(app.MapGroup("/leaderboard").WithTags("Leaderboards").WithOpenApi());
-            MapLegacyLeaderboard(app.MapGroup("/api/v1/leaderboard").WithTags("Leaderboards").WithOpenApi());
+            MapLegacyLeaderboard(app.MapGroup("/leaderboard").WithTags("Leaderboards"));
+            MapLegacyLeaderboard(app.MapGroup("/api/v1/leaderboard").WithTags("Leaderboards"));
 
             // Existing: keep for now (until auth-sub binding is enforced)
             g.MapGet("/me/{playerId:guid}", async (Guid playerId, IMediator mediator, CancellationToken ct) =>

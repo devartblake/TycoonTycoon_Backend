@@ -11,7 +11,7 @@ public static class CoachEndpoints
         var group = app.MapGroup("/coach")
             .RequireAuthorization()
             .WithTags("Coach")
-            .WithOpenApi();
+            ;
 
         group.MapGet("/{playerId:guid}/daily-brief", async (
             Guid playerId,

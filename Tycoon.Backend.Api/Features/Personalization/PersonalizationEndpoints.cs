@@ -11,7 +11,7 @@ public static class PersonalizationEndpoints
         var group = app.MapGroup("/personalization")
             .RequireAuthorization()
             .WithTags("Personalization")
-            .WithOpenApi();
+            ;
 
         group.MapGet("/profile/{playerId:guid}", async (
             Guid playerId,
