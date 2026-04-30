@@ -21,7 +21,7 @@
   </ItemGroup>
   <ItemGroup Label="FluentValidation">
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
-    <PackageVersion Include="FluentValidation.AspNetCore" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
   </ItemGroup>
   <ItemGroup Label="Hangfire">
@@ -59,7 +59,8 @@
     <PackageVersion Include="Elastic.Serilog.Sinks" Version="8.19.0" />
   </ItemGroup>
   <ItemGroup Label="ASP.NET Core">
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Cookies" Version="9.0.11" />
+    <!-- 2.3.9 is the last standalone NuGet release; .NET 3+ ships it in the shared framework -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.9" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.HeaderPropagation" Version="9.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.11" />

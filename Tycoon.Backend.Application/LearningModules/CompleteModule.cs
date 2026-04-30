@@ -106,7 +106,7 @@ namespace Tycoon.Backend.Application.LearningModules
                         EventType: "learning_module_completed",
                         EventSource: "learning",
                         Category: module.Category,
-                        Difficulty: module.Difficulty?.ToString(),
+                        Difficulty: module.Difficulty.ToString(),
                         Mode: "study",
                         Metadata: new Dictionary<string, object>
                         {
