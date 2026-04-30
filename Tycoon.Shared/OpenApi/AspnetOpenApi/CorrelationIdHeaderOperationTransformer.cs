@@ -1,6 +1,6 @@
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace Tycoon.Shared.OpenApi.AspnetOpenApi;
 
@@ -28,7 +28,7 @@ public class CorrelationIdHeaderOperationTransformer : IOpenApiOperationTransfor
                 Schema = new OpenApiSchema
                 {
                     Type = "string",
-                    Example = new OpenApiString("123e4567-e89b-12d3-a456-426614174000"), // Example GUID
+                    Example = JsonValue.Create("123e4567-e89b-12d3-a456-426614174000"), // Example GUID
                 },
             }
         );

@@ -2,7 +2,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Tycoon.Shared.Core.Extensions.ServiceCollectionsExtensions;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
