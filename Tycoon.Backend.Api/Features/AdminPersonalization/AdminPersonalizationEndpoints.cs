@@ -23,6 +23,7 @@ public static class AdminPersonalizationEndpoints
         g.MapGet("/archetypes", GetArchetypes);
         g.MapGet("/recommendations/performance", GetRecommendationPerformance);
         g.MapGet("/player/{playerId:guid}", GetPlayerProfile);
+        g.MapGet("/debug/{playerId:guid}", GetDebug);
         g.MapPost("/player/{playerId:guid}/recalculate", RecalculatePlayer);
         g.MapPost("/player/{playerId:guid}/reset", ResetPlayer);
         g.MapGet("/rules", GetRules);
@@ -88,6 +89,29 @@ public static class AdminPersonalizationEndpoints
     {
         var profile = await profiles.GetOrCreateAsync(playerId, ct);
         return Results.Ok(profile);
+    }
+
+    private static async Task<IResult> GetDebug(Guid playerId, IAppDb db, CancellationToken ct)
+    {
+        var profile = await db.PlayerMindProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.PlayerId == playerId, ct);
+
+        var recentEvents = await db.PlayerBehaviorEvents
+            .AsNoTracking()
+            .Where(x => x.PlayerId == playerId)
+            .OrderByDescending(x => x.OccurredAt)
+            .Take(25)
+            .ToListAsync(ct);
+
+        var recentAudit = await db.PersonalizationAuditLogs
+            .AsNoTracking()
+            .Where(x => x.PlayerId == playerId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(25)
+            .ToListAsync(ct);
+
+        return Results.Ok(new { playerId, profile, recentEvents, recentAudit });
     }
 
     private static async Task<IResult> RecalculatePlayer(

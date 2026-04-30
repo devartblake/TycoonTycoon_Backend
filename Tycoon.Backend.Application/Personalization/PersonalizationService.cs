@@ -14,17 +14,20 @@ public sealed class PersonalizationService : IPersonalizationService
     private readonly IPlayerMindProfileService _profiles;
     private readonly IPersonalizationGuardrailService _guardrails;
     private readonly IPersonalizationSidecarClient _sidecar;
+    private readonly IPersonalizationAuditService _audit;
 
     public PersonalizationService(
         IAppDb db,
         IPlayerMindProfileService profiles,
         IPersonalizationGuardrailService guardrails,
-        IPersonalizationSidecarClient sidecar)
+        IPersonalizationSidecarClient sidecar,
+        IPersonalizationAuditService audit)
     {
         _db = db;
         _profiles = profiles;
         _guardrails = guardrails;
         _sidecar = sidecar;
+        _audit = audit;
     }
 
     public async Task<PlayerHomePersonalizationDto> GetHomeAsync(Guid playerId, CancellationToken ct = default)
@@ -112,9 +115,11 @@ public sealed class PersonalizationService : IPersonalizationService
             var guardCandidate = new PersonalizationCandidateDto(candidate.Type, candidate.Score, candidate.Payload);
             var guardrailResult = _guardrails.Apply(profile, guardCandidate);
 
+            var recId = Guid.NewGuid();
+
             var rec = new PersonalizationRecommendation
             {
-                Id = Guid.NewGuid(),
+                Id = recId,
                 PlayerId = playerId,
                 RecommendationType = candidate.Type,
                 Source = "sidecar",
@@ -126,6 +131,18 @@ public sealed class PersonalizationService : IPersonalizationService
             };
 
             _db.PersonalizationRecommendations.Add(rec);
+
+            await _audit.LogDecisionAsync(
+                playerId,
+                recId,
+                guardrailResult.Allowed ? "allowed" : "blocked",
+                "sidecar",
+                guardrailResult.BlockReason ?? candidate.Reason,
+                profile,
+                candidate,
+                guardrailResult.AppliedRules,
+                new { guardrailResult.Allowed },
+                ct);
 
             if (guardrailResult.Allowed)
             {

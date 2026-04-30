@@ -98,6 +98,7 @@ namespace Tycoon.Backend.Application.Abstractions
         DbSet<PlayerBehaviorEvent> PlayerBehaviorEvents { get; }
         DbSet<PersonalizationRecommendation> PersonalizationRecommendations { get; }
         DbSet<PersonalizationRule> PersonalizationRules { get; }
+        DbSet<PersonalizationAuditLog> PersonalizationAuditLogs { get; }
 
         // A/B Experiments
         DbSet<Experiment> Experiments { get; }

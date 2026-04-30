@@ -122,6 +122,7 @@ namespace Tycoon.Backend.Application
             services.AddScoped<Personalization.IPlayerMindProfileService, Personalization.PlayerMindProfileService>();
             services.AddScoped<Personalization.IPersonalizationService, Personalization.PersonalizationService>();
             services.AddScoped<Personalization.IPersonalizationGuardrailService, Personalization.PersonalizationGuardrailService>();
+            services.AddScoped<Personalization.IPersonalizationAuditService, Personalization.PersonalizationAuditService>();
 
             // A/B Experiments
             services.AddScoped<Experiments.IExperimentService, Experiments.ExperimentService>();
