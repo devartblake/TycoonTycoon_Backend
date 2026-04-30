@@ -38,7 +38,9 @@ using Tycoon.Backend.Api.Features.AdminPowerups;
 using Tycoon.Backend.Api.Features.AdminQuestions;
 using Tycoon.Backend.Api.Features.AdminStore;
 using Tycoon.Backend.Api.Features.AdminSeasons;
+using Tycoon.Backend.Api.Features.AdminExperiments;
 using Tycoon.Backend.Api.Features.AdminPersonalization;
+using Tycoon.Backend.Api.Features.Experiments;
 using Tycoon.Backend.Api.Features.AdminSkills;
 using Tycoon.Backend.Api.Features.AdminUsers;
 using Tycoon.Backend.Api.Features.Analytics;
@@ -843,6 +845,7 @@ StoreEndpoints.Map(app);
 AvatarEndpoints.Map(app);
 PersonalizationEndpoints.Map(app);
 CoachEndpoints.Map(app);
+ExperimentEndpoints.Map(app);
 CryptoEconomyEndpoints.Map(app);
 MlScoringEndpoints.Map(app);
 GameEventsEndpoints.Map(app);
@@ -894,6 +897,7 @@ AdminEmailAclEndpoints.Map(admin);
 AdminStoreEndpoints.Map(admin);
 AdminLearningModulesEndpoints.Map(admin);
 AdminPersonalizationEndpoints.Map(admin);
+AdminExperimentEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Tycoon Backend API starting...");
