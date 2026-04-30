@@ -86,13 +86,11 @@ public static class DependencyInjectionExtensions
         );
 
         // Add Security Requirements
-        // OpenAPI 2.0: OpenApiSecurityRequirement is Dictionary<OpenApiSecuritySchemeReference, List<string>>.
-        options.AddSecurityRequirement(
-            new OpenApiSecurityRequirement
-            {
-                { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() },
-                { new OpenApiSecuritySchemeReference("ApiKey"), new List<string>() },
-            }
-        );
+        // Swashbuckle 10: AddSecurityRequirement takes Func<OpenApiDocument, OpenApiSecurityRequirement>.
+        options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+        {
+            { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() },
+            { new OpenApiSecuritySchemeReference("ApiKey"), new List<string>() },
+        });
     }
 }
