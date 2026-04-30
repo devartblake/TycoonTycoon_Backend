@@ -3,7 +3,7 @@ using Asp.Versioning.ApiExplorer;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace Tycoon.Shared.OpenApi.AspnetOpenApi;
 

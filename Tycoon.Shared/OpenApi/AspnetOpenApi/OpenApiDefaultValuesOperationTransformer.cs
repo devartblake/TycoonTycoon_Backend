@@ -1,8 +1,8 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.OpenApi;
 
 namespace Tycoon.Shared.OpenApi.AspnetOpenApi;
 
@@ -61,7 +61,7 @@ public class OpenApiDefaultValuesOperationTransformer : IOpenApiOperationTransfo
             {
                 // REF: https://github.com/Microsoft/aspnet-api-versioning/issues/429#issuecomment-605402330
                 var json = JsonSerializer.Serialize(description.DefaultValue, modelMetadata.ModelType);
-                parameter.Schema.Default = OpenApiAnyFactory.CreateFromJson(json);
+                parameter.Schema.Default = JsonNode.Parse(json);
             }
 
             parameter.Required |= description.IsRequired;

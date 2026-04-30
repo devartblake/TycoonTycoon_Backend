@@ -1,5 +1,5 @@
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using System.Text.Json.Nodes;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Tycoon.Shared.OpenApi.Swashbuckle;
@@ -8,21 +8,16 @@ namespace Tycoon.Shared.OpenApi.Swashbuckle;
 // `SchemaFilter` is used to customize `schemas` in the OpenAPI document.
 public class EnumSchemaFilter : ISchemaFilter
 {
-    public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+    // Swashbuckle 10 / Microsoft.OpenApi 2.0: parameter changed to IOpenApiSchema.
+    // Cast to the concrete OpenApiSchema to access mutable Enum list.
+    public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {
-        var enumType = context.Type;
+        if (!context.Type.IsEnum) return;
+        if (schema is not OpenApiSchema concreteSchema) return;
 
-        // Check if the type is an enum
-        if (!enumType.IsEnum)
-            return;
-
-        // Clear the default enum values
-        schema.Enum.Clear();
-
-        // Add only string representations of the enum values
-        Enum.GetNames(enumType).ToList().ForEach(name => schema.Enum.Add(new OpenApiString(name)));
-
-        // Set the schema type explicitly to "string"
-        schema.Type = "string";
+        concreteSchema.Enum.Clear();
+        Enum.GetNames(context.Type).ToList()
+            .ForEach(name => concreteSchema.Enum.Add(JsonValue.Create(name)!));
+        concreteSchema.Type = "string";
     }
 }

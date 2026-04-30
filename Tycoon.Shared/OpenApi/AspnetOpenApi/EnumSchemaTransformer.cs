@@ -1,6 +1,6 @@
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace Tycoon.Shared.OpenApi.AspnetOpenApi;
 
@@ -22,7 +22,7 @@ public class EnumSchemaTransformer : IOpenApiSchemaTransformer
         schema.Enum.Clear();
 
         // Add only string representations of the enum values
-        Enum.GetNames(enumType).ToList().ForEach(name => schema.Enum.Add(new OpenApiString(name)));
+        Enum.GetNames(enumType).ToList().ForEach(name => schema.Enum.Add(JsonValue.Create(name)!));
 
         // Set the schema type explicitly to "string"
         schema.Type = "string";

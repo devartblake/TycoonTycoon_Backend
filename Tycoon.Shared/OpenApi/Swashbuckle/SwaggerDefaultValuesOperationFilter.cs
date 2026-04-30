@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Tycoon.Shared.OpenApi.Swashbuckle;
@@ -63,7 +64,7 @@ public class SwaggerDefaultValuesOperationFilter : IOperationFilter
             {
                 // REF: https://github.com/Microsoft/aspnet-api-versioning/issues/429#issuecomment-605402330
                 var json = JsonSerializer.Serialize(description.DefaultValue, modelMetadata.ModelType);
-                parameter.Schema.Default = OpenApiAnyFactory.CreateFromJson(json);
+                parameter.Schema.Default = JsonNode.Parse(json);
             }
 
             parameter.Required |= description.IsRequired;
