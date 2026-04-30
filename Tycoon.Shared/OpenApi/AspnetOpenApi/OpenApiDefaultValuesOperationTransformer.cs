@@ -16,10 +16,12 @@ public class OpenApiDefaultValuesOperationTransformer : IOpenApiOperationTransfo
     )
     {
         var apiDescription = context.Description;
-        var actionDescriptor = apiDescription.ActionDescriptor;
-        var endpointMetadata = actionDescriptor.EndpointMetadata;
 
-        openApiOperation.Deprecated |= apiDescription.IsDeprecated();
+        // IsDeprecated() extension was removed in Swashbuckle 10 — check endpoint metadata directly.
+        var isDeprecated = apiDescription.ActionDescriptor.EndpointMetadata
+            .OfType<ObsoleteAttribute>()
+            .Any();
+        openApiOperation.Deprecated |= isDeprecated;
 
         // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/1752#issue-663991077
         foreach (var responseType in context.Description.SupportedResponseTypes)
@@ -44,27 +46,29 @@ public class OpenApiDefaultValuesOperationTransformer : IOpenApiOperationTransfo
 
         // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/412
         // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/pull/413
+        // OpenAPI 2.0: Parameters is IList<IOpenApiParameter>; cast to OpenApiParameter for mutation.
         foreach (var parameter in openApiOperation.Parameters)
         {
-            var description = apiDescription.ParameterDescriptions.FirstOrDefault(p => p.Name == parameter.Name);
+            if (parameter is not OpenApiParameter concreteParam) continue;
+
+            var description = apiDescription.ParameterDescriptions.FirstOrDefault(p => p.Name == concreteParam.Name);
             if (description == null)
                 continue;
 
-            parameter.Description ??= description.ModelMetadata?.Description;
+            concreteParam.Description ??= description.ModelMetadata?.Description;
 
-            if (
-                parameter.Schema.Default == null
+            if (concreteParam.Schema is OpenApiSchema concreteSchema
+                && concreteSchema.Default == null
                 && description.DefaultValue != null
                 && description.DefaultValue is not DBNull
-                && description.ModelMetadata is { } modelMetadata
-            )
+                && description.ModelMetadata is { } modelMetadata)
             {
                 // REF: https://github.com/Microsoft/aspnet-api-versioning/issues/429#issuecomment-605402330
                 var json = JsonSerializer.Serialize(description.DefaultValue, modelMetadata.ModelType);
-                parameter.Schema.Default = JsonNode.Parse(json);
+                concreteSchema.Default = JsonNode.Parse(json);
             }
 
-            parameter.Required |= description.IsRequired;
+            concreteParam.Required |= description.IsRequired;
         }
 
         return Task.CompletedTask;

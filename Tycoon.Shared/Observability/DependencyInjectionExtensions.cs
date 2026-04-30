@@ -158,10 +158,7 @@ public static class DependencyInjectionExtensions
                     {
                         instrumentationOptions.RecordException = true;
                     })
-                    .AddEntityFrameworkCoreInstrumentation(instrumentationOptions =>
-                    {
-                        instrumentationOptions.SetDbStatementForText = true;
-                    })
+                    .AddEntityFrameworkCoreInstrumentation()
                     .AddSource(MassTransit.Logging.DiagnosticHeaders.DefaultListenerName)
                     .AddNpgsql()
                     // `AddSource` for adding custom activity sources

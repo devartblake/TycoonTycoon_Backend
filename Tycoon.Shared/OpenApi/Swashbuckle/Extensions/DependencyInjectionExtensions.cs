@@ -86,23 +86,12 @@ public static class DependencyInjectionExtensions
         );
 
         // Add Security Requirements
+        // OpenAPI 2.0: OpenApiReference was removed; OpenApiSecurityRequirement is now Dictionary<string, IList<string>>.
         options.AddSecurityRequirement(
             new OpenApiSecurityRequirement
             {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
-                    },
-                    new List<string>() // No specific scopes for bearer
-                },
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" },
-                    },
-                    new List<string>() // No specific scopes for API Key
-                },
+                { "Bearer", Array.Empty<string>() },
+                { "ApiKey", Array.Empty<string>() },
             }
         );
     }

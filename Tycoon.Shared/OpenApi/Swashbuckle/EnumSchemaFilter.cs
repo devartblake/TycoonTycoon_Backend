@@ -18,6 +18,6 @@ public class EnumSchemaFilter : ISchemaFilter
         concreteSchema.Enum.Clear();
         Enum.GetNames(context.Type).ToList()
             .ForEach(name => concreteSchema.Enum.Add(JsonValue.Create(name)!));
-        concreteSchema.Type = "string";
+        concreteSchema.Type = JsonSchemaType.String;
     }
 }

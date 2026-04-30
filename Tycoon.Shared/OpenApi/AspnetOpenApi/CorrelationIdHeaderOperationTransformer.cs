@@ -15,7 +15,7 @@ public class CorrelationIdHeaderOperationTransformer : IOpenApiOperationTransfor
         CancellationToken cancellationToken
     )
     {
-        operation.Parameters ??= new List<OpenApiParameter>();
+        operation.Parameters ??= new List<IOpenApiParameter>();
 
         // Add the Correlation ID header to the operation parameters
         operation.Parameters.Add(
@@ -27,7 +27,7 @@ public class CorrelationIdHeaderOperationTransformer : IOpenApiOperationTransfor
                 Required = false, // Set to true if the header is mandatory
                 Schema = new OpenApiSchema
                 {
-                    Type = "string",
+                    Type = JsonSchemaType.String,
                     Example = JsonValue.Create("123e4567-e89b-12d3-a456-426614174000"), // Example GUID
                 },
             }
