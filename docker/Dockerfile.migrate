@@ -1,7 +1,7 @@
 # ================================
 # Build Stage - Optimized with layer caching
 # ================================
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -y \
 # ================================
 # Runtime Stage
 # ================================
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # Required by Npgsql/Kerberos-capable auth paths to avoid runtime shared-library warnings
