@@ -47,8 +47,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
-RUN groupadd --system --gid 1000 appuser && \
-    useradd --system --uid 1000 --gid appuser --shell /bin/false --no-create-home appuser
+RUN groupadd --gid 10001 appuser && \
+    useradd --uid 10001 --gid 10001 --no-create-home --shell /bin/false appuser
 
 # Copy published files
 COPY --from=build /app/publish .

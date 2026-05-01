@@ -17,7 +17,7 @@ namespace Tycoon.Backend.Migrations.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.11")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -4375,6 +4375,640 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.ToTable("votes", (string)null);
                 });
 
+            modelBuilder.Entity("Tycoon.Backend.Domain.Personalization.PlayerMindProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Archetype")
+                        .IsRequired()
+                        .HasMaxLength(96)
+                        .HasColumnType("character varying(96)")
+                        .HasDefaultValue("new_player")
+                        .HasColumnName("archetype");
+
+                    b.Property<string>("CategoryStrengthsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("category_strengths_json");
+
+                    b.Property<string>("CategoryWeaknessesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("category_weaknesses_json");
+
+                    b.Property<decimal>("ChurnRiskScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(0.00m)
+                        .HasColumnName("churn_risk_score");
+
+                    b.Property<string>("CompetitivePreference")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("balanced")
+                        .HasColumnName("competitive_preference");
+
+                    b.Property<decimal>("ConfidenceLevel")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(0.50m)
+                        .HasColumnName("confidence_level");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("FrustrationRiskScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(0.00m)
+                        .HasColumnName("frustration_risk_score");
+
+                    b.Property<string>("GuardrailJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("guardrail_json");
+
+                    b.Property<DateTimeOffset?>("LastCalculatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_calculated_at");
+
+                    b.Property<string>("LearningStyle")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("mixed")
+                        .HasColumnName("learning_style");
+
+                    b.Property<decimal>("NotificationFatigueScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(0.00m)
+                        .HasColumnName("notification_fatigue_score");
+
+                    b.Property<bool>("PersonalizationEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("personalization_enabled");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("PreferenceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("preference_json");
+
+                    b.Property<string>("PreferredPace")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("balanced")
+                        .HasColumnName("preferred_pace");
+
+                    b.Property<decimal>("RewardSensitivityScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(0.50m)
+                        .HasColumnName("reward_sensitivity_score");
+
+                    b.Property<decimal>("RiskTolerance")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(0.50m)
+                        .HasColumnName("risk_tolerance");
+
+                    b.Property<bool>("SidecarScoringEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("sidecar_scoring_enabled");
+
+                    b.Property<string>("SidecarScoresJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("sidecar_scores_json");
+
+                    b.Property<string>("SocialPreference")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("solo")
+                        .HasColumnName("social_preference");
+
+                    b.Property<decimal>("StoreAffinityScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(0.50m)
+                        .HasColumnName("store_affinity_score");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_player_mind_profiles");
+
+                    b.HasIndex("Archetype")
+                        .HasDatabaseName("ix_player_mind_profiles_archetype");
+
+                    b.HasIndex("ChurnRiskScore")
+                        .HasDatabaseName("ix_player_mind_profiles_churn_risk");
+
+                    b.HasIndex("FrustrationRiskScore")
+                        .HasDatabaseName("ix_player_mind_profiles_frustration_risk");
+
+                    b.HasIndex("PlayerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_mind_profiles_player_id");
+
+                    b.HasIndex("UpdatedAt")
+                        .HasDatabaseName("ix_player_mind_profiles_updated_at");
+
+                    b.ToTable("player_mind_profiles", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Personalization.PlayerBehaviorEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Difficulty")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("difficulty");
+
+                    b.Property<string>("EventSource")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("event_source");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("event_type");
+
+                    b.Property<DateTimeOffset>("IngestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ingested_at");
+
+                    b.Property<string>("MetadataJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("metadata_json");
+
+                    b.Property<string>("Mode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("mode");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_player_behavior_events");
+
+                    b.HasIndex("Category")
+                        .HasDatabaseName("ix_player_behavior_events_category");
+
+                    b.HasIndex("EventSource")
+                        .HasDatabaseName("ix_player_behavior_events_source");
+
+                    b.HasIndex("EventType")
+                        .HasDatabaseName("ix_player_behavior_events_type");
+
+                    b.HasIndex("PlayerId", "OccurredAt")
+                        .HasDatabaseName("ix_player_behavior_events_player_time");
+
+                    b.ToTable("player_behavior_events", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Personalization.PersonalizationRecommendation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DismissedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dismissed_at");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("GuardrailJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("guardrail_json");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("payload_json");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<int>("Priority")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("priority");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasDefaultValue("")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RecommendationType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("recommendation_type");
+
+                    b.Property<decimal>("Score")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(0.50m)
+                        .HasColumnName("score");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("backend")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id")
+                        .HasName("pk_personalization_recommendations");
+
+                    b.HasIndex("RecommendationType")
+                        .HasDatabaseName("ix_personalization_recommendations_type");
+
+                    b.HasIndex("PlayerId", "CreatedAt")
+                        .HasDatabaseName("ix_personalization_recommendations_player_created");
+
+                    b.ToTable("personalization_recommendations", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Personalization.PersonalizationRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasDefaultValue("")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("RuleJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("rule_json");
+
+                    b.Property<string>("RuleKey")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("rule_key");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_personalization_rules");
+
+                    b.HasIndex("RuleKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_personalization_rules_rule_key");
+
+                    b.ToTable("personalization_rules", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Personalization.PersonalizationAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CandidateJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("candidate_json");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DecisionType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("decision_type");
+
+                    b.Property<string>("FinalDecisionJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("final_decision_json");
+
+                    b.Property<string>("GuardrailsAppliedJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("guardrails_applied_json");
+
+                    b.Property<string>("InputSignalsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("input_signals_json");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasDefaultValue("")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("RecommendationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recommendation_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("backend")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id")
+                        .HasName("pk_personalization_audit_logs");
+
+                    b.HasIndex("DecisionType")
+                        .HasDatabaseName("ix_personalization_audit_logs_decision_type");
+
+                    b.HasIndex("RecommendationId")
+                        .HasDatabaseName("ix_personalization_audit_logs_recommendation_id");
+
+                    b.HasIndex("PlayerId", "CreatedAt")
+                        .HasDatabaseName("ix_personalization_audit_logs_player_created");
+
+                    b.ToTable("personalization_audit_logs", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Experiments.Experiment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AllocationPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(100m)
+                        .HasColumnName("allocation_percent");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTimeOffset?>("EndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("MetadataJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("metadata_json");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset?>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("draft")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("PK_experiments");
+
+                    b.HasIndex("Key")
+                        .IsUnique()
+                        .HasDatabaseName("IX_experiments_key");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_experiments_status");
+
+                    b.ToTable("experiments", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Experiments.ExperimentVariant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ConfigJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("config_json");
+
+                    b.Property<Guid>("ExperimentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experiment_id");
+
+                    b.Property<bool>("IsControl")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_control");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<decimal>("Weight")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)")
+                        .HasDefaultValue(50m)
+                        .HasColumnName("weight");
+
+                    b.HasKey("Id")
+                        .HasName("PK_experiment_variants");
+
+                    b.HasIndex("ExperimentId", "Key")
+                        .IsUnique()
+                        .HasDatabaseName("IX_experiment_variants_experiment_id_key");
+
+                    b.ToTable("experiment_variants", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Experiments.ExperimentAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<Guid>("ExperimentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experiment_id");
+
+                    b.Property<string>("ExperimentKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("experiment_key");
+
+                    b.Property<DateTimeOffset?>("FirstSeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_seen_at");
+
+                    b.Property<int>("ImpressionCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("impression_count");
+
+                    b.Property<string>("OutcomeJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("outcome_json");
+
+                    b.Property<int>("OutcomeCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("outcome_count");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("VariantKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("variant_key");
+
+                    b.HasKey("Id")
+                        .HasName("PK_experiment_assignments");
+
+                    b.HasIndex("ExperimentId", "VariantKey")
+                        .HasDatabaseName("IX_experiment_assignments_experiment_id_variant_key");
+
+                    b.HasIndex("PlayerId", "ExperimentId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_experiment_assignments_player_id_experiment_id");
+
+                    b.ToTable("experiment_assignments", (string)null);
+                });
+
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.DirectMessage", b =>
                 {
                     b.HasOne("Tycoon.Backend.Domain.Entities.DirectMessageConversation", null)
@@ -4540,6 +5174,22 @@ namespace Tycoon.Backend.Migrations.Migrations
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.StudySet", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Experiments.ExperimentVariant", b =>
+                {
+                    b.HasOne("Tycoon.Backend.Domain.Experiments.Experiment", "Experiment")
+                        .WithMany("Variants")
+                        .HasForeignKey("ExperimentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Experiment");
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Experiments.Experiment", b =>
+                {
+                    b.Navigation("Variants");
                 });
 #pragma warning restore 612, 618
         }
