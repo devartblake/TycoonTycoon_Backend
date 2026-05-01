@@ -4,7 +4,57 @@ All notable changes to this project.
 
 ---
 
-## [2026-04-29] Unified Personalization Layer — Gameplay Hooks + Admin Endpoints
+## [2026-05-01] Personalization Alignment Audit — Gap Fixes
+
+### Completed this session
+
+- **Reason / Explainability (audit gap #1)** — Added `Reason` field to `PersonalizationRecommendation` domain model and `PersonalizationRecommendationConfiguration` EF config; added `Reason` to `PlayerRecommendationDto` (frontend now receives explainability text); `PersonalizationService` populates it from the sidecar candidate's `Reason`; migration `20260501090000_AddReasonToPersonalizationRecommendation` adds the column.
+- **Recommendation persistence fix (audit gaps #2 & #8)** — `_db.PersonalizationRecommendations.Add()` moved inside the guardrail-allowed branch. Blocked candidates now write to the audit log only; the `personalization_recommendations` table contains only approved recommendations. Audit always runs unconditionally before the branch.
+- **Ownership validation (audit gap #6)** — All 7 `PersonalizationEndpoints` routes and both `CoachEndpoints` routes now enforce an `IsOwner()` check that compares the JWT `NameIdentifier`/`sub` claim to the route `playerId`, returning `403 Forbidden` on mismatch. Prevents cross-player data access.
+- **Config-driven sidecar timeout (audit gap #4)** — Replaced hardcoded `TimeSpan.FromSeconds(5)` with `configuration.GetValue<int>("SidecarPersonalization:TimeoutSeconds", 5)` in `Program.cs`.
+
+### Skipped / N/A
+
+- Gap #3 (Sidecar FastAPI routes) — routes `POST /personalization/score-player` and `POST /personalization/recommendation-candidates` already exist in `Tycoon.Sidecar/app/routers/personalization.py`.
+- Gap #5 (DB migrations) — migration files exist; `dotnet ef database update` must be run against staging/production.
+- Gap #7 (`.WithOpenApi()`) — intentionally removed in the .NET 10 upgrade session; deprecated (`ASPDEPR002`) in ASP.NET Core 10.
+
+---
+
+## [2026-05-01] Personalization Hardening — Audit Trail, Feature Flags, Configurable Guardrails
+
+### Completed this session
+
+- **`PersonalizationAuditLog` domain model** — New entity in `Tycoon.Backend.Domain/Personalization/PersonalizationAuditLog.cs` capturing `DecisionType`, `Source`, `Reason`, and four JSONB fields: `InputSignalsJson`, `CandidateJson`, `GuardrailsAppliedJson`, `FinalDecisionJson`.
+- **`PersonalizationAuditLogConfiguration`** — EF config with `jsonb` columns, `(player_id, created_at)` composite index, `decision_type` index, `recommendation_id` index.
+- **`PersonalizationAuditLogs` DbSet** — Added to `AppDb` and `IAppDb`.
+- **`PersonalizationOptions`** — New feature-flag class (`Enabled`, `UseSidecar`, `AdaptiveQuestions`, `AdaptiveMissions`, `AdaptiveStore`, `AdaptiveNotifications`, `CoachEnabled`) with configurable thresholds (`FrustrationPaidOfferSuppressionThreshold`, `NotificationFatigueThreshold`).
+- **`IPersonalizationAuditService` + `PersonalizationAuditService`** — Writes one structured audit record per recommendation decision (allowed or blocked) with full input/output snapshot.
+- **`PersonalizationGuardrailService` updated** — Now takes `IOptions<PersonalizationOptions>`; suppression thresholds are runtime-configurable rather than hardcoded.
+- **`PersonalizationService` updated** — Injects `IPersonalizationAuditService`; calls `LogDecisionAsync` for every guardrail evaluation.
+- **Admin debug endpoint** — `GET /admin/personalization/debug/{playerId}` returns profile + last-25 behavior events + last-25 audit entries.
+- **DI registration** — `IPersonalizationAuditService` registered in `Application/DependencyInjection.cs`; `PersonalizationOptions` configured via `Configure<PersonalizationOptions>` in `Program.cs`.
+- **Migration `20260430120000_AddPersonalizationAuditLog`** — Creates `personalization_audit_logs` table.
+- **`appsettings.Development.json`** — `Personalization` and `SidecarPersonalization` sections added.
+
+---
+
+## [2026-05-01] .NET 10 Upgrade + Docker Fixes
+
+### Completed this session
+
+- **Runtime upgrade** — All 20 projects migrated from `net9.0` → `net10.0`; `global.json` SDK pinned to `10.0.100`.
+- **Package upgrades** — `Directory.Packages.props` bumped: EF Core `10.0.7`, MassTransit `9.1.0`, Elastic.Clients.Elasticsearch `9.3.6`, MinIO `7.0.0`, Stripe.net `51.1.0`, Asp.Versioning `10.0.0`, Swashbuckle.AspNetCore `10.1.7`, Testcontainers `4.11.0`, WireMock.Net `2.4.0`, SonarAnalyzer `10.25.0`, HotChocolate `15.1.16`. FluentAssertions held at `7.0.0` (license review pending).
+- **Microsoft.OpenApi 2.0 breaking changes** — All 10 files in `Tycoon.Shared/OpenApi/` updated: `Microsoft.OpenApi.Models` → `Microsoft.OpenApi` namespace; `OpenApiAnyFactory.CreateFromJson` → `JsonNode.Parse`; `new OpenApiString(...)` → `JsonValue.Create(...)`; `ISchemaFilter.Apply` parameter updated to `IOpenApiSchema`; `OpenApiSecurityRequirement` key type changed to `OpenApiSecuritySchemeReference`; `AddSecurityRequirement` wrapped in lambda.
+- **Swashbuckle 10** — `IsDeprecated()` extension removed; inlined as `EndpointMetadata.OfType<ObsoleteAttribute>().Any()`. All 74 `.WithOpenApi()` call sites removed (ASPDEPR002 deprecated in ASP.NET Core 10).
+- **Asp.Versioning 10** — `EnableApiVersionBinding()` removed.
+- **MinIO 7** — `.Build()` removed from `AddMinio()` chain.
+- **Stripe.net 51** — `Events` → `EventTypes`; `Subscription.CurrentPeriodEnd` moved to `SubscriptionItem.CurrentPeriodEnd`.
+- **OpenTelemetry EF Core** — `SetDbStatementForText` removed; collapsed to no-argument `AddEntityFrameworkCoreInstrumentation()`.
+- **Hangfire PostgreSql** — `UsePostgreSqlStorage(string, options)` obsolete overload replaced with `UsePostgreSqlStorage(opts => opts.UseNpgsqlConnection(connStr), options)`.
+- **Docker** — `Dockerfile.api`, `Dockerfile.dashboard`, `Dockerfile.migrate`, `Dockerfile.migration-service` updated from `mcr.microsoft.com/dotnet/sdk:9.0` / `aspnet:9.0` → `sdk:10.0` / `aspnet:10.0`.
+
+
 
 ### Completed this session
 

@@ -1,6 +1,6 @@
 # Synaptix Backend
 
-A modern, cloud-native backend API built with .NET 9, designed for the scalable Synaptix cognitive competition platform with real-time analytics, robust data persistence, and comprehensive observability.
+A modern, cloud-native backend API built with .NET 10, designed for the scalable Synaptix cognitive competition platform with real-time analytics, robust data persistence, and comprehensive observability.
 
 ---
 
@@ -77,10 +77,10 @@ As of **April 8, 2026**:
 
 ### Technology Stack
 
-- **Runtime**: .NET 9
-- **Web Framework**: ASP.NET Core 9.0 (Minimal API)
-- **Operator Dashboard**: Django 5.2 (primary), Blazor Server (.NET 9 legacy)
-- **ORM**: Entity Framework Core 9.0
+- **Runtime**: .NET 10
+- **Web Framework**: ASP.NET Core 10.0 (Minimal API)
+- **Operator Dashboard**: Django 5.2 (primary), Blazor Server (.NET 10 legacy)
+- **ORM**: Entity Framework Core 10.0
 - **Databases**: PostgreSQL 16, MongoDB 7.0
 - **Cache**: Redis 7
 - **Search**: Elasticsearch 8.11
@@ -187,9 +187,9 @@ Before you begin, ensure you have the following installed:
 
 ### Required Tools
 
-1. **[.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** (9.0 or later)
+1. **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)** (10.0 or later)
    ```bash
-   dotnet --version  # Should show 9.0.x
+   dotnet --version  # Should show 10.0.x
    ```
 
 2. **[Docker Desktop](https://www.docker.com/get-started)** (includes Docker Compose V2)
