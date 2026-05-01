@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,11 @@ public static class CoachEndpoints
 
         group.MapGet("/{playerId:guid}/daily-brief", async (
             Guid playerId,
+            HttpContext httpContext,
             IPersonalizationService personalization,
             CancellationToken ct) =>
         {
+            if (!IsOwner(httpContext, playerId)) return Results.Forbid();
             var home = await personalization.GetHomeAsync(playerId, ct);
             return Results.Ok(home.CoachBrief);
         });
@@ -27,9 +30,11 @@ public static class CoachEndpoints
         group.MapPost("/{playerId:guid}/feedback", async (
             Guid playerId,
             [FromBody] CoachFeedbackRequest request,
+            HttpContext httpContext,
             IPlayerMindProfileService profiles,
             CancellationToken ct) =>
         {
+            if (!IsOwner(httpContext, playerId)) return Results.Forbid();
             await profiles.RecordEventAsync(playerId, new PlayerBehaviorEventDto(
                 EventType: "coach_feedback",
                 EventSource: "coach",
@@ -45,5 +50,12 @@ public static class CoachEndpoints
 
             return Results.Accepted();
         });
+    }
+
+    private static bool IsOwner(HttpContext httpContext, Guid playerId)
+    {
+        var sub = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? httpContext.User.FindFirst("sub")?.Value;
+        return Guid.TryParse(sub, out var userId) && userId == playerId;
     }
 }

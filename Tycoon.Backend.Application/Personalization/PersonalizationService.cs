@@ -116,28 +116,14 @@ public sealed class PersonalizationService : IPersonalizationService
             var guardrailResult = _guardrails.Apply(profile, guardCandidate);
 
             var recId = Guid.NewGuid();
-
-            var rec = new PersonalizationRecommendation
-            {
-                Id = recId,
-                PlayerId = playerId,
-                RecommendationType = candidate.Type,
-                Source = "sidecar",
-                Priority = priority++,
-                Score = candidate.Score,
-                PayloadJson = JsonSerializer.Serialize(candidate.Payload, _json),
-                GuardrailJson = JsonSerializer.Serialize(guardrailResult.AppliedRules, _json),
-                ExpiresAt = DateTimeOffset.UtcNow.AddHours(6)
-            };
-
-            _db.PersonalizationRecommendations.Add(rec);
+            var reason = guardrailResult.BlockReason ?? candidate.Reason;
 
             await _audit.LogDecisionAsync(
                 playerId,
                 recId,
                 guardrailResult.Allowed ? "allowed" : "blocked",
                 "sidecar",
-                guardrailResult.BlockReason ?? candidate.Reason,
+                reason,
                 profile,
                 candidate,
                 guardrailResult.AppliedRules,
@@ -146,9 +132,25 @@ public sealed class PersonalizationService : IPersonalizationService
 
             if (guardrailResult.Allowed)
             {
+                var rec = new PersonalizationRecommendation
+                {
+                    Id = recId,
+                    PlayerId = playerId,
+                    RecommendationType = candidate.Type,
+                    Source = "sidecar",
+                    Priority = priority++,
+                    Score = candidate.Score,
+                    Reason = candidate.Reason,
+                    PayloadJson = JsonSerializer.Serialize(candidate.Payload, _json),
+                    GuardrailJson = JsonSerializer.Serialize(guardrailResult.AppliedRules, _json),
+                    ExpiresAt = DateTimeOffset.UtcNow.AddHours(6)
+                };
+
+                _db.PersonalizationRecommendations.Add(rec);
+
                 result.Add(new PlayerRecommendationDto(
                     rec.Id, candidate.Type, "sidecar", rec.Priority, candidate.Score,
-                    candidate.Payload, guardrailResult.AppliedRules, rec.ExpiresAt));
+                    candidate.Reason, candidate.Payload, guardrailResult.AppliedRules, rec.ExpiresAt));
             }
         }
 

@@ -518,8 +518,9 @@ builder.Services.Configure<PersonalizationOptions>(
 builder.Services.AddHttpClient<IPersonalizationSidecarClient, PersonalizationSidecarClient>(client =>
 {
     var baseUrl = builder.Configuration["SidecarPersonalization:BaseUrl"] ?? "http://localhost:8001";
+    var timeoutSeconds = builder.Configuration.GetValue<int>("SidecarPersonalization:TimeoutSeconds", 5);
     client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromSeconds(5);
+    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 });
 builder.Services.Configure<StorePremiumOptions>(builder.Configuration.GetSection("StorePremium"));
 builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection("PayPal"));

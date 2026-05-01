@@ -16,6 +16,7 @@ public sealed class PersonalizationRecommendationConfiguration : IEntityTypeConf
         b.Property(x => x.Source).HasColumnName("source").HasMaxLength(64);
         b.Property(x => x.Priority).HasColumnName("priority");
         b.Property(x => x.Score).HasColumnName("score").HasPrecision(5, 2);
+        b.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(512).HasDefaultValue("");
         b.Property(x => x.PayloadJson).HasColumnName("payload_json").HasColumnType("jsonb");
         b.Property(x => x.GuardrailJson).HasColumnName("guardrail_json").HasColumnType("jsonb");
         b.Property(x => x.ExpiresAt).HasColumnName("expires_at");

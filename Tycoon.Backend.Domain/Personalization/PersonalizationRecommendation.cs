@@ -10,6 +10,7 @@ public sealed class PersonalizationRecommendation
 
     public int Priority { get; set; }
     public decimal Score { get; set; } = 0.50m;
+    public string Reason { get; set; } = "";
 
     public string PayloadJson { get; set; } = "{}";
     public string GuardrailJson { get; set; } = "{}";

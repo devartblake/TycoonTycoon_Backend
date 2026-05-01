@@ -39,6 +39,7 @@ public sealed record PlayerRecommendationDto(
     string Source,
     int Priority,
     decimal Score,
+    string Reason,
     Dictionary<string, object> Payload,
     Dictionary<string, object> Guardrails,
     DateTimeOffset? ExpiresAt
