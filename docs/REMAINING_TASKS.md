@@ -1,6 +1,6 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-04-29 (Unified Personalization Layer complete: core services + admin endpoints + gameplay/store/notification hooks)_
+_Last updated: 2026-05-01 (.NET 10 upgrade complete; Personalization hardening + audit gap fixes complete)_
 
 > This file is the canonical "what is left to do" reference.
 > For completed work, see [`docs/ALPHA_TASK_AUDIT.md`](ALPHA_TASK_AUDIT.md).
@@ -24,6 +24,9 @@ _Last updated: 2026-04-29 (Unified Personalization Layer complete: core services
 | **Unified Personalization Layer — Core (PRs 1–5)** | **High** | **Complete — DB schema, services, APIs, sidecar, DTOs** | **No** |
 | **Unified Personalization Layer — Admin Endpoints (Issue 13)** | **High** | **Complete — 8 admin routes, archetype/churn/rule management** | **No** |
 | **Unified Personalization Layer — Gameplay Hooks (Issues 9–12)** | **High** | **Complete — question, match, module, store, notification hooks** | **No** |
+| **Personalization Hardening (audit trail, feature flags, options)** | **High** | **Complete — AuditLog, PersonalizationOptions, debug endpoint, configurable guardrails** | **No** |
+| **Personalization Alignment Audit gap fixes** | **High** | **Complete — Reason field, persistence fix, ownership validation, config timeout** | **No** |
+| **.NET 10 upgrade** | **High** | **Complete — all 20 projects, all packages, Docker images updated** | **No** |
 | **Operator Dashboard Wave B (Questions, Events, Seasons)** | Medium | **Complete — 2026-04-29** | No |
 | **Operator Dashboard Wave C (Moderation, Notifications, Economy, Anti-cheat, Event Queue)** | Medium | **Complete — 2026-04-29** | No |
 | **Django DefaultPermissions fix** | Medium | **Complete — all 12 scopes now granted on login** | No |
