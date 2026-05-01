@@ -37,7 +37,7 @@
 {% if player_id %}
 <section class="card">
   {% include "dashboard/partials/section_intro.html" with title="Manual transaction" copy="Grants and deductions are permanent. Use a support ticket reference as the reason." %}
-  <form method="post" action="{% url 'economy-grant' %}" class="stack" onsubmit="return confirm('Apply this transaction to player {{ player_id }}?');">
+  <form method="post" action="{% url 'economy-grant' %}" class="stack" data-validate="1" onsubmit="return confirm('Apply this transaction to player {{ player_id }}?');">
     {% csrf_token %}
     <input type="hidden" name="playerId" value="{{ player_id }}" />
     <div class="form-grid">
@@ -48,15 +48,20 @@
           <option value="deduction">Deduction (remove coins)</option>
         </select>
       </label>
-      <label>
-        Amount
-        <input type="number" name="amount" min="1" placeholder="e.g. 100" required />
-      </label>
+      <div class="form-field">
+        <label for="grant-amount">Amount</label>
+        <input id="grant-amount" type="number" name="amount" min="1" placeholder="e.g. 100" required
+               data-hint="Enter a positive integer coin amount." />
+        <span class="field-error"></span>
+      </div>
     </div>
-    <label>
-      Reason (required)
-      <input type="text" name="reason" placeholder="e.g. support ticket #4421" required />
-    </label>
+    <div class="form-field">
+      <label for="grant-reason">Reason (required)</label>
+      <input id="grant-reason" type="text" name="reason" placeholder="e.g. support ticket #4421" required
+             data-hint="Reference a support ticket or case ID." />
+      <span class="field-error"></span>
+      <span class="field-hint">Include a support ticket number for audit traceability.</span>
+    </div>
     <div class="toolbar-actions">
       <button type="submit">Apply transaction</button>
     </div>

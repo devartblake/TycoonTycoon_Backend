@@ -1,0 +1,11 @@
+{% comment %}
+  Reusable table density toggle.
+  Usage: {% include "dashboard/partials/table_density.html" with target_id="my-table" %}
+  The target element must have id="{{ target_id }}" on the <table> element.
+{% endcomment %}
+<div class="table-density-bar" data-density-target="{{ target_id }}">
+  <span class="helper-text">Density:</span>
+  <button type="button" class="density-btn is-active" data-density="standard">Standard</button>
+  <button type="button" class="density-btn" data-density="compact">Compact</button>
+  <button type="button" class="density-btn" data-density="comfortable">Comfortable</button>
+</div>

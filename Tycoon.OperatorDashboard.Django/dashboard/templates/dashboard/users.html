@@ -93,10 +93,10 @@
       <button type="submit">Refresh triage view</button>
       <span class="helper-text">Showing {{ items|length }} records, total {{ total }}, page {{ page }}.</span>
       {% if has_prev %}
-      <a class="button secondary" href="?preset={{ preset|default:'' }}&q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&role={{ query.role|default:'' }}&isVerified={{ query.isVerified|default:'' }}&isBanned={{ query.isBanned|default:'' }}&sortBy={{ query.sortBy|default:'createdAt' }}&sortOrder={{ query.sortOrder|default:'desc' }}&page={{ prev_page }}&pageSize={{ page_size }}">Previous</a>
+      <a class="button secondary" href="?preset={{ preset|default:'' }}&q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&role={{ query.role|default:'' }}&isVerified={{ query.isVerified|default:'' }}&isBanned={{ query.isBanned|default:'' }}&sortBy={{ query.sortBy|default:'createdAt' }}&sortOrder={{ query.sortOrder|default:'desc' }}&page={{ prev_page }}&pageSize={{ page_size }}">← Previous</a>
       {% endif %}
       {% if has_next %}
-      <a class="button secondary" href="?preset={{ preset|default:'' }}&q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&role={{ query.role|default:'' }}&isVerified={{ query.isVerified|default:'' }}&isBanned={{ query.isBanned|default:'' }}&sortBy={{ query.sortBy|default:'createdAt' }}&sortOrder={{ query.sortOrder|default:'desc' }}&page={{ next_page }}&pageSize={{ page_size }}">Next</a>
+      <a class="button secondary" href="?preset={{ preset|default:'' }}&q={{ query.q|default:'' }}&status={{ query.status|default:'' }}&role={{ query.role|default:'' }}&isVerified={{ query.isVerified|default:'' }}&isBanned={{ query.isBanned|default:'' }}&sortBy={{ query.sortBy|default:'createdAt' }}&sortOrder={{ query.sortOrder|default:'desc' }}&page={{ next_page }}&pageSize={{ page_size }}">Next →</a>
       {% endif %}
     </div>
   </form>
@@ -158,7 +158,7 @@
 </section>
 
 <section class="card" style="margin-top: 18px;">
-  {% include "dashboard/partials/section_intro.html" with title="Saved-view governance audit" copy="Track save, archive, delete, and transfer actions for team-shared triage views." %}
+  {% include "dashboard/partials/section_intro.html" with title="Saved-view governance audit timeline" copy="Track save, archive, delete, and transfer actions for team-shared triage views." %}
   <form method="get" class="stack">
     <div class="form-grid">
       <label>
@@ -216,7 +216,7 @@
         {% for row in saved_view_audit_rows %}
         <tr>
           <td>{{ row.createdAtUtc }}</td>
-          <td><span class="chip neutral">{{ row.action }}</span></td>
+          <td>{{ row.action }}</td>
           <td>{{ row.actorEmail }}</td>
           <td>{{ row.ownerEmail }}</td>
           <td>{{ row.viewName }}</td>
@@ -233,9 +233,9 @@
 </section>
 
 <section class="card" style="margin-top: 18px;">
-  {% include "dashboard/partials/section_intro.html" with title="Users table" copy="This view remains backed by the authenticated Django operator route and existing bulk-action guardrails." %}
+  {% include "dashboard/partials/section_intro.html" with title="Operator Users" copy="This view remains backed by the authenticated Django operator route and existing bulk-action guardrails." %}
   {% if can_write_users %}
-  <form method="post" class="stack">
+  <form method="post" class="stack" data-validate="1">
     {% csrf_token %}
     <div class="form-grid">
       <label>
@@ -245,10 +245,14 @@
           <option value="unban">unban</option>
         </select>
       </label>
-      <label>
-        Reason
-        <input type="text" name="reason" placeholder="reason for bulk ban" />
-      </label>
+      <div class="form-field">
+        <label for="bulk-reason">
+          Reason
+        </label>
+        <input id="bulk-reason" type="text" name="reason" placeholder="reason for bulk ban"
+               data-hint="A reason is required for audit purposes." />
+        <span class="field-error"></span>
+      </div>
       <label>
         Execution mode
         <select name="dryRun">
@@ -256,10 +260,15 @@
           <option value="">live execution</option>
         </select>
       </label>
-      <label>
-        Confirmation
-        <input type="text" name="confirm" placeholder="type YES to execute" />
-      </label>
+      <div class="form-field">
+        <label for="bulk-confirm">
+          Confirmation
+        </label>
+        <input id="bulk-confirm" type="text" name="confirm" placeholder="type YES to execute"
+               data-hint="Type YES to confirm live execution." />
+        <span class="field-error"></span>
+        <span class="field-hint">Live execution requires typing YES.</span>
+      </div>
     </div>
     <div class="toolbar-actions">
       <button type="submit">Run on selected users</button>
@@ -267,8 +276,11 @@
     </div>
   {% endif %}
 
+    <div class="table-meta">
+      {% include "dashboard/partials/table_density.html" with target_id="users-table" %}
+    </div>
     <div class="table-wrap">
-      <table class="dense-table">
+      <table id="users-table" class="dense-table">
         <thead>
           <tr>
             {% if can_write_users %}<th>Select</th>{% endif %}

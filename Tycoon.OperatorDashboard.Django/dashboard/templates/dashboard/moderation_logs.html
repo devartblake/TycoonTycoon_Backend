@@ -44,9 +44,10 @@
   {% include "dashboard/partials/section_intro.html" with title="Moderation entries" copy="Read-only log output from the backend moderation endpoints." %}
   <div class="table-meta">
     <span class="helper-text">Statuses are color-coded for quicker scanning during enforcement review.</span>
+    {% include "dashboard/partials/table_density.html" with target_id="moderation-table" %}
   </div>
   <div class="table-wrap">
-    <table class="dense-table">
+    <table id="moderation-table" class="dense-table">
       <thead>
         <tr>
           <th>Player</th>
