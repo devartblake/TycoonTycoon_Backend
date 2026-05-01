@@ -47,9 +47,10 @@
   {% include "dashboard/partials/section_intro.html" with title="Audit events" copy="Events are displayed directly from the backend response envelope." %}
   <div class="table-meta">
     <span class="helper-text">Current view reflects the active audit filters and backend pagination response.</span>
+    {% include "dashboard/partials/table_density.html" with target_id="audit-table" %}
   </div>
   <div class="table-wrap">
-    <table class="dense-table">
+    <table id="audit-table" class="dense-table">
       <thead>
         <tr>
           <th>Event</th>

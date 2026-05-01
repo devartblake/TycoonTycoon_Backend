@@ -803,3 +803,107 @@ class DashboardViewsTests(TestCase):
         response = self.client.get(reverse("operator-minio-diagnostics-view"))
         self.assertEqual(302, response.status_code)
         self.assertEqual(reverse("operator-login"), response.url)
+
+    # ── UX hardening: table density toggle ────────────────────────────────────
+
+    @mock.patch("dashboard.views.list_admin_users")
+    def test_users_view_renders_density_toggle(self, mock_list_admin_users):
+        """Users table should include the density-toggle widget."""
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_admin_users.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("operator-users-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'data-density-target="users-table"')
+        self.assertContains(response, 'data-density="compact"')
+        self.assertContains(response, 'data-density="comfortable"')
+
+    @mock.patch("dashboard.views.get_security_audit")
+    def test_audit_security_view_renders_density_toggle(self, mock_get_security_audit):
+        """Audit security table should include the density-toggle widget."""
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_get_security_audit.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("operator-audit-security-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'data-density-target="audit-table"')
+
+    @mock.patch("dashboard.views.get_moderation_logs")
+    def test_moderation_logs_view_renders_density_toggle(self, mock_get_moderation_logs):
+        """Moderation logs table should include the density-toggle widget."""
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["events:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_get_moderation_logs.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("operator-moderation-logs-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'data-density-target="moderation-table"')
+
+    # ── UX hardening: inline form validation markup ────────────────────────────
+
+    @mock.patch("dashboard.views.list_admin_users")
+    def test_users_view_bulk_form_has_validation_attributes(self, mock_list_admin_users):
+        """Bulk-action form should carry data-validate and field-error spans."""
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read", "users:write"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_admin_users.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("operator-users-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'data-validate="1"')
+        self.assertContains(response, 'class="field-error"')
+        self.assertContains(response, 'class="field-hint"')
+
+    @mock.patch("dashboard.views.get_economy_history")
+    def test_economy_player_grant_form_has_validation_attributes(self, mock_list_history):
+        """Economy grant form should carry data-validate and field hints."""
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["economy:read"], "email": "ops@example.com"}
+        session.save()
+
+        mock_list_history.return_value = {"items": [], "total": 0, "page": 1}
+        response = self.client.get(reverse("economy-player-view"), {"playerId": "test-player-id"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'data-validate="1"')
+        self.assertContains(response, "support ticket")
+
+    # ── UX hardening: operator.js is loaded by base template ──────────────────
+
+    @mock.patch("dashboard.views.list_service_statuses")
+    @mock.patch("dashboard.views.get_overall_status")
+    def test_base_template_loads_operator_js(self, mock_overall_status, mock_list_service_statuses):
+        """Every authenticated page should load operator.js for progressive enhancement."""
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"email": "ops@example.com", "permissions": ["users:read"]}
+        session.save()
+
+        mock_list_service_statuses.return_value = []
+        mock_overall_status.return_value = "healthy"
+
+        response = self.client.get(reverse("dashboard-home"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "operator.js")
