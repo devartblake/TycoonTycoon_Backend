@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Tycoon.Backend.Infrastructure.Persistence;
 
@@ -31,6 +32,7 @@ public sealed class AppDbDesignTimeFactory : IDesignTimeDbContextFactory<AppDb>
         var options = new DbContextOptionsBuilder<AppDb>()
             .UseNpgsql(cs)
             .UseSnakeCaseNamingConvention()
+            .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
         return new AppDb(options);
