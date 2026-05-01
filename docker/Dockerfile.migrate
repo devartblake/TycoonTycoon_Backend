@@ -54,8 +54,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgssapi-krb5-
 COPY --from=build /app/publish .
 
 # Run as non-root user
-RUN groupadd --system --gid 1000 appuser && \
-    useradd --system --uid 1000 --gid appuser --shell /bin/false --no-create-home appuser && \
+RUN groupadd --gid 10001 appuser && \
+    useradd --uid 10001 --gid 10001 --no-create-home --shell /bin/false appuser && \
     chown -R appuser:appuser /app
 
 USER appuser
