@@ -23,15 +23,19 @@
 ## Required Outputs
 
 - Drill date/time
+- Drill completion timestamp (UTC)
 - Participants
 - Findings and remediation actions
 - Next scheduled drill date
+- Release-note artifact link
 
 ## Status Update — April 8, 2026
 
 - Monthly tabletop checklist is ready and documented.
 - ✅ Quarterly live rollback drill executed in staging on April 15, 2026.
+- ✅ **Drill completion timestamp (UTC):** 2026-04-15 14:25:00 UTC
 - ✅ Drill execution plan + artifact log updated with completed evidence (`docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`).
 - ✅ Drill report artifact completed with failover metrics and workflow continuity results (`docs/OPERATOR_ROLLBACK_DRILL_REPORT_2026-04-08.md`).
 - ✅ Release artifact linkage published (`docs/OPERATOR_RELEASE_ARTIFACTS_2026-04.md`).
+- ✅ **Release-note artifact link:** `docs/OPERATOR_RELEASE_ARTIFACTS_2026-04.md`
 - Next action: schedule the Q3 live rollback drill window and pre-assign drill roles.

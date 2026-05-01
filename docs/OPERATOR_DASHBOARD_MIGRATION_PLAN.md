@@ -139,3 +139,10 @@ while preserving feature parity, role-based access control, and operational reli
 - ⏳ **Still pending**:
   - Real cookie/JWT auth integration in `Tycoon.OperatorDashboard.Web`
   - Remaining Wave A action workflows + richer UX interactions
+
+## Rollback Drill Record
+
+- **Drill completion timestamp (UTC):** 2026-04-15 14:25:00 UTC
+- **Release-note artifact link:** `docs/OPERATOR_RELEASE_ARTIFACTS_2026-04.md`
+- **Drill execution plan + evidence:** `docs/OPERATOR_ROLLBACK_DRILL_STAGING_2026-Q2.md`
+- **Drill report:** `docs/OPERATOR_ROLLBACK_DRILL_REPORT_2026-04-08.md`
