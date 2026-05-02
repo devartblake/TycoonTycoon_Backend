@@ -96,6 +96,14 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
+    // ── Health — always available regardless of environment ───────────────────
+    app.MapHealthChecks("/health");
+    app.MapHealthChecks("/alive", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        Predicate = r => r.Tags.Contains("live")
+    });
+
+    // ── OpenAPI — dev only ────────────────────────────────────────────────────
     if (app.Environment.IsDevelopment())
         app.MapOpenApi();
 
@@ -105,7 +113,6 @@ try
     KeyEndpoints.Map(app);
     InternalEndpoints.Map(app);
 
-    app.MapDefaultEndpoints();
     app.MapGet("/", () => new { service = "Synaptix.Security.Kms", version = "1.0" });
 
     await app.RunAsync();
