@@ -4375,6 +4375,50 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.ToTable("votes", (string)null);
                 });
 
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.SpinClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ClaimedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_at_utc");
+
+                    b.Property<int>("CoinsGranted")
+                        .HasColumnType("integer")
+                        .HasColumnName("coins_granted");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("SegmentId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("segment_id");
+
+                    b.Property<string>("SpinId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("spin_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_arcade_spin_claims");
+
+                    b.HasIndex("SpinId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_arcade_spin_claims_spin_id");
+
+                    b.HasIndex("PlayerId", "ClaimedAtUtc")
+                        .HasDatabaseName("ix_arcade_spin_claims_player_id_claimed_at_utc");
+
+                    b.ToTable("arcade_spin_claims", (string)null);
+                });
+
             modelBuilder.Entity("Tycoon.Backend.Domain.Personalization.PlayerMindProfile", b =>
                 {
                     b.Property<Guid>("Id")
