@@ -1,4 +1,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+# curl is needed for the compose healthcheck; not present in the slim aspnet image
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 USER $APP_UID
 WORKDIR /app
 EXPOSE 5050
