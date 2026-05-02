@@ -16,9 +16,8 @@
   <Folder Name="/Services/Synaptix.Security.Kms/">
     <Project Path="Synaptix.Security.Kms.Api/Synaptix.Security.Kms.Api.csproj" Id="49570931-8e9b-49a5-b15b-0577ef19c651" />
     <Project Path="Synaptix.Security.Kms.Application/Synaptix.Security.Kms.Application.csproj" Id="bc10b555-9ef7-4dff-8823-75343d34ae3f" />
-    <Project Path="Synaptix.Security.Kms.Contracts/Synaptix.Security.Kms.Contracts.csproj" />
+    <Project Path="Synaptix.Security.Kms.Contracts/Synaptix.Security.Kms.Contracts.csproj" Id="7ab62bf4-6034-42a7-b9eb-6cc526f16dc0" />
     <Project Path="Synaptix.Security.Kms.Infrastructure/Synaptix.Security.Kms.Infrastructure.csproj" Id="68a6f7e6-02aa-4c4b-bc62-b70e3efc3c1a" />
-    <Project Path="Tycoon.Security.Kms.Client/Tycoon.Security.Kms.Client.csproj" />
   </Folder>
   <Folder Name="/Shared/">
     <Project Path="Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj" />
