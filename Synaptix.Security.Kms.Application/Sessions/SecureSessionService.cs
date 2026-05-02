@@ -12,7 +12,7 @@ public sealed class SecureSessionService(ISessionStore store) : ISecureSessionSe
     private static readonly TimeSpan SessionTtl = TimeSpan.FromMinutes(30);
 
     // X25519 OID — supported on .NET 8+ Linux/macOS/Windows via CNG
-    private static readonly ECCurve Curve25519 = ECCurve.CreateFromOid("1.3.101.110");
+    private static readonly ECCurve Curve25519 = ECCurve.CreateFromOid(new Oid("1.3.101.110"));
 
     public async Task<StartSessionResult> StartAsync(
         string subjectId, StartSessionCommand command, CancellationToken ct)
