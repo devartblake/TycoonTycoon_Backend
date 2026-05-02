@@ -39,8 +39,7 @@ services:
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: "${VAULT_DEV_TOKEN:-dev-root-token-change-me}"
       VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
-    cap_add:
-      - IPC_LOCK
+      VAULT_DISABLE_MLOCK: "true"
     command: server -dev
     networks: [security-net]
     healthcheck:
