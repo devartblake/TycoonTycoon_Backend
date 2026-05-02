@@ -47,6 +47,7 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<StudySetItem> StudySetItems => Set<StudySetItem>();
         public DbSet<StudyCardState> StudyCardStates => Set<StudyCardState>();
         public DbSet<PlayerWallet> PlayerWallets => Set<PlayerWallet>();
+        public DbSet<SpinClaim> SpinClaims => Set<SpinClaim>();
         public DbSet<EconomyTransaction> EconomyTransactions => Set<EconomyTransaction>();
         public DbSet<EconomyTransactionLine> EconomyTransactionLines => Set<EconomyTransactionLine>();
         public DbSet<PlayerPowerup> PlayerPowerups => Set<PlayerPowerup>();
