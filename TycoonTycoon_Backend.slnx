@@ -30,5 +30,6 @@
     <Project Path="Tycoon.Backend.Infrastructure.Tests/Tycoon.Backend.Infrastructure.Tests.csproj" />
   </Folder>
   <Project Path="Tycoon.MigrationService/Tycoon.MigrationService.csproj" />
+  <Project Path="Tycoon.Security.Kms.Client/Tycoon.Security.Kms.Client.csproj" />
   <Project Path="Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj" />
 </Solution>

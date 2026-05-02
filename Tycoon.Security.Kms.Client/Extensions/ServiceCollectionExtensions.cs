@@ -18,7 +18,6 @@ public static class ServiceCollectionExtensions
         services
             .AddOptions<KmsClientOptions>()
             .Bind(configuration.GetSection(KmsClientOptions.SectionName))
-            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         services
