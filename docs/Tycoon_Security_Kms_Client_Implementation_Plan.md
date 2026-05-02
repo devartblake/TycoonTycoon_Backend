@@ -1,5 +1,10 @@
 # Tycoon.Security.Kms.Client — Implementation Plan
 
+> **Status: COMPLETE** — 2026-05-02
+> All milestones below have been implemented and are live on branch `claude/analyze-security-docs-pZy71`.
+> The KMS API and security stack run via `docker compose -f docker/compose.security.yml up`.
+> See [`docs/SYNAPTIX_SECURITY_RUNNING_GUIDE.md`](SYNAPTIX_SECURITY_RUNNING_GUIDE.md).
+
 Source documents:
 - `docs/Synaptix_Backend_Security_KMS_Handoff.md`
 - `docs/Synaptix_Security_Architecture_Recommendation.md`

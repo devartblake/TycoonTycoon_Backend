@@ -728,3 +728,72 @@ If you want to run this stack on your own Linux servers (Ubuntu/Fedora) and expo
 See the full runbook here:
 
 - `docs/ON_PREM_CLOUDFLARE_DEPLOYMENT.md`
+
+---
+
+## 11. Synaptix Security Stack (`compose.security.yml`)
+
+The security stack is a **separate, independently runnable** Docker Compose file that provides:
+
+| Service | Container | Port | Purpose |
+|---|---|---|---|
+| HashiCorp Vault (dev) | `synaptix_vault` | `8210:8200` | Transit key wrapping |
+| Vault Init (one-shot) | `synaptix_vault_init` | — | Provisions Transit keys at startup |
+| KMS API | `synaptix_kms_api` | `5060:5050` | Session, payload, and key endpoints |
+
+### Standalone (no main stack)
+
+```bash
+docker compose -f docker/compose.security.yml up --build
+```
+
+The KMS API falls back to in-memory cache when no Redis connection string is set. This is the default for local development.
+
+### Alongside the main stack
+
+```bash
+# Start main infrastructure first
+docker compose -f docker/compose.yml up -d
+
+# Then bring up the security stack
+docker compose -f docker/compose.security.yml up -d
+```
+
+To connect KMS to the main Redis instance, set `KMS_REDIS_URL` in your environment before running:
+
+```bash
+export KMS_REDIS_URL="redis:6379,password=<redis-password>"
+docker compose -f docker/compose.security.yml up -d
+```
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `VAULT_PORT` | `8210` | Host-side Vault port |
+| `KMS_API_PORT` | `5060` | Host-side KMS API port |
+| `VAULT_DEV_TOKEN` | `dev-root-token-change-me` | Vault root token (dev only) |
+| `KMS_SERVICE_TOKEN` | `kms-internal-service-token-change-me` | Service-to-service header value |
+| `JWT_SECRET_KEY` | `your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long` | Must match backend JWT secret |
+| `VAULT_REQUIRED` | `false` | If true, KMS API refuses to start when Vault is unreachable |
+| `KMS_REDIS_URL` | _(empty)_ | Redis connection string; empty = in-memory fallback |
+
+### Transit keys provisioned by Vault Init
+
+| Key name | Algorithm |
+|---|---|
+| `synaptix-session-wrap` | aes256-gcm96 |
+| `synaptix-payload-wrap` | aes256-gcm96 |
+| `synaptix-refresh-token-wrap` | aes256-gcm96 |
+| `synaptix-data-protection-wrap` | aes256-gcm96 |
+
+### Health check
+
+```bash
+curl http://localhost:5060/health
+# → {"status":"Healthy"}
+```
+
+### Full run instructions
+
+See [`docs/SYNAPTIX_SECURITY_RUNNING_GUIDE.md`](docs/SYNAPTIX_SECURITY_RUNNING_GUIDE.md) for a complete step-by-step guide including curl examples for every endpoint.

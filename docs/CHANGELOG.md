@@ -4,6 +4,58 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-02] Synaptix Security KMS — Full Implementation
+
+### New projects
+
+- **`Synaptix.Security.Kms.Contracts`** — shared model class library (`EncryptedPayload`, `SecureSession`, `WrappedDataKey`, `SecureSuites` constants `ClassicalV1` / `HybridPqV1`). Converted from console exe to class library; `Program.cs` removed.
+- **`Synaptix.Security.Kms.Application`** — domain services class library.
+  - `SecureSessionService` — X25519 ECDH key exchange, HKDF-SHA256 key derivation (context labels `synaptix:c2s:v1` / `synaptix:s2c:v1`), `CryptographicOperations.ZeroMemory` for forward secrecy.
+  - `SecurePayloadService` — AES-256-GCM encryption (96-bit nonce, 128-bit auth tag) with HMAC-SHA256 server signature.
+  - `KeyRotationService` — triggers Vault Transit key rotation via `IKeyWrappingService`.
+- **`Synaptix.Security.Kms.Infrastructure`** — infrastructure adapters class library.
+  - `VaultTransitClient` — direct HTTP REST client to HashiCorp Vault Transit API (no VaultSharp dependency); `GenerateDataKeyAsync`, `DecryptDataKeyAsync`, `GetLatestKeyVersionAsync`.
+  - `VaultEnvelopeEncryptionService` — envelope encryption: Vault wraps/unwraps data keys, local AES-GCM encrypts data.
+  - `NullKeyWrappingService` — dev fallback (random bytes, no Vault required).
+  - `RedisSessionStore` — `IDistributedCache`-backed session persistence with AOT-safe `System.Text.Json` source generation.
+  - `RedisReplayProtectionStore` — Redis keys `synsec:session:{id}:seq:{n}` and `synsec:session:{id}:nonce:{n}` for replay/sequence protection.
+  - `InMemoryReplayProtectionStore` — dev fallback when Redis unavailable.
+  - `DependencyInjection.AddKmsInfrastructure()` — conditionally registers Vault services (only when `Vault` config section present); falls back to in-memory cache when `ConnectionStrings:cache` is empty.
+- **`Tycoon.Security.Kms.Client`** — typed HTTP client library for consuming the KMS API.
+  - Interfaces: `IKmsSessionClient`, `IKmsPayloadClient`, `IKmsKeyClient`, `IKmsInternalClient`.
+  - Implementations in `Http/` — all use `PostAsJsonAsync` + `ReadFromJsonAsync`; throw `KmsClientException` / `KmsUnavailableException` on failure.
+  - `KmsClientOptions` bound from `appsettings.json` section `"KmsClient"`.
+  - `ServiceCollectionExtensions.AddKmsClient()` — one-call DI registration with `AddStandardResilienceHandler()` (retry + circuit-breaker).
+
+### Updated projects
+
+- **`Synaptix.Security.Kms.Api`** — converted from `Microsoft.NET.Sdk` console to `Microsoft.NET.Sdk.Web`.
+  - JWT bearer authentication supporting OIDC authority, symmetric secret, or dev-only passthrough.
+  - Minimal API endpoints: `SessionEndpoints` (`/security/sessions/start|renew|revoke`), `PayloadEndpoints` (`/security/payload/encrypt|decrypt`), `KeyEndpoints` (`/security/keys/rotate`), `InternalEndpoints` (`/internal/security/datakey|encrypt|decrypt`).
+  - `ServiceTokenFilter` — `IEndpointFilter` enforcing `X-Service-Token` header on key and internal routes.
+  - `/health` and `/alive` mapped unconditionally (not gated behind `IsDevelopment`).
+  - `appsettings.json` and `appsettings.Development.json` with full config skeleton (Vault, JWT, Redis, KmsApi sections).
+- **`Directory.Packages.props`** — added `Microsoft.Extensions.Caching.Memory` 10.0.7.
+- **`TycoonTycoon_Backend.slnx`** — added `Synaptix.Security.Kms.Contracts` and `Tycoon.Security.Kms.Client` to the `/Services/Synaptix.Security.Kms/` solution folder.
+
+### Docker / infrastructure
+
+- **`docker/compose.security.yml`** (new) — standalone security stack: HashiCorp Vault (dev mode), `vault-init` one-shot Transit key provisioner (4 keys: `synaptix-session-wrap`, `synaptix-payload-wrap`, `synaptix-refresh-token-wrap`, `synaptix-data-protection-wrap`), `kms-api` service.
+  - Ports: Vault `8210:8200`, KMS API `5060:5050`.
+  - `VAULT_DISABLE_MLOCK=true` — allows Vault dev mode to start without `CAP_SETFCAP` capability.
+- **`Synaptix.Security.Kms.Api/Dockerfile`** — `curl` installed in the runtime stage (required for Docker Compose healthcheck; absent from `dotnet/aspnet:10.0` slim image).
+- **`Synaptix.Security.Kms.Api/Properties/launchSettings.json`** — `applicationUrl: http://localhost:5050` added; `ASPNETCORE_ENVIRONMENT: Development` set on both profiles.
+- **`Synaptix.Security.Kms.Api/appsettings.Development.json`** — Redis connection string cleared (empty string); in-memory cache fallback used when running without Redis.
+
+### Docs
+
+- `docs/Synaptix_Backend_Security_KMS_Handoff.md` — updated with implementation status.
+- `docs/Tycoon_Security_Kms_Client_Implementation_Plan.md` — marked as completed.
+- `Docker.md` — Security stack section added.
+- `docs/SYNAPTIX_SECURITY_RUNNING_GUIDE.md` (new) — full local and Docker run instructions.
+
+---
+
 ## [2026-05-01] Personalization Alignment Audit — Gap Fixes
 
 ### Completed this session
