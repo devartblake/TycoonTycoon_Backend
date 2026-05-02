@@ -2,7 +2,6 @@
   <PropertyGroup>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
-
   <!-- ═══════════════════════════════════════════════════════════════════════════
        INTENTIONALLY HELD BACK
        ───────────────────────────────────────────────────────────────────────────
@@ -10,15 +9,14 @@
        StyleCop.Analyzers 1.2.0-beta.556      (1.2.x series has no stable release)
        NBomber / Http     5.11.0              (breaking 5→6 API; perf-test only)
        ═══════════════════════════════════════════════════════════════════════════ -->
-
   <ItemGroup Label="MediatR">
     <PackageVersion Include="Hangfire.InMemory" Version="1.0.0" />
     <PackageVersion Include="MediatR" Version="14.1.0" />
     <!-- MediatR.Extensions.Microsoft.DependencyInjection merged into MediatR 12+; removed -->
     <PackageVersion Include="Mediator.Abstractions" Version="3.0.2" />
+    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageVersion Include="Npgsql" Version="10.0.2" />
   </ItemGroup>
-
   <ItemGroup Label="Entity Framework Core">
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7" />
@@ -29,21 +27,18 @@
     <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.2" />
     <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
   </ItemGroup>
-
   <ItemGroup Label="FluentValidation">
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <!-- FluentValidation.AspNetCore: author stopped AspNetCore integration at v11 -->
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
   </ItemGroup>
-
   <ItemGroup Label="Hangfire">
     <PackageVersion Include="Hangfire" Version="1.8.23" />
     <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.23" />
     <PackageVersion Include="Hangfire.Core" Version="1.8.23" />
     <PackageVersion Include="Hangfire.PostgreSql" Version="1.21.1" />
   </ItemGroup>
-
   <ItemGroup Label="OpenTelemetry">
     <PackageVersion Include="OpenTelemetry" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
@@ -61,7 +56,6 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
     <PackageVersion Include="Grafana.OpenTelemetry" Version="1.7.0" />
   </ItemGroup>
-
   <ItemGroup Label="Serilog">
     <PackageVersion Include="Serilog" Version="4.3.1" />
     <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
@@ -76,7 +70,6 @@
     <PackageVersion Include="Serilog.Sinks.Spectre" Version="0.6.0" />
     <PackageVersion Include="Elastic.Serilog.Sinks" Version="8.19.0" />
   </ItemGroup>
-
   <ItemGroup Label="ASP.NET Core">
     <!-- 2.3.9 is the last standalone NuGet release; .NET 3+ ships it in the shared framework -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.9" />
@@ -86,7 +79,6 @@
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.7" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
   </ItemGroup>
-
   <ItemGroup Label="Health Checks">
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.7" />
     <PackageVersion Include="AspNetCore.HealthChecks.MongoDb" Version="9.0.0" />
@@ -96,7 +88,6 @@
     <PackageVersion Include="AspNetCore.HealthChecks.Publisher.Prometheus" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.System" Version="9.0.0" />
   </ItemGroup>
-
   <ItemGroup Label="API Versioning Documentation">
     <PackageVersion Include="Asp.Versioning.Http" Version="10.0.0" />
     <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="10.0.0" />
@@ -105,7 +96,6 @@
     <PackageVersion Include="Swashbuckle.AspNetCore.ReDoc" Version="10.1.7" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.14.8" />
   </ItemGroup>
-
   <ItemGroup Label="Microsoft Extensions">
     <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="10.5.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.7" />
@@ -125,28 +115,24 @@
     <PackageVersion Include="Microsoft.Extensions.Resilience" Version="10.5.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.5.0" />
   </ItemGroup>
-
   <ItemGroup Label="Database Drivers">
     <PackageVersion Include="MongoDB.Driver" Version="3.8.0" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.3.6" />
     <PackageVersion Include="Elastic.Transport" Version="8.0.1" />
     <PackageVersion Include="Minio" Version="7.0.0" />
   </ItemGroup>
-
   <ItemGroup Label="MassTransit">
     <PackageVersion Include="MassTransit" Version="9.1.0" />
     <PackageVersion Include="MassTransit.Abstractions" Version="9.1.0" />
     <PackageVersion Include="MassTransit.Kafka" Version="9.1.0" />
     <PackageVersion Include="MassTransit.RabbitMQ" Version="9.1.0" />
   </ItemGroup>
-
   <ItemGroup Label="Data Access Query">
     <PackageVersion Include="Dapper" Version="2.1.72" />
     <PackageVersion Include="SqlKata" Version="4.0.1" />
     <PackageVersion Include="Sieve" Version="2.5.5" />
     <PackageVersion Include="Ardalis.Specification.EntityFrameworkCore" Version="9.3.1" />
   </ItemGroup>
-
   <ItemGroup Label="Utilities">
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageVersion Include="Humanizer.Core" Version="3.0.10" />
@@ -162,7 +148,6 @@
     <PackageVersion Include="System.Linq.Async.Queryable" Version="7.0.1" />
     <PackageVersion Include="System.Net.Http.Json" Version="10.0.7" />
   </ItemGroup>
-
   <ItemGroup Label="Aspire">
     <PackageVersion Include="Aspire.Hosting" Version="13.2.4" />
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.2.4" />
@@ -172,7 +157,6 @@
     <PackageVersion Include="Aspire.Hosting.Redis" Version="13.2.4" />
     <PackageVersion Include="Aspire.MongoDB.Driver" Version="13.2.4" />
   </ItemGroup>
-
   <ItemGroup Label="Testing">
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
     <!-- FluentAssertions held at 7.0.0 — license review pending -->
@@ -183,27 +167,22 @@
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
-
   <ItemGroup Label="Data Generation">
     <PackageVersion Include="Bogus" Version="35.6.5" />
   </ItemGroup>
-
   <ItemGroup Label="Diagnostics">
     <PackageVersion Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.661903" />
   </ItemGroup>
-
   <ItemGroup Label="Metrics">
     <PackageVersion Include="prometheus-net" Version="8.2.1" />
     <PackageVersion Include="prometheus-net.AspNetCore" Version="8.2.1" />
     <PackageVersion Include="App.Metrics" Version="4.3.0" />
     <PackageVersion Include="App.Metrics.AspNetCore" Version="4.3.0" />
   </ItemGroup>
-
   <ItemGroup Label="Feature Management">
     <PackageVersion Include="Microsoft.FeatureManagement" Version="4.5.0" />
     <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore" Version="4.5.0" />
   </ItemGroup>
-
   <ItemGroup Label="Integration Testing">
     <PackageVersion Include="Testcontainers" Version="4.11.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.11.0" />
@@ -214,7 +193,6 @@
     <PackageVersion Include="Respawn" Version="6.2.1" />
     <PackageVersion Include="WireMock.Net" Version="2.4.0" />
   </ItemGroup>
-
   <ItemGroup Label="Code Quality">
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.25.0.139117" />
     <!-- StyleCop.Analyzers: 1.2.x series has no stable release; leaving at current beta -->
@@ -223,35 +201,29 @@
     <PackageVersion Include="SecurityCodeScan.VS2019" Version="5.6.7" />
     <!-- Note: SecurityCodeScan.VS2019 is build-time only; upgrade to VS2022 package when tooling permits -->
   </ItemGroup>
-
   <ItemGroup Label="API Gateway">
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
   </ItemGroup>
-
   <ItemGroup Label="Performance">
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
     <!-- NBomber held at 5.11.0 — 6.x has breaking API changes; perf-test only -->
     <PackageVersion Include="NBomber" Version="5.11.0" />
     <PackageVersion Include="NBomber.Http" Version="5.11.0" />
   </ItemGroup>
-
   <ItemGroup Label="Rate Limiting">
     <PackageVersion Include="AspNetCoreRateLimit" Version="5.0.0" />
     <PackageVersion Include="AspNetCoreRateLimit.Redis" Version="2.0.0" />
   </ItemGroup>
-
   <ItemGroup Label="GraphQL">
     <PackageVersion Include="HotChocolate.AspNetCore" Version="15.1.16" />
     <PackageVersion Include="HotChocolate.Data" Version="15.1.16" />
     <PackageVersion Include="HotChocolate.Data.EntityFramework" Version="15.1.16" />
   </ItemGroup>
-
   <ItemGroup Label="gRPC">
     <PackageVersion Include="Grpc.AspNetCore" Version="2.76.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.80.0" />
     <PackageVersion Include="Google.Protobuf" Version="3.34.1" />
   </ItemGroup>
-
   <ItemGroup Label="Scheduling">
     <PackageVersion Include="Cronos" Version="0.13.0" />
     <PackageVersion Include="NCrontab" Version="3.4.0" />

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Synaptix.Security.Kms.Infrastructure": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
