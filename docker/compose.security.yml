@@ -1,0 +1,130 @@
+# ============================================================
+# Synaptix Security Stack
+# ============================================================
+# Provides HashiCorp Vault (dev mode) + Synaptix KMS API.
+#
+# Standalone (no main stack required):
+#   docker compose -f docker/compose.security.yml up
+#   KMS API falls back to in-memory distributed cache when
+#   ConnectionStrings__cache is empty.
+#
+# Alongside main stack (Redis + shared network):
+#   docker compose -f docker/compose.yml up -d
+#   docker compose -f docker/compose.security.yml \
+#     --profile full up -d
+#
+# Transit keys provisioned by vault-init:
+#   synaptix-session-wrap        (aes256-gcm96)
+#   synaptix-payload-wrap        (aes256-gcm96)
+#   synaptix-refresh-token-wrap  (aes256-gcm96)
+#   synaptix-data-protection-wrap (aes256-gcm96)
+# ============================================================
+
+name: tycoon-security
+
+services:
+
+  # ================================
+  # Vault (Dev Mode)
+  # ================================
+  # WARNING: dev mode is in-memory only and resets on restart.
+  # For staging/prod use an initialized + unsealed Vault with
+  # persistent storage — see docs/Synaptix_Backend_Security_KMS_Handoff.md
+  vault:
+    image: hashicorp/vault:latest
+    container_name: synaptix_vault
+    restart: unless-stopped
+    ports:
+      - "${VAULT_PORT:-8210}:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "${VAULT_DEV_TOKEN:-dev-root-token-change-me}"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    command: server -dev
+    networks: [security-net]
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://localhost:8200"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ================================
+  # Vault Init (one-shot transit setup)
+  # ================================
+  vault-init:
+    image: hashicorp/vault:latest
+    container_name: synaptix_vault_init
+    restart: "no"
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: "${VAULT_DEV_TOKEN:-dev-root-token-change-me}"
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        vault secrets enable transit 2>/dev/null || true
+        vault write -f transit/keys/synaptix-session-wrap        type=aes256-gcm96
+        vault write -f transit/keys/synaptix-payload-wrap        type=aes256-gcm96
+        vault write -f transit/keys/synaptix-refresh-token-wrap  type=aes256-gcm96
+        vault write -f transit/keys/synaptix-data-protection-wrap type=aes256-gcm96
+        echo "Vault Transit keys provisioned."
+    depends_on:
+      vault:
+        condition: service_healthy
+    networks: [security-net]
+
+  # ================================
+  # KMS API
+  # ================================
+  kms-api:
+    build:
+      context: ..
+      dockerfile: Synaptix.Security.Kms.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
+    image: synaptix-kms-api:latest
+    container_name: synaptix_kms_api
+    restart: unless-stopped
+    ports:
+      - "${KMS_API_PORT:-5060}:5050"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+
+      # Service-to-service token — other backend services send this as X-Service-Token
+      KmsApi__ServiceToken: "${KMS_SERVICE_TOKEN:-kms-internal-service-token-change-me}"
+
+      # JWT — must match the main backend's JwtSettings:SecretKey
+      JwtSettings__SecretKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
+
+      # Vault Transit
+      Vault__Address: "http://vault:8200"
+      Vault__Token: "${VAULT_DEV_TOKEN:-dev-root-token-change-me}"
+      Vault__TransitMount: "transit"
+      Vault__SessionWrapKey: "synaptix-session-wrap"
+      Vault__PayloadWrapKey: "synaptix-payload-wrap"
+      Vault__Required: "${VAULT_REQUIRED:-false}"
+
+      # Redis — leave empty to fall back to in-memory cache (standalone dev)
+      # Set to "redis:6379,password=..." when running alongside the main stack
+      ConnectionStrings__cache: "${KMS_REDIS_URL:-}"
+
+      # Observability
+      Serilog__MinimumLevel__Default: "${LOG_LEVEL:-Information}"
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+    networks: [security-net]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+# ================================
+# Networks
+# ================================
+networks:
+  security-net:
+    driver: bridge
