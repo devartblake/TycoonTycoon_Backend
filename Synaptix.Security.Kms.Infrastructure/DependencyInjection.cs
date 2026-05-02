@@ -36,7 +36,6 @@ public static class DependencyInjection
         {
             services.AddOptions<VaultOptions>()
                 .Bind(vaultSection)
-                .ValidateDataAnnotations()
                 .ValidateOnStart();
 
             services.AddHttpClient<VaultTransitClient>((sp, client) =>
