@@ -4,6 +4,38 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-03] Synaptix Rebrand — Backend Completion (Packets A–D)
+
+### Domain
+
+- **`Tier.UpdateDefinition()`** — new method on `Tycoon.Backend.Domain.Entities.Tier` allowing name and score-band updates without replacing the entity; required for seeder upsert and future admin tooling.
+
+### Seeder / MigrationService
+
+- **Tier names** (`Tycoon.MigrationService/Seeding/AppSeeder.cs`) — replaced Bronze/Silver/Gold/Platinum/Diamond with the six Synaptix ladder tiers: **Neural Initiate → Synapse Adept → Cortex Strategist → Mind Architect → Neural Overlord → Synaptix Prime**. Seeder now upserts by `Order` so existing databases are renamed on next migration run, not just fresh installs.
+- **Mission titles and descriptions** — all 10 seed missions previously had the placeholder title "Daily win" and empty descriptions. Each mission now carries a distinct Synaptix-flavoured title and flavour-text description aligned with the neural/cognitive brand voice (e.g. "First Signal", "Synapse Chain", "Arena Ascendant", "Flawless Circuit"). Seeder upserts by `Key` — existing missions with the old placeholder titles are not duplicated; new keys are inserted.
+
+### Application
+
+- **`LeaderboardRecalculator.SeedDefaultTiersAsync`** — fallback tier names updated to match the Synaptix ladder (was Bronze…Titan; now Neural Initiate…Synaptix Prime). Overflow tiers beyond the six named ones still generate as `"Tier N"`.
+
+### Configuration
+
+- **`JwtSettings:Issuer`** — `TycoonBackendApi` → `SynaptixApi` in both `appsettings.json` and `appsettings.Development.json`.
+- **`JwtSettings:Audience`** — `TycoonFrontendApp` → `SynaptixApp` in both files.
+- **`Authentication:Schemes:Bearer:ValidAudiences`** — `TycoonClient` → `SynaptixApp` in `appsettings.Development.json`.
+- **`PayPal:BrandName`** — `"Tycoon"` → `"Synaptix"` in both files.
+- **`StorePremium:AdFree:Subtitle`** — "uninterrupted Tycoon experience" → "uninterrupted Synaptix experience" in both files.
+
+### Deferred (Packet E — post soft-launch)
+
+- Backend namespace rename `Tycoon.*` → `Synaptix.*`
+- Elasticsearch daily-rollup alias rename (`tycoon-qa-*`)
+- `Observability:ServiceName` rename
+- `Iap:GooglePackageName` app-id change (`com.tycoon.app.*`)
+
+---
+
 ## [2026-05-02] Synaptix Security KMS — Full Implementation
 
 ### New projects

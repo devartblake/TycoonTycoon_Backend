@@ -133,17 +133,16 @@ namespace Tycoon.Backend.Application.Leaderboards
 
         private async Task<List<Tier>> SeedDefaultTiersAsync(CancellationToken ct)
         {
-            // Minimal deterministic 10-tier seed if DB is empty
+            // Synaptix tier ladder — mirrors AppSeeder definitions.
             var names = new[]
             {
-                "Bronze", "Silver", "Gold", "Platinum", "Diamond",
-                "Master", "Grandmaster", "Legend", "Mythic", "Titan"
+                "Neural Initiate", "Synapse Adept", "Cortex Strategist",
+                "Mind Architect", "Neural Overlord", "Synaptix Prime"
             };
 
             var tiers = new List<Tier>();
             for (int i = 0; i < names.Length; i++)
             {
-                // Min/MaxScore are legacy fields; keep them inert.
                 var t = new Tier(names[i], order: i + 1, minScore: 0, maxScore: int.MaxValue);
                 tiers.Add(t);
                 _db.Tiers.Add(t);

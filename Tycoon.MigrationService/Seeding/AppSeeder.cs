@@ -37,46 +37,62 @@ public sealed class AppSeeder
 
     private static async Task SeedTiersAsync(AppDb db, CancellationToken ct)
     {
-        // If you already have tiers, do nothing.
-        if (await db.Tiers.AsNoTracking().AnyAsync(ct)) return;
-
-        // NOTE: This assumes Tier has a public constructor or settable properties.
-        // If your Tier entity differs, tell me the exact fields and I’ll adapt this seed.
-        var tiers = new List<Tier>
+        // Synaptix tier ladder — upsert by order so existing rows get renamed.
+        var definitions = new (string Name, int Order, int MinScore, int MaxScore)[]
         {
-            new Tier("Bronze", 1, minScore: 0,    maxScore: 999),
-            new Tier("Silver", 2, minScore: 1000, maxScore: 2499),
-            new Tier("Gold",   3, minScore: 2500, maxScore: 4999),
-            new Tier("Platinum",4,minScore: 5000, maxScore: 7999),
-            new Tier("Diamond", 5, minScore: 8000, maxScore: 15000),
+            ("Neural Initiate",    1, 0,      999),
+            ("Synapse Adept",      2, 1000,   2999),
+            ("Cortex Strategist",  3, 3000,   5999),
+            ("Mind Architect",     4, 6000,   9999),
+            ("Neural Overlord",    5, 10000,  14999),
+            ("Synaptix Prime",     6, 15000,  int.MaxValue),
         };
 
-        db.Tiers.AddRange(tiers);
+        var existing = await db.Tiers.ToListAsync(ct);
+
+        foreach (var (name, order, min, max) in definitions)
+        {
+            var tier = existing.FirstOrDefault(t => t.Order == order);
+            if (tier is null)
+            {
+                db.Tiers.Add(new Tier(name, order, minScore: min, maxScore: max));
+            }
+            else if (tier.Name != name)
+            {
+                tier.UpdateDefinition(name, min, max);
+            }
+        }
     }
 
     private static async Task SeedMissionsAsync(AppDb db, CancellationToken ct)
     {
-        // If you already have missions, do nothing.
-        if (await db.Missions.AsNoTracking().AnyAsync(ct)) return;
-
-        var missions = new List<Mission>
+        // Synaptix mission definitions — upsert by key so existing rows get proper copy.
+        var definitions = new[]
         {
-            // Daily missions (Xp, Coins, Diamonds)
-            new Mission(type: "Daily", key: "daily_win_1", title: "Daily win", description: "", goal: 1,  rewardXp: 50, rewardCoins: 25, rewardDiamonds: 0,  active: true),
-            new Mission(type: "Daily", key: "daily_play_3", title: "Daily win", description: "", goal: 3,  rewardXp: 75, rewardCoins: 40, rewardDiamonds: 0,  active: true),
-            new Mission(type: "Daily", key: "daily_streak_5", title: "Daily win", description: "", goal: 5,  rewardXp: 125, rewardCoins: 60, rewardDiamonds: 1, active: true),
-            new Mission(type: "Daily", key: "daily_streak_7", title: "Daily win", description: "", goal: 7, rewardXp: 150, rewardCoins: 70, rewardDiamonds: 1, active: true),
-            new Mission(type : "Daily", key : "daily_streak_14", title : "Daily win", description : "", goal : 14, rewardXp : 200, rewardCoins : 80, rewardDiamonds : 2, active : true),
-            new Mission(type : "Daily", key : "daily_answer_20", title : "Daily win", description : "", goal : 20, rewardXp : 120, rewardCoins : 50, rewardDiamonds : 0, active : true),
+            // Daily Signals
+            new Mission(type: "Daily", key: "daily_win_1",      title: "First Signal",       description: "Win a match to send your first neural signal today.",               goal: 1,  rewardXp: 50,  rewardCoins: 25,  rewardDiamonds: 0, active: true),
+            new Mission(type: "Daily", key: "daily_play_3",     title: "Signal Burst",        description: "Play 3 matches and keep your cognitive momentum going.",            goal: 3,  rewardXp: 75,  rewardCoins: 40,  rewardDiamonds: 0, active: true),
+            new Mission(type: "Daily", key: "daily_streak_5",   title: "Synapse Chain",       description: "Win 5 matches in a row to activate your synaptic chain.",           goal: 5,  rewardXp: 125, rewardCoins: 60,  rewardDiamonds: 1, active: true),
+            new Mission(type: "Daily", key: "daily_streak_7",   title: "Neural Surge",        description: "Hit a 7-win streak and prove your neural dominance.",               goal: 7,  rewardXp: 150, rewardCoins: 70,  rewardDiamonds: 1, active: true),
+            new Mission(type: "Daily", key: "daily_streak_14",  title: "Mind Overclocked",    description: "14-win streak — your cortex is firing on all cylinders.",           goal: 14, rewardXp: 200, rewardCoins: 80,  rewardDiamonds: 2, active: true),
+            new Mission(type: "Daily", key: "daily_answer_20",  title: "Knowledge Flood",     description: "Answer 20 questions to flood your neural network with data.",       goal: 20, rewardXp: 120, rewardCoins: 50,  rewardDiamonds: 0, active: true),
 
-            // Weekly missions
-            new Mission(type: "Weekly", key: "weekly_win_10",title: "Daily win", description: "", goal: 10, rewardXp: 500, rewardCoins: 250, rewardDiamonds: 3, active: true),
-            new Mission(type: "Weekly", key: "weekly_play_25", title: "Daily win", description: "", goal: 25, rewardXp: 650, rewardCoins: 300, rewardDiamonds: 4, active: true),
-            new Mission(type : "Weekly", key : "weekly_perfect_5", title : "Daily win", description : "", goal : 5, rewardXp : 750, rewardCoins : 350, rewardDiamonds : 5, active : true),
-            new Mission(type : "Weekly", key : "weekly_perfect_7", title : "Daily win", description : "", goal : 7, rewardXp : 600, rewardCoins : 275, rewardDiamonds : 3, active : true),
+            // Weekly Signals
+            new Mission(type: "Weekly", key: "weekly_win_10",    title: "Arena Ascendant",    description: "Secure 10 arena victories this week to climb the neural ladder.",  goal: 10, rewardXp: 500, rewardCoins: 250, rewardDiamonds: 3, active: true),
+            new Mission(type: "Weekly", key: "weekly_play_25",   title: "Cognitive Marathon", description: "Complete 25 matches — endurance is the foundation of mastery.",   goal: 25, rewardXp: 650, rewardCoins: 300, rewardDiamonds: 4, active: true),
+            new Mission(type: "Weekly", key: "weekly_perfect_5", title: "Precision Protocol", description: "Achieve 5 perfect rounds — no errors, pure cognitive clarity.",   goal: 5,  rewardXp: 750, rewardCoins: 350, rewardDiamonds: 5, active: true),
+            new Mission(type: "Weekly", key: "weekly_perfect_7", title: "Flawless Circuit",   description: "7 perfect rounds in one week — your neural pathways are elite.",   goal: 7,  rewardXp: 600, rewardCoins: 275, rewardDiamonds: 3, active: true),
         };
 
-        db.Missions.AddRange(missions);
+        var existingKeys = await db.Missions.AsNoTracking()
+            .Select(m => m.Key)
+            .ToHashSetAsync(ct);
+
+        foreach (var mission in definitions)
+        {
+            if (!existingKeys.Contains(mission.Key))
+                db.Missions.Add(mission);
+        }
     }
 
     private async Task SeedSuperAdminAsync(AppDb db, CancellationToken ct)

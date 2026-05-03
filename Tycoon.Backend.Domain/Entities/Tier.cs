@@ -41,5 +41,12 @@ namespace Tycoon.Backend.Domain.Entities
 
         public bool ContainsScore(int score)
             => score >= MinScore && score <= MaxScore;
+
+        public void UpdateDefinition(string name, int minScore, int maxScore)
+        {
+            Name = name;
+            MinScore = minScore;
+            MaxScore = maxScore;
+        }
     }
 }

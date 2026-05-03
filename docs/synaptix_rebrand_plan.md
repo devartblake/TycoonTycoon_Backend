@@ -2,6 +2,28 @@
 # SYNAPTIX REBRAND MASTER PLAN
 ## (Formerly Trivia Tycoon)
 
+> **Implementation Status — 2026-05-03**
+>
+> | Layer | Status |
+> |---|---|
+> | Brand naming & Swagger title | ✅ Complete |
+> | Operator dashboards (Synaptix Command) | ✅ Complete |
+> | Currency labels (Neural XP / Credits / Synapse Shards) | ✅ Complete |
+> | Player preferences API (synaptixMode, surface, tone) | ✅ Complete |
+> | Analytics dimensions (5/5) | ✅ Complete |
+> | Tier system (Neural Initiate → Synaptix Prime) | ✅ Complete |
+> | Mission seeds (Synaptix titles + flavour text) | ✅ Complete |
+> | JWT Issuer / Audience aligned to Synaptix | ✅ Complete |
+> | PayPal BrandName + StorePremium copy | ✅ Complete |
+> | Security KMS subsystem (Synaptix.Security.Kms.*) | ✅ Complete |
+> | Skill tree / Pathways backend API | ✅ Complete |
+> | Economy / wallet backend API | ✅ Complete |
+> | Deep namespace rename (Tycoon.* → Synaptix.*) | ⏸️ Deferred — Packet E |
+> | Flutter frontend rebrand (Packets A–D) | ✅ Complete (separate repo) |
+> | Flutter package rename (package:trivia_tycoon) | ⏸️ Deferred — Packet E |
+>
+> **Next action:** Internal soft launch validation — run the build against a live database, execute the smoke suite, and verify frontend ↔ backend terminology end-to-end. See `docs/synaptix_internal_soft_launch_build_plan.md`.
+
 ---
 
 ## 1. Executive Summary
