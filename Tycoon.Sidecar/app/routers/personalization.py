@@ -92,6 +92,40 @@ async def recommendation_candidates(
             reason="Player has elevated frustration risk; recommend low-pressure learning.",
             payload={"tone": "encouraging", "difficultyStrategy": "warmup"},
         ))
+        # High-frustration players get only low-pressure missions
+        candidates.append(RecommendationCandidate(
+            type="mission",
+            targetId=None,
+            score=0.88,
+            reason="High frustration detected; a low-pressure confidence-building mission will help recovery.",
+            payload={"tone": "supportive", "missionArchetype": "confidence_builder", "isLowPressure": True},
+        ))
+    else:
+        # Recommend missions based on player archetype
+        archetype_mission_recommendations: dict[str, tuple[str, str, float]] = {
+            "confidence_builder":   ("confidence_builder", "Low-pressure missions help you rebuild confidence step by step.", 0.87),
+            "streak_seeker":        ("streak_seeker",      "Keep the momentum — daily streak missions are your strength.", 0.85),
+            "explorer":             ("explorer",           "Explore new categories and broaden your knowledge.", 0.84),
+            "comeback_player":      ("comeback_player",    "A quick comeback mission gets you back in the game fast.", 0.86),
+            "collector":            ("collector",          "Collect badges and milestones across every topic.", 0.84),
+            "risk_taker":           ("risk_taker",         "High-stakes challenge missions are built for you.", 0.85),
+            "social_challenger":    ("social_challenger",  "Challenge friends and climb the leaderboard.", 0.85),
+            "mastery_path":         ("mastery_path",       "Deep-dive mastery missions will push your expertise to the max.", 0.86),
+            "new_player":           ("confidence_builder", "Start with confidence-building missions designed for new players.", 0.83),
+            "low_pressure_learner": ("confidence_builder", "Low-pressure missions let you learn at your own pace.", 0.85),
+        }
+        archetype = request.profile.archetype
+        mission_archetype, reason, score = archetype_mission_recommendations.get(
+            archetype,
+            ("explorer", "Explore a variety of missions to discover what suits you best.", 0.70),
+        )
+        candidates.append(RecommendationCandidate(
+            type="mission",
+            targetId=None,
+            score=score,
+            reason=reason,
+            payload={"tone": "motivating", "missionArchetype": mission_archetype, "isLowPressure": False},
+        ))
 
     if request.profile.churnRiskScore >= 0.60:
         candidates.append(RecommendationCandidate(

@@ -53,6 +53,12 @@ public sealed record CoachBriefDto(
     string Tone
 );
 
+public sealed record MissionRecommendationDto(
+    string MissionArchetype,
+    string Reason,
+    bool IsLowPressure
+);
+
 public sealed record PlayerHomePersonalizationDto(
     Guid PlayerId,
     string RecommendedMode,
@@ -60,7 +66,8 @@ public sealed record PlayerHomePersonalizationDto(
     string? RecommendedDifficulty,
     IReadOnlyList<PlayerRecommendationDto> Recommendations,
     CoachBriefDto? CoachBrief,
-    Dictionary<string, object> Guardrails
+    Dictionary<string, object> Guardrails,
+    IReadOnlyList<MissionRecommendationDto> RecommendedMissions
 );
 
 // Sidecar client DTOs

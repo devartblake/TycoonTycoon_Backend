@@ -1,17 +1,21 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Domain.Entities; // Assuming MissionClaim is here
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Missions
 {
     public sealed class ClaimMissionHandler : IRequestHandler<ClaimMission, ClaimMissionResult>
     {
         private readonly IAppDb _db;
+        private readonly IPlayerMindProfileService? _mindProfiles;
 
-        public ClaimMissionHandler(IAppDb db)
+        public ClaimMissionHandler(IAppDb db, IPlayerMindProfileService? mindProfiles = null)
         {
             _db = db;
+            _mindProfiles = mindProfiles;
         }
 
         public async Task<ClaimMissionResult> Handle(ClaimMission request, CancellationToken ct)
@@ -61,6 +65,28 @@ namespace Tycoon.Backend.Application.Missions
             claim.MarkClaimed();
 
             await _db.SaveChangesAsync(ct);
+
+            if (_mindProfiles is not null)
+            {
+                try
+                {
+                    await _mindProfiles.RecordEventAsync(request.PlayerId, new PlayerBehaviorEventDto(
+                        EventType: "mission_completed",
+                        EventSource: "mission",
+                        Category: null,
+                        Difficulty: null,
+                        Mode: null,
+                        Metadata: new Dictionary<string, object>
+                        {
+                            ["missionId"]   = request.MissionId,
+                            ["missionType"] = mission.Type,
+                            ["missionKey"]  = mission.Key,
+                            ["rewardXp"]    = mission.RewardXp
+                        },
+                        OccurredAt: DateTimeOffset.UtcNow), ct);
+                }
+                catch { /* personalization must never break mission claiming */ }
+            }
 
             var updatedMissions = await LoadMissionListAsync(request.PlayerId, request.TypeFilter, ct);
 

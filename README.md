@@ -271,6 +271,7 @@ All recommendations pass through `PersonalizationGuardrailService` before persis
 | Ranked manipulation | `ranked_difficulty_modifier` candidates blocked unconditionally |
 | Notification fatigue | Notifications suppressed when `NotificationFatigueScore ≥ threshold` |
 | Sidecar authority | Sidecar provides scores only — all decisions made in .NET |
+| High-frustration missions | Only low-pressure `confidence_builder` missions recommended when `FrustrationRiskScore ≥ 0.65` |
 
 Blocked recommendations are written to `personalization_audit_logs` only; they are never persisted to `personalization_recommendations`.
 
@@ -300,6 +301,22 @@ Behavior events are emitted automatically from:
 | `store_item_purchased` | `StoreEndpoints.Purchase` |
 | `notification_opened` | `PlayerInboxService.MarkReadAsync` |
 | `notification_dismissed` | `PlayerInboxService.DeleteAsync` |
+| `mission_completed` | `ClaimMissionHandler` (on successful reward claim) |
+
+#### Mission Personalization
+
+The `/personalization/home/{playerId}` response includes a `recommendedMissions` array with archetype-aligned mission recommendations built by `PersonalizationService.BuildMissionRecommendations`.
+
+**Mission archetypes:** `confidence_builder`, `streak_seeker`, `explorer`, `comeback_player`, `collector`, `risk_taker`, `social_challenger`, `mastery_path`
+
+Each entry contains:
+- `missionArchetype` — which style of mission to recommend
+- `reason` — human-readable explanation
+- `isLowPressure` — `true` when the recommendation is a deliberately low-pressure suggestion
+
+**High-frustration rule:** when `FrustrationRiskScore ≥ 0.65` the service returns only the `confidence_builder` archetype (marked `isLowPressure: true`) regardless of the player's overall archetype.
+
+The sidecar's `/personalization/recommendation-candidates` endpoint also emits archetype-matched `mission` candidates so that the full sidecar → guardrail → audit pipeline is exercised for sidecar-enabled profiles.
 
 ---
 

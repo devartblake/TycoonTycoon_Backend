@@ -114,6 +114,65 @@ def test_recommendation_candidates_high_frustration_adds_learning_module():
     assert "learning_module" in types
 
 
+def test_recommendation_candidates_high_frustration_adds_low_pressure_mission():
+    client = _make_client()
+    resp = client.post("/personalization/recommendation-candidates", json={
+        "playerId": "p1",
+        "profile": {
+            "confidenceLevel": 0.3,
+            "churnRiskScore": 0.3,
+            "frustrationRiskScore": 0.70,
+            "notificationFatigueScore": 0.1,
+            "archetype": "risk_taker",  # normally gets high-pressure missions
+        },
+        "recentEvents": [],
+    })
+    assert resp.status_code == 200
+    mission_candidates = [c for c in resp.json()["candidates"] if c["type"] == "mission"]
+    assert len(mission_candidates) > 0, "a mission recommendation must be present"
+    # High frustration → only confidence_builder (low-pressure) missions
+    for mc in mission_candidates:
+        assert mc["payload"].get("missionArchetype") == "confidence_builder", (
+            "high-frustration players must receive only low-pressure confidence_builder missions"
+        )
+        assert mc["payload"].get("isLowPressure") is True
+
+
+def test_recommendation_candidates_archetype_mission_recommendation():
+    """Each archetype receives a mission recommendation matching their archetype."""
+    client = _make_client()
+    cases = [
+        ("streak_seeker",     "streak_seeker"),
+        ("risk_taker",        "risk_taker"),
+        ("social_challenger", "social_challenger"),
+        ("mastery_path",      "mastery_path"),
+        ("explorer",          "explorer"),
+        ("comeback_player",   "comeback_player"),
+        ("collector",         "collector"),
+        ("new_player",        "confidence_builder"),
+    ]
+    for archetype, expected_mission_archetype in cases:
+        resp = client.post("/personalization/recommendation-candidates", json={
+            "playerId": "p-" + archetype,
+            "profile": {
+                "confidenceLevel": 0.5,
+                "churnRiskScore": 0.1,
+                "frustrationRiskScore": 0.1,  # low frustration — archetype mapping applies
+                "notificationFatigueScore": 0.1,
+                "archetype": archetype,
+            },
+            "recentEvents": [],
+        })
+        assert resp.status_code == 200
+        mission_candidates = [c for c in resp.json()["candidates"] if c["type"] == "mission"]
+        assert len(mission_candidates) > 0, f"no mission recommendation for archetype '{archetype}'"
+        archetypes_in_payload = [mc["payload"].get("missionArchetype") for mc in mission_candidates]
+        assert expected_mission_archetype in archetypes_in_payload, (
+            f"expected mission archetype '{expected_mission_archetype}' for player archetype '{archetype}', "
+            f"got {archetypes_in_payload}"
+        )
+
+
 def test_recommendation_candidates_sorted_by_score_descending():
     client = _make_client()
     resp = client.post("/personalization/recommendation-candidates", json={

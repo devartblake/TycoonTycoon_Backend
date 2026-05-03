@@ -36,6 +36,7 @@ public sealed class PersonalizationService : IPersonalizationService
         var recommendations = await BuildRecommendationsAsync(playerId, profile, ct);
 
         var coachBrief = BuildCoachBrief(profile);
+        var recommendedMissions = BuildMissionRecommendations(profile);
 
         return new PlayerHomePersonalizationDto(
             playerId,
@@ -48,7 +49,8 @@ public sealed class PersonalizationService : IPersonalizationService
             {
                 ["personalizationEnabled"] = profile.PersonalizationEnabled,
                 ["sidecarEnabled"] = profile.SidecarScoringEnabled
-            });
+            },
+            RecommendedMissions: recommendedMissions);
     }
 
     public async Task<IReadOnlyList<PlayerRecommendationDto>> GetRecommendationsAsync(Guid playerId, CancellationToken ct = default)
@@ -215,5 +217,50 @@ public sealed class PersonalizationService : IPersonalizationService
             "start_ranked",
             "/play/ranked",
             "motivating");
+    }
+
+    // Maps player archetype → ordered list of (missionArchetype, reason, isLowPressure)
+    private static readonly IReadOnlyDictionary<string, IReadOnlyList<(string Archetype, string Reason, bool IsLowPressure)>>
+        _archetypeMissionMap = new Dictionary<string, IReadOnlyList<(string, string, bool)>>
+    {
+        ["confidence_builder"]  = [("confidence_builder", "Low-pressure missions help you rebuild confidence step by step.", true),
+                                   ("comeback_player",    "A short comeback mission is a great way to ease back in.", true)],
+        ["streak_seeker"]       = [("streak_seeker",      "Keep the momentum — daily streak missions are your strength.", false),
+                                   ("mastery_path",       "Master a skill category to push your streak even further.", false)],
+        ["explorer"]            = [("explorer",           "Explore new categories and broaden your knowledge.", false),
+                                   ("collector",          "Collect achievements across different topics.", false)],
+        ["comeback_player"]     = [("comeback_player",    "A quick comeback mission gets you back in the game fast.", true),
+                                   ("confidence_builder", "Rebuild confidence before aiming higher.", true)],
+        ["collector"]           = [("collector",          "Collect badges and milestones across every topic.", false),
+                                   ("explorer",           "Explore new categories to add to your collection.", false)],
+        ["risk_taker"]          = [("risk_taker",         "High-stakes challenge missions are built for you.", false),
+                                   ("social_challenger",  "Take on social challenges to prove your skills.", false)],
+        ["social_challenger"]   = [("social_challenger",  "Challenge friends and climb the leaderboard.", false),
+                                   ("risk_taker",         "Test your limits with high-risk challenge missions.", false)],
+        ["mastery_path"]        = [("mastery_path",       "Deep-dive mastery missions will push your expertise to the max.", false),
+                                   ("streak_seeker",      "A streak mission keeps your mastery progress consistent.", false)],
+        ["new_player"]          = [("confidence_builder", "Start with confidence-building missions designed for new players.", true)],
+        ["low_pressure_learner"]= [("confidence_builder", "Low-pressure missions let you learn at your own pace.", true)],
+    };
+
+    private static IReadOnlyList<MissionRecommendationDto> BuildMissionRecommendations(PlayerMindProfileDto profile)
+    {
+        // High-frustration players receive only low-pressure missions
+        if (profile.FrustrationRiskScore >= 0.65m)
+        {
+            return [new MissionRecommendationDto(
+                "confidence_builder",
+                "You seem frustrated — a low-pressure confidence-building mission will help you recover.",
+                IsLowPressure: true)];
+        }
+
+        if (_archetypeMissionMap.TryGetValue(profile.Archetype, out var mapped))
+            return mapped.Select(m => new MissionRecommendationDto(m.Archetype, m.Reason, m.IsLowPressure)).ToList();
+
+        // Fallback for unknown archetypes
+        return [new MissionRecommendationDto(
+            "explorer",
+            "Explore a variety of missions to discover what suits you best.",
+            IsLowPressure: false)];
     }
 }

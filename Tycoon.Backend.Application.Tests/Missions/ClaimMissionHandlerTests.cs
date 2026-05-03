@@ -162,4 +162,102 @@ public sealed class ClaimMissionHandlerTests
 
         result.Status.Should().Be(ClaimMissionStatus.NotFound);
     }
+
+    // ── Behavior event emission ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task Handle_Claimed_RecordsBehaviorEvent_ViaPlayerMindProfileService()
+    {
+        await using var db = NewDb();
+        var mission = MakeMission();
+        db.Missions.Add(mission);
+
+        var playerId = Guid.NewGuid();
+        var claim = new MissionClaim(playerId, mission.Id);
+        claim.AddProgress(3, mission.Goal);
+        db.MissionClaims.Add(claim);
+        await db.SaveChangesAsync();
+
+        var mindProfiles = new TrackingMindProfileService();
+        var handler = new ClaimMissionHandler(db, mindProfiles);
+        var result = await handler.Handle(new ClaimMission(playerId, mission.Id, ""), CancellationToken.None);
+
+        result.Status.Should().Be(ClaimMissionStatus.Claimed);
+        mindProfiles.RecordedEvents.Should().ContainSingle(
+            e => e.PlayerId == playerId && e.EventType == "mission_completed",
+            "a mission_completed event must be recorded when a mission reward is claimed");
+    }
+
+    [Fact]
+    public async Task Handle_NotClaimed_DoesNotRecord_BehaviorEvent()
+    {
+        await using var db = NewDb();
+        var mission = MakeMission();
+        db.Missions.Add(mission);
+
+        var playerId = Guid.NewGuid();
+        var claim = new MissionClaim(playerId, mission.Id);
+        claim.AddProgress(1, mission.Goal); // incomplete
+        db.MissionClaims.Add(claim);
+        await db.SaveChangesAsync();
+
+        var mindProfiles = new TrackingMindProfileService();
+        var handler = new ClaimMissionHandler(db, mindProfiles);
+        await handler.Handle(new ClaimMission(playerId, mission.Id, ""), CancellationToken.None);
+
+        mindProfiles.RecordedEvents.Should().BeEmpty("no event should be emitted when the mission is not yet completed");
+    }
+
+    [Fact]
+    public async Task Handle_Claimed_MindProfileServiceThrows_DoesNotBubbleUp()
+    {
+        await using var db = NewDb();
+        var mission = MakeMission();
+        db.Missions.Add(mission);
+
+        var playerId = Guid.NewGuid();
+        var claim = new MissionClaim(playerId, mission.Id);
+        claim.AddProgress(3, mission.Goal);
+        db.MissionClaims.Add(claim);
+        await db.SaveChangesAsync();
+
+        var handler = new ClaimMissionHandler(db, new ThrowingMindProfileService());
+
+        // Should not throw despite service failure
+        var result = await handler.Handle(new ClaimMission(playerId, mission.Id, ""), CancellationToken.None);
+        result.Status.Should().Be(ClaimMissionStatus.Claimed);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private sealed record RecordedEvent(Guid PlayerId, string EventType);
+
+    private sealed class TrackingMindProfileService : Tycoon.Backend.Application.Personalization.IPlayerMindProfileService
+    {
+        public List<RecordedEvent> RecordedEvents { get; } = [];
+
+        public Task<Tycoon.Shared.Contracts.Dtos.PlayerMindProfileDto> GetOrCreateAsync(Guid playerId, CancellationToken ct = default)
+            => throw new NotImplementedException();
+
+        public Task RecordEventAsync(Guid playerId, Tycoon.Shared.Contracts.Dtos.PlayerBehaviorEventDto dto, CancellationToken ct = default)
+        {
+            RecordedEvents.Add(new RecordedEvent(playerId, dto.EventType));
+            return Task.CompletedTask;
+        }
+
+        public Task<Tycoon.Shared.Contracts.Dtos.PlayerMindProfileDto> RecalculateAsync(Guid playerId, CancellationToken ct = default)
+            => throw new NotImplementedException();
+    }
+
+    private sealed class ThrowingMindProfileService : Tycoon.Backend.Application.Personalization.IPlayerMindProfileService
+    {
+        public Task<Tycoon.Shared.Contracts.Dtos.PlayerMindProfileDto> GetOrCreateAsync(Guid playerId, CancellationToken ct = default)
+            => throw new InvalidOperationException("test failure");
+
+        public Task RecordEventAsync(Guid playerId, Tycoon.Shared.Contracts.Dtos.PlayerBehaviorEventDto dto, CancellationToken ct = default)
+            => throw new InvalidOperationException("test failure");
+
+        public Task<Tycoon.Shared.Contracts.Dtos.PlayerMindProfileDto> RecalculateAsync(Guid playerId, CancellationToken ct = default)
+            => throw new InvalidOperationException("test failure");
+    }
 }
