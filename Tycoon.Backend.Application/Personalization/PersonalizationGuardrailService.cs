@@ -48,6 +48,12 @@ public sealed class PersonalizationGuardrailService : IPersonalizationGuardrailS
             return new(false, "Ranked difficulty cannot be modified by personalization.", rules);
         }
 
+        if (candidate.Type == "reward_grant")
+        {
+            rules["sidecar_direct_reward_grant_blocked"] = true;
+            return new(false, "Sidecar cannot directly grant rewards.", rules);
+        }
+
         rules["allowed"] = true;
         return new(true, null, rules);
     }
