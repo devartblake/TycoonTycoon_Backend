@@ -1,10 +1,17 @@
 from fastapi import APIRouter
+from collections import defaultdict
 from app.schemas.personalization import (
     ScorePlayerRequest,
     ScorePlayerResponse,
     RecommendationCandidateRequest,
     RecommendationCandidateResponse,
     RecommendationCandidate,
+    CategoryProfileRequest,
+    CategoryProfileResponse,
+    NotificationScoreRequest,
+    NotificationScoreResponse,
+    MissionFitRequest,
+    MissionFitResponse,
 )
 
 router = APIRouter(prefix="/personalization", tags=["personalization"])
@@ -115,3 +122,112 @@ async def recommendation_candidates(
 
     candidates.sort(key=lambda c: c.score, reverse=True)
     return RecommendationCandidateResponse(candidates=candidates)
+
+
+@router.post("/category-profile", response_model=CategoryProfileResponse)
+async def category_profile(request: CategoryProfileRequest) -> CategoryProfileResponse:
+    correct_by_category: defaultdict[str, int] = defaultdict(int)
+    total_by_category: defaultdict[str, int] = defaultdict(int)
+
+    for event in request.recentEvents:
+        if event.eventType != "question_answered" or not event.category:
+            continue
+
+        category = event.category
+        total_by_category[category] += 1
+        if bool(event.metadata.get("correct", False)):
+            correct_by_category[category] += 1
+
+    strengths: dict[str, float] = {}
+    weaknesses: dict[str, float] = {}
+
+    for category, total in total_by_category.items():
+        accuracy = round(correct_by_category[category] / total, 4)
+        if accuracy >= 0.60:
+            strengths[category] = accuracy
+        elif accuracy < 0.40:
+            weaknesses[category] = accuracy
+
+    top_category = max(strengths, key=lambda k: strengths[k]) if strengths else None
+    weakest_category = min(weaknesses, key=lambda k: weaknesses[k]) if weaknesses else None
+
+    return CategoryProfileResponse(
+        strengths=strengths,
+        weaknesses=weaknesses,
+        topCategory=top_category,
+        weakestCategory=weakest_category,
+    )
+
+
+@router.post("/notification-score", response_model=NotificationScoreResponse)
+async def notification_score(request: NotificationScoreRequest) -> NotificationScoreResponse:
+    recent_notification_count = sum(
+        1 for event in request.recentEvents
+        if event.eventType == "notification_received"
+    )
+
+    base_fatigue = request.currentProfile.notificationFatigueScore
+    event_penalty = min(0.30, recent_notification_count * 0.05)
+    fatigue = round(min(1.0, base_fatigue + event_penalty), 4)
+
+    can_receive = fatigue < 0.75
+
+    if fatigue >= 0.75:
+        frequency_hours = 48
+    elif fatigue >= 0.50:
+        frequency_hours = 24
+    elif fatigue >= 0.25:
+        frequency_hours = 12
+    else:
+        frequency_hours = 6
+
+    return NotificationScoreResponse(
+        notificationFatigueScore=fatigue,
+        canReceiveNotification=can_receive,
+        recommendedFrequencyHours=frequency_hours,
+    )
+
+
+# Archetype compatibility map: higher score = better mission fit
+_ARCHETYPE_MISSION_FIT: dict[str, dict[str, float]] = {
+    "new_player":          {"onboarding": 1.0, "daily_focus": 0.80, "challenge": 0.30, "comeback": 0.60, "streak": 0.40},
+    "confidence_builder":  {"onboarding": 0.80, "daily_focus": 0.90, "challenge": 0.30, "comeback": 0.70, "streak": 0.50},
+    "streak_seeker":       {"onboarding": 0.50, "daily_focus": 0.90, "challenge": 0.70, "comeback": 0.60, "streak": 1.0},
+    "explorer":            {"onboarding": 0.60, "daily_focus": 0.80, "challenge": 0.70, "comeback": 0.50, "streak": 0.60},
+    "collector":           {"onboarding": 0.60, "daily_focus": 0.85, "challenge": 0.60, "comeback": 0.60, "streak": 0.70},
+    "risk_taker":          {"onboarding": 0.40, "daily_focus": 0.70, "challenge": 1.0, "comeback": 0.50, "streak": 0.70},
+    "social_challenger":   {"onboarding": 0.40, "daily_focus": 0.70, "challenge": 0.90, "comeback": 0.50, "streak": 0.80},
+    "mastery_path":        {"onboarding": 0.50, "daily_focus": 0.85, "challenge": 0.90, "comeback": 0.50, "streak": 0.75},
+    "comeback_player":     {"onboarding": 0.60, "daily_focus": 0.80, "challenge": 0.40, "comeback": 1.0, "streak": 0.50},
+    "premium_power_user":  {"onboarding": 0.40, "daily_focus": 0.80, "challenge": 0.90, "comeback": 0.50, "streak": 0.80},
+    "low_pressure_learner":{"onboarding": 0.90, "daily_focus": 0.85, "challenge": 0.30, "comeback": 0.60, "streak": 0.40},
+}
+_DEFAULT_FIT = 0.50
+
+
+@router.post("/mission-fit", response_model=MissionFitResponse)
+async def mission_fit(request: MissionFitRequest) -> MissionFitResponse:
+    archetype = request.currentProfile.archetype
+    mission = request.missionArchetype
+
+    base_fit = _ARCHETYPE_MISSION_FIT.get(archetype, {}).get(mission, _DEFAULT_FIT)
+
+    # Penalise high-frustration players for demanding missions
+    if request.currentProfile.frustrationRiskScore >= 0.65 and mission == "challenge":
+        base_fit = max(0.0, base_fit - 0.30)
+
+    # Boost comeback missions for high-churn players
+    if request.currentProfile.churnRiskScore >= 0.60 and mission == "comeback":
+        base_fit = min(1.0, base_fit + 0.15)
+
+    fit_score = round(base_fit, 4)
+    recommended = fit_score >= 0.60
+
+    if fit_score >= 0.85:
+        reason = f"Excellent fit: '{archetype}' players thrive with '{mission}' missions."
+    elif fit_score >= 0.60:
+        reason = f"Good fit: '{archetype}' players generally enjoy '{mission}' missions."
+    else:
+        reason = f"Low fit: '{archetype}' players rarely engage well with '{mission}' missions."
+
+    return MissionFitResponse(fitScore=fit_score, reason=reason, recommended=recommended)
