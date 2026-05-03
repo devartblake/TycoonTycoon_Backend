@@ -56,6 +56,7 @@ namespace Tycoon.Backend.Api.Features.Store
             g.MapPost("/payments/webhook", HandleStripeWebhook);
             g.MapPost("/payments/paypal/webhook", HandlePayPalWebhook);
             g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization();
+            g.MapGet("/recommendations/{playerId:guid}", GetStoreRecommendations).RequireAuthorization();
         }
 
         private static async Task<IResult> GetCatalog(
@@ -231,6 +232,21 @@ namespace Tycoon.Backend.Api.Features.Store
 
             var catalog = await stockService.GetCatalogForPlayerAsync(playerId, itemType, category, ct);
             return Results.Ok(catalog);
+        }
+
+        private static async Task<IResult> GetStoreRecommendations(
+            [FromRoute] Guid playerId,
+            HttpContext httpContext,
+            IPersonalizationService personalization,
+            CancellationToken ct)
+        {
+            if (!TryGetAuthenticatedPlayerId(httpContext.User, out var jwtPlayerId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+            if (jwtPlayerId != playerId)
+                return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Cannot view another player's recommendations.");
+
+            var result = await personalization.GetStoreRecommendationsAsync(playerId, ct);
+            return Results.Ok(result);
         }
 
         private static async Task<IResult> GetStoreHub(

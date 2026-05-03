@@ -146,3 +146,9 @@ public sealed record UpdatePersonalizationRuleRequest(
 );
 
 public sealed record CoachFeedbackRequest(string BriefId, string Feedback);
+
+public sealed record StorePersonalizationDto(
+    Guid PlayerId,
+    IReadOnlyList<PlayerRecommendationDto> Offers,
+    Dictionary<string, object> AppliedGuardrails
+);

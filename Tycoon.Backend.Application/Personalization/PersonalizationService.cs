@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Personalization;
 using Tycoon.Shared.Contracts.Dtos;
@@ -15,19 +16,22 @@ public sealed class PersonalizationService : IPersonalizationService
     private readonly IPersonalizationGuardrailService _guardrails;
     private readonly IPersonalizationSidecarClient _sidecar;
     private readonly IPersonalizationAuditService _audit;
+    private readonly PersonalizationOptions _options;
 
     public PersonalizationService(
         IAppDb db,
         IPlayerMindProfileService profiles,
         IPersonalizationGuardrailService guardrails,
         IPersonalizationSidecarClient sidecar,
-        IPersonalizationAuditService audit)
+        IPersonalizationAuditService audit,
+        IOptions<PersonalizationOptions> options)
     {
         _db = db;
         _profiles = profiles;
         _guardrails = guardrails;
         _sidecar = sidecar;
         _audit = audit;
+        _options = options.Value;
     }
 
     public async Task<PlayerHomePersonalizationDto> GetHomeAsync(Guid playerId, CancellationToken ct = default)
@@ -58,6 +62,121 @@ public sealed class PersonalizationService : IPersonalizationService
         var profile = await _profiles.GetOrCreateAsync(playerId, ct);
         return await BuildRecommendationsAsync(playerId, profile, ct);
     }
+
+    public async Task<StorePersonalizationDto> GetStoreRecommendationsAsync(Guid playerId, CancellationToken ct = default)
+    {
+        var profile = await _profiles.GetOrCreateAsync(playerId, ct);
+
+        var appliedGuardrails = new Dictionary<string, object>
+        {
+            ["adaptiveStoreEnabled"] = _options.AdaptiveStore,
+            ["personalizationEnabled"] = profile.PersonalizationEnabled,
+            ["frustrationPaidOfferSuppressed"] = IsFrustrated(profile)
+        };
+
+        if (!_options.AdaptiveStore)
+            return new StorePersonalizationDto(playerId, [], appliedGuardrails);
+
+        var candidates = await BuildStoreCandidatesAsync(playerId, profile, ct);
+
+        var offers = new List<PlayerRecommendationDto>();
+        var priority = 0;
+
+        foreach (var candidate in candidates)
+        {
+            var guardCandidate = new PersonalizationCandidateDto(candidate.Type, candidate.Score, candidate.Payload);
+            var guardrailResult = _guardrails.Apply(profile, guardCandidate);
+
+            var recId = Guid.NewGuid();
+            var reason = guardrailResult.BlockReason ?? candidate.Reason;
+
+            await _audit.LogDecisionAsync(
+                playerId,
+                recId,
+                guardrailResult.Allowed ? "allowed" : "blocked",
+                "store",
+                reason,
+                profile,
+                candidate,
+                guardrailResult.AppliedRules,
+                new { guardrailResult.Allowed },
+                ct);
+
+            if (guardrailResult.Allowed)
+            {
+                var rec = new PersonalizationRecommendation
+                {
+                    Id = recId,
+                    PlayerId = playerId,
+                    RecommendationType = candidate.Type,
+                    Source = "store",
+                    Priority = priority++,
+                    Score = candidate.Score,
+                    Reason = candidate.Reason,
+                    PayloadJson = JsonSerializer.Serialize(candidate.Payload, _json),
+                    GuardrailJson = JsonSerializer.Serialize(guardrailResult.AppliedRules, _json),
+                    ExpiresAt = DateTimeOffset.UtcNow.AddHours(6)
+                };
+
+                _db.PersonalizationRecommendations.Add(rec);
+
+                offers.Add(new PlayerRecommendationDto(
+                    rec.Id, candidate.Type, "store", rec.Priority, candidate.Score,
+                    candidate.Reason, candidate.Payload, guardrailResult.AppliedRules, rec.ExpiresAt));
+            }
+        }
+
+        if (offers.Count > 0)
+            await _db.SaveChangesAsync(ct);
+
+        return new StorePersonalizationDto(playerId, offers, appliedGuardrails);
+    }
+
+    private async Task<List<SidecarRecommendationCandidateDto>> BuildStoreCandidatesAsync(
+        Guid playerId, PlayerMindProfileDto profile, CancellationToken ct)
+    {
+        var candidates = new List<SidecarRecommendationCandidateDto>();
+
+        if (profile.PersonalizationEnabled && profile.SidecarScoringEnabled)
+        {
+            try
+            {
+                var sidecarCandidates = await _sidecar.GetRecommendationCandidatesAsync(
+                    new SidecarRecommendationRequest(
+                        playerId.ToString(),
+                        new SidecarPlayerSnapshotDto(
+                            profile.ConfidenceLevel,
+                            profile.ChurnRiskScore,
+                            profile.FrustrationRiskScore,
+                            profile.NotificationFatigueScore,
+                            profile.Archetype),
+                        []), ct);
+
+                candidates.AddRange(sidecarCandidates.Where(c =>
+                    c.Type is "store_offer" or "store_free_offer"));
+            }
+            catch
+            {
+                // Sidecar unavailable — fall back to local rules
+            }
+        }
+
+        // Local fallback: ensure struggling players always receive a free support offer
+        if (IsFrustrated(profile) && !candidates.Any(c => c.Type == "store_free_offer"))
+        {
+            candidates.Add(new SidecarRecommendationCandidateDto(
+                Type: "store_free_offer",
+                TargetId: null,
+                Score: 0.80m,
+                Reason: "You seem to be having a tough time — here's a free support item to help you get back on track.",
+                Payload: new Dictionary<string, object> { ["tone"] = "supportive", ["isFree"] = true }));
+        }
+
+        return candidates;
+    }
+
+    private bool IsFrustrated(PlayerMindProfileDto profile) =>
+        profile.FrustrationRiskScore >= _options.FrustrationPaidOfferSuppressionThreshold;
 
     public async Task AcceptRecommendationAsync(Guid recommendationId, Guid playerId, CancellationToken ct = default)
     {

@@ -165,6 +165,18 @@ public sealed class PersonalizationGuardrailServiceTests
     // ── Allow-through ─────────────────────────────────────────────────────────
 
     [Fact]
+    public void Apply_AllowsStoreFreeOffer_EvenWhenFrustrationRiskAboveThreshold()
+    {
+        var svc = NewService(frustrationThreshold: 0.75m);
+        var profile = MakeProfile(frustrationRiskScore: 0.80m);
+        var candidate = MakeCandidate(type: "store_free_offer");
+
+        var result = svc.Apply(profile, candidate);
+
+        result.Allowed.Should().BeTrue("free support offers must pass through for frustrated players");
+    }
+
+    [Fact]
     public void Apply_Allows_WhenNoGuardrailsTriggered()
     {
         var svc = NewService();
