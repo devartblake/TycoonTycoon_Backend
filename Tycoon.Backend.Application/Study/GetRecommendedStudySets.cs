@@ -134,7 +134,7 @@ namespace Tycoon.Backend.Application.Study
                                 items.Insert(insertAt, new StudySetListItemDto(
                                     StudySetHelpers.CreateWeakAreaId(topWeakCategory),
                                     $"Recommended Focus: {topWeakCategory}",
-                                    $"Your personalization profile suggests practising {topWeakCategory} to strengthen your skills.",
+                                    $"Your personalization profile suggests practicing {topWeakCategory} to strengthen your skills.",
                                     StudySetKinds.WeakArea,
                                     topWeakCategory,
                                     profileQuestionCount));
