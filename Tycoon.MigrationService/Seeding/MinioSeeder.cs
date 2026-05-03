@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
@@ -12,28 +13,26 @@ namespace Tycoon.MigrationService.Seeding;
 public sealed class MinioSeeder
 {
     private readonly IObjectStorage _storage;
+    private readonly MinioSeedOptions _seedOptions;
     private readonly Serilog.ILogger _log;
 
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
-    private const string StoreItemsKey    = "seeds/store-items.json";
-    private const string SkillNodesKey    = "seeds/skill-nodes.json";
-    private const string SeasonRewardsKey = "seeds/season-rewards.json";
-    private const string QuestionsKey     = "seeds/questions.json";
-
-    public MinioSeeder(IObjectStorage storage)
+    public MinioSeeder(IObjectStorage storage, 
+        IOptions<MinioSeedOptions> seedOptions)
     {
         _storage = storage;
+        _seedOptions = seedOptions.Value;
         _log = Log.ForContext<MinioSeeder>();
     }
 
     public async Task SeedAsync(AppDb db, CancellationToken ct)
     {
         // Read all seed files concurrently before touching the DB.
-        var storeTask    = ReadJsonAsync<List<StoreItemSeedModel>>(StoreItemsKey, ct);
-        var skillTask    = ReadJsonAsync<List<SkillNodeSeedModel>>(SkillNodesKey, ct);
-        var seasonTask   = ReadJsonAsync<List<SeasonRewardSeedModel>>(SeasonRewardsKey, ct);
-        var questionTask = ReadJsonAsync<List<QuestionSeedModel>>(QuestionsKey, ct);
+        var storeTask    = ReadJsonAsync<List<StoreItemSeedModel>>(_seedOptions.StoreItemsKey, ct);
+        var skillTask    = ReadJsonAsync<List<SkillNodeSeedModel>>(_seedOptions.SkillNodesKey, ct);
+        var seasonTask   = ReadJsonAsync<List<SeasonRewardSeedModel>>(_seedOptions.SeasonRewardsKey, ct);
+        var questionTask = ReadJsonAsync<List<QuestionSeedModel>>(_seedOptions.QuestionsKey, ct);
         await Task.WhenAll(storeTask, skillTask, seasonTask, questionTask);
 
         var strategy = db.Database.CreateExecutionStrategy();

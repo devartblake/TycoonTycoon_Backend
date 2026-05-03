@@ -126,6 +126,10 @@ services:
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-tycoon_minio_user}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-tycoon_minio_password_123}"
+      MinIO__Seeds__StoreItemsKey: tycoon-assets/store-items.json
+      MinIO__Seeds__SkillNodesKey: tycoon-assets/skill-nodes.json
+      MinIO__Seeds__SeasonRewardsKey: tycoon-assets/season-rewards.json
+      MinIO__Seeds__QuestionsKey: tycoon-assets/questions.json
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
