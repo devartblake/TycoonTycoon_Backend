@@ -51,3 +51,40 @@ class RecommendationCandidateRequest(BaseModel):
 
 class RecommendationCandidateResponse(BaseModel):
     candidates: List[RecommendationCandidate]
+
+
+class CategoryProfileRequest(BaseModel):
+    playerId: str
+    recentEvents: List[BehaviorEvent] = Field(default_factory=list)
+
+
+class CategoryProfileResponse(BaseModel):
+    strengths: Dict[str, float] = Field(default_factory=dict)
+    weaknesses: Dict[str, float] = Field(default_factory=dict)
+    topCategory: Optional[str] = None
+    weakestCategory: Optional[str] = None
+
+
+class NotificationScoreRequest(BaseModel):
+    playerId: str
+    currentProfile: PlayerProfileSnapshot
+    recentEvents: List[BehaviorEvent] = Field(default_factory=list)
+
+
+class NotificationScoreResponse(BaseModel):
+    notificationFatigueScore: float
+    canReceiveNotification: bool
+    recommendedFrequencyHours: int
+
+
+class MissionFitRequest(BaseModel):
+    playerId: str
+    currentProfile: PlayerProfileSnapshot
+    missionArchetype: str
+    recentEvents: List[BehaviorEvent] = Field(default_factory=list)
+
+
+class MissionFitResponse(BaseModel):
+    fitScore: float
+    reason: str
+    recommended: bool

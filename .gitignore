@@ -56,3 +56,10 @@ Tycoon/bin/**
 # Caches
 *.cache
 **/node_modules/**
+# Python
+**/__pycache__/**
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache/
+**/.pytest_cache/
