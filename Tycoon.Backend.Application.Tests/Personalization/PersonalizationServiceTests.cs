@@ -290,6 +290,108 @@ public sealed class PersonalizationServiceTests
         home.Recommendations.Should().BeEmpty("sidecar failure must fall back to empty candidates");
     }
 
+    // ── GetHomeAsync — mission recommendations ────────────────────────────────
+
+    [Fact]
+    public async Task GetHomeAsync_NewPlayer_ReturnsRecommendedMissions()
+    {
+        await using var db = NewDb();
+        var svc = NewService(db);
+        var playerId = Guid.NewGuid();
+
+        var home = await svc.GetHomeAsync(playerId);
+
+        home.RecommendedMissions.Should().NotBeNull();
+        home.RecommendedMissions.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task GetHomeAsync_HighFrustrationPlayer_GetsOnlyLowPressureMissions()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.70m,   // >= 0.65 → low-pressure only
+            ConfidenceLevel: 0.30m,
+            RecommendedArchetype: "confidence_builder",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        var svc = NewService(db, new ScoringSidecarClient(scores));
+        var home = await svc.GetHomeAsync(playerId);
+
+        home.RecommendedMissions.Should().NotBeEmpty();
+        home.RecommendedMissions.Should().AllSatisfy(m => m.IsLowPressure.Should().BeTrue(),
+            "high-frustration players must only receive low-pressure missions");
+        home.RecommendedMissions.Should().AllSatisfy(m =>
+            m.MissionArchetype.Should().Be("confidence_builder"),
+            "high-frustration players should get confidence_builder missions");
+    }
+
+    [Theory]
+    [InlineData("streak_seeker",     "streak_seeker")]
+    [InlineData("risk_taker",        "risk_taker")]
+    [InlineData("social_challenger", "social_challenger")]
+    [InlineData("explorer",          "explorer")]
+    [InlineData("comeback_player",   "comeback_player")]
+    [InlineData("mastery_path",      "mastery_path")]
+    [InlineData("collector",         "collector")]
+    [InlineData("new_player",        "confidence_builder")]
+    public async Task GetHomeAsync_RecommendedMissions_MatchArchetype(string archetype, string expectedMissionArchetype)
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.10m,   // low frustration — archetype mapping applies
+            ConfidenceLevel: 0.50m,
+            RecommendedArchetype: archetype,
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        var svc = NewService(db, new ScoringSidecarClient(scores));
+        var home = await svc.GetHomeAsync(playerId);
+
+        home.RecommendedMissions.Should().NotBeEmpty();
+        home.RecommendedMissions.First().MissionArchetype.Should().Be(expectedMissionArchetype);
+    }
+
+    [Fact]
+    public async Task GetHomeAsync_UnknownArchetype_ReturnsExplorerMission()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.10m,
+            ConfidenceLevel: 0.50m,
+            RecommendedArchetype: "unknown_archetype",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        var svc = NewService(db, new ScoringSidecarClient(scores));
+        var home = await svc.GetHomeAsync(playerId);
+
+        home.RecommendedMissions.Should().NotBeEmpty();
+        home.RecommendedMissions.First().MissionArchetype.Should().Be("explorer");
+    }
+
     // ── GetRecommendationsAsync ───────────────────────────────────────────────
 
     [Fact]
