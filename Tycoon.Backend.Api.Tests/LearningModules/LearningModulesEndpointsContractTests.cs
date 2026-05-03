@@ -237,4 +237,44 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
         await db.SaveChangesAsync();
         return question;
     }
+
+    // ── Personalization: weak-category prioritisation ─────────────────────────
+
+    [Fact]
+    public async Task GetRecommendedModules_PrioritisesWeakCategories_FromPersonalizationProfile()
+    {
+        var playerId = Guid.NewGuid();
+
+        // Seed a module in a unique category (GeoAdaptiveTest) so it is guaranteed to be
+        // the only Geography module and will always appear in the weak-category slot.
+        var weakModule = await SeedPublishedModuleAsync("Adaptive Geo Module", "GeoAdaptiveTest", QuestionDifficulty.Hard);
+
+        await SeedPlayerProfileAsync(playerId, categoryWeaknessesJson: "{\"GeoAdaptiveTest\": 0.85}");
+
+        var response = await _http.GetFromJsonAsync<RecommendedLearningModulesResponseDto>(
+            $"/modules/recommended?playerId={playerId}&count=10", JsonOptions);
+
+        response.Should().NotBeNull();
+        var items = response!.Items;
+        items.Should().Contain(x => x.Id == weakModule.Id,
+            "the weak-category module must always be surfaced first");
+
+        // It must appear at position 0 (leading the list).
+        items[0].Id.Should().Be(weakModule.Id,
+            "weak-category modules are fetched first and placed at the head of the list");
+    }
+
+    private async Task SeedPlayerProfileAsync(Guid playerId, string categoryWeaknessesJson)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+
+        db.PlayerMindProfiles.Add(new Tycoon.Backend.Domain.Personalization.PlayerMindProfile
+        {
+            Id = Guid.NewGuid(),
+            PlayerId = playerId,
+            CategoryWeaknessesJson = categoryWeaknessesJson
+        });
+        await db.SaveChangesAsync();
+    }
 }

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.Study
@@ -12,8 +13,13 @@ namespace Tycoon.Backend.Application.Study
         : IRequestHandler<GetRecommendedStudySets, RecommendedStudySetsResponseDto>
     {
         private readonly IAppDb _db;
+        private readonly IPlayerMindProfileService? _mindProfiles;
 
-        public GetRecommendedStudySetsHandler(IAppDb db) => _db = db;
+        public GetRecommendedStudySetsHandler(IAppDb db, IPlayerMindProfileService? mindProfiles = null)
+        {
+            _db = db;
+            _mindProfiles = mindProfiles;
+        }
 
         public async Task<RecommendedStudySetsResponseDto> Handle(GetRecommendedStudySets request, CancellationToken ct)
         {
@@ -99,6 +105,45 @@ namespace Tycoon.Backend.Application.Study
                             StudySetKinds.WeakArea,
                             weakArea.Category,
                             questionCount));
+                    }
+                }
+
+                // Add a personalization-profile-backed weak area set when the player's profile
+                // identifies a weak category that is not already surfaced by the rollup-based one.
+                if (_mindProfiles is not null)
+                {
+                    try
+                    {
+                        var profile = await _mindProfiles.GetOrCreateAsync(request.PlayerId.Value, ct);
+                        var topWeakCategory = profile.CategoryWeaknesses
+                            .Where(kv => kv.Value > 0)
+                            .OrderByDescending(kv => kv.Value)
+                            .Select(kv => kv.Key)
+                            .FirstOrDefault();
+
+                        if (topWeakCategory is not null &&
+                            !string.Equals(topWeakCategory, weakArea?.Category, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var profileQuestionCount = await StudySetHelpers
+                                .BuildApprovedQuestionsQuery(_db, topWeakCategory).CountAsync(ct);
+                            if (profileQuestionCount > 0)
+                            {
+                                // Insert after any rollup-based weak area so game-data signal leads.
+                                var insertAt = items.FindIndex(x => x.Kind == StudySetKinds.WeakArea);
+                                insertAt = insertAt >= 0 ? insertAt + 1 : 0;
+                                items.Insert(insertAt, new StudySetListItemDto(
+                                    StudySetHelpers.CreateWeakAreaId(topWeakCategory),
+                                    $"Recommended Focus: {topWeakCategory}",
+                                    $"Your personalization profile suggests practicing {topWeakCategory} to strengthen your skills.",
+                                    StudySetKinds.WeakArea,
+                                    topWeakCategory,
+                                    profileQuestionCount));
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Personalization must never break study set recommendations.
                     }
                 }
             }
