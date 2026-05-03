@@ -1,0 +1,260 @@
+[
+  {
+    "id": "coins_starter_100",
+    "name": "100 Coins",
+    "description": "Starter coin pack for buying power-ups, hints, and cosmetic rewards.",
+    "iconPath": "assets/icons/store/coins_100.png",
+    "price": 0.99,
+    "currency": "usd",
+    "category": "currency",
+    "amount": 100,
+    "tags": [
+      "starter",
+      "coins",
+      "currency"
+    ],
+    "active": true
+  },
+  {
+    "id": "coins_value_550",
+    "name": "550 Coins",
+    "description": "Value coin pack with a small bonus for active quiz players.",
+    "iconPath": "assets/icons/store/coins_550.png",
+    "price": 3.99,
+    "currency": "usd",
+    "category": "currency",
+    "amount": 550,
+    "bonusAmount": 50,
+    "tags": [
+      "value",
+      "coins",
+      "currency"
+    ],
+    "active": true
+  },
+  {
+    "id": "diamonds_starter_10",
+    "name": "10 Diamonds",
+    "description": "Premium diamonds for rare avatars, shields, and event bundles.",
+    "iconPath": "assets/icons/store/diamonds_10.png",
+    "price": 1.99,
+    "currency": "usd",
+    "category": "currency",
+    "amount": 10,
+    "tags": [
+      "premium",
+      "diamonds",
+      "currency"
+    ],
+    "active": true
+  },
+  {
+    "id": "powerup_hint_reveal_3",
+    "name": "Hint Reveal x3",
+    "description": "Reveal one helpful hint during tough trivia questions.",
+    "iconPath": "assets/images/power-ups/hint.png",
+    "price": 90,
+    "currency": "coins",
+    "category": "power-up",
+    "powerUpId": "hint_reveal",
+    "quantity": 3,
+    "duration": 60,
+    "tags": [
+      "hint",
+      "beginner",
+      "quiz-assist"
+    ],
+    "active": true
+  },
+  {
+    "id": "powerup_remove_option_3",
+    "name": "Remove One Wrong x3",
+    "description": "Remove one incorrect answer choice from multiple-choice questions.",
+    "iconPath": "assets/images/power-ups/remove.png",
+    "price": 75,
+    "currency": "coins",
+    "category": "power-up",
+    "powerUpId": "remove_option",
+    "quantity": 3,
+    "duration": 45,
+    "tags": [
+      "eliminate",
+      "multiple-choice"
+    ],
+    "active": true
+  },
+  {
+    "id": "powerup_double_points_2",
+    "name": "Double Points x2",
+    "description": "Double the score value of your next answered question.",
+    "iconPath": "assets/images/power-ups/double.png",
+    "price": 5,
+    "currency": "diamonds",
+    "category": "power-up",
+    "powerUpId": "double_points",
+    "quantity": 2,
+    "duration": 90,
+    "tags": [
+      "score",
+      "premium",
+      "streak"
+    ],
+    "active": true
+  },
+  {
+    "id": "powerup_time_freeze_2",
+    "name": "Time Freeze x2",
+    "description": "Freeze the timer briefly when a question needs extra thought.",
+    "iconPath": "assets/images/power-ups/freeze.png",
+    "price": 6,
+    "currency": "diamonds",
+    "category": "power-up",
+    "powerUpId": "time_freeze",
+    "quantity": 2,
+    "duration": 180,
+    "tags": [
+      "timer",
+      "strategy",
+      "premium"
+    ],
+    "active": true
+  },
+  {
+    "id": "powerup_answer_shield_2",
+    "name": "Answer Shield x2",
+    "description": "Block one penalty from a wrong answer during a match.",
+    "iconPath": "assets/images/power-ups/shield.png",
+    "price": 6,
+    "currency": "diamonds",
+    "category": "power-up",
+    "powerUpId": "shield_answer",
+    "quantity": 2,
+    "duration": 120,
+    "tags": [
+      "shield",
+      "defense",
+      "ranked"
+    ],
+    "active": true
+  },
+  {
+    "id": "theme_neon_tycoon",
+    "name": "Neon Tycoon Theme",
+    "description": "A high-energy neon UI theme for competitive trivia runs.",
+    "iconPath": "assets/icons/store/themes/theme_neon_icon.png",
+    "price": 350,
+    "currency": "coins",
+    "category": "theme",
+    "themeId": "neon_tycoon",
+    "tags": [
+      "theme",
+      "cosmetic",
+      "neon"
+    ],
+    "active": true
+  },
+  {
+    "id": "theme_midnight_scholar",
+    "name": "Midnight Scholar Theme",
+    "description": "A dark academic theme for long study and ranked sessions.",
+    "iconPath": "assets/icons/store/themes/midnight_scholar.png",
+    "price": 450,
+    "currency": "coins",
+    "category": "theme",
+    "themeId": "midnight_scholar",
+    "tags": [
+      "theme",
+      "cosmetic",
+      "scholar"
+    ],
+    "active": true
+  },
+  {
+    "id": "avatar_dragon_legend",
+    "name": "Dragon Legend Avatar",
+    "description": "A legendary dragon avatar for leaderboard intimidation.",
+    "iconPath": "assets/icons/store/avatars/dragon.png",
+    "price": 15,
+    "currency": "diamonds",
+    "category": "avatar",
+    "avatarId": "dragon_legend",
+    "rarity": "legendary",
+    "tags": [
+      "avatar",
+      "legendary",
+      "cosmetic"
+    ],
+    "active": true
+  },
+  {
+    "id": "avatar_robotic_tactician",
+    "name": "Robotic Tactician Avatar",
+    "description": "A futuristic avatar built for strategy-focused players.",
+    "iconPath": "assets/icons/store/avatars/robotic.png",
+    "price": 650,
+    "currency": "coins",
+    "category": "avatar",
+    "avatarId": "robotic_tactician",
+    "rarity": "epic",
+    "tags": [
+      "avatar",
+      "strategy",
+      "cosmetic"
+    ],
+    "active": true
+  },
+  {
+    "id": "bundle_ranked_climb",
+    "name": "Ranked Climb Bundle",
+    "description": "A focused bundle for climbing tier leaderboards with shields, hints, and time tools.",
+    "iconPath": "assets/icons/store/bundles/ranked_climb.png",
+    "price": 12,
+    "currency": "diamonds",
+    "category": "bundle",
+    "items": [
+      {
+        "itemId": "powerup_hint_reveal_3",
+        "quantity": 1
+      },
+      {
+        "itemId": "powerup_time_freeze_2",
+        "quantity": 1
+      },
+      {
+        "itemId": "powerup_answer_shield_2",
+        "quantity": 1
+      }
+    ],
+    "tags": [
+      "bundle",
+      "ranked",
+      "strategy"
+    ],
+    "active": true
+  },
+  {
+    "id": "bundle_scholar_starter",
+    "name": "Scholar Starter Bundle",
+    "description": "A beginner-friendly bundle for careful learning and steady XP progression.",
+    "iconPath": "assets/icons/store/bundles/scholar_starter.png",
+    "price": 500,
+    "currency": "coins",
+    "category": "bundle",
+    "items": [
+      {
+        "itemId": "powerup_hint_reveal_3",
+        "quantity": 1
+      },
+      {
+        "itemId": "powerup_remove_option_3",
+        "quantity": 1
+      }
+    ],
+    "tags": [
+      "bundle",
+      "scholar",
+      "starter"
+    ],
+    "active": true
+  }
+]

@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    {
+      "id": "sch_root",
+      "title": "Study Habits",
+      "description": "+2 seconds per question.",
+      "tier": 0,
+      "cost": 1,
+      "category": "scholar",
+      "effects": {
+        "timeBonusSec": 2
+      },
+      "unlocked": false,
+      "available": true,
+      "position": {
+        "q": 0,
+        "r": 0
+      }
+    },
+    {
+      "id": "sch_focus",
+      "title": "Deep Focus",
+      "description": "Minor streak stability during longer sessions.",
+      "tier": 1,
+      "cost": 1,
+      "category": "scholar",
+      "effects": {
+        "streakMult": 1.05
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": -1,
+        "r": 1
+      }
+    },
+    {
+      "id": "sch_timer_plus",
+      "title": "Extra Time I",
+      "description": "+3 seconds per question.",
+      "tier": 1,
+      "cost": 1,
+      "category": "scholar",
+      "effects": {
+        "timeBonusSec": 3
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": 1,
+        "r": 0
+      }
+    },
+    {
+      "id": "sch_sage",
+      "title": "Trivia Scholar",
+      "description": "Unlock scholar elite challenge access.",
+      "tier": 3,
+      "cost": 3,
+      "category": "scholar",
+      "effects": {
+        "eliteAccess": 1,
+        "hardBonus": 0.1
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": 0,
+        "r": 3
+      }
+    },
+    {
+      "id": "str_root",
+      "title": "Game Planner",
+      "description": "Start building stronger answer streaks.",
+      "tier": 0,
+      "cost": 1,
+      "category": "strategist",
+      "effects": {
+        "streakMult": 1.1
+      },
+      "unlocked": false,
+      "available": true,
+      "position": {
+        "q": 2,
+        "r": -1
+      }
+    },
+    {
+      "id": "str_timer",
+      "title": "Time Management I",
+      "description": "+5 seconds per question.",
+      "tier": 1,
+      "cost": 1,
+      "category": "strategist",
+      "effects": {
+        "timeBonusSec": 5
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": 3,
+        "r": -1
+      }
+    },
+    {
+      "id": "str_combo",
+      "title": "Combo Planner",
+      "description": "Boost streak scoring multiplier.",
+      "tier": 1,
+      "cost": 1,
+      "category": "strategist",
+      "effects": {
+        "streakMult": 1.2
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": 2,
+        "r": 0
+      }
+    },
+    {
+      "id": "str_master",
+      "title": "Master Tactician",
+      "description": "Unlock strategist elite challenge access.",
+      "tier": 3,
+      "cost": 3,
+      "category": "strategist",
+      "effects": {
+        "eliteAccess": 1,
+        "streakMult": 1.35
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": 3,
+        "r": 2
+      }
+    },
+    {
+      "id": "xp_root",
+      "title": "XP Boost I",
+      "description": "+5% XP on all correct answers.",
+      "tier": 0,
+      "cost": 1,
+      "category": "xp",
+      "effects": {
+        "xpBoost": 0.05
+      },
+      "unlocked": false,
+      "available": true,
+      "position": {
+        "q": -2,
+        "r": 1
+      }
+    },
+    {
+      "id": "xp_boost_2",
+      "title": "XP Boost II",
+      "description": "+10% XP on all correct answers.",
+      "tier": 1,
+      "cost": 1,
+      "category": "xp",
+      "effects": {
+        "xpBoost": 0.1
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": -3,
+        "r": 2
+      }
+    },
+    {
+      "id": "xp_burst",
+      "title": "XP Burst",
+      "description": "Gain bonus XP with a short cooldown.",
+      "tier": 1,
+      "cost": 1,
+      "category": "xp",
+      "effects": {
+        "bonusXP": 50,
+        "cooldownSec": 60
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": -2,
+        "r": 2
+      }
+    },
+    {
+      "id": "xp_grandmaster",
+      "title": "Grandmaster XP",
+      "description": "+25% XP on all correct answers.",
+      "tier": 3,
+      "cost": 3,
+      "category": "xp",
+      "effects": {
+        "xpBoost": 0.25
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": -3,
+        "r": 4
+      }
+    },
+    {
+      "id": "pwr_root",
+      "title": "Lifeline Basics",
+      "description": "Reduce global lifeline cooldown slightly.",
+      "tier": 0,
+      "cost": 1,
+      "category": "powerup",
+      "effects": {
+        "cooldownReductionSec": 5
+      },
+      "unlocked": false,
+      "available": true,
+      "position": {
+        "q": 0,
+        "r": -2
+      }
+    },
+    {
+      "id": "pwr_hint_mastery",
+      "title": "Hint Mastery",
+      "description": "Auto-show a basic hint on difficult questions.",
+      "tier": 1,
+      "cost": 2,
+      "category": "powerup",
+      "effects": {
+        "autoHint": 1
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": -1,
+        "r": -1
+      }
+    },
+    {
+      "id": "pwr_shield_mastery",
+      "title": "Shield Mastery",
+      "description": "Gain one streak shield per session.",
+      "tier": 2,
+      "cost": 2,
+      "category": "powerup",
+      "effects": {
+        "streakShield": 1
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": 1,
+        "r": -2
+      }
+    },
+    {
+      "id": "wild_root",
+      "title": "Wildcard Instinct",
+      "description": "Small chance to trigger a random benefit.",
+      "tier": 0,
+      "cost": 1,
+      "category": "wildcard",
+      "effects": {
+        "randomBenefitChance": 0.05
+      },
+      "unlocked": false,
+      "available": true,
+      "position": {
+        "q": -1,
+        "r": 0
+      }
+    },
+    {
+      "id": "wild_chaos_control",
+      "title": "Chaos Control",
+      "description": "Periodic chaos effects are more likely to benefit the player.",
+      "tier": 2,
+      "cost": 3,
+      "category": "wildcard",
+      "effects": {
+        "chaosFavorChance": 0.15
+      },
+      "unlocked": false,
+      "available": false,
+      "position": {
+        "q": -1,
+        "r": 3
+      }
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "sch_root",
+      "toId": "sch_focus"
+    },
+    {
+      "fromId": "sch_root",
+      "toId": "sch_timer_plus"
+    },
+    {
+      "fromId": "sch_focus",
+      "toId": "sch_sage"
+    },
+    {
+      "fromId": "sch_timer_plus",
+      "toId": "sch_sage"
+    },
+    {
+      "fromId": "str_root",
+      "toId": "str_timer"
+    },
+    {
+      "fromId": "str_root",
+      "toId": "str_combo"
+    },
+    {
+      "fromId": "str_timer",
+      "toId": "str_master"
+    },
+    {
+      "fromId": "str_combo",
+      "toId": "str_master"
+    },
+    {
+      "fromId": "xp_root",
+      "toId": "xp_boost_2"
+    },
+    {
+      "fromId": "xp_root",
+      "toId": "xp_burst"
+    },
+    {
+      "fromId": "xp_boost_2",
+      "toId": "xp_grandmaster"
+    },
+    {
+      "fromId": "xp_burst",
+      "toId": "xp_grandmaster"
+    },
+    {
+      "fromId": "pwr_root",
+      "toId": "pwr_hint_mastery"
+    },
+    {
+      "fromId": "pwr_root",
+      "toId": "pwr_shield_mastery"
+    },
+    {
+      "fromId": "wild_root",
+      "toId": "wild_chaos_control"
+    },
+    {
+      "fromId": "wild_chaos_control",
+      "toId": "xp_grandmaster"
+    }
+  ]
+}

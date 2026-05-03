@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "seasonId": "season_001_founders_league",
+  "title": "Founders League",
+  "description": "Launch season rewards for Trivia Tycoon/Synaptix ranked progression.",
+  "startsAtUtc": "2026-05-01T00:00:00Z",
+  "endsAtUtc": "2026-06-01T00:00:00Z",
+  "rankRules": {
+    "playersPerTier": 100,
+    "promotionEligibleRankMax": 25,
+    "dailyRewardRankMax": 20
+  },
+  "dailyTierRewards": [
+    {
+      "tier": "bronze",
+      "rankMin": 1,
+      "rankMax": 5,
+      "coins": 120,
+      "xp": 80,
+      "diamonds": 1
+    },
+    {
+      "tier": "bronze",
+      "rankMin": 6,
+      "rankMax": 20,
+      "coins": 70,
+      "xp": 50,
+      "diamonds": 0
+    },
+    {
+      "tier": "silver",
+      "rankMin": 1,
+      "rankMax": 5,
+      "coins": 180,
+      "xp": 120,
+      "diamonds": 2
+    },
+    {
+      "tier": "silver",
+      "rankMin": 6,
+      "rankMax": 20,
+      "coins": 100,
+      "xp": 70,
+      "diamonds": 1
+    },
+    {
+      "tier": "gold",
+      "rankMin": 1,
+      "rankMax": 5,
+      "coins": 260,
+      "xp": 175,
+      "diamonds": 3
+    },
+    {
+      "tier": "gold",
+      "rankMin": 6,
+      "rankMax": 20,
+      "coins": 150,
+      "xp": 100,
+      "diamonds": 1
+    },
+    {
+      "tier": "platinum",
+      "rankMin": 1,
+      "rankMax": 5,
+      "coins": 360,
+      "xp": 240,
+      "diamonds": 5
+    },
+    {
+      "tier": "platinum",
+      "rankMin": 6,
+      "rankMax": 20,
+      "coins": 220,
+      "xp": 150,
+      "diamonds": 2
+    }
+  ],
+  "milestoneRewards": [
+    {
+      "id": "season_level_5",
+      "level": 5,
+      "name": "Bronze Spark",
+      "type": "coins",
+      "amount": 250,
+      "iconPath": "assets/icons/rewards/coins.png"
+    },
+    {
+      "id": "season_level_10",
+      "level": 10,
+      "name": "Hint Cache",
+      "type": "powerup",
+      "powerUpId": "hint_reveal",
+      "quantity": 3,
+      "iconPath": "assets/images/power-ups/hint.png"
+    },
+    {
+      "id": "season_level_15",
+      "level": 15,
+      "name": "Neon Tycoon Badge",
+      "type": "badge",
+      "badgeId": "badge_neon_tycoon",
+      "iconPath": "assets/icons/badges/neon_tycoon.png"
+    },
+    {
+      "id": "season_level_20",
+      "level": 20,
+      "name": "Time Control Pack",
+      "type": "powerup",
+      "powerUpId": "time_freeze",
+      "quantity": 2,
+      "iconPath": "assets/images/power-ups/freeze.png"
+    },
+    {
+      "id": "season_level_25",
+      "level": 25,
+      "name": "Promotion Chest",
+      "type": "bundle",
+      "coins": 800,
+      "diamonds": 8,
+      "iconPath": "assets/icons/rewards/chest_promotion.png"
+    },
+    {
+      "id": "season_level_30",
+      "level": 30,
+      "name": "Founder Avatar Frame",
+      "type": "cosmetic",
+      "cosmeticId": "frame_founder_gold",
+      "iconPath": "assets/icons/rewards/frame_founder_gold.png"
+    }
+  ],
+  "promotionRewards": [
+    {
+      "fromTier": "bronze",
+      "toTier": "silver",
+      "coins": 300,
+      "xp": 150,
+      "badgeId": "badge_promoted_silver"
+    },
+    {
+      "fromTier": "silver",
+      "toTier": "gold",
+      "coins": 600,
+      "xp": 300,
+      "diamonds": 3,
+      "badgeId": "badge_promoted_gold"
+    },
+    {
+      "fromTier": "gold",
+      "toTier": "platinum",
+      "coins": 1000,
+      "xp": 500,
+      "diamonds": 5,
+      "badgeId": "badge_promoted_platinum"
+    }
+  ]
+}
