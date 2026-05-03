@@ -25,7 +25,8 @@ public sealed class PersonalizationServiceTests
         IPersonalizationSidecarClient? sidecar = null,
         bool guardrailsEnabled = true,
         decimal frustrationThreshold = 0.75m,
-        decimal notificationFatigueThreshold = 0.70m)
+        decimal notificationFatigueThreshold = 0.70m,
+        bool adaptiveStore = true)
     {
         var sidecarClient = sidecar ?? new EmptySidecarClient();
 
@@ -39,9 +40,17 @@ public sealed class PersonalizationServiceTests
         });
         var guardrailSvc = new PersonalizationGuardrailService(guardrailOptions);
 
+        var serviceOptions = Options.Create(new PersonalizationOptions
+        {
+            Enabled = guardrailsEnabled,
+            AdaptiveStore = adaptiveStore,
+            FrustrationPaidOfferSuppressionThreshold = frustrationThreshold,
+            NotificationFatigueThreshold = notificationFatigueThreshold
+        });
+
         var auditSvc = new PersonalizationAuditService(db);
 
-        return new PersonalizationService(db, mindProfileSvc, guardrailSvc, sidecarClient, auditSvc);
+        return new PersonalizationService(db, mindProfileSvc, guardrailSvc, sidecarClient, auditSvc, serviceOptions);
     }
 
     // ── GetHomeAsync — home payload structure ─────────────────────────────────
@@ -467,6 +476,180 @@ public sealed class PersonalizationServiceTests
         // Should not throw
         await svc.Invoking(s => s.AcceptRecommendationAsync(Guid.NewGuid(), playerId))
                  .Should().NotThrowAsync();
+    }
+
+    // ── GetStoreRecommendationsAsync ──────────────────────────────────────────
+
+    [Fact]
+    public async Task GetStoreRecommendationsAsync_ReturnsPlayerId()
+    {
+        await using var db = NewDb();
+        var svc = NewService(db);
+        var playerId = Guid.NewGuid();
+
+        var result = await svc.GetStoreRecommendationsAsync(playerId);
+
+        result.PlayerId.Should().Be(playerId);
+        result.Offers.Should().NotBeNull();
+        result.AppliedGuardrails.Should().NotBeNull();
+        result.AppliedGuardrails.Should().ContainKey("adaptiveStoreEnabled");
+        result.AppliedGuardrails.Should().ContainKey("personalizationEnabled");
+        result.AppliedGuardrails.Should().ContainKey("frustrationPaidOfferSuppressed");
+    }
+
+    [Fact]
+    public async Task GetStoreRecommendationsAsync_AdaptiveStoreDisabled_ReturnsNoOffers()
+    {
+        await using var db = NewDb();
+        var svc = NewService(db, adaptiveStore: false);
+        var playerId = Guid.NewGuid();
+
+        var result = await svc.GetStoreRecommendationsAsync(playerId);
+
+        result.Offers.Should().BeEmpty("adaptive store is disabled");
+        result.AppliedGuardrails["adaptiveStoreEnabled"].Should().Be(false);
+    }
+
+    [Fact]
+    public async Task GetStoreRecommendationsAsync_FrustratedPlayer_PayloadIncludesFreeOffer()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.80m,   // above suppression threshold (0.75)
+            ConfidenceLevel: 0.20m,
+            RecommendedArchetype: "confidence_builder",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        var svc = NewService(db, new ScoringSidecarClient(scores));
+        var result = await svc.GetStoreRecommendationsAsync(playerId);
+
+        result.Offers.Should().NotBeEmpty("frustrated player should receive a free support offer");
+        result.Offers.Should().AllSatisfy(o =>
+            o.Type.Should().Be("store_free_offer", "only free offers are allowed for frustrated players"));
+        result.AppliedGuardrails["frustrationPaidOfferSuppressed"].Should().Be(true);
+    }
+
+    [Fact]
+    public async Task GetStoreRecommendationsAsync_PaidOffer_SuppressedWhenPlayerFrustrated()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.80m,
+            ConfidenceLevel: 0.20m,
+            RecommendedArchetype: "confidence_builder",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var paidCandidate = new SidecarRecommendationCandidateDto(
+            Type: "store_offer",
+            TargetId: "pack-gold",
+            Score: 0.95m,
+            Reason: "Hot deal",
+            Payload: new Dictionary<string, object> { ["isPaid"] = true });
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        var svc = NewService(db, new ComposedSidecarClient(scores, [paidCandidate]));
+        var result = await svc.GetStoreRecommendationsAsync(playerId);
+
+        result.Offers.Should().NotContain(o => o.Type == "store_offer",
+            "paid offers must be suppressed when player is frustrated");
+    }
+
+    [Fact]
+    public async Task GetStoreRecommendationsAsync_PaidOffer_AllowedWhenPlayerNotFrustrated()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.10m,   // well below threshold
+            ConfidenceLevel: 0.70m,
+            RecommendedArchetype: "risk_taker",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var paidCandidate = new SidecarRecommendationCandidateDto(
+            Type: "store_offer",
+            TargetId: "pack-gold",
+            Score: 0.85m,
+            Reason: "Great deal for competitive players.",
+            Payload: new Dictionary<string, object> { ["isPaid"] = true });
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        var svc = NewService(db, new ComposedSidecarClient(scores, [paidCandidate]));
+        var result = await svc.GetStoreRecommendationsAsync(playerId);
+
+        result.Offers.Should().Contain(o => o.Type == "store_offer",
+            "paid offers are allowed when player is not frustrated");
+    }
+
+    [Fact]
+    public async Task GetStoreRecommendationsAsync_OfferIncludesReasonAndGuardrails()
+    {
+        await using var db = NewDb();
+        var candidate = new SidecarRecommendationCandidateDto(
+            Type: "store_offer",
+            TargetId: null,
+            Score: 0.80m,
+            Reason: "Personalized store pick",
+            Payload: new Dictionary<string, object>());
+
+        var svc = NewService(db, new RecommendationSidecarClient([candidate]));
+        var playerId = Guid.NewGuid();
+
+        var result = await svc.GetStoreRecommendationsAsync(playerId);
+
+        result.Offers.Should().HaveCount(1);
+        var offer = result.Offers[0];
+        offer.Reason.Should().NotBeNullOrEmpty();
+        offer.Guardrails.Should().NotBeNull();
+        offer.Source.Should().Be("store");
+    }
+
+    [Fact]
+    public async Task GetStoreRecommendationsAsync_FrustratedPlayer_FreeOfferIsPersisted()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.80m,
+            ConfidenceLevel: 0.20m,
+            RecommendedArchetype: "confidence_builder",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        var svc = NewService(db, new ScoringSidecarClient(scores));
+        await svc.GetStoreRecommendationsAsync(playerId);
+
+        var stored = await db.PersonalizationRecommendations
+            .Where(r => r.PlayerId == playerId && r.RecommendationType == "store_free_offer")
+            .ToListAsync();
+
+        stored.Should().HaveCount(1, "the free support offer must be persisted for audit purposes");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

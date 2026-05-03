@@ -154,6 +154,24 @@ async def recommendation_candidates(
             payload={"tone": "competitive"},
         ))
 
+    # Store offer candidates: paid for engaged players, free support for struggling players
+    if request.profile.frustrationRiskScore >= 0.65:
+        candidates.append(RecommendationCandidate(
+            type="store_free_offer",
+            targetId=None,
+            score=0.82,
+            reason="You seem to be struggling — here is a free hint pack to help you get back on track.",
+            payload={"tone": "supportive", "isPaid": False, "offerType": "free_hint_pack"},
+        ))
+    elif request.profile.archetype in ("risk_taker", "collector", "mastery_path", "premium_power_user"):
+        candidates.append(RecommendationCandidate(
+            type="store_offer",
+            targetId=None,
+            score=0.78,
+            reason="Your play style suggests you'd benefit from premium power-ups.",
+            payload={"tone": "motivating", "isPaid": True, "offerType": "powerup_bundle"},
+        ))
+
     candidates.sort(key=lambda c: c.score, reverse=True)
     return RecommendationCandidateResponse(candidates=candidates)
 
