@@ -103,7 +103,6 @@ using Tycoon.Backend.Infrastructure;
 using Tycoon.Backend.Infrastructure.Persistence.Extensions;
 using Tycoon.Backend.Infrastructure.Persistence.HealthChecks;
 using Tycoon.Backend.Infrastructure.Persistence.Startup;
-using Tycoon.Backend.Infrastructure.SidecarClient;
 using Tycoon.Shared.Contracts.Dtos;
 using Tycoon.Shared.Observability;
 using Tycoon.Backend.Api.Grpc;
@@ -516,13 +515,7 @@ builder.Services.AddHttpClient();
 builder.Services.Configure<PersonalizationOptions>(
     builder.Configuration.GetSection("Personalization"));
 
-builder.Services.AddHttpClient<IPersonalizationSidecarClient, PersonalizationSidecarClient>(client =>
-{
-    var baseUrl = builder.Configuration["SidecarPersonalization:BaseUrl"] ?? "http://localhost:8001";
-    var timeoutSeconds = builder.Configuration.GetValue<int>("SidecarPersonalization:TimeoutSeconds", 5);
-    client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
-});
+builder.Services.AddPersonalizationSidecarClient(builder.Configuration);
 builder.Services.Configure<StorePremiumOptions>(builder.Configuration.GetSection("StorePremium"));
 builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection("PayPal"));
 builder.Services.AddSingleton<IPayPalPaymentGateway, PayPalPaymentGateway>();
