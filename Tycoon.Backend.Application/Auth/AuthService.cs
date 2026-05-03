@@ -115,10 +115,8 @@ namespace Tycoon.Backend.Application.Auth
             if (!authenticatedUser.IsActive)
                 throw new UnauthorizedAccessException("User account is not active");
 
-            await _database.Users
-                .Where(u => u.Id == authenticatedUser.Id)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(u => u.LastLoginAt, _ => DateTimeOffset.UtcNow));
+            var userEntity = await _database.Users.FindAsync(authenticatedUser.Id);
+            userEntity?.RecordLogin();
 
             // Look up ACL role for admin logins to grant elevated scopes
             AdminRole? aclRole = null;
