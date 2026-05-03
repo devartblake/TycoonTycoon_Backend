@@ -1,6 +1,6 @@
 # Synaptix Migration — Remaining Work
 
-**Date:** 2026-04-01 | **Last updated:** 2026-04-04
+**Date:** 2026-04-01 | **Last updated:** 2026-05-03
 **Purpose:** Consolidated status across backend and frontend, incorporating cross-comparison findings.
 
 ---
@@ -43,6 +43,11 @@ Source: `synaptix_frontend_cross_comparison_status.md`
 | No API contract breaks | ✅ |
 | Analytics dimensions match (5/5) | ✅ |
 | Preferences persistence aligned | ✅ |
+| Tier names aligned to Synaptix ladder | ✅ *(updated 2026-05-03)* |
+| Mission seeds use Synaptix copy | ✅ *(updated 2026-05-03)* |
+| JWT Issuer / Audience use Synaptix identifiers | ✅ *(updated 2026-05-03)* |
+| PayPal BrandName = Synaptix | ✅ *(updated 2026-05-03)* |
+| StorePremium subtitle copy = Synaptix | ✅ *(updated 2026-05-03)* |
 
 ---
 
@@ -79,10 +84,10 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 
 ### Priority 1: Build & Migration Verification
 - [ ] Verify solution compiles cleanly (`dotnet build` on `Tycoon.Backend.Api/Tycoon.Backend.Api.csproj`)
-- [ ] Generate EF Core migration for `PlayerPreferences` table
-- [ ] Run migration against dev database
+- [ ] Run migration service against dev database (`dotnet run --project Tycoon.MigrationService`) — this will apply tier renames and new mission seeds
 - [ ] Confirm CI passes with no namespace/build regressions
   - Attempted local bootstrap on 2026-04-04 via `./scripts/bootstrap-dotnet.sh`; blocked by HTTP 403 fetching `dotnet-install.sh` in this environment.
+  - *Note: `PlayerPreferences` migration was already generated in a prior session.*
 
 ### Priority 2: Questions Gameplay Hardening
 - [x] `GET /questions/set?category=&difficulty=&count=` — Serve questions for match play
@@ -131,10 +136,13 @@ Source: Full API survey + `synaptix_backend_cross_comparison_status.md` Section 
 - [ ] Release-level QA on all core screens
 
 ### Deferred: BE Packet E + FE Packet E
+> JWT Issuer/Audience values were updated to `SynaptixApi`/`SynaptixApp` on 2026-05-03 as a brand-surface fix. The items below are the deeper technical renames still deferred.
 - [ ] Backend namespace rename (`Tycoon.*` → `Synaptix.*`)
 - [ ] Frontend package rename (`package:trivia_tycoon` → `package:synaptix`)
 - [ ] Cookie/persistence key cleanup
-- [ ] Docker/CI/JWT/telemetry identifier updates
+- [ ] Docker/CI/telemetry service-name identifier updates (`Tycoon.Backend.Api` → `Synaptix.Backend.Api` in `Observability:ServiceName`)
+- [ ] Elasticsearch alias rename (`tycoon-qa-*` → `synaptix-qa-*`) — requires index migration plan
+- [ ] IAP Google package name (`com.tycoon.app.*` → `com.synaptix.app.*`) — requires store re-submission
 
 ---
 

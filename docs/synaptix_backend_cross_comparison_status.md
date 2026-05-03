@@ -1,7 +1,10 @@
 # Synaptix Backend Cross-Comparison Status
 ## Completed work, dependency map, and remaining work
 
+**Last updated:** 2026-05-03
 **Purpose:** summarize the current backend status, split into work that is independent of the frontend vs. work that depends on frontend readiness or cross-stack verification.
+
+> **2026-05-03 update:** Backend Packets A–D are now fully complete. The remaining open items are (1) build + migration runtime verification and (2) Packet E technical renames (deferred post-soft-launch). See section 8 for current assessment.
 
 ---
 
@@ -13,19 +16,22 @@ What is clearly completed:
 - backend packet A
 - backend packet B
 - backend packet C
-- backend packet D
+- backend packet D *(fully closed 2026-05-03)*
 - operator-facing Synaptix Command branding
 - Synaptix API branding
 - additive preference persistence
 - analytics dimension expansion
+- tier system renamed to Synaptix ladder (Neural Initiate → Synaptix Prime) *(2026-05-03)*
+- mission seeds updated with Synaptix copy *(2026-05-03)*
+- JWT Issuer/Audience aligned to SynaptixApi/SynaptixApp *(2026-05-03)*
+- PayPal BrandName and StorePremium subtitle updated *(2026-05-03)*
+- Synaptix Security KMS subsystem (full Vault + KMS API + client library) *(2026-05-02)*
 - several operational/backend hardening items unrelated to the rebrand
 
 What is still incomplete:
-- alpha gameplay backend called out in the FastAPI backend plan
-- full economy sync
-- crypto economy layer
-- build/migration verification in a .NET environment
-- final frontend/backend vocabulary verification
+- build/migration verification in a live .NET environment
+- final frontend/backend vocabulary verification (needs runtime)
+- Packet E: deep technical namespace/alias/identifier renames (intentionally deferred)
 
 ---
 
@@ -136,10 +142,13 @@ Still open:
 
 ### 5.2 Deferred Packet E technical cleanup
 Still open and intentionally deferred:
-- `Tycoon.Backend.*` -> `Synaptix.Backend.*`
+- `Tycoon.Backend.*` → `Synaptix.Backend.*` namespace rename
 - project/solution rename
-- service/telemetry identifier rename
-- docker / CI / issuer / audience naming cleanup
+- `Observability:ServiceName` update (`Tycoon.Backend.Api` → `Synaptix.Backend.Api`)
+- Docker/CI service-identifier alignment
+- Elasticsearch alias rename (`tycoon-qa-*` → `synaptix-qa-*`)
+- IAP Google package name (`com.tycoon.app.*` → `com.synaptix.app.*`)
+> *Note:* JWT Issuer/Audience were updated on 2026-05-03 as a brand-surface fix and are no longer in this list.
 
 ### 5.3 Ongoing backend platform hardening
 Potential continued work:
@@ -211,29 +220,25 @@ Still open:
 ## 7. Practical backend priority order from here
 
 ### Highest-value remaining backend items
-1. build + migration verification in a real .NET environment
-2. core alpha gameplay backend from the FastAPI plan:
-   - auth
-   - profile sync
-   - quiz
-   - leaderboard
-   - economy state
-   - store
-3. authoritative wallet/economy sync
-4. cross-stack terminology verification with the live frontend
-5. crypto economy layer
-6. multiplayer / seasons / skills / social deeper APIs
-7. only then reconsider Packet E
+1. **Build + migration verification** — run `dotnet build` and `dotnet run --project Tycoon.MigrationService` against a live database to apply tier renames and mission seeds
+2. **Cross-stack terminology verification** — verify frontend labels match backend responses at runtime
+3. **Packet E (post-soft-launch)** — namespace/alias/identifier renames once product is stable
+
+> *Items 2–6 from the prior version of this list (alpha gameplay, economy sync, crypto, multiplayer, skills/social) are all marked ✅ complete in `synaptix_remaining_work.md`. See Section 4 of that doc for the full route inventory.*
 
 ---
 
-## 8. Final backend assessment
+## 8. Final backend assessment — 2026-05-03
 
-### Completed and mostly independent
-The backend rebrand, dashboard alignment, and analytics-dimension work are largely complete.
+### Fully complete
+- All Synaptix rebrand Packets A–D (brand, preferences, language alignment, analytics, tier system, mission copy, JWT config)
+- Synaptix Security KMS subsystem (Vault + KMS API + client library)
+- Full gameplay API surface (auth, matches, economy, missions, leaderboard, skills, social, store, crypto, personalization)
 
-### Completed because frontend needed it
-Preferences persistence and analytics-dimension support are already in place.
+### Needs runtime confirmation
+- `dotnet build` has not been executed in this environment (SDK bootstrap blocked by HTTP 403)
+- Tier rename and mission seed updates will be applied on next `Tycoon.MigrationService` run
+- Frontend ↔ backend terminology alignment needs live verification
 
-### Still open
-The biggest unfinished backend work is not the Synaptix rename itself — it is the actual gameplay/economy service layer needed to support the frontend beyond local/demo behavior.
+### Intentionally deferred
+- Packet E: deep technical namespace/alias/identifier renames — post-soft-launch, by design
