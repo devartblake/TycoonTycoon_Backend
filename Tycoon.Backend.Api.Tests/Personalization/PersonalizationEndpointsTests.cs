@@ -179,7 +179,14 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         using var http = AuthClient(token);
 
         var otherPlayerId = Guid.NewGuid();
-        var evt = new PlayerBehaviorEventDto("match_completed", "ranked", null, null, null, null, null);
+        var evt = new PlayerBehaviorEventDto(
+            EventType: "match_completed",
+            EventSource: "ranked",
+            Category: null,
+            Difficulty: null,
+            Mode: null,
+            Metadata: null,
+            OccurredAt: null);
         var resp = await http.PostAsJsonAsync($"/personalization/profile/{otherPlayerId}/event", evt);
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);

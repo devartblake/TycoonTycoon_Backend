@@ -117,6 +117,7 @@ namespace Tycoon.Backend.Application.Auth
 
             var userEntity = await _database.Users.FindAsync(authenticatedUser.Id);
             userEntity?.RecordLogin();
+            // Note: SaveChangesAsync below persists this login timestamp together with the refresh token.
 
             // Look up ACL role for admin logins to grant elevated scopes
             AdminRole? aclRole = null;
