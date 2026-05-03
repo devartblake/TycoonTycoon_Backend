@@ -19,6 +19,7 @@ using Tycoon.Backend.Infrastructure.Analytics.Mongo;
 using Tycoon.Backend.Infrastructure.Events;
 using Tycoon.Backend.Infrastructure.Persistence;
 using Tycoon.Backend.Infrastructure.Services;
+using Tycoon.Backend.Infrastructure.SidecarClient;
 using Tycoon.Backend.Infrastructure.Storage;
 
 namespace Tycoon.Backend.Infrastructure
@@ -236,6 +237,43 @@ namespace Tycoon.Backend.Infrastructure
             return services;
         }
 
+
+        /// <summary>
+        /// Registers <see cref="IPersonalizationSidecarClient"/> using <see cref="IHttpClientFactory"/>.
+        /// When <c>SidecarPersonalization:Enabled</c> is <c>false</c> a no-op client is registered
+        /// so the caller always falls back to local scoring rules.
+        /// </summary>
+        public static IServiceCollection AddPersonalizationSidecarClient(
+            this IServiceCollection services,
+            IConfiguration cfg)
+        {
+            var opts = cfg
+                .GetSection(SidecarPersonalizationOptions.SectionName)
+                .Get<SidecarPersonalizationOptions>() ?? new SidecarPersonalizationOptions();
+
+            // Register options so they can be resolved via IOptions<SidecarPersonalizationOptions>
+            services.AddOptions<SidecarPersonalizationOptions>()
+                .Configure(o =>
+                {
+                    o.BaseUrl = opts.BaseUrl;
+                    o.TimeoutSeconds = opts.TimeoutSeconds;
+                    o.Enabled = opts.Enabled;
+                });
+
+            if (!opts.Enabled)
+            {
+                services.TryAddSingleton<IPersonalizationSidecarClient, NullPersonalizationSidecarClient>();
+                return services;
+            }
+
+            services.AddHttpClient<IPersonalizationSidecarClient, PersonalizationSidecarClient>(client =>
+            {
+                client.BaseAddress = new Uri(opts.BaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(opts.TimeoutSeconds);
+            });
+
+            return services;
+        }
 
         // ✅ Robust connection string resolution (Aspire + non-Aspire + legacy keys)
         // IMPORTANT:

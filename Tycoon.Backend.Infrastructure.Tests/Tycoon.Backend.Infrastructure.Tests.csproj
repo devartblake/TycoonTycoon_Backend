@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Tycoon.Backend.Application\Tycoon.Backend.Application.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Domain\Tycoon.Backend.Domain.csproj" />
     <ProjectReference Include="..\Tycoon.Backend.Infrastructure\Tycoon.Backend.Infrastructure.csproj" />
   </ItemGroup>
