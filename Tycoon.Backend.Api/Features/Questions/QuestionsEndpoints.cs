@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Features.Questions
@@ -28,14 +29,52 @@ namespace Tycoon.Backend.Api.Features.Questions
         /// <summary>
         /// Serves a random set of questions for gameplay.
         /// Correct answers are NOT included — use /questions/check for server-side grading.
+        /// When <paramref name="mode"/> is not "ranked" and a <paramref name="playerId"/> is supplied,
+        /// adaptive defaults are applied: the player's weakest category and recommended difficulty
+        /// are used when those filters are not explicitly provided.
+        /// Ranked play is never influenced by personalization to preserve fairness.
         /// </summary>
         private static async Task<IResult> GetQuestionSet(
             [FromQuery] string? category,
             [FromQuery] QuestionDifficulty? difficulty,
             [FromQuery] int count,
+            [FromQuery] Guid? playerId,
+            [FromQuery] string? mode,
             IAppDb db,
+            IPlayerMindProfileService mindProfiles,
             CancellationToken ct)
         {
+            // Apply adaptive strategy only for non-ranked practice modes.
+            if (playerId.HasValue && !string.Equals(mode, "ranked", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var profile = await mindProfiles.GetOrCreateAsync(playerId.Value, ct);
+
+                    if (string.IsNullOrWhiteSpace(category) && profile.CategoryWeaknesses.Count > 0)
+                    {
+                        category = profile.CategoryWeaknesses
+                            .OrderByDescending(kv => kv.Value)
+                            .First().Key;
+                    }
+
+                    if (!difficulty.HasValue)
+                    {
+                        difficulty = profile.ConfidenceLevel switch
+                        {
+                            < 0.30m => QuestionDifficulty.Easy,
+                            < 0.60m => QuestionDifficulty.Medium,
+                            < 0.85m => QuestionDifficulty.Hard,
+                            _ => QuestionDifficulty.Expert
+                        };
+                    }
+                }
+                catch
+                {
+                    // Personalization must never break question serving.
+                }
+            }
+
             var dtos = await QueryGameplayQuestionsAsync(
                 db,
                 count,

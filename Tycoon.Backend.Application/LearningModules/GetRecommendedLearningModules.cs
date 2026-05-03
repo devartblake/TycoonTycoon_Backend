@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Personalization;
 using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Application.LearningModules
@@ -11,9 +12,19 @@ namespace Tycoon.Backend.Application.LearningModules
     public sealed class GetRecommendedLearningModulesHandler
         : IRequestHandler<GetRecommendedLearningModules, RecommendedLearningModulesResponseDto>
     {
-        private readonly IAppDb _db;
+        // Private projection type to avoid repeated anonymous-type definitions.
+        private sealed record ModuleRow(
+            Guid Id, string Title, string Description, string Category,
+            QuestionDifficulty Difficulty, int LessonCount, int RewardXp, int RewardCoins);
 
-        public GetRecommendedLearningModulesHandler(IAppDb db) => _db = db;
+        private readonly IAppDb _db;
+        private readonly IPlayerMindProfileService? _mindProfiles;
+
+        public GetRecommendedLearningModulesHandler(IAppDb db, IPlayerMindProfileService? mindProfiles = null)
+        {
+            _db = db;
+            _mindProfiles = mindProfiles;
+        }
 
         public async Task<RecommendedLearningModulesResponseDto> Handle(
             GetRecommendedLearningModules request,
@@ -38,38 +49,80 @@ namespace Tycoon.Backend.Application.LearningModules
                 query = query.Where(m => !completedIds.Contains(m.Id));
             }
 
-            var modules = await query
-                .OrderBy(m => m.Difficulty)
-                .ThenBy(m => m.Title)
-                .Take(take)
-                .Select(m => new
+            // Resolve weak categories from the personalization profile when available.
+            HashSet<string>? weakCategories = null;
+            if (request.PlayerId.HasValue && _mindProfiles is not null)
+            {
+                try
                 {
-                    m.Id,
-                    m.Title,
-                    m.Description,
-                    m.Category,
-                    m.Difficulty,
-                    LessonCount = m.Lessons.Count,
-                    m.RewardXp,
-                    m.RewardCoins
-                })
-                .ToListAsync(ct);
+                    var profile = await _mindProfiles.GetOrCreateAsync(request.PlayerId.Value, ct);
+                    if (profile.CategoryWeaknesses.Count > 0)
+                    {
+                        weakCategories = profile.CategoryWeaknesses
+                            .Where(kv => kv.Value > 0)
+                            .Select(kv => kv.Key)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    }
+                }
+                catch
+                {
+                    // Personalization must never break module recommendations.
+                }
+            }
 
-            var items = modules
+            List<ModuleRow> orderedModules;
+
+            if (weakCategories is { Count: > 0 })
+            {
+                // Fetch weak-category modules first (always surfaced, up to `take`).
+                var weakModules = await ProjectQuery(query
+                    .Where(m => weakCategories.Contains(m.Category))
+                    .OrderBy(m => m.Difficulty)
+                    .ThenBy(m => m.Title)
+                    .Take(take), ct);
+
+                // Fill remaining slots with modules from other categories.
+                var remaining = take - weakModules.Count;
+                if (remaining > 0)
+                {
+                    var weakIds = weakModules.Select(m => m.Id).ToHashSet();
+                    var otherModules = await ProjectQuery(query
+                        .Where(m => !weakCategories.Contains(m.Category) && !weakIds.Contains(m.Id))
+                        .OrderBy(m => m.Difficulty)
+                        .ThenBy(m => m.Title)
+                        .Take(remaining), ct);
+
+                    orderedModules = [.. weakModules, .. otherModules];
+                }
+                else
+                {
+                    orderedModules = weakModules;
+                }
+            }
+            else
+            {
+                orderedModules = await ProjectQuery(query
+                    .OrderBy(m => m.Difficulty)
+                    .ThenBy(m => m.Title)
+                    .Take(take), ct);
+            }
+
+            var items = orderedModules
                 .Select(m => new LearningModuleListItemDto(
-                    m.Id,
-                    m.Title,
-                    m.Description,
-                    m.Category,
-                    m.Difficulty,
-                    m.LessonCount,
-                    m.RewardXp,
-                    m.RewardCoins,
-                    completedIds is not null && completedIds.Contains(m.Id)
-                ))
+                    m.Id, m.Title, m.Description, m.Category, m.Difficulty,
+                    m.LessonCount, m.RewardXp, m.RewardCoins,
+                    completedIds is not null && completedIds.Contains(m.Id)))
                 .ToList();
 
             return new RecommendedLearningModulesResponseDto(items);
         }
+
+        private static Task<List<ModuleRow>> ProjectQuery(
+            IQueryable<Domain.Entities.LearningModule> source, CancellationToken ct) =>
+            source
+                .Select(m => new ModuleRow(
+                    m.Id, m.Title, m.Description, m.Category, m.Difficulty,
+                    m.Lessons.Count, m.RewardXp, m.RewardCoins))
+                .ToListAsync(ct);
     }
 }
