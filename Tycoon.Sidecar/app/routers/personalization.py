@@ -159,7 +159,7 @@ async def recommendation_candidates(
             targetId=None,
             score=0.70,
             reason="Player can receive one helpful coach recommendation.",
-            payload={"tone": notif_tone, "intent": notif_intent},
+            payload={"tone": "supportive"},
         ))
 
     if request.profile.archetype in ("streak_seeker", "risk_taker", "social_challenger"):
