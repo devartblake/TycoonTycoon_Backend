@@ -10,6 +10,8 @@ public interface IPersonalizationService
 
     Task<StorePersonalizationDto> GetStoreRecommendationsAsync(Guid playerId, CancellationToken ct = default);
 
+    Task<NotificationPersonalizationDto> GetNotificationRecommendationAsync(Guid playerId, CancellationToken ct = default);
+
     Task AcceptRecommendationAsync(Guid recommendationId, Guid playerId, CancellationToken ct = default);
 
     Task DismissRecommendationAsync(Guid recommendationId, Guid playerId, CancellationToken ct = default);

@@ -26,7 +26,8 @@ public sealed class PersonalizationServiceTests
         bool guardrailsEnabled = true,
         decimal frustrationThreshold = 0.75m,
         decimal notificationFatigueThreshold = 0.70m,
-        bool adaptiveStore = true)
+        bool adaptiveStore = true,
+        bool adaptiveNotifications = true)
     {
         var sidecarClient = sidecar ?? new EmptySidecarClient();
 
@@ -44,6 +45,7 @@ public sealed class PersonalizationServiceTests
         {
             Enabled = guardrailsEnabled,
             AdaptiveStore = adaptiveStore,
+            AdaptiveNotifications = adaptiveNotifications,
             FrustrationPaidOfferSuppressionThreshold = frustrationThreshold,
             NotificationFatigueThreshold = notificationFatigueThreshold
         });
@@ -652,12 +654,193 @@ public sealed class PersonalizationServiceTests
         stored.Should().HaveCount(1, "the free support offer must be persisted for audit purposes");
     }
 
+    // ── GetNotificationRecommendationAsync ────────────────────────────────────
+
+    [Fact]
+    public async Task GetNotificationRecommendationAsync_LowFatigue_ReturnsRecommendationWithToneAndIntent()
+    {
+        await using var db = NewDb();
+        var svc = NewService(db);
+        var playerId = Guid.NewGuid();
+
+        var result = await svc.GetNotificationRecommendationAsync(playerId);
+
+        result.PlayerId.Should().Be(playerId);
+        result.CanReceiveNotification.Should().BeTrue();
+        result.Recommendation.Should().NotBeNull();
+        result.Recommendation!.Payload.Should().ContainKey("tone");
+        result.Recommendation.Payload.Should().ContainKey("intent");
+        result.AppliedGuardrails.Should().ContainKey("adaptiveNotificationsEnabled");
+    }
+
+    [Fact]
+    public async Task GetNotificationRecommendationAsync_HighFatigue_SuppressesNotification()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.10m,
+            ConfidenceLevel: 0.50m,
+            RecommendedArchetype: "new_player",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        // Force a high fatigue score directly on the entity
+        var entity = await db.PlayerMindProfiles.FirstOrDefaultAsync(p => p.PlayerId == playerId);
+        entity!.NotificationFatigueScore = 0.85m;
+        await db.SaveChangesAsync();
+
+        var svc = NewService(db, new EmptySidecarClient());
+        var result = await svc.GetNotificationRecommendationAsync(playerId);
+
+        result.CanReceiveNotification.Should().BeFalse("fatigue score is above threshold");
+        result.Recommendation.Should().BeNull("high-fatigue players must not receive notification recommendations");
+        result.AppliedGuardrails["notificationFatigueSuppressed"].Should().Be(true);
+    }
+
+    [Fact]
+    public async Task GetNotificationRecommendationAsync_AdaptiveNotificationsDisabled_ReturnsNoRecommendation()
+    {
+        await using var db = NewDb();
+        var svc = NewService(db, adaptiveNotifications: false);
+        var playerId = Guid.NewGuid();
+
+        var result = await svc.GetNotificationRecommendationAsync(playerId);
+
+        result.CanReceiveNotification.Should().BeFalse();
+        result.Recommendation.Should().BeNull();
+        result.AppliedGuardrails["adaptiveNotificationsEnabled"].Should().Be(false);
+    }
+
+    [Fact]
+    public async Task GetNotificationRecommendationAsync_SidecarProvidesNotificationCandidate_PayloadHasToneAndIntent()
+    {
+        await using var db = NewDb();
+        var notifCandidate = new SidecarRecommendationCandidateDto(
+            Type: "notification",
+            TargetId: null,
+            Score: 0.72m,
+            Reason: "Personalised notification",
+            Payload: new Dictionary<string, object> { ["tone"] = "motivating", ["intent"] = "daily_check_in" });
+
+        var svc = NewService(db, new RecommendationSidecarClient([notifCandidate]));
+        var playerId = Guid.NewGuid();
+
+        var result = await svc.GetNotificationRecommendationAsync(playerId);
+
+        result.Recommendation.Should().NotBeNull();
+        result.Recommendation!.Payload["tone"].Should().Be("motivating");
+        result.Recommendation.Payload["intent"].Should().Be("daily_check_in");
+        result.Recommendation.Source.Should().Be("notification");
+    }
+
+    [Fact]
+    public async Task GetNotificationRecommendationAsync_SidecarThrows_FallsBackToLocalRecommendation()
+    {
+        await using var db = NewDb();
+        var svc = NewService(db, new ThrowingSidecarClient());
+        var playerId = Guid.NewGuid();
+
+        var result = await svc.GetNotificationRecommendationAsync(playerId);
+
+        result.Should().NotBeNull("sidecar failure must not break the notification endpoint");
+        result.Recommendation.Should().NotBeNull("local fallback recommendation must always be returned for low-fatigue players");
+        result.Recommendation!.Source.Should().Be("local");
+        result.Recommendation.Payload.Should().ContainKey("tone");
+        result.Recommendation.Payload.Should().ContainKey("intent");
+    }
+
+    [Fact]
+    public async Task GetNotificationRecommendationAsync_FrustratedPlayer_LocalFallbackToneIsSupportive()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.10m,
+            FrustrationRiskScore: 0.80m,
+            ConfidenceLevel: 0.20m,
+            RecommendedArchetype: "confidence_builder",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        // Use EmptySidecarClient so no notification candidate comes from sidecar → local fallback applies
+        var svc = NewService(db, new EmptySidecarClient());
+        var result = await svc.GetNotificationRecommendationAsync(playerId);
+
+        result.Recommendation.Should().NotBeNull();
+        result.Recommendation!.Payload["tone"].Should().Be("supportive");
+        result.Recommendation.Payload["intent"].Should().Be("support");
+    }
+
+    [Fact]
+    public async Task GetNotificationRecommendationAsync_ChurnRiskPlayer_LocalFallbackToneIsEncouraging()
+    {
+        await using var db = NewDb();
+        var scores = new SidecarPlayerScoresDto(
+            ChurnRiskScore: 0.80m,
+            FrustrationRiskScore: 0.10m,
+            ConfidenceLevel: 0.50m,
+            RecommendedArchetype: "comeback_player",
+            CategoryStrengths: new Dictionary<string, decimal>(),
+            CategoryWeaknesses: new Dictionary<string, decimal>(),
+            Signals: new Dictionary<string, object>());
+
+        var mindSvc = new PlayerMindProfileService(db, new ScoringSidecarClient(scores));
+        var playerId = Guid.NewGuid();
+        await mindSvc.RecordEventAsync(playerId, MakeEvent());
+        await mindSvc.RecalculateAsync(playerId);
+
+        var svc = NewService(db, new EmptySidecarClient());
+        var result = await svc.GetNotificationRecommendationAsync(playerId);
+
+        result.Recommendation.Should().NotBeNull();
+        result.Recommendation!.Payload["tone"].Should().Be("encouraging");
+        result.Recommendation.Payload["intent"].Should().Be("re_engage");
+    }
+
+    [Fact]
+    public async Task GetNotificationRecommendationAsync_SidecarNotifCandidate_IsPersisted()
+    {
+        await using var db = NewDb();
+        var notifCandidate = new SidecarRecommendationCandidateDto(
+            Type: "notification",
+            TargetId: null,
+            Score: 0.72m,
+            Reason: "Personalised notification",
+            Payload: new Dictionary<string, object> { ["tone"] = "motivating", ["intent"] = "daily_check_in" });
+
+        var svc = NewService(db, new RecommendationSidecarClient([notifCandidate]));
+        var playerId = Guid.NewGuid();
+
+        await svc.GetNotificationRecommendationAsync(playerId);
+
+        var stored = await db.PersonalizationRecommendations
+            .Where(r => r.PlayerId == playerId && r.RecommendationType == "notification")
+            .ToListAsync();
+
+        stored.Should().HaveCount(1, "the notification recommendation must be persisted for audit purposes");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static PlayerBehaviorEventDto MakeEvent(string eventSource = "ranked") =>
         new("match_completed", eventSource, "math", "medium", eventSource, null, DateTimeOffset.UtcNow);
 
     // ── Sidecar stubs ─────────────────────────────────────────────────────────
+
+    private static SidecarNotificationScoreDto DefaultNotifScore(decimal fatigueScore) =>
+        new(fatigueScore, fatigueScore < 0.75m, fatigueScore >= 0.75m ? 48 : fatigueScore >= 0.50m ? 24 : 12);
 
     /// <summary>Returns no candidates and default scores.</summary>
     private sealed class EmptySidecarClient : IPersonalizationSidecarClient
@@ -672,6 +855,10 @@ public sealed class PersonalizationServiceTests
             SidecarRecommendationRequest request, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<SidecarRecommendationCandidateDto>>(
                 Array.Empty<SidecarRecommendationCandidateDto>());
+
+        public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+            SidecarNotificationScoreRequest request, CancellationToken ct = default) =>
+            Task.FromResult(DefaultNotifScore((decimal)request.CurrentProfile.NotificationFatigueScore));
     }
 
     /// <summary>Returns a fixed set of scores but no recommendation candidates.</summary>
@@ -685,6 +872,10 @@ public sealed class PersonalizationServiceTests
             SidecarRecommendationRequest request, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<SidecarRecommendationCandidateDto>>(
                 Array.Empty<SidecarRecommendationCandidateDto>());
+
+        public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+            SidecarNotificationScoreRequest request, CancellationToken ct = default) =>
+            Task.FromResult(DefaultNotifScore((decimal)request.CurrentProfile.NotificationFatigueScore));
     }
 
     /// <summary>Returns a fixed list of recommendation candidates but default scores.</summary>
@@ -700,6 +891,10 @@ public sealed class PersonalizationServiceTests
         public Task<IReadOnlyList<SidecarRecommendationCandidateDto>> GetRecommendationCandidatesAsync(
             SidecarRecommendationRequest request, CancellationToken ct = default) =>
             Task.FromResult(candidates);
+
+        public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+            SidecarNotificationScoreRequest request, CancellationToken ct = default) =>
+            Task.FromResult(DefaultNotifScore((decimal)request.CurrentProfile.NotificationFatigueScore));
     }
 
     /// <summary>Returns specific scores AND specific recommendation candidates.</summary>
@@ -714,6 +909,10 @@ public sealed class PersonalizationServiceTests
         public Task<IReadOnlyList<SidecarRecommendationCandidateDto>> GetRecommendationCandidatesAsync(
             SidecarRecommendationRequest request, CancellationToken ct = default) =>
             Task.FromResult(candidates);
+
+        public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+            SidecarNotificationScoreRequest request, CancellationToken ct = default) =>
+            Task.FromResult(DefaultNotifScore((decimal)request.CurrentProfile.NotificationFatigueScore));
     }
 
     /// <summary>Throws on every call to simulate a sidecar outage.</summary>
@@ -725,6 +924,10 @@ public sealed class PersonalizationServiceTests
 
         public Task<IReadOnlyList<SidecarRecommendationCandidateDto>> GetRecommendationCandidatesAsync(
             SidecarRecommendationRequest request, CancellationToken ct = default) =>
+            throw new HttpRequestException("Sidecar unavailable");
+
+        public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+            SidecarNotificationScoreRequest request, CancellationToken ct = default) =>
             throw new HttpRequestException("Sidecar unavailable");
     }
 }

@@ -9,4 +9,8 @@ public interface IPersonalizationSidecarClient
     Task<IReadOnlyList<SidecarRecommendationCandidateDto>> GetRecommendationCandidatesAsync(
         SidecarRecommendationRequest request,
         CancellationToken ct = default);
+
+    Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+        SidecarNotificationScoreRequest request,
+        CancellationToken ct = default);
 }

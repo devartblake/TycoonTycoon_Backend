@@ -191,6 +191,93 @@ def test_recommendation_candidates_sorted_by_score_descending():
     assert scores == sorted(scores, reverse=True)
 
 
+def test_recommendation_candidates_notification_includes_tone_and_intent():
+    """Low-fatigue players receive a 'notification' candidate with both tone and intent."""
+    client = _make_client()
+    resp = client.post("/personalization/recommendation-candidates", json={
+        "playerId": "p-notif",
+        "profile": {
+            "confidenceLevel": 0.7,
+            "churnRiskScore": 0.1,
+            "frustrationRiskScore": 0.1,
+            "notificationFatigueScore": 0.2,  # below 0.50 → notification candidate expected
+            "archetype": "explorer",
+        },
+        "recentEvents": [],
+    })
+    assert resp.status_code == 200
+    candidates = resp.json()["candidates"]
+    notif_candidates = [c for c in candidates if c["type"] == "notification"]
+    assert len(notif_candidates) > 0, "a notification candidate must be present for low-fatigue players"
+    for nc in notif_candidates:
+        assert "tone" in nc["payload"], "notification candidate payload must include 'tone'"
+        assert "intent" in nc["payload"], "notification candidate payload must include 'intent'"
+
+
+def test_recommendation_candidates_high_fatigue_no_notification_candidate():
+    """High-fatigue players do not receive a 'notification' candidate."""
+    client = _make_client()
+    resp = client.post("/personalization/recommendation-candidates", json={
+        "playerId": "p-high-fatigue",
+        "profile": {
+            "confidenceLevel": 0.5,
+            "churnRiskScore": 0.2,
+            "frustrationRiskScore": 0.2,
+            "notificationFatigueScore": 0.80,  # >= 0.50 → no notification candidate
+            "archetype": "explorer",
+        },
+        "recentEvents": [],
+    })
+    assert resp.status_code == 200
+    candidates = resp.json()["candidates"]
+    notif_types = [c["type"] for c in candidates if c["type"] == "notification"]
+    assert len(notif_types) == 0, "high-fatigue players must not receive notification candidates"
+
+
+def test_recommendation_candidates_frustrated_player_notification_intent_is_support():
+    """Frustrated low-fatigue player gets notification with intent='support'."""
+    client = _make_client()
+    resp = client.post("/personalization/recommendation-candidates", json={
+        "playerId": "p-frustrated",
+        "profile": {
+            "confidenceLevel": 0.2,
+            "churnRiskScore": 0.1,
+            "frustrationRiskScore": 0.70,
+            "notificationFatigueScore": 0.2,  # still low enough for notification
+            "archetype": "confidence_builder",
+        },
+        "recentEvents": [],
+    })
+    assert resp.status_code == 200
+    candidates = resp.json()["candidates"]
+    notif_candidates = [c for c in candidates if c["type"] == "notification"]
+    assert len(notif_candidates) > 0
+    assert notif_candidates[0]["payload"]["intent"] == "support"
+    assert notif_candidates[0]["payload"]["tone"] == "supportive"
+
+
+def test_recommendation_candidates_churn_risk_notification_intent_is_re_engage():
+    """Churn-risk low-fatigue player gets notification with intent='re_engage'."""
+    client = _make_client()
+    resp = client.post("/personalization/recommendation-candidates", json={
+        "playerId": "p-churn",
+        "profile": {
+            "confidenceLevel": 0.4,
+            "churnRiskScore": 0.70,
+            "frustrationRiskScore": 0.10,
+            "notificationFatigueScore": 0.2,
+            "archetype": "comeback_player",
+        },
+        "recentEvents": [],
+    })
+    assert resp.status_code == 200
+    candidates = resp.json()["candidates"]
+    notif_candidates = [c for c in candidates if c["type"] == "notification"]
+    assert len(notif_candidates) > 0
+    assert notif_candidates[0]["payload"]["intent"] == "re_engage"
+    assert notif_candidates[0]["payload"]["tone"] == "encouraging"
+
+
 # ---------------------------------------------------------------------------
 # /personalization/category-profile
 # ---------------------------------------------------------------------------

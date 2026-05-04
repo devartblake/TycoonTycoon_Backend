@@ -63,6 +63,177 @@ public sealed class PersonalizationService : IPersonalizationService
         return await BuildRecommendationsAsync(playerId, profile, ct);
     }
 
+    public async Task<NotificationPersonalizationDto> GetNotificationRecommendationAsync(Guid playerId, CancellationToken ct = default)
+    {
+        var profile = await _profiles.GetOrCreateAsync(playerId, ct);
+
+        var appliedGuardrails = new Dictionary<string, object>
+        {
+            ["adaptiveNotificationsEnabled"] = _options.AdaptiveNotifications,
+            ["personalizationEnabled"] = profile.PersonalizationEnabled,
+            ["notificationFatigueSuppressed"] = profile.NotificationFatigueScore >= _options.NotificationFatigueThreshold
+        };
+
+        if (!_options.AdaptiveNotifications)
+            return new NotificationPersonalizationDto(playerId, null, profile.NotificationFatigueScore, false, 24, appliedGuardrails);
+
+        // Get notification score from sidecar (falls back to local computation when sidecar unavailable)
+        var notifScore = new SidecarNotificationScoreDto(
+            profile.NotificationFatigueScore,
+            profile.NotificationFatigueScore < _options.NotificationFatigueThreshold,
+            RecommendedFrequencyHours(profile.NotificationFatigueScore));
+
+        if (profile.PersonalizationEnabled && profile.SidecarScoringEnabled)
+        {
+            try
+            {
+                notifScore = await _sidecar.GetNotificationScoreAsync(
+                    new SidecarNotificationScoreRequest(
+                        playerId.ToString(),
+                        new SidecarPlayerSnapshotDto(
+                            profile.ConfidenceLevel,
+                            profile.ChurnRiskScore,
+                            profile.FrustrationRiskScore,
+                            profile.NotificationFatigueScore,
+                            profile.Archetype),
+                        []), ct);
+            }
+            catch
+            {
+                // Sidecar unavailable — use local fallback
+            }
+        }
+
+        // Apply local fatigue guardrail regardless of sidecar result
+        var canReceive = notifScore.CanReceiveNotification &&
+                         profile.NotificationFatigueScore < _options.NotificationFatigueThreshold;
+
+        appliedGuardrails["notificationFatigueSuppressed"] = !canReceive;
+        appliedGuardrails["recommendedFrequencyHours"] = notifScore.RecommendedFrequencyHours;
+
+        if (!canReceive)
+            return new NotificationPersonalizationDto(playerId, null, notifScore.NotificationFatigueScore, false, notifScore.RecommendedFrequencyHours, appliedGuardrails);
+
+        // Find the best notification candidate
+        PlayerRecommendationDto? recommendation = null;
+
+        if (profile.PersonalizationEnabled && profile.SidecarScoringEnabled)
+        {
+            try
+            {
+                var candidates = await _sidecar.GetRecommendationCandidatesAsync(
+                    new SidecarRecommendationRequest(
+                        playerId.ToString(),
+                        new SidecarPlayerSnapshotDto(
+                            profile.ConfidenceLevel,
+                            profile.ChurnRiskScore,
+                            profile.FrustrationRiskScore,
+                            profile.NotificationFatigueScore,
+                            profile.Archetype),
+                        []), ct);
+
+                var notifCandidate = candidates.FirstOrDefault(c => c.Type == "notification");
+
+                if (notifCandidate is not null)
+                {
+                    var guardCandidate = new PersonalizationCandidateDto(notifCandidate.Type, notifCandidate.Score, notifCandidate.Payload);
+                    var guardrailResult = _guardrails.Apply(profile, guardCandidate);
+
+                    var recId = Guid.NewGuid();
+                    var reason = guardrailResult.BlockReason ?? notifCandidate.Reason;
+
+                    await _audit.LogDecisionAsync(
+                        playerId,
+                        recId,
+                        guardrailResult.Allowed ? "allowed" : "blocked",
+                        "notification",
+                        reason,
+                        profile,
+                        notifCandidate,
+                        guardrailResult.AppliedRules,
+                        new { guardrailResult.Allowed },
+                        ct);
+
+                    if (guardrailResult.Allowed)
+                    {
+                        var rec = new PersonalizationRecommendation
+                        {
+                            Id = recId,
+                            PlayerId = playerId,
+                            RecommendationType = notifCandidate.Type,
+                            Source = "notification",
+                            Priority = 0,
+                            Score = notifCandidate.Score,
+                            Reason = notifCandidate.Reason,
+                            PayloadJson = JsonSerializer.Serialize(notifCandidate.Payload, _json),
+                            GuardrailJson = JsonSerializer.Serialize(guardrailResult.AppliedRules, _json),
+                            ExpiresAt = DateTimeOffset.UtcNow.AddHours(notifScore.RecommendedFrequencyHours)
+                        };
+
+                        _db.PersonalizationRecommendations.Add(rec);
+                        await _db.SaveChangesAsync(ct);
+
+                        recommendation = new PlayerRecommendationDto(
+                            rec.Id, notifCandidate.Type, "notification", rec.Priority, notifCandidate.Score,
+                            notifCandidate.Reason, notifCandidate.Payload, guardrailResult.AppliedRules, rec.ExpiresAt);
+                    }
+                }
+            }
+            catch
+            {
+                // Sidecar unavailable — use local fallback
+            }
+        }
+
+        // Local fallback: build a notification recommendation from the player profile
+        recommendation ??= BuildLocalNotificationRecommendation(profile);
+
+        return new NotificationPersonalizationDto(playerId, recommendation, notifScore.NotificationFatigueScore, true, notifScore.RecommendedFrequencyHours, appliedGuardrails);
+    }
+
+    private static int RecommendedFrequencyHours(decimal fatigueScore) => fatigueScore switch
+    {
+        >= 0.75m => 48,
+        >= 0.50m => 24,
+        >= 0.25m => 12,
+        _ => 6
+    };
+
+    private static PlayerRecommendationDto BuildLocalNotificationRecommendation(PlayerMindProfileDto profile)
+    {
+        string tone, intent, reason;
+
+        if (profile.FrustrationRiskScore >= 0.65m)
+        {
+            tone   = "supportive";
+            intent = "support";
+            reason = "You've had some tough sessions — take it easy and try a low-pressure round.";
+        }
+        else if (profile.ChurnRiskScore >= 0.60m)
+        {
+            tone   = "encouraging";
+            intent = "re_engage";
+            reason = "We missed you! Jump back in — your favourite categories are waiting.";
+        }
+        else
+        {
+            tone   = "motivating";
+            intent = "daily_check_in";
+            reason = "Stay sharp — a quick round today keeps your streak going.";
+        }
+
+        return new PlayerRecommendationDto(
+            Guid.NewGuid(),
+            "notification",
+            "local",
+            0,
+            0.65m,
+            reason,
+            new Dictionary<string, object> { ["tone"] = tone, ["intent"] = intent },
+            new Dictionary<string, object> { ["allowed"] = true },
+            DateTimeOffset.UtcNow.AddHours(RecommendedFrequencyHours(profile.NotificationFatigueScore)));
+    }
+
     public async Task<StorePersonalizationDto> GetStoreRecommendationsAsync(Guid playerId, CancellationToken ct = default)
     {
         var profile = await _profiles.GetOrCreateAsync(playerId, ct);

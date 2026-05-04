@@ -72,6 +72,17 @@ public static class PersonalizationEndpoints
             return Results.Ok(result);
         });
 
+        group.MapGet("/notifications/{playerId:guid}", async (
+            Guid playerId,
+            HttpContext httpContext,
+            IPersonalizationService personalization,
+            CancellationToken ct) =>
+        {
+            if (!IsOwner(httpContext, playerId)) return Results.Forbid();
+            var result = await personalization.GetNotificationRecommendationAsync(playerId, ct);
+            return Results.Ok(result);
+        });
+
         group.MapPost("/recommendations/{recommendationId:guid}/accept", async (
             Guid recommendationId,
             [FromQuery] Guid playerId,

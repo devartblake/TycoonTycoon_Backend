@@ -98,6 +98,44 @@ public sealed class PersonalizationSidecarClient : IPersonalizationSidecarClient
             c.Payload)).ToList();
     }
 
+    public async Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+        SidecarNotificationScoreRequest request,
+        CancellationToken ct = default)
+    {
+        var payload = new
+        {
+            playerId = request.PlayerId,
+            currentProfile = new
+            {
+                confidenceLevel = (double)request.CurrentProfile.ConfidenceLevel,
+                churnRiskScore = (double)request.CurrentProfile.ChurnRiskScore,
+                frustrationRiskScore = (double)request.CurrentProfile.FrustrationRiskScore,
+                notificationFatigueScore = (double)request.CurrentProfile.NotificationFatigueScore,
+                archetype = request.CurrentProfile.Archetype
+            },
+            recentEvents = request.RecentEvents.Select(e => new
+            {
+                eventType = e.EventType,
+                eventSource = e.EventSource,
+                category = e.Category,
+                difficulty = e.Difficulty,
+                mode = e.Mode,
+                metadata = e.Metadata ?? new Dictionary<string, object>()
+            })
+        };
+
+        var response = await _http.PostAsJsonAsync("/personalization/notification-score", payload, _json, ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<SidecarNotificationScoreResponse>(_json, ct)
+            ?? throw new InvalidOperationException("Sidecar returned empty notification-score response.");
+
+        return new SidecarNotificationScoreDto(
+            (decimal)result.NotificationFatigueScore,
+            result.CanReceiveNotification,
+            result.RecommendedFrequencyHours);
+    }
+
     // Local response shapes (not shared — internal to this client)
     private sealed record SidecarScorePlayerResponse(
         double ChurnRiskScore,
@@ -116,4 +154,9 @@ public sealed class PersonalizationSidecarClient : IPersonalizationSidecarClient
         double Score,
         string Reason,
         Dictionary<string, object> Payload);
+
+    private sealed record SidecarNotificationScoreResponse(
+        double NotificationFatigueScore,
+        bool CanReceiveNotification,
+        int RecommendedFrequencyHours);
 }

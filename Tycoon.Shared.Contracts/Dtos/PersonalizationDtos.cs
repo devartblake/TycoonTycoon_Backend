@@ -147,6 +147,27 @@ public sealed record UpdatePersonalizationRuleRequest(
 
 public sealed record CoachFeedbackRequest(string BriefId, string Feedback);
 
+public sealed record SidecarNotificationScoreRequest(
+    string PlayerId,
+    SidecarPlayerSnapshotDto CurrentProfile,
+    IReadOnlyList<PlayerBehaviorEventDto> RecentEvents
+);
+
+public sealed record SidecarNotificationScoreDto(
+    decimal NotificationFatigueScore,
+    bool CanReceiveNotification,
+    int RecommendedFrequencyHours
+);
+
+public sealed record NotificationPersonalizationDto(
+    Guid PlayerId,
+    PlayerRecommendationDto? Recommendation,
+    decimal NotificationFatigueScore,
+    bool CanReceiveNotification,
+    int RecommendedFrequencyHours,
+    Dictionary<string, object> AppliedGuardrails
+);
+
 public sealed record StorePersonalizationDto(
     Guid PlayerId,
     IReadOnlyList<PlayerRecommendationDto> Offers,
