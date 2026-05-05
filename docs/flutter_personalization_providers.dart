@@ -278,16 +278,22 @@ class RecommendationActionsNotifier extends AsyncNotifier<void> {
 
   Future<void> accept(String recommendationId, String playerId) async {
     final service = ref.read(personalizationServiceProvider);
-    await service.acceptRecommendation(recommendationId, playerId);
-    ref.invalidate(recommendationsProvider(playerId));
-    ref.invalidate(homePersonalizationProvider(playerId));
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await service.acceptRecommendation(recommendationId, playerId);
+      ref.invalidate(recommendationsProvider(playerId));
+      ref.invalidate(homePersonalizationProvider(playerId));
+    });
   }
 
   Future<void> dismiss(String recommendationId, String playerId) async {
     final service = ref.read(personalizationServiceProvider);
-    await service.dismissRecommendation(recommendationId, playerId);
-    ref.invalidate(recommendationsProvider(playerId));
-    ref.invalidate(homePersonalizationProvider(playerId));
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await service.dismissRecommendation(recommendationId, playerId);
+      ref.invalidate(recommendationsProvider(playerId));
+      ref.invalidate(homePersonalizationProvider(playerId));
+    });
   }
 }
 
