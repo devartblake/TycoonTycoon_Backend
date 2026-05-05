@@ -197,6 +197,9 @@ public static class AdminPersonalizationEndpoints
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
                 db.PersonalizationRules.Add(rule);
+                // Track newly added rules so duplicate keys within the same
+                // request reuse the same entity (last-write-wins).
+                existingRules[item.RuleKey] = rule;
             }
             else
             {

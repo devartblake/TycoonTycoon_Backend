@@ -172,7 +172,7 @@ public sealed class AdminPersonalizationEndpointsTests : IClassFixture<TycoonApi
     {
         var ruleKey = $"test_rule_{Guid.NewGuid():N}";
 
-        // Create via individual PUT
+        // Create via bulk PUT
         var createReq = new BulkUpdatePersonalizationRulesRequest(
         [
             new BulkRuleUpdateItem(ruleKey, IsEnabled: true, Rule: null)
@@ -191,6 +191,29 @@ public sealed class AdminPersonalizationEndpointsTests : IClassFixture<TycoonApi
         var rules = await updateResp.Content.ReadFromJsonAsync<List<PersonalizationRuleDto>>();
         rules.Should().NotBeNull();
         rules!.Should().ContainSingle(r => r.RuleKey == ruleKey && !r.IsEnabled);
+    }
+
+    [Fact]
+    public async Task BulkPutRules_DuplicateKeysInSameRequest_LastWriteWins_Returns200()
+    {
+        var ruleKey = $"test_rule_{Guid.NewGuid():N}";
+
+        // Both items carry the same new key; the second value should win.
+        var request = new BulkUpdatePersonalizationRulesRequest(
+        [
+            new BulkRuleUpdateItem(ruleKey, IsEnabled: true, Rule: null),
+            new BulkRuleUpdateItem(ruleKey, IsEnabled: false, Rule: null)
+        ]);
+
+        var resp = await _http.PutAsJsonAsync("/admin/personalization/rules", request);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var rules = await resp.Content.ReadFromJsonAsync<List<PersonalizationRuleDto>>();
+        rules.Should().NotBeNull();
+        // Two result entries are returned (one per input item), but they resolve
+        // to the same persisted rule entity — the final state should be disabled.
+        rules!.Should().OnlyContain(r => r.RuleKey == ruleKey);
+        rules.Last().IsEnabled.Should().BeFalse();
     }
 
     // ── PUT /admin/personalization/rules/{ruleKey} (individual) ──────────
