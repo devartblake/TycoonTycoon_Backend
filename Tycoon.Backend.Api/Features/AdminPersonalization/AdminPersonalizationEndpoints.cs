@@ -27,6 +27,7 @@ public static class AdminPersonalizationEndpoints
         g.MapPost("/player/{playerId:guid}/recalculate", RecalculatePlayer);
         g.MapPost("/player/{playerId:guid}/reset", ResetPlayer);
         g.MapGet("/rules", GetRules);
+        g.MapPut("/rules", BulkUpsertRules);
         g.MapPut("/rules/{ruleKey}", UpsertRule);
     }
 
@@ -164,6 +165,56 @@ public static class AdminPersonalizationEndpoints
             r.UpdatedAt)).ToList();
 
         return Results.Ok(dtos);
+    }
+
+    private static async Task<IResult> BulkUpsertRules(
+        [FromBody] BulkUpdatePersonalizationRulesRequest request,
+        IAppDb db,
+        CancellationToken ct)
+    {
+        var ruleKeys = request.Rules.Select(r => r.RuleKey).ToList();
+
+        var existingRules = await db.PersonalizationRules
+            .Where(r => ruleKeys.Contains(r.RuleKey))
+            .ToDictionaryAsync(r => r.RuleKey, ct);
+
+        var results = new List<PersonalizationRuleDto>();
+
+        foreach (var item in request.Rules)
+        {
+            if (!existingRules.TryGetValue(item.RuleKey, out var rule))
+            {
+                rule = new PersonalizationRule
+                {
+                    Id = Guid.NewGuid(),
+                    RuleKey = item.RuleKey,
+                    Description = "",
+                    IsEnabled = item.IsEnabled ?? true,
+                    RuleJson = item.Rule is not null
+                        ? JsonSerializer.Serialize(item.Rule, _json)
+                        : "{}",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                db.PersonalizationRules.Add(rule);
+            }
+            else
+            {
+                if (item.IsEnabled.HasValue)
+                    rule.IsEnabled = item.IsEnabled.Value;
+                if (item.Rule is not null)
+                    rule.RuleJson = JsonSerializer.Serialize(item.Rule, _json);
+                rule.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            results.Add(new PersonalizationRuleDto(
+                rule.Id, rule.RuleKey, rule.Description, rule.IsEnabled,
+                ParseJson(rule.RuleJson), rule.UpdatedAt));
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        return Results.Ok(results);
     }
 
     private static async Task<IResult> UpsertRule(

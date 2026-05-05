@@ -194,15 +194,22 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
     }
 
     [Fact]
-    public async Task NotificationSend_WithMalformedBearer_Returns401()
+    public async Task AdminPersonalizationSummary_WithWrongOpsKey_Returns403()
     {
-        var client = _factory.CreateClient().WithAdminOpsKey();
-        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "not-a-jwt");
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
 
-        var resp = await client.PostAsJsonAsync("/admin/notifications/send",
-            new AdminNotificationSendRequest("Title", "Body", "admin_basic", new Dictionary<string, object> { ["segment"] = "all" }, null));
+        var resp = await client.GetAsync("/admin/personalization/summary");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
+    }
 
-        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        await resp.HasErrorCodeAsync("UNAUTHORIZED");
+    [Fact]
+    public async Task AdminPersonalizationRules_WithWrongOpsKey_Returns403()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");
+
+        var resp = await client.GetAsync("/admin/personalization/rules");
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await resp.HasErrorCodeAsync("FORBIDDEN");
     }
 }
