@@ -269,6 +269,33 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    [Fact]
+    public async Task DismissRecommendation_CrossUserPlayerId_Returns403()
+    {
+        var (token, _) = await SignupAsync();
+        using var http = AuthClient(token);
+
+        var fakeRecId = Guid.NewGuid();
+        var otherPlayerId = Guid.NewGuid();
+        var resp = await http.PostAsync(
+            $"/personalization/recommendations/{fakeRecId}/dismiss?playerId={otherPlayerId}",
+            content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetRecommendations_AuthenticatedAsOtherUser_Returns403()
+    {
+        var (token, _) = await SignupAsync();
+        using var http = AuthClient(token);
+
+        var otherPlayerId = Guid.NewGuid();
+        var resp = await http.GetAsync($"/personalization/recommendations/{otherPlayerId}");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private async Task<(string Token, Guid PlayerId)> SignupAsync()

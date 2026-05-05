@@ -28,15 +28,18 @@ This document is the authoritative reference for connecting the Flutter client t
    - [Guardians](#guardians)
    - [Territory](#territory)
    - [Event Stats & Leaderboards](#event-stats--leaderboards)
+   - [Personalization & Coach](#personalization--coach)
 4. [Real-Time (SignalR)](#4-real-time-signalr)
 5. [Feature Flows](#5-feature-flows)
    - [Game Event (Battle Royale / Champion Battle)](#game-event-flow)
    - [Guardian Challenge](#guardian-challenge-flow)
    - [Territory Capture](#territory-capture-flow)
    - [Ranked Match](#ranked-match-flow)
+   - [Personalization Home Flow](#personalization-home-flow)
 6. [Event System Activation Controls](#6-event-system-activation-controls)
 7. [Error Handling](#7-error-handling)
 8. [Rate Limits](#8-rate-limits)
+9. [Personalization Dart Reference](#9-personalization-dart-reference)
 
 ---
 
@@ -708,6 +711,112 @@ These endpoints were added as part of the event tracking system and cover cross-
 
 ---
 
+### Personalization & Coach
+
+> The backend computes all personalization logic (Theory of Mind, guardrails, archetype scoring). **The Flutter app must never implement ToM logic client-side.** It only renders what the backend returns.
+
+All endpoints below require JWT bearer auth (`Authorization: Bearer <token>`).
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/personalization/home/{playerId}` | ✓ | Full home bundle: mode/category suggestions, recommendations, coach brief, mission recommendations |
+| `GET` | `/personalization/recommendations/{playerId}` | ✓ | Recommendations list only |
+| `GET` | `/coach/{playerId}/daily-brief` | ✓ | Coach brief only |
+| `POST` | `/personalization/recommendations/{recommendationId}/accept?playerId={id}` | ✓ | Accept a recommendation (records feedback) |
+| `POST` | `/personalization/recommendations/{recommendationId}/dismiss?playerId={id}` | ✓ | Dismiss a recommendation (records feedback) |
+
+#### `GET /personalization/home/{playerId}`
+
+```json
+// Response 200
+{
+  "playerId": "<uuid>",
+  "recommendedMode": "ranked",
+  "recommendedCategory": "science",
+  "recommendedDifficulty": "medium",
+  "recommendations": [
+    {
+      "id": "<uuid>",
+      "type": "mode_suggestion",
+      "source": "archetype_engine",
+      "priority": 1,
+      "score": 0.87,
+      "reason": "You perform best in ranked — keep the streak going!",
+      "payload": { "label": "Play Ranked", "tone": "encouraging", "intent": "engagement" },
+      "guardrails": {},
+      "expiresAt": null
+    }
+  ],
+  "coachBrief": {
+    "title": "Ready to level up?",
+    "message": "Your science score has climbed 12 points this week. Try a medium ranked match to consolidate your lead.",
+    "recommendedAction": "Start Ranked Match",
+    "targetRoute": "/match/ranked",
+    "tone": "encouraging"
+  },
+  "guardrails": { "paidOfferSuppressed": false },
+  "recommendedMissions": [
+    {
+      "missionArchetype": "win_streak",
+      "reason": "You are on a winning streak — complete 3 more for a bonus.",
+      "isLowPressure": false
+    }
+  ]
+}
+```
+
+#### `GET /personalization/recommendations/{playerId}`
+
+Returns the same `recommendations` array as the home bundle.
+
+```json
+// Response 200
+[
+  {
+    "id": "<uuid>",
+    "type": "category_focus",
+    "source": "archetype_engine",
+    "priority": 2,
+    "score": 0.72,
+    "reason": "History is your weakest category this week.",
+    "payload": { "category": "history", "label": "Practice History", "tone": "calm", "intent": "learning" },
+    "guardrails": {},
+    "expiresAt": "2026-05-10T00:00:00Z"
+  }
+]
+```
+
+#### `GET /coach/{playerId}/daily-brief`
+
+```json
+// Response 200
+{
+  "title": "Daily Brief",
+  "message": "Take it easy today — your confidence is high but fatigue signals suggest a lighter session.",
+  "recommendedAction": "Quick Practice",
+  "targetRoute": "/match/casual",
+  "tone": "calm"
+}
+```
+
+`targetRoute` is nullable. When present, navigate to this named route on the accept/CTA button tap.
+
+#### `POST /personalization/recommendations/{recommendationId}/accept?playerId={id}`
+
+```
+// Response 204 No Content
+```
+
+#### `POST /personalization/recommendations/{recommendationId}/dismiss?playerId={id}`
+
+```
+// Response 204 No Content
+```
+
+Both actions are fire-and-forget from the UI perspective. After either action, reload the recommendations list (or invalidate the Riverpod provider) so the UI reflects the change.
+
+---
+
 ## 4. Real-Time (SignalR)
 
 Use the [`signalr_netcore`](https://pub.dev/packages/signalr_netcore) package.
@@ -914,6 +1023,36 @@ Fire when any tile in a watched tier changes ownership. Update the local board s
 
 ---
 
+### Personalization Home Flow
+
+```
+1. GET /personalization/home/{playerId}
+      → render CoachBriefCard at top of home screen (if coachBrief != null)
+      → render RecommendationsList below the brief
+      → render RecommendedMissions section at the bottom
+
+2. User taps Accept on a recommendation
+      POST /personalization/recommendations/{id}/accept?playerId={id}
+      → 204 response; invalidate recommendations cache
+      → list refreshes automatically
+
+3. User taps Dismiss on a recommendation
+      POST /personalization/recommendations/{id}/dismiss?playerId={id}
+      → 204 response; invalidate recommendations cache
+      → dismissed item disappears from list
+
+4. User taps the CTA in CoachBriefCard (targetRoute present)
+      → Navigator.pushNamed(context, coachBrief.targetRoute)
+
+5. Pull-to-refresh
+      → re-fetch GET /personalization/home/{playerId}
+      → all sections update
+```
+
+> **Key rule**: The Flutter app only renders what the backend returns. It must not compute archetype, risk scores, or guardrails client-side.
+
+---
+
 ## 6. Event System Activation Controls
 
 ### Game Events
@@ -1014,3 +1153,42 @@ All limits are per-IP unless noted.
 | Admin notifications send | 20 requests / minute (per user) |
 
 When a `429` is returned, respect the `Retry-After` response header before retrying.
+
+
+---
+
+## 9. Personalization Dart Reference
+
+See [`docs/flutter_personalization_providers.dart`](flutter_personalization_providers.dart) for a complete, copy-paste-ready reference implementation including:
+
+- **Dart model classes** — `PlayerHomePersonalizationDto`, `PlayerRecommendationDto`, `CoachBriefDto`, `MissionRecommendationDto`
+- **`PersonalizationService`** — thin API wrapper around the 5 personalization endpoints
+- **Riverpod providers** — `homePersonalizationProvider`, `recommendationsProvider`, `coachDailyBriefProvider`
+- **`RecommendationActionsNotifier`** — accept/dismiss notifier that auto-invalidates the recommendations cache
+- **`CoachBriefCard`** widget — renders the daily brief with tone-based tint color and CTA navigation
+- **`RecommendationsList`** widget — renders the recommendations list with accept/dismiss buttons
+- **`PersonalizationHomeScreen`** widget — full screen combining all of the above
+
+### Quick-start wiring
+
+```dart
+// 1. Override dioProvider with your configured Dio instance
+final dioProvider = Provider<Dio>((ref) => myApiClient.dio);
+
+// 2. Add ProviderScope at app root
+void main() {
+  runApp(const ProviderScope(child: MyApp()));
+}
+
+// 3. Navigate to the personalization screen
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (_) => PersonalizationHomeScreen(playerId: currentUser.id),
+  ),
+);
+```
+
+### Guardrails
+
+The backend may suppress recommendations via guardrails (e.g. `paidOfferSuppressed: true`). The Flutter app does not need to evaluate guardrails — it simply renders the list the backend returns. If a recommendation has been suppressed by a guardrail it will not appear in the response at all.
