@@ -521,15 +521,7 @@ class PersonalizationHomeScreen extends ConsumerWidget {
               ],
 
               // ── Suggested actions (recommendations) ──────────────────────
-              if (home.recommendations.isNotEmpty) ...[
-                Text('Suggested Actions',
-                    style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                ...home.recommendations.map(
-                  (rec) => _RecommendationTile(rec: rec, playerId: playerId),
-                ),
-                const SizedBox(height: 24),
-              ],
+              RecommendationsList(playerId: playerId),
 
               // ── Recommended missions ──────────────────────────────────────
               if (home.recommendedMissions.isNotEmpty) ...[
