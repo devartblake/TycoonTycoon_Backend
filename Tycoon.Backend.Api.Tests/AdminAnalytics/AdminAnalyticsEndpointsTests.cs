@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tycoon.Backend.Api.Tests.TestHost;
@@ -28,12 +29,12 @@ public sealed class AdminAnalyticsEndpointsTests : IClassFixture<TycoonApiFactor
     // ── Helpers ───────────────────────────────────────────────────────────
 
     /// <summary>Creates a factory with a no-op IRollupRebuilder stub registered.</summary>
-    private TycoonApiFactory FactoryWithStubRebuilder(Action<RebuildSpy>? configure = null)
+    private WebApplicationFactory<Program> FactoryWithStubRebuilder(Action<RebuildSpy>? configure = null)
     {
         var spy = new RebuildSpy();
         configure?.Invoke(spy);
 
-        return (TycoonApiFactory)_factory.WithWebHostBuilder(b =>
+        return _factory.WithWebHostBuilder(b =>
             b.ConfigureServices(services =>
             {
                 services.RemoveAll<IRollupRebuilder>();
@@ -106,7 +107,7 @@ public sealed class AdminAnalyticsEndpointsTests : IClassFixture<TycoonApiFactor
     public async Task Rebuild_Invokes_RebuildElasticFromMongo()
     {
         var spy = new RebuildSpy();
-        using var factory = (TycoonApiFactory)_factory.WithWebHostBuilder(b =>
+        using var factory = _factory.WithWebHostBuilder(b =>
             b.ConfigureServices(services =>
             {
                 services.RemoveAll<IRollupRebuilder>();
