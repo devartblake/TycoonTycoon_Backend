@@ -137,6 +137,23 @@ async def recommendation_candidates(
         ))
 
     if request.profile.notificationFatigueScore < 0.50:
+        if request.profile.frustrationRiskScore >= 0.65:
+            notif_tone = "supportive"
+            notif_intent = "support"
+        elif request.profile.churnRiskScore >= 0.60:
+            notif_tone = "encouraging"
+            notif_intent = "re_engage"
+        else:
+            notif_tone = "motivating"
+            notif_intent = "daily_check_in"
+
+        candidates.append(RecommendationCandidate(
+            type="notification",
+            targetId=None,
+            score=0.72,
+            reason="Player can receive a personalised notification.",
+            payload={"tone": notif_tone, "intent": notif_intent},
+        ))
         candidates.append(RecommendationCandidate(
             type="coach_tip",
             targetId=None,

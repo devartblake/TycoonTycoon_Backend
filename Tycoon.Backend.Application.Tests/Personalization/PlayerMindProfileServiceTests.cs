@@ -294,6 +294,11 @@ public sealed class PlayerMindProfileServiceTests
             SidecarRecommendationRequest request, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<SidecarRecommendationCandidateDto>>(
                 Array.Empty<SidecarRecommendationCandidateDto>());
+
+        public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+            SidecarNotificationScoreRequest request, CancellationToken ct = default) =>
+            Task.FromResult(new SidecarNotificationScoreDto(
+                request.CurrentProfile.NotificationFatigueScore, true, 24));
     }
 
     private sealed class StubSidecarClient(SidecarPlayerScoresDto scores) : IPersonalizationSidecarClient
@@ -306,6 +311,11 @@ public sealed class PlayerMindProfileServiceTests
             SidecarRecommendationRequest request, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<SidecarRecommendationCandidateDto>>(
                 Array.Empty<SidecarRecommendationCandidateDto>());
+
+        public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+            SidecarNotificationScoreRequest request, CancellationToken ct = default) =>
+            Task.FromResult(new SidecarNotificationScoreDto(
+                request.CurrentProfile.NotificationFatigueScore, true, 24));
     }
 
     private sealed class ThrowingSidecarClient : IPersonalizationSidecarClient
@@ -318,5 +328,9 @@ public sealed class PlayerMindProfileServiceTests
             SidecarRecommendationRequest request, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<SidecarRecommendationCandidateDto>>(
                 Array.Empty<SidecarRecommendationCandidateDto>());
+
+        public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+            SidecarNotificationScoreRequest request, CancellationToken ct = default) =>
+            throw new HttpRequestException("Sidecar unavailable");
     }
 }

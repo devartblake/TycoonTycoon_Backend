@@ -26,4 +26,12 @@ public sealed class NullPersonalizationSidecarClient : IPersonalizationSidecarCl
         CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<SidecarRecommendationCandidateDto>>(
             Array.Empty<SidecarRecommendationCandidateDto>());
+
+    public Task<SidecarNotificationScoreDto> GetNotificationScoreAsync(
+        SidecarNotificationScoreRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(new SidecarNotificationScoreDto(
+            NotificationFatigueScore: request.CurrentProfile.NotificationFatigueScore,
+            CanReceiveNotification: request.CurrentProfile.NotificationFatigueScore < 0.75m,
+            RecommendedFrequencyHours: 24));
 }

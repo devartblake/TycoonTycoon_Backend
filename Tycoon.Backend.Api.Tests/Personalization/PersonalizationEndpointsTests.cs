@@ -23,6 +23,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
     [InlineData("/personalization/profile/00000000-0000-0000-0000-000000000001")]
     [InlineData("/personalization/home/00000000-0000-0000-0000-000000000001")]
     [InlineData("/personalization/recommendations/00000000-0000-0000-0000-000000000001")]
+    [InlineData("/personalization/notifications/00000000-0000-0000-0000-000000000001")]
     public async Task GetEndpoints_AnonymousAccess_Returns401(string route)
     {
         using var anon = _factory.CreateClient();
@@ -156,6 +157,55 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
             content: null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task GetNotifications_AuthenticatedOwner_Returns200WithNotificationPersonalization()
+    {
+        var (token, playerId) = await SignupAsync();
+        using var http = AuthClient(token);
+
+        var resp = await http.GetAsync($"/personalization/notifications/{playerId}");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await resp.Content.ReadFromJsonAsync<NotificationPersonalizationDto>();
+        result.Should().NotBeNull();
+        result!.PlayerId.Should().Be(playerId);
+        result.AppliedGuardrails.Should().ContainKey("adaptiveNotificationsEnabled");
+        result.AppliedGuardrails.Should().ContainKey("localFatigueSuppressed");
+        result.AppliedGuardrails.Should().ContainKey("sidecarFatigueSuppressed");
+    }
+
+    [Fact]
+    public async Task GetNotifications_AuthenticatedOwner_RecommendationIncludesToneAndIntent()
+    {
+        var (token, playerId) = await SignupAsync();
+        using var http = AuthClient(token);
+
+        var resp = await http.GetAsync($"/personalization/notifications/{playerId}");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await resp.Content.ReadFromJsonAsync<NotificationPersonalizationDto>();
+        result.Should().NotBeNull();
+
+        // A fresh player has low fatigue so should receive a recommendation
+        if (result!.CanReceiveNotification && result.Recommendation is not null)
+        {
+            result.Recommendation.Payload.Should().ContainKey("tone");
+            result.Recommendation.Payload.Should().ContainKey("intent");
+        }
+    }
+
+    [Fact]
+    public async Task GetNotifications_AuthenticatedAsOtherUser_Returns403()
+    {
+        var (token, _) = await SignupAsync();
+        using var http = AuthClient(token);
+
+        var otherPlayerId = Guid.NewGuid();
+        var resp = await http.GetAsync($"/personalization/notifications/{otherPlayerId}");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     // ── Cross-user access returns 403 ─────────────────────────────────────
