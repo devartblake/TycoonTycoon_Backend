@@ -671,6 +671,8 @@ public sealed class PersonalizationServiceTests
         result.Recommendation!.Payload.Should().ContainKey("tone");
         result.Recommendation.Payload.Should().ContainKey("intent");
         result.AppliedGuardrails.Should().ContainKey("adaptiveNotificationsEnabled");
+        result.AppliedGuardrails.Should().ContainKey("localFatigueSuppressed");
+        result.AppliedGuardrails.Should().ContainKey("sidecarFatigueSuppressed");
     }
 
     [Fact]
@@ -701,7 +703,7 @@ public sealed class PersonalizationServiceTests
 
         result.CanReceiveNotification.Should().BeFalse("fatigue score is above threshold");
         result.Recommendation.Should().BeNull("high-fatigue players must not receive notification recommendations");
-        result.AppliedGuardrails["notificationFatigueSuppressed"].Should().Be(true);
+        result.AppliedGuardrails["localFatigueSuppressed"].Should().Be(true);
     }
 
     [Fact]
@@ -840,7 +842,7 @@ public sealed class PersonalizationServiceTests
     // ── Sidecar stubs ─────────────────────────────────────────────────────────
 
     private static SidecarNotificationScoreDto DefaultNotifScore(decimal fatigueScore) =>
-        new(fatigueScore, fatigueScore < 0.75m, fatigueScore >= 0.75m ? 48 : fatigueScore >= 0.50m ? 24 : 12);
+        new(fatigueScore, fatigueScore < 0.75m, fatigueScore >= 0.75m ? 48 : fatigueScore >= 0.50m ? 24 : fatigueScore >= 0.25m ? 12 : 6);
 
     /// <summary>Returns no candidates and default scores.</summary>
     private sealed class EmptySidecarClient : IPersonalizationSidecarClient

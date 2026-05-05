@@ -67,20 +67,26 @@ public sealed class PersonalizationService : IPersonalizationService
     {
         var profile = await _profiles.GetOrCreateAsync(playerId, ct);
 
+        // Track local fatigue suppression separately so clients can see the block reason
+        var localFatigueSuppressed = profile.NotificationFatigueScore >= _options.NotificationFatigueThreshold;
+
         var appliedGuardrails = new Dictionary<string, object>
         {
             ["adaptiveNotificationsEnabled"] = _options.AdaptiveNotifications,
             ["personalizationEnabled"] = profile.PersonalizationEnabled,
-            ["notificationFatigueSuppressed"] = profile.NotificationFatigueScore >= _options.NotificationFatigueThreshold
+            ["localFatigueSuppressed"] = localFatigueSuppressed
         };
 
         if (!_options.AdaptiveNotifications)
             return new NotificationPersonalizationDto(playerId, null, profile.NotificationFatigueScore, false, 24, appliedGuardrails);
 
+        // Load recent notification events so the sidecar can refine the fatigue estimate
+        var recentNotifEvents = await LoadRecentEventsAsync(playerId, 30, ct);
+
         // Get notification score from sidecar (falls back to local computation when sidecar unavailable)
         var notifScore = new SidecarNotificationScoreDto(
             profile.NotificationFatigueScore,
-            profile.NotificationFatigueScore < _options.NotificationFatigueThreshold,
+            !localFatigueSuppressed,
             RecommendedFrequencyHours(profile.NotificationFatigueScore));
 
         if (profile.PersonalizationEnabled && profile.SidecarScoringEnabled)
@@ -96,7 +102,7 @@ public sealed class PersonalizationService : IPersonalizationService
                             profile.FrustrationRiskScore,
                             profile.NotificationFatigueScore,
                             profile.Archetype),
-                        []), ct);
+                        recentNotifEvents), ct);
             }
             catch
             {
@@ -104,11 +110,11 @@ public sealed class PersonalizationService : IPersonalizationService
             }
         }
 
-        // Apply local fatigue guardrail regardless of sidecar result
-        var canReceive = notifScore.CanReceiveNotification &&
-                         profile.NotificationFatigueScore < _options.NotificationFatigueThreshold;
+        // Apply local fatigue guardrail and track each source separately
+        var sidecarFatigueSuppressed = !notifScore.CanReceiveNotification;
+        var canReceive = !localFatigueSuppressed && !sidecarFatigueSuppressed;
 
-        appliedGuardrails["notificationFatigueSuppressed"] = !canReceive;
+        appliedGuardrails["sidecarFatigueSuppressed"] = sidecarFatigueSuppressed;
         appliedGuardrails["recommendedFrequencyHours"] = notifScore.RecommendedFrequencyHours;
 
         if (!canReceive)
@@ -130,7 +136,7 @@ public sealed class PersonalizationService : IPersonalizationService
                             profile.FrustrationRiskScore,
                             profile.NotificationFatigueScore,
                             profile.Archetype),
-                        []), ct);
+                        recentNotifEvents), ct);
 
                 var notifCandidate = candidates.FirstOrDefault(c => c.Type == "notification");
 
@@ -198,6 +204,16 @@ public sealed class PersonalizationService : IPersonalizationService
         >= 0.25m => 12,
         _ => 6
     };
+
+    private async Task<IReadOnlyList<PlayerBehaviorEventDto>> LoadRecentEventsAsync(Guid playerId, int count, CancellationToken ct) =>
+        await _db.PlayerBehaviorEvents
+            .AsNoTracking()
+            .Where(e => e.PlayerId == playerId)
+            .OrderByDescending(e => e.OccurredAt)
+            .Take(count)
+            .Select(e => new PlayerBehaviorEventDto(
+                e.EventType, e.EventSource, e.Category, e.Difficulty, e.Mode, null, e.OccurredAt))
+            .ToListAsync(ct);
 
     private static PlayerRecommendationDto BuildLocalNotificationRecommendation(PlayerMindProfileDto profile)
     {

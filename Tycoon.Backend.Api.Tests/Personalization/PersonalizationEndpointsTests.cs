@@ -172,6 +172,8 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         result.Should().NotBeNull();
         result!.PlayerId.Should().Be(playerId);
         result.AppliedGuardrails.Should().ContainKey("adaptiveNotificationsEnabled");
+        result.AppliedGuardrails.Should().ContainKey("localFatigueSuppressed");
+        result.AppliedGuardrails.Should().ContainKey("sidecarFatigueSuppressed");
     }
 
     [Fact]
