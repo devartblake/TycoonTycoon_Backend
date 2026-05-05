@@ -522,6 +522,10 @@ class PersonalizationHomeScreen extends ConsumerWidget {
 
   final String playerId;
 
+  /// Default height of a [ListTile] with a two-line subtitle, matching the
+  /// material spec for a list tile with leading icon and subtitle text.
+  static const double _kRecommendationTileHeight = 72.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final homeAsync = ref.watch(homePersonalizationProvider(playerId));
@@ -557,7 +561,7 @@ class PersonalizationHomeScreen extends ConsumerWidget {
                 // cached by Riverpod; no extra network request is made while
                 // the home bundle is still fresh.
                 SizedBox(
-                  height: home.recommendations.length * 72.0,
+                  height: home.recommendations.length * _kRecommendationTileHeight,
                   child: RecommendationsList(playerId: playerId),
                 ),
                 const SizedBox(height: 24),
