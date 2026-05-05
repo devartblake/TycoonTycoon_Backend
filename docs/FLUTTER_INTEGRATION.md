@@ -1172,15 +1172,21 @@ See [`docs/flutter_personalization_providers.dart`](flutter_personalization_prov
 ### Quick-start wiring
 
 ```dart
-// 1. Override dioProvider with your configured Dio instance
-final dioProvider = Provider<Dio>((ref) => myApiClient.dio);
-
-// 2. Add ProviderScope at app root
+// 1. Add ProviderScope at app root, overriding dioProvider with your
+//    configured Dio instance (auth interceptors already attached).
+//    See the ApiClient example in §1 of this guide.
 void main() {
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    ProviderScope(
+      overrides: [
+        dioProvider.overrideWithValue(myApiClient.dio),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
-// 3. Navigate to the personalization screen
+// 2. Navigate to the personalization screen
 Navigator.push(
   context,
   MaterialPageRoute(

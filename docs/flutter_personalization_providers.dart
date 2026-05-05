@@ -17,12 +17,6 @@
 //   dependencies:
 //     dio: ^5.4.0
 //     flutter_riverpod: ^2.5.1
-//     freezed_annotation: ^2.4.4
-//
-//   dev_dependencies:
-//     freezed: ^2.5.2
-//     json_serializable: ^6.8.0
-//     build_runner: ^2.4.0
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:dio/dio.dart';
@@ -272,22 +266,33 @@ final coachDailyBriefProvider =
 /// Manages accept/dismiss actions for a specific player's recommendations.
 /// After a successful action the recommendations list is invalidated so the
 /// UI refreshes automatically.
+///
+/// State transitions:
+///   - `AsyncLoading` while the POST is in-flight (disables buttons)
+///   - `AsyncData(null)` on success (re-enables buttons, list auto-refreshes)
+///   - `AsyncError` on failure (re-enables buttons; surface error in UI if needed)
 class RecommendationActionsNotifier extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
   Future<void> accept(String recommendationId, String playerId) async {
-    final service = ref.read(personalizationServiceProvider);
-    await service.acceptRecommendation(recommendationId, playerId);
-    ref.invalidate(recommendationsProvider(playerId));
-    ref.invalidate(homePersonalizationProvider(playerId));
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final service = ref.read(personalizationServiceProvider);
+      await service.acceptRecommendation(recommendationId, playerId);
+      ref.invalidate(recommendationsProvider(playerId));
+      ref.invalidate(homePersonalizationProvider(playerId));
+    });
   }
 
   Future<void> dismiss(String recommendationId, String playerId) async {
-    final service = ref.read(personalizationServiceProvider);
-    await service.dismissRecommendation(recommendationId, playerId);
-    ref.invalidate(recommendationsProvider(playerId));
-    ref.invalidate(homePersonalizationProvider(playerId));
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final service = ref.read(personalizationServiceProvider);
+      await service.dismissRecommendation(recommendationId, playerId);
+      ref.invalidate(recommendationsProvider(playerId));
+      ref.invalidate(homePersonalizationProvider(playerId));
+    });
   }
 }
 
@@ -299,21 +304,38 @@ final recommendationActionsProvider =
 // 5. Example UI widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Renders the coach daily brief as a dismissible card.
+/// Renders the coach daily brief card.
 ///
-/// Example:
+/// Pass an already-loaded [brief] (e.g. from `homePersonalizationProvider`)
+/// to avoid an extra network request.  Omit [brief] to fetch it directly
+/// via `coachDailyBriefProvider` when using this widget standalone.
+///
+/// Example — standalone (fetches its own data):
 /// ```dart
 /// CoachBriefCard(playerId: currentPlayerId)
 /// ```
+///
+/// Example — from home bundle (no extra fetch):
+/// ```dart
+/// if (home.coachBrief != null)
+///   CoachBriefCard(playerId: playerId, brief: home.coachBrief)
+/// ```
 class CoachBriefCard extends ConsumerWidget {
-  const CoachBriefCard({super.key, required this.playerId});
+  const CoachBriefCard({super.key, required this.playerId, this.brief});
 
   final String playerId;
 
+  /// Pre-loaded brief. When non-null, skips the provider fetch.
+  final CoachBriefDto? brief;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final briefAsync = ref.watch(coachDailyBriefProvider(playerId));
+    // Use the pre-loaded brief when available; otherwise watch the provider.
+    if (brief != null) {
+      return _BriefContent(brief: brief!);
+    }
 
+    final briefAsync = ref.watch(coachDailyBriefProvider(playerId));
     return briefAsync.when(
       loading: () => const Card(
         child: ListTile(
@@ -322,37 +344,48 @@ class CoachBriefCard extends ConsumerWidget {
         ),
       ),
       error: (e, _) => const SizedBox.shrink(), // silently suppress
-      data: (brief) => Card(
-        color: _toneColor(brief.tone, context),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.smart_toy_outlined),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      brief.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+      data: (b) => _BriefContent(brief: b),
+    );
+  }
+}
+
+class _BriefContent extends StatelessWidget {
+  const _BriefContent({required this.brief});
+
+  final CoachBriefDto brief;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: _toneColor(brief.tone, context),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.smart_toy_outlined),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    brief.title,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(brief.message),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: brief.targetRoute != null
-                    ? () => Navigator.of(context)
-                        .pushNamed(brief.targetRoute!)
-                    : null,
-                child: Text(brief.recommendedAction),
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(brief.message),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: brief.targetRoute != null
+                  ? () => Navigator.of(context)
+                      .pushNamed(brief.targetRoute!)
+                  : null,
+              child: Text(brief.recommendedAction),
+            ),
+          ],
         ),
       ),
     );
@@ -505,22 +538,27 @@ class PersonalizationHomeScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // ── Coach brief ──────────────────────────────────────────────
+              // ── Coach brief — pass the already-fetched brief to avoid
+              //    a second GET /coach/{playerId}/daily-brief request. ────────
               if (home.coachBrief != null) ...[
                 Text('Your Coach',
                     style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
-                CoachBriefCard(playerId: playerId),
+                CoachBriefCard(playerId: playerId, brief: home.coachBrief),
                 const SizedBox(height: 24),
               ],
 
-              // ── Suggested actions (recommendations) ──────────────────────
+              // ── Suggested actions — delegate to the canonical widget ──────
               if (home.recommendations.isNotEmpty) ...[
                 Text('Suggested Actions',
                     style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
-                ...home.recommendations.map(
-                  (rec) => _RecommendationTile(rec: rec, playerId: playerId),
+                // RecommendationsList watches recommendationsProvider which is
+                // cached by Riverpod; no extra network request is made while
+                // the home bundle is still fresh.
+                SizedBox(
+                  height: home.recommendations.length * 72.0,
+                  child: RecommendationsList(playerId: playerId),
                 ),
                 const SizedBox(height: 24),
               ],
