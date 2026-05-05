@@ -145,6 +145,16 @@ public sealed record UpdatePersonalizationRuleRequest(
     Dictionary<string, object>? Rule
 );
 
+public sealed record BulkRuleUpdateItem(
+    string RuleKey,
+    bool? IsEnabled,
+    Dictionary<string, object>? Rule
+);
+
+public sealed record BulkUpdatePersonalizationRulesRequest(
+    IReadOnlyList<BulkRuleUpdateItem> Rules
+);
+
 public sealed record CoachFeedbackRequest(string BriefId, string Feedback);
 
 public sealed record SidecarNotificationScoreRequest(
