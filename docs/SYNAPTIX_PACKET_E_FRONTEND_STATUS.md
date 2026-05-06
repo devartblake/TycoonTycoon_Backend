@@ -5,6 +5,7 @@
 **Prepared by:** Backend team
 **Audience:** Frontend team (Flutter)
 **Companion doc:** `docs/synaptix_packet_e_detailed.md`
+**Last updated:** 2026-05-06 — Frontend response added (sections 4.1–4.4 filled; Section 9 added)
 
 ---
 
@@ -126,28 +127,29 @@ Please review each item below and respond with current status.
 
 | Item | Status — please confirm |
 |---|---|
-| Has `TriviaTycoonApp` been renamed to `SynaptixApp`? | ☐ Done &nbsp;&nbsp; ☐ Not started &nbsp;&nbsp; ☐ In progress |
-| Have internal `trivia_tycoon_*` / `tycoon_*` symbol names been cleaned up? | ☐ Done &nbsp;&nbsp; ☐ Not started &nbsp;&nbsp; ☐ Partial |
-| Are all `// TODO(Synaptix Phase 8)` comments resolved or reviewed? | ☐ Done &nbsp;&nbsp; ☐ Not started &nbsp;&nbsp; ☐ N/A |
-| Has `pubspec.yaml` description been updated? | ☐ Done &nbsp;&nbsp; ☐ Not started |
+| Has `TriviaTycoonApp` been renamed to `SynaptixApp`? | ✅ **Done** — `lib/main.dart` uses `SynaptixApp` / `_SynaptixAppState` |
+| Have internal `trivia_tycoon_*` / `tycoon_*` symbol names been cleaned up? | ⚠️ **Partial** — `tycoon_toast/` folder, `trivia_tycoon_group` notification key, `tTriviaGameImage` path, and a "Tycoon backend" comment in `mission_repository.dart` remain |
+| Are all `// TODO(Synaptix Phase 8)` comments resolved or reviewed? | ✅ **Done** — no `TODO(Synaptix Phase 8)` comments found in the codebase |
+| Has `pubspec.yaml` description been updated? | ❌ **Not started** — still reads `"A new Flutter project."` |
 
 ### 4.2 Package Root Rename (FE-E Workstream 2)
 
 | Item | Status — please confirm |
 |---|---|
-| Has `pubspec.yaml` `name:` been changed from `trivia_tycoon` to `synaptix`? | ☐ Done &nbsp;&nbsp; ☐ Not started &nbsp;&nbsp; ☐ Planned |
-| Have all `package:trivia_tycoon/...` imports been updated? | ☐ Done &nbsp;&nbsp; ☐ Not started |
-| What is the current Android application ID? | `______________________` |
-| What is the current iOS bundle identifier? | `______________________` |
-| Has a store transition plan been agreed with product/legal for the bundle ID change? | ☐ Yes &nbsp;&nbsp; ☐ No &nbsp;&nbsp; ☐ Not applicable yet |
+| Has `pubspec.yaml` `name:` been changed from `trivia_tycoon` to `synaptix`? | ❌ **Not started** — still `name: trivia_tycoon` |
+| Have all `package:trivia_tycoon/...` imports been updated? | ❌ **Not started** — **564** occurrences across `lib/` |
+| What is the current Android application ID? | `com.theoreticalmindstech.trivia_tycoon` |
+| What is the current iOS bundle identifier? | `com.theoreticalmindstech.triviaTycoon` |
+| Target bundle ID (both platforms — confirmed 2026-05-06) | `com.theoreticalmindstech.synaptix` |
+| Has a store transition plan been agreed with product/legal for the bundle ID change? | ⚠️ **In discussion** — no final plan yet |
 
 ### 4.3 JWT Config (action required — backend already changed)
 
 | Item | Status — please confirm |
 |---|---|
-| Does the Flutter app validate `iss` or `aud` JWT claims locally? | ☐ Yes &nbsp;&nbsp; ☐ No |
-| Does any config file reference `TycoonBackendApi`, `TycoonFrontendApp`, or `TycoonClient`? | ☐ Yes (needs update) &nbsp;&nbsp; ☐ No |
-| Flutter auth layer confirmed compatible with `iss: SynaptixApi` / `aud: SynaptixApp`? | ☐ Confirmed &nbsp;&nbsp; ☐ Needs check &nbsp;&nbsp; ☐ Unknown |
+| Does the Flutter app validate `iss` or `aud` JWT claims locally? | ✅ **No** — no JWT validation package (`dart_jsonwebtoken`, `jwt_decoder`, `jose`) is present in `pubspec.yaml`/`pubspec.lock`. Tokens are passed through as opaque bearer tokens. |
+| Does any config file reference `TycoonBackendApi`, `TycoonFrontendApp`, or `TycoonClient`? | ✅ **No** — full scan of `lib/`, `assets/`, and `.env.example` found zero occurrences |
+| Flutter auth layer confirmed compatible with `iss: SynaptixApi` / `aud: SynaptixApp`? | ✅ **Confirmed** — no local claim validation means the backend-side issuer/audience change is transparent to Flutter |
 
 ### 4.4 Decision: Proceed with FE-E or Hold?
 
@@ -155,10 +157,10 @@ Per the original plan, Packet E only proceeds if the product layer is stable and
 
 | Question | Response |
 |---|---|
-| Is Packet D fully stable in the Flutter app? | ☐ Yes &nbsp;&nbsp; ☐ Not yet |
-| Has the internal soft launch validation been run? | ☐ Yes &nbsp;&nbsp; ☐ Not yet |
-| Does the frontend team want to proceed with FE-E Workstream 1 (symbol cleanup)? | ☐ Proceed &nbsp;&nbsp; ☐ Hold &nbsp;&nbsp; ☐ Needs discussion |
-| Does the frontend team want to proceed with FE-E Workstream 2 (package root rename)? | ☐ Proceed &nbsp;&nbsp; ☐ Hold &nbsp;&nbsp; ☐ Needs discussion |
+| Is Packet D fully stable in the Flutter app? | ⚠️ **Needs confirmation** — `synaptix_frontend_plan.md` marks FE-D ✅ complete (commits `6485ad9`, `6eda2c2`, `634614e`, `429deb2`). One deferred item remains: cross-check of frontend labels against backend dashboards/docs (awaiting backend alignment). No functional blockers identified. |
+| Has the internal soft launch validation been run? | ⚠️ **Unknown** — QA checklist in FE-D2 is fully checked. Whether a formal soft launch pass has been declared is not captured in any doc. Frontend team to confirm. |
+| Does the frontend team want to proceed with FE-E Workstream 1 (symbol cleanup)? | 🔜 **Proceed — pending Packet D confirmation** |
+| Does the frontend team want to proceed with FE-E Workstream 2 (package root rename)? | 🔜 **Proceed — pending Packet D confirmation and store transition plan** |
 
 ---
 
@@ -226,3 +228,126 @@ Everything else in Packet E is a deliberate deferral and can be scheduled as a s
 ---
 
 *Questions or corrections? Raise against this document or contact the backend lead directly.*
+
+---
+
+## 9. Frontend Status Response — 2026-05-06
+
+*This section was added by the Flutter frontend team following a codebase audit on 2026-05-06.*
+
+---
+
+### 9.1 Packets A–D — Frontend Completion Summary
+
+All FE Packet A–D workstreams are recorded as complete in `docs/synaptix_frontend_plan.md` with associated commit hashes. The table below summarises what was delivered.
+
+| Packet | Workstream | Status | Notes |
+|---|---|---|---|
+| **A — Brand Surface** | FE-A1: Frontend audit | ✅ Complete | Inventory, rename matrix, asset list, persistence risk list produced |
+| | FE-A2: Brand surface reframe | ✅ Complete (`e1fe300`) | App logo, splash, menu shell, safe string replacements |
+| **B — Mode/Theme + Hub** | FE-B1: Mode and theme foundation | ✅ Complete (`3feba39`) | `SynaptixMode`, mode mapper, theme extension presets (kids/teen/adult) |
+| | FE-B2: Shell and navigation upgrade | ✅ Complete (`4b4bbe0`) | Synaptix Hub with mode-aware cards, header, progress snapshot |
+| **C — Feature Surface Rebrand** | FE-C: Arena/Labs/Pathways/Journey/Circles/Command | ✅ Complete (`d41391e`) | UI labels, headers, section framing updated across all 6 surfaces |
+| **D — Analytics + Stabilization** | FE-D1: Analytics instrumentation | ✅ Complete (`6485ad9`) | `synaptix_mode`, `surface`, `entry_point`, `audience_segment` dimensions added |
+| | FE-D2: Stabilization and QA | ✅ Complete (`6eda2c2`, `634614e`, `429deb2`) | Full QA checklist checked; one item deferred (see below) |
+
+**One deferred item in FE-D2:**
+- [ ] Frontend labels cross-checked against backend dashboards/docs — *deferred pending backend alignment; not a functional blocker*
+
+---
+
+### 9.2 Post-Packet D — Additional Completed Work (In-Scope Flutter)
+
+These items are complete in the Flutter codebase and are recorded in `docs/synaptix_frontend_plan.md` under "Additional Completed Work (Post-Packet D)".
+
+| Item | Status | Notes |
+|---|---|---|
+| Premium Hub glassmorphic redesign | ✅ Complete (`3f4c65b`) | Live ticker, featured match, metallic buttons, daily quest card, pulse animation |
+| Phase 7 bug fixes + data integrity | ✅ Complete (`429deb2`) | Background rendering, user avatar in ticker, profile XP fixes, Hive wallet persistence |
+| Onboarding expansion (7 → 11 steps) | ✅ Complete (`0a60048`) | IntentStep, PlayStyleStep, FirstSessionChallenge, RewardReveal, economy seeding |
+| Personalization API integration | ✅ Complete | Profile, home, behavior events, recommendations, coach brief, experiments — all wired |
+| Personalization UX controls | ✅ Complete | Reset recommendations, reduce suggestions, personalized notifications in settings screen |
+| Personalization provider/state layer | ✅ Complete | Riverpod providers for session init, home, profile, brief, recommendations, experiment store |
+| Secure channel scaffolding | ✅ Complete | `lib/core/security/` — models, service, session store, payload codec, exceptions; `EncryptedApiClient` wired in `ServiceManager` |
+
+---
+
+### 9.3 Post-Packet D — Remaining Work (In-Scope Flutter)
+
+| Item | Priority | Notes |
+|---|---|---|
+| Secure channel: roll out to one non-critical endpoint | High | First milestone before phasing to refresh/match/economy/messages |
+| Secure channel: tests (wrong nonce/sequence, expiry, logout, perf) | High | From secure-channel checklist in handoff doc |
+| Secure channel: backend compatibility validation | High | Exact response schema + replay/sequence semantics against staging |
+| Personalization endpoint path reconciliation | Medium | `/personalization/{playerId}/...` (current) vs older plan shape — confirm with backend |
+| FE-D2: Frontend labels vs backend dashboard cross-check | Low | Deferred pending backend alignment |
+
+---
+
+### 9.4 Out-of-Packet-E-Scope Work Completed (This Session — 2026-05-06)
+
+These items are not part of the Packet E scope but are relevant to overall project status.
+
+| Item | Notes |
+|---|---|
+| Spin wheel redesign — `WheelWidget` pie-chart renderer | Replaced broken `WheelSegmentStack` (stacked-card fan) with proper `CustomPainter` pie chart |
+| Spin wheel — fixed pointer/needle at 12 o'clock | `_drawPointer()` drawn after `canvas.restore()` so it never rotates with the wheel |
+| Spin wheel — gesture spin via `GestureDetector` | `onVerticalDragEnd` / `onHorizontalDragEnd` wired to `_handleGestureSpin` |
+| Spin wheel — removed spinning overlay | `CircularProgressIndicator` overlay removed; wheel animation communicates spin state |
+| `SpinCooldownWidget` — fixed Future toString bug | `${SpinTracker.getMaxSpins()}` → `$_maxSpins` (was showing "Instance of 'Future\<int\>'") |
+| `SpinWheelApiService` | New service: `GET /arcade/spin/segments` + `POST /arcade/spin/claim` |
+| `SegmentLoader` backend wiring | Replaced raw `http.get` + hardcoded URL with `ApiService.getList('/arcade/spin/segments')` |
+| `WheelScreen` — 6 bug fixes | Button spin never completing (`onComplete` stub), gesture spins not registered, `ref.read()` in `dispose()`, AppBar `FutureBuilder` flicker, StatCard hardcoded count |
+
+---
+
+### 9.5 Packet E — What Is Complete vs. Remaining
+
+#### ✅ Complete (verified from codebase — 2026-05-06)
+
+| Item | Evidence |
+|---|---|
+| `TriviaTycoonApp` → `SynaptixApp` root class rename | `lib/main.dart` — class is `SynaptixApp`, state is `_SynaptixAppState` |
+| All `// TODO(Synaptix Phase 8)` comments cleared | Full `grep` scan returned zero matches |
+| JWT: no local `iss`/`aud` claim validation | No JWT validation package in `pubspec.yaml`/`pubspec.lock`; tokens are opaque bearer strings |
+| JWT: no old issuer/audience values hardcoded | Zero matches for `TycoonBackendApi`, `TycoonFrontendApp`, `TycoonClient` across `lib/`, `assets/`, `.env.example` |
+| JWT auth layer: compatible with backend's new values | Confirmed — change is transparent to Flutter |
+| PayPal `BrandName`: no Flutter render of this field | Flutter calls PayPal API endpoints but does not read or display `BrandName` from a backend config endpoint |
+
+#### ❌ Remaining — Workstream 1 (Symbol Cleanup)
+
+| Item | Detail |
+|---|---|
+| `tycoon_toast` folder not renamed | `lib/ui_components/tycoon_toast/` — `tycoon_toast.dart`, `tycoon_toast_route.dart`, `tycoon_toast_helper.dart` and all references |
+| `trivia_tycoon_group` notification key | `lib/core/services/notification_service.dart:25` — `_groupKey = 'trivia_tycoon_group'` |
+| `tTriviaGameImage` logo asset reference | `lib/core/constants/image_strings.dart` — references `assets/images/logo/trivia_tycoon_appLogo.png` |
+| "Tycoon backend" comment | `lib/core/repositories/mission_repository.dart:35` — `/// JWT-first implementation backed by Tycoon backend.` |
+| `pubspec.yaml` description | Still reads `"A new Flutter project."` |
+| `README.md` branding | Title is `# Trivia Tycoon`; body text references the old brand |
+
+#### ❌ Remaining — Workstream 2 (Package Root Rename)
+
+| Item | Detail |
+|---|---|
+| `pubspec.yaml` `name:` | Still `trivia_tycoon` |
+| `package:trivia_tycoon/` imports | **564 occurrences** across `lib/` |
+| Android application ID | `com.theoreticalmindstech.trivia_tycoon` → target: `com.theoreticalmindstech.synaptix` |
+| iOS bundle identifier | `com.theoreticalmindstech.triviaTycoon` → target: `com.theoreticalmindstech.synaptix` |
+| Firebase / Google services config | Will require new Firebase app registrations once bundle IDs change |
+| `build_runner` generated files | Full regeneration required after package rename |
+| Store transition plan | In discussion with product/legal — no final plan yet |
+
+---
+
+### 9.6 Precondition Gate for Packet E
+
+Per `docs/synaptix_frontend_plan.md`, Packet E requires:
+
+| Precondition | Status |
+|---|---|
+| Stable release candidate from Packet D | ⚠️ Functionally complete; formal soft launch declaration pending |
+| No major outstanding rebrand bugs | ✅ No functional regressions identified |
+| Build/test coverage acceptable | ⚠️ Secure channel tests outstanding |
+| Rollback strategy documented | ❌ Not yet documented for Packet E |
+
+**Frontend team decision (2026-05-06):** Proceed with both Workstream 1 and Workstream 2 once Packet A–D completion is formally confirmed. Workstream 1 (symbol cleanup) can begin immediately as it carries no store or backend risk. Workstream 2 (package root rename) must wait for the store transition plan to be finalised.
