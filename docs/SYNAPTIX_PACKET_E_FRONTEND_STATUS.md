@@ -5,7 +5,7 @@
 **Prepared by:** Backend team
 **Audience:** Frontend team (Flutter)
 **Companion doc:** `docs/synaptix_packet_e_detailed.md`
-**Last updated:** 2026-05-06 — Frontend response added (sections 4.1–4.4 filled; Section 9 added)
+**Last updated:** 2026-05-08 — Workstream 1 complete (commit `79bc788`); sections 4.1, 4.4, 8, 9.5 updated
 
 ---
 
@@ -128,9 +128,9 @@ Please review each item below and respond with current status.
 | Item | Status — please confirm |
 |---|---|
 | Has `TriviaTycoonApp` been renamed to `SynaptixApp`? | ✅ **Done** — `lib/main.dart` uses `SynaptixApp` / `_SynaptixAppState` |
-| Have internal `trivia_tycoon_*` / `tycoon_*` symbol names been cleaned up? | ⚠️ **Partial** — `tycoon_toast/` folder, `trivia_tycoon_group` notification key, `tTriviaGameImage` path, and a "Tycoon backend" comment in `mission_repository.dart` remain |
+| Have internal `trivia_tycoon_*` / `tycoon_*` symbol names been cleaned up? | ✅ **Complete (commit `79bc788`)** — `tycoon_toast/` folder renamed, all `TycoonToast*` symbols, `TycoonApiClientEnhanced`, `TycoonLinearProgressIndicator`, `LoginMessages` toast constants, `tTriviaGameImage` all renamed. `trivia_tycoon_group` notification key preserved intentionally (Android OS-persisted value). |
 | Are all `// TODO(Synaptix Phase 8)` comments resolved or reviewed? | ✅ **Done** — no `TODO(Synaptix Phase 8)` comments found in the codebase |
-| Has `pubspec.yaml` description been updated? | ❌ **Not started** — still reads `"A new Flutter project."` |
+| Has `pubspec.yaml` description been updated? | ✅ **Done (commit `79bc788`)** — now reads `"Synaptix — Train. Compete. Grow."` |
 
 ### 4.2 Package Root Rename (FE-E Workstream 2)
 
@@ -159,8 +159,8 @@ Per the original plan, Packet E only proceeds if the product layer is stable and
 |---|---|
 | Is Packet D fully stable in the Flutter app? | ⚠️ **Needs confirmation** — `synaptix_frontend_plan.md` marks FE-D ✅ complete (commits `6485ad9`, `6eda2c2`, `634614e`, `429deb2`). One deferred item remains: cross-check of frontend labels against backend dashboards/docs (awaiting backend alignment). No functional blockers identified. |
 | Has the internal soft launch validation been run? | ⚠️ **Unknown** — QA checklist in FE-D2 is fully checked. Whether a formal soft launch pass has been declared is not captured in any doc. Frontend team to confirm. |
-| Does the frontend team want to proceed with FE-E Workstream 1 (symbol cleanup)? | 🔜 **Proceed — pending Packet D confirmation** |
-| Does the frontend team want to proceed with FE-E Workstream 2 (package root rename)? | 🔜 **Proceed — pending Packet D confirmation and store transition plan** |
+| Does the frontend team want to proceed with FE-E Workstream 1 (symbol cleanup)? | ✅ **Complete — commit `79bc788` (2026-05-08)** |
+| Does the frontend team want to proceed with FE-E Workstream 2 (package root rename)? | ⏸️ **Blocked — pending store/legal bundle ID transition plan** |
 
 ---
 
@@ -213,17 +213,17 @@ To set expectations clearly — the following are **explicitly out of scope** fo
 
 | Area | Backend status | Frontend status |
 |---|---|---|
-| FE-E Workstream 1 — symbol cleanup | N/A | ⚠️ Awaiting confirmation |
-| FE-E Workstream 2 — package root rename | N/A | ⚠️ Awaiting confirmation |
+| FE-E Workstream 1 — symbol cleanup | N/A | ✅ **Complete — commit `79bc788` (2026-05-08)** |
+| FE-E Workstream 2 — package root rename | N/A | ⏸️ Blocked — awaiting store transition plan |
 | BE-E — namespace rename | ⏸️ Deferred | N/A |
-| JWT issuer/audience | ✅ Already updated to Synaptix values | ⚠️ **Needs frontend confirmation** |
+| JWT issuer/audience | ✅ Already updated to Synaptix values | ✅ **Confirmed compatible — no local JWT claim validation** |
 | IAP bundle ID | ⏸️ Deferred — needs store plan | ⏸️ Deferred — needs store plan |
 | Elasticsearch alias rename | ⏸️ Deferred | N/A |
 | Ops/telemetry identifiers | ⏸️ Deferred | N/A |
 
-**The one item requiring immediate attention** is the JWT issuer/audience change — the backend is already live with new values and the frontend team should verify there is no auth regression before the next integration test pass.
+**Workstream 1 is complete.** Commit `79bc788` — 29 files changed; all `Tycoon*` internal symbols renamed to `Synaptix*`, `tycoon_toast/` folder renamed, `pubspec.yaml` description updated, README updated. No store impact, no backend contract changes, no persistence key renames.
 
-Everything else in Packet E is a deliberate deferral and can be scheduled as a standalone modernisation sprint when the team is ready.
+**Workstream 2 remains blocked** on the store/legal bundle ID transition plan. No timeline yet.
 
 ---
 
@@ -314,16 +314,20 @@ These items are not part of the Packet E scope but are relevant to overall proje
 | JWT auth layer: compatible with backend's new values | Confirmed — change is transparent to Flutter |
 | PayPal `BrandName`: no Flutter render of this field | Flutter calls PayPal API endpoints but does not read or display `BrandName` from a backend config endpoint |
 
-#### ❌ Remaining — Workstream 1 (Symbol Cleanup)
+#### ✅ Complete — Workstream 1 (Symbol Cleanup) — commit `79bc788` (2026-05-08)
 
-| Item | Detail |
+| Item | Resolution |
 |---|---|
-| `tycoon_toast` folder not renamed | `lib/ui_components/tycoon_toast/` — `tycoon_toast.dart`, `tycoon_toast_route.dart`, `tycoon_toast_helper.dart` and all references |
-| `trivia_tycoon_group` notification key | `lib/core/services/notification_service.dart:25` — `_groupKey = 'trivia_tycoon_group'` |
-| `tTriviaGameImage` logo asset reference | `lib/core/constants/image_strings.dart` — references `assets/images/logo/trivia_tycoon_appLogo.png` |
-| "Tycoon backend" comment | `lib/core/repositories/mission_repository.dart:35` — `/// JWT-first implementation backed by Tycoon backend.` |
-| `pubspec.yaml` description | Still reads `"A new Flutter project."` |
-| `README.md` branding | Title is `# Trivia Tycoon`; body text references the old brand |
+| `tycoon_toast` folder | ✅ Renamed to `lib/ui_components/synaptix_toast/`; all 4 files renamed; all `TycoonToast*` symbols → `SynaptixToast*`; 5 external consumer files updated (widget_helper, main_menu_screen, weekly_rewards_widget, spin_ready_toast, spin_ready_premium_toast) |
+| `TycoonApiClientEnhanced` | ✅ → `SynaptixApiClientEnhanced`; `tycoonApiClientEnhancedProvider` → `synaptixApiClientEnhancedProvider` in `core_providers.dart` |
+| `TycoonLinearProgressIndicator` | ✅ → `SynaptixLinearProgressIndicator`; `_TycoonLinearProgressIndicatorState` → `_SynaptixLinearProgressIndicatorState`; `mission_card_widget.dart` updated (2 usages) |
+| `LoginMessages` toast constants | ✅ `defaultTycoonToastTitleSuccess/Error` → `defaultToastTitleSuccess/Error`; `tycoonToastTitleSuccess/Error` field → `toastTitleSuccess/Error`; 5 login card callsite files updated |
+| `tTriviaGameImage` constant | ✅ → `tSynaptixAppLogo`; asset path `trivia_tycoon_appLogo.png` → `synaptix_appLogo.png`; `app_logo.dart` + `login_screen.dart` updated |
+| "Tycoon backend" comments | ✅ `mission_repository.dart` both occurrences updated; `leaderboard_entry.dart` and `leaderboard_swipe_card.dart` "Tycoon Hall" → "Synaptix Hall"; `rank_tab_widget.dart` tier name "Tycoon" → "Synaptix" |
+| `tier_manager.dart` reward string | ✅ `'Tycoon Badge'` → `'Synaptix Badge'` |
+| `pubspec.yaml` description | ✅ Updated to `"Synaptix — Train. Compete. Grow."` |
+| `README.md` branding | ✅ Title → `# Synaptix`; opening paragraph updated to Synaptix brand copy |
+| `trivia_tycoon_group` notification key | ⚠️ **Intentionally preserved** — Android notification channel group ID; renaming loses user notification preferences. Out of scope per governing rule. |
 
 #### ❌ Remaining — Workstream 2 (Package Root Rename)
 
