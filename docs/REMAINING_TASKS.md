@@ -1,6 +1,6 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-05-09 — Personalization doc reconciliation ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅_
+_Last updated: 2026-05-09 — Personalization doc reconciliation ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅; Secure channel endpoint rollout ✅; Secure channel tests (KMS unit + filter integration) ✅; JWT placeholder key hardening ✅_
 
 > This file is the canonical "what is left to do" reference.
 > For completed work, see [`docs/ALPHA_TASK_AUDIT.md`](ALPHA_TASK_AUDIT.md).
@@ -39,6 +39,9 @@ _Last updated: 2026-05-09 — Personalization doc reconciliation ✅; Sound cue 
 | Backend Packet E (namespace rename) | Deferred | Not started | Intentional deferral |
 | **Spin wheel redesign** | **Medium** | **Complete** | **No** |
 | **Secure channel scaffolding** | **High** | **Complete (scaffolded); rollout pending** | **No** |
+| **Secure channel endpoint rollout** | **High** | **Complete — filter on /auth/refresh, /store/purchase, /store/payments/\*, /store/iap/validate, /store/subscription/checkout+paypal, /crypto/link-wallet + withdraw + stake + unstake, /admin/auth/login + refresh** | **No** |
+| **Secure channel tests (KMS unit + filter integration)** | **High** | **Complete — `Synaptix.Security.Kms.Tests` (session, payload, replay); `Tycoon.Backend.Api.Tests/Security/SecureChannelFilterTests.cs`** | **No** |
+| **JWT placeholder key hardening** | **High** | **Complete — blocks startup if known placeholder key is used in non-Development env; `RequireHttpsMetadata` now env-aware** | **No** |
 
 ---
 
@@ -581,5 +584,6 @@ or use conditional imports to provide web-safe stubs.
 | Packet E Workstream 1 (symbol cleanup) | ✅ Complete — `79bc788` (2026-05-08) |
 | Packet E Workstream 2 (package root rename) | ⏸️ Blocked — awaiting store/legal plan |
 | Spin wheel redesign (pie-chart renderer, fixed needle, gesture spin) | ✅ Complete |
-| Secure channel (scaffolding) | ✅ Scaffolded; rollout to endpoints pending |
-| Secure channel (endpoint rollout + tests) | ❌ Not started |
+| Secure channel (scaffolding) | ✅ Scaffolded; rollout complete |
+| Secure channel (endpoint rollout + tests) | ✅ Complete — 2026-05-09 |
+| JWT placeholder key hardening | ✅ Complete — 2026-05-09 |

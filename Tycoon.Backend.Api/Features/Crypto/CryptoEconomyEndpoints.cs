@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 
@@ -16,16 +17,16 @@ public static class CryptoEconomyEndpoints
     {
         var g = app.MapGroup("/crypto").WithTags("Crypto Economy");
 
-        g.MapPost("/link-wallet", LinkWallet).RequireAuthorization();
+        g.MapPost("/link-wallet", LinkWallet).RequireAuthorization().RequireSecureChannel();
         g.MapGet("/balance/{playerId:guid}", GetBalance).RequireAuthorization();
         g.MapGet("/history/{playerId:guid}", GetHistory).RequireAuthorization();
-        g.MapPost("/withdraw", RequestWithdrawal).RequireAuthorization();
+        g.MapPost("/withdraw", RequestWithdrawal).RequireAuthorization().RequireSecureChannel();
         g.MapPost("/prize-pool/fund", FundPrizePool).RequireAuthorization();
         g.MapGet("/prize-pool/{poolId}", GetPrizePool).RequireAuthorization();
         g.MapPost("/prize-pool/distribute", DistributePrizePool).RequireAuthorization()
             .WithMetadata(new Security.RequireAdminOpsKeyAttribute());
-        g.MapPost("/stake", Stake).RequireAuthorization();
-        g.MapPost("/unstake", Unstake).RequireAuthorization();
+        g.MapPost("/stake", Stake).RequireAuthorization().RequireSecureChannel();
+        g.MapPost("/unstake", Unstake).RequireAuthorization().RequireSecureChannel();
         g.MapGet("/staking/{playerId:guid}", GetStakingPosition).RequireAuthorization();
         g.MapGet("/withdraw/pending", ListPendingWithdrawals).RequireAuthorization()
             .WithMetadata(new Security.RequireAdminOpsKeyAttribute());

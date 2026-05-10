@@ -89,6 +89,7 @@ using Tycoon.Backend.Api.Payments.Stripe;
 using Tycoon.Backend.Api.Realtime;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application;
+using Tycoon.Security.Kms.Client.Extensions;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Application.Analytics.Abstractions;
@@ -257,6 +258,9 @@ if (analyticsEnabled)
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
 
+// KMS typed clients for secure-channel payload encryption
+builder.Services.AddKmsClient(builder.Configuration);
+
 // Register Authentication Service
 builder.Services.AddScoped<Tycoon.Backend.Application.Auth.IAuthService, Tycoon.Backend.Application.Auth.AuthService>();
 
@@ -269,6 +273,19 @@ if (string.IsNullOrWhiteSpace(jwtSecret))
 if (jwtSecret.Length < 32)
 {
     Console.WriteLine("⚠️ WARNING: JWT secret key should be at least 32 characters long for security.");
+}
+
+HashSet<string> knownWeakJwtKeys = new(StringComparer.OrdinalIgnoreCase)
+{
+    "YOUR-SUPER-SECRET-KEY-MINIMUM-32-CHARACTERS-LONG-FOR-SECURITY",
+    "dev-only-change-me-dev-only-change-me-dev-only-change-me",
+    "CHANGE-ME-your-secure-jwt-secret-key-at-least-32-characters-long",
+};
+if (!builder.Environment.IsDevelopment() && knownWeakJwtKeys.Contains(jwtSecret))
+{
+    throw new InvalidOperationException(
+        "Refusing to start: JWT secret is a known placeholder value. " +
+        "Set a real secret via the JwtSettings:SecretKey environment variable.");
 }
 
 // SignalR with Redis
@@ -357,15 +374,19 @@ if (hangfireEnabled)
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
 if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
 {
+    if (!builder.Environment.IsDevelopment())
+        throw new InvalidOperationException(
+            "JWT secret not configured. Set JwtSettings:SecretKey in environment variables or secrets manager.");
+
     jwtSettings.SecretKey = "dev-only-change-me-dev-only-change-me-dev-only-change-me";
-    Console.WriteLine("⚠️ Using default JWT key for development!");
+    Console.WriteLine("⚠️ Using default JWT key — Development only!");
 }
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {
-        o.RequireHttpsMetadata = false;
+        o.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         o.SaveToken = true;
         o.MapInboundClaims = false;
         o.TokenValidationParameters = new TokenValidationParameters
