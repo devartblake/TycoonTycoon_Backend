@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.Json;
 using MediatR;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Api.Payments.PayPal;
 using Tycoon.Backend.Api.Payments.Stripe;
 using Tycoon.Backend.Application.Abstractions;
@@ -41,21 +42,21 @@ namespace Tycoon.Backend.Api.Features.Store
             g.MapGet("/inventory/{playerId:guid}", GetInventory).RequireAuthorization();
             g.MapGet("/subscription/status/{playerId:guid}", GetSubscriptionStatus).RequireAuthorization();
             g.MapPost("/subscription/activate", ActivateSubscription).RequireAuthorization();
-            g.MapPost("/subscription/checkout/session", CreateStripeSubscriptionCheckoutSession).RequireAuthorization();
+            g.MapPost("/subscription/checkout/session", CreateStripeSubscriptionCheckoutSession).RequireAuthorization().RequireSecureChannel();
             g.MapPost("/subscription/portal/session", CreateStripeBillingPortalSession).RequireAuthorization();
-            g.MapPost("/subscription/paypal/create", CreatePayPalSubscription).RequireAuthorization();
+            g.MapPost("/subscription/paypal/create", CreatePayPalSubscription).RequireAuthorization().RequireSecureChannel();
             g.MapPost("/subscription/paypal/cancel", CancelPayPalSubscription).RequireAuthorization();
             g.MapGet("/daily", GetDailyStore).RequireAuthorization();
             g.MapGet("/hub", GetStoreHub).RequireAuthorization();
             g.MapGet("/special-offers", GetSpecialOffers).RequireAuthorization();
             g.MapGet("/catalog/{playerId:guid}", GetPlayerCatalog).RequireAuthorization();
-            g.MapPost("/purchase", Purchase).RequireAuthorization();
-            g.MapPost("/payments/checkout/session", CreateStripeCheckoutSession).RequireAuthorization();
-            g.MapPost("/payments/paypal/order", CreatePayPalOrder).RequireAuthorization();
-            g.MapPost("/payments/paypal/capture", CapturePayPalOrder).RequireAuthorization();
-            g.MapPost("/payments/webhook", HandleStripeWebhook);
-            g.MapPost("/payments/paypal/webhook", HandlePayPalWebhook);
-            g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization();
+            g.MapPost("/purchase", Purchase).RequireAuthorization().RequireSecureChannel();
+            g.MapPost("/payments/checkout/session", CreateStripeCheckoutSession).RequireAuthorization().RequireSecureChannel();
+            g.MapPost("/payments/paypal/order", CreatePayPalOrder).RequireAuthorization().RequireSecureChannel();
+            g.MapPost("/payments/paypal/capture", CapturePayPalOrder).RequireAuthorization().RequireSecureChannel();
+            g.MapPost("/payments/webhook", HandleStripeWebhook);        // Stripe webhook — not from the app
+            g.MapPost("/payments/paypal/webhook", HandlePayPalWebhook); // PayPal webhook — not from the app
+            g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization().RequireSecureChannel();
             g.MapGet("/recommendations/{playerId:guid}", GetStoreRecommendations).RequireAuthorization();
         }
 

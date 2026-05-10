@@ -330,3 +330,85 @@ It is not necessary for public catalog endpoints, public leaderboard reads, stat
 Build a **versioned secure-channel architecture**, not a proprietary encryption algorithm. Start with TLS 1.3 + AES-256-GCM/XChaCha20-Poly1305 + Vault Transit + replay protection. Then evolve the handshake to hybrid X25519 + ML-KEM-768 when mobile library support is stable enough for your target platforms.
 
 This gives Synaptix strong practical security today, a sane post-quantum migration path, and a reusable backend security layer that can protect other projects without locking you into fragile custom crypto.
+
+---
+
+## Implementation status
+
+_Last updated: 2026-05-09_
+
+### Completed
+
+#### Phase A — Hardening
+
+| Item | Status | Notes |
+|---|---|---|
+| JWT placeholder key detection | ✅ Complete | Startup throws in non-Development if secret matches any known placeholder (`YOUR-SUPER-SECRET-KEY-…`, etc.) |
+| JWT dev fallback gated | ✅ Complete | Fallback key only injected when `IsDevelopment()` is true; throws in staging/prod if key is absent |
+| `RequireHttpsMetadata` env-aware | ✅ Complete | `false` only in Development; `true` in all other environments |
+
+#### Phase B — Secure session service (KMS microservice)
+
+| Item | Status | Notes |
+|---|---|---|
+| `Synaptix.Security.Kms.*` projects | ✅ Complete | Contracts, Application, Infrastructure, Api, Client layers all scaffolded |
+| `ISecureSessionService` + X25519 ECDH key agreement | ✅ Complete | HKDF-SHA256 derives directional `c2s`/`s2c` keys; suite negotiation with `ClassicalV1` fallback |
+| `ISecurePayloadService` (AES-256-GCM AEAD) | ✅ Complete | Encrypt uses `ServerToClientKey`; Decrypt uses `ClientToServerKey` |
+| Redis-backed replay protection | ✅ Complete | `RedisReplayProtectionStore` tracks sequence + nonce per session via `IDistributedCache` |
+| `/security/sessions/start` and `/security/sessions/renew` | ✅ Complete | Session TTL 30 min; bound to userId + deviceId |
+| `SecureChannelFilter` endpoint filter | ✅ Complete | Decrypts incoming envelope → runs handler → encrypts response via `EncryptedResponseResult` using `IHttpResponseBodyFeature` swap |
+| KMS client registered in `Program.cs` | ✅ Complete | `AddKmsClient(configuration)` wired after `AddApplication()` |
+| Endpoint rollout | ✅ Complete | `RequireSecureChannel()` applied to: `/auth/refresh`, `/admin/auth/login`, `/admin/auth/refresh`, `/crypto/link-wallet`, `/crypto/withdraw`, `/crypto/stake`, `/crypto/unstake`, `/store/purchase`, `/store/iap/validate`, `/store/payments/checkout/session`, `/store/payments/paypal/order`, `/store/payments/paypal/capture`, `/store/subscription/checkout/session`, `/store/subscription/paypal/create` |
+| Docker image (backend-api) | ✅ Complete | `Dockerfile.api` updated to COPY `Tycoon.Security.Kms.Client` + `Synaptix.Security.Kms.Contracts` before `dotnet restore` |
+
+#### Test coverage
+
+| Item | Status | Notes |
+|---|---|---|
+| `Synaptix.Security.Kms.Tests` — Session service (7 tests) | ✅ Complete | Start, key derivation, suite fallback, invalid key, renew expiry, wrong device, revoke |
+| `Synaptix.Security.Kms.Tests` — Payload service (5 tests) | ✅ Complete | Roundtrip, tampered ciphertext, expired session, unknown session, nonce uniqueness |
+| `Synaptix.Security.Kms.Tests` — Replay protection (5 tests) | ✅ Complete | First call, replay, incremented seq, seq below last seen, concurrent sessions |
+| `Tycoon.Backend.Api.Tests/Security/SecureChannelFilterTests.cs` (5 tests) | ✅ Complete | Missing header, malformed body, KMS 401, encrypted roundtrip, unprotected endpoint passthrough |
+
+---
+
+### Remaining
+
+#### Phase C — Flutter secure channel
+
+| Item | Priority | Notes |
+|---|---|---|
+| `SecureChannelService` in Flutter | High | Wraps `EncryptedApiClient`; performs ECDH key agreement against `/security/sessions/start` |
+| `SecureSessionStore` using `SecureStorage` | High | Persists `sessionId`, `c2sKey`, `s2cKey`, expiry; clears on logout |
+| `EncryptedApiClient` wrapper | High | Intercepts high-value requests, encrypts body with `c2sKey`, decrypts response with `s2cKey` |
+| Automatic session renewal | Medium | Renew when `expiresAtUtc - now < 5 min`; back off on failure |
+| Certificate pinning | Low | Operationally acceptable on mobile; evaluate per-platform cost before enabling |
+
+#### Phase D — Vault Transit integration
+
+| Item | Priority | Notes |
+|---|---|---|
+| `Synaptix.Security.Vault` project | High | Vault Transit client; envelope encryption; key rotation job |
+| Vault dev container in Docker Compose | High | Local development; replace placeholder secrets with Vault-sourced values |
+| JWT signing key managed by Vault | High | Removes last long-lived static secret from config |
+| ASP.NET Data Protection key wrapping | Medium | Store protection keys in Vault instead of filesystem |
+| Payment provider secrets in Vault KV | Medium | Stripe, PayPal keys currently in `appsettings`/env vars |
+| Audit dashboard for key operations | Low | Vault audit log surfaced in Grafana or operator dashboard |
+
+#### Phase E — Hybrid / post-quantum readiness
+
+| Item | Priority | Notes |
+|---|---|---|
+| Add ML-KEM-768 protocol fields to session start request | Medium | Fields already documented in the protocol design above; server ignores until Phase E lands |
+| Server-side ML-KEM key generation | Low | Blocked on stable .NET ML-KEM library (monitor `System.Security.Cryptography` for ML-KEM in .NET 10/11) |
+| Hybrid shared secret: `HKDF(X25519 \|\| ML-KEM)` | Low | Implement server-first, then enable for mobile clients once library support is confirmed |
+| Versioned `selectedSuite` negotiation | Low | Suite registry already present; add `X25519+ML-KEM-768` entry when server-side is ready |
+
+#### Outstanding filter hardening (beyond MVP)
+
+| Item | Priority | Notes |
+|---|---|---|
+| `X-Syn-Sec-Seq` + `X-Syn-Sec-Nonce` header enforcement in filter | Medium | Current filter validates session only; full replay protection requires KMS to check sequence + nonce at decrypt time |
+| AAD binding in `SecureChannelFilter` | Medium | Spec calls for AAD = `method \|\| path \|\| sessionId \|\| sequence \|\| jwtSubject \|\| deviceId \|\| timestamp`; not yet wired into `DecryptPayloadRequest` |
+| Timestamp skew check | Medium | Reject `encryptedAtUtc` older than ±5 minutes at the filter level |
+| `/auth/login` and `/auth/signup` — TLS-only note | Info | Intentionally excluded from secure channel (pre-auth, no session); covered by TLS 1.3 only |

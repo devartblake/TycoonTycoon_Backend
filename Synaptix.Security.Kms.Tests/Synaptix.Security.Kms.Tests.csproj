@@ -10,23 +10,21 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="Hangfire.InMemory" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tycoon.Backend.Api\Tycoon.Backend.Api.csproj" />
-    <ProjectReference Include="..\Tycoon.Backend.Application\Tycoon.Backend.Application.csproj" />
-    <ProjectReference Include="..\Tycoon.Shared.Contracts\Tycoon.Shared.Contracts.csproj" />
-    <ProjectReference Include="..\Tycoon.Security.Kms.Client\Tycoon.Security.Kms.Client.csproj" />
+    <ProjectReference Include="..\Synaptix.Security.Kms.Application\Synaptix.Security.Kms.Application.csproj" />
+    <ProjectReference Include="..\Synaptix.Security.Kms.Infrastructure\Synaptix.Security.Kms.Infrastructure.csproj" />
+    <ProjectReference Include="..\Synaptix.Security.Kms.Contracts\Synaptix.Security.Kms.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="FluentAssertions" />
   </ItemGroup>
 
 </Project>

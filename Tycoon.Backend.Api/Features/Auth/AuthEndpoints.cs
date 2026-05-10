@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Auth;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -15,7 +16,7 @@ namespace Tycoon.Backend.Api.Features.Auth
             authGroup.MapPost("/register", HandleRegistration);
             authGroup.MapPost("/signup", HandleSignup);
             authGroup.MapPost("/login", HandleLogin);
-            authGroup.MapPost("/refresh", HandleTokenRefresh);
+            authGroup.MapPost("/refresh", HandleTokenRefresh).RequireSecureChannel();
             authGroup.MapPost("/logout", HandleLogout).RequireAuthorization();
         }
 

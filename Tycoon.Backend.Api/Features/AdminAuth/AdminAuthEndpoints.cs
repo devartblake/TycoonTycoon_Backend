@@ -43,8 +43,8 @@ public static class AdminAuthEndpoints
     {
         var g = admin.MapGroup("/auth").WithTags("Admin/Auth");
 
-        g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login");
-        g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh");
+        g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login").RequireSecureChannel();
+        g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh").RequireSecureChannel();
         g.MapGet("/me", Me).RequireAuthorization(AdminPolicies.AdminOpsPolicy);
     }
 

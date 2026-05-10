@@ -47,6 +47,7 @@
     <ProjectReference Include="..\Tycoon.Shared.Contracts\Tycoon.Shared.Contracts.csproj" />
     <ProjectReference Include="..\Tycoon.Shared.Observability\Tycoon.Shared.Observability.csproj" />
     <ProjectReference Include="..\Tycoon.Shared\Tycoon.Shared.csproj" />
+    <ProjectReference Include="..\Tycoon.Security.Kms.Client\Tycoon.Security.Kms.Client.csproj" />
   </ItemGroup>
 
 </Project>

@@ -18,6 +18,8 @@ COPY ["Tycoon.Shared/Tycoon.Shared.csproj", "Tycoon.Shared/"]
 COPY ["Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj", "Tycoon.Shared.Contracts/"]
 COPY ["Tycoon.Shared.Observability/Tycoon.Shared.Observability.csproj", "Tycoon.Shared.Observability/"]
 COPY ["Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj", "Tycoon.ServiceDefaults/"]
+COPY ["Tycoon.Security.Kms.Client/Tycoon.Security.Kms.Client.csproj", "Tycoon.Security.Kms.Client/"]
+COPY ["Synaptix.Security.Kms.Contracts/Synaptix.Security.Kms.Contracts.csproj", "Synaptix.Security.Kms.Contracts/"]
 
 # Restore packages - This layer is cached unless .csproj or Directory.Packages.props changes
 RUN dotnet restore "Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
