@@ -13,11 +13,11 @@ services:
   migration:
     environment:
       # Seed a dedicated smoke-test operator account (idempotent).
-      SuperAdmin__Email: "${SMOKE_ADMIN_EMAIL:-smoke-admin@tycoon.local}"
+      SuperAdmin__Email: "${SMOKE_ADMIN_EMAIL:-smoke-admin@synaptix.local}"
       SuperAdmin__Password: "${SMOKE_ADMIN_PASSWORD:-SmokeTest123!}"
       SuperAdmin__Handle: "${SMOKE_ADMIN_HANDLE:-smokeadmin}"
 
   backend-api:
     environment:
       # Allow the smoke-test operator account to access the admin auth endpoints.
-      AdminAuth__AllowedEmails__0: "${SMOKE_ADMIN_EMAIL:-smoke-admin@tycoon.local}"
+      AdminAuth__AllowedEmails__0: "${SMOKE_ADMIN_EMAIL:-smoke-admin@synaptix.local}"

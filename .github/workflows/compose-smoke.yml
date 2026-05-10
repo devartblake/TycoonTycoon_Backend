@@ -19,7 +19,7 @@ jobs:
       contents: read
 
     env:
-      SMOKE_ADMIN_EMAIL: smoke-admin@tycoon.local
+      SMOKE_ADMIN_EMAIL: smoke-admin@synaptix.local
       SMOKE_ADMIN_PASSWORD: SmokeTest123!
       KEEP_STACK: ${{ github.event.inputs.keep_stack || 'false' }}
 

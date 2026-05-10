@@ -220,7 +220,7 @@ function Test-AppSettings {
     
     # Check connection strings match Docker defaults
     $apiContent = Get-Content $apiSettings -Raw
-    if ($apiContent -match "Database=tycoon_db") {
+    if ($apiContent -match "Database=synaptix_db") {
         Write-Success "API configuration uses correct database name"
     }
     else {
@@ -273,18 +273,18 @@ function Test-ServiceHealth {
         }
         else {
             Write-Info "Checking PostgreSQL..."
-            docker compose exec -T postgres pg_isready -U tycoon_user -d tycoon_db 2>$null
+            docker compose exec -T postgres pg_isready -U synaptix_user -d synaptix_db 2>$null
             
             Write-Info "Checking MongoDB..."
             docker compose exec -T mongodb mongosh --quiet --eval "db.adminCommand('ping')" 2>$null
             
             Write-Info "Checking Redis..."
-            docker compose exec -T redis redis-cli -a "tycoon_redis_password_123" ping 2>$null
+            docker compose exec -T redis redis-cli -a "synaptix_redis_password_123" ping 2>$null
             
             Write-Info "Checking Elasticsearch..."
             try {
                 $response = Invoke-WebRequest -Uri "http://localhost:9200/_cluster/health" `
-                    -Credential (New-Object System.Management.Automation.PSCredential("elastic", (ConvertTo-SecureString "tycoon_elastic_password_123" -AsPlainText -Force))) `
+                    -Credential (New-Object System.Management.Automation.PSCredential("elastic", (ConvertTo-SecureString "synaptix_elastic_password_123" -AsPlainText -Force))) `
                     -UseBasicParsing -ErrorAction SilentlyContinue
                 if ($response.StatusCode -eq 200) {
                     Write-Host "  ✅ Healthy" -ForegroundColor Green

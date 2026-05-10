@@ -1,4 +1,4 @@
-name: tycoon
+name: synaptix
 
 services:
   # ================================
@@ -6,43 +6,43 @@ services:
   # ================================
   postgres:
     image: postgres:16-alpine
-    container_name: tycoon_postgres
+    container_name: synaptix_postgres
     restart: unless-stopped
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_DB: "${POSTGRES_DB:-tycoon_db}"
-      POSTGRES_USER: "${POSTGRES_USER:-tycoon_user}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-tycoon_password_123}"
+      POSTGRES_DB: "${POSTGRES_DB:-synaptix_db}"
+      POSTGRES_USER: "${POSTGRES_USER:-synaptix_user}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-synaptix_password_123}"
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init/postgres:/docker-entrypoint-initdb.d
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tycoon_user} -d ${POSTGRES_DB:-tycoon_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-synaptix_user} -d ${POSTGRES_DB:-synaptix_db}"]
       interval: 10s
       timeout: 5s
       retries: 10
 
   mongodb:
     image: mongo:7.0
-    container_name: tycoon_mongodb
+    container_name: synaptix_mongodb
     restart: unless-stopped
     ports:
       - "${MONGO_PORT:-27017}:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}"
-      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}"
-      MONGO_INITDB_DATABASE: "${MONGO_INITDB_DATABASE:-tycoon_db}"
-      MONGO_APP_USER: "${MONGO_APP_USER:-tycoon_app_user}"
-      MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:-tycoon_app_password_123}"
-      MONGO_APP_DB: "${MONGO_APP_DB:-tycoon_db}"
+      MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}"
+      MONGO_INITDB_DATABASE: "${MONGO_INITDB_DATABASE:-synaptix_db}"
+      MONGO_APP_USER: "${MONGO_APP_USER:-synaptix_app_user}"
+      MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:-synaptix_app_password_123}"
+      MONGO_APP_DB: "${MONGO_APP_DB:-synaptix_db}"
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
       - ./init/mongo:/docker-entrypoint-initdb.d
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -54,23 +54,23 @@ services:
   # ================================
   redis:
     image: redis:7-alpine
-    container_name: tycoon_redis
+    container_name: synaptix_redis
     restart: unless-stopped
     ports:
       - "${REDIS_PORT:-6379}:6379"
-    command: ["sh", "-c", "redis-server --appendonly yes --requirepass '${REDIS_PASSWORD:-tycoon_redis_password_123}'"]
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass '${REDIS_PASSWORD:-synaptix_redis_password_123}'"]
     volumes:
       - redis_data:/data
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD:-tycoon_redis_password_123}' ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD:-synaptix_redis_password_123}' ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 10
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: tycoon_elasticsearch
+    container_name: synaptix_elasticsearch
     restart: unless-stopped
     ports:
       - "${ELASTICSEARCH_PORT:-9200}:9200"
@@ -79,13 +79,13 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=true
       - xpack.security.enrollment.enabled=false
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-tycoon_elastic_password_123}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-synaptix_elastic_password_123}
       - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -u elastic:${ELASTIC_PASSWORD:-tycoon_elastic_password_123} http://localhost:9200/_cluster/health?pretty >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -u elastic:${ELASTIC_PASSWORD:-synaptix_elastic_password_123} http://localhost:9200/_cluster/health?pretty >/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -95,18 +95,18 @@ services:
   # ================================
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
-    container_name: tycoon_rabbitmq
+    container_name: synaptix_rabbitmq
     restart: unless-stopped
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-tycoon_user}"
-      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-tycoon_rabbitmq_password_123}"
-      RABBITMQ_DEFAULT_VHOST: "${RABBITMQ_VHOST:-tycoon}"
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-synaptix_user}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-synaptix_rabbitmq_password_123}"
+      RABBITMQ_DEFAULT_VHOST: "${RABBITMQ_VHOST:-synaptix}"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -118,22 +118,22 @@ services:
   # ================================
   minio:
     image: minio/minio:latest
-    container_name: tycoon_minio
+    container_name: synaptix_minio
     restart: unless-stopped
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-tycoon_minio_user}"
-      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-tycoon_minio_password_123}"
-      MinIO__Seeds__StoreItemsKey: tycoon-assets/store-items.json
-      MinIO__Seeds__SkillNodesKey: tycoon-assets/skill-nodes.json
-      MinIO__Seeds__SeasonRewardsKey: tycoon-assets/season-rewards.json
-      MinIO__Seeds__QuestionsKey: tycoon-assets/questions.json
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-synaptix_minio_user}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
+      MinIO__Seeds__StoreItemsKey: synaptix-assets/store-items.json
+      MinIO__Seeds__SkillNodesKey: synaptix-assets/skill-nodes.json
+      MinIO__Seeds__SeasonRewardsKey: synaptix-assets/season-rewards.json
+      MinIO__Seeds__QuestionsKey: synaptix-assets/questions.json
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -145,7 +145,7 @@ services:
   # ================================
   prometheus:
     image: prom/prometheus:latest
-    container_name: tycoon_prometheus
+    container_name: synaptix_prometheus
     restart: unless-stopped
     profiles: ["dev"]
     ports:
@@ -158,11 +158,11 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
-    networks: [tycoon-net]
+    networks: [synaptix-net]
 
   grafana:
     image: grafana/grafana:latest
-    container_name: tycoon_grafana
+    container_name: synaptix_grafana
     restart: unless-stopped
     profiles: ["dev"]
     ports:
@@ -176,14 +176,14 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
-    networks: [tycoon-net]
+    networks: [synaptix-net]
 
   # ================================
   # Admin UIs
   # ================================
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
-    container_name: tycoon_kibana
+    container_name: synaptix_kibana
     restart: unless-stopped
     profiles: ["dev"]
     ports:
@@ -191,89 +191,89 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-tycoon_elastic_password_123}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-synaptix_elastic_password_123}
     depends_on:
       - elasticsearch
-    networks: [tycoon-net]
+    networks: [synaptix-net]
 
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: tycoon_pgadmin
+    container_name: synaptix_pgadmin
     restart: unless-stopped
     profiles: ["dev"]
     ports:
       - "${PGADMIN_PORT:-5050}:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@tycoon.app}"
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@synaptix.app}"
       PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-admin_password_123}"
       PGADMIN_CONFIG_SERVER_MODE: "False"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
       - postgres
-    networks: [tycoon-net]
+    networks: [synaptix-net]
 
   mongo-express:
     image: mongo-express:latest
-    container_name: tycoon_mongo_express
+    container_name: synaptix_mongo_express
     restart: unless-stopped
     profiles: ["dev"]
     ports:
       - "${MONGO_EXPRESS_PORT:-8081}:8081"
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: "${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}"
-      ME_CONFIG_MONGODB_ADMINPASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}"
-      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}:${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}@mongodb:27017/"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}"
+      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}:${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}@mongodb:27017/"
       ME_CONFIG_BASICAUTH_USERNAME: "${MONGO_EXPRESS_USERNAME:-admin}"
       ME_CONFIG_BASICAUTH_PASSWORD: "${MONGO_EXPRESS_PASSWORD:-admin_password_123}"
     depends_on:
       - mongodb
-    networks: [tycoon-net]
+    networks: [synaptix-net]
 
   dbgate:
       image: dbgate/dbgate:latest
-      container_name: tycoon_dbgate
+      container_name: synaptix_dbgate
       restart: unless-stopped
       profiles: ["dev"]
       ports:
         - "${DBGATE_PORT:-3001}:3000"
       environment:
-        CONNECTIONS: tycoon_postgres,tycoon_mongodb
+        CONNECTIONS: synaptix_postgres,synaptix_mongodb
 
-        LABEL_tycoon_postgres: "Tycoon PostgreSQL"
-        SERVER_tycoon_postgres: postgres
-        PORT_tycoon_postgres: 5432
-        ENGINE_tycoon_postgres: postgres@dbgate-plugin-postgres
-        USER_tycoon_postgres: "${POSTGRES_USER:-tycoon_user}"
-        PASSWORD_tycoon_postgres: "${POSTGRES_PASSWORD:-tycoon_password_123}"
-        DATABASE_tycoon_postgres: "${POSTGRES_DB:-tycoon_db}"
+        LABEL_synaptix_postgres: "Synaptix PostgreSQL"
+        SERVER_synaptix_postgres: postgres
+        PORT_synaptix_postgres: 5432
+        ENGINE_synaptix_postgres: postgres@dbgate-plugin-postgres
+        USER_synaptix_postgres: "${POSTGRES_USER:-synaptix_user}"
+        PASSWORD_synaptix_postgres: "${POSTGRES_PASSWORD:-synaptix_password_123}"
+        DATABASE_synaptix_postgres: "${POSTGRES_DB:-synaptix_db}"
 
-        LABEL_tycoon_mongodb: "Tycoon MongoDB"
-        SERVER_tycoon_mongodb: mongodb
-        PORT_tycoon_mongodb: 27017
-        ENGINE_tycoon_mongodb: mongo@dbgate-plugin-mongo
-        USER_tycoon_mongodb: "${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}"
-        PASSWORD_tycoon_mongodb: "${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}"
-        DATABASE_tycoon_mongodb: "${MONGO_INITDB_DATABASE:-tycoon_db}"
-        URL_tycoon_mongodb: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin}:${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}@mongodb:27017/${MONGO_INITDB_DATABASE:-tycoon_db}?authSource=admin"
+        LABEL_synaptix_mongodb: "Synaptix MongoDB"
+        SERVER_synaptix_mongodb: mongodb
+        PORT_synaptix_mongodb: 27017
+        ENGINE_synaptix_mongodb: mongo@dbgate-plugin-mongo
+        USER_synaptix_mongodb: "${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}"
+        PASSWORD_synaptix_mongodb: "${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}"
+        DATABASE_synaptix_mongodb: "${MONGO_INITDB_DATABASE:-synaptix_db}"
+        URL_synaptix_mongodb: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}:${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}@mongodb:27017/${MONGO_INITDB_DATABASE:-synaptix_db}?authSource=admin"
       depends_on:
         - postgres
         - mongodb
-      networks: [tycoon-net]
+      networks: [synaptix-net]
 
   # ================================
   # Reverse Proxy
   # ================================
   traefik:
     image: traefik:v3.2
-    container_name: tycoon_traefik
+    container_name: synaptix_traefik
     restart: unless-stopped
     command:
       - "--api.dashboard=true"
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=tycoon-net"
+      - "--providers.docker.network=synaptix-net"
       - "--entrypoints.web.address=:80"
       - "--log.level=INFO"
     ports:
@@ -282,7 +282,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - letsencrypt:/letsencrypt
-    networks: [tycoon-net]
+    networks: [synaptix-net]
 
   # ================================
   # Backend Services
@@ -293,25 +293,25 @@ services:
       dockerfile: docker/Dockerfile.migrate
       args:
         - BUILD_CONFIGURATION="${BUILD_CONFIGURATION:-Release}"
-    container_name: tycoon_migration
+    container_name: synaptix_migration
     restart: "no"
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       DOTNET_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       
       # Database connections
-      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
-      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-tycoon_redis_password_123}"
-      ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
+      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD:-synaptix_password_123}"
+      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-synaptix_redis_password_123}"
+      ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD:-synaptix_app_password_123}@mongodb:27017/${MONGO_APP_DB:-synaptix_db}?authSource=${MONGO_APP_DB:-synaptix_db}"
       ConnectionStrings__elasticsearch: "http://elasticsearch:9200"
       
       # Elasticsearch
       Elastic__Url: "http://elasticsearch:9200"
       Elastic__Username: "elastic"
-      Elastic__Password: "${ELASTIC_PASSWORD:-tycoon_elastic_password_123}"
+      Elastic__Password: "${ELASTIC_PASSWORD:-synaptix_elastic_password_123}"
       
       # MongoDB
-      MongoSettings__Database: "tycoon_analytics"
+      MongoSettings__Database: "synaptix_analytics"
       
       # Super admin seed (idempotent — only creates the account if it doesn't exist)
       SuperAdmin__Email: "${SUPER_ADMIN_EMAIL:-}"
@@ -326,7 +326,7 @@ services:
       MigrationService__RebuildElastic__Enabled: "${REBUILD_ELASTIC:-false}"
       
       # Observability
-      Observability__ServiceName: "Tycoon.MigrationService"
+      Observability__ServiceName: "Synaptix.MigrationService"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
     depends_on:
       postgres:
@@ -339,7 +339,7 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    networks: [tycoon-net]
+    networks: [synaptix-net]
 
   backend-api:
     build:
@@ -347,7 +347,7 @@ services:
       dockerfile: docker/Dockerfile.api
       args:
         BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
-    container_name: tycoon_backend_api
+    container_name: synaptix_backend_api
     restart: unless-stopped
     ports:
       - "${BACKEND_HTTP_PORT:-5000}:5000"
@@ -357,21 +357,21 @@ services:
       ASPNETCORE_URLS: ""   # Kestrel dual-port config in Program.cs overrides this
       
       # Database connections
-      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-tycoon_db};Username=${POSTGRES_USER:-tycoon_user};Password=${POSTGRES_PASSWORD:-tycoon_password_123}"
-      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-tycoon_redis_password_123},defaultDatabase=0"
-      ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
-      ConnectionStrings__elasticsearch: "http://elastic:${ELASTIC_PASSWORD:-tycoon_elastic_password_123}@elasticsearch:9200"
+      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD:-synaptix_password_123}"
+      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-synaptix_redis_password_123},defaultDatabase=0"
+      ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD:-synaptix_app_password_123}@mongodb:27017/${MONGO_APP_DB:-synaptix_db}?authSource=${MONGO_APP_DB:-synaptix_db}"
+      ConnectionStrings__elasticsearch: "http://elastic:${ELASTIC_PASSWORD:-synaptix_elastic_password_123}@elasticsearch:9200"
       
       # Elasticsearch
       Elastic__Url: "http://elasticsearch:9200"
       Elastic__Username: "elastic"
-      Elastic__Password: "${ELASTIC_PASSWORD:-tycoon_elastic_password_123}"
-      Elastic__DailyWriteAlias: "tycoon-qa-daily-rollups"
-      Elastic__PlayerDailyWriteAlias: "tycoon-qa-player-daily-rollups"
+      Elastic__Password: "${ELASTIC_PASSWORD:-synaptix_elastic_password_123}"
+      Elastic__DailyWriteAlias: "synaptix-daily-rollups"
+      Elastic__PlayerDailyWriteAlias: "synaptix-player-daily-rollups"
       
       # MongoDB
-      Mongo__Database: "tycoon_analytics"
-      MongoSettings__Database: "tycoon_analytics"
+      Mongo__Database: "synaptix_analytics"
+      MongoSettings__Database: "synaptix_analytics"
       
       # Hangfire
       Hangfire__Enabled: "${HANGFIRE_ENABLED:-true}"
@@ -396,9 +396,9 @@ services:
       
       # Object storage (MinIO)
       MinIO__Endpoint: "minio:9000"
-      MinIO__AccessKey: "${MINIO_ROOT_USER:-tycoon_minio_user}"
-      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD:-tycoon_minio_password_123}"
-      MinIO__Bucket: "${MINIO_BUCKET:-tycoon-assets}"
+      MinIO__AccessKey: "${MINIO_ROOT_USER:-synaptix_minio_user}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
+      MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
       MinIO__UseSSL: "false"
       MinIO__PublicEndpoint: "${MINIO_PUBLIC_ENDPOINT:-localhost:9000}"
 
@@ -410,16 +410,16 @@ services:
       SchemaGate__TimeoutSeconds: "120"
 
       # Observability
-      Observability__ServiceName: "Tycoon.Backend.Api"
+      Observability__ServiceName: "Synaptix.Backend.Api"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
-      DataProtection__KeysPath: "${DATA_PROTECTION_KEYS_PATH:-/tmp/tycoon-dpkeys}"
+      DataProtection__KeysPath: "${DATA_PROTECTION_KEYS_PATH:-/tmp/synaptix-dpkeys}"
       # Durable file-backed sidecar inference store path (mounted volume below).
-      SIDECAR_INFERENCE_STORE_PATH: "/var/lib/tycoon-sidecar/inference-store.jsonl"
+      SIDECAR_INFERENCE_STORE_PATH: "/var/lib/synaptix-sidecar/inference-store.jsonl"
       # Comma-separated origins allowed by CORS (e.g. for mobile clients calling the API directly)
       Cors__AllowedOrigins__0: "${CORS_ORIGIN_0:-http://localhost:8200}"
       Cors__AllowedOrigins__1: "${CORS_ORIGIN_1:-}"
     volumes:
-      - sidecar_inference_data:/var/lib/tycoon-sidecar
+      - sidecar_inference_data:/var/lib/synaptix-sidecar
     depends_on:
       postgres:
         condition: service_healthy
@@ -435,7 +435,7 @@ services:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     labels:
       - "traefik.enable=true"
       # Route /api/* to the backend; strip the /api prefix before forwarding
@@ -459,18 +459,18 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.sidecar
-    container_name: tycoon_sidecar
+    container_name: synaptix_sidecar
     restart: unless-stopped
     ports:
       - "${SIDECAR_PORT:-8100}:8100"
     environment:
       BACKEND_BASE_URL: "http://backend-api:5000"
       BACKEND_GRPC_URL: "backend-api:5001"
-      MONGO_URL: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
-      MONGO_DB: "${MONGO_APP_DB:-tycoon_analytics}"
+      MONGO_URL: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD:-synaptix_app_password_123}@mongodb:27017/${MONGO_APP_DB:-synaptix_db}?authSource=${MONGO_APP_DB:-synaptix_db}"
+      MONGO_DB: "${MONGO_APP_DB:-synaptix_analytics}"
       ELASTICSEARCH_URL: "http://elasticsearch:9200"
       ELASTICSEARCH_USER: "elastic"
-      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD:-tycoon_elastic_password_123}"
+      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD:-synaptix_elastic_password_123}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
       # Passed through so the config proxy can authenticate against /admin/config
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
@@ -481,7 +481,7 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
       # python:3.12-slim has no curl — use Python stdlib instead
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health', timeout=5)"]
@@ -497,15 +497,15 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.crypto
-    container_name: tycoon_crypto_service
+    container_name: synaptix_crypto_service
     restart: unless-stopped
     ports:
       - "${CRYPTO_SERVICE_PORT:-8300}:8300"
     environment:
       BACKEND_BASE_URL: "http://backend-api:5000"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
-      MONGO_URL: "mongodb://${MONGO_APP_USER:-tycoon_app_user}:${MONGO_APP_PASSWORD:-tycoon_app_password_123}@mongodb:27017/${MONGO_APP_DB:-tycoon_db}?authSource=${MONGO_APP_DB:-tycoon_db}"
-      MONGO_DB: "tycoon_crypto"
+      MONGO_URL: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD:-synaptix_app_password_123}@mongodb:27017/${MONGO_APP_DB:-synaptix_db}?authSource=${MONGO_APP_DB:-synaptix_db}"
+      MONGO_DB: "synaptix_crypto"
       # Solana (SOL native + SNX SPL token)
       SOLANA_RPC_URL: "${SOLANA_RPC_URL:-https://api.devnet.solana.com}"
       SOLANA_TREASURY_KEYPAIR_PATH: "/run/secrets/solana-treasury"
@@ -526,7 +526,7 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8300/health', timeout=5)"]
       interval: 30s
@@ -541,7 +541,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.dashboard-django
-    container_name: tycoon_operator_dashboard
+    container_name: synaptix_operator_dashboard
     restart: unless-stopped
     ports:
       - "${DASHBOARD_PORT:-8200}:8200"
@@ -558,7 +558,7 @@ services:
         condition: service_healthy
       sidecar:
         condition: service_healthy
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.operator-dashboard.rule=PathPrefix(`/`)"
@@ -579,7 +579,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.dashboard
-    container_name: tycoon_operator_dashboard_blazor
+    container_name: synaptix_operator_dashboard_blazor
     restart: unless-stopped
     ports:
       - "${DASHBOARD_BLAZOR_PORT:-8201}:8200"
@@ -598,7 +598,7 @@ services:
     depends_on:
       backend-api:
         condition: service_healthy
-    networks: [tycoon-net]
+    networks: [synaptix-net]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8200"]
       interval: 30s
@@ -610,7 +610,7 @@ services:
 # Networks
 # ================================
 networks:
-  tycoon-net:
+  synaptix-net:
     driver: bridge
 
 # ================================
