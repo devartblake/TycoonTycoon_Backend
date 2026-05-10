@@ -38,8 +38,8 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
         /// </summary>
         public async Task EnsureTemplatesAsync(CancellationToken ct)
         {
-            await EnsureDailyRollupTemplateAsync("tycoon-qa-daily-rollups-template", ct);
-            await EnsurePlayerDailyRollupTemplateAsync("tycoon-qa-player-daily-rollups-template", ct);
+            await EnsureDailyRollupTemplateAsync("synaptix-daily-rollups-template", ct);
+            await EnsurePlayerDailyRollupTemplateAsync("synaptix-player-daily-rollups-template", ct);
         }
 
         private async Task EnsureDailyRollupTemplateAsync(string templateName, CancellationToken ct)
@@ -246,9 +246,9 @@ namespace Tycoon.Backend.Infrastructure.Analytics.Elastic
 
         /// <summary>
         /// Bootstrap rollover pattern:
-        /// - create first backing index (e.g. tycoon-qa-daily-rollups-000001)
-        /// - attach write alias (e.g. tycoon-qa-daily-rollups-write, is_write_index=true)
-        /// - attach read alias (e.g. tycoon-qa-daily-rollups)
+        /// - create first backing index (e.g. synaptix-daily-rollups-000001)
+        /// - attach write alias (e.g. synaptix-daily-rollups-write, is_write_index=true)
+        /// - attach read alias (e.g. synaptix-daily-rollups)
         /// </summary>
         public async Task BootstrapRolloverAliasesRawAsync(
             string firstIndex,

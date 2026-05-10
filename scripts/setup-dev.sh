@@ -180,7 +180,7 @@ validate_appsettings() {
     fi
     
     # Check connection strings match Docker defaults
-    if grep -q "Database=tycoon_db" "$API_SETTINGS"; then
+    if grep -q "Database=synaptix_db" "$API_SETTINGS"; then
         print_success "API configuration uses correct database name"
     else
         print_warning "API configuration may not match Docker defaults"
@@ -219,16 +219,16 @@ check_service_health() {
         make -f MakeFile health
     else
         print_info "Checking PostgreSQL..."
-        docker compose exec -T postgres pg_isready -U tycoon_user -d tycoon_db || echo "  Not ready"
+        docker compose exec -T postgres pg_isready -U synaptix_user -d synaptix_db || echo "  Not ready"
         
         print_info "Checking MongoDB..."
         docker compose exec -T mongodb mongosh --quiet --eval "db.adminCommand('ping')" || echo "  Not ready"
         
         print_info "Checking Redis..."
-        docker compose exec -T redis redis-cli -a "tycoon_redis_password_123" ping || echo "  Not ready"
+        docker compose exec -T redis redis-cli -a "synaptix_redis_password_123" ping || echo "  Not ready"
         
         print_info "Checking Elasticsearch..."
-        curl -fsS -u elastic:tycoon_elastic_password_123 http://localhost:9200/_cluster/health?pretty 2>/dev/null | grep -q '"status"' && echo "  ✅ Healthy" || echo "  Not ready"
+        curl -fsS -u elastic:synaptix_elastic_password_123 http://localhost:9200/_cluster/health?pretty 2>/dev/null | grep -q '"status"' && echo "  ✅ Healthy" || echo "  Not ready"
     fi
 }
 

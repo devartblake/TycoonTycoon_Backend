@@ -1,9 +1,9 @@
 print('Starting MongoDB initialization...');
 
-const appDb = process.env.MONGO_APP_DB || 'tycoon_db';
-const appUser = process.env.MONGO_APP_USER || 'tycoon_app_user';
-const appPassword = process.env.MONGO_APP_PASSWORD || 'tycoon_app_password_123';
-const extraDbs = (process.env.MONGO_EXTRA_DBS || 'tycoon_analytics,tycoon_crypto')
+const appDb = process.env.MONGO_APP_DB || 'synaptix_db';
+const appUser = process.env.MONGO_APP_USER || 'synaptix_app_user';
+const appPassword = process.env.MONGO_APP_PASSWORD || 'synaptix_app_password_123';
+const extraDbs = (process.env.MONGO_EXTRA_DBS || 'synaptix_analytics,synaptix_crypto')
   .split(',')
   .map(x => x.trim())
   .filter(Boolean);

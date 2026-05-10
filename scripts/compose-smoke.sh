@@ -7,7 +7,7 @@
 #   KEEP_STACK=true ./scripts/compose-smoke.sh       # keep stack alive after tests
 #
 # Key env vars:
-#   SMOKE_ADMIN_EMAIL     Operator email to test with  (default: smoke-admin@tycoon.local)
+#   SMOKE_ADMIN_EMAIL     Operator email to test with  (default: smoke-admin@synaptix.local)
 #   SMOKE_ADMIN_PASSWORD  Operator password            (default: SmokeTest123!)
 #   API_URL               Backend API base URL         (default: http://localhost:5000)
 #   DASHBOARD_URL         Operator dashboard base URL  (default: http://localhost:8200)
@@ -25,7 +25,7 @@ KEEP_STACK="${KEEP_STACK:-false}"
 API_URL="${API_URL:-http://localhost:5000}"
 DASHBOARD_URL="${DASHBOARD_URL:-http://localhost:8200}"
 
-SMOKE_ADMIN_EMAIL="${SMOKE_ADMIN_EMAIL:-smoke-admin@tycoon.local}"
+SMOKE_ADMIN_EMAIL="${SMOKE_ADMIN_EMAIL:-smoke-admin@synaptix.local}"
 SMOKE_ADMIN_PASSWORD="${SMOKE_ADMIN_PASSWORD:-SmokeTest123!}"
 
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-120}"

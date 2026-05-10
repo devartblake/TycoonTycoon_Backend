@@ -82,13 +82,13 @@ migrate:
 	@echo "✅ Migrations complete!"
 
 shell-postgres:
-	@$(COMPOSE) exec postgres psql -U $${POSTGRES_USER:-tycoon_user} -d $${POSTGRES_DB:-tycoon_db}
+	@$(COMPOSE) exec postgres psql -U $${POSTGRES_USER:-synaptix_user} -d $${POSTGRES_DB:-synaptix_db}
 
 shell-mongo:
-	@$(COMPOSE) exec mongodb mongosh -u $${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin} -p $${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123}
+	@$(COMPOSE) exec mongodb mongosh -u $${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin} -p $${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}
 
 shell-redis:
-	@$(COMPOSE) exec redis redis-cli -a "$${REDIS_PASSWORD:-tycoon_redis_password_123}"
+	@$(COMPOSE) exec redis redis-cli -a "$${REDIS_PASSWORD:-synaptix_redis_password_123}"
 
 shell-minio:
 	@$(COMPOSE) exec minio sh
@@ -101,16 +101,16 @@ health:
 	@echo "=== Service Health Checks ==="
 	@echo ""
 	@echo "PostgreSQL:"
-	@$(COMPOSE) exec -T postgres pg_isready -U $${POSTGRES_USER:-tycoon_user} -d $${POSTGRES_DB:-tycoon_db} || echo "  ❌ Not ready"
+	@$(COMPOSE) exec -T postgres pg_isready -U $${POSTGRES_USER:-synaptix_user} -d $${POSTGRES_DB:-synaptix_db} || echo "  ❌ Not ready"
 	@echo ""
 	@echo "MongoDB:"
 	@$(COMPOSE) exec -T mongodb mongosh --quiet --eval "db.adminCommand('ping')" || echo "  ❌ Not ready"
 	@echo ""
 	@echo "Redis:"
-	@$(COMPOSE) exec -T redis redis-cli -a "$${REDIS_PASSWORD:-tycoon_redis_password_123}" ping || echo "  ❌ Not ready"
+	@$(COMPOSE) exec -T redis redis-cli -a "$${REDIS_PASSWORD:-synaptix_redis_password_123}" ping || echo "  ❌ Not ready"
 	@echo ""
 	@echo "Elasticsearch:"
-	@curl -fsS -u elastic:$${ELASTIC_PASSWORD:-tycoon_elastic_password_123} http://localhost:$${ELASTICSEARCH_PORT:-9200}/_cluster/health?pretty 2>/dev/null | grep -q '"status"' && echo "  ✅ Healthy" || echo "  ❌ Not ready"
+	@curl -fsS -u elastic:$${ELASTIC_PASSWORD:-synaptix_elastic_password_123} http://localhost:$${ELASTICSEARCH_PORT:-9200}/_cluster/health?pretty 2>/dev/null | grep -q '"status"' && echo "  ✅ Healthy" || echo "  ❌ Not ready"
 	@echo ""
 	@echo "MinIO:"
 	@curl -fsS http://localhost:$${MINIO_PORT:-9000}/minio/health/live 2>/dev/null && echo "  ✅ Healthy" || echo "  ❌ Not ready"
@@ -158,27 +158,27 @@ rebuild-migration:
 backup-postgres:
 	@mkdir -p backups
 	@echo "Backing up PostgreSQL..."
-	@$(COMPOSE) exec -T postgres pg_dump -U $${POSTGRES_USER:-tycoon_user} $${POSTGRES_DB:-tycoon_db} > backups/postgres_$$(date +%Y%m%d_%H%M%S).sql
+	@$(COMPOSE) exec -T postgres pg_dump -U $${POSTGRES_USER:-synaptix_user} $${POSTGRES_DB:-synaptix_db} > backups/postgres_$$(date +%Y%m%d_%H%M%S).sql
 	@echo "✅ PostgreSQL backup complete: backups/"
 
 backup-mongo:
 	@mkdir -p backups
 	@echo "Backing up MongoDB..."
-	@$(COMPOSE) exec mongodb mongodump --username=$${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin} --password=$${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123} --out=/tmp/backup
-	@docker cp tycoon_mongodb:/tmp/backup backups/mongodb_$$(date +%Y%m%d_%H%M%S)
+	@$(COMPOSE) exec mongodb mongodump --username=$${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin} --password=$${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123} --out=/tmp/backup
+	@docker cp synaptix_mongodb:/tmp/backup backups/mongodb_$$(date +%Y%m%d_%H%M%S)
 	@echo "✅ MongoDB backup complete: backups/"
 
 restore-postgres:
 	@if [ -z "$(FILE)" ]; then echo "Usage: make restore-postgres FILE=backup.sql"; exit 1; fi
 	@echo "Restoring PostgreSQL from $(FILE)..."
-	@$(COMPOSE) exec -T postgres psql -U $${POSTGRES_USER:-tycoon_user} $${POSTGRES_DB:-tycoon_db} < $(FILE)
+	@$(COMPOSE) exec -T postgres psql -U $${POSTGRES_USER:-synaptix_user} $${POSTGRES_DB:-synaptix_db} < $(FILE)
 	@echo "✅ PostgreSQL restore complete"
 
 restore-mongo:
 	@if [ -z "$(DIR)" ]; then echo "Usage: make restore-mongo DIR=backup_dir"; exit 1; fi
 	@echo "Restoring MongoDB from $(DIR)..."
-	@docker cp $(DIR) tycoon_mongodb:/tmp/restore
-	@$(COMPOSE) exec mongodb mongorestore --username=$${MONGO_INITDB_ROOT_USERNAME:-tycoon_admin} --password=$${MONGO_INITDB_ROOT_PASSWORD:-tycoon_mongo_password_123} /tmp/restore
+	@docker cp $(DIR) synaptix_mongodb:/tmp/restore
+	@$(COMPOSE) exec mongodb mongorestore --username=$${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin} --password=$${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123} /tmp/restore
 	@echo "✅ MongoDB restore complete"
 
 # ===================================

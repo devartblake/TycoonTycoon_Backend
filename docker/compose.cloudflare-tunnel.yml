@@ -11,7 +11,7 @@ services:
   # without opening inbound 80/443 on your router/firewall.
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: tycoon_cloudflared
+    container_name: synaptix_cloudflared
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:
@@ -19,4 +19,4 @@ services:
     depends_on:
       traefik:
         condition: service_started
-    networks: [tycoon-net]
+    networks: [synaptix-net]
