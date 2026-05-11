@@ -416,8 +416,11 @@ services:
       # Durable file-backed sidecar inference store path (mounted volume below).
       SIDECAR_INFERENCE_STORE_PATH: "/var/lib/synaptix-sidecar/inference-store.jsonl"
       # Comma-separated origins allowed by CORS (e.g. for mobile clients calling the API directly)
-      Cors__AllowedOrigins__0: "${CORS_ORIGIN_0:-http://localhost:8200}"
-      Cors__AllowedOrigins__1: "${CORS_ORIGIN_1:-}"
+      Cors__AllowedOrigins__0: "${CORS_ORIGIN_0:-http://localhost:63033}"
+      Cors__AllowedOrigins__1: "${CORS_ORIGIN_1:-http://127.0.0.1:63033}"
+      Cors__AllowedOrigins__2: "${CORS_ORIGIN_2:-http://localhost:8200}"
+      Cors__AllowedOrigins__3: "${CORS_ORIGIN_3:-http://localhost:3000}"
+      Cors__AllowedOrigins__4: "${CORS_ORIGIN_4:-http://localhost:8080}"
     volumes:
       - sidecar_inference_data:/var/lib/synaptix-sidecar
     depends_on:

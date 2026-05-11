@@ -101,7 +101,7 @@ public static class CryptoEconomyEndpoints
             .Include(x => x.Actors)
             .Include(x => x.ItemChanges)
             .Where(x =>
-                x.Kind.StartsWith("crypto-", StringComparison.Ordinal) &&
+                x.Kind.StartsWith("crypto-") &&
                 x.Actors.Any(a => a.PlayerId == playerId))
             .OrderByDescending(x => x.CreatedAtUtc);
 

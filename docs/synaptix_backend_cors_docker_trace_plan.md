@@ -1,7 +1,9 @@
 # Synaptix / Trivia Tycoon Backend CORS Remediation Plan
 
 **Repository analyzed:** `devartblake/TycoonTycoon_Backend`  
-**Target problem:** Flutter Web client renders login in Edge but cannot complete `POST /auth/login` due to repeated backend CORS failures.  
+**Target problem:** Flutter Web client renders login in Edge but cannot complete `POST /auth/login` due to repeated backend CORS failures.
+
+**2026-05-10 status:** resolved for local Docker direct API. `OPTIONS http://localhost:5000/auth/login` now returns `204` with `Access-Control-Allow-Origin` for both `http://localhost:63033` and `http://127.0.0.1:63033`.
 **Primary frontend repo context:** Flutter Web client likely runs on `http://localhost:<web-port>` and calls the backend at `http://localhost:5000`.
 
 ---
