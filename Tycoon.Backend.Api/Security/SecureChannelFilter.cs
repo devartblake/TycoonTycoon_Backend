@@ -26,7 +26,6 @@ public sealed class SecureChannelFilter : IEndpointFilter
         EndpointFilterDelegate next)
     {
         var http = context.HttpContext;
-        var kms = http.RequestServices.GetRequiredService<IKmsPayloadClient>();
         var ct = http.RequestAborted;
 
         if (!http.Request.Headers.TryGetValue("X-Syn-Sec-Session", out var sessionIdStr)
@@ -51,6 +50,7 @@ public sealed class SecureChannelFilter : IEndpointFilter
                 "Request body must be a JSON encrypted payload envelope (ciphertext, nonce, mac, contentType, encryptedAtUtc).");
         }
 
+        var kms = http.RequestServices.GetRequiredService<IKmsPayloadClient>();
         DecryptPayloadResponse decrypted;
         try
         {

@@ -145,7 +145,7 @@ If P0 passes, explicitly defer to next window:
 ### NOW (release blockers — do before any ship decision)
 1. [ ] Build gate passes in real environment (`dotnet build` on solution).
 2. [ ] Database migration gate passes (`dotnet ef database update` in target dev env).
-3. [ ] API P0 smoke checks pass (Auth, Questions, Store, Economy, Leaderboards, Crypto routes).
+3. [ ] API P0 smoke checks pass (Auth, Questions, Store, Economy, Leaderboards, Crypto routes). 2026-05-10 update: local Docker crypto contract smoke passed via `scripts/crypto-contract-smoke.ps1`; staging still needs credentials.
 4. [ ] Strict IAP precheck complete in Development:
    - real (non-placeholder) provider config values present
    - `/store/iap/validate` no longer returns `IAP_STRICT_CONFIG_MISSING` for valid test requests

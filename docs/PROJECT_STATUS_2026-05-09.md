@@ -13,7 +13,7 @@ _Derived from all docs in `/docs/`. Reflects state after Packets A–D completio
 | Auth + JWT | ✅ | Issuer `SynaptixApi` / Audience `SynaptixApp` |
 | Store (P0/P1/P2) | ✅ | Daily store, catalog, hub, flash sales, stock enforcement, admin overrides |
 | Avatar purchase + MinIO | ✅ | GLB download, presigned upload-url, 18 handler tests |
-| Crypto economy | ✅ | 10 endpoints: link-wallet, balance, history, withdraw, stake/unstake |
+| Crypto economy | ✅ | 10 endpoints: link-wallet, balance, history, withdraw, stake/unstake. Local Docker contract smoke passed 2026-05-10; staging validation still needs staging credentials |
 | Missions | ✅ | List, progress (match/round), claim; 10 Synaptix titles seeded |
 | Questions | ✅ | Set, preview, check, check-batch; `ORDER BY RANDOM()` performance fixed |
 | Leaderboards / Tiers | ✅ | 6 Synaptix tiers upserted; `Tier.UpdateDefinition()` added |

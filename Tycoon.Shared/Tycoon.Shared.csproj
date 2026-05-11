@@ -90,7 +90,9 @@
     <PackageReference Include="Serilog.Sinks.Grafana.Loki" />
     <PackageReference Include="Serilog.Sinks.Seq" />
     <PackageReference Include="Serilog.Sinks.Spectre" />
+    <PackageReference Include="SharpCompress" />
     <PackageReference Include="Sieve" />
+    <PackageReference Include="Snappier" />
     <PackageReference Include="SqlKata" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" />
