@@ -8,6 +8,8 @@ dashboard service in Docker Compose and is actively developed toward full Blazor
 
 **Do not add new features or workflows here.**
 
+Role separation belongs in Django RBAC/permission scopes; do not split super-admin/admin/operator workflows between Django and Vue/Web.
+
 Refer to:
 - `Tycoon.OperatorDashboard.Django` — active replacement
 - `docs/OPERATOR_DASHBOARD_MIGRATION_PLAN.md` — migration history

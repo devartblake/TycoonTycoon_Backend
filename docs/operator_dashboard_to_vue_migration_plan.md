@@ -1,93 +1,42 @@
-# Tycoon.OperatorDashboard -> Tycoon.OperatorDashboard.Vue Migration Plan
+# Tycoon.OperatorDashboard → Tycoon.OperatorDashboard.Vue Migration Plan (Historical — Superseded)
 
-Date: 2026-04-02
-Owner: TBD
+> **Status as of 2026-05-12:** Superseded by `Tycoon.OperatorDashboard.Django`.
+>
+> This document is preserved for migration history only. It is not an active delivery plan.
 
-## Goal
-Move operator capabilities currently in `Tycoon.OperatorDashboard` (Blazor) into `Tycoon.OperatorDashboard.Vue` in phased, low-risk increments.
+## Decision
 
-## Current gap summary
-Vue currently covers a subset of operator surfaces (dashboard/users/moderation/anti-cheat/economy/transactions/notifications/security/escalations/season points).
-Blazor still contains additional operational workflows and mature page behaviors.
+Django is the primary Operator Dashboard for all operator/admin roles. Super-admin, admin, support, moderation, economy, and audit access should be separated with Django RBAC/permission scopes rather than by routing different roles to different UI frameworks.
 
-## Migration principles
-1. API-contract first (no hidden server behavior in UI code).
-2. Page-by-page parity with acceptance criteria.
-3. Keep Blazor as fallback until Vue feature parity is signed off.
-4. Instrument each migrated page with analytics/error telemetry.
+## Closed-by-supersession scope
 
-## Proposed phases
+The retired Vue migration plan covered:
 
-### Phase 0 — Inventory + acceptance criteria
-- Build a page/feature matrix:
-  - Blazor page
-  - Vue equivalent page
-  - status: `parity`, `partial`, `missing`
-- Define acceptance checks per page:
-  - route works
-  - data loads
-  - create/update flows work
-  - error envelope handling
-  - auth/role behavior
+- Blazor-to-Vue route inventory.
+- API/data contract review.
+- Vue information architecture alignment.
+- Feature migration batches for users, moderation, economy, anti-cheat, questions, events, seasons, notifications, security audit, and diagnostics.
+- Vue smoke tests and API-backed scenario tests.
+- A Vue primary cutover with Blazor fallback.
 
-### Phase 1 — Shared contract hardening
-- Ensure all UI actions map to typed DTOs in `Tycoon.Shared.Contracts`.
-- Remove implicit assumptions in UI by documenting request/response schemas.
-- Add API contract snapshots for high-risk admin endpoints.
+That work should not be resumed for the current operator-dashboard cutover.
 
-### Phase 2 — Navigation and IA parity
-- Align Vue navigation sections with Blazor information architecture.
-- Add missing placeholders/routes in Vue for pages that are still Blazor-only.
-- Keep labels and terminology consistent across both dashboards.
+## Active direction
 
-### Phase 3 — Feature migration batches
-Batch A (high-value daily ops):
-- Users
-- Moderation
-- Economy
-- Anti-cheat
+Use the Django dashboard and associated cutover docs instead:
 
-Batch B (content + lifecycle):
-- Questions
-- Events/Seasons
-- Notifications
+- `Tycoon.OperatorDashboard.Django` — canonical operator dashboard.
+- `README.md` — current project status.
+- `docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md` — parity and release gates.
+- `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` — staging validation checklist.
 
-Batch C (advanced/admin):
-- Security audit
-- Powerups/skills
-- Match/admin diagnostics
+## Historical risks that informed the decision
 
-Each batch done only when:
-- API integration tests pass
-- route smoke checks pass
-- operator UAT sign-off completed
+The Vue split would have kept the following risks open:
 
-### Phase 4 — Test automation and CI gates
-- Add Vue UI smoke tests for critical routes.
-- Add API-backed scenario tests for operator write actions.
-- Keep `alpha-p0-smoke` route-check gate and extend with live mode in CI once environment services are available.
+- Hidden Blazor-only business logic during migration.
+- Role/auth drift between UIs.
+- Inconsistent labels and operator confusion.
+- Duplicate QA and incident-response paths across two operator systems.
 
-### Phase 5 — Cutover + deprecation
-- Enable Vue as primary operator UI.
-- Keep Blazor behind fallback flag for one release window.
-- Remove Blazor pages after stability period and telemetry review.
-
-## Deliverables checklist
-- [ ] Feature parity matrix doc
-- [ ] Route parity map (`Blazor route` -> `Vue route`)
-- [ ] API contract diff report
-- [ ] UAT checklist per batch
-- [ ] Cutover runbook and rollback plan
-
-## Risks and mitigations
-- Risk: hidden Blazor-only business logic.
-  - Mitigation: move logic to API and test via contracts.
-- Risk: role/auth drift between UIs.
-  - Mitigation: explicit auth tests for admin scopes per page.
-- Risk: inconsistent labels and operator confusion.
-  - Mitigation: single terminology table enforced in both UIs.
-
-## Immediate next actions
-1. Create parity matrix doc from current routes/pages.
-2. Select Batch A pages and define “done” criteria.
-3. Implement one migrated page end-to-end (pilot), then scale pattern.
+Django-only operator delivery avoids those split-stack risks while preserving role separation through one RBAC model.

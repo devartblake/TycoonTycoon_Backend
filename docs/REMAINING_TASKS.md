@@ -1,6 +1,6 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-05-09 — Personalization doc reconciliation ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅; Secure channel endpoint rollout ✅; Secure channel tests (KMS unit + filter integration) ✅; JWT placeholder key hardening ✅_
+_Last updated: 2026-05-12 — Operator dashboard direction reconciled ✅; Vue/Web migration backlog closed by Django supersession ✅; Personalization doc reconciliation ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅; Secure channel endpoint rollout ✅; Secure channel tests (KMS unit + filter integration) ✅; JWT placeholder key hardening ✅_
 
 > This file is the canonical "what is left to do" reference.
 > For completed work, see [`docs/ALPHA_TASK_AUDIT.md`](ALPHA_TASK_AUDIT.md).
@@ -27,7 +27,8 @@ _Last updated: 2026-05-09 — Personalization doc reconciliation ✅; Sound cue 
 | **Operator Dashboard Wave B (Questions, Events, Seasons)** | Medium | **Complete — 2026-04-29** | No |
 | **Operator Dashboard Wave C (Moderation, Notifications, Economy, Anti-cheat, Event Queue)** | Medium | **Complete — 2026-04-29** | No |
 | **Django DefaultPermissions fix** | Medium | **Complete — all 12 scopes now granted on login** | No |
-| Operator Dashboard Wave D (Cutover + Blazor decommission) | Low | Staging parallel-run pending (May 8–14); cutover May 15 | Depends on sign-off |
+| Operator Dashboard Wave D (Django cutover + Blazor decommission) | Low | Staging parallel-run pending (May 8–14); cutover May 15; Django remains sole primary operator UI | Depends on sign-off |
+| **Operator Dashboard Vue/Web split** | **N/A** | **Closed by decision — do not split super-admin/admin workflows across Vue and Django; use Django RBAC instead** | **No** |
 | Phase 2 - Crash recovery stubs | High | Code complete; device validation pending | Yes — needs device |
 | Phase 3 - Test coverage (remaining gaps) | Medium | ~4.1% → 40% target | No |
 | Phase 4 - Dependency audit | Medium | Partial | No |
@@ -42,6 +43,17 @@ _Last updated: 2026-05-09 — Personalization doc reconciliation ✅; Sound cue 
 | **Secure channel endpoint rollout** | **High** | **Complete — filter on /auth/refresh, /store/purchase, /store/payments/\*, /store/iap/validate, /store/subscription/checkout+paypal, /crypto/link-wallet + withdraw + stake + unstake, /admin/auth/login + refresh** | **No** |
 | **Secure channel tests (KMS unit + filter integration)** | **High** | **Complete — `Synaptix.Security.Kms.Tests` (session, payload, replay); `Tycoon.Backend.Api.Tests/Security/SecureChannelFilterTests.cs`** | **No** |
 | **JWT placeholder key hardening** | **High** | **Complete — blocks startup if known placeholder key is used in non-Development env; `RequireHttpsMetadata` now env-aware** | **No** |
+
+---
+
+
+## Operator Dashboard Direction — 2026-05-12 Decision
+
+- `Tycoon.OperatorDashboard.Django` is the canonical Operator Dashboard for all operator/admin roles.
+- Super-admin, admin, support, moderation, economy, audit, and read-only access must be separated with Django RBAC/permission scopes, not by splitting users across Django and Vue/Web.
+- `Tycoon.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web` are deprecated migration experiments. Do not add new workflows there.
+- Active cutover work remains limited to Django release gates: apply pending EF migrations, complete the staging parallel-run, capture operator sign-off, then decommission Blazor after the rollback window.
+- Post-cutover product work remains in Django: personalization admin UI and intentionally deferred support workflows such as player stock overrides.
 
 ---
 
