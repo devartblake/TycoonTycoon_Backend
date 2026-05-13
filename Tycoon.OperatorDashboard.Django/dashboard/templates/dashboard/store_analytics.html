@@ -2,6 +2,10 @@
 
 {% block title %}Purchase Analytics{% endblock %}
 
+{% block extra_head %}
+  {{ plotly_runtime }}
+{% endblock %}
+
 {% block content %}
 <section class="topbar">
   <div>
@@ -60,6 +64,13 @@
 {% if analytics.topSkus %}
 <section class="card">
   {% include "dashboard/partials/section_intro.html" with title="Top SKUs" copy="Most-purchased items in the selected window." %}
+  {% if top_skus_chart %}
+  <div class="chart-panel" aria-label="Top purchased SKUs chart">
+    {{ top_skus_chart }}
+  </div>
+  {% else %}
+  <div class="chart-empty">No SKU chart is available for the current filter.</div>
+  {% endif %}
   <div class="table-wrap">
     <table class="dense-table">
       <thead>

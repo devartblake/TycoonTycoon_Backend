@@ -6,13 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Operator Dashboard{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'dashboard/operator.css' %}" />
-    <script defer src="{% static 'dashboard/operator.js' %}"></script>
+    {% block extra_head %}{% endblock %}
+    <script defer src="{% static 'dashboard/operator.js' %}" data-static-name="operator.js"></script>
   </head>
   <body>
     <div class="operator-shell">
       <aside class="operator-sidebar">
         <div class="operator-brand">
-          <div class="operator-brand-mark">SC</div>
+          <div class="operator-brand-mark">SX</div>
           <div>
             <h1>Synaptix Command</h1>
             <p>Operator workflows, incident visibility, and backend control surfaces in one place.</p>
@@ -23,6 +24,7 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Overview</div>
             <a class="operator-nav-link {% if request.path == '/' %}is-active{% endif %}" href="{% url 'dashboard-home' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
               <span>Command center</span>
               <span class="operator-nav-caption">Health</span>
             </a>
@@ -31,14 +33,17 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Operations</div>
             <a class="operator-nav-link {% if '/users' in request.path %}is-active{% endif %}" href="{% url 'operator-users-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span>Users</span>
               <span class="operator-nav-caption">Triage</span>
             </a>
             <a class="operator-nav-link {% if '/moderation/' in request.path %}is-active{% endif %}" href="{% url 'operator-moderation-logs-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               <span>Moderation</span>
               <span class="operator-nav-caption">Enforcement</span>
             </a>
             <a class="operator-nav-link {% if '/audit/' in request.path %}is-active{% endif %}" href="{% url 'operator-audit-security-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               <span>Security audit</span>
               <span class="operator-nav-caption">History</span>
             </a>
@@ -47,6 +52,7 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Content</div>
             <a class="operator-nav-link {% if '/content/questions' in request.path %}is-active{% endif %}" href="{% url 'questions-queue-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg>
               <span>Questions</span>
               <span class="operator-nav-caption">Approve / reject</span>
             </a>
@@ -55,6 +61,7 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Economy</div>
             <a class="operator-nav-link {% if '/economy/player' in request.path %}is-active{% endif %}" href="{% url 'economy-player-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               <span>Player economy</span>
               <span class="operator-nav-caption">History &amp; grants</span>
             </a>
@@ -63,18 +70,22 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Store</div>
             <a class="operator-nav-link {% if '/store/flash-sales' in request.path %}is-active{% endif %}" href="{% url 'store-flash-sales-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
               <span>Flash sales</span>
               <span class="operator-nav-caption">Active promos</span>
             </a>
             <a class="operator-nav-link {% if '/store/stock-policies' in request.path %}is-active{% endif %}" href="{% url 'store-stock-policies-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
               <span>Stock policies</span>
               <span class="operator-nav-caption">Purchase limits</span>
             </a>
             <a class="operator-nav-link {% if '/store/player-stock' in request.path %}is-active{% endif %}" href="{% url 'store-player-stock-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
               <span>Player stock</span>
               <span class="operator-nav-caption">Overrides &amp; resets</span>
             </a>
             <a class="operator-nav-link {% if '/store/analytics' in request.path %}is-active{% endif %}" href="{% url 'store-analytics-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
               <span>Purchase analytics</span>
               <span class="operator-nav-caption">Revenue signals</span>
             </a>
@@ -83,10 +94,12 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Events</div>
             <a class="operator-nav-link {% if '/events/game-events' in request.path %}is-active{% endif %}" href="{% url 'game-events-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               <span>Game events</span>
               <span class="operator-nav-caption">Lifecycle control</span>
             </a>
             <a class="operator-nav-link {% if '/operations/seasons' in request.path %}is-active{% endif %}" href="{% url 'seasons-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
               <span>Seasons</span>
               <span class="operator-nav-caption">Activate / close</span>
             </a>
@@ -95,6 +108,7 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Security</div>
             <a class="operator-nav-link {% if '/security/anticheat' in request.path %}is-active{% endif %}" href="{% url 'anticheat-flags-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
               <span>Anti-cheat flags</span>
               <span class="operator-nav-caption">Review &amp; annotate</span>
             </a>
@@ -103,10 +117,12 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Notifications</div>
             <a class="operator-nav-link {% if '/operations/notifications' in request.path %}is-active{% endif %}" href="{% url 'notifications-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               <span>Notifications</span>
               <span class="operator-nav-caption">Send &amp; dead-letter</span>
             </a>
             <a class="operator-nav-link {% if '/operations/event-queue' in request.path %}is-active{% endif %}" href="{% url 'event-queue-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               <span>Event queue</span>
               <span class="operator-nav-caption">Reprocess</span>
             </a>
@@ -115,14 +131,17 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Personalization</div>
             <a class="operator-nav-link {% if request.path == '/personalization' %}is-active{% endif %}" href="{% url 'personalization-overview-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6m11-11h-6M7 12H1m16.95-7.95l-4.24 4.24M9.29 14.71l-4.24 4.24m12.9 0l-4.24-4.24M9.29 9.29L5.05 5.05"/></svg>
               <span>Overview</span>
               <span class="operator-nav-caption">Risk signals</span>
             </a>
             <a class="operator-nav-link {% if '/personalization/player' in request.path %}is-active{% endif %}" href="{% url 'personalization-player-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
               <span>Player debug</span>
               <span class="operator-nav-caption">Profile trace</span>
             </a>
             <a class="operator-nav-link {% if '/personalization/rules' in request.path %}is-active{% endif %}" href="{% url 'personalization-rules-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6v6H9z"/></svg>
               <span>Guardrail rules</span>
               <span class="operator-nav-caption">Runtime config</span>
             </a>
@@ -131,10 +150,12 @@
           <div class="operator-nav-group">
             <div class="operator-nav-label">Storage</div>
             <a class="operator-nav-link {% if '/media/' in request.path %}is-active{% endif %}" href="{% url 'operator-media-intent-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <span>Media intents</span>
               <span class="operator-nav-caption">Upload prep</span>
             </a>
             <a class="operator-nav-link {% if '/minio/' in request.path %}is-active{% endif %}" href="{% url 'operator-minio-diagnostics-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
               <span>MinIO diagnostics</span>
               <span class="operator-nav-caption">Storage health</span>
             </a>
@@ -143,8 +164,11 @@
 
         <div class="operator-sidebar-footer">
           {% if admin_profile %}
-          <strong>{{ admin_profile.email }}</strong><br />
-          Session-backed operator access is active.<br />
+          <div class="operator-avatar">{{ admin_profile.email|first|upper }}</div>
+          <div class="operator-sidebar-footer-meta">
+            <strong>{{ admin_profile.email }}</strong>
+            <span>Session active</span>
+          </div>
           <a href="{% url 'operator-logout' %}">Sign out</a>
           {% else %}
           Authenticated pages inherit the current operator session and permission-gated actions.

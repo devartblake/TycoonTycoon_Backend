@@ -68,7 +68,7 @@
           </td>
           <td>{{ q.updatedAtUtc|default:"-" }}</td>
           <td>
-            <div style="display:flex;gap:4px;">
+            <div class="inline-actions">
               {% if q.status != 'Approved' %}
               <form method="post" action="{% url 'questions-approve' q.id %}">
                 {% csrf_token %}
@@ -93,7 +93,7 @@
     </table>
   </div>
   {% if total > items|length %}
-  <div class="toolbar-actions" style="margin-top:8px;">
+  <div class="toolbar-actions mt-sm">
     {% if page > 1 %}
     <a class="button secondary small" href="?{{ query|urlencode }}&page={{ page|add:'-1' }}">← Previous</a>
     {% endif %}

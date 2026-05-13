@@ -73,6 +73,12 @@ from .services.admin_users_client import (
     update_admin_user,
 )
 from .services.api_clients import get_overall_status, list_service_statuses
+from .services.charting import (
+    archetype_distribution_chart,
+    plotly_runtime_script,
+    recommendation_performance_chart,
+    top_skus_chart,
+)
 from .services.minio_diagnostics import get_minio_diagnostics
 from .services.upstream_error import build_upstream_http_error_response, build_upstream_unavailable_response
 
@@ -1235,11 +1241,16 @@ def store_analytics_view(request):
     }
     context = {
         "analytics": None,
+        "top_skus_chart": "",
+        "plotly_runtime": "",
         "query": {k: v for k, v in params.items() if v not in (None, "")},
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
     try:
         context["analytics"] = get_purchase_analytics(access_token, params)
+        context["top_skus_chart"] = top_skus_chart(context["analytics"].get("topSkus"))
+        if context["top_skus_chart"]:
+            context["plotly_runtime"] = plotly_runtime_script()
     except httpx.HTTPStatusError as ex:
         messages.error(request, f"Analytics lookup failed (HTTP {ex.response.status_code}).")
     except httpx.RequestError:
@@ -1714,12 +1725,19 @@ def personalization_overview_view(request):
         "summary": None,
         "archetypes": [],
         "performance": [],
+        "archetypes_chart": "",
+        "performance_chart": "",
+        "plotly_runtime": "",
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
     try:
         context["summary"] = get_personalization_summary(access_token)
         context["archetypes"] = get_personalization_archetypes(access_token)
         context["performance"] = get_recommendation_performance(access_token)
+        context["archetypes_chart"] = archetype_distribution_chart(context["archetypes"])
+        context["performance_chart"] = recommendation_performance_chart(context["performance"])
+        if context["archetypes_chart"] or context["performance_chart"]:
+            context["plotly_runtime"] = plotly_runtime_script()
     except httpx.HTTPStatusError as ex:
         messages.error(request, f"Personalization overview failed (HTTP {ex.response.status_code}).")
     except httpx.RequestError:

@@ -362,7 +362,7 @@ public sealed class MigrationWorker : BackgroundService
 
     private async Task EnsureCriticalTablesReadyAsync(AppDb db, bool autoRepairOnMissingTables, CancellationToken ct)
     {
-        var requiredTables = new[] { "tiers", "missions" };
+        var requiredTables = new[] { "tiers", "missions", "questions", "store_items", "skill_nodes", "season_reward_rules", "admin_email_acls" };
 
         var missingTables = new List<string>();
         foreach (var table in requiredTables)
@@ -371,15 +371,39 @@ public sealed class MigrationWorker : BackgroundService
                 missingTables.Add(table);
         }
 
-        if (missingTables.Count == 0)
+        var missingColumns = new List<string>();
+        var requiredColumns = new (string Table, string Column)[]
+        {
+            ("questions", "status"),
+            ("questions", "status_changed_at_utc"),
+            ("store_items", "sku"),
+            ("skill_nodes", "key"),
+            ("season_reward_rules", "max_tier_rank"),
+            ("admin_email_acls", "normalized_email")
+        };
+
+        foreach (var (table, column) in requiredColumns)
+        {
+            if (missingTables.Contains(table))
+                continue;
+
+            if (!await ColumnExistsAsync(db, table, column, ct))
+                missingColumns.Add($"{table}.{column}");
+        }
+
+        if (missingTables.Count == 0 && missingColumns.Count == 0)
             return;
 
-        _log.Warning("Schema mismatch detected after migration. Missing tables: {MissingTables}", string.Join(", ", missingTables));
+        _log.Warning(
+            "Schema mismatch detected after migration. Missing tables: {MissingTables}. Missing columns: {MissingColumns}",
+            string.Join(", ", missingTables),
+            string.Join(", ", missingColumns));
 
         if (!autoRepairOnMissingTables)
         {
             throw new InvalidOperationException(
-                $"Missing critical tables after migration ({string.Join(", ", missingTables)}). " +
+                $"Schema mismatch after migration. Missing tables: {string.Join(", ", missingTables)}. " +
+                $"Missing columns: {string.Join(", ", missingColumns)}. " +
                 "Enable MigrationService:AutoRepairOnMissingTables=true or reset the DB volume and rerun migrations.");
         }
 
@@ -392,6 +416,12 @@ public sealed class MigrationWorker : BackgroundService
         {
             if (!await TableExistsAsync(db, table, ct))
                 stillMissing.Add(table);
+        }
+
+        foreach (var (table, column) in requiredColumns)
+        {
+            if (!await ColumnExistsAsync(db, table, column, ct))
+                stillMissing.Add($"{table}.{column}");
         }
 
         if (stillMissing.Count > 0)
@@ -427,6 +457,46 @@ public sealed class MigrationWorker : BackgroundService
             p.ParameterName = "@tableName";
             p.Value = tableName;
             cmd.Parameters.Add(p);
+
+            var result = await cmd.ExecuteScalarAsync(ct);
+            return result is bool b && b;
+        }
+        finally
+        {
+            if (openedHere)
+                await conn.CloseAsync();
+        }
+    }
+
+    private static async Task<bool> ColumnExistsAsync(AppDb db, string tableName, string columnName, CancellationToken ct)
+    {
+        var conn = db.Database.GetDbConnection();
+        var openedHere = false;
+
+        try
+        {
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                await conn.OpenAsync(ct);
+                openedHere = true;
+            }
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                "SELECT EXISTS (" +
+                "SELECT 1 FROM information_schema.columns " +
+                "WHERE table_schema = current_schema() AND table_name = @tableName AND column_name = @columnName" +
+                ")";
+
+            var table = cmd.CreateParameter();
+            table.ParameterName = "@tableName";
+            table.Value = tableName;
+            cmd.Parameters.Add(table);
+
+            var column = cmd.CreateParameter();
+            column.ParameterName = "@columnName";
+            column.Value = columnName;
+            cmd.Parameters.Add(column);
 
             var result = await cmd.ExecuteScalarAsync(ct);
             return result is bool b && b;

@@ -1092,6 +1092,53 @@ class StorePlayerStockViewsTests(TestCase):
         mock_bulk_reset.assert_not_called()
 
 
+class StoreAnalyticsViewsTests(TestCase):
+    def _login(self, permissions):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions, "email": "ops@example.com"}
+        session.save()
+
+    def test_store_analytics_requires_login(self):
+        response = self.client.get(reverse("store-analytics-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
+
+    def test_store_analytics_requires_read_permission(self):
+        self._login([])
+        response = self.client.get(reverse("store-analytics-view"))
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_purchase_analytics")
+    def test_store_analytics_renders_plotly_chart_and_table(self, mock_analytics):
+        self._login(["store:read"])
+        mock_analytics.return_value = {
+            "totalPurchases": 1842,
+            "totalCoinsSpent": 92000,
+            "topSkus": [{"sku": "powerup:skip", "purchaseCount": 731}],
+        }
+
+        response = self.client.get(reverse("store-analytics-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Purchase analytics")
+        self.assertContains(response, "plotly-graph-div")
+        self.assertContains(response, "powerup:skip")
+        self.assertContains(response, "Top SKUs")
+
+    @mock.patch("dashboard.views.get_purchase_analytics")
+    def test_store_analytics_empty_data_still_renders(self, mock_analytics):
+        self._login(["store:read"])
+        mock_analytics.return_value = {"totalPurchases": 0, "totalCoinsSpent": 0, "topSkus": []}
+
+        response = self.client.get(reverse("store-analytics-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Summary")
+        self.assertNotContains(response, "plotly-graph-div")
+
+
 class PersonalizationDashboardViewsTests(TestCase):
     def _login(self, permissions):
         session = self.client.session
@@ -1130,6 +1177,8 @@ class PersonalizationDashboardViewsTests(TestCase):
         self.assertContains(response, "Personalization overview")
         self.assertContains(response, "new_player")
         self.assertContains(response, "mission")
+        self.assertContains(response, "plotly-graph-div")
+        self.assertContains(response, "Recommendation performance")
 
     def test_personalization_player_requires_read_permission(self):
         self._login([])

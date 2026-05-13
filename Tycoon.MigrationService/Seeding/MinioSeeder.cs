@@ -57,7 +57,10 @@ public sealed class MinioSeeder
 
         _log.Information("MinioSeeder: seeding {Count} store items…", models.Count);
 
-        var seedSkus = models.ConvertAll(m => m.Sku);
+        var seedSkus = models.Select(GetStoreSku)
+            .Where(sku => !string.IsNullOrWhiteSpace(sku))
+            .Select(sku => sku!)
+            .ToList();
         var existingMap = await db.StoreItems
             .Where(x => seedSkus.Contains(x.Sku))
             .ToDictionaryAsync(x => x.Sku, ct);
@@ -67,14 +70,21 @@ public sealed class MinioSeeder
 
         foreach (var m in models)
         {
-            if (existingMap.TryGetValue(m.Sku, out var existing))
+            var sku = GetStoreSku(m);
+            if (string.IsNullOrWhiteSpace(sku))
+            {
+                _log.Warning("MinioSeeder: store item missing sku/id — skipping.");
+                continue;
+            }
+
+            if (existingMap.TryGetValue(sku, out var existing))
             {
                 ApplyStoreItemFields(existing, m);
                 updated++;
             }
             else
             {
-                var item = new StoreItem { Sku = m.Sku };
+                var item = new StoreItem { Sku = sku };
                 ApplyStoreItemFields(item, m);
                 db.StoreItems.Add(item);
                 seeded++;
@@ -89,15 +99,15 @@ public sealed class MinioSeeder
     {
         item.Name          = m.Name;
         item.Description   = m.Description ?? string.Empty;
-        item.ItemType      = m.ItemType;
-        item.PriceCoins    = m.PriceCoins;
-        item.PriceDiamonds = m.PriceDiamonds;
-        item.GrantQuantity = m.GrantQuantity > 0 ? m.GrantQuantity : 1;
+        item.ItemType      = m.ItemType ?? m.Category ?? "catalog";
+        item.PriceCoins    = m.PriceCoins > 0 ? m.PriceCoins : PriceForCurrency(m, "coins");
+        item.PriceDiamonds = m.PriceDiamonds > 0 ? m.PriceDiamonds : PriceForCurrency(m, "diamonds");
+        item.GrantQuantity = FirstPositive(m.GrantQuantity, m.Quantity, m.Amount, 1);
         item.MaxPerPlayer  = m.MaxPerPlayer;
-        item.IsActive      = m.IsActive;
+        item.IsActive      = m.Active ?? m.IsActive;
         item.SortOrder     = m.SortOrder;
-        item.MediaKey      = m.MediaKey;
-        item.ThumbnailUrl  = m.ThumbnailUrl;
+        item.MediaKey      = m.MediaKey ?? m.IconPath;
+        item.ThumbnailUrl  = m.ThumbnailUrl ?? m.IconPath;
         item.IsFeatured    = m.IsFeatured;
         item.Version       = m.Version;
         item.UpdatedAtUtc  = DateTimeOffset.UtcNow;
@@ -111,7 +121,10 @@ public sealed class MinioSeeder
 
         _log.Information("MinioSeeder: seeding {Count} skill nodes…", models.Count);
 
-        var seedKeys = models.ConvertAll(m => m.Key);
+        var seedKeys = models.Select(GetSkillKey)
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .Select(key => key!)
+            .ToList();
         var existingMap = await db.SkillNodes
             .Where(x => seedKeys.Contains(x.Key))
             .ToDictionaryAsync(x => x.Key, ct);
@@ -121,17 +134,24 @@ public sealed class MinioSeeder
 
         foreach (var m in models)
         {
-            if (!Enum.TryParse<SkillBranch>(m.Branch, ignoreCase: true, out var branch))
+            var key = GetSkillKey(m);
+            if (string.IsNullOrWhiteSpace(key))
             {
-                _log.Warning("MinioSeeder: unknown SkillBranch '{Branch}' for node '{Key}' — skipping.", m.Branch, m.Key);
+                _log.Warning("MinioSeeder: skill node missing key/id — skipping.");
+                continue;
+            }
+
+            if (!TryParseSkillBranch(m.Branch ?? m.Category, out var branch))
+            {
+                _log.Warning("MinioSeeder: unknown SkillBranch '{Branch}' for node '{Key}' — skipping.", m.Branch ?? m.Category, key);
                 continue;
             }
 
             var prereqJson  = JsonSerializer.Serialize(m.PrereqKeys  ?? Array.Empty<string>(),             JsonOpts);
-            var costsJson   = JsonSerializer.Serialize(MapCosts(m.Costs),                                   JsonOpts);
+            var costsJson   = JsonSerializer.Serialize(MapCosts(m),                                         JsonOpts);
             var effectsJson = JsonSerializer.Serialize(m.Effects ?? new Dictionary<string, double>(),       JsonOpts);
 
-            if (existingMap.TryGetValue(m.Key, out var existing))
+            if (existingMap.TryGetValue(key, out var existing))
             {
                 // SkillNode uses private setters — reflection mirrors SkillTreeService.UpsertNodesAsync
                 SetPrivate(existing, nameof(SkillNode.Branch),         branch);
@@ -146,7 +166,7 @@ public sealed class MinioSeeder
             }
             else
             {
-                db.SkillNodes.Add(new SkillNode(m.Key, branch, m.Tier, m.Title, m.Description,
+                db.SkillNodes.Add(new SkillNode(key, branch, m.Tier, m.Title, m.Description,
                     prereqJson, costsJson, effectsJson));
                 seeded++;
             }
@@ -193,7 +213,10 @@ public sealed class MinioSeeder
 
         _log.Information("MinioSeeder: seeding {Count} questions…", models.Count);
 
-        var seedTexts = models.ConvertAll(m => m.Text.Trim());
+        var seedTexts = models
+            .Select(m => (m.Text ?? m.Question ?? string.Empty).Trim())
+            .Where(text => !string.IsNullOrWhiteSpace(text))
+            .ToList();
         var existingMap = await db.Questions
             .Where(q => seedTexts.Contains(q.Text))
             .Include(q => q.Options)
@@ -205,23 +228,28 @@ public sealed class MinioSeeder
 
         foreach (var m in models)
         {
-            if (!Enum.TryParse<QuestionDifficulty>(m.Difficulty, ignoreCase: true, out var difficulty))
+            if (!TryParseQuestionDifficulty(m.Difficulty, out var difficulty))
             {
                 _log.Warning("MinioSeeder: unknown difficulty '{Difficulty}' for question — skipping.", m.Difficulty);
                 continue;
             }
 
-            var normalizedText = m.Text.Trim();
+            var normalizedText = (m.Text ?? m.Question ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedText))
+            {
+                _log.Warning("MinioSeeder: question missing text/question — skipping.");
+                continue;
+            }
 
             if (existingMap.TryGetValue(normalizedText, out var existing))
             {
-                existing.Update(normalizedText, m.Category, difficulty, m.CorrectOptionId, m.MediaKey);
+                existing.Update(normalizedText, m.Category, difficulty, ResolveCorrectOptionId(m), m.MediaKey);
                 ApplyQuestionRelations(existing, m);
                 updated++;
             }
             else
             {
-                var q = new Question(normalizedText, m.Category, difficulty, m.CorrectOptionId, m.MediaKey);
+                var q = new Question(normalizedText, m.Category, difficulty, ResolveCorrectOptionId(m), m.MediaKey);
                 ApplyQuestionRelations(q, m);
                 db.Questions.Add(q);
                 seeded++;
@@ -234,8 +262,9 @@ public sealed class MinioSeeder
 
     private static void ApplyQuestionRelations(Question question, QuestionSeedModel m)
     {
-        if (m.Options.Length > 0)
-            question.ReplaceOptions(m.Options.Select(o => new QuestionOption(question.Id, o.OptionId, o.Text)));
+        var options = NormalizeOptions(m).ToArray();
+        if (options.Length > 0)
+            question.ReplaceOptions(options.Select(o => new QuestionOption(question.Id, o.OptionId!, o.Text)));
 
         if (m.Tags.Length > 0)
             question.ReplaceTags(m.Tags);
@@ -307,7 +336,9 @@ public sealed class MinioSeeder
     {
         try
         {
-            return await JsonSerializer.DeserializeAsync<T>(stream, JsonOpts, ct);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+            var normalized = NormalizeSeedJson<T>(document.RootElement);
+            return normalized.Deserialize<T>(JsonOpts);
         }
         catch (Exception ex)
         {
@@ -326,12 +357,50 @@ public sealed class MinioSeeder
         MinIO
     }
 
-    private static IReadOnlyList<SkillCostDto> MapCosts(SkillCostSeedModel[]? models)
+    private static JsonElement NormalizeSeedJson<T>(JsonElement root)
     {
-        if (models is null or { Length: 0 })
-            return Array.Empty<SkillCostDto>();
+        if (typeof(T) == typeof(List<SkillNodeSeedModel>) && root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("nodes", out var nodes))
+            return nodes;
 
-        return models
+        if (typeof(T) == typeof(List<SeasonRewardSeedModel>) && root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("dailyTierRewards", out var dailyTierRewards))
+            return NormalizeSeasonRewards(dailyTierRewards);
+
+        return root;
+    }
+
+    private static JsonElement NormalizeSeasonRewards(JsonElement dailyTierRewards)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartArray();
+            foreach (var reward in dailyTierRewards.EnumerateArray())
+            {
+                writer.WriteStartObject();
+                writer.WriteNumber("tier", TierNameToNumber(reward.TryGetProperty("tier", out var tier) ? tier.GetString() : null));
+                writer.WriteNumber("maxTierRank", reward.TryGetProperty("rankMax", out var rankMax) ? rankMax.GetInt32() : 0);
+                writer.WriteNumber("rewardXp", reward.TryGetProperty("xp", out var xp) ? xp.GetInt32() : 0);
+                writer.WriteNumber("rewardCoins", reward.TryGetProperty("coins", out var coins) ? coins.GetInt32() : 0);
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
+        }
+
+        return JsonDocument.Parse(stream.ToArray()).RootElement.Clone();
+    }
+
+    private static IReadOnlyList<SkillCostDto> MapCosts(SkillNodeSeedModel model)
+    {
+        if (model.Costs is null or { Length: 0 })
+        {
+            return model.Cost > 0
+                ? [new SkillCostDto(CurrencyType.Coins, model.Cost)]
+                : Array.Empty<SkillCostDto>();
+        }
+
+        return model.Costs
             .Select(c => new SkillCostDto(
                 Enum.TryParse<CurrencyType>(c.Currency, ignoreCase: true, out var currency)
                     ? currency
@@ -339,6 +408,89 @@ public sealed class MinioSeeder
                 c.Amount))
             .ToArray();
     }
+
+    private static string? GetStoreSku(StoreItemSeedModel model) => FirstNonBlank(model.Sku, model.Id);
+
+    private static string? GetSkillKey(SkillNodeSeedModel model) => FirstNonBlank(model.Key, model.Id);
+
+    private static string? FirstNonBlank(params string?[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
+    private static int FirstPositive(params int[] values) => values.FirstOrDefault(v => v > 0);
+
+    private static int PriceForCurrency(StoreItemSeedModel model, string currency) =>
+        string.Equals(model.Currency, currency, StringComparison.OrdinalIgnoreCase) && model.Price is > 0
+            ? (int)Math.Round(model.Price.Value, MidpointRounding.AwayFromZero)
+            : 0;
+
+    private static bool TryParseSkillBranch(string? value, out SkillBranch branch)
+    {
+        if (Enum.TryParse(value, ignoreCase: true, out branch))
+            return true;
+
+        branch = value?.Trim().ToLowerInvariant() switch
+        {
+            "scholar" => SkillBranch.Knowledge,
+            "knowledge" => SkillBranch.Knowledge,
+            "strategist" => SkillBranch.Strategy,
+            "strategy" => SkillBranch.Strategy,
+            "power-up" => SkillBranch.Powerups,
+            "powerup" => SkillBranch.Powerups,
+            "powerups" => SkillBranch.Powerups,
+            _ => default
+        };
+        return branch != default;
+    }
+
+    private static bool TryParseQuestionDifficulty(JsonElement value, out QuestionDifficulty difficulty)
+    {
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var numeric) &&
+            Enum.IsDefined(typeof(QuestionDifficulty), numeric))
+        {
+            difficulty = (QuestionDifficulty)numeric;
+            return true;
+        }
+
+        if (value.ValueKind == JsonValueKind.String &&
+            Enum.TryParse(value.GetString(), ignoreCase: true, out difficulty))
+            return true;
+
+        difficulty = default;
+        return false;
+    }
+
+    private static IReadOnlyList<QuestionOptionSeedModel> NormalizeOptions(QuestionSeedModel model)
+    {
+        var source = model.Options.Length > 0 ? model.Options : model.Answers;
+        for (var i = 0; i < source.Length; i++)
+            source[i].OptionId ??= ((char)('A' + i)).ToString();
+
+        return source;
+    }
+
+    private static string ResolveCorrectOptionId(QuestionSeedModel model)
+    {
+        if (!string.IsNullOrWhiteSpace(model.CorrectOptionId))
+            return model.CorrectOptionId;
+
+        var options = NormalizeOptions(model);
+        var correct = options.FirstOrDefault(o => o.IsCorrect) ??
+                      options.FirstOrDefault(o => string.Equals(o.Text, model.CorrectAnswer, StringComparison.OrdinalIgnoreCase));
+
+        return correct?.OptionId ?? options.FirstOrDefault()?.OptionId ?? "A";
+    }
+
+    private static int TierNameToNumber(string? value) =>
+        value?.Trim().ToLowerInvariant() switch
+        {
+            "bronze" => 1,
+            "silver" => 2,
+            "gold" => 3,
+            "platinum" => 4,
+            "diamond" => 5,
+            "legend" => 6,
+            _ => 1
+        };
 
     private static void SetPrivate(object target, string propertyName, object? value) =>
         target.GetType().GetProperty(propertyName)!.SetValue(target, value);

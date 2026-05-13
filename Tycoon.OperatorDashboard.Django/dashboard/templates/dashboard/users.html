@@ -101,7 +101,7 @@
     </div>
   </form>
 
-  <form method="post" class="stack" style="margin-top: 18px;">
+  <form method="post" class="stack mt-lg">
     {% csrf_token %}
     <input type="hidden" name="action" value="save_view" />
     <input type="hidden" name="preset" value="{{ preset|default:'' }}" />
@@ -132,8 +132,8 @@
   </form>
 
   {% if selected_saved_view %}
-  <div class="surface-note" style="margin-top: 18px;">Selected saved view: <strong>{{ selected_saved_view }}</strong></div>
-  <div class="toolbar-actions" style="margin-top: 14px;">
+  <div class="surface-note mt-lg">Selected saved view: <strong>{{ selected_saved_view }}</strong></div>
+  <div class="toolbar-actions mt-md">
     <form method="post">
       {% csrf_token %}
       <input type="hidden" name="action" value="delete_view" />
@@ -157,7 +157,7 @@
   {% endif %}
 </section>
 
-<section class="card" style="margin-top: 18px;">
+<section class="card mt-lg">
   {% include "dashboard/partials/section_intro.html" with title="Saved-view governance audit timeline" copy="Track save, archive, delete, and transfer actions for team-shared triage views." %}
   <form method="get" class="stack">
     <div class="form-grid">
@@ -200,7 +200,7 @@
     <a class="button secondary" href="?savedViewAuditAction={{ saved_view_audit_query.action|default:'' }}&savedViewAuditActorEmail={{ saved_view_audit_query.actorEmail|default:'' }}&savedViewAuditOwnerEmail={{ saved_view_audit_query.ownerEmail|default:'' }}&savedViewAuditViewName={{ saved_view_audit_query.viewName|default:'' }}&savedViewAuditFrom={{ saved_view_audit_query.from|default:'' }}&savedViewAuditTo={{ saved_view_audit_query.to|default:'' }}&savedViewAuditFormat=csv">Export CSV</a>
     <span class="helper-text">Review the latest 100 governance events matching the current filter.</span>
   </div>
-  <div class="table-wrap" style="margin-top: 18px;">
+  <div class="table-wrap mt-lg">
     <table class="dense-table">
       <thead>
         <tr>
@@ -232,7 +232,7 @@
   </div>
 </section>
 
-<section class="card" style="margin-top: 18px;">
+<section class="card mt-lg">
   {% include "dashboard/partials/section_intro.html" with title="Operator Users" copy="This view remains backed by the authenticated Django operator route and existing bulk-action guardrails." %}
   {% if can_write_users %}
   <form method="post" class="stack" data-validate="1">
@@ -316,7 +316,7 @@
   {% endif %}
 
   {% if bulk_result %}
-  <div class="surface-note" style="margin-top: 18px;">
+  <div class="surface-note mt-lg">
     {% if bulk_result.dry_run %}Dry-run{% else %}Bulk{% endif %} {{ bulk_result.action }} -> success: {{ bulk_result.succeeded|length }}, failed: {{ bulk_result.failed|length }}
   </div>
   {% endif %}

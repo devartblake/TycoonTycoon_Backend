@@ -2,6 +2,10 @@
 
 {% block title %}Personalization Overview{% endblock %}
 
+{% block extra_head %}
+  {{ plotly_runtime }}
+{% endblock %}
+
 {% block content %}
 <section class="topbar">
   <div>
@@ -37,6 +41,13 @@
 
 <section class="card">
   {% include "dashboard/partials/section_intro.html" with title="Archetypes" copy="Distribution of player mind profile archetypes." %}
+  {% if archetypes_chart %}
+  <div class="chart-panel" aria-label="Player archetype distribution chart">
+    {{ archetypes_chart }}
+  </div>
+  {% else %}
+  <div class="chart-empty">No archetype chart is available yet.</div>
+  {% endif %}
   <div class="table-wrap">
     <table class="dense-table">
       <thead>
@@ -63,6 +74,13 @@
 
 <section class="card">
   {% include "dashboard/partials/section_intro.html" with title="Recommendation performance" copy="Acceptance, dismissal, and pending counts grouped by recommendation type." %}
+  {% if performance_chart %}
+  <div class="chart-panel" aria-label="Recommendation performance chart">
+    {{ performance_chart }}
+  </div>
+  {% else %}
+  <div class="chart-empty">No recommendation performance chart is available yet.</div>
+  {% endif %}
   <div class="table-wrap">
     <table class="dense-table">
       <thead>

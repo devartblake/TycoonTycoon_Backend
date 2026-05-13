@@ -82,6 +82,8 @@ Windows helper:
 ./scripts/run-dashboard-bootstrap.ps1 -Mode docker -RebuildElastic
 ```
 
+The local mode imports `docker/.env` when present and builds `ConnectionStrings__db` from the active `POSTGRES_*` values. This avoids accidentally running the migration service with the fallback `appsettings.json` credentials against an already-running Docker Postgres volume.
+
 ## Readiness Checks
 
 The migration job validates:

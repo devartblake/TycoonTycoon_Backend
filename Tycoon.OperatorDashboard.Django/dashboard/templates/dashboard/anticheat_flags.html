@@ -88,7 +88,7 @@
             <form method="post" action="{% url 'anticheat-flag-review' flag.id %}" class="inline-form">
               {% csrf_token %}
               <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-              <input type="text" name="note" placeholder="Review note" required style="width:140px" />
+              <input class="input-compact" type="text" name="note" placeholder="Review note" required />
               <button class="btn-inline" type="submit">Mark reviewed</button>
             </form>
             {% else %}

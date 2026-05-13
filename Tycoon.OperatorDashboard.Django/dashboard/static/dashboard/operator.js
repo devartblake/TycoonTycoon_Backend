@@ -1,9 +1,7 @@
-/* Operator dashboard — progressive-enhancement layer */
+/* Operator dashboard progressive-enhancement layer. */
 
 (function () {
   'use strict';
-
-  /* ─── Table density toggle ──────────────────────────────────────────────── */
 
   var DENSITY_OPTIONS = ['standard', 'compact', 'comfortable'];
 
@@ -42,25 +40,11 @@
     });
   }
 
-  /* ─── Inline form validation ─────────────────────────────────────────────
-   *
-   * Forms decorated with data-validate="1" run client-side checks on submit.
-   * Required fields must have the `required` attribute set. An optional
-   * data-hint attribute on the input provides the error message text.
-   *
-   * Markup example:
-   *   <div class="form-field">
-   *     <label for="f-reason">Reason</label>
-   *     <input id="f-reason" name="reason" required
-   *            data-hint="A reason is required for audit purposes." />
-   *     <span class="field-error" data-error-for="f-reason"></span>
-   *   </div>
-   */
-
   function clearFieldState(input) {
     input.classList.remove('invalid', 'valid');
-    var errorEl = input.closest('.form-field')
-      ? input.closest('.form-field').querySelector('.field-error')
+    var closestField = input.closest('.form-field');
+    var errorEl = closestField
+      ? closestField.querySelector('.field-error')
       : document.querySelector('[data-error-for="' + input.id + '"]');
     if (errorEl) {
       errorEl.textContent = '';
@@ -71,8 +55,9 @@
   function markFieldInvalid(input, message) {
     input.classList.add('invalid');
     input.classList.remove('valid');
-    var errorEl = input.closest('.form-field')
-      ? input.closest('.form-field').querySelector('.field-error')
+    var closestField = input.closest('.form-field');
+    var errorEl = closestField
+      ? closestField.querySelector('.field-error')
       : (input.id ? document.querySelector('[data-error-for="' + input.id + '"]') : null);
     if (errorEl) {
       errorEl.textContent = message || 'This field is required.';
@@ -83,8 +68,9 @@
   function markFieldValid(input) {
     input.classList.add('valid');
     input.classList.remove('invalid');
-    var errorEl = input.closest('.form-field')
-      ? input.closest('.form-field').querySelector('.field-error')
+    var closestField = input.closest('.form-field');
+    var errorEl = closestField
+      ? closestField.querySelector('.field-error')
       : (input.id ? document.querySelector('[data-error-for="' + input.id + '"]') : null);
     if (errorEl) {
       errorEl.textContent = '';
@@ -98,8 +84,7 @@
       clearFieldState(input);
       var value = input.value.trim();
       if (!value) {
-        var hint = input.dataset.hint || 'This field is required.';
-        markFieldInvalid(input, hint);
+        markFieldInvalid(input, input.dataset.hint || 'This field is required.');
         valid = false;
       } else {
         markFieldValid(input);
@@ -110,7 +95,6 @@
 
   function initFormValidation() {
     document.querySelectorAll('form[data-validate]').forEach(function (form) {
-      /* Clear state on input so errors disappear as the user types */
       form.querySelectorAll('[required]').forEach(function (input) {
         input.addEventListener('input', function () {
           clearFieldState(input);
@@ -126,8 +110,6 @@
       });
     });
   }
-
-  /* ─── Boot ───────────────────────────────────────────────────────────────── */
 
   document.addEventListener('DOMContentLoaded', function () {
     initDensityBars();
