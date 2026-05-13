@@ -70,6 +70,10 @@
               <span>Stock policies</span>
               <span class="operator-nav-caption">Purchase limits</span>
             </a>
+            <a class="operator-nav-link {% if '/store/player-stock' in request.path %}is-active{% endif %}" href="{% url 'store-player-stock-view' %}">
+              <span>Player stock</span>
+              <span class="operator-nav-caption">Overrides &amp; resets</span>
+            </a>
             <a class="operator-nav-link {% if '/store/analytics' in request.path %}is-active{% endif %}" href="{% url 'store-analytics-view' %}">
               <span>Purchase analytics</span>
               <span class="operator-nav-caption">Revenue signals</span>

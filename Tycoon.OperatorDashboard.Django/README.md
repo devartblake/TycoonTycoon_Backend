@@ -43,6 +43,17 @@ The dashboard now uses session-based operator login:
 - Session middleware auto-attempts refresh via `/admin/auth/refresh` when access token is near expiry
 - API routes enforce permission checks from the operator profile (`users:read`, `users:write`)
 
+### Development login
+
+When running Docker Compose from `docker/.env.example` values after the migration service seeds the super-admin account:
+
+- URL: `http://localhost:8200/login`
+- Email: `admin@tycoon.local`
+- Password: `ChangeMe123!`
+- Required matching ops key: `ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION`
+
+Smoke compose seeds `smoke-admin@synaptix.local` / `SmokeTest123!` instead. If `docker/.env` has not been created from `docker/.env.example`, compose defaults may leave the super-admin seed blank and no dev admin account will be created.
+
 ## Basic verification
 
 ```bash
@@ -84,8 +95,9 @@ When running inside Docker Compose, these are overridden to:
 - `FASTAPI_BASE_URL=http://sidecar:8100`
 - `MINIO_BASE_URL=http://minio:9000`
 
-## Current Status (April 8, 2026)
+## Current Status (May 12, 2026)
 
 - Django remains the default operator dashboard service in Compose.
-- Admin auth calls now support configurable ops-key header names for deployment parity with the legacy Blazor dashboard.
-- Staging parallel-run sign-off and quarterly rollback drill execution remain open cutover gates.
+- Admin auth supports trusted internal plain JSON for dev plus secure-channel transport hooks for production.
+- Django code-level parity is complete, including personalization and player stock support.
+- Staging parallel-run sign-off, pending EF migration apply, and Blazor decommission remain external cutover gates.

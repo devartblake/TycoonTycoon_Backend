@@ -1,5 +1,7 @@
 import csv
 import json
+import re
+import uuid
 from functools import wraps
 from io import StringIO
 from time import time
@@ -21,10 +23,13 @@ from .services.admin_moderation_client import get_moderation_logs, get_moderatio
 from .services.admin_economy_client import create_economy_transaction, get_economy_history
 from .services.admin_questions_client import approve_question, list_questions, reject_question
 from .services.admin_store_client import (
+    bulk_reset_stock,
     cancel_flash_sale,
     get_flash_sales,
+    get_player_stock,
     get_purchase_analytics,
     get_stock_policies,
+    override_player_stock,
 )
 from .services.admin_game_events_client import (
     close_game_event,
@@ -1036,6 +1041,23 @@ def healthz(request):
     return JsonResponse({"status": "ok"})
 
 
+def _is_valid_uuid(value: str | None) -> bool:
+    if not value:
+        return False
+    try:
+        uuid.UUID(str(value))
+    except ValueError:
+        return False
+    return True
+
+
+def _split_skus(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    parts = re.split(r"[\s,]+", raw)
+    return list(dict.fromkeys(part.strip().lower() for part in parts if part.strip()))
+
+
 # ---------------------------------------------------------------------------
 # Store — Flash Sales
 # ---------------------------------------------------------------------------
@@ -1099,6 +1121,103 @@ def store_stock_policies_view(request):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend stock policies endpoint.")
     return render(request, "dashboard/stock_policies.html", context)
+
+
+@operator_login_required
+@require_permission("store:write")
+def store_stock_policies_bulk_reset(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    skus = _split_skus(request.POST.get("skus"))
+    reason = (request.POST.get("reason") or "").strip()
+    if not skus:
+        messages.error(request, "Enter at least one SKU to bulk reset.")
+        return redirect("store-player-stock-view")
+
+    try:
+        payload = bulk_reset_stock(access_token, skus, reason)
+        players_affected = payload.get("playersAffected", 0)
+        messages.success(request, f"Bulk reset queued for {len(skus)} SKU(s); {players_affected} player stock row(s) affected.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Bulk reset failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend stock reset endpoint.")
+    return redirect("store-player-stock-view")
+
+
+# ---------------------------------------------------------------------------
+# Store — Player Stock
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("store:read")
+def store_player_stock_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    player_id = (request.GET.get("playerId") or "").strip()
+    context = {
+        "player_id": player_id,
+        "items": [],
+        "has_lookup": bool(player_id),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    if not player_id:
+        return render(request, "dashboard/player_stock.html", context)
+    if not _is_valid_uuid(player_id):
+        messages.error(request, "Enter a valid player UUID.")
+        return render(request, "dashboard/player_stock.html", context)
+
+    try:
+        payload = get_player_stock(access_token, player_id)
+        context["player_id"] = payload.get("playerId", player_id)
+        context["items"] = payload.get("items", [])
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Player stock lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend player stock endpoint.")
+    return render(request, "dashboard/player_stock.html", context)
+
+
+@operator_login_required
+@require_permission("store:write")
+def store_player_stock_override(request, player_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    redirect_url = f"/store/player-stock?playerId={player_id}"
+    if not _is_valid_uuid(player_id):
+        messages.error(request, "Enter a valid player UUID.")
+        return redirect("store-player-stock-view")
+
+    sku = (request.POST.get("sku") or "").strip().lower()
+    if not sku:
+        messages.error(request, "SKU is required for a player stock override.")
+        return redirect(redirect_url)
+
+    raw_effective_max = (request.POST.get("effectiveMaxQuantity") or "").strip()
+    effective_max_quantity = None
+    if raw_effective_max:
+        try:
+            effective_max_quantity = int(raw_effective_max)
+        except ValueError:
+            messages.error(request, "Effective max quantity must be a non-negative whole number, or blank to clear.")
+            return redirect(redirect_url)
+        if effective_max_quantity < 0:
+            messages.error(request, "Effective max quantity must be a non-negative whole number, or blank to clear.")
+            return redirect(redirect_url)
+
+    reason = (request.POST.get("reason") or "").strip()
+    try:
+        override_player_stock(access_token, player_id, sku, effective_max_quantity, reason)
+        if effective_max_quantity is None:
+            messages.success(request, f"Cleared stock override for {sku}.")
+        else:
+            messages.success(request, f"Set stock override for {sku} to {effective_max_quantity}.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Stock override failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend player stock endpoint.")
+    return redirect(redirect_url)
 
 
 # ---------------------------------------------------------------------------

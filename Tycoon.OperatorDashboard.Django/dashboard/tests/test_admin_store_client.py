@@ -4,10 +4,13 @@ import httpx
 from django.test import TestCase, override_settings
 
 from dashboard.services.admin_store_client import (
+    bulk_reset_stock,
     cancel_flash_sale,
     get_flash_sales,
+    get_player_stock,
     get_purchase_analytics,
     get_stock_policies,
+    override_player_stock,
 )
 
 DOTNET_BASE = "http://backend-api:5000"
@@ -69,6 +72,73 @@ class TestGetStockPolicies(TestCase):
         mock_get.return_value = _mock_response(403)
         with self.assertRaises(httpx.HTTPStatusError):
             get_stock_policies(TOKEN)
+
+
+@override_settings(**SETTINGS)
+class TestPlayerStock(TestCase):
+    @patch("dashboard.services.admin_store_client.httpx.get")
+    def test_get_player_stock_calls_endpoint(self, mock_get):
+        player_id = "00000000-0000-0000-0000-000000000001"
+        payload = {"playerId": player_id, "items": [{"sku": "powerup:skip"}]}
+        mock_get.return_value = _mock_response(200, payload)
+
+        result = get_player_stock(TOKEN, player_id)
+
+        call_url = mock_get.call_args[0][0]
+        _, kwargs = mock_get.call_args
+        assert call_url == f"{DOTNET_BASE}/admin/store/player-stock/{player_id}"
+        assert kwargs["headers"]["Authorization"] == f"Bearer {TOKEN}"
+        assert kwargs["headers"]["X-Admin-Ops-Key"] == "test-ops-key"
+        assert result["items"][0]["sku"] == "powerup:skip"
+
+    @patch("dashboard.services.admin_store_client.httpx.get")
+    def test_get_player_stock_raises_on_http_error(self, mock_get):
+        mock_get.return_value = _mock_response(404)
+        with self.assertRaises(httpx.HTTPStatusError):
+            get_player_stock(TOKEN, "00000000-0000-0000-0000-000000000001")
+
+    @patch("dashboard.services.admin_store_client.httpx.post")
+    def test_override_player_stock_posts_integer_override(self, mock_post):
+        player_id = "00000000-0000-0000-0000-000000000001"
+        mock_post.return_value = _mock_response(200, {"sku": "powerup:skip", "effectiveMaxQuantity": 9})
+
+        result = override_player_stock(TOKEN, player_id, "powerup:skip", 9, "ticket-1")
+
+        call_url = mock_post.call_args[0][0]
+        _, kwargs = mock_post.call_args
+        assert call_url == f"{DOTNET_BASE}/admin/store/player-stock/{player_id}/override"
+        assert kwargs["json"] == {
+            "sku": "powerup:skip",
+            "effectiveMaxQuantity": 9,
+            "reason": "ticket-1",
+        }
+        assert result["effectiveMaxQuantity"] == 9
+
+    @patch("dashboard.services.admin_store_client.httpx.post")
+    def test_override_player_stock_posts_null_to_clear_override(self, mock_post):
+        player_id = "00000000-0000-0000-0000-000000000001"
+        mock_post.return_value = _mock_response(200, {"sku": "powerup:skip", "effectiveMaxQuantity": None})
+
+        override_player_stock(TOKEN, player_id, "powerup:skip", None, "")
+
+        _, kwargs = mock_post.call_args
+        assert kwargs["json"]["effectiveMaxQuantity"] is None
+        assert kwargs["json"]["reason"] is None
+
+    @patch("dashboard.services.admin_store_client.httpx.post")
+    def test_bulk_reset_stock_posts_skus(self, mock_post):
+        mock_post.return_value = _mock_response(200, {"playersAffected": 2})
+
+        result = bulk_reset_stock(TOKEN, ["powerup:skip", "powerup:hint"], "support reset")
+
+        call_url = mock_post.call_args[0][0]
+        _, kwargs = mock_post.call_args
+        assert call_url == f"{DOTNET_BASE}/admin/store/stock-policies/bulk-reset"
+        assert kwargs["json"] == {
+            "skus": ["powerup:skip", "powerup:hint"],
+            "reason": "support reset",
+        }
+        assert result["playersAffected"] == 2
 
 
 @override_settings(**SETTINGS)

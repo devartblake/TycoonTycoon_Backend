@@ -18,6 +18,51 @@ def get_stock_policies(access_token: str, params: dict | None = None) -> dict[st
     return response.json()
 
 
+def bulk_reset_stock(access_token: str, skus: list[str], reason: str | None = None) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/store/stock-policies/bulk-reset"
+    response = httpx.post(
+        url,
+        json={"skus": skus, "reason": reason or None},
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def get_player_stock(access_token: str, player_id: str) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/store/player-stock/{player_id}"
+    response = httpx.get(
+        url,
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def override_player_stock(
+    access_token: str,
+    player_id: str,
+    sku: str,
+    effective_max_quantity: int | None,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/store/player-stock/{player_id}/override"
+    response = httpx.post(
+        url,
+        json={
+            "sku": sku,
+            "effectiveMaxQuantity": effective_max_quantity,
+            "reason": reason or None,
+        },
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def get_flash_sales(access_token: str) -> dict[str, Any]:
     url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/store/flash-sales"
     response = httpx.get(

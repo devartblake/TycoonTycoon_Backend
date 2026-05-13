@@ -1,0 +1,125 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Player Stock{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store</p>
+    <h1 class="page-title">Player stock</h1>
+    <p class="page-subtitle">Inspect per-player stock usage, set support overrides, and reset SKU stock rows in bulk.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Lookup" copy="Enter a player UUID to inspect stock state for limited store items." %}
+  <form method="get" class="stack" data-validate="1">
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="00000000-0000-0000-0000-000000000000" required />
+        <span class="field-hint">Use the backend player UUID.</span>
+        <span class="field-error"></span>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Load player stock</button>
+    </div>
+  </form>
+</section>
+
+{% if player_id %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Stock state" copy="Remaining reflects active policy rules plus any player-specific override." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Used</th>
+          <th>Max</th>
+          <th>Remaining</th>
+          <th>Override</th>
+          <th>Last reset (UTC)</th>
+          <th>Next reset (UTC)</th>
+          <th>Updated (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.sku|default:"-" }}</td>
+          <td>{{ item.quantityUsed|default:"0" }}</td>
+          <td>{% if item.maxQuantity == 0 %}unlimited{% else %}{{ item.maxQuantity|default:"-" }}{% endif %}</td>
+          <td>{% if item.remaining == -1 %}unlimited{% else %}{{ item.remaining|default:"-" }}{% endif %}</td>
+          <td>
+            {% if item.effectiveMaxQuantity == None %}
+              <span class="chip">policy</span>
+            {% else %}
+              <span class="chip warning">{{ item.effectiveMaxQuantity }}</span>
+            {% endif %}
+          </td>
+          <td>{{ item.lastResetAtUtc|default:"-" }}</td>
+          <td>{{ item.nextResetAtUtc|default:"-" }}</td>
+          <td>{{ item.updatedAtUtc|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="helper-text">No stock rows exist for this player yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Override player stock" copy="Set a player-specific max quantity for one SKU, or leave the value blank to clear the override." %}
+  <form method="post" action="{% url 'store-player-stock-override' player_id %}" class="stack" data-validate="1">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        SKU
+        <input type="text" name="sku" placeholder="powerup:skip" required />
+        <span class="field-error"></span>
+      </label>
+      <label>
+        Effective max quantity
+        <input type="number" name="effectiveMaxQuantity" min="0" step="1" placeholder="blank clears override" />
+        <span class="field-hint">Blank sends null and restores policy behavior.</span>
+        <span class="field-error"></span>
+      </label>
+      <label>
+        Reason
+        <input type="text" name="reason" placeholder="support ticket or incident note" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Save override</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Bulk reset stock" copy="Reset matching stock rows for one or more SKUs across all players." %}
+  <form method="post" action="{% url 'store-stock-policies-bulk-reset' %}" class="stack" data-validate="1" onsubmit="return confirm('Bulk reset stock for these SKU values?');">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        SKUs
+        <textarea name="skus" rows="4" placeholder="powerup:skip&#10;powerup:hint" required></textarea>
+        <span class="field-hint">Separate SKUs with commas, spaces, or new lines.</span>
+        <span class="field-error"></span>
+      </label>
+      <label>
+        Reason
+        <input type="text" name="reason" placeholder="support ticket or rollout note" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit" class="button danger">Bulk reset</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

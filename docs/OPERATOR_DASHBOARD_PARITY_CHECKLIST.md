@@ -27,7 +27,7 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [x] Anti-cheat review queue (`AntiCheat.razor`) — `/security/anticheat`
 - [x] Notifications send / schedule / dead-letter (`Notifications.razor`) — `/operations/notifications`
 - [x] Event queue reprocess — `/operations/event-queue`
-- [ ] Player stock overrides + bulk reset (`/admin/store/player-stock/*`) — **intentionally deferred; support-only, low operator impact**
+- [x] Player stock overrides + bulk reset (`/store/player-stock`, `/store/stock-policies/bulk-reset`)
 
 ## Safety/Operations
 
@@ -37,6 +37,8 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [x] Legacy fallback service remains available in compose as `operator-dashboard-blazor`
 
 ## Release Gates
+
+These require staging/prod access and human sign-off; they are not repo-code tasks.
 
 - [ ] Execute one full parallel-run validation in staging with real operator accounts. **Runbook: `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`** (window: May 8–14)
 - [ ] Apply pending EF migrations to staging + production. **Script: `docs/pending_migrations_2026-04-29.sql`**
@@ -59,6 +61,8 @@ Backend API endpoints are complete and available at `/admin/personalization/*`; 
 - [x] Django operator dashboard UI for personalization — `/personalization`, `/personalization/player`, `/personalization/rules`
 
 ## Status Update — April 29, 2026
+
+- ✅ **Django store support surface complete:** Player stock lookup, per-player effective max override, override clearing, and SKU bulk reset are now implemented in Django.
 
 - ✅ **Unified Personalization Layer complete:** Core services (PRs 1–5), admin endpoints (Issue 13), gameplay/store/notification hooks (Issues 9–12).
 - ✅ **All Wave B surfaces complete:** Questions queue (list/approve/reject), Game Events (open/start/close lifecycle).

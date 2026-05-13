@@ -288,6 +288,40 @@ Recommended tick-loop behavior:
 - Authoritative answer timing
 - Synchronization validation
 
+### 7.4 Operator Dashboard Realtime Strategy
+
+The backend already exposes realtime infrastructure through SignalR hubs (`/ws/match`, `/ws/presence`, `/ws/notify`) and a raw WebSocket presence endpoint (`/ws`). These endpoints are primarily player/mobile-facing today.
+
+`Tycoon.OperatorDashboard.Django` should remain the canonical operator UI, but it should not assume all dashboard data needs full push-based realtime delivery. Most operator views are administrative, auditable, and permission-gated, so near-realtime freshness is usually safer and simpler than persistent browser subscriptions.
+
+Recommended strategy:
+
+- Use lightweight polling for broad dashboard freshness:
+  - health/status cards
+  - moderation queues
+  - anti-cheat lists
+  - event queue status
+  - notification/dead-letter status
+  - store/player stock views
+  - personalization summaries
+- Use SignalR for true realtime operator streams where push semantics materially improve response time:
+  - live game-event lifecycle updates
+  - new anti-cheat flags
+  - notification dispatch/dead-letter changes
+  - matchmaking/presence incident indicators
+  - critical operational alerts
+- Consider SSE for one-way operational feeds if SignalR is unnecessary for a specific dashboard stream.
+
+Security and architecture rules:
+
+- Keep Django session auth and Django permission checks as the operator-facing authority.
+- Never expose `X-Admin-Ops-Key` or backend service credentials to browser JavaScript.
+- Browser clients should subscribe only through operator-safe channels or through Django-issued short-lived subscription credentials.
+- Mutating operator actions must continue to use POST-backed Django views or BFF endpoints with CSRF/session protection.
+- Realtime messages should be treated as refresh hints; authoritative state should still be reloaded through existing admin APIs before an operator takes action.
+
+This keeps the dashboard operationally fresh without coupling every admin workflow to persistent WebSocket state.
+
 ## 8. Matchmaking Design
 
 ### Queue Flow
@@ -432,6 +466,7 @@ Recommended validation types:
 - SignalR realtime matches
 - Match state synchronization
 - Simple authoritative gameplay
+- Optional lightweight polling refresh for critical Operator Dashboard health/status cards
 
 **Estimated time:** 2-4 weeks
 
@@ -442,6 +477,7 @@ Recommended validation types:
 - Queue system
 - MMR matching
 - Match allocation
+- Optional polling refresh for operator queue and incident indicators
 
 **Estimated time:** 4-6 weeks
 
@@ -482,7 +518,7 @@ Recommended validation types:
 
 - Advanced scaling
 - Operational tooling
-- Realtime dashboards
+- Realtime dashboards with SignalR-backed operational streams
 - Cluster orchestration
 
 **Estimated time:** 6-12 months

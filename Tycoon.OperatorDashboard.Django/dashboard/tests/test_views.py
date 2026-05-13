@@ -948,6 +948,150 @@ class DashboardViewsTests(TestCase):
         self.assertContains(response, "operator.js")
 
 
+class StorePlayerStockViewsTests(TestCase):
+    player_id = "00000000-0000-0000-0000-000000000001"
+
+    def _login(self, permissions):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions, "email": "ops@example.com"}
+        session.save()
+
+    def test_player_stock_requires_login(self):
+        response = self.client.get(reverse("store-player-stock-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
+
+    def test_player_stock_requires_read_permission(self):
+        self._login([])
+        response = self.client.get(reverse("store-player-stock-view"))
+        self.assertEqual(403, response.status_code)
+
+    def test_player_stock_without_player_id_renders_lookup(self):
+        self._login(["store:read"])
+        response = self.client.get(reverse("store-player-stock-view"))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Load player stock")
+
+    @mock.patch("dashboard.views.get_player_stock")
+    def test_player_stock_invalid_player_id_does_not_call_backend(self, mock_get_player_stock):
+        self._login(["store:read"])
+        response = self.client.get(reverse("store-player-stock-view"), {"playerId": "not-a-uuid"})
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Enter a valid player UUID.")
+        mock_get_player_stock.assert_not_called()
+
+    @mock.patch("dashboard.views.get_player_stock")
+    def test_player_stock_renders_backend_rows(self, mock_get_player_stock):
+        self._login(["store:read"])
+        mock_get_player_stock.return_value = {
+            "playerId": self.player_id,
+            "items": [
+                {
+                    "sku": "powerup:skip",
+                    "quantityUsed": 2,
+                    "maxQuantity": 5,
+                    "remaining": 3,
+                    "effectiveMaxQuantity": 5,
+                    "lastResetAtUtc": "2026-05-12T00:00:00Z",
+                    "nextResetAtUtc": "2026-05-13T00:00:00Z",
+                    "updatedAtUtc": "2026-05-12T00:00:00Z",
+                }
+            ],
+        }
+
+        response = self.client.get(reverse("store-player-stock-view"), {"playerId": self.player_id})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "powerup:skip")
+        self.assertContains(response, "2026-05-13T00:00:00Z")
+        mock_get_player_stock.assert_called_once_with("token", self.player_id)
+
+    def test_player_stock_override_requires_write_permission(self):
+        self._login(["store:read"])
+        response = self.client.post(
+            reverse("store-player-stock-override", kwargs={"player_id": self.player_id}),
+            data={"sku": "powerup:skip", "effectiveMaxQuantity": "4"},
+        )
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.override_player_stock")
+    def test_player_stock_override_valid_integer_calls_backend(self, mock_override):
+        self._login(["store:write"])
+        response = self.client.post(
+            reverse("store-player-stock-override", kwargs={"player_id": self.player_id}),
+            data={"sku": "POWERUP:SKIP", "effectiveMaxQuantity": "4", "reason": "ticket-1"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(f"/store/player-stock?playerId={self.player_id}", response.url)
+        mock_override.assert_called_once_with("token", self.player_id, "powerup:skip", 4, "ticket-1")
+
+    @mock.patch("dashboard.views.override_player_stock")
+    def test_player_stock_override_blank_quantity_clears_override(self, mock_override):
+        self._login(["store:write"])
+        response = self.client.post(
+            reverse("store-player-stock-override", kwargs={"player_id": self.player_id}),
+            data={"sku": "powerup:skip", "effectiveMaxQuantity": "", "reason": ""},
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_override.assert_called_once_with("token", self.player_id, "powerup:skip", None, "")
+
+    @mock.patch("dashboard.views.override_player_stock")
+    def test_player_stock_override_empty_sku_does_not_call_backend(self, mock_override):
+        self._login(["store:write"])
+        response = self.client.post(
+            reverse("store-player-stock-override", kwargs={"player_id": self.player_id}),
+            data={"sku": "", "effectiveMaxQuantity": "4"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_override.assert_not_called()
+
+    @mock.patch("dashboard.views.override_player_stock")
+    def test_player_stock_override_invalid_quantity_does_not_call_backend(self, mock_override):
+        self._login(["store:write"])
+        response = self.client.post(
+            reverse("store-player-stock-override", kwargs={"player_id": self.player_id}),
+            data={"sku": "powerup:skip", "effectiveMaxQuantity": "-1"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_override.assert_not_called()
+
+    def test_bulk_reset_requires_write_permission(self):
+        self._login(["store:read"])
+        response = self.client.post(
+            reverse("store-stock-policies-bulk-reset"),
+            data={"skus": "powerup:skip"},
+        )
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.bulk_reset_stock")
+    def test_bulk_reset_valid_skus_calls_backend(self, mock_bulk_reset):
+        self._login(["store:write"])
+        mock_bulk_reset.return_value = {"playersAffected": 2}
+
+        response = self.client.post(
+            reverse("store-stock-policies-bulk-reset"),
+            data={"skus": "POWERUP:SKIP, powerup:hint\npowerup:skip", "reason": "rollout"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("store-player-stock-view"), response.url)
+        mock_bulk_reset.assert_called_once_with("token", ["powerup:skip", "powerup:hint"], "rollout")
+
+    @mock.patch("dashboard.views.bulk_reset_stock")
+    def test_bulk_reset_empty_skus_does_not_call_backend(self, mock_bulk_reset):
+        self._login(["store:write"])
+        response = self.client.post(reverse("store-stock-policies-bulk-reset"), data={"skus": "  \n "})
+
+        self.assertEqual(302, response.status_code)
+        mock_bulk_reset.assert_not_called()
+
+
 class PersonalizationDashboardViewsTests(TestCase):
     def _login(self, permissions):
         session = self.client.session
