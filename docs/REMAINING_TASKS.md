@@ -1,6 +1,6 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-05-12 — Operator dashboard direction reconciled ✅; Django admin auth recovery ✅; Django player stock support surface ✅; Vue/Web migration backlog closed by Django supersession ✅; Personalization Django UI implemented ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅; Secure channel endpoint rollout ✅; Secure channel tests (KMS unit + filter integration) ✅; JWT placeholder key hardening ✅_
+_Last updated: 2026-05-12 — Operator dashboard direction reconciled ✅; Django admin auth recovery ✅; Django player stock support surface ✅; migration/seed bootstrap for Django readiness ✅; Vue/Web migration backlog closed by Django supersession ✅; Personalization Django UI implemented ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅; Secure channel endpoint rollout ✅; Secure channel tests (KMS unit + filter integration) ✅; JWT placeholder key hardening ✅_
 
 > This file is the canonical "what is left to do" reference.
 > For completed work, see [`docs/ALPHA_TASK_AUDIT.md`](ALPHA_TASK_AUDIT.md).
@@ -28,7 +28,7 @@ _Last updated: 2026-05-12 — Operator dashboard direction reconciled ✅; Djang
 | **Operator Dashboard Wave C (Moderation, Notifications, Economy, Anti-cheat, Event Queue)** | Medium | **Complete — 2026-04-29** | No |
 | **Django DefaultPermissions fix** | Medium | **Complete — all 12 scopes now granted on login** | No |
 | **Django admin auth recovery** | High | **Complete — trusted BFF plain JSON for dev/internal Docker plus secure-channel transport hooks for production** | No |
-| Operator Dashboard Wave D (Django cutover + Blazor decommission) | Low | Repo-code parity complete; external gates remain: staging parallel-run, EF migration apply, operator sign-off, Blazor decommission after rollback window | Depends on sign-off |
+| Operator Dashboard Wave D (Django cutover + Blazor decommission) | Low | Repo-code parity and migration/seed bootstrap complete; external gates remain: staging parallel-run, EF migration apply, operator sign-off, Blazor decommission after rollback window | Depends on sign-off |
 | **Operator Dashboard Vue/Web split** | **N/A** | **Closed by decision — do not split super-admin/admin workflows across Vue and Django; use Django RBAC instead** | **No** |
 | Phase 2 - Crash recovery stubs | High | Code complete; device validation pending | Yes — needs device |
 | Phase 3 - Test coverage (remaining gaps) | Medium | ~4.1% → 40% target | No |
@@ -55,6 +55,7 @@ _Last updated: 2026-05-12 — Operator dashboard direction reconciled ✅; Djang
 - `Tycoon.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web` are deprecated migration experiments. Do not add new workflows there.
 - Active cutover work is now limited to external release gates: apply pending EF migrations, complete the staging parallel-run, capture operator sign-off, then decommission Blazor after the rollback window.
 - Post-cutover product work remains in Django; personalization admin UI and player stock support workflows are implemented.
+- Migration and seed bootstrap is handled by `Tycoon.MigrationService`; see [`docs/OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md`](OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md).
 
 ---
 

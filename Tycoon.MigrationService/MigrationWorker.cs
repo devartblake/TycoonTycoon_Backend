@@ -161,6 +161,10 @@ public sealed class MigrationWorker : BackgroundService
                 var reset = scope.ServiceProvider.GetRequiredService<MissionResetService>();
                 await reset.ResetAsync(db, stoppingToken);
                 _log.Information("Mission claims reset completed successfully");
+
+                _log.Information("Validating Django Operator Dashboard readiness…");
+                var readiness = scope.ServiceProvider.GetRequiredService<DashboardReadinessValidator>();
+                await readiness.ValidateAsync(db, stoppingToken);
             }
             else
             {

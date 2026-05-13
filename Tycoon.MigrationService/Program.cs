@@ -38,11 +38,14 @@ try
             // Bind MigrationServiceOptions from config section "MigrationService"
             services.AddOptions<MigrationServiceOptions>()
                 .BindConfiguration("MigrationService");
+            services.AddOptions<MinioSeedOptions>()
+                .BindConfiguration("MinIO:Seeds");
 
             // Seeder + reset services
             services.AddTransient<AppSeeder>();
             services.AddTransient<MissionResetService>();
             services.AddTransient<MinioSeeder>();
+            services.AddTransient<DashboardReadinessValidator>();
 
             // Worker
             services.AddHostedService<MigrationWorker>();

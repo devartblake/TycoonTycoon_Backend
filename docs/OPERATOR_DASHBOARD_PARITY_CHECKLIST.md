@@ -45,6 +45,7 @@ These require staging/prod access and human sign-off; they are not repo-code tas
 - [ ] Capture and attach operator sign-off notes (QA Lead + Backend Lead + On-call Operator).
 - [x] Rollback drill executed (April 15, 2026).
 - [x] Blazor soft-freeze enforced (April 22, 2026).
+- [x] Migration/seed bootstrap documented and wired through `Tycoon.MigrationService` (`docs/OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md`).
 
 ## Personalization Admin Surface
 
@@ -63,6 +64,7 @@ Backend API endpoints are complete and available at `/admin/personalization/*`; 
 ## Status Update — April 29, 2026
 
 - ✅ **Django store support surface complete:** Player stock lookup, per-player effective max override, override clearing, and SKU bulk reset are now implemented in Django.
+- ✅ **Migration/seed bootstrap complete:** `Tycoon.MigrationService` now publishes bundled seed files, supports Auto/Bundled/MinIO seed sources, seeds super-admin ACL access, and validates Django dashboard readiness before `backend-api` starts.
 
 - ✅ **Unified Personalization Layer complete:** Core services (PRs 1–5), admin endpoints (Issue 13), gameplay/store/notification hooks (Issues 9–12).
 - ✅ **All Wave B surfaces complete:** Questions queue (list/approve/reject), Game Events (open/start/close lifecycle).

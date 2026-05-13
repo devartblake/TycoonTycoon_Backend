@@ -126,10 +126,6 @@ services:
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-synaptix_minio_user}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
-      MinIO__Seeds__StoreItemsKey: synaptix-assets/store-items.json
-      MinIO__Seeds__SkillNodesKey: synaptix-assets/skill-nodes.json
-      MinIO__Seeds__SeasonRewardsKey: synaptix-assets/season-rewards.json
-      MinIO__Seeds__QuestionsKey: synaptix-assets/questions.json
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -320,10 +316,24 @@ services:
 
       # Migration settings
       MigrationService__Mode: "${MIGRATION_MODE:-MigrateAndSeed}"
+      MigrationService__SeedSource: "${MIGRATION_SEED_SOURCE:-Auto}"
       MigrationService__AllowEnsureCreated: "${MIGRATION_ALLOW_ENSURE_CREATED:-false}"
       MigrationService__ResetDatabase: "${MIGRATION_RESET_DATABASE:-false}"
       MigrationService__AutoRepairOnMissingTables: "${MIGRATION_AUTO_REPAIR_MISSING_TABLES:-true}"
+      MigrationService__DashboardReadiness__Enabled: "${MIGRATION_DASHBOARD_READINESS_ENABLED:-true}"
+      MigrationService__DashboardReadiness__Strict: "${MIGRATION_DASHBOARD_READINESS_STRICT:-true}"
       MigrationService__RebuildElastic__Enabled: "${REBUILD_ELASTIC:-false}"
+
+      # Seed object keys. The bucket is MinIO__Bucket; do not include the bucket name in these keys.
+      MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
+      MinIO__Endpoint: "minio:9000"
+      MinIO__AccessKey: "${MINIO_ROOT_USER:-synaptix_minio_user}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
+      MinIO__UseSSL: "false"
+      MinIO__Seeds__StoreItemsKey: "${MINIO_SEED_STORE_ITEMS_KEY:-seeds/store-items.json}"
+      MinIO__Seeds__SkillNodesKey: "${MINIO_SEED_SKILL_NODES_KEY:-seeds/skill-nodes.json}"
+      MinIO__Seeds__SeasonRewardsKey: "${MINIO_SEED_SEASON_REWARDS_KEY:-seeds/season-rewards.json}"
+      MinIO__Seeds__QuestionsKey: "${MINIO_SEED_QUESTIONS_KEY:-seeds/questions.json}"
       
       # Observability
       Observability__ServiceName: "Synaptix.MigrationService"
@@ -338,6 +348,8 @@ services:
       elasticsearch:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     networks: [synaptix-net]
 

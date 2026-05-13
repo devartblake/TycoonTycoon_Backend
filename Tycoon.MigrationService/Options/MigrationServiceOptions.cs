@@ -32,7 +32,26 @@
         /// </summary>
         public bool SuppressPendingModelWarnings { get; set; } = false;
 
+        /// <summary>
+        /// Controls where catalog/question seed data is loaded from.
+        /// Valid values: Auto | Bundled | MinIO.
+        /// Auto tries object storage first, then falls back to bundled seed files.
+        /// </summary>
+        public string SeedSource { get; set; } = "Auto";
+
+        public DashboardReadinessOptions DashboardReadiness { get; set; } = new();
+
         public RebuildElasticOptions RebuildElastic { get; set; } = new();
+
+        public sealed class DashboardReadinessOptions
+        {
+            public bool Enabled { get; set; } = true;
+
+            /// <summary>
+            /// When true, missing dashboard-critical seed data fails the migration job.
+            /// </summary>
+            public bool Strict { get; set; } = true;
+        }
 
         public sealed class RebuildElasticOptions
         {

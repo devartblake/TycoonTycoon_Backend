@@ -5,6 +5,7 @@ using Serilog;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Infrastructure.Persistence;
+using Tycoon.MigrationService.Options;
 using Tycoon.MigrationService.Seeding.SeedModels;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -14,15 +15,18 @@ public sealed class MinioSeeder
 {
     private readonly IObjectStorage _storage;
     private readonly MinioSeedOptions _seedOptions;
+    private readonly MigrationServiceOptions _migrationOptions;
     private readonly Serilog.ILogger _log;
 
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
     public MinioSeeder(IObjectStorage storage, 
-        IOptions<MinioSeedOptions> seedOptions)
+        IOptions<MinioSeedOptions> seedOptions,
+        IOptions<MigrationServiceOptions> migrationOptions)
     {
         _storage = storage;
         _seedOptions = seedOptions.Value;
+        _migrationOptions = migrationOptions.Value;
         _log = Log.ForContext<MinioSeeder>();
     }
 
@@ -244,22 +248,82 @@ public sealed class MinioSeeder
 
     private async Task<T?> ReadJsonAsync<T>(string key, CancellationToken ct)
     {
-        await using var stream = await _storage.GetAsync(key, ct);
+        var seedSource = ParseSeedSource(_migrationOptions.SeedSource);
+
+        if (seedSource is SeedSource.Bundled)
+            return await ReadBundledJsonAsync<T>(key, ct);
+
+        Stream? stream = null;
+        try
+        {
+            stream = await _storage.GetAsync(key, ct);
+        }
+        catch (Exception ex) when (seedSource is SeedSource.Auto)
+        {
+            _log.Warning(ex, "MinioSeeder: failed to read '{Key}' from object storage; trying bundled seed file.", key);
+        }
+
         if (stream is null)
         {
-            _log.Information("MinioSeeder: seed file '{Key}' not found in storage — skipping.", key);
+            if (seedSource is SeedSource.Auto)
+            {
+                _log.Information("MinioSeeder: seed file '{Key}' not found in object storage; trying bundled seed file.", key);
+                return await ReadBundledJsonAsync<T>(key, ct);
+            }
+
+            _log.Information("MinioSeeder: seed file '{Key}' not found in object storage — skipping.", key);
             return default;
         }
 
+        await using (stream)
+        {
+            return await DeserializeSeedAsync<T>(stream, key, ct);
+        }
+    }
+
+    private async Task<T?> ReadBundledJsonAsync<T>(string key, CancellationToken ct)
+    {
+        var root = string.IsNullOrWhiteSpace(_seedOptions.BundledRootPath)
+            ? AppContext.BaseDirectory
+            : _seedOptions.BundledRootPath!;
+
+        var rootPath = Path.GetFullPath(root);
+        var fullPath = Path.GetFullPath(Path.Combine(rootPath, key.Replace('/', Path.DirectorySeparatorChar)));
+        var relativePath = Path.GetRelativePath(rootPath, fullPath);
+        if (relativePath.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relativePath))
+            throw new InvalidOperationException($"Seed path '{key}' resolves outside bundled seed root.");
+
+        if (!File.Exists(fullPath))
+        {
+            _log.Information("MinioSeeder: bundled seed file '{Path}' not found — skipping.", fullPath);
+            return default;
+        }
+
+        await using var stream = File.OpenRead(fullPath);
+        return await DeserializeSeedAsync<T>(stream, fullPath, ct);
+    }
+
+    private async Task<T?> DeserializeSeedAsync<T>(Stream stream, string source, CancellationToken ct)
+    {
         try
         {
             return await JsonSerializer.DeserializeAsync<T>(stream, JsonOpts, ct);
         }
         catch (Exception ex)
         {
-            _log.Warning(ex, "MinioSeeder: failed to deserialize '{Key}' — skipping.", key);
+            _log.Warning(ex, "MinioSeeder: failed to deserialize '{Source}' — skipping.", source);
             return default;
         }
+    }
+
+    private static SeedSource ParseSeedSource(string? value) =>
+        Enum.TryParse<SeedSource>(value, ignoreCase: true, out var parsed) ? parsed : SeedSource.Auto;
+
+    private enum SeedSource
+    {
+        Auto,
+        Bundled,
+        MinIO
     }
 
     private static IReadOnlyList<SkillCostDto> MapCosts(SkillCostSeedModel[]? models)
