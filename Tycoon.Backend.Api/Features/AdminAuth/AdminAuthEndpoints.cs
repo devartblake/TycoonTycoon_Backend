@@ -36,15 +36,17 @@ public static class AdminAuthEndpoints
         "seasons:read",
         "seasons:write",
         "eventqueue:read",
-        "eventqueue:write"
+        "eventqueue:write",
+        "personalization:read",
+        "personalization:write"
     ];
 
     public static void Map(RouteGroupBuilder admin)
     {
         var g = admin.MapGroup("/auth").WithTags("Admin/Auth");
 
-        g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login").RequireSecureChannel();
-        g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh").RequireSecureChannel();
+        g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login").RequireSecureChannel().AllowTrustedBffPlainJson();
+        g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh").RequireSecureChannel().AllowTrustedBffPlainJson();
         g.MapGet("/me", Me).RequireAuthorization(AdminPolicies.AdminOpsPolicy);
     }
 

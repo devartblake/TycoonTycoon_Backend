@@ -15,7 +15,7 @@ from django.utils import timezone
 
 from .models import OperatorSavedView, OperatorSavedViewAuditEvent
 from .services.admin_audit_client import get_security_audit
-from .services.admin_auth_client import admin_login, admin_me, admin_refresh
+from .services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError, admin_login, admin_me, admin_refresh
 from .services.admin_media_client import create_upload_intent
 from .services.admin_moderation_client import get_moderation_logs, get_moderation_profile, set_moderation_status
 from .services.admin_economy_client import create_economy_transaction, get_economy_history
@@ -46,6 +46,17 @@ from .services.admin_notifications_client import (
     list_channels,
     replay_dead_letter,
     send_notification,
+)
+from .services.admin_personalization_client import (
+    get_personalization_archetypes,
+    get_personalization_summary,
+    get_player_debug,
+    get_player_profile,
+    get_recommendation_performance,
+    list_rules,
+    recalculate_player,
+    reset_player,
+    upsert_rule,
 )
 from .services.admin_event_queue_client import reprocess_event_queue
 from .services.admin_users_client import (
@@ -201,6 +212,24 @@ def _to_csv_response(rows: list[dict], fieldnames: list[str], filename: str):
     return response
 
 
+def _to_pretty_json(value) -> str:
+    return json.dumps(value or {}, indent=2, sort_keys=True)
+
+
+def _normalize_personalization_audit_rows(rows: list[dict] | None) -> list[dict]:
+    normalized = []
+    for row in rows or []:
+        normalized.append(
+            {
+                **row,
+                "decisionDisplay": row.get("finalDecisionJson") or row.get("finalDecision") or row.get("decision") or "-",
+                "candidateDisplay": row.get("candidateType") or row.get("recommendationType") or row.get("type") or "-",
+                "allowedDisplay": row.get("allowed") if row.get("allowed") is not None else "-",
+            }
+        )
+    return normalized
+
+
 def _is_access_token_expired(request) -> bool:
     exp = request.session.get(SESSION_ACCESS_EXP_KEY)
     if not exp:
@@ -221,7 +250,7 @@ def _try_refresh_session(request) -> bool:
         profile = admin_me(refreshed.access_token)
         request.session[SESSION_ADMIN_PROFILE_KEY] = profile
         return True
-    except httpx.HTTPError:
+    except (httpx.HTTPError, AdminAuthConfigurationError, KmsUnavailableError):
         return False
 
 
@@ -974,9 +1003,21 @@ def login_view(request):
         if ex.response.status_code in (401, 403):
             messages.error(request, "Invalid operator credentials or access not allowed.")
             return render(request, "dashboard/login.html", status=401)
+        if ex.response.status_code == 400 and "secure_session_required" in ex.response.text:
+            messages.error(request, "Backend admin auth requires secure-channel. Configure KMS for Django or enable the trusted BFF auth path.")
+            return render(request, "dashboard/login.html", status=502)
+        if ex.response.status_code == 503 and "AdminOps key not configured" in ex.response.text:
+            messages.error(request, "Backend admin ops key is not configured.")
+            return render(request, "dashboard/login.html", status=503)
 
         messages.error(request, f"Login failed with HTTP {ex.response.status_code}.")
         return render(request, "dashboard/login.html", status=502)
+    except AdminAuthConfigurationError as ex:
+        messages.error(request, str(ex))
+        return render(request, "dashboard/login.html", status=500)
+    except KmsUnavailableError:
+        messages.error(request, "Unable to complete secure-channel login through KMS.")
+        return render(request, "dashboard/login.html", status=503)
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend auth service.")
         return render(request, "dashboard/login.html", status=503)
@@ -1540,3 +1581,148 @@ def event_queue_reprocess(request):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend event queue endpoint.")
     return redirect("/operations/event-queue")
+
+
+# ---------------------------------------------------------------------------
+# Personalization
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("personalization:read")
+def personalization_overview_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "summary": None,
+        "archetypes": [],
+        "performance": [],
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["summary"] = get_personalization_summary(access_token)
+        context["archetypes"] = get_personalization_archetypes(access_token)
+        context["performance"] = get_recommendation_performance(access_token)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Personalization overview failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend personalization endpoints.")
+    return render(request, "dashboard/personalization_overview.html", context)
+
+
+@operator_login_required
+@require_permission("personalization:read")
+def personalization_player_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    player_id = (request.GET.get("playerId") or "").strip()
+    context = {
+        "player_id": player_id,
+        "profile": None,
+        "debug": None,
+        "profile_json": "{}",
+        "preferences_json": "{}",
+        "guardrails_json": "{}",
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    if not player_id:
+        messages.warning(request, "Enter a player ID to load personalization debug details.")
+        return render(request, "dashboard/personalization_player.html", context)
+
+    try:
+        profile = get_player_profile(access_token, player_id)
+        debug = get_player_debug(access_token, player_id)
+        debug["recentAudit"] = _normalize_personalization_audit_rows(debug.get("recentAudit"))
+        context["profile"] = profile
+        context["debug"] = debug
+        context["profile_json"] = _to_pretty_json(profile)
+        context["preferences_json"] = _to_pretty_json(profile.get("preferences"))
+        context["guardrails_json"] = _to_pretty_json(profile.get("guardrails"))
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Player personalization lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend personalization endpoints.")
+    return render(request, "dashboard/personalization_player.html", context)
+
+
+@operator_login_required
+@require_permission("personalization:write")
+def personalization_player_recalculate(request, player_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        recalculate_player(access_token, player_id)
+        messages.success(request, f"Recalculation triggered for player {player_id}.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Recalculate failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend personalization endpoint.")
+    return redirect(f"/personalization/player?playerId={player_id}")
+
+
+@operator_login_required
+@require_permission("personalization:write")
+def personalization_player_reset(request, player_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        reset_player(access_token, player_id)
+        messages.success(request, f"Personalization reset to safe defaults for player {player_id}.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Reset failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend personalization endpoint.")
+    return redirect(f"/personalization/player?playerId={player_id}")
+
+
+@operator_login_required
+@require_permission("personalization:read")
+def personalization_rules_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "rules": [],
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        rules = list_rules(access_token)
+        context["rules"] = [
+            {
+                **rule,
+                "ruleJson": _to_pretty_json(rule.get("rule")),
+            }
+            for rule in rules
+        ]
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Guardrail rules lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend personalization rules endpoint.")
+    return render(request, "dashboard/personalization_rules.html", context)
+
+
+@operator_login_required
+@require_permission("personalization:write")
+def personalization_rule_upsert(request, rule_key: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    raw_rule = (request.POST.get("ruleJson") or "{}").strip() or "{}"
+    is_enabled = str(request.POST.get("isEnabled") or "").lower() in {"1", "true", "on", "yes"}
+
+    try:
+        parsed_rule = json.loads(raw_rule)
+    except json.JSONDecodeError:
+        messages.error(request, f"Rule JSON for '{rule_key}' is invalid. No update was sent.")
+        return redirect("/personalization/rules")
+
+    if not isinstance(parsed_rule, dict):
+        messages.error(request, f"Rule JSON for '{rule_key}' must be a JSON object. No update was sent.")
+        return redirect("/personalization/rules")
+
+    try:
+        upsert_rule(access_token, rule_key, {"isEnabled": is_enabled, "rule": parsed_rule})
+        messages.success(request, f"Updated guardrail rule '{rule_key}'.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Rule update failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend personalization rules endpoint.")
+    return redirect("/personalization/rules")

@@ -38,6 +38,7 @@ namespace Tycoon.Backend.Api.Tests.TestHost
                     ["AdminOps:Enabled"] = "true",
                     ["AdminOps:Header"] = "X-Admin-Ops-Key",
                     ["AdminOps:Key"] = TestAdminKey,
+                    ["AdminAuth:AllowTrustedBffPlainJson"] = "true",
                 };
 
                 cfg.AddInMemoryCollection(dict);

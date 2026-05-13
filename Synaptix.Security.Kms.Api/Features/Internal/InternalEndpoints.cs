@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Synaptix.Security.Kms.Api.Security;
 using Synaptix.Security.Kms.Application.Abstractions;
+using Synaptix.Security.Kms.Application.Sessions;
 using Synaptix.Security.Kms.Contracts.Models;
+using Synaptix.Security.Kms.Contracts.Suites;
+using System.Security.Cryptography;
 
 namespace Synaptix.Security.Kms.Api.Features.Internal;
 
 /// Internal service-to-service endpoints.
-/// All routes require a valid X-Service-Token header — not exposed to public callers.
+/// All routes require a valid X-Service-Token header and are not exposed to public callers.
 public static class InternalEndpoints
 {
     public static void Map(WebApplication app)
@@ -16,6 +19,7 @@ public static class InternalEndpoints
             .AddEndpointFilter<ServiceTokenFilter>();
 
         group.MapPost("/datakey", HandleGenerateDataKey);
+        group.MapPost("/sessions/start", HandleStartSession);
         group.MapPost("/encrypt", HandleEncrypt);
         group.MapPost("/decrypt", HandleDecrypt);
     }
@@ -34,6 +38,44 @@ public static class InternalEndpoints
         {
             return Results.BadRequest(new { error = "datakey_failed", message = ex.Message });
         }
+    }
+
+    public static async Task<IResult> HandleStartSession(
+        [FromBody] InternalStartSessionRequest body,
+        ISessionStore sessions,
+        CancellationToken ct)
+    {
+        var subjectId = string.IsNullOrWhiteSpace(body.SubjectId) ? "trusted-service" : body.SubjectId.Trim();
+        var deviceId = string.IsNullOrWhiteSpace(body.DeviceId) ? "service-bff" : body.DeviceId.Trim();
+        var sessionId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var expiresAt = now.AddMinutes(30);
+        var suite = body.SupportedSuites?.Contains(SecureSuites.ClassicalV1) == true
+            ? SecureSuites.ClassicalV1
+            : SecureSuites.ClassicalV1;
+
+        var session = new SecureSession(
+            sessionId,
+            subjectId,
+            deviceId,
+            "syn-sec-v1",
+            suite,
+            RandomNumberGenerator.GetBytes(32),
+            RandomNumberGenerator.GetBytes(32),
+            now,
+            expiresAt,
+            0L);
+
+        await sessions.SaveAsync(session, ct);
+
+        return Results.Ok(new StartSessionResult(
+            sessionId,
+            "syn-sec-v1",
+            suite,
+            "internal-service-session",
+            "internal-service-session",
+            expiresAt,
+            "internal-service-session"));
     }
 
     private static async Task<IResult> HandleEncrypt(
@@ -80,6 +122,11 @@ public static class InternalEndpoints
 }
 
 public sealed record DataKeyRequest(string KeyName);
+
+public sealed record InternalStartSessionRequest(
+    string? SubjectId,
+    string? DeviceId,
+    IReadOnlyList<string>? SupportedSuites);
 
 public sealed record InternalEncryptRequest(
     Guid SessionId,

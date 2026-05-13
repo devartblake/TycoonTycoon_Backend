@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace Tycoon.Backend.Api.Security;
 
+public sealed class AllowTrustedBffPlainJsonAttribute : Attribute { }
+
 public static class SecureChannelExtensions
 {
     /// Marks a minimal-API endpoint as requiring an active KMS secure session.
@@ -11,6 +13,9 @@ public static class SecureChannelExtensions
     public static RouteHandlerBuilder RequireSecureChannel(this RouteHandlerBuilder builder)
         => builder.AddEndpointFilter<SecureChannelFilter>()
                   .WithTags("secure-channel");
+
+    public static RouteHandlerBuilder AllowTrustedBffPlainJson(this RouteHandlerBuilder builder)
+        => builder.WithMetadata(new AllowTrustedBffPlainJsonAttribute());
 
     /// Applies secure-channel enforcement to every endpoint in a route group.
     public static RouteGroupBuilder RequireSecureChannel(this RouteGroupBuilder group)

@@ -1,0 +1,49 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Personalization Guardrail Rules{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Personalization</p>
+    <h1 class="page-title">Guardrail rules</h1>
+    <p class="page-subtitle">Review and update runtime guardrail rules used before recommendations are persisted.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Rules" copy="Rule JSON must be a JSON object. Invalid JSON is rejected before any backend update is sent." %}
+  <div class="stack">
+    {% for rule in rules %}
+    <form method="post" action="{% url 'personalization-rule-upsert' rule.ruleKey %}" class="stack" data-validate="1">
+      {% csrf_token %}
+      <div class="toolbar-actions">
+        <div>
+          <strong>{{ rule.ruleKey }}</strong>
+          <span class="chip {% if rule.isEnabled %}success{% else %}warning{% endif %}">
+            {% if rule.isEnabled %}Enabled{% else %}Disabled{% endif %}
+          </span>
+          <div class="helper-text">{{ rule.description|default:"No description supplied." }}</div>
+          <div class="helper-text">Updated {{ rule.updatedAt|default:"-" }}</div>
+        </div>
+        <label class="inline-form">
+          <input type="checkbox" name="isEnabled" {% if rule.isEnabled %}checked{% endif %} />
+          Enabled
+        </label>
+      </div>
+      <label>
+        Rule JSON
+        <textarea name="ruleJson" rows="10" required>{{ rule.ruleJson }}</textarea>
+        <span class="field-hint">Submit a JSON object such as {"maxChurnRisk": 0.65}.</span>
+        <span class="field-error"></span>
+      </label>
+      <div class="toolbar-actions">
+        <button type="submit" class="button small">Save rule</button>
+      </div>
+    </form>
+    {% empty %}
+    <p class="helper-text">No personalization guardrail rules are available.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

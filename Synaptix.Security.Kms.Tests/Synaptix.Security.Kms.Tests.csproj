@@ -18,8 +18,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Synaptix.Security.Kms.Application\Synaptix.Security.Kms.Application.csproj" />
+    <ProjectReference Include="..\Synaptix.Security.Kms.Api\Synaptix.Security.Kms.Api.csproj" />
     <ProjectReference Include="..\Synaptix.Security.Kms.Infrastructure\Synaptix.Security.Kms.Infrastructure.csproj" />
     <ProjectReference Include="..\Synaptix.Security.Kms.Contracts\Synaptix.Security.Kms.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>

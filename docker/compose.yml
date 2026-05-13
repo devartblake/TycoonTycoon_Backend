@@ -384,6 +384,7 @@ services:
       AdminOps__Enabled: "${ADMIN_OPS_ENABLED:-true}"
       AdminOps__Header: "X-Admin-Ops-Key"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+      AdminAuth__AllowTrustedBffPlainJson: "${ADMIN_AUTH_ALLOW_TRUSTED_BFF_PLAIN_JSON:-true}"
 
       # Admin allowlist — email(s) permitted to access the operator dashboard
       AdminAuth__AllowedEmails__0: "${SUPER_ADMIN_EMAIL:-}"
@@ -555,6 +556,9 @@ services:
       FASTAPI_BASE_URL: "http://sidecar:8100"
       MINIO_BASE_URL: "http://minio:9000"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+      ADMIN_AUTH_TRANSPORT: "${ADMIN_AUTH_TRANSPORT:-auto}"
+      KMS_API_BASE_URL: "${KMS_API_BASE_URL:-}"
+      KMS_SERVICE_TOKEN: "${KMS_SERVICE_TOKEN:-}"
       API_REQUEST_TIMEOUT_SECONDS: "5"
     depends_on:
       backend-api:

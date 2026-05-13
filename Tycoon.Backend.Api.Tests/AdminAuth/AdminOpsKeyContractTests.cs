@@ -56,6 +56,36 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
     }
 
     [Fact]
+    public async Task AdminLogin_WithTrustedBffPlainJsonEnabled_ReachesCredentialValidation()
+    {
+        var client = _factory.CreateClient().WithAdminOpsKey();
+
+        var resp = await client.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("x@example.com", "badpass"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await resp.HasErrorCodeAsync("UNAUTHORIZED");
+    }
+
+    [Fact]
+    public async Task AdminLogin_WithTrustedBffPlainJsonDisabled_RequiresSecureChannel()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, cfg) =>
+                cfg.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AdminAuth:AllowTrustedBffPlainJson"] = "false"
+                })));
+
+        var client = factory.CreateClient().WithAdminOpsKey();
+
+        var resp = await client.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("x@example.com", "badpass"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await resp.Content.ReadAsStringAsync();
+        body.Should().Contain("secure_session_required");
+    }
+
+    [Fact]
     public async Task AdminNotificationsChannels_WithWrongOpsKey_Returns403()
     {
         var client = _factory.CreateClient().WithAdminOpsKey("wrong-key");

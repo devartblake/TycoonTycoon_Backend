@@ -111,6 +111,7 @@ using Tycoon.Shared.Observability;
 using Tycoon.Backend.Api.Grpc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Hosting;
+using Tycoon.Backend.Api.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -420,6 +421,27 @@ builder.Services
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                if (context.Response.HasStarted)
+                    return Task.CompletedTask;
+
+                context.HandleResponse();
+                return ApiResponses.Error(
+                    StatusCodes.Status401Unauthorized,
+                    "UNAUTHORIZED",
+                    "Authentication required.").ExecuteAsync(context.HttpContext);
+            },
+            OnForbidden = context =>
+            {
+                if (context.Response.HasStarted)
+                    return Task.CompletedTask;
+
+                return ApiResponses.Error(
+                    StatusCodes.Status403Forbidden,
+                    "FORBIDDEN",
+                    "Authorization requirements not satisfied.").ExecuteAsync(context.HttpContext);
             }
         };
     });
@@ -570,11 +592,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("Frontend");
+app.UseMiddleware<AdminOpsKeyMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseWebSockets();
 app.UseRateLimiter();
-app.UseMiddleware<AdminOpsKeyMiddleware>();
 
 // ✅ SWAGGER CONFIGURATION
 if (app.Environment.IsDevelopment())

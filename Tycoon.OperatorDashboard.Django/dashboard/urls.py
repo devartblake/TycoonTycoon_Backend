@@ -48,6 +48,12 @@ from .views import (
     notifications_dead_letter_replay,
     event_queue_view,
     event_queue_reprocess,
+    personalization_overview_view,
+    personalization_player_view,
+    personalization_player_recalculate,
+    personalization_player_reset,
+    personalization_rules_view,
+    personalization_rule_upsert,
 )
 
 urlpatterns = [
@@ -105,5 +111,12 @@ urlpatterns = [
     # Event Queue
     path("operations/event-queue", event_queue_view, name="event-queue-view"),
     path("operations/event-queue/reprocess", event_queue_reprocess, name="event-queue-reprocess"),
+    # Personalization
+    path("personalization", personalization_overview_view, name="personalization-overview-view"),
+    path("personalization/player", personalization_player_view, name="personalization-player-view"),
+    path("personalization/player/<str:player_id>/recalculate", personalization_player_recalculate, name="personalization-player-recalculate"),
+    path("personalization/player/<str:player_id>/reset", personalization_player_reset, name="personalization-player-reset"),
+    path("personalization/rules", personalization_rules_view, name="personalization-rules-view"),
+    path("personalization/rules/<str:rule_key>/upsert", personalization_rule_upsert, name="personalization-rule-upsert"),
     path("healthz", healthz, name="dashboard-healthz"),
 ]

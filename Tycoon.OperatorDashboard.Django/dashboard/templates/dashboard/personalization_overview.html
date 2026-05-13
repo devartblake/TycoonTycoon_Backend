@@ -1,0 +1,99 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Personalization Overview{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Personalization</p>
+    <h1 class="page-title">Personalization overview</h1>
+    <p class="page-subtitle">Monitor player archetypes, risk counts, and recommendation outcomes from the unified personalization layer.</p>
+  </div>
+</section>
+
+{% if summary %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Risk summary" copy="Current profile and risk counts from the backend personalization tables." %}
+  <div class="form-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total profiles</div>
+      <div class="stat-value">{{ summary.totalProfiles|default:"0" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">High churn risk</div>
+      <div class="stat-value">{{ summary.highChurnRiskCount|default:"0" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">High frustration risk</div>
+      <div class="stat-value">{{ summary.highFrustrationRiskCount|default:"0" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Generated</div>
+      <div class="stat-value">{{ summary.generatedAt|default:"-" }}</div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Archetypes" copy="Distribution of player mind profile archetypes." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Archetype</th>
+          <th>Profiles</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in archetypes %}
+        <tr>
+          <td>{{ row.archetype|default:"-" }}</td>
+          <td>{{ row.count|default:"0" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="2" class="helper-text">No archetype data available.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Recommendation performance" copy="Acceptance, dismissal, and pending counts grouped by recommendation type." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Total</th>
+          <th>Accepted</th>
+          <th>Dismissed</th>
+          <th>Pending</th>
+          <th>Acceptance rate</th>
+          <th>Dismissal rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in performance %}
+        <tr>
+          <td>{{ row.type|default:"-" }}</td>
+          <td>{{ row.total|default:"0" }}</td>
+          <td>{{ row.accepted|default:"0" }}</td>
+          <td>{{ row.dismissed|default:"0" }}</td>
+          <td>{{ row.pending|default:"0" }}</td>
+          <td>{{ row.acceptanceRate|default:"0" }}</td>
+          <td>{{ row.dismissalRate|default:"0" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="helper-text">No recommendation performance data available.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

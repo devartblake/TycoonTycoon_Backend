@@ -773,9 +773,9 @@ The Django dashboard has full Wave A/B/C parity with the Blazor dashboard:
 - [ ] Execute staging parallel-run (May 8–14) per `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`
 - [ ] Capture operator sign-off (QA Lead + Backend Lead + On-call Operator)
 
-### Personalization Admin (Post-Cutover P2)
+### Personalization Admin
 
-The `.NET` backend exposes full `/admin/personalization/*` APIs. A Django operator UI for personalization is planned post-cutover and not yet started.
+The `.NET` backend exposes full `/admin/personalization/*` APIs. Django operator UI routes are implemented at `/personalization`, `/personalization/player`, and `/personalization/rules`.
 
 ---
 

@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from dashboard.models import OperatorSavedViewAuditEvent
+from dashboard.services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError
 
 
 class DashboardViewsTests(TestCase):
@@ -85,6 +86,44 @@ class DashboardViewsTests(TestCase):
 
         self.assertEqual(401, response.status_code)
         self.assertContains(response, "Invalid operator credentials", status_code=401)
+
+    @mock.patch("dashboard.views.admin_login")
+    def test_login_secure_channel_required_message(self, mock_admin_login):
+        req = httpx.Request("POST", "http://backend/admin/auth/login")
+        resp = httpx.Response(status_code=400, request=req, content=b'{"error":{"code":"secure_session_required"}}')
+        mock_admin_login.side_effect = httpx.HTTPStatusError("secure channel", request=req, response=resp)
+
+        response = self.client.post(
+            reverse("operator-login"),
+            data={"email": "ops@example.com", "password": "secret"},
+        )
+
+        self.assertEqual(502, response.status_code)
+        self.assertContains(response, "requires secure-channel", status_code=502)
+
+    @mock.patch("dashboard.views.admin_login")
+    def test_login_kms_unavailable_message(self, mock_admin_login):
+        mock_admin_login.side_effect = KmsUnavailableError("kms down")
+
+        response = self.client.post(
+            reverse("operator-login"),
+            data={"email": "ops@example.com", "password": "secret"},
+        )
+
+        self.assertEqual(503, response.status_code)
+        self.assertContains(response, "secure-channel login through KMS", status_code=503)
+
+    @mock.patch("dashboard.views.admin_login")
+    def test_login_auth_configuration_error_message(self, mock_admin_login):
+        mock_admin_login.side_effect = AdminAuthConfigurationError("KMS_SERVICE_TOKEN is required")
+
+        response = self.client.post(
+            reverse("operator-login"),
+            data={"email": "ops@example.com", "password": "secret"},
+        )
+
+        self.assertEqual(500, response.status_code)
+        self.assertContains(response, "KMS_SERVICE_TOKEN is required", status_code=500)
 
     @mock.patch("dashboard.views.admin_me")
     @mock.patch("dashboard.views.admin_refresh")
@@ -907,3 +946,159 @@ class DashboardViewsTests(TestCase):
 
         self.assertEqual(200, response.status_code)
         self.assertContains(response, "operator.js")
+
+
+class PersonalizationDashboardViewsTests(TestCase):
+    def _login(self, permissions):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions, "email": "ops@example.com"}
+        session.save()
+
+    def test_personalization_overview_requires_login(self):
+        response = self.client.get(reverse("personalization-overview-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
+
+    def test_personalization_overview_requires_read_permission(self):
+        self._login([])
+        response = self.client.get(reverse("personalization-overview-view"))
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_recommendation_performance")
+    @mock.patch("dashboard.views.get_personalization_archetypes")
+    @mock.patch("dashboard.views.get_personalization_summary")
+    def test_personalization_overview_renders_data(self, mock_summary, mock_archetypes, mock_performance):
+        self._login(["personalization:read"])
+        mock_summary.return_value = {
+            "totalProfiles": 7,
+            "highChurnRiskCount": 2,
+            "highFrustrationRiskCount": 1,
+            "generatedAt": "2026-05-12T00:00:00Z",
+        }
+        mock_archetypes.return_value = [{"archetype": "new_player", "count": 4}]
+        mock_performance.return_value = [{"type": "mission", "total": 5, "accepted": 3, "dismissed": 1, "pending": 1}]
+
+        response = self.client.get(reverse("personalization-overview-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Personalization overview")
+        self.assertContains(response, "new_player")
+        self.assertContains(response, "mission")
+
+    def test_personalization_player_requires_read_permission(self):
+        self._login([])
+        response = self.client.get(reverse("personalization-player-view"))
+        self.assertEqual(403, response.status_code)
+
+    def test_personalization_player_without_player_id_renders_lookup(self):
+        self._login(["personalization:read"])
+        response = self.client.get(reverse("personalization-player-view"))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Enter a player ID")
+
+    @mock.patch("dashboard.views.get_player_debug")
+    @mock.patch("dashboard.views.get_player_profile")
+    def test_personalization_player_renders_profile_and_debug(self, mock_profile, mock_debug):
+        self._login(["personalization:read"])
+        player_id = "00000000-0000-0000-0000-000000000001"
+        mock_profile.return_value = {
+            "playerId": player_id,
+            "archetype": "at_risk",
+            "churnRiskScore": 0.7,
+            "frustrationRiskScore": 0.3,
+            "confidenceLevel": 0.8,
+            "preferences": {"pace": "fast"},
+            "guardrails": {"pressure": "low"},
+        }
+        mock_debug.return_value = {
+            "recentEvents": [{"eventType": "question_answered", "eventSource": "gameplay", "category": "Science"}],
+            "recentAudit": [{"candidateType": "mission", "allowed": True, "createdAt": "2026-05-12T00:00:00Z"}],
+        }
+
+        response = self.client.get(reverse("personalization-player-view"), {"playerId": player_id})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "at_risk")
+        self.assertContains(response, "question_answered")
+        self.assertContains(response, "mission")
+
+    def test_personalization_recalculate_requires_write_permission(self):
+        self._login(["personalization:read"])
+        response = self.client.post(
+            reverse("personalization-player-recalculate", kwargs={"player_id": "p1"})
+        )
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.recalculate_player")
+    def test_personalization_recalculate_posts_and_redirects(self, mock_recalculate):
+        self._login(["personalization:write"])
+        response = self.client.post(
+            reverse("personalization-player-recalculate", kwargs={"player_id": "p1"})
+        )
+        self.assertEqual(302, response.status_code)
+        self.assertEqual("/personalization/player?playerId=p1", response.url)
+        mock_recalculate.assert_called_once_with("token", "p1")
+
+    @mock.patch("dashboard.views.reset_player")
+    def test_personalization_reset_posts_and_redirects(self, mock_reset):
+        self._login(["personalization:write"])
+        response = self.client.post(
+            reverse("personalization-player-reset", kwargs={"player_id": "p1"})
+        )
+        self.assertEqual(302, response.status_code)
+        self.assertEqual("/personalization/player?playerId=p1", response.url)
+        mock_reset.assert_called_once_with("token", "p1")
+
+    @mock.patch("dashboard.views.list_rules")
+    def test_personalization_rules_renders_json_editor(self, mock_list_rules):
+        self._login(["personalization:read"])
+        mock_list_rules.return_value = [
+            {
+                "ruleKey": "fatigue",
+                "description": "Cap notification pressure",
+                "isEnabled": True,
+                "rule": {"maxScore": 0.65},
+                "updatedAt": "2026-05-12T00:00:00Z",
+            }
+        ]
+
+        response = self.client.get(reverse("personalization-rules-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Guardrail rules")
+        self.assertContains(response, "fatigue")
+        self.assertContains(response, "maxScore")
+
+    def test_personalization_rule_upsert_requires_write_permission(self):
+        self._login(["personalization:read"])
+        response = self.client.post(
+            reverse("personalization-rule-upsert", kwargs={"rule_key": "fatigue"}),
+            data={"ruleJson": "{}", "isEnabled": "on"},
+        )
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.upsert_rule")
+    def test_personalization_rule_upsert_valid_json_calls_backend(self, mock_upsert):
+        self._login(["personalization:write"])
+        response = self.client.post(
+            reverse("personalization-rule-upsert", kwargs={"rule_key": "fatigue"}),
+            data={"ruleJson": '{"maxScore": 0.65}', "isEnabled": "on"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        self.assertEqual("/personalization/rules", response.url)
+        mock_upsert.assert_called_once_with("token", "fatigue", {"isEnabled": True, "rule": {"maxScore": 0.65}})
+
+    @mock.patch("dashboard.views.upsert_rule")
+    def test_personalization_rule_upsert_invalid_json_does_not_call_backend(self, mock_upsert):
+        self._login(["personalization:write"])
+        response = self.client.post(
+            reverse("personalization-rule-upsert", kwargs={"rule_key": "fatigue"}),
+            data={"ruleJson": "{not-json}", "isEnabled": "on"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        self.assertEqual("/personalization/rules", response.url)
+        mock_upsert.assert_not_called()

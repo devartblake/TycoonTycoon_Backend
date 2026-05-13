@@ -109,6 +109,22 @@
           </div>
 
           <div class="operator-nav-group">
+            <div class="operator-nav-label">Personalization</div>
+            <a class="operator-nav-link {% if request.path == '/personalization' %}is-active{% endif %}" href="{% url 'personalization-overview-view' %}">
+              <span>Overview</span>
+              <span class="operator-nav-caption">Risk signals</span>
+            </a>
+            <a class="operator-nav-link {% if '/personalization/player' in request.path %}is-active{% endif %}" href="{% url 'personalization-player-view' %}">
+              <span>Player debug</span>
+              <span class="operator-nav-caption">Profile trace</span>
+            </a>
+            <a class="operator-nav-link {% if '/personalization/rules' in request.path %}is-active{% endif %}" href="{% url 'personalization-rules-view' %}">
+              <span>Guardrail rules</span>
+              <span class="operator-nav-caption">Runtime config</span>
+            </a>
+          </div>
+
+          <div class="operator-nav-group">
             <div class="operator-nav-label">Storage</div>
             <a class="operator-nav-link {% if '/media/' in request.path %}is-active{% endif %}" href="{% url 'operator-media-intent-view' %}">
               <span>Media intents</span>

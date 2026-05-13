@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Security.Kms.Client.Abstractions;
@@ -27,6 +28,11 @@ public sealed class SecureChannelFilter : IEndpointFilter
     {
         var http = context.HttpContext;
         var ct = http.RequestAborted;
+
+        if (IsTrustedBffPlainJsonAllowed(http))
+        {
+            return await next(context);
+        }
 
         if (!http.Request.Headers.TryGetValue("X-Syn-Sec-Session", out var sessionIdStr)
             || !Guid.TryParse(sessionIdStr, out var sessionId))
@@ -78,6 +84,24 @@ public sealed class SecureChannelFilter : IEndpointFilter
         var handlerResult = await next(context);
 
         return new EncryptedResponseResult(sessionId, handlerResult, kms);
+    }
+
+    private static bool IsTrustedBffPlainJsonAllowed(HttpContext http)
+    {
+        var endpoint = http.GetEndpoint();
+        if (endpoint?.Metadata.GetMetadata<AllowTrustedBffPlainJsonAttribute>() is null)
+            return false;
+
+        if (http.Request.Headers.ContainsKey("X-Syn-Sec-Session"))
+            return false;
+
+        var cfg = http.RequestServices.GetRequiredService<IConfiguration>();
+        if (!cfg.GetValue("AdminAuth:AllowTrustedBffPlainJson", false))
+            return false;
+
+        var logger = http.RequestServices.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("TrustedBffPlainJson");
+        return AdminOpsKeyMiddleware.ValidateOpsKey(http, cfg, logger) is null;
     }
 }
 

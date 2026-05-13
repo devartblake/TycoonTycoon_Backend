@@ -76,4 +76,7 @@ MINIO_BASE_URL = os.getenv("MINIO_BASE_URL", "http://localhost:9000")
 
 ADMIN_OPS_HEADER = os.getenv("ADMIN_OPS_HEADER", os.getenv("AdminOps__Header", "X-Admin-Ops-Key"))
 ADMIN_OPS_KEY = os.getenv("AdminOps__Key", os.getenv("ADMIN_OPS_KEY", ""))
+ADMIN_AUTH_TRANSPORT = os.getenv("ADMIN_AUTH_TRANSPORT", "auto").strip().lower()
+KMS_API_BASE_URL = os.getenv("KMS_API_BASE_URL", "")
+KMS_SERVICE_TOKEN = os.getenv("KMS_SERVICE_TOKEN", "")
 LOGIN_URL = "/login"

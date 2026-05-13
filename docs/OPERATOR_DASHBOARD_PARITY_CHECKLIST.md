@@ -44,9 +44,9 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [x] Rollback drill executed (April 15, 2026).
 - [x] Blazor soft-freeze enforced (April 22, 2026).
 
-## Personalization Admin Surface (Backend API — no Django UI yet)
+## Personalization Admin Surface
 
-Backend API endpoints are complete and available at `/admin/personalization/*`:
+Backend API endpoints are complete and available at `/admin/personalization/*`; Django UI routes are now implemented under `/personalization/*`:
 
 - [x] `GET /admin/personalization/summary` — archetype distribution, churn/frustration counts
 - [x] `GET /admin/personalization/archetypes` — archetype frequency breakdown
@@ -56,7 +56,7 @@ Backend API endpoints are complete and available at `/admin/personalization/*`:
 - [x] `POST /admin/personalization/player/{playerId}/reset` — reset to safe defaults
 - [x] `GET /admin/personalization/rules` — list guardrail rules
 - [x] `PUT /admin/personalization/rules/{ruleKey}` — upsert a guardrail rule
-- [ ] Django operator dashboard UI for personalization — **not started; P2 post-cutover**
+- [x] Django operator dashboard UI for personalization — `/personalization`, `/personalization/player`, `/personalization/rules`
 
 ## Status Update — April 29, 2026
 
