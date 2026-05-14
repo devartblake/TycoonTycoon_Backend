@@ -70,6 +70,20 @@ Use this section for the May 14/15 completion pass described in
 | Staging migration status | Not complete from this workspace; requires live staging migration job or DBA SQL transcript |
 | Staging gate status | Keep open until staging migration/readiness artifacts are attached |
 
+### May 14 Retry Status
+
+| Item | Evidence / result |
+|------|-------------------|
+| Retry source commit | `34b0a2bcd640d785ae87af1707eb3979e8668c79` (`main`) |
+| Latest `dotnet-ci` retry | Failed: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25870936043 |
+| `dotnet-ci` progress | Redis initialization passed; build passed; failure moved to API tests and EF schema validation |
+| Local EF pending-model check | Passed: `No changes have been made to the model since the last migration.` |
+| Local API test retry | Failed: 357 passed, 61 failed in `Tycoon.Backend.Api.Tests` with failures across economy, skills, matchmaking, store payments, party flow, game events, secure channel, and admin questions |
+| Latest `compose-smoke` retry | Failed: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25870936027 |
+| Local compose-smoke retry | Passed after smoke-script fixes for Postgres init, admin ops key export, optional `/admin/dashboard` 404 handling, and Django login redirect handling |
+| Current cutover gate decision | Hold before Task 3. Do not start staging login readiness or staging parallel-run until GitHub `dotnet-ci` and `compose-smoke` pass and live staging Task 1-2 evidence is attached. |
+| Remediation owner action | Re-run `dotnet-ci` and `compose-smoke` after the smoke-script fix is pushed. If `dotnet-ci` still fails, triage the 61 API test failures by shared fixture/seed/config root cause before retrying cutover gates. |
+
 ### CI Readiness Automation
 
 Use `.github/workflows/operator-cutover-readiness.yml` to generate read-only JSON/Markdown evidence after

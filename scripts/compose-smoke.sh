@@ -229,7 +229,7 @@ else
   login_http=$(curl -sS -L \
     -b "$cookie_jar" -c "$cookie_jar" \
     -w '%{http_code}' -o /dev/null \
-    -X POST "$DASHBOARD_URL/login" \
+    "$DASHBOARD_URL/login" \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -H "Referer: $DASHBOARD_URL/login" \
     --data-urlencode "email=$SMOKE_ADMIN_EMAIL" \

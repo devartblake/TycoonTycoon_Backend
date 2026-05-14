@@ -42,6 +42,25 @@ GitHub Actions is the source of truth for deployment and readiness evidence.
 
 The compose readiness artifact is not staging evidence. It reported backend and Django health passing, but overall readiness failed because backend admin login returned `401` and Django session login returned `500`.
 
+### May 14 Retry Outcome
+
+GitHub retry evidence:
+
+| Artifact | Status / link |
+|----------|---------------|
+| Retry source commit | `34b0a2bcd640d785ae87af1707eb3979e8668c79` (`main`) |
+| `dotnet-ci` retry | Failed: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25870936043 |
+| `compose-smoke` retry | Failed: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25870936027 |
+| `compose-smoke` readiness artifact | `compose-readiness-results`, artifact id `6998930743`, digest `sha256:537e6f37f546d64dea4596980b400799e7dea76307c8d2601328ddabeac36e6e` |
+| Gate decision | Hold before staging Task 3 until CI/smoke pass and live Task 1-2 evidence is attached |
+
+Local remediation evidence:
+
+- `compose-smoke` now passes locally against the compose stack after smoke-script fixes.
+- `operator-cutover-readiness.py` passes locally against compose with backend health, Django health, backend admin login/profile, optional backend dashboard skip, and Django session login all passing.
+- EF pending-model check passes locally with no model changes since the last migration.
+- Full local `Tycoon.Backend.Api.Tests` remains blocked: 357 passed, 61 failed. Treat this as the current `dotnet-ci` blocker before moving to staging login readiness or staging parallel-run.
+
 ### May Publication Checklist
 
 - [ ] Staging EF migration/readiness evidence attached.
