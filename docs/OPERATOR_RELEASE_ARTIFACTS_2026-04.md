@@ -24,6 +24,24 @@
 - [x] Repo verification baseline recorded.
 - [ ] Live staging/prod cutover gates completed with attached evidence.
 
+### May 14 Task 1-2 Start Evidence
+
+GitHub Actions is the source of truth for deployment and readiness evidence.
+
+| Artifact | Status / link |
+|----------|---------------|
+| Source commit | `c7600548a5884e3c886e4e638c634e7462e2cc31` (`main`) |
+| `trivia-tycoon-ci` | Success: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25843251645 |
+| `alpha-p0-smoke` | Success: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25843251640 |
+| `dotnet-ci` | Failed: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25843251638 |
+| `compose-smoke` | Failed: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25843251635 |
+| `compose-smoke` readiness artifact | `compose-readiness-results`, artifact id `6987729716`, digest `sha256:b7ca39b94bfe9cd22e2c1a93223ad1b8527083d7065c2aa24fee2c7881e8a54c` |
+| Staging deployment image tags | Pending live GitHub Actions/deployment evidence from staging owner |
+| Staging migration evidence | Pending live `Tycoon.MigrationService` job log or DBA SQL transcript |
+| Staging readiness artifact | Pending `operator-cutover-readiness` staging artifact |
+
+The compose readiness artifact is not staging evidence. It reported backend and Django health passing, but overall readiness failed because backend admin login returned `401` and Django session login returned `500`.
+
 ### May Publication Checklist
 
 - [ ] Staging EF migration/readiness evidence attached.

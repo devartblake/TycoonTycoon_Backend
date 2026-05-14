@@ -154,9 +154,17 @@ def main() -> int:
     api_url = args.api_url.rstrip("/")
     dashboard_url = args.dashboard_url.rstrip("/")
     operator_password = os.getenv(args.operator_password_env, "")
+    admin_ops_header = os.getenv("ADMIN_OPS_HEADER", "X-Admin-Ops-Key")
+    admin_ops_key = os.getenv("ADMIN_OPS_KEY", "")
     probe = Probe(args.timeout)
     checks: list[dict[str, Any]] = []
     access_token = ""
+
+    def admin_headers(extra: dict[str, str] | None = None) -> dict[str, str]:
+        headers = dict(extra or {})
+        if admin_ops_key:
+            headers[admin_ops_header] = admin_ops_key
+        return headers
 
     add_check(
         checks,
@@ -188,7 +196,7 @@ def main() -> int:
             "POST",
             f"{api_url}/admin/auth/login",
             body=json_body({"email": args.operator_email, "password": operator_password}),
-            headers={"Content-Type": "application/json"},
+            headers=admin_headers({"Content-Type": "application/json"}),
         )
         parsed = parse_json(payload)
         access_token = str(parsed.get("accessToken") or "")
@@ -204,7 +212,7 @@ def main() -> int:
         status, payload = probe.request(
             "GET",
             f"{api_url}/admin/auth/me",
-            headers={"Authorization": f"Bearer {access_token}"},
+            headers=admin_headers({"Authorization": f"Bearer {access_token}"}),
         )
         parsed = parse_json(payload)
         email = parsed.get("email") or parsed.get("Email") or "<present>"
@@ -220,7 +228,7 @@ def main() -> int:
         status, _ = probe.request(
             "GET",
             f"{api_url}/admin/dashboard",
-            headers={"Authorization": f"Bearer {access_token}"},
+            headers=admin_headers({"Authorization": f"Bearer {access_token}"}),
         )
         if 200 <= status < 300:
             return "pass", f"Backend admin dashboard returned HTTP {status}", status

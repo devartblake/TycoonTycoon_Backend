@@ -27,6 +27,8 @@ DASHBOARD_URL="${DASHBOARD_URL:-http://localhost:8200}"
 
 SMOKE_ADMIN_EMAIL="${SMOKE_ADMIN_EMAIL:-smoke-admin@synaptix.local}"
 SMOKE_ADMIN_PASSWORD="${SMOKE_ADMIN_PASSWORD:-SmokeTest123!}"
+ADMIN_OPS_HEADER="${ADMIN_OPS_HEADER:-X-Admin-Ops-Key}"
+ADMIN_OPS_KEY="${ADMIN_OPS_KEY:-CHANGE_ME}"
 
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-120}"
 
@@ -173,7 +175,8 @@ login_payload=$(cat <<JSON
 {"email":"${SMOKE_ADMIN_EMAIL}","password":"${SMOKE_ADMIN_PASSWORD}"}
 JSON
 )
-login_response=$(curl_json "POST" "$API_URL/admin/auth/login" "$login_payload")
+login_response=$(curl_json "POST" "$API_URL/admin/auth/login" "$login_payload" \
+  -H "$ADMIN_OPS_HEADER: $ADMIN_OPS_KEY")
 access_token=$(extract_field "$login_response" '.accessToken')
 if [[ -z "$access_token" || "$access_token" == "null" ]]; then
   fail "Login succeeded (HTTP 2xx) but no accessToken in response"
@@ -184,6 +187,7 @@ ok "Login succeeded — received accessToken"
 echo ""
 echo "[3/6] Admin profile — GET /admin/auth/me"
 me_response=$(curl_json "GET" "$API_URL/admin/auth/me" "" \
+  -H "$ADMIN_OPS_HEADER: $ADMIN_OPS_KEY" \
   -H "Authorization: Bearer $access_token")
 admin_email=$(extract_field "$me_response" '.email')
 ok "Admin me returned email: ${admin_email:-<present>}"
@@ -192,6 +196,7 @@ ok "Admin me returned email: ${admin_email:-<present>}"
 echo ""
 echo "[4/6] Dashboard overview — GET /admin/dashboard"
 dash_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  -H "$ADMIN_OPS_HEADER: $ADMIN_OPS_KEY" \
   -H "Authorization: Bearer $access_token" \
   "$API_URL/admin/dashboard")
 # 200 (data) or 204 (no content) are both fine; 401/403 are failures

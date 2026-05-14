@@ -43,16 +43,32 @@ Use this section for the May 14/15 completion pass described in
 
 | Item | Value / link |
 |------|--------------|
-| Staging environment | |
-| Django dashboard image tag | |
-| Backend API image tag | |
-| Migration service image tag | |
-| Blazor fallback image tag / endpoint | |
-| Database target reference, non-secret | |
-| Migration evidence link | |
-| Dashboard readiness log link | |
-| Staging readiness JSON artifact | |
+| Staging environment | Pending live staging confirmation. Expected dashboard URL from runbook: `https://operator-staging.synaptix.internal/` |
+| Django dashboard image tag | Pending GitHub Actions/deployment evidence from staging owner |
+| Backend API image tag | Pending GitHub Actions/deployment evidence from staging owner |
+| Migration service image tag | Pending GitHub Actions/deployment evidence from staging owner |
+| Blazor fallback image tag / endpoint | Pending GitHub Actions/deployment evidence from staging owner; compose fallback service is `operator-dashboard-blazor` |
+| Database target reference, non-secret | Pending DBA/DevOps staging target reference |
+| Migration evidence link | Pending staging migration job log or DBA SQL transcript |
+| Dashboard readiness log link | Pending staging `Tycoon.MigrationService` strict readiness log |
+| Staging readiness JSON artifact | Pending `operator-cutover-readiness` staging artifact |
 | Production readiness JSON artifact | |
+
+### Task 1-2 Start Snapshot
+
+| Item | Evidence |
+|------|----------|
+| Evidence source of truth | GitHub Actions / deployment evidence |
+| Current repo commit | `c7600548a5884e3c886e4e638c634e7462e2cc31` (`main`) |
+| Latest successful `trivia-tycoon-ci` run | https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25843251645 |
+| Latest successful `alpha-p0-smoke` run | https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25843251640 |
+| Latest `dotnet-ci` run | Failed: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25843251638 |
+| Latest `compose-smoke` run | Failed: https://github.com/devartblake/TycoonTycoon_Backend/actions/runs/25843251635 |
+| Compose readiness artifact | `compose-readiness-results`, artifact id `6987729716`, digest `sha256:b7ca39b94bfe9cd22e2c1a93223ad1b8527083d7065c2aa24fee2c7881e8a54c` |
+| Compose readiness result | `overallStatus: fail`; backend health and Django health passed, admin login returned `401`, Django session login returned `500` |
+| Compose release gate fields | `efMigrationsApplied: pass`, `strictReadiness: pass`, `parallelRun/signOff/cutover/blazorRollbackWindow: pending` |
+| Staging migration status | Not complete from this workspace; requires live staging migration job or DBA SQL transcript |
+| Staging gate status | Keep open until staging migration/readiness artifacts are attached |
 
 ### CI Readiness Automation
 
