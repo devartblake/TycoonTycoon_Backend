@@ -8,9 +8,9 @@
 
 ## Executive Summary
 
-**Updated: 2026-04-29** — Wave B/C implementation is complete. The Django dashboard now covers all Blazor operator surfaces except player stock overrides (intentionally deferred — support-only, low operational impact). The May 15 hard cutover is on track. All remaining blockers are operational (parallel-run execution, migrations apply, sign-off) rather than code gaps.
+**Updated: 2026-05-14** — Wave B/C implementation, personalization, player stock overrides, stock bulk reset, migration/seed bootstrap, and first operational drilldowns are complete in Django. The May 15 hard cutover is on track. All remaining blockers are operational (parallel-run execution, migrations apply/readiness, sign-off) rather than code gaps. Use `docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md` as the closure guide.
 
-**Recommendation:** Proceed with **full cutover on May 15** — Django as the sole operator UI. Blazor fallback container remains warm through June 12 per the rollback window. Execute staging parallel run May 8–14 using `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` and collect sign-off before flipping nginx.
+**Recommendation:** Proceed with **full cutover on May 15** if the May 14/15 completion guide evidence is populated. Django becomes the sole operator UI after sign-off. Blazor fallback container remains warm through June 12 per the rollback window.
 
 ---
 
@@ -42,13 +42,13 @@
 | Notifications | `/operations/notifications` | `/admin/notifications/*` | ✅ **Added 2026-04-29** — send, history, dead-letter replay |
 | Event queue | `/operations/event-queue` | `/admin/event-queue/*` | ✅ **Added 2026-04-29** — reprocess |
 
-### Intentionally deferred (not blocking cutover)
+### Post-cutover product backlog (not blocking cutover)
 
 | Surface | Blazor page | Backend endpoint | Risk |
 |---------|------------|-----------------|------|
-| Player stock overrides | N/A | `/admin/store/player-stock/*` | LOW — support-only workflow, deferred |
-| Bulk stock reset | N/A | `/admin/store/stock-policies/bulk-reset` | LOW |
-| Reward claim limits | N/A | `/admin/store/reward-limits/*` | LOW |
+| Reward claim limits | N/A | `/admin/store/reward-limits/*` | LOW — backend exists; dedicated Django UI can follow cutover |
+| Near-realtime operator freshness | N/A | polling / future SignalR or SSE | LOW — documented as post-cutover maturity |
+| Expanded reporting snapshots | N/A | existing admin APIs plus future aggregates | LOW — product maturity, not parity gate |
 
 ---
 
@@ -60,7 +60,7 @@
 | DefaultPermissions fix (.NET) | ✅ **Complete — 2026-04-29** | — |
 | Pending migrations SQL script | ✅ **Ready — `docs/pending_migrations_2026-04-29.sql`** | DBA must apply |
 | Staging parallel-run runbook | ✅ **Ready — `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`** | — |
-| Staging parallel-run with real operator accounts | ⚠️ **Pending** | Window: May 8–14 |
+| Staging parallel-run with real operator accounts | ⚠️ **Pending** | Complete before route cutover |
 | Operator sign-off notes captured | ⚠️ **Pending** | Waiting on parallel-run execution |
 | Pending migrations applied to staging/prod | ⚠️ **Pending** | DBA action required before parallel run |
 | Rollback drill executed | ✅ Complete (April 15, 2026) | — |
@@ -76,9 +76,9 @@
 Django Questions page is live at `/content/questions` — list, approve, reject. Wave B complete 2026-04-29.
 
 ### R2 — Parallel-run sign-off not completed before cutover (OPEN)
-The parity checklist requires a full staging parallel-run with real operator accounts before hard cutover. Gate still open — execution window is May 8–14.
+The parity checklist requires a full staging parallel-run with real operator accounts before hard cutover. Gate still open as of the May 14 completion guide.
 
-**Mitigation:** Runbook in place at `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`. Schedule 2-hour session with operators before May 8.
+**Mitigation:** Runbook in place at `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`; evidence and closure rules are in `docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md`.
 
 ### R3 — Economy/reward workflows have no Django UI ✅ RESOLVED
 Django Economy page is live at `/economy/player` — player lookup, transaction history, coin grant. Wave C complete 2026-04-29.
@@ -93,7 +93,7 @@ Django Economy page is live at `/economy/player` — player lookup, transaction 
 
 ## Recommended Immediate Actions (Priority Order)
 
-1. **Apply `docs/pending_migrations_2026-04-29.sql`** to staging and production — DBA action required before parallel run begins.
-2. **Schedule staging parallel-run** (May 8–14) — block 2 hours with operators using `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`. Required before May 15 cutover.
+1. **Run `Tycoon.MigrationService` with strict dashboard readiness** in staging and production. Use `docs/pending_migrations_2026-04-29.sql` only as the DBA manual fallback.
+2. **Execute staging parallel-run** using `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` and capture evidence in `docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`.
 3. **Collect operator sign-off** — QA Lead, Backend Lead, On-call Operator must sign the runbook's sign-off table before May 15.
 4. **Flip nginx upstream on May 15** — switch from Blazor port to Django port. Blazor stays warm through June 12 as the rollback target.

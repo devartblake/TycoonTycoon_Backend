@@ -11,8 +11,8 @@ rm -rf "${LOG_DIR}"
 mkdir -p "${LOG_DIR}"
 
 declare -a COMMANDS=(
-  "dotnet restore"
-  "dotnet build --configuration Release --no-restore"
+  "dotnet restore TycoonTycoon_Backend.slnx"
+  "dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore"
   "dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build"
   "bash scripts/check-error-envelope-hardening.sh"
   "bash scripts/validate-ef-schema.sh"
@@ -29,14 +29,14 @@ run_cmd() {
   local runner_cmd="${cmd}"
 
   # If local dotnet is unavailable but docker is present, run dotnet commands
-  # in the .NET 9 SDK container so health pass can still run on Docker-only hosts.
+  # in the .NET 10 SDK container so health pass can still run on Docker-only hosts.
   if [[ "${cmd}" == dotnet* ]] && ! command -v dotnet >/dev/null 2>&1 && command -v docker >/dev/null 2>&1; then
-    runner_cmd="docker run --rm -v \"${ROOT_DIR}\":/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:9.0 bash -lc \"${cmd}\""
+    runner_cmd="docker run --rm -v \"${ROOT_DIR}\":/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:10.0 bash -lc \"${cmd}\""
   fi
 
   # Same fallback for EF validation script (which internally shells out to dotnet).
   if [[ "${cmd}" == "bash scripts/validate-ef-schema.sh" ]] && ! command -v dotnet >/dev/null 2>&1 && command -v docker >/dev/null 2>&1; then
-    runner_cmd="docker run --rm -v \"${ROOT_DIR}\":/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:9.0 bash -lc \"bash scripts/validate-ef-schema.sh\""
+    runner_cmd="docker run --rm -v \"${ROOT_DIR}\":/workspace -w /workspace mcr.microsoft.com/dotnet/sdk:10.0 bash -lc \"bash scripts/validate-ef-schema.sh\""
   fi
 
   set +e
@@ -99,12 +99,12 @@ done
   done < "${TMP_DIR}/results.txt"
   echo
   echo "## Dashboard Target Decision"
-  echo "- Authoritative target remains **Blazor Operator Dashboard** via \`docker/Dockerfile.dashboard\` as configured in compose."
-  echo "- Archived alternate dashboard-web Dockerfiles as \`.txt\` to avoid split build paths without deleting project artifacts."
+  echo "- Authoritative target is **Tycoon.OperatorDashboard.Django** via \`docker/Dockerfile.dashboard-django\` as configured in compose."
+  echo "- Blazor remains a rollback fallback only until the documented post-cutover rollback window ends."
   echo
   echo "## Next Actions"
   echo '1. Ensure prerequisites are installed locally: `bash scripts/setup-health-pass-prereqs.sh`.'
-  echo "2. Re-run this health pass in CI/dev with .NET 9 SDK + Docker available."
+  echo "2. Re-run this health pass in CI/dev with .NET 10 SDK + Docker available."
   echo "3. Attach full command logs if any command fails."
   echo "4. Mark blockers cleared and update final pass/fail summary."
 } > "${REPORT_PATH}"

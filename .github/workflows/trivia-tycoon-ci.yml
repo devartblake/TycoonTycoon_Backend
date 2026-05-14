@@ -1,0 +1,74 @@
+name: trivia-tycoon-ci
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  flutter-ci:
+    name: Optional trivia_tycoon Flutter CI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TRIVIA_TYCOON_REPOSITORY: ${{ vars.TRIVIA_TYCOON_REPOSITORY }}
+      TRIVIA_TYCOON_REF: ${{ vars.TRIVIA_TYCOON_REF || 'main' }}
+
+    steps:
+      - name: Checkout backend repository
+        uses: actions/checkout@v4
+
+      - name: Skip when trivia repository is not configured
+        if: env.TRIVIA_TYCOON_REPOSITORY == ''
+        run: |
+          echo "TRIVIA_TYCOON_REPOSITORY is not configured. Skipping separate-repo Flutter CI." | tee trivia-tycoon-ci-skip.txt
+          {
+            echo "## trivia_tycoon CI"
+            echo
+            echo "Skipped because repository variable \`TRIVIA_TYCOON_REPOSITORY\` is not configured."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checkout trivia_tycoon repository
+        if: env.TRIVIA_TYCOON_REPOSITORY != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TRIVIA_TYCOON_REPOSITORY }}
+          ref: ${{ env.TRIVIA_TYCOON_REF }}
+          token: ${{ secrets.TRIVIA_TYCOON_REPO_TOKEN || github.token }}
+          path: trivia_tycoon
+
+      - name: Setup Flutter
+        if: env.TRIVIA_TYCOON_REPOSITORY != ''
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        if: env.TRIVIA_TYCOON_REPOSITORY != ''
+        working-directory: trivia_tycoon
+        run: flutter pub get
+
+      - name: Analyze Flutter project
+        if: env.TRIVIA_TYCOON_REPOSITORY != ''
+        working-directory: trivia_tycoon
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        if: env.TRIVIA_TYCOON_REPOSITORY != ''
+        working-directory: trivia_tycoon
+        run: |
+          mkdir -p ../artifacts/trivia-tycoon
+          flutter test --machine | tee ../artifacts/trivia-tycoon/flutter-test.json
+
+      - name: Upload Flutter test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivia-tycoon-ci-results
+          path: |
+            artifacts/trivia-tycoon/
+            trivia-tycoon-ci-skip.txt
+          if-no-files-found: ignore

@@ -43,6 +43,32 @@ jobs:
           SMOKE_ADMIN_PASSWORD: ${{ env.SMOKE_ADMIN_PASSWORD }}
           WAIT_TIMEOUT: '180'
 
+      - name: Collect compose readiness JSON
+        if: always()
+        run: |
+          python3 scripts/operator-cutover-readiness.py \
+            --environment compose-smoke \
+            --api-url http://localhost:5000 \
+            --dashboard-url http://localhost:8200 \
+            --operator-email "${SMOKE_ADMIN_EMAIL}" || true
+        env:
+          OPERATOR_PASSWORD_ENV: SMOKE_ADMIN_PASSWORD
+          SMOKE_ADMIN_PASSWORD: ${{ env.SMOKE_ADMIN_PASSWORD }}
+          GATE_EF_MIGRATIONS_APPLIED: pass
+          GATE_STRICT_READINESS: pass
+          GATE_PARALLEL_RUN: pending
+          GATE_SIGN_OFF: pending
+          GATE_CUTOVER: pending
+          GATE_BLAZOR_ROLLBACK_WINDOW: pending
+
+      - name: Upload compose readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-readiness-results
+          path: artifacts/operator-cutover/
+          if-no-files-found: ignore
+
       - name: Dump service logs on failure
         if: failure()
         run: |

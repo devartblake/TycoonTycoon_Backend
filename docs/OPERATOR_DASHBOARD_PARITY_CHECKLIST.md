@@ -4,6 +4,21 @@
 
 Validate critical operator workflows before hard cutover from `operator-dashboard-blazor` to Django `operator-dashboard`.
 
+## May 2026 Completion Path
+
+**Status date: 2026-05-14.** The checked workflow items below represent repo-side Django parity.
+The only remaining checklist items are external release gates requiring staging/prod access and
+human sign-off. Use
+[`docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md`](OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md)
+as the source of truth for the run order, evidence requirements, and closure rules.
+
+Do not mark the release-gate checkboxes complete until the evidence pack and sign-off rows are
+populated.
+
+CI now supports evidence collection through `.github/workflows/operator-cutover-readiness.yml`.
+Attach the generated JSON/Markdown artifacts to the evidence pack, but keep the gate checkboxes open
+until staging/prod owners confirm the results.
+
 ## Core Workflow Parity
 
 - [x] Login/logout flow (`/login`, `/logout`)
@@ -41,9 +56,10 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 
 These require staging/prod access and human sign-off; they are not repo-code tasks.
 
-- [ ] Execute one full parallel-run validation in staging with real operator accounts. **Runbook: `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`** (window: May 8–14)
-- [ ] Apply pending EF migrations to staging + production. **Script: `docs/pending_migrations_2026-04-29.sql`**
-- [ ] Capture and attach operator sign-off notes (QA Lead + Backend Lead + On-call Operator).
+- [ ] Execute one full parallel-run validation in staging with real operator accounts. **Runbook: `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`; completion guide: `docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md`.**
+- [ ] Apply pending EF migrations to staging + production. **Preferred: `Tycoon.MigrationService` with strict readiness; manual DBA fallback: `docs/pending_migrations_2026-04-29.sql`.**
+- [ ] Attach `operator-cutover-readiness.json` artifacts for staging and production.
+- [ ] Capture and attach operator sign-off notes (QA Lead + Backend Lead + On-call Operator) in `docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`.
 - [x] Rollback drill executed (April 15, 2026).
 - [x] Blazor soft-freeze enforced (April 22, 2026).
 - [x] Migration/seed bootstrap documented and wired through `Tycoon.MigrationService` (`docs/OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md`).
@@ -74,7 +90,7 @@ Backend API endpoints are complete and available at `/admin/personalization/*`; 
 - ✅ **Avatar handler tests:** 18 unit tests covering all three avatar endpoints (`GetAvatarCatalog`, `PurchaseAvatar`, `GetAvatarAsset`).
 - ✅ **Pending migrations SQL:** `docs/pending_migrations_2026-04-29.sql` — idempotent DDL for all 6 outstanding EF migrations.
 - ✅ **Staging runbook:** `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` — 14-surface parallel-run checklist with pass/fail criteria and sign-off table.
-- ⚠️ Parallel-run execution (May 8–14) and operator sign-off still outstanding — must complete before May 15 cutover.
+- ⚠️ Parallel-run execution and operator sign-off still outstanding as of the May 14 completion guide — must complete before route cutover.
 - ⚠️ DBA must apply `docs/pending_migrations_2026-04-29.sql` to staging and production before parallel run begins.
 
 ## Status Update — April 28, 2026
@@ -82,7 +98,7 @@ Backend API endpoints are complete and available at `/admin/personalization/*`; 
 - ✅ Store section added: Flash Sales, Stock Policies, Purchase Analytics (backed by admin store P2 endpoints).
 - ✅ Parity checklist updated with Wave B/C gap matrix.
 - ⚠️ Cutover risk assessment created: `docs/OPERATOR_DASHBOARD_CUTOVER_RISK_2026-04-28.md`.
-- ⚠️ Parallel-run sign-off still outstanding — must complete before May 15 hard cutover.
+- ⚠️ Parallel-run sign-off still outstanding — use the May completion guide before hard cutover.
 - ✅ Wave B (Questions, Events, Seasons) and Wave C (Economy, Anti-cheat, Notifications) — **now complete as of April 29**.
 
 ## Status Update — April 8, 2026

@@ -1,0 +1,106 @@
+name: operator-cutover-readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment label'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      api_url:
+        description: 'Backend API base URL'
+        required: true
+      dashboard_url:
+        description: 'Django Operator Dashboard base URL'
+        required: true
+      operator_email:
+        description: 'Seeded operator email or staging validation account'
+        required: true
+      ef_migrations_applied:
+        description: 'EF migration evidence status'
+        required: true
+        default: 'pending'
+        type: choice
+        options: [pending, pass, fail, blocked]
+      strict_readiness:
+        description: 'Migration service strict readiness status'
+        required: true
+        default: 'pending'
+        type: choice
+        options: [pending, pass, fail, blocked]
+      parallel_run:
+        description: 'Staging parallel-run evidence status'
+        required: true
+        default: 'pending'
+        type: choice
+        options: [pending, pass, fail, blocked]
+      sign_off:
+        description: 'QA/backend/on-call sign-off status'
+        required: true
+        default: 'pending'
+        type: choice
+        options: [pending, pass, fail, blocked]
+      cutover:
+        description: 'Route cutover evidence status'
+        required: true
+        default: 'pending'
+        type: choice
+        options: [pending, pass, fail, blocked]
+      blazor_rollback_window:
+        description: 'Blazor rollback window evidence status'
+        required: true
+        default: 'pending'
+        type: choice
+        options: [pending, pass, fail, blocked]
+
+jobs:
+  readiness:
+    name: Collect cutover readiness evidence
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Collect readiness evidence
+        run: |
+          python scripts/operator-cutover-readiness.py \
+            --environment "${{ inputs.environment }}" \
+            --api-url "${{ inputs.api_url }}" \
+            --dashboard-url "${{ inputs.dashboard_url }}" \
+            --operator-email "${{ inputs.operator_email }}"
+        env:
+          OPERATOR_PASSWORD_ENV: OPERATOR_PASSWORD
+          OPERATOR_PASSWORD: ${{ secrets.OPERATOR_CUTOVER_PASSWORD }}
+          GATE_EF_MIGRATIONS_APPLIED: ${{ inputs.ef_migrations_applied }}
+          GATE_STRICT_READINESS: ${{ inputs.strict_readiness }}
+          GATE_PARALLEL_RUN: ${{ inputs.parallel_run }}
+          GATE_SIGN_OFF: ${{ inputs.sign_off }}
+          GATE_CUTOVER: ${{ inputs.cutover }}
+          GATE_BLAZOR_ROLLBACK_WINDOW: ${{ inputs.blazor_rollback_window }}
+
+      - name: Publish readiness summary
+        if: always()
+        run: |
+          if [[ -f artifacts/operator-cutover/operator-cutover-readiness.md ]]; then
+            cat artifacts/operator-cutover/operator-cutover-readiness.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-cutover-readiness-${{ inputs.environment }}
+          path: artifacts/operator-cutover/

@@ -56,6 +56,7 @@ _Last updated: 2026-05-12 — Operator dashboard direction reconciled ✅; Djang
 - Active cutover work is now limited to external release gates: apply pending EF migrations, complete the staging parallel-run, capture operator sign-off, then decommission Blazor after the rollback window.
 - Post-cutover product work remains in Django; personalization admin UI, player stock support workflows, and the first operational investigation workbench are implemented.
 - Migration and seed bootstrap is handled by `Tycoon.MigrationService`; see [`docs/OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md`](OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md).
+- May 2026 cutover closure is tracked in [`docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md`](OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md).
 
 ---
 

@@ -6,6 +6,27 @@
 
 ---
 
+## May 14 Evidence-Capture Preface
+
+Use this runbook with
+[`docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md`](OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md).
+Record live execution evidence in
+[`docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`](OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md)
+before marking release gates complete in the parity checklist.
+
+For each workflow, capture:
+
+- staging environment identifier and deployed image tags;
+- operator account role used for the check, without secrets;
+- pass/fail result;
+- discrepancy notes and defect links;
+- screenshot or log reference when the workflow mutates data.
+
+The Django dashboard now includes some Django-only surfaces with no Blazor equivalent. Run those as
+supplemental checks after the legacy parity matrix.
+
+---
+
 ## Prerequisites
 
 Before starting the parallel run, verify all gates are clear:
@@ -161,6 +182,10 @@ For each test below, perform the action in both dashboards and compare results. 
 |-------|--------|--------|--------|
 | Channels list renders | ☐ | ☐ | ☐ |
 | Send notification → job ID returned | ☐ | ☐ | ☐ |
+| Schedule notification → schedule row appears | ☐ | ☐ | ☐ |
+| Cancel scheduled notification | ☐ | ☐ | ☐ |
+| Create/update/delete template | ☐ | ☐ | ☐ |
+| Upsert notification channel | ☐ | ☐ | ☐ |
 | History shows sent notification | ☐ | ☐ | ☐ |
 | Dead-letter queue renders (may be empty) | ☐ | ☐ | ☐ |
 
@@ -223,6 +248,24 @@ curl -H "Authorization: Bearer <different-player-jwt>" \
 ```
 
 Expected responses documented in `docs/full_api_handoff_2026-04-28.md`.
+
+---
+
+## Supplemental Django-Only Checks
+
+These do not need Blazor comparison. They must pass before cutover because they are active Django
+operator workflows.
+
+| Surface | Check | Result | Evidence |
+|---------|-------|--------|----------|
+| User investigation | `/users/{userId}/investigation` loads account, activity, moderation, economy, personalization, and store links | ☐ | |
+| Personalization overview | `/personalization` renders summary, archetypes, and recommendation performance | ☐ | |
+| Personalization player debug | `/personalization/player?playerId=<uuid>` renders profile/debug/audit rows | ☐ | |
+| Personalization rules | Rule JSON update rejects invalid JSON and accepts valid JSON | ☐ | |
+| Player stock | `/store/player-stock?playerId=<uuid>` renders stock rows | ☐ | |
+| Player stock override | Effective max override and clear-override actions complete | ☐ | |
+| Stock bulk reset | Bulk reset accepts SKU list and records success message | ☐ | |
+| Notification advanced admin | schedule/cancel, template CRUD, and channel upsert complete | ☐ | |
 
 ---
 

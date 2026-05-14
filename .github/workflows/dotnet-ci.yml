@@ -36,6 +36,18 @@ jobs:
 
   build-test:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: bitnami/redis:7.2
+        env:
+          REDIS_PASSWORD: synaptix_redis_password_123
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli -a synaptix_redis_password_123 ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,7 +55,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -55,10 +67,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Guard hardened error-envelope surfaces
         run: bash scripts/check-error-envelope-hardening.sh
@@ -78,6 +90,18 @@ jobs:
   security-contract-tests:
     runs-on: ubuntu-latest
     needs: build-test
+    services:
+      redis:
+        image: bitnami/redis:7.2
+        env:
+          REDIS_PASSWORD: synaptix_redis_password_123
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli -a synaptix_redis_password_123 ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -85,7 +109,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -97,10 +121,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Guard hardened error-envelope surfaces
         run: bash scripts/check-error-envelope-hardening.sh
@@ -160,7 +184,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -175,10 +199,10 @@ jobs:
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Validate EF schema is in sync
         run: bash scripts/validate-ef-schema.sh
@@ -193,7 +217,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Install dotnet-ef
         run: dotnet tool install --global dotnet-ef
@@ -237,10 +261,10 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Run personalization guardrail and sidecar tests
         run: |
@@ -261,6 +285,18 @@ jobs:
   grpc-streaming-tests:
     runs-on: ubuntu-latest
     needs: build-test
+    services:
+      redis:
+        image: bitnami/redis:7.2
+        env:
+          REDIS_PASSWORD: synaptix_redis_password_123
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli -a synaptix_redis_password_123 ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -268,13 +304,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Run gRPC-focused test suites
         run: |
