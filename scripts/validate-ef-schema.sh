@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Reduce first-time prompts and telemetry noise during CI
+# Reduce first-time prompts and telemetry noise during CI.
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 export DOTNET_ENVIRONMENT=Development
@@ -10,8 +10,6 @@ export ASPNETCORE_ENVIRONMENT=Development
 PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
 STARTUP="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
 CONTEXT="AppDb"
-TMP_NAME="__SchemaCheck$(date +%s)"
-TMP_DIR="Tycoon.Backend.Migrations/Migrations/__SchemaCheck"
 AUTO_FIX=false
 AUTO_FIX_NAME=""
 
@@ -51,55 +49,41 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-cleanup() {
-  rm -rf "$TMP_DIR"
-}
-trap cleanup EXIT
-
-mkdir -p "$TMP_DIR"
-
 echo "Running EF Core schema drift validation..."
 set +e
-OUTPUT=$(dotnet ef migrations add "$TMP_NAME" \
+OUTPUT=$(dotnet ef migrations has-pending-model-changes \
   --project "$PROJECT" \
   --startup-project "$STARTUP" \
-  --context "$CONTEXT" \
-  --output-dir "Migrations/__SchemaCheck" 2>&1)
+  --context "$CONTEXT" 2>&1)
 STATUS=$?
 set -e
 
 echo "$OUTPUT"
 
-if [[ $STATUS -ne 0 ]]; then
-  if echo "$OUTPUT" | grep -qi "No changes were found"; then
-    echo "✅ EF schema validation passed (no pending model changes)."
-    exit 0
-  fi
+if [[ $STATUS -eq 0 ]]; then
+  echo "EF schema validation passed (no pending model changes)."
+  exit 0
+fi
 
-  echo "❌ EF schema validation failed due to command error."
+if ! echo "$OUTPUT" | grep -qi "Changes have been made to the model"; then
+  echo "EF schema validation failed due to command error."
   exit $STATUS
 fi
 
-MIGRATION_FILE=$(find "$TMP_DIR" -type f -name "*.cs" ! -name "*.Designer.cs" | head -1)
-
-if [[ -n "$MIGRATION_FILE" ]] && grep -q "migrationBuilder\." "$MIGRATION_FILE"; then
-  echo "❌ Schema drift detected: model changes are not represented in migrations."
-  if $AUTO_FIX; then
-    if [[ -z "$AUTO_FIX_NAME" ]]; then
-      echo "--auto-fix requires --name <MigrationName>." >&2
-      exit 1
-    fi
-    echo "Attempting auto-fix with migration '$AUTO_FIX_NAME'..."
-    ./scripts/update-ef-migration.sh --name "$AUTO_FIX_NAME"
-    echo "Re-running schema validation..."
-    ./scripts/validate-ef-schema.sh
-    exit $?
+echo "Schema drift detected: model changes are not represented in migrations."
+if $AUTO_FIX; then
+  if [[ -z "$AUTO_FIX_NAME" ]]; then
+    echo "--auto-fix requires --name <MigrationName>." >&2
+    exit 1
   fi
-
-  echo "Please add/update migrations in Tycoon.Backend.Migrations and commit them."
-  echo "Tip: ./scripts/update-ef-migration.sh --name <MigrationName>"
-  echo "Or:  ./scripts/validate-ef-schema.sh --auto-fix --name <MigrationName>"
-  exit 1
+  echo "Attempting auto-fix with migration '$AUTO_FIX_NAME'..."
+  ./scripts/update-ef-migration.sh --name "$AUTO_FIX_NAME"
+  echo "Re-running schema validation..."
+  ./scripts/validate-ef-schema.sh
+  exit $?
 fi
 
-echo "✅ EF schema validation passed (no pending model changes)."
+echo "Please add/update migrations in Tycoon.Backend.Migrations and commit them."
+echo "Tip: ./scripts/update-ef-migration.sh --name <MigrationName>"
+echo "Or:  ./scripts/validate-ef-schema.sh --auto-fix --name <MigrationName>"
+exit 1

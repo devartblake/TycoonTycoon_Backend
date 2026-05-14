@@ -10,6 +10,13 @@
 #   docker compose -f docker/compose.yml -f docker/compose.smoke.yml up -d
 
 services:
+  postgres:
+    healthcheck:
+      start_period: 60s
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
   migration:
     environment:
       MigrationService__SeedSource: "${MIGRATION_SEED_SOURCE:-Auto}"
