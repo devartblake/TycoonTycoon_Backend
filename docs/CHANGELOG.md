@@ -4,6 +4,21 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-14] Operator Dashboard May Cutover Evidence Readiness
+
+### Completed
+
+- **CI/readiness automation prepared** — backend CI now targets `TycoonTycoon_Backend.slnx` with the SDK from `global.json`, keeps Django checks in CI, provisions Redis for API-hosted test jobs, and adds optional separate-repo `trivia_tycoon` Flutter CI.
+- **Read-only cutover evidence workflow** — added `operator-cutover-readiness` automation that probes backend/dashboard health, admin login/profile/dashboard readiness, and supplied release-gate statuses, then emits JSON and Markdown artifacts without flipping traffic.
+- **Evidence package prepared** — May cutover guide, parity checklist, release artifacts, staging runbook, evidence pack, and risk assessment now distinguish repo-complete preparation from external staging/prod gates.
+- **Repo verification baseline recorded** — Django checks/tests, compose config, workflow YAML parse, readiness script compile, diff check, and .NET restore/build are captured as repo-side evidence.
+
+### Still External
+
+- Staging/prod EF migration application, strict migration/seed readiness runs, staging parallel-run, QA/backend/on-call sign-off, production route cutover, and Blazor rollback-window completion remain open until live evidence is attached.
+
+---
+
 ## [2026-05-03] Synaptix Rebrand — Backend Completion (Packets A–D)
 
 ### Domain

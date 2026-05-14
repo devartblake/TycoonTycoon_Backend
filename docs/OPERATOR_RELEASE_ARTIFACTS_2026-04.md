@@ -20,6 +20,8 @@
 - [x] Rollback drill evidence published.
 - [x] Blazor soft-freeze documented.
 - [x] May evidence templates created.
+- [x] CI/readiness automation prepared.
+- [x] Repo verification baseline recorded.
 - [ ] Live staging/prod cutover gates completed with attached evidence.
 
 ### May Publication Checklist
@@ -57,6 +59,9 @@
 
 - [ ] Parallel-run evidence populated with real operator sign-offs.
 - [ ] May cutover evidence populated before closing `docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md`.
+- [x] CI/readiness automation prepared for JSON/Markdown cutover evidence.
+- [x] May release artifact placeholders and evidence slots created.
+- [x] Repo verification baseline recorded in the May completion guide.
 - [x] Rollback drill report populated with live timestamps and outcomes.
 - [x] Any remediation tasks created and linked.
 - [x] This artifact file linked from release notes.

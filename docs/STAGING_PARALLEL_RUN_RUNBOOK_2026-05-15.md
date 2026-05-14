@@ -14,6 +14,14 @@ Record live execution evidence in
 [`docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`](OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md)
 before marking release gates complete in the parity checklist.
 
+Repo preparation completed on 2026-05-14:
+
+- CI/readiness automation is prepared for JSON/Markdown evidence.
+- Evidence tables and release artifact slots are prepared.
+- Repo verification baseline is recorded in the May completion guide.
+
+These do not replace live staging execution, migration/readiness evidence, or human sign-off.
+
 For each workflow, capture:
 
 - staging environment identifier and deployed image tags;
@@ -33,6 +41,8 @@ Before starting the parallel run, verify all gates are clear:
 
 | Gate | Owner | Status |
 |------|-------|--------|
+| CI/readiness automation prepared | Backend / DevOps | Complete — run `.github/workflows/operator-cutover-readiness.yml` for live artifacts |
+| Evidence-capture package prepared | Backend / QA | Complete — update `docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md` during execution |
 | Pending EF migrations applied to staging | Backend / DevOps | See `docs/pending_migrations_2026-04-29.sql` |
 | Django dashboard deployed to staging | DevOps | `docker-compose up operator-dashboard` |
 | Blazor dashboard deployed to staging | DevOps | Keep running on alternate port |

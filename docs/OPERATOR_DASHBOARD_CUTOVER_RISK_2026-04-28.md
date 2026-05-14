@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-**Updated: 2026-05-14** — Wave B/C implementation, personalization, player stock overrides, stock bulk reset, migration/seed bootstrap, and first operational drilldowns are complete in Django. The May 15 hard cutover is on track. All remaining blockers are operational (parallel-run execution, migrations apply/readiness, sign-off) rather than code gaps. Use `docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md` as the closure guide.
+**Updated: 2026-05-14** — Wave B/C implementation, personalization, player stock overrides, stock bulk reset, migration/seed bootstrap, first operational drilldowns, CI/readiness automation, and evidence-capture templates are complete in Django. The May 15 hard cutover is on track if live evidence is attached. All remaining blockers are operational (parallel-run execution, migrations apply/readiness, sign-off, cutover, rollback-window tracking) rather than code gaps. Use `docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md` as the closure guide.
 
 **Recommendation:** Proceed with **full cutover on May 15** if the May 14/15 completion guide evidence is populated. Django becomes the sole operator UI after sign-off. Blazor fallback container remains warm through June 12 per the rollback window.
 
@@ -60,6 +60,9 @@
 | DefaultPermissions fix (.NET) | ✅ **Complete — 2026-04-29** | — |
 | Pending migrations SQL script | ✅ **Ready — `docs/pending_migrations_2026-04-29.sql`** | DBA must apply |
 | Staging parallel-run runbook | ✅ **Ready — `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`** | — |
+| CI/readiness automation | ✅ **Ready — JSON/Markdown evidence workflow prepared** | Live workflow runs still required |
+| May evidence-capture package | ✅ **Ready — artifact slots and tables prepared** | Populate with staging/prod evidence |
+| Repo verification baseline | ✅ **Recorded — see May completion guide** | Local full API test caveat documented |
 | Staging parallel-run with real operator accounts | ⚠️ **Pending** | Complete before route cutover |
 | Operator sign-off notes captured | ⚠️ **Pending** | Waiting on parallel-run execution |
 | Pending migrations applied to staging/prod | ⚠️ **Pending** | DBA action required before parallel run |
@@ -94,6 +97,7 @@ Django Economy page is live at `/economy/player` — player lookup, transaction 
 ## Recommended Immediate Actions (Priority Order)
 
 1. **Run `Tycoon.MigrationService` with strict dashboard readiness** in staging and production. Use `docs/pending_migrations_2026-04-29.sql` only as the DBA manual fallback.
-2. **Execute staging parallel-run** using `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` and capture evidence in `docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`.
-3. **Collect operator sign-off** — QA Lead, Backend Lead, On-call Operator must sign the runbook's sign-off table before May 15.
-4. **Flip nginx upstream on May 15** — switch from Blazor port to Django port. Blazor stays warm through June 12 as the rollback target.
+2. **Run the read-only cutover readiness workflow** and attach JSON/Markdown artifacts to the evidence pack.
+3. **Execute staging parallel-run** using `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` and capture evidence in `docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`.
+4. **Collect operator sign-off** — QA Lead, Backend Lead, On-call Operator must sign the runbook's sign-off table before May 15.
+5. **Flip nginx upstream on May 15** — switch from Blazor port to Django port. Blazor stays warm through June 12 as the rollback target.

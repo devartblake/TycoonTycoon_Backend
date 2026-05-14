@@ -60,6 +60,10 @@ Use `.github/workflows/operator-cutover-readiness.yml` to generate read-only JSO
 migration/bootstrap and after cutover smoke checks. Attach the uploaded artifact links here; the workflow does
 not approve sign-off or perform the route cutover.
 
+**Preparation status:** Complete as of 2026-05-14. The workflow, JSON probe script, release artifact
+slots, and evidence tables are in place. The runs below remain pending until staging/prod owners execute
+the workflow and attach uploaded artifacts.
+
 | Run | Environment | Overall status | JSON artifact link | Markdown summary link | Notes |
 |-----|-------------|----------------|--------------------|-----------------------|-------|
 | Pre-cutover readiness | Staging | Pending | | | |

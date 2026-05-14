@@ -19,6 +19,12 @@ CI now supports evidence collection through `.github/workflows/operator-cutover-
 Attach the generated JSON/Markdown artifacts to the evidence pack, but keep the gate checkboxes open
 until staging/prod owners confirm the results.
 
+Repo-evidence tasks completed on 2026-05-14:
+
+- [x] CI/readiness automation prepared for backend, Django, optional `trivia_tycoon`, and read-only cutover probes.
+- [x] May evidence-capture package prepared with JSON/Markdown artifact slots.
+- [x] Repo verification baseline recorded in the May completion guide.
+
 ## Core Workflow Parity
 
 - [x] Login/logout flow (`/login`, `/logout`)
@@ -63,6 +69,9 @@ These require staging/prod access and human sign-off; they are not repo-code tas
 - [x] Rollback drill executed (April 15, 2026).
 - [x] Blazor soft-freeze enforced (April 22, 2026).
 - [x] Migration/seed bootstrap documented and wired through `Tycoon.MigrationService` (`docs/OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md`).
+- [x] CI/readiness automation prepared for May cutover evidence (May 14, 2026).
+- [x] May evidence-capture package prepared (May 14, 2026).
+- [x] Repo verification baseline recorded (May 14, 2026).
 
 ## Personalization Admin Surface
 

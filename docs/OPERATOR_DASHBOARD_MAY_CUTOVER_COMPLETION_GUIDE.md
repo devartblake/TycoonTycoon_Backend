@@ -21,8 +21,22 @@ As of 2026-05-14, these items can be treated as complete from repo evidence:
 - Rollback drill evidence is published.
 - Blazor soft-freeze is documented; Blazor is rollback fallback only after Django cutover.
 - May evidence templates and release artifact placeholders exist.
+- CI/readiness automation is prepared and emits read-only JSON/Markdown evidence.
+- Repo-side verification baseline is recorded for the May cutover package.
 
 Do not mark the operational release gates complete until live staging/prod evidence is attached.
+
+## Repo-Evidence Tasks Completed
+
+These tasks are complete from repository evidence and can be referenced during the May closeout:
+
+| Task | Status | Evidence |
+|------|--------|----------|
+| CI/readiness automation prepared | Complete | `.github/workflows/dotnet-ci.yml`, `.github/workflows/trivia-tycoon-ci.yml`, `.github/workflows/operator-cutover-readiness.yml`, `scripts/operator-cutover-readiness.py` |
+| Evidence-capture package prepared | Complete | May evidence section in `OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`, release artifact checklist, readiness JSON slots |
+| Repo verification baseline recorded | Complete | `git diff --check`, workflow YAML parse, `python -m py_compile scripts/operator-cutover-readiness.py`, `bash -n scripts/run-health-pass.sh`, `python manage.py check`, `python manage.py test dashboard.tests`, `docker compose -f docker/compose.yml config`, `dotnet restore TycoonTycoon_Backend.slnx`, `dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore` |
+
+Known caveat: the full local `Tycoon.Backend.Api.Tests` suite is not accepted as cutover evidence from this workstation because it collided with a local Redis password mismatch. CI now provisions an explicit Redis service for API-hosted test jobs.
 
 ## Open Gates
 
