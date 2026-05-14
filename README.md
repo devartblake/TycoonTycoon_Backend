@@ -60,8 +60,8 @@ TycoonTycoon_Backend/
 ├── Tycoon.Backend.Infrastructure/   # Data access, external services, EF Core
 ├── Tycoon.Backend.Migrations/       # EF Core migrations
 ├── Tycoon.MigrationService/         # Database migration runner service
-├── Tycoon.OperatorDashboard.Django/ # Django operator dashboard — canonical (port 8300)
-├── Tycoon.OperatorDashboard/        # Blazor Server dashboard — legacy fallback (port 8200, soft-frozen)
+├── Tycoon.OperatorDashboard.Django/ # Django operator dashboard — canonical (port 8200)
+├── Tycoon.OperatorDashboard/        # Blazor Server dashboard — legacy fallback (port 8201, soft-frozen)
 ├── Tycoon.OperatorDashboard.Vue/    # [DEPRECATED] — superseded by Django dashboard
 ├── Tycoon.OperatorDashboard.Web/    # [DEPRECATED] — superseded by Django dashboard
 ├── Tycoon.Sidecar/                  # FastAPI Python sidecar — ML scoring, personalization (port 8100)
@@ -689,8 +689,8 @@ Configure via `MigrationService__Mode`:
 | Backend API | 5000 | Main REST API + SignalR |
 | Swagger UI | 5000/swagger | Interactive API docs |
 | Hangfire Dashboard | 5000/hangfire | Background job monitoring |
-| Operator Dashboard | 8300 | Django ops control panel (primary) |
-| Operator Dashboard (legacy) | 8200 | Blazor Server ops panel (soft-frozen) |
+| Operator Dashboard | 8200 | Django ops control panel (primary) |
+| Operator Dashboard (legacy) | 8201 | Blazor Server ops panel (soft-frozen) |
 | FastAPI Sidecar | 8100 | ML scoring, personalization, analytics |
 
 ### Development Tools (dev profile only)
@@ -733,8 +733,8 @@ dotnet test /p:CollectCoverage=true /p:CoverageReportsDirectory=../coverage
 
 | Project | Status | Port |
 |---------|--------|------|
-| `Tycoon.OperatorDashboard.Django` | **Active — canonical replacement** | 8300 |
-| `Tycoon.OperatorDashboard` (Blazor) | Soft-frozen April 22; warm fallback until June 12 | 8200 |
+| `Tycoon.OperatorDashboard.Django` | **Active — canonical replacement** | 8200 |
+| `Tycoon.OperatorDashboard` (Blazor) | Soft-frozen April 22; warm fallback until June 12 | 8201 |
 | `Tycoon.OperatorDashboard.Vue` | **Deprecated** — superseded by Django | — |
 | `Tycoon.OperatorDashboard.Web` | **Deprecated** — superseded by Django | — |
 

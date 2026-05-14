@@ -9,6 +9,33 @@
     <h1 class="page-title">Player economy</h1>
     <p class="page-subtitle">Look up a player's transaction history and apply manual coin grants or deductions for support cases.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Permanent writes</span>
+    {% if player_id %}<span class="chip neutral">{{ player_id }}</span>{% endif %}
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi">
+    <span class="kpi-label">Player lookup</span>
+    <span class="kpi-val">{% if player_id %}On{% else %}Off{% endif %}</span>
+    <span class="kpi-delta">{{ player_id|default:"enter player ID" }}</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">History rows</span>
+    <span class="kpi-val">{{ history.items|length|default:"0" }}</span>
+    <span class="kpi-delta">current page</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Total records</span>
+    <span class="kpi-val">{{ history.total|default:"0" }}</span>
+    <span class="kpi-delta">backend filtered count</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">Mutation guard</span>
+    <span class="kpi-val">POST</span>
+    <span class="kpi-delta">reason required</span>
+  </article>
 </section>
 
 <section class="card">
@@ -96,7 +123,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="helper-text">No transactions found for this player.</td>
+          <td colspan="5">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No transactions found</strong>
+              <span>This player has no economy rows in the selected page window.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

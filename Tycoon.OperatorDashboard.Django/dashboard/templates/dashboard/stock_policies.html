@@ -9,6 +9,33 @@
     <h1 class="page-title">Stock policies</h1>
     <p class="page-subtitle">Per-SKU purchase limits and reset intervals. Policies define how many units a player may buy per interval.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge acc"><span class="dot"></span>Policy view</span>
+    <span class="chip neutral">{{ policies|length }} returned</span>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi">
+    <span class="kpi-label">Policies returned</span>
+    <span class="kpi-val">{{ policies|length }}</span>
+    <span class="kpi-delta">current filter</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Active filter</span>
+    <span class="kpi-val">{{ query.activeOnly|default:"All" }}</span>
+    <span class="kpi-delta">active or all policies</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">SKU filter</span>
+    <span class="kpi-val">{% if query.sku %}On{% else %}Off{% endif %}</span>
+    <span class="kpi-delta">{{ query.sku|default:"all SKUs" }}</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Unlimited</span>
+    <span class="kpi-val">0</span>
+    <span class="kpi-delta">max quantity convention</span>
+  </article>
 </section>
 
 <section class="card">
@@ -62,7 +89,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="helper-text">No stock policies found.</td>
+          <td colspan="5">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No stock policies found</strong>
+              <span>Clear the SKU filter or confirm store seed data was loaded.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

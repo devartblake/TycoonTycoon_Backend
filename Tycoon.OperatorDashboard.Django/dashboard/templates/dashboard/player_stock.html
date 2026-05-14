@@ -9,6 +9,33 @@
     <h1 class="page-title">Player stock</h1>
     <p class="page-subtitle">Inspect per-player stock usage, set support overrides, and reset SKU stock rows in bulk.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Bulk actions audited</span>
+    {% if player_id %}<span class="chip neutral">{{ items|length }} rows</span>{% endif %}
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi">
+    <span class="kpi-label">Player lookup</span>
+    <span class="kpi-val">{% if player_id %}On{% else %}Off{% endif %}</span>
+    <span class="kpi-delta">{{ player_id|default:"enter player UUID" }}</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Stock rows</span>
+    <span class="kpi-val">{{ items|length }}</span>
+    <span class="kpi-delta">loaded for this player</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Override mode</span>
+    <span class="kpi-val">V1</span>
+    <span class="kpi-delta">blank max clears override</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">Bulk reset</span>
+    <span class="kpi-val">POST</span>
+    <span class="kpi-delta">SKU list required</span>
+  </article>
 </section>
 
 <section class="card">

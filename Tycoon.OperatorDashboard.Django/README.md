@@ -27,11 +27,45 @@ python manage.py migrate
 python manage.py runserver 0.0.0.0:8300
 ```
 
-Open http://localhost:8300.
+Open http://localhost:8300 only for unauthenticated template/static checks such as `/login` and `/healthz`.
+Authenticated dashboard pages still require a real `.NET` backend admin auth flow, a matching
+`ADMIN_OPS_KEY`, and a seeded admin account. Use the Docker-backed preview flow below for normal
+dashboard review.
 
 ## Docker
 
 The main compose service now builds this dashboard with `docker/Dockerfile.dashboard-django` and serves it on container port `8200`.
+
+### Authenticated local preview
+
+Use Docker Compose for authenticated dashboard review. This keeps Django, the `.NET` API,
+`Tycoon.MigrationService`, PostgreSQL, MinIO, and the sidecar wired the same way as dev/staging:
+
+```bash
+cp docker/.env.example docker/.env   # only if docker/.env does not already exist
+docker compose -f docker/compose.yml up -d --build
+```
+
+The required local values are:
+
+- `ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION`
+- `ADMIN_AUTH_ALLOW_TRUSTED_BFF_PLAIN_JSON=true`
+- `ADMIN_AUTH_TRANSPORT=auto`
+- `SUPER_ADMIN_EMAIL=admin@tycoon.local`
+- `SUPER_ADMIN_PASSWORD=ChangeMe123!`
+
+Startup order is intentional: infrastructure starts first, `migration` applies/seeds data and
+validates dashboard readiness, `backend-api` starts after migration completion, and
+`operator-dashboard` starts after the backend is healthy.
+
+Preview URL and login:
+
+- URL: `http://localhost:8200/login`
+- Email: `admin@tycoon.local`
+- Password: `ChangeMe123!`
+
+See [`../docs/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md`](../docs/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md)
+for the verification workflow and common failure checks.
 
 ## Authentication
 

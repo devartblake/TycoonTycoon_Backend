@@ -9,6 +9,33 @@
     <h1 class="page-title">Anti-cheat flags</h1>
     <p class="page-subtitle">Review flagged players and annotate investigative outcomes.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Review queue</span>
+    <span class="chip neutral">{{ flags.items|length|default:"0" }} loaded</span>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Flags loaded</span>
+    <span class="kpi-val">{{ flags.items|length|default:"0" }}</span>
+    <span class="kpi-delta">current page</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Total matches</span>
+    <span class="kpi-val">{{ flags.total|default:"0" }}</span>
+    <span class="kpi-delta">backend filtered count</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">Severity filter</span>
+    <span class="kpi-val">{{ query.severity|default:"All" }}</span>
+    <span class="kpi-delta">1 low through 4 critical</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Unreviewed</span>
+    <span class="kpi-val">{{ query.unreviewedOnly|default:"All" }}</span>
+    <span class="kpi-delta">review queue mode</span>
+  </article>
 </section>
 
 <section class="card">
@@ -76,7 +103,13 @@
         {% for flag in flags.items %}
         <tr>
           <td class="helper-text">{{ flag.id|default:"-" }}</td>
-          <td class="helper-text">{{ flag.playerId|default:"-" }}</td>
+          <td class="helper-text">
+            {% if flag.playerId %}
+              <a href="{% url 'operator-user-investigation-view' flag.playerId %}">{{ flag.playerId }}</a>
+            {% else %}
+              -
+            {% endif %}
+          </td>
           <td>{{ flag.ruleKey|default:"-" }}</td>
           <td>{{ flag.severity|default:"-" }}</td>
           <td>{{ flag.action|default:"-" }}</td>
@@ -98,7 +131,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9" class="helper-text">No flags found.</td>
+          <td colspan="9">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No flags found</strong>
+              <span>Clear player, severity, or review filters to widen the queue.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

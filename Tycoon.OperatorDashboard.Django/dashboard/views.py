@@ -46,11 +46,19 @@ from .services.admin_seasons_client import (
     recompute_season_tiers,
 )
 from .services.admin_notifications_client import (
+    cancel_scheduled,
+    create_template,
+    delete_template,
     get_dead_letter,
     get_notification_history,
+    list_scheduled,
     list_channels,
+    list_templates,
     replay_dead_letter,
     send_notification,
+    schedule_notification,
+    update_template,
+    upsert_channel,
 )
 from .services.admin_personalization_client import (
     get_personalization_archetypes,
@@ -241,6 +249,64 @@ def _normalize_personalization_audit_rows(rows: list[dict] | None) -> list[dict]
     return normalized
 
 
+def _normalize_user_activity_rows(rows: list[dict] | None) -> list[dict]:
+    normalized = []
+    for row in rows or []:
+        normalized.append(
+            {
+                **row,
+                "typeDisplay": row.get("type") or row.get("eventType") or "-",
+                "statusDisplay": row.get("status") or "-",
+                "ipDisplay": row.get("ipAddress") or row.get("ip") or "-",
+                "createdDisplay": row.get("createdAt") or row.get("createdAtUtc") or row.get("occurredAt") or "-",
+                "detailDisplay": row.get("detail") or row.get("message") or row.get("description") or "-",
+            }
+        )
+    return normalized
+
+
+def _normalize_economy_history_rows(rows: list[dict] | None) -> list[dict]:
+    normalized = []
+    for row in rows or []:
+        normalized.append(
+            {
+                **row,
+                "typeDisplay": row.get("type") or row.get("transactionType") or "-",
+                "amountDisplay": row.get("amount") if row.get("amount") is not None else row.get("delta", "-"),
+                "reasonDisplay": row.get("reason") or row.get("description") or "-",
+                "createdDisplay": row.get("createdAt") or row.get("createdAtUtc") or row.get("occurredAt") or "-",
+            }
+        )
+    return normalized
+
+
+def _detail_section(label: str, permission: str | None = None) -> dict:
+    return {
+        "label": label,
+        "permission": permission,
+        "available": True,
+        "skipped": False,
+        "error": "",
+    }
+
+
+def _load_optional_investigation_section(request, label: str, permission: str, loader):
+    section = _detail_section(label, permission)
+    if not _has_permission(request, permission):
+        section["available"] = False
+        section["skipped"] = True
+        section["error"] = f"Missing permission: {permission}"
+        return None, section
+
+    try:
+        return loader(), section
+    except httpx.HTTPStatusError as ex:
+        section["error"] = f"{label} lookup failed (HTTP {ex.response.status_code})."
+    except httpx.RequestError:
+        section["error"] = f"Unable to reach backend {label.lower()} endpoint."
+    return None, section
+
+
 def _is_access_token_expired(request) -> bool:
     exp = request.session.get(SESSION_ACCESS_EXP_KEY)
     if not exp:
@@ -309,9 +375,72 @@ def dashboard_home(request):
     for service in services:
         service.css_class = STATUS_CLASSES.get(service.status, "status-unknown")
 
+    healthy_services = sum(1 for service in services if service.status == "healthy")
+    degraded_services = sum(1 for service in services if service.status == "degraded")
+    offline_services = sum(1 for service in services if service.status == "offline")
+    workflow_cards = [
+        {
+            "label": "Users triage",
+            "description": "Filter accounts, open investigation workbenches, and run guarded bulk actions.",
+            "href": "operator-users-view",
+            "badge": "Triage",
+        },
+        {
+            "label": "Anti-cheat queue",
+            "description": "Review flagged sessions and annotate outcomes for audit review.",
+            "href": "anticheat-flags-view",
+            "badge": "Security",
+        },
+        {
+            "label": "Personalization",
+            "description": "Inspect risk signals, archetypes, recommendation performance, and guardrails.",
+            "href": "personalization-overview-view",
+            "badge": "Risk",
+        },
+        {
+            "label": "Event queue",
+            "description": "Reprocess failed or stuck domain events by scope with operator confirmation.",
+            "href": "event-queue-view",
+            "badge": "Ops",
+        },
+        {
+            "label": "Player stock",
+            "description": "Inspect stock usage, set overrides, or bulk reset limited SKU rows.",
+            "href": "store-player-stock-view",
+            "badge": "Store",
+        },
+        {
+            "label": "Notifications",
+            "description": "Send notifications and replay dead-letter failures from one surface.",
+            "href": "notifications-view",
+            "badge": "Comms",
+        },
+    ]
+    readiness_items = [
+        {"label": "Django canonical UI", "status": "Complete", "tone": "ok"},
+        {"label": "Migration/seed bootstrap", "status": "Complete", "tone": "ok"},
+        {"label": "Operational drilldowns", "status": "Started", "tone": "warn"},
+        {"label": "Staging parallel-run", "status": "External gate", "tone": "warn"},
+        {"label": "Operator sign-off", "status": "External gate", "tone": "warn"},
+        {"label": "Blazor decommission", "status": "After rollback window", "tone": "neutral"},
+    ]
+    endpoint_surfaces = [
+        {"method": "GET", "path": "/api/operator/health", "description": "Aggregated dashboard health payload."},
+        {"method": "GET", "path": "/api/operator/users", "description": "Users triage and investigation entrypoint."},
+        {"method": "GET", "path": "/api/operator/audit/security", "description": "Security audit timeline and CSV export."},
+        {"method": "POST", "path": "/operations/event-queue/reprocess", "description": "Django POST action for event queue recovery."},
+    ]
+
     context = {
         "services": services,
         "overall_status": get_overall_status(services),
+        "healthy_services": healthy_services,
+        "degraded_services": degraded_services,
+        "offline_services": offline_services,
+        "operator_route_count": 20,
+        "workflow_cards": workflow_cards,
+        "readiness_items": readiness_items,
+        "endpoint_surfaces": endpoint_surfaces,
         "generated_at": timezone.now(),
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
@@ -663,6 +792,126 @@ def operator_user_activity(request, user_id: str):
         return build_upstream_http_error_response(ex, "User activity endpoint failed.")
     except httpx.RequestError:
         return build_upstream_unavailable_response("Unable to reach backend user activity endpoint.")
+
+
+@operator_login_required
+@require_permission("users:read")
+def operator_user_investigation_view(request, user_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    player_id = (request.GET.get("playerId") or user_id or "").strip()
+    activity_query = {
+        "page": request.GET.get("activityPage", 1),
+        "pageSize": request.GET.get("activityPageSize", 25),
+    }
+    context = {
+        "user_id": user_id,
+        "player_id": player_id,
+        "user_detail": None,
+        "user_detail_json": "{}",
+        "activity": None,
+        "activity_query": activity_query,
+        "moderation_profile": None,
+        "moderation_profile_json": "{}",
+        "economy_history": None,
+        "personalization_profile": None,
+        "personalization_debug": None,
+        "personalization_profile_json": "{}",
+        "player_stock": None,
+        "sections": {},
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+
+    try:
+        user_detail = get_admin_user(access_token, user_id)
+        context["user_detail"] = user_detail
+        context["user_detail_json"] = _to_pretty_json(user_detail)
+    except httpx.HTTPStatusError as ex:
+        context["sections"]["user"] = {
+            **_detail_section("User profile", "users:read"),
+            "error": f"User profile lookup failed (HTTP {ex.response.status_code}).",
+        }
+    except httpx.RequestError:
+        context["sections"]["user"] = {
+            **_detail_section("User profile", "users:read"),
+            "error": "Unable to reach backend user profile endpoint.",
+        }
+
+    try:
+        context["activity"] = get_admin_user_activity(access_token, user_id, activity_query)
+        context["activity"]["items"] = _normalize_user_activity_rows(context["activity"].get("items"))
+    except httpx.HTTPStatusError as ex:
+        context["sections"]["activity"] = {
+            **_detail_section("User activity", "users:read"),
+            "error": f"User activity lookup failed (HTTP {ex.response.status_code}).",
+        }
+    except httpx.RequestError:
+        context["sections"]["activity"] = {
+            **_detail_section("User activity", "users:read"),
+            "error": "Unable to reach backend user activity endpoint.",
+        }
+
+    moderation_profile, moderation_section = _load_optional_investigation_section(
+        request,
+        "Moderation profile",
+        "moderation:read",
+        lambda: get_moderation_profile(access_token, player_id),
+    )
+    context["moderation_profile"] = moderation_profile
+    context["moderation_profile_json"] = _to_pretty_json(moderation_profile)
+    context["sections"]["moderation"] = moderation_section
+
+    economy_history, economy_section = _load_optional_investigation_section(
+        request,
+        "Economy history",
+        "economy:read",
+        lambda: get_economy_history(access_token, player_id, {"page": 1, "pageSize": 10}),
+    )
+    context["economy_history"] = economy_history
+    if context["economy_history"]:
+        context["economy_history"]["items"] = _normalize_economy_history_rows(context["economy_history"].get("items"))
+    context["sections"]["economy"] = economy_section
+
+    personalization_profile, personalization_section = _load_optional_investigation_section(
+        request,
+        "Personalization profile",
+        "personalization:read",
+        lambda: get_player_profile(access_token, player_id),
+    )
+    context["personalization_profile"] = personalization_profile
+    context["personalization_profile_json"] = _to_pretty_json(personalization_profile)
+    context["sections"]["personalization"] = personalization_section
+
+    personalization_debug, personalization_debug_section = _load_optional_investigation_section(
+        request,
+        "Personalization debug",
+        "personalization:read",
+        lambda: get_player_debug(access_token, player_id),
+    )
+    if personalization_debug:
+        personalization_debug["recentAudit"] = _normalize_personalization_audit_rows(personalization_debug.get("recentAudit"))
+    context["personalization_debug"] = personalization_debug
+    context["sections"]["personalization_debug"] = personalization_debug_section
+
+    if _is_valid_uuid(player_id):
+        player_stock, stock_section = _load_optional_investigation_section(
+            request,
+            "Player stock",
+            "store:read",
+            lambda: get_player_stock(access_token, player_id),
+        )
+    else:
+        player_stock = None
+        stock_section = {
+            **_detail_section("Player stock", "store:read"),
+            "available": False,
+            "skipped": True,
+            "error": "Player stock requires a player UUID. Pass ?playerId=<uuid> if the user ID is not the player UUID.",
+        }
+    context["player_stock"] = player_stock
+    context["sections"]["stock"] = stock_section
+
+    context["last_refreshed_at"] = timezone.now()
+    return render(request, "dashboard/user_investigation.html", context)
 
 
 @operator_login_required
@@ -1610,10 +1859,25 @@ def seasons_recompute(request, season_id: str):
 @require_permission("notifications:read")
 def notifications_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    history_query = {
+        "from": request.GET.get("from"),
+        "to": request.GET.get("to"),
+        "channelKey": request.GET.get("channelKey"),
+        "status": request.GET.get("status"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+    }
     context = {
         "channels": [],
+        "scheduled": None,
+        "templates": [],
         "history": None,
         "dead_letter": None,
+        "history_query": history_query,
+        "default_audience_json": '{\n  "type": "all"\n}',
+        "default_payload_json": "{\n}",
+        "default_repeat_json": "",
+        "last_refreshed": timezone.now(),
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
     try:
@@ -1621,14 +1885,44 @@ def notifications_view(request):
     except (httpx.HTTPStatusError, httpx.RequestError):
         messages.error(request, "Failed to load notification channels.")
     try:
-        context["history"] = get_notification_history(access_token, {"page": 1, "pageSize": 25})
+        context["scheduled"] = list_scheduled(access_token, {"page": 1, "pageSize": 25})
     except (httpx.HTTPStatusError, httpx.RequestError):
-        pass
+        messages.error(request, "Failed to load scheduled notifications.")
+    try:
+        context["templates"] = list_templates(access_token)
+    except (httpx.HTTPStatusError, httpx.RequestError):
+        messages.error(request, "Failed to load notification templates.")
+    try:
+        context["history"] = get_notification_history(access_token, history_query)
+    except (httpx.HTTPStatusError, httpx.RequestError):
+        messages.error(request, "Failed to load notification history.")
     try:
         context["dead_letter"] = get_dead_letter(access_token, {"page": 1, "pageSize": 25})
     except (httpx.HTTPStatusError, httpx.RequestError):
-        pass
+        messages.error(request, "Failed to load notification dead-letter queue.")
     return render(request, "dashboard/notifications.html", context)
+
+
+def _parse_json_object_field(request, field_name: str, label: str, *, required: bool) -> tuple[dict | None, bool]:
+    raw = (request.POST.get(field_name) or "").strip()
+    if not raw:
+        if required:
+            messages.error(request, f"{label} is required and must be a JSON object.")
+            return None, False
+        return None, True
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        messages.error(request, f"{label} must be valid JSON. No backend call was sent.")
+        return None, False
+    if not isinstance(parsed, dict):
+        messages.error(request, f"{label} must be a JSON object. No backend call was sent.")
+        return None, False
+    return parsed, True
+
+
+def _parse_variables(raw: str) -> list[str]:
+    return [part.strip() for part in re.split(r"[\n,]+", raw or "") if part.strip()]
 
 
 @operator_login_required
@@ -1637,11 +1931,18 @@ def notifications_send(request):
     if request.method != "POST":
         return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    audience, audience_ok = _parse_json_object_field(request, "audience", "Audience JSON", required=True)
+    payload_json, payload_ok = _parse_json_object_field(request, "payload", "Payload JSON", required=False)
+    if not audience_ok or not payload_ok:
+        return redirect("/operations/notifications")
     payload = {
-        "channelKey": request.POST.get("channelKey"),
-        "title": request.POST.get("title"),
+        "channelKey": (request.POST.get("channelKey") or "").strip(),
+        "title": (request.POST.get("title") or "").strip(),
+        "body": (request.POST.get("body") or "").strip(),
+        "audience": audience,
+        "payload": payload_json,
     }
-    missing = [k for k, v in payload.items() if not v]
+    missing = [k for k in ("channelKey", "title", "body") if not payload.get(k)]
     if missing:
         messages.error(request, f"Missing required fields: {', '.join(missing)}.")
         return redirect("/operations/notifications")
@@ -1652,6 +1953,139 @@ def notifications_send(request):
         messages.error(request, f"Send failed (HTTP {ex.response.status_code}).")
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend notifications endpoint.")
+    return redirect("/operations/notifications")
+
+
+@operator_login_required
+@require_permission("notifications:write")
+def notifications_schedule(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    audience, audience_ok = _parse_json_object_field(request, "audience", "Audience JSON", required=True)
+    repeat, repeat_ok = _parse_json_object_field(request, "repeat", "Repeat JSON", required=False)
+    if not audience_ok or not repeat_ok:
+        return redirect("/operations/notifications")
+    payload = {
+        "channelKey": (request.POST.get("channelKey") or "").strip(),
+        "title": (request.POST.get("title") or "").strip(),
+        "body": (request.POST.get("body") or "").strip(),
+        "scheduledAt": (request.POST.get("scheduledAt") or "").strip(),
+        "audience": audience,
+        "repeat": repeat,
+    }
+    missing = [k for k in ("channelKey", "title", "body", "scheduledAt") if not payload.get(k)]
+    if missing:
+        messages.error(request, f"Missing required fields: {', '.join(missing)}.")
+        return redirect("/operations/notifications")
+    try:
+        schedule_notification(access_token, payload)
+        messages.success(request, f"Notification scheduled on channel '{payload['channelKey']}'.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Schedule failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend notifications endpoint.")
+    return redirect("/operations/notifications")
+
+
+@operator_login_required
+@require_permission("notifications:write")
+def notifications_scheduled_cancel(request, schedule_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        cancel_scheduled(access_token, schedule_id)
+        messages.success(request, f"Schedule {schedule_id} cancelled.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Cancel failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/operations/notifications")
+
+
+@operator_login_required
+@require_permission("notifications:write")
+def notifications_channel_upsert(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    key = (request.POST.get("key") or "").strip()
+    payload = {
+        "name": (request.POST.get("name") or "").strip(),
+        "description": (request.POST.get("description") or "").strip(),
+        "importance": (request.POST.get("importance") or "").strip() or "normal",
+        "enabled": request.POST.get("enabled") == "on",
+    }
+    if not key or not payload["name"]:
+        messages.error(request, "Channel key and name are required.")
+        return redirect("/operations/notifications")
+    try:
+        upsert_channel(access_token, key, payload)
+        messages.success(request, f"Channel '{key}' saved.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Channel save failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/operations/notifications")
+
+
+@operator_login_required
+@require_permission("notifications:write")
+def notifications_template_create(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    return _save_notification_template(request)
+
+
+@operator_login_required
+@require_permission("notifications:write")
+def notifications_template_update(request, template_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    return _save_notification_template(request, template_id)
+
+
+def _save_notification_template(request, template_id: str | None = None):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    payload = {
+        "name": (request.POST.get("name") or "").strip(),
+        "title": (request.POST.get("title") or "").strip(),
+        "body": (request.POST.get("body") or "").strip(),
+        "channelKey": (request.POST.get("channelKey") or "").strip(),
+        "variables": _parse_variables(request.POST.get("variables") or ""),
+    }
+    missing = [k for k in ("name", "title", "body", "channelKey") if not payload.get(k)]
+    if missing:
+        messages.error(request, f"Missing required template fields: {', '.join(missing)}.")
+        return redirect("/operations/notifications")
+    try:
+        if template_id:
+            update_template(access_token, template_id, payload)
+            messages.success(request, f"Template '{payload['name']}' updated.")
+        else:
+            create_template(access_token, payload)
+            messages.success(request, f"Template '{payload['name']}' created.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Template save failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    return redirect("/operations/notifications")
+
+
+@operator_login_required
+@require_permission("notifications:write")
+def notifications_template_delete(request, template_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        delete_template(access_token, template_id)
+        messages.success(request, f"Template {template_id} deleted.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Template delete failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
     return redirect("/operations/notifications")
 
 

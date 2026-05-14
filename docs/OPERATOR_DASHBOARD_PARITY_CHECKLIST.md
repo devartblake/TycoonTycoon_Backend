@@ -35,6 +35,7 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 - [x] Request/session expiration refresh handling
 - [x] Incident runbook in place (`docs/OPERATOR_DASHBOARD_INCIDENT_RUNBOOK.md`)
 - [x] Legacy fallback service remains available in compose as `operator-dashboard-blazor`
+- [x] Operational investigation workbench added in Django (`/users/{userId}/investigation`) to consolidate account, activity, moderation, economy, personalization, and store-stock context behind existing permission scopes.
 
 ## Release Gates
 

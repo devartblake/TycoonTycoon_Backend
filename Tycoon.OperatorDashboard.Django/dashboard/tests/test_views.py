@@ -246,6 +246,119 @@ class DashboardViewsTests(TestCase):
         response = self.client.get(reverse("operator-users-view"))
         self.assertEqual(403, response.status_code)
 
+    def test_operator_user_investigation_redirects_to_login_when_not_authenticated(self):
+        response = self.client.get(reverse("operator-user-investigation-view", kwargs={"user_id": "u1"}))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
+
+    def test_operator_user_investigation_requires_users_read(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": []}
+        session.save()
+
+        response = self.client.get(reverse("operator-user-investigation-view", kwargs={"user_id": "u1"}))
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_player_stock")
+    @mock.patch("dashboard.views.get_player_debug")
+    @mock.patch("dashboard.views.get_player_profile")
+    @mock.patch("dashboard.views.get_economy_history")
+    @mock.patch("dashboard.views.get_moderation_profile")
+    @mock.patch("dashboard.views.get_admin_user_activity")
+    @mock.patch("dashboard.views.get_admin_user")
+    def test_operator_user_investigation_renders_cross_surface_details(
+        self,
+        mock_get_admin_user,
+        mock_get_admin_user_activity,
+        mock_get_moderation_profile,
+        mock_get_economy_history,
+        mock_get_player_profile,
+        mock_get_player_debug,
+        mock_get_player_stock,
+    ):
+        player_id = "00000000-0000-0000-0000-000000000001"
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {
+            "permissions": [
+                "users:read",
+                "moderation:read",
+                "economy:read",
+                "personalization:read",
+                "store:read",
+            ],
+            "email": "ops@example.com",
+        }
+        session.save()
+
+        mock_get_admin_user.return_value = {
+            "id": player_id,
+            "email": "player@example.com",
+            "role": "player",
+            "isVerified": True,
+            "isBanned": False,
+        }
+        mock_get_admin_user_activity.return_value = {
+            "items": [{"type": "login", "status": "success", "ipAddress": "127.0.0.1", "createdAt": "2026-05-13T00:00:00Z"}]
+        }
+        mock_get_moderation_profile.return_value = {"status": "clear"}
+        mock_get_economy_history.return_value = {"items": [{"type": "grant", "amount": 25, "reason": "support"}]}
+        mock_get_player_profile.return_value = {"archetype": "Explorer", "churnRiskScore": 0.1, "frustrationRiskScore": 0.2}
+        mock_get_player_debug.return_value = {
+            "recentEvents": [{"eventType": "question_answered", "eventSource": "quiz", "category": "science"}],
+            "recentAudit": [{"finalDecision": "allow", "candidateType": "store_offer", "allowed": True}],
+        }
+        mock_get_player_stock.return_value = {"items": [{"sku": "powerup:skip", "quantityUsed": 1, "remaining": 2}]}
+
+        response = self.client.get(reverse("operator-user-investigation-view", kwargs={"user_id": player_id}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Investigation workbench")
+        self.assertContains(response, "player@example.com")
+        self.assertContains(response, "Explorer")
+        self.assertContains(response, "powerup:skip")
+        mock_get_moderation_profile.assert_called_once_with("token", player_id)
+        mock_get_player_stock.assert_called_once_with("token", player_id)
+
+    @mock.patch("dashboard.views.get_player_stock")
+    @mock.patch("dashboard.views.get_player_debug")
+    @mock.patch("dashboard.views.get_player_profile")
+    @mock.patch("dashboard.views.get_economy_history")
+    @mock.patch("dashboard.views.get_moderation_profile")
+    @mock.patch("dashboard.views.get_admin_user_activity")
+    @mock.patch("dashboard.views.get_admin_user")
+    def test_operator_user_investigation_skips_optional_sections_without_permissions(
+        self,
+        mock_get_admin_user,
+        mock_get_admin_user_activity,
+        mock_get_moderation_profile,
+        mock_get_economy_history,
+        mock_get_player_profile,
+        mock_get_player_debug,
+        mock_get_player_stock,
+    ):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+        mock_get_admin_user.return_value = {"id": "u1", "email": "player@example.com"}
+        mock_get_admin_user_activity.return_value = {"items": []}
+
+        response = self.client.get(reverse("operator-user-investigation-view", kwargs={"user_id": "u1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Missing permission: moderation:read")
+        self.assertContains(response, "Missing permission: economy:read")
+        mock_get_moderation_profile.assert_not_called()
+        mock_get_economy_history.assert_not_called()
+        mock_get_player_profile.assert_not_called()
+        mock_get_player_debug.assert_not_called()
+        mock_get_player_stock.assert_not_called()
+
     @mock.patch("dashboard.views.list_admin_users")
     @mock.patch("dashboard.views.ban_admin_user")
     def test_operator_users_view_bulk_ban(self, mock_ban_admin_user, mock_list_admin_users):
@@ -946,6 +1059,207 @@ class DashboardViewsTests(TestCase):
 
         self.assertEqual(200, response.status_code)
         self.assertContains(response, "operator.js")
+
+
+class NotificationsViewsTests(TestCase):
+    def _login(self, permissions):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"email": "ops@example.com", "permissions": permissions}
+        session.save()
+
+    def test_notifications_page_requires_login(self):
+        response = self.client.get(reverse("notifications-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
+
+    def test_notifications_page_requires_read_permission(self):
+        self._login([])
+        response = self.client.get(reverse("notifications-view"))
+        self.assertEqual(403, response.status_code)
+
+    def test_notification_mutation_requires_write_permission(self):
+        self._login(["notifications:read"])
+        response = self.client.post(reverse("notifications-send"), data={})
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_dead_letter")
+    @mock.patch("dashboard.views.get_notification_history")
+    @mock.patch("dashboard.views.list_templates")
+    @mock.patch("dashboard.views.list_scheduled")
+    @mock.patch("dashboard.views.list_channels")
+    def test_notifications_page_renders_admin_sections(
+        self,
+        mock_channels,
+        mock_scheduled,
+        mock_templates,
+        mock_history,
+        mock_dead_letter,
+    ):
+        self._login(["notifications:read"])
+        mock_channels.return_value = [{"key": "admin_basic", "name": "Admin Basic", "importance": "high", "enabled": True}]
+        mock_scheduled.return_value = {"items": [{"scheduleId": "sch_1", "channelKey": "admin_basic", "title": "Later", "scheduledAt": "2026-05-13T12:00:00Z", "status": "scheduled"}], "totalItems": 1}
+        mock_templates.return_value = [{"templateId": "tpl_1", "name": "Winback", "title": "Hi", "body": "Body", "channelKey": "admin_basic", "variables": ["playerName"]}]
+        mock_history.return_value = {"items": [{"id": "job_1", "channelKey": "admin_basic", "title": "Hello", "status": "queued", "createdAt": "2026-05-13T00:00:00Z"}], "totalItems": 1}
+        mock_dead_letter.return_value = {"items": [{"scheduleId": "sch_dead", "channelKey": "admin_basic", "title": "Failed", "scheduledAt": "2026-05-13T00:00:00Z"}], "totalItems": 1}
+
+        response = self.client.get(reverse("notifications-view"), data={"channelKey": "admin_basic", "status": "queued"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Schedule notification")
+        self.assertContains(response, "Template library")
+        self.assertContains(response, "Scheduled queue")
+        self.assertContains(response, "sch_1")
+        self.assertContains(response, "tpl_1")
+        mock_history.assert_called_once_with(
+            "token",
+            {"from": None, "to": None, "channelKey": "admin_basic", "status": "queued", "page": 1, "pageSize": 25},
+        )
+
+    @mock.patch("dashboard.views.send_notification")
+    def test_send_notification_valid_payload_calls_backend(self, mock_send):
+        self._login(["notifications:write"])
+        response = self.client.post(
+            reverse("notifications-send"),
+            data={
+                "channelKey": "admin_basic",
+                "title": "Hello",
+                "body": "Body",
+                "audience": '{"type":"all"}',
+                "payload": '{"deepLink":"/home"}',
+            },
+        )
+
+        self.assertEqual(302, response.status_code)
+        self.assertEqual("/operations/notifications", response.url)
+        mock_send.assert_called_once_with(
+            "token",
+            {
+                "channelKey": "admin_basic",
+                "title": "Hello",
+                "body": "Body",
+                "audience": {"type": "all"},
+                "payload": {"deepLink": "/home"},
+            },
+        )
+
+    @mock.patch("dashboard.views.send_notification")
+    def test_send_notification_invalid_json_does_not_call_backend(self, mock_send):
+        self._login(["notifications:write"])
+        response = self.client.post(
+            reverse("notifications-send"),
+            data={"channelKey": "admin_basic", "title": "Hello", "body": "Body", "audience": "{bad-json}"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_send.assert_not_called()
+
+    @mock.patch("dashboard.views.schedule_notification")
+    def test_schedule_notification_valid_payload_calls_backend(self, mock_schedule):
+        self._login(["notifications:write"])
+        response = self.client.post(
+            reverse("notifications-schedule"),
+            data={
+                "channelKey": "admin_basic",
+                "title": "Later",
+                "body": "Body",
+                "scheduledAt": "2026-05-13T12:00",
+                "audience": '{"type":"all"}',
+                "repeat": '{"interval":"daily"}',
+            },
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_schedule.assert_called_once_with(
+            "token",
+            {
+                "channelKey": "admin_basic",
+                "title": "Later",
+                "body": "Body",
+                "scheduledAt": "2026-05-13T12:00",
+                "audience": {"type": "all"},
+                "repeat": {"interval": "daily"},
+            },
+        )
+
+    @mock.patch("dashboard.views.schedule_notification")
+    def test_schedule_notification_invalid_repeat_does_not_call_backend(self, mock_schedule):
+        self._login(["notifications:write"])
+        response = self.client.post(
+            reverse("notifications-schedule"),
+            data={
+                "channelKey": "admin_basic",
+                "title": "Later",
+                "body": "Body",
+                "scheduledAt": "2026-05-13T12:00",
+                "audience": '{"type":"all"}',
+                "repeat": "[1,2]",
+            },
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_schedule.assert_not_called()
+
+    @mock.patch("dashboard.views.cancel_scheduled")
+    def test_cancel_scheduled_calls_backend(self, mock_cancel):
+        self._login(["notifications:write"])
+        response = self.client.post(reverse("notifications-scheduled-cancel", kwargs={"schedule_id": "sch_1"}))
+
+        self.assertEqual(302, response.status_code)
+        mock_cancel.assert_called_once_with("token", "sch_1")
+
+    @mock.patch("dashboard.views.upsert_channel")
+    def test_upsert_channel_calls_backend(self, mock_upsert):
+        self._login(["notifications:write"])
+        response = self.client.post(
+            reverse("notifications-channel-upsert"),
+            data={"key": "admin_security", "name": "Admin Security", "description": "Alerts", "importance": "high", "enabled": "on"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_upsert.assert_called_once_with(
+            "token",
+            "admin_security",
+            {"name": "Admin Security", "description": "Alerts", "importance": "high", "enabled": True},
+        )
+
+    @mock.patch("dashboard.views.create_template")
+    def test_create_template_calls_backend(self, mock_create):
+        self._login(["notifications:write"])
+        response = self.client.post(
+            reverse("notifications-template-create"),
+            data={"name": "Winback", "title": "Hi", "body": "Body", "channelKey": "admin_basic", "variables": "playerName\nrewardName"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_create.assert_called_once_with(
+            "token",
+            {"name": "Winback", "title": "Hi", "body": "Body", "channelKey": "admin_basic", "variables": ["playerName", "rewardName"]},
+        )
+
+    @mock.patch("dashboard.views.update_template")
+    def test_update_template_calls_backend(self, mock_update):
+        self._login(["notifications:write"])
+        response = self.client.post(
+            reverse("notifications-template-update", kwargs={"template_id": "tpl_1"}),
+            data={"name": "Winback", "title": "Hi", "body": "Body", "channelKey": "admin_basic", "variables": "playerName, rewardName"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_update.assert_called_once_with(
+            "token",
+            "tpl_1",
+            {"name": "Winback", "title": "Hi", "body": "Body", "channelKey": "admin_basic", "variables": ["playerName", "rewardName"]},
+        )
+
+    @mock.patch("dashboard.views.delete_template")
+    def test_delete_template_calls_backend(self, mock_delete):
+        self._login(["notifications:write"])
+        response = self.client.post(reverse("notifications-template-delete", kwargs={"template_id": "tpl_1"}))
+
+        self.assertEqual(302, response.status_code)
+        mock_delete.assert_called_once_with("token", "tpl_1")
 
 
 class StorePlayerStockViewsTests(TestCase):

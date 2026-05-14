@@ -1,0 +1,295 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}User Investigation{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">User operations</p>
+    <h1 class="page-title">Investigation workbench</h1>
+    <p class="page-subtitle">Review account context, activity, moderation, economy, personalization, and store stock signals from one permission-gated operator view.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="chip neutral">User {{ user_id }}</span>
+    <span class="chip neutral">Player {{ player_id }}</span>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Cross-surface lookup" copy="Use a different player UUID when the admin user ID is not the same identifier used by player-facing services." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="00000000-0000-0000-0000-000000000000" />
+      </label>
+      <label>
+        Activity page size
+        <select name="activityPageSize">
+          <option value="10" {% if activity_query.pageSize == "10" %}selected{% endif %}>10</option>
+          <option value="25" {% if activity_query.pageSize == "25" %}selected{% endif %}>25</option>
+          <option value="50" {% if activity_query.pageSize == "50" %}selected{% endif %}>50</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Refresh workbench</button>
+      <span class="helper-text">Last refreshed {{ last_refreshed_at|date:"c" }}</span>
+    </div>
+  </form>
+</section>
+
+<section class="card-grid mt-lg">
+  <article class="stat-card">
+    <div class="stat-label">Email</div>
+    <div class="stat-value">{{ user_detail.email|default:"-" }}</div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Role</div>
+    <div class="stat-value">{{ user_detail.role|default:"-" }}</div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Verified</div>
+    <div class="stat-value">{{ user_detail.isVerified|yesno:"yes,no,-" }}</div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Banned</div>
+    <div class="stat-value">{{ user_detail.isBanned|yesno:"yes,no,-" }}</div>
+  </article>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Investigation shortcuts" copy="Jump to the authoritative surface when an operator needs the full workflow or a mutating action." %}
+  <div class="link-grid">
+    <a class="button secondary" href="{% url 'operator-users-view' %}?q={{ user_detail.email|default:user_id }}">Users triage</a>
+    <a class="button secondary" href="{% url 'operator-moderation-logs-view' %}?playerId={{ player_id }}">Moderation logs</a>
+    <a class="button secondary" href="{% url 'economy-player-view' %}?playerId={{ player_id }}">Economy history</a>
+    <a class="button secondary" href="{% url 'personalization-player-view' %}?playerId={{ player_id }}">Personalization debug</a>
+    <a class="button secondary" href="{% url 'store-player-stock-view' %}?playerId={{ player_id }}">Player stock</a>
+    <a class="button secondary" href="{% url 'anticheat-flags-view' %}?playerId={{ player_id }}&unreviewedOnly=true">Anti-cheat flags</a>
+  </div>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Account profile" copy="Raw account data returned by the backend user administration endpoint." %}
+  {% if sections.user.error %}<div class="message error">{{ sections.user.error }}</div>{% endif %}
+  <label>
+    User JSON
+    <textarea rows="12" readonly>{{ user_detail_json }}</textarea>
+  </label>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Recent user activity" copy="Auth and account events from the user activity endpoint." %}
+  {% if sections.activity.error %}<div class="message error">{{ sections.activity.error }}</div>{% endif %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Status</th>
+          <th>IP</th>
+          <th>At (UTC)</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in activity.items %}
+        <tr>
+          <td>{{ item.typeDisplay }}</td>
+          <td>{{ item.statusDisplay }}</td>
+          <td>{{ item.ipDisplay }}</td>
+          <td>{{ item.createdDisplay }}</td>
+          <td>{{ item.detailDisplay }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="helper-text">No recent activity rows returned.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card-grid mt-lg">
+  <article class="card">
+    {% include "dashboard/partials/section_intro.html" with title="Moderation profile" copy="Current moderation context for this player." %}
+    {% if sections.moderation.skipped %}
+      <div class="surface-note">{{ sections.moderation.error }}</div>
+    {% elif sections.moderation.error %}
+      <div class="message error">{{ sections.moderation.error }}</div>
+    {% endif %}
+    <label>
+      Moderation JSON
+      <textarea rows="12" readonly>{{ moderation_profile_json }}</textarea>
+    </label>
+  </article>
+
+  <article class="card">
+    {% include "dashboard/partials/section_intro.html" with title="Personalization profile" copy="Risk and preference context used by recommendations." %}
+    {% if sections.personalization.skipped %}
+      <div class="surface-note">{{ sections.personalization.error }}</div>
+    {% elif sections.personalization.error %}
+      <div class="message error">{{ sections.personalization.error }}</div>
+    {% endif %}
+    <dl class="stat-grid">
+      <div class="stat-item">
+        <dt class="helper-text">Archetype</dt>
+        <dd>{{ personalization_profile.archetype|default:"-" }}</dd>
+      </div>
+      <div class="stat-item">
+        <dt class="helper-text">Churn risk</dt>
+        <dd>{{ personalization_profile.churnRiskScore|default:"-" }}</dd>
+      </div>
+      <div class="stat-item">
+        <dt class="helper-text">Frustration risk</dt>
+        <dd>{{ personalization_profile.frustrationRiskScore|default:"-" }}</dd>
+      </div>
+    </dl>
+    <label>
+      Profile JSON
+      <textarea rows="10" readonly>{{ personalization_profile_json }}</textarea>
+    </label>
+  </article>
+</section>
+
+<section class="card-grid mt-lg">
+  <article class="card">
+    {% include "dashboard/partials/section_intro.html" with title="Economy snapshot" copy="Most recent player wallet history rows." %}
+    {% if sections.economy.skipped %}
+      <div class="surface-note">{{ sections.economy.error }}</div>
+    {% elif sections.economy.error %}
+      <div class="message error">{{ sections.economy.error }}</div>
+    {% endif %}
+    <div class="table-wrap">
+      <table class="dense-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Reason</th>
+            <th>At (UTC)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in economy_history.items %}
+          <tr>
+            <td>{{ item.typeDisplay }}</td>
+            <td>{{ item.amountDisplay }}</td>
+            <td>{{ item.reasonDisplay }}</td>
+            <td>{{ item.createdDisplay }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="helper-text">No economy history rows returned.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="card">
+    {% include "dashboard/partials/section_intro.html" with title="Player stock snapshot" copy="Limited-store stock state and support overrides." %}
+    {% if sections.stock.skipped %}
+      <div class="surface-note">{{ sections.stock.error }}</div>
+    {% elif sections.stock.error %}
+      <div class="message error">{{ sections.stock.error }}</div>
+    {% endif %}
+    <div class="table-wrap">
+      <table class="dense-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Used</th>
+            <th>Remaining</th>
+            <th>Override</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in player_stock.items %}
+          <tr>
+            <td>{{ item.sku|default:"-" }}</td>
+            <td>{{ item.quantityUsed|default:"0" }}</td>
+            <td>{% if item.remaining == -1 %}unlimited{% else %}{{ item.remaining|default:"-" }}{% endif %}</td>
+            <td>{{ item.effectiveMaxQuantity|default:"policy" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="helper-text">No stock rows returned.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Personalization decision trace" copy="Recent behavior events and recommendation audit rows." %}
+  {% if sections.personalization_debug.skipped %}
+    <div class="surface-note">{{ sections.personalization_debug.error }}</div>
+  {% elif sections.personalization_debug.error %}
+    <div class="message error">{{ sections.personalization_debug.error }}</div>
+  {% endif %}
+  <div class="split">
+    <div>
+      <h3 class="section-title">Behavior events</h3>
+      <div class="table-wrap">
+        <table class="dense-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Source</th>
+              <th>Category</th>
+              <th>Occurred</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in personalization_debug.recentEvents %}
+            <tr>
+              <td>{{ event.eventType|default:"-" }}</td>
+              <td>{{ event.eventSource|default:"-" }}</td>
+              <td>{{ event.category|default:"-" }}</td>
+              <td>{{ event.occurredAt|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="helper-text">No recent behavior events returned.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h3 class="section-title">Audit rows</h3>
+      <div class="table-wrap">
+        <table class="dense-table">
+          <thead>
+            <tr>
+              <th>Decision</th>
+              <th>Candidate</th>
+              <th>Allowed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in personalization_debug.recentAudit %}
+            <tr>
+              <td>{{ row.decisionDisplay|truncatechars:70 }}</td>
+              <td>{{ row.candidateDisplay }}</td>
+              <td>{{ row.allowedDisplay }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="helper-text">No recent audit rows returned.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

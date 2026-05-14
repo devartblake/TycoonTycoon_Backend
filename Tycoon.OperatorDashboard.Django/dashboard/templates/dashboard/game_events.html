@@ -9,6 +9,33 @@
     <h1 class="page-title">Game events</h1>
     <p class="page-subtitle">View and manage scheduled, open, and live game events.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Lifecycle actions</span>
+    <span class="chip neutral">{{ events.items|length|default:"0" }} loaded</span>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi">
+    <span class="kpi-label">Rows loaded</span>
+    <span class="kpi-val">{{ events.items|length|default:"0" }}</span>
+    <span class="kpi-delta">current event page</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Status filter</span>
+    <span class="kpi-val">{{ query.status|default:"All" }}</span>
+    <span class="kpi-delta">scheduled, open, live, closed</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Total events</span>
+    <span class="kpi-val">{{ events.total|default:"0" }}</span>
+    <span class="kpi-delta">backend filtered count</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">Actions</span>
+    <span class="kpi-val">POST</span>
+    <span class="kpi-delta">open, start, close</span>
+  </article>
 </section>
 
 <section class="card">
@@ -92,7 +119,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8" class="helper-text">No game events found.</td>
+          <td colspan="8">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No game events found</strong>
+              <span>Clear the status filter or increase the page size.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

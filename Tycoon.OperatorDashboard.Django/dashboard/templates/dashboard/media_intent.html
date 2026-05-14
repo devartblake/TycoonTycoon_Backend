@@ -9,6 +9,10 @@
     <h1 class="page-title">Media upload intent</h1>
     <p class="page-subtitle">Generate presigned upload intent payloads for operator verification and object-storage troubleshooting.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge acc"><span class="dot"></span>Payload preview</span>
+    <span class="chip neutral">Copy enabled</span>
+  </div>
 </section>
 
 <section class="split">
@@ -65,7 +69,7 @@
     </div>
   </div>
   <div class="surface-note">
-    <pre>{{ intent|pprint }}</pre>
+    <pre id="media-intent-payload">{{ intent|pprint }}</pre>
   </div>
 </section>
 {% endif %}

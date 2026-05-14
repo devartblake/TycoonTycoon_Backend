@@ -10,6 +10,15 @@
    cp docker/.env.example docker/.env
    ```
 
+   Do not use a standalone Django `runserver` as the authenticated preview path unless it is
+   explicitly configured to talk to a running backend API with the same admin ops key. The
+   canonical local preview is Docker-backed because the dashboard login depends on backend admin
+   auth and migration-seeded admin ACL data.
+
+   If you already have a local database you want to preserve, check `MIGRATION_RESET_DATABASE`
+   in `docker/.env` before starting compose. Set it to `false` unless you intentionally want a
+   fresh dev reseed.
+
 2. Start the stack:
 
    ```bash
@@ -31,6 +40,17 @@
    - Email: `admin@tycoon.local`
    - Password: `ChangeMe123!`
    - Matching ops key: `ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION`
+
+5. Review authenticated dashboard pages after login:
+
+   - `/`
+   - `/users`
+   - `/users/{userId}/investigation`
+   - `/personalization`
+   - `/store/player-stock`
+
+For a focused preview checklist, see
+[`docs/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md`](OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md).
 
 ## Seed Source
 

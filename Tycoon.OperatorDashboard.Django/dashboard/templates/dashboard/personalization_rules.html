@@ -9,6 +9,33 @@
     <h1 class="page-title">Guardrail rules</h1>
     <p class="page-subtitle">Review and update runtime guardrail rules used before recommendations are persisted.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Runtime config</span>
+    <span class="chip neutral">{{ rules|length }} rules</span>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi">
+    <span class="kpi-label">Rules loaded</span>
+    <span class="kpi-val">{{ rules|length }}</span>
+    <span class="kpi-delta">backend guardrail list</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">JSON editor</span>
+    <span class="kpi-val">V1</span>
+    <span class="kpi-delta">validated before upstream call</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">Mutation guard</span>
+    <span class="kpi-val">POST</span>
+    <span class="kpi-delta">requires personalization:write</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Backend shape</span>
+    <span class="kpi-val">Same</span>
+    <span class="kpi-delta">no wire changes</span>
+  </article>
 </section>
 
 <section class="card">
@@ -42,7 +69,11 @@
       </div>
     </form>
     {% empty %}
-    <p class="helper-text">No personalization guardrail rules are available.</p>
+    <div class="empty">
+      <span class="empty-ico">0</span>
+      <strong>No personalization guardrail rules are available</strong>
+      <span>Seed or create backend guardrail rules before editing runtime config here.</span>
+    </div>
     {% endfor %}
   </div>
 </section>

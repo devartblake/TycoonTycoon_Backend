@@ -14,6 +14,29 @@
   </div>
 </section>
 
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi {% if overall_status == 'healthy' %}ok{% elif overall_status == 'offline' %}bad{% else %}warn{% endif %}">
+    <span class="kpi-label">Storage status</span>
+    <span class="kpi-val">{{ overall_status|upper }}</span>
+    <span class="kpi-delta">aggregated MinIO checks</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Probe count</span>
+    <span class="kpi-val">{{ diagnostics.checks|length }}</span>
+    <span class="kpi-delta">configured diagnostics</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Guidance</span>
+    <span class="kpi-val">{{ guidance|length }}</span>
+    <span class="kpi-delta">recommended actions</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Base URL</span>
+    <span class="kpi-val">MINIO</span>
+    <span class="kpi-delta">{{ diagnostics.baseUrl|default:"not configured" }}</span>
+  </article>
+</section>
+
 <section class="split">
   <article class="card">
     <div class="section-header">

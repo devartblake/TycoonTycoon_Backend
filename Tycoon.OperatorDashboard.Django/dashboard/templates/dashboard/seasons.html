@@ -9,6 +9,33 @@
     <h1 class="page-title">Seasons</h1>
     <p class="page-subtitle">Manage competitive seasons — activate, close, and inspect leaderboards.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Season lifecycle</span>
+    {% if season_id %}<span class="chip neutral">Season {{ season_id }}</span>{% endif %}
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi">
+    <span class="kpi-label">Seasons loaded</span>
+    <span class="kpi-val">{{ seasons.items|length|default:"0" }}</span>
+    <span class="kpi-delta">current backend page</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Leaderboard rows</span>
+    <span class="kpi-val">{{ leaderboard.items|length|default:"0" }}</span>
+    <span class="kpi-delta">selected season view</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Selected season</span>
+    <span class="kpi-val">{% if season_id %}On{% else %}Off{% endif %}</span>
+    <span class="kpi-delta">{{ season_id|default:"choose leaderboard" }}</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">Mutation guard</span>
+    <span class="kpi-val">POST</span>
+    <span class="kpi-delta">activate, close, recompute</span>
+  </article>
 </section>
 
 {% if seasons %}
@@ -57,7 +84,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="helper-text">No seasons found.</td>
+          <td colspan="6">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No seasons found</strong>
+              <span>Run migration/seed bootstrap or confirm the backend season data source.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -96,7 +129,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="helper-text">No leaderboard data.</td>
+          <td colspan="6">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No leaderboard data</strong>
+              <span>Leaderboard rows will appear after season activity is recorded.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

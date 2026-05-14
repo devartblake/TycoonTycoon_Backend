@@ -9,6 +9,33 @@
     <h1 class="page-title">Flash sales</h1>
     <p class="page-subtitle">Active and scheduled promotional discounts. Cancel a sale to remove it from the player-facing store immediately.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Promo control</span>
+    <span class="chip neutral">{{ sales|length }} loaded</span>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi">
+    <span class="kpi-label">Sales loaded</span>
+    <span class="kpi-val">{{ sales|length }}</span>
+    <span class="kpi-delta">active and scheduled only</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Player-facing</span>
+    <span class="kpi-val">Live</span>
+    <span class="kpi-delta">active sales affect catalog</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Cancel action</span>
+    <span class="kpi-val">POST</span>
+    <span class="kpi-delta">confirmation required</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">Rollback</span>
+    <span class="kpi-val">Soft</span>
+    <span class="kpi-delta">sale is removed from active view</span>
+  </article>
 </section>
 
 <section class="card">
@@ -48,7 +75,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="helper-text">No active or scheduled flash sales.</td>
+          <td colspan="7">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No active or scheduled flash sales</strong>
+              <span>Create promotions through the backend API or seed data before reviewing this surface.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

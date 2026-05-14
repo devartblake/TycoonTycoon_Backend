@@ -13,29 +13,34 @@
     <h1 class="page-title">Personalization overview</h1>
     <p class="page-subtitle">Monitor player archetypes, risk counts, and recommendation outcomes from the unified personalization layer.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge acc"><span class="dot"></span>Risk signals</span>
+    <span class="chip neutral">{{ archetypes|length }} archetypes</span>
+  </div>
 </section>
 
 {% if summary %}
-<section class="card">
-  {% include "dashboard/partials/section_intro.html" with title="Risk summary" copy="Current profile and risk counts from the backend personalization tables." %}
-  <div class="form-grid">
-    <div class="stat-card">
-      <div class="stat-label">Total profiles</div>
-      <div class="stat-value">{{ summary.totalProfiles|default:"0" }}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">High churn risk</div>
-      <div class="stat-value">{{ summary.highChurnRiskCount|default:"0" }}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">High frustration risk</div>
-      <div class="stat-value">{{ summary.highFrustrationRiskCount|default:"0" }}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Generated</div>
-      <div class="stat-value">{{ summary.generatedAt|default:"-" }}</div>
-    </div>
-  </div>
+<section class="screen-kpis">
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Total profiles</span>
+    <span class="kpi-val">{{ summary.totalProfiles|default:"0" }}</span>
+    <span class="kpi-delta">personalization profiles</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">High churn risk</span>
+    <span class="kpi-val">{{ summary.highChurnRiskCount|default:"0" }}</span>
+    <span class="kpi-delta">needs retention review</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">High frustration</span>
+    <span class="kpi-val">{{ summary.highFrustrationRiskCount|default:"0" }}</span>
+    <span class="kpi-delta">support-sensitive cohort</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Generated</span>
+    <span class="kpi-val">{{ archetypes|length }}</span>
+    <span class="kpi-delta">{{ summary.generatedAt|default:"latest backend snapshot" }}</span>
+  </article>
 </section>
 {% endif %}
 
@@ -64,7 +69,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="2" class="helper-text">No archetype data available.</td>
+          <td colspan="2">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No archetype data available</strong>
+              <span>Profiles will appear after personalization events are processed.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -107,7 +118,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="helper-text">No recommendation performance data available.</td>
+          <td colspan="7">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No recommendation performance data</strong>
+              <span>Accepted, dismissed, and pending rows appear after recommendation activity.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

@@ -290,6 +290,7 @@
             <th>Role</th>
             <th>Verified</th>
             <th>Banned</th>
+            <th>Investigate</th>
           </tr>
         </thead>
         <tbody>
@@ -302,10 +303,11 @@
             <td><span class="chip neutral">{{ user.role|default:"-" }}</span></td>
             <td><span class="chip {% if user.isVerified %}success{% else %}warning{% endif %}">{{ user.isVerified|yesno:"yes,no,-" }}</span></td>
             <td><span class="chip {% if user.isBanned %}danger{% else %}success{% endif %}">{{ user.isBanned|yesno:"yes,no,-" }}</span></td>
+            <td><a class="btn-inline" href="{% url 'operator-user-investigation-view' user.id %}">Open</a></td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="{% if can_write_users %}7{% else %}6{% endif %}" class="helper-text">No users returned for this filter.</td>
+            <td colspan="{% if can_write_users %}8{% else %}7{% endif %}" class="helper-text">No users returned for this filter.</td>
           </tr>
           {% endfor %}
         </tbody>
