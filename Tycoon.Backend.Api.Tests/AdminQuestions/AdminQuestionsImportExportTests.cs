@@ -51,7 +51,7 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             var importResp = await _http.PostAsJsonAsync("/admin/questions/import", importReq);
             importResp.IsSuccessStatusCode.Should().BeTrue();
 
-            var import = await importResp.Content.ReadFromJsonAsync<ImportQuestionsResultDto>();
+            var import = await importResp.Content.ReadFromJsonAsync<ImportQuestionsResultDto>(TestJson.Default);
             import!.Received.Should().Be(2);
             import.Created.Should().BeGreaterThanOrEqualTo(2);
 
@@ -59,7 +59,7 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             var exportResp = await _http.GetAsync("/admin/questions/export?tags=capital&tagMode=Any&page=1&pageSize=100");
             exportResp.IsSuccessStatusCode.Should().BeTrue();
 
-            var export = await exportResp.Content.ReadFromJsonAsync<QuestionListResponseDto>();
+            var export = await exportResp.Content.ReadFromJsonAsync<QuestionListResponseDto>(TestJson.Default);
             export!.Items.Should().NotBeEmpty();
             export.Items.Any(i => i.Category == "Geography").Should().BeTrue();
         }

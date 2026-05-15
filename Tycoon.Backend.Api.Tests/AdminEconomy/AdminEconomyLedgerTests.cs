@@ -35,7 +35,7 @@ public sealed class AdminEconomyLedgerTests : IClassFixture<TycoonApiFactory>
 
         var r1 = await _http.PostAsJsonAsync("/admin/economy/transactions", req);
         r1.EnsureSuccessStatusCode();
-        var res1 = await r1.Content.ReadFromJsonAsync<EconomyTxnResultDto>();
+        var res1 = await r1.Content.ReadFromJsonAsync<EconomyTxnResultDto>(TestJson.Default);
 
         res1!.Status.Should().Be(EconomyTxnStatus.Applied);
         res1.BalanceCoins.Should().Be(100);
@@ -44,7 +44,7 @@ public sealed class AdminEconomyLedgerTests : IClassFixture<TycoonApiFactory>
         // Same event id again => Duplicate, balances unchanged
         var r2 = await _http.PostAsJsonAsync("/admin/economy/transactions", req with { Note = "second" });
         r2.EnsureSuccessStatusCode();
-        var res2 = await r2.Content.ReadFromJsonAsync<EconomyTxnResultDto>();
+        var res2 = await r2.Content.ReadFromJsonAsync<EconomyTxnResultDto>(TestJson.Default);
 
         res2!.Status.Should().Be(EconomyTxnStatus.Duplicate);
         res2.BalanceCoins.Should().Be(100);
@@ -67,7 +67,7 @@ public sealed class AdminEconomyLedgerTests : IClassFixture<TycoonApiFactory>
 
         var r = await _http.PostAsJsonAsync("/admin/economy/transactions", spendReq);
         r.EnsureSuccessStatusCode();
-        var res = await r.Content.ReadFromJsonAsync<EconomyTxnResultDto>();
+        var res = await r.Content.ReadFromJsonAsync<EconomyTxnResultDto>(TestJson.Default);
 
         res!.Status.Should().Be(EconomyTxnStatus.InsufficientFunds);
         res.BalanceCoins.Should().Be(0);
@@ -93,7 +93,7 @@ public sealed class AdminEconomyLedgerTests : IClassFixture<TycoonApiFactory>
         var h = await _http.GetAsync($"/admin/economy/history/{playerId}?page=1&pageSize=50");
         h.EnsureSuccessStatusCode();
 
-        var hist = await h.Content.ReadFromJsonAsync<EconomyHistoryDto>();
+        var hist = await h.Content.ReadFromJsonAsync<EconomyHistoryDto>(TestJson.Default);
         hist!.PlayerId.Should().Be(playerId);
         hist.Items.Should().NotBeEmpty();
         hist.Items.Any(x => x.Kind == "test-award-history").Should().BeTrue();

@@ -28,7 +28,7 @@ public sealed class SeasonFlowTests : IClassFixture<TycoonApiFactory>
             EndsAtUtc: DateTimeOffset.UtcNow.AddDays(30)
         ));
         created.EnsureSuccessStatusCode();
-        var s = await created.Content.ReadFromJsonAsync<SeasonDto>();
+        var s = await created.Content.ReadFromJsonAsync<SeasonDto>(TestJson.Default);
 
         var act = await _admin.PostAsJsonAsync("/admin/seasons/activate", new ActivateSeasonRequest(s!.SeasonId));
         act.EnsureSuccessStatusCode();

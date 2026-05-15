@@ -7,6 +7,9 @@ export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 export DOTNET_ENVIRONMENT=Development
 export ASPNETCORE_ENVIRONMENT=Development
 
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
 PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
 STARTUP="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
 CONTEXT="AppDb"
@@ -79,22 +82,49 @@ resolve_ef_tool() {
   EF_CMD=("${DOTNET_CMD[@]}" ef)
 }
 
-ensure_local_ef_tool() {
-  local tool_dir="artifacts/dotnet-tools"
-  local tool_exe="$tool_dir/dotnet-ef"
+find_local_ef_tool() {
+  local tool_dir="$1"
+  local candidate
 
-  if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "${WINDIR:-}" ]]; then
-    tool_exe="$tool_exe.exe"
-  fi
+  for candidate in "$tool_dir/dotnet-ef" "$tool_dir/dotnet-ef.exe"; do
+    if [[ -f "$candidate" ]]; then
+      EF_CMD=("$candidate")
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+ensure_local_ef_tool() {
+  local tool_dir="$PROJECT_ROOT/artifacts/dotnet-tools"
+  local install_output
+  local install_status
 
   mkdir -p "$tool_dir"
 
-  if [[ ! -x "$tool_exe" ]]; then
-    echo "dotnet-ef is not available on PATH; installing repo-local tool in $tool_dir..."
-    "${DOTNET_CMD[@]}" tool install dotnet-ef --tool-path "$tool_dir"
+  if find_local_ef_tool "$tool_dir"; then
+    return 0
   fi
 
-  EF_CMD=("$tool_exe")
+  echo "dotnet-ef is not available on PATH; installing repo-local tool in $tool_dir..."
+  set +e
+  install_output=$("${DOTNET_CMD[@]}" tool install dotnet-ef --tool-path "$tool_dir" 2>&1)
+  install_status=$?
+  set -e
+  echo "$install_output"
+
+  if find_local_ef_tool "$tool_dir"; then
+    return 0
+  fi
+
+  if [[ $install_status -ne 0 ]] && echo "$install_output" | grep -qi "already installed"; then
+    echo "dotnet-ef reports as installed, but no launcher was found in $tool_dir." >&2
+  fi
+
+  echo "Unable to resolve a repo-local dotnet-ef launcher." >&2
+  echo "Remove artifacts/dotnet-tools and rerun with network access, or install dotnet-ef globally." >&2
+  exit "${install_status:-1}"
 }
 
 run_schema_validation() {

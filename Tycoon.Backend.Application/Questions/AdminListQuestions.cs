@@ -95,14 +95,16 @@ namespace Tycoon.Backend.Application.Questions
                 .ToListAsync(ct);
 
             var pageIds = pageRows.Select(x => x.Id).ToArray();
-            var tagsByQuestionId = await db.QuestionTags.AsNoTracking()
+            var pageTags = await db.QuestionTags.AsNoTracking()
                 .Where(t => pageIds.Contains(t.QuestionId))
                 .OrderBy(t => t.Tag)
+                .ToListAsync(ct);
+
+            var tagsByQuestionId = pageTags
                 .GroupBy(t => t.QuestionId)
-                .ToDictionaryAsync(
+                .ToDictionary(
                     g => g.Key,
-                    g => g.Select(x => x.Tag).Take(8).ToList(),
-                    ct);
+                    g => g.Select(x => x.Tag).Take(8).ToList());
 
             var items = pageRows
                 .Select(x => new QuestionListItemDto(
@@ -119,32 +121,36 @@ namespace Tycoon.Backend.Application.Questions
 
             // Facets (based on current filtered set except the facet dimension itself could be expanded later)
             // For now: compute facets from the filtered result set.
-            var filteredIds = filtered.Select(x => x.Id);
+            var filteredIdList = await filtered.Select(x => x.Id).ToListAsync(ct);
 
-            var tagFacets = await db.QuestionTags.AsNoTracking()
-                .Where(t => filteredIds.Contains(t.QuestionId))
+            var facetTags = await db.QuestionTags.AsNoTracking()
+                .Where(t => filteredIdList.Contains(t.QuestionId))
+                .ToListAsync(ct);
+            var tagFacets = facetTags
                 .GroupBy(t => t.Tag)
                 .Select(g => new FacetCountDto(g.Key, g.Count()))
                 .OrderByDescending(x => x.Count)
                 .ThenBy(x => x.Key)
                 .Take(50)
-                .ToListAsync(ct);
+                .ToList();
 
-            var categoryFacets = await db.Questions.AsNoTracking()
-                .Where(x => filteredIds.Contains(x.Id))
+            var facetQuestions = await db.Questions.AsNoTracking()
+                .Where(x => filteredIdList.Contains(x.Id))
+                .Select(x => new { x.Category, x.Difficulty })
+                .ToListAsync(ct);
+            var categoryFacets = facetQuestions
                 .GroupBy(x => x.Category)
                 .Select(g => new FacetCountDto(g.Key, g.Count()))
                 .OrderByDescending(x => x.Count)
                 .ThenBy(x => x.Key)
                 .Take(50)
-                .ToListAsync(ct);
+                .ToList();
 
-            var difficultyFacets = await db.Questions.AsNoTracking()
-                .Where(x => filteredIds.Contains(x.Id))
+            var difficultyFacets = facetQuestions
                 .GroupBy(x => x.Difficulty)
                 .Select(g => new FacetCountDto(g.Key.ToString(), g.Count()))
                 .OrderByDescending(x => x.Count)
-                .ToListAsync(ct);
+                .ToList();
 
             var echo = new QuestionQueryEchoDto(
                 r.Search,

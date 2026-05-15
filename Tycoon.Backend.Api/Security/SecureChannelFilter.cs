@@ -34,6 +34,11 @@ public sealed class SecureChannelFilter : IEndpointFilter
             return await next(context);
         }
 
+        if (IsTestPlainJsonAllowed(http))
+        {
+            return await next(context);
+        }
+
         if (!http.Request.Headers.TryGetValue("X-Syn-Sec-Session", out var sessionIdStr)
             || !Guid.TryParse(sessionIdStr, out var sessionId))
         {
@@ -102,6 +107,14 @@ public sealed class SecureChannelFilter : IEndpointFilter
         var logger = http.RequestServices.GetRequiredService<ILoggerFactory>()
             .CreateLogger("TrustedBffPlainJson");
         return AdminOpsKeyMiddleware.ValidateOpsKey(http, cfg, logger) is null;
+    }
+
+    private static bool IsTestPlainJsonAllowed(HttpContext http)
+    {
+        var cfg = http.RequestServices.GetRequiredService<IConfiguration>();
+        return cfg.GetValue("Testing:UseInMemoryDb", false)
+            && cfg.GetValue("SecureChannel:AllowPlainJsonInTests", false)
+            && !http.Request.Headers.ContainsKey("X-Syn-Sec-Session");
     }
 }
 

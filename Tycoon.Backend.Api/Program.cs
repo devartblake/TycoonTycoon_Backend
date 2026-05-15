@@ -318,8 +318,13 @@ builder.Services.AddSingleton<ISidecarInferenceStore>(_ =>
     }
 });
 
-var signalr = builder.Services.AddSignalR();
-if (!string.IsNullOrWhiteSpace(redis))
+var signalr = builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+    });
+var useInMemoryDbForTesting = builder.Configuration.GetValue("Testing:UseInMemoryDb", false);
+if (!useInMemoryDbForTesting && !string.IsNullOrWhiteSpace(redis))
 {
     Console.WriteLine($"✅ Configuring SignalR with Redis: {redis}");
     signalr.AddStackExchangeRedis(redis);
@@ -331,7 +336,6 @@ else
 
 // Hangfire
 var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", true);
-var useInMemoryDbForTesting = builder.Configuration.GetValue("Testing:UseInMemoryDb", false);
 
 if (useInMemoryDbForTesting)
 {

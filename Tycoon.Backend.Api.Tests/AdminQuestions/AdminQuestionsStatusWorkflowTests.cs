@@ -35,14 +35,14 @@ public sealed class AdminQuestionsStatusWorkflowTests : IClassFixture<TycoonApiF
 
         var createdResp = await _http.PostAsJsonAsync("/admin/questions", createReq);
         createdResp.StatusCode.Should().Be(HttpStatusCode.Created);
-        var createdBody = await createdResp.Content.ReadFromJsonAsync<Dictionary<string, Guid>>();
+        var createdBody = await createdResp.Content.ReadFromJsonAsync<QuestionDto>(TestJson.Default);
         createdBody.Should().NotBeNull();
-        var id = createdBody!["id"];
+        var id = createdBody!.Id;
 
         var approveResp = await _http.PostAsync($"/admin/questions/{id}/approve", null);
         approveResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var approved = await approveResp.Content.ReadFromJsonAsync<QuestionDto>();
+        var approved = await approveResp.Content.ReadFromJsonAsync<QuestionDto>(TestJson.Default);
         approved.Should().NotBeNull();
         approved!.Status.Should().Be("Approved");
 

@@ -25,9 +25,7 @@ namespace Tycoon.Backend.Application.Matchmaking
             var scope = decision.QueueScope;
 
             // Cleanup expired tickets
-            await db.MatchmakingTickets
-                .Where(t => t.Status == "Queued" && t.ExpiresAtUtc <= DateTimeOffset.UtcNow)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, "Cancelled"), ct);
+            await CancelExpiredTicketsAsync(ct);
 
             // Idempotent enqueue
             var existing = await db.MatchmakingTickets
@@ -82,7 +80,11 @@ namespace Tycoon.Backend.Application.Matchmaking
             string scope,
             CancellationToken ct)
         {
-            await using var tx = await ((DbContext)db).Database.BeginTransactionAsync(ct);
+            var context = (DbContext)db;
+            if (IsInMemoryProvider(context))
+                return await TryMatchCoreAsync(ticketId, mode, tier, scope, ct);
+
+            await using var tx = await context.Database.BeginTransactionAsync(ct);
 
             var self = await db.MatchmakingTickets
                 .FirstOrDefaultAsync(t => t.Id == ticketId, ct);
@@ -143,5 +145,79 @@ namespace Tycoon.Backend.Application.Matchmaking
                 return null;
             }
         }
+
+        private async Task<QueueResultDto?> TryMatchCoreAsync(
+            Guid ticketId,
+            string mode,
+            int tier,
+            string scope,
+            CancellationToken ct)
+        {
+            var self = await db.MatchmakingTickets
+                .FirstOrDefaultAsync(t => t.Id == ticketId, ct);
+
+            if (self is null || self.Status != "Queued")
+                return null;
+
+            var opponent = await db.MatchmakingTickets
+                .OrderBy(t => t.CreatedAtUtc)
+                .FirstOrDefaultAsync(t =>
+                    t.Status == "Queued" &&
+                    t.Id != ticketId &&
+                    t.Mode == mode &&
+                    t.Scope == scope &&
+                    (scope == "TierOnly" ? t.Tier == tier : true), ct);
+
+            if (opponent is null)
+                return null;
+
+            self.MarkMatched();
+            opponent.MarkMatched();
+
+            try
+            {
+                await db.SaveChangesAsync(ct);
+
+                await notifier.NotifyMatchedAsync(
+                    self.PlayerId,
+                    opponent.PlayerId,
+                    mode,
+                    tier,
+                    scope,
+                    self.Id,
+                    ct);
+
+                await notifier.NotifyMatchedAsync(
+                    opponent.PlayerId,
+                    self.PlayerId,
+                    mode,
+                    tier,
+                    scope,
+                    opponent.Id,
+                    ct);
+
+                return new QueueResultDto("Matched", self.Id, null, opponent.PlayerId);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return null;
+            }
+        }
+
+        private async Task CancelExpiredTicketsAsync(CancellationToken ct)
+        {
+            var expiredQuery = db.MatchmakingTickets
+                .Where(t => t.Status == "Queued" && t.ExpiresAtUtc <= DateTimeOffset.UtcNow);
+
+            var expired = await expiredQuery.ToListAsync(ct);
+            foreach (var ticket in expired)
+                ticket.Cancel();
+
+            if (expired.Count > 0)
+                await db.SaveChangesAsync(ct);
+        }
+
+        private static bool IsInMemoryProvider(DbContext context) =>
+            string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.InMemory", StringComparison.Ordinal);
     }
 }

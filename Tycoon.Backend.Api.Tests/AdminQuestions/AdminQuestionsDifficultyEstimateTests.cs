@@ -23,7 +23,7 @@ public sealed class AdminQuestionsDifficultyEstimateTests : IClassFixture<Tycoon
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var dto = await resp.Content.ReadFromJsonAsync<QuestionDifficultyEstimateResponse>();
+        var dto = await resp.Content.ReadFromJsonAsync<QuestionDifficultyEstimateResponse>(TestJson.Default);
         dto.Should().NotBeNull();
         dto!.Source.Should().Be("heuristic");
         dto.Difficulty.Should().Be(QuestionDifficulty.Easy);

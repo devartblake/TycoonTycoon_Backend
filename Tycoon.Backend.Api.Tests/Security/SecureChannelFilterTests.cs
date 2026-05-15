@@ -164,6 +164,7 @@ public sealed class SecureChannelApiFactory : TycoonApiFactory
             {
                 // Satisfy KmsClientOptions binding; the real HTTP client is replaced below
                 ["KmsClient:BaseUrl"] = "http://test-kms-not-used",
+                ["SecureChannel:AllowPlainJsonInTests"] = "false",
             });
         });
 

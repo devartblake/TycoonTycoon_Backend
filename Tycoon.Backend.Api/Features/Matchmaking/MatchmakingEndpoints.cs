@@ -34,11 +34,11 @@ namespace Tycoon.Backend.Api.Features.Matchmaking
             .RequireRateLimiting("matches-submit");
 
             g.MapPost("/cancel", async (
-                [FromBody] Guid playerId,
+                [FromBody] CancelRequest req,
                 MatchmakingService mm,
                 CancellationToken ct) =>
             {
-                await mm.CancelAsync(playerId, ct);
+                await mm.CancelAsync(req.PlayerId, ct);
                 return Results.NoContent();
             });
 

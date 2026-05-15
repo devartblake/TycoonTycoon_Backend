@@ -22,10 +22,11 @@ namespace Tycoon.Backend.Api.Features.AdminMedia
 
             g.MapPost("/upload/{*assetKey}", async ([FromRoute] string assetKey, IFormFile file, IObjectStorage storage, CancellationToken ct) =>
             {
+                assetKey = Uri.UnescapeDataString(assetKey);
                 await using var stream = file.OpenReadStream();
                 await storage.PutAsync(assetKey, stream, file.ContentType, file.Length, ct);
                 return Results.Ok(new { assetKey, url = storage.GetPublicUrl(assetKey) });
-            });
+            }).DisableAntiforgery();
         }
     }
 }

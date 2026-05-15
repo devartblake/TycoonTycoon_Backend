@@ -60,7 +60,7 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             var createdResp = await _http.PostAsJsonAsync("/admin/questions", createReq);
             createdResp.IsSuccessStatusCode.Should().BeTrue();
 
-            var created = await createdResp.Content.ReadFromJsonAsync<QuestionDto>();
+            var created = await createdResp.Content.ReadFromJsonAsync<QuestionDto>(TestJson.Default);
             created.Should().NotBeNull();
             created!.Id.Should().NotBeEmpty();
             created.Category.Should().Be("Math");
@@ -72,7 +72,7 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             var getResp = await _http.GetAsync($"/admin/questions/{id}");
             getResp.IsSuccessStatusCode.Should().BeTrue();
 
-            var got = await getResp.Content.ReadFromJsonAsync<QuestionDto>();
+            var got = await getResp.Content.ReadFromJsonAsync<QuestionDto>(TestJson.Default);
             got!.CorrectOptionId.Should().Be("B");
             got.Options.Count.Should().Be(3);
 
@@ -95,7 +95,7 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             var updateResp = await _http.PutAsJsonAsync($"/admin/questions/{id}", updateReq);
             updateResp.IsSuccessStatusCode.Should().BeTrue();
 
-            var updated = await updateResp.Content.ReadFromJsonAsync<QuestionDto>();
+            var updated = await updateResp.Content.ReadFromJsonAsync<QuestionDto>(TestJson.Default);
             updated!.Text.Should().Contain("3+3");
             updated.HasMedia().Should().BeTrue();
 
@@ -103,7 +103,7 @@ namespace Tycoon.Backend.Api.Tests.AdminQuestions
             var listResp = await _http.GetAsync("/admin/questions?tags=addition&tagMode=Any&page=1&pageSize=20");
             listResp.IsSuccessStatusCode.Should().BeTrue();
 
-            var list = await listResp.Content.ReadFromJsonAsync<QuestionListResponseDto>();
+            var list = await listResp.Content.ReadFromJsonAsync<QuestionListResponseDto>(TestJson.Default);
             list!.Total.Should().BeGreaterThan(0);
             list.Items.Should().Contain(i => i.Id == id);
 
