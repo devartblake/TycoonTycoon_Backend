@@ -108,8 +108,13 @@ If the fallback script is used, verify:
 SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId";
 ```
 
-Expected last migration from the script:
-`20260501090000_AddReasonToPersonalizationRecommendation`.
+Expected last committed migration after the May 15 schema-sync update:
+`20260515102821_AddMayCutoverSchemaSync`.
+
+If the manual DBA fallback script is used, it still ends at
+`20260501090000_AddReasonToPersonalizationRecommendation`; apply the committed
+May schema-sync migration afterward before marking the staging migration gate
+ready.
 
 ### 3. Confirm Dashboard Login Readiness
 

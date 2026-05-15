@@ -5,7 +5,7 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
-STARTUP_PROJECT="Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+STARTUP_PROJECT="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
 CONTEXT="AppDb"
 OUTPUT_DIR="Migrations"
 MIGRATION_NAME=""
@@ -13,6 +13,7 @@ REMOVE_LAST=false
 APPLY_DATABASE=false
 NO_BUILD=false
 CONFIGURATION="${CONFIGURATION:-Debug}"
+DOTNET_CMD=()
 
 usage() {
   cat <<USAGE
@@ -35,11 +36,27 @@ log() {
 }
 
 require_dotnet() {
-  if ! command -v dotnet >/dev/null 2>&1; then
-    echo "dotnet CLI is required but not found in PATH." >&2
-    echo "Tip: run 'bash scripts/setup-health-pass-prereqs.sh' first." >&2
-    exit 1
+  if command -v dotnet >/dev/null 2>&1; then
+    DOTNET_CMD=(dotnet)
+    return
   fi
+
+  local candidates=(
+    "/c/Program Files/dotnet/dotnet.exe"
+    "/mnt/c/Program Files/dotnet/dotnet.exe"
+    "C:/Program Files/dotnet/dotnet.exe"
+  )
+
+  for candidate in "${candidates[@]}"; do
+    if [[ -x "$candidate" ]]; then
+      DOTNET_CMD=("$candidate")
+      return
+    fi
+  done
+
+  echo "dotnet CLI is required but not found in PATH." >&2
+  echo "Tip: run 'bash scripts/setup-health-pass-prereqs.sh' first." >&2
+  exit 1
 }
 
 while [[ $# -gt 0 ]]; do
@@ -99,12 +116,12 @@ require_dotnet
 
 if $REMOVE_LAST; then
   log "Removing last migration (force)..."
-  dotnet ef migrations remove --force "${EF_ARGS[@]}"
+  "${DOTNET_CMD[@]}" ef migrations remove --force "${EF_ARGS[@]}"
 fi
 
 log "Adding migration '$MIGRATION_NAME'..."
 set +e
-ADD_OUTPUT="$(dotnet ef migrations add "$MIGRATION_NAME" "${EF_ARGS[@]}" --output-dir "$OUTPUT_DIR" 2>&1)"
+ADD_OUTPUT="$("${DOTNET_CMD[@]}" ef migrations add "$MIGRATION_NAME" "${EF_ARGS[@]}" --output-dir "$OUTPUT_DIR" 2>&1)"
 ADD_STATUS=$?
 set -e
 echo "$ADD_OUTPUT"
@@ -116,7 +133,7 @@ if [[ $ADD_STATUS -ne 0 ]]; then
     if $NO_BUILD; then
       RETRY_ARGS+=(--no-build)
     fi
-    dotnet ef migrations add "$MIGRATION_NAME" \
+    "${DOTNET_CMD[@]}" ef migrations add "$MIGRATION_NAME" \
       --project "$PROJECT" \
       --startup-project "$PROJECT" \
       --context "$CONTEXT" \
@@ -135,7 +152,7 @@ fi
 
 if $APPLY_DATABASE; then
   log "Updating database to latest migration..."
-  dotnet ef database update "${EF_ARGS[@]}"
+  "${DOTNET_CMD[@]}" ef database update "${EF_ARGS[@]}"
 fi
 
 log "Done."

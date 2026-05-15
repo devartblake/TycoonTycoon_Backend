@@ -12,6 +12,8 @@ STARTUP="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
 CONTEXT="AppDb"
 AUTO_FIX=false
 AUTO_FIX_NAME=""
+DOTNET_CMD=()
+EF_CMD=()
 
 usage() {
   cat <<USAGE
@@ -49,14 +51,77 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+resolve_dotnet() {
+  if command -v dotnet >/dev/null 2>&1; then
+    DOTNET_CMD=(dotnet)
+    return
+  fi
+
+  local candidates=(
+    "/c/Program Files/dotnet/dotnet.exe"
+    "/mnt/c/Program Files/dotnet/dotnet.exe"
+    "C:/Program Files/dotnet/dotnet.exe"
+  )
+
+  for candidate in "${candidates[@]}"; do
+    if [[ -x "$candidate" ]]; then
+      DOTNET_CMD=("$candidate")
+      return
+    fi
+  done
+
+  echo "dotnet was not found on PATH, and no Windows dotnet.exe fallback was found." >&2
+  echo "Install the .NET SDK or add dotnet to PATH before running EF schema validation." >&2
+  exit 127
+}
+
+resolve_ef_tool() {
+  EF_CMD=("${DOTNET_CMD[@]}" ef)
+}
+
+ensure_local_ef_tool() {
+  local tool_dir="artifacts/dotnet-tools"
+  local tool_exe="$tool_dir/dotnet-ef"
+
+  if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || -n "${WINDIR:-}" ]]; then
+    tool_exe="$tool_exe.exe"
+  fi
+
+  mkdir -p "$tool_dir"
+
+  if [[ ! -x "$tool_exe" ]]; then
+    echo "dotnet-ef is not available on PATH; installing repo-local tool in $tool_dir..."
+    "${DOTNET_CMD[@]}" tool install dotnet-ef --tool-path "$tool_dir"
+  fi
+
+  EF_CMD=("$tool_exe")
+}
+
+run_schema_validation() {
+  "${EF_CMD[@]}" migrations has-pending-model-changes \
+    --project "$PROJECT" \
+    --startup-project "$STARTUP" \
+    --context "$CONTEXT" 2>&1
+}
+
+resolve_dotnet
+resolve_ef_tool
+
 echo "Running EF Core schema drift validation..."
 set +e
-OUTPUT=$(dotnet ef migrations has-pending-model-changes \
-  --project "$PROJECT" \
-  --startup-project "$STARTUP" \
-  --context "$CONTEXT" 2>&1)
+OUTPUT=$(run_schema_validation)
 STATUS=$?
 set -e
+
+if [[ $STATUS -ne 0 ]] && echo "$OUTPUT" | grep -Eqi "dotnet-ef does not exist|specified command or file was not found|could not execute"; then
+  echo "$OUTPUT"
+  ensure_local_ef_tool
+  echo "Re-running EF Core schema drift validation with repo-local dotnet-ef..."
+  set +e
+  OUTPUT=$(run_schema_validation)
+  STATUS=$?
+  set -e
+fi
 
 echo "$OUTPUT"
 
