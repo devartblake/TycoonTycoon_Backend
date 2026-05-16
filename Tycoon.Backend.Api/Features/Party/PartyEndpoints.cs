@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.Social;
 
 namespace Tycoon.Backend.Api.Features.Party
@@ -20,7 +22,14 @@ namespace Tycoon.Backend.Api.Features.Party
         public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/party")
-                .WithTags("Party");
+                .WithTags("Party")
+                .AddEndpointFilter(async (ctx, next) =>
+                {
+                    var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
+                    if (!await flags.IsEnabledAsync("social_enabled", ctx.HttpContext.RequestAborted))
+                        return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
+                    return await next(ctx);
+                });
 
             // POST /party
             g.MapPost("", async (

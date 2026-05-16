@@ -128,9 +128,18 @@ public sealed class MigrationWorker : BackgroundService
 
                     if (!recoveredFromSchemaDrift)
                     {
-                        _log.Information("Applying EF migrations…");
-                        await db.Database.MigrateAsync(stoppingToken);
-                        _log.Information("EF migrations completed successfully");
+                        const long AdvisoryLockKey = 987654321L;
+                        await AcquireAdvisoryLockAsync(db, AdvisoryLockKey, _log, stoppingToken);
+                        try
+                        {
+                            _log.Information("Applying EF migrations…");
+                            await db.Database.MigrateAsync(stoppingToken);
+                            _log.Information("EF migrations completed successfully");
+                        }
+                        finally
+                        {
+                            await ReleaseAdvisoryLockAsync(db, AdvisoryLockKey, _log);
+                        }
                     }
                 }
 
@@ -580,6 +589,34 @@ public sealed class MigrationWorker : BackgroundService
             return fallback;
 
         return null;
+    }
+
+    private static async Task AcquireAdvisoryLockAsync(AppDb db, long lockKey, Serilog.ILogger log, CancellationToken ct)
+    {
+        var conn = db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT pg_advisory_lock({lockKey})";
+        await cmd.ExecuteNonQueryAsync(ct);
+        log.Information("Acquired PostgreSQL advisory lock {LockKey}.", lockKey);
+    }
+
+    private static async Task ReleaseAdvisoryLockAsync(AppDb db, long lockKey, Serilog.ILogger log)
+    {
+        try
+        {
+            var conn = db.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open) return;
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"SELECT pg_advisory_unlock({lockKey})";
+            await cmd.ExecuteNonQueryAsync();
+            log.Information("Released PostgreSQL advisory lock {LockKey}.", lockKey);
+        }
+        catch (Exception ex)
+        {
+            log.Warning(ex, "Failed to release advisory lock {LockKey} — connection may have already closed.", lockKey);
+        }
     }
 
     private async Task VerifySeedPrerequisiteTablesAsync(AppDb db, Serilog.ILogger log, CancellationToken ct)

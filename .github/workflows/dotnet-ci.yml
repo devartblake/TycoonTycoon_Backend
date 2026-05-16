@@ -207,6 +207,27 @@ jobs:
       - name: Validate EF schema is in sync
         run: bash scripts/validate-ef-schema.sh
 
+      - name: Generate idempotent migration SQL
+        run: |
+          mkdir -p artifacts/migrations
+          dotnet ef migrations script \
+            --idempotent \
+            --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
+            --startup-project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj \
+            --output artifacts/migrations/idempotent.sql \
+            --no-build
+
+      - name: Generate migration manifest
+        run: |
+          echo "{\"release\":\"alpha-beta-2026\",\"generatedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"scriptFile\":\"idempotent.sql\",\"migrationProject\":\"Tycoon.Backend.Migrations\"}" \
+            > artifacts/migrations/migration-manifest.json
+
+      - name: Upload migration artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-artifacts
+          path: artifacts/migrations/
+
   health-pass-report:
     runs-on: ubuntu-latest
     needs: [build-test, schema-validation]

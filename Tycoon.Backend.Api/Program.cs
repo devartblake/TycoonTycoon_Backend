@@ -32,6 +32,8 @@ using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
 using Tycoon.Backend.Api.Features.AdminModeration;
 using Tycoon.Backend.Api.Features.AdminNotifications;
+using Tycoon.Backend.Api.Features.AppConfig;
+using Tycoon.Backend.Api.Features.Quiz;
 using Tycoon.Backend.Api.Features.AdminConfig;
 using Tycoon.Backend.Api.Features.AdminEmailAcl;
 using Tycoon.Backend.Api.Features.AdminPowerups;
@@ -95,6 +97,7 @@ using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Writers;
 using Tycoon.Backend.Application.Auth;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.GameEvents;
 using Tycoon.Backend.Application.Guardians;
 using Tycoon.Backend.Application.Matchmaking;
@@ -845,7 +848,21 @@ app.Map("/ws", async context =>
 
 // app.MapControllers();
 
-// SignalR hubs
+// SignalR hubs — gated by realtime_multiplayer_enabled feature flag
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.Path.StartsWithSegments("/ws"))
+    {
+        var flags = ctx.RequestServices.GetRequiredService<FeatureFlagService>();
+        if (!await flags.IsEnabledAsync("realtime_multiplayer_enabled", ctx.RequestAborted))
+        {
+            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await ctx.Response.WriteAsJsonAsync(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } });
+            return;
+        }
+    }
+    await next(ctx);
+});
 app.MapHub<MatchHub>("/ws/match");
 app.MapHub<PresenceHub>("/ws/presence");
 app.MapHub<NotificationHub>("/ws/notify");
@@ -859,7 +876,8 @@ app.MapGrpcService<MobileMatchGrpcService>();
 // Route ownership note:
 // - /questions/* = gameplay-safe question retrieval and grading
 // - /modules/* = learning and mastery flows
-// - /quiz/* is intentionally not mapped in this backend
+// - /quiz/* = solo quiz completion and reward grant (POST /quiz/complete)
+AppConfigEndpoints.Map(app);
 AnalyticsEndpoints.Map(app);
 AuthEndpoints.Map(app);
 UsersEndpoints.Map(app);
@@ -867,6 +885,7 @@ UserFriendsEndpoints.Map(app);
 PlayerPreferencesEndpoints.Map(app);
 PlayersEndpoints.Map(app);
 MatchesEndpoints.Map(app);
+QuizEndpoints.Map(app);
 MatchmakingEndpoints.Map(app);
 MissionsEndpoints.Map(app);
 LeaderboardsEndpoints.Map(app);

@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Api.Security;
 using Tycoon.Backend.Application.Abstractions;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Domain.Entities;
 
 namespace Tycoon.Backend.Api.Features.Crypto;
@@ -15,7 +17,14 @@ public static class CryptoEconomyEndpoints
 {
     public static void Map(WebApplication app)
     {
-        var g = app.MapGroup("/crypto").WithTags("Crypto Economy");
+        var g = app.MapGroup("/crypto").WithTags("Crypto Economy")
+            .AddEndpointFilter(async (ctx, next) =>
+            {
+                var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
+                if (!await flags.IsEnabledAsync("crypto_enabled", ctx.HttpContext.RequestAborted))
+                    return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
+                return await next(ctx);
+            });
 
         g.MapPost("/link-wallet", LinkWallet).RequireAuthorization().RequireSecureChannel();
         g.MapGet("/balance/{playerId:guid}", GetBalance).RequireAuthorization();

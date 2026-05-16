@@ -34,7 +34,7 @@ namespace Tycoon.Backend.Api.Features.Guardians
 
                 return res.Status switch
                 {
-                    "FeatureDisabled" => ApiResponses.Error(StatusCodes.Status503ServiceUnavailable, "FEATURE_DISABLED", "Guardian feature is currently disabled."),
+                    "FeatureDisabled" => ApiResponses.Error(StatusCodes.Status403Forbidden, "FeatureDisabled", "This feature is not available in the current release."),
                     "GuardianNotFound" => ApiResponses.Error(StatusCodes.Status404NotFound, "GUARDIAN_NOT_FOUND", "Guardian not found or expired."),
                     "ChallengeAlreadyPending" => ApiResponses.Error(StatusCodes.Status409Conflict, "CHALLENGE_PENDING", "A challenge is already pending between these players."),
                     _ => Results.Ok(res)

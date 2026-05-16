@@ -34,7 +34,7 @@ namespace Tycoon.Backend.Api.Features.Territory
 
                 return res.Status switch
                 {
-                    "FeatureDisabled" => ApiResponses.Error(StatusCodes.Status503ServiceUnavailable, "FEATURE_DISABLED", "Territory feature is currently disabled."),
+                    "FeatureDisabled" => ApiResponses.Error(StatusCodes.Status403Forbidden, "FeatureDisabled", "This feature is not available in the current release."),
                     _ when res.MatchId == Guid.Empty => Results.Ok(new { status = "AlreadyOwner", matchId = Guid.Empty, tileOwnerId = res.TileOwnerId }),
                     _ => Results.Ok(res)
                 };
