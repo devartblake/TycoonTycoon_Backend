@@ -88,7 +88,7 @@ public sealed class AdminGameEventsEndpointsTests : IClassFixture<TycoonApiFacto
 
         resp.IsSuccessStatusCode.Should().BeTrue();
 
-        var summary = await resp.Content.ReadFromJsonAsync<GameEventSummaryDto>();
+        var summary = await resp.Content.ReadFromJsonAsync<GameEventSummaryDto>(TestJson.Default);
         summary.Should().NotBeNull();
         summary!.Id.Should().NotBeEmpty();
         summary.Kind.Should().Be(req.Kind);
@@ -174,7 +174,7 @@ public sealed class AdminGameEventsEndpointsTests : IClassFixture<TycoonApiFacto
     {
         await CreateEventAsync();
 
-        var resp = await _http.GetAsync("/admin/game-events?pageSize=100");
+        var resp = await _http.GetAsync("/admin/game-events?page=1&pageSize=100");
         resp.IsSuccessStatusCode.Should().BeTrue();
 
         var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
@@ -188,7 +188,7 @@ public sealed class AdminGameEventsEndpointsTests : IClassFixture<TycoonApiFacto
         var eventId = await CreateEventAsync();
         await _http.PostAsync($"/admin/game-events/{eventId}/open", null);
 
-        var resp = await _http.GetAsync("/admin/game-events?status=Open&pageSize=100");
+        var resp = await _http.GetAsync("/admin/game-events?page=1&status=Open&pageSize=100");
         resp.IsSuccessStatusCode.Should().BeTrue();
 
         var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
@@ -201,7 +201,7 @@ public sealed class AdminGameEventsEndpointsTests : IClassFixture<TycoonApiFacto
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private static CreateGameEventRequest BuildCreateRequest() => new(
-        Kind: "battle-royale",
+        Kind: "millionaire",
         TierId: 1,
         ScheduledAtUtc: DateTimeOffset.UtcNow.AddHours(1),
         OpenAtUtc: null,
@@ -214,7 +214,7 @@ public sealed class AdminGameEventsEndpointsTests : IClassFixture<TycoonApiFacto
     {
         var resp = await _http.PostAsJsonAsync("/admin/game-events/", BuildCreateRequest());
         resp.EnsureSuccessStatusCode();
-        var summary = await resp.Content.ReadFromJsonAsync<GameEventSummaryDto>();
+        var summary = await resp.Content.ReadFromJsonAsync<GameEventSummaryDto>(TestJson.Default);
         return summary!.Id;
     }
 }

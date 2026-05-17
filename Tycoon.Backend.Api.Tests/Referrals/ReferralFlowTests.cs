@@ -1,6 +1,9 @@
 ﻿using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Tycoon.Backend.Api.Tests.TestHost;
+using Tycoon.Backend.Domain.Entities;
+using Tycoon.Backend.Infrastructure.Persistence;
 using Tycoon.Shared.Contracts.Dtos;
 using Xunit;
 
@@ -8,10 +11,12 @@ namespace Tycoon.Backend.Api.Tests.Referrals
 {
     public sealed class ReferralFlowTests : IClassFixture<TycoonApiFactory>
     {
+        private readonly TycoonApiFactory _factory;
         private readonly HttpClient _http;
 
         public ReferralFlowTests(TycoonApiFactory factory)
         {
+            _factory = factory;
             _http = factory.CreateClient();
         }
 
@@ -20,6 +25,18 @@ namespace Tycoon.Backend.Api.Tests.Referrals
         {
             var ownerId = Guid.NewGuid();
             var redeemerId = Guid.NewGuid();
+
+            // Seed player rows — RedeemReferralCode requires both to exist in Players table
+            await using (var scope = _factory.Services.CreateAsyncScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+                var owner = new Player($"refowner_{ownerId:N}");
+                typeof(Player).GetProperty("Id")!.SetValue(owner, ownerId);
+                var redeemer = new Player($"refredeemer_{redeemerId:N}");
+                typeof(Player).GetProperty("Id")!.SetValue(redeemer, redeemerId);
+                db.Players.AddRange(owner, redeemer);
+                await db.SaveChangesAsync();
+            }
 
             // Create code
             var create = await _http.PostAsJsonAsync("/referrals", new CreateReferralCodeRequest(ownerId));

@@ -14,9 +14,11 @@ public sealed class PlayerEconomySafeguardState
 
     private PlayerEconomySafeguardState() { } // EF
 
-    public PlayerEconomySafeguardState(Guid playerId)
+    public PlayerEconomySafeguardState(Guid playerId, int startEnergy = 20)
     {
         PlayerId = playerId;
+        CurrentEnergy = Math.Max(0, startEnergy);
+        LastEnergyRegenAtUtc = DateTimeOffset.UtcNow;
     }
 
     public int StartSession()
@@ -26,20 +28,9 @@ public sealed class PlayerEconomySafeguardState
         return SessionsStarted;
     }
 
-    public void EnsureEnergyInitialized(int startEnergy)
-    {
-        var appearsUninitialized =
-            CurrentEnergy <= 0
-            && SessionsStarted == 0
-            && LossStreak == 0
-            && FreeTicketsClaimedToday == 0
-            && LastFreeTicketClaimDate is null;
-
-        if (!appearsUninitialized) return;
-        CurrentEnergy = Math.Max(0, startEnergy);
-        LastEnergyRegenAtUtc = DateTimeOffset.UtcNow;
-        UpdatedAtUtc = DateTimeOffset.UtcNow;
-    }
+    // Energy is initialized in the constructor; this is a no-op for all new entities.
+    // Kept for call-site compatibility.
+    public void EnsureEnergyInitialized(int startEnergy) { }
 
     public void RegenerateEnergy(int maxEnergy, int regenMinutesPerEnergy)
     {

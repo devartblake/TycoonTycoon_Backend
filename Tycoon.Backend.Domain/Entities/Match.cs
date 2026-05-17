@@ -11,7 +11,7 @@ namespace Tycoon.Backend.Domain.Entities
         public Guid HostPlayerId { get; private set; }
         public string Mode { get; private set; } = "solo";
         public DateTimeOffset StartedAt { get; private set; } = DateTimeOffset.UtcNow;
-        public DateTimeOffset? FinishedAt { get; private set; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset? FinishedAt { get; private set; }
         public byte[]? RowVersion { get; private set; } // EF Core concurrency token
 
         /// <summary>

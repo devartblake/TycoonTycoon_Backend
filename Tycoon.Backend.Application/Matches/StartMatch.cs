@@ -19,12 +19,7 @@ namespace Tycoon.Backend.Application.Matches
     {
         public async Task<StartMatchResponse> Handle(StartMatch r, CancellationToken ct)
         {
-            var decision = await policy.TryEnterModeAsync(r.HostPlayerId, r.Mode, ct);
-            if (!decision.Allowed)
-                throw new InvalidOperationException(decision.Message);
-
-            // Prevent duplicate active matches for the same host.
-            // "Active" == FinishedAt is null in your domain model.
+            // Return existing active match idempotently (no energy charge).
             var existing = await db.Matches
                 .AsNoTracking()
                 .OrderByDescending(m => m.StartedAt)
@@ -33,14 +28,12 @@ namespace Tycoon.Backend.Application.Matches
                     m.FinishedAt == null, ct);
 
             if (existing is not null)
-            {
-                // Return existing match instead of creating a new one.
                 return new StartMatchResponse(existing.Id, existing.StartedAt);
-            }
 
-            var modeDecision = await policy.TryEnterModeAsync(r.HostPlayerId, r.Mode, ct);
-            if (!modeDecision.Allowed)
-                throw new ModeEntryDeniedException(modeDecision.ReasonCode, modeDecision.Message);
+            // Check energy/ticket policy — consumes resources if allowed.
+            var decision = await policy.TryEnterModeAsync(r.HostPlayerId, r.Mode, ct);
+            if (!decision.Allowed)
+                throw new ModeEntryDeniedException(decision.ReasonCode, decision.Message);
 
             var match = new Match(
                 r.HostPlayerId,

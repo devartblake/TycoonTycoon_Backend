@@ -107,7 +107,10 @@ namespace Tycoon.Backend.Api.Features.Users
         private static bool TryGetUserId(HttpContext ctx, out Guid userId)
         {
             userId = Guid.Empty;
-            var claim = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            // JWT middleware runs with MapInboundClaims=false, so "sub" is not remapped to
+            // ClaimTypes.NameIdentifier. Try "sub" first, fall back for other auth schemes.
+            var claim = ctx.User.FindFirst("sub")
+                     ?? ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
             return claim is not null && Guid.TryParse(claim.Value, out userId);
         }
 

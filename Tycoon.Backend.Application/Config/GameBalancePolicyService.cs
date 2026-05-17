@@ -183,22 +183,10 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
         state.EnsureEnergyInitialized(cfg.StartEnergy);
         state.RegenerateEnergy(cfg.MaxEnergy, cfg.RegenMinutesPerEnergy);
 
-        var sessionDiscount = state.SessionsStarted <= cfg.Safeguards.FirstSessionsReducedCostCount
+        var sessionDiscount = state.SessionsStarted > 0 && state.SessionsStarted <= cfg.Safeguards.FirstSessionsReducedCostCount
             ? cfg.Safeguards.FirstSessionsEnergyDiscount
             : 0;
         var energyCost = Math.Max(0, rule.EnergyCost - sessionDiscount);
-
-        if (rule.RequiresTicket && !state.HasTicketAvailable(cfg.Safeguards.DailyFreeJackpotTickets))
-        {
-            return new ModeEntryDecisionDto(
-                Allowed: false,
-                ReasonCode: "NO_TICKET",
-                Message: "No ticket available for this mode.",
-                EnergyCostApplied: energyCost,
-                TicketConsumed: false,
-                CurrentEnergy: state.CurrentEnergy
-            );
-        }
 
         if (state.CurrentEnergy < energyCost)
         {
@@ -206,6 +194,18 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
                 Allowed: false,
                 ReasonCode: "INSUFFICIENT_ENERGY",
                 Message: "Not enough energy to enter this mode.",
+                EnergyCostApplied: energyCost,
+                TicketConsumed: false,
+                CurrentEnergy: state.CurrentEnergy
+            );
+        }
+
+        if (rule.RequiresTicket && !state.HasTicketAvailable(cfg.Safeguards.DailyFreeJackpotTickets))
+        {
+            return new ModeEntryDecisionDto(
+                Allowed: false,
+                ReasonCode: "NO_TICKET",
+                Message: "No ticket available for this mode.",
                 EnergyCostApplied: energyCost,
                 TicketConsumed: false,
                 CurrentEnergy: state.CurrentEnergy
@@ -236,7 +236,8 @@ public sealed class GameBalancePolicyService(IAppDb db) : IGameBalancePolicyServ
         var state = await db.PlayerEconomySafeguardStates.FirstOrDefaultAsync(x => x.PlayerId == playerId, ct);
         if (state is not null) return state;
 
-        var created = new PlayerEconomySafeguardState(playerId);
+        var cfg = await GetConfigAsync(ct);
+        var created = new PlayerEconomySafeguardState(playerId, cfg.StartEnergy);
         db.PlayerEconomySafeguardStates.Add(created);
         await db.SaveChangesAsync(ct);
         return created;

@@ -53,6 +53,7 @@ public static class AppConfigEndpoints
                 socialEnabled              = Flag("social_enabled",                false),
                 notificationsEnabled       = Flag("notifications_enabled",         false),
                 experimentsEnabled         = Flag("experiments_enabled",           false),
+                aiSidecarEnabled           = Flag("ai_sidecar_enabled",            false),
             };
 
             var minimumClientVersion = config["AppConfig:MinimumClientVersion"] ?? "0.0.1";

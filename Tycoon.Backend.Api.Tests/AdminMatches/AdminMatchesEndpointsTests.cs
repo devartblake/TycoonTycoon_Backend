@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
+using System.Text.Json;
 using Xunit;
 
 namespace Tycoon.Backend.Api.Tests.AdminMatches;
@@ -47,7 +48,7 @@ public sealed class AdminMatchesEndpointsTests : IClassFixture<TycoonApiFactory>
 
         resp.IsSuccessStatusCode.Should().BeTrue();
 
-        var body = await resp.Content.ReadFromJsonAsync<MatchListResponseDto>();
+        var body = await resp.Content.ReadFromJsonAsync<MatchListResponseDto>(TestJson.Default);
         body.Should().NotBeNull();
         body!.Page.Should().Be(1);
         body.PageSize.Should().Be(10);
@@ -62,7 +63,7 @@ public sealed class AdminMatchesEndpointsTests : IClassFixture<TycoonApiFactory>
 
         resp.IsSuccessStatusCode.Should().BeTrue();
 
-        var body = await resp.Content.ReadFromJsonAsync<MatchListResponseDto>();
+        var body = await resp.Content.ReadFromJsonAsync<MatchListResponseDto>(TestJson.Default);
         body.Should().NotBeNull();
         body!.PageSize.Should().BeLessThanOrEqualTo(100);
     }
@@ -74,7 +75,7 @@ public sealed class AdminMatchesEndpointsTests : IClassFixture<TycoonApiFactory>
 
         resp.IsSuccessStatusCode.Should().BeTrue();
 
-        var body = await resp.Content.ReadFromJsonAsync<MatchListResponseDto>();
+        var body = await resp.Content.ReadFromJsonAsync<MatchListResponseDto>(TestJson.Default);
         body.Should().NotBeNull();
         body!.Page.Should().Be(1);
     }

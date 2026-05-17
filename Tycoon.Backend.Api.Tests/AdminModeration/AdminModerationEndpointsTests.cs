@@ -79,8 +79,8 @@ public sealed class AdminModerationEndpointsTests : IClassFixture<TycoonApiFacto
         var profile = await resp.Content.ReadFromJsonAsync<ModerationProfileDto>();
         profile.Should().NotBeNull();
         profile!.PlayerId.Should().Be(playerId);
-        // Default status is Normal (0)
-        profile.Status.Should().Be(0);
+        // Default status is Normal (ModerationStatus.Normal = 1)
+        profile.Status.Should().Be(1);
         profile.Reason.Should().BeNull();
     }
 

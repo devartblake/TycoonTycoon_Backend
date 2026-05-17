@@ -287,7 +287,8 @@ namespace Tycoon.Backend.Application.Matches
                 }
             }
 
-            return new SubmitMatchResponse(req.EventId, req.MatchId, "Applied", awards);
+            var finalStatus = antiCheatBlocksRewards ? "Rejected" : "Applied";
+            return new SubmitMatchResponse(req.EventId, req.MatchId, finalStatus, awards);
         }
 
         private async Task<IReadOnlyList<MatchParticipantResultDto>> BuildAuthoritativeParticipantsAsync(
@@ -372,7 +373,8 @@ namespace Tycoon.Backend.Application.Matches
                 var win = !isDraw && winnerPlayerId.HasValue && p.PlayerId == winnerPlayerId.Value;
                 var draw = isDraw;
 
-                // Load or create profile ONCE
+                // Load or create profile ONCE — save immediately so SeasonPointsService.GetOrCreateProfileAsync
+                // finds it and doesn't create a duplicate (unique index on SeasonId+PlayerId).
                 var profile = await db.PlayerSeasonProfiles
                     .FirstOrDefaultAsync(x => x.SeasonId == seasonId && x.PlayerId == p.PlayerId, ct);
 
@@ -380,6 +382,7 @@ namespace Tycoon.Backend.Application.Matches
                 {
                     profile = new PlayerSeasonProfile(seasonId, p.PlayerId, 0);
                     db.PlayerSeasonProfiles.Add(profile);
+                    await db.SaveChangesAsync(ct);
                 }
 
                 // Placement-aware delta

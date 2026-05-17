@@ -61,7 +61,7 @@ public sealed class MatchSubmitTests : IClassFixture<TycoonApiFactory>
         // Verify economy history includes match-complete for host (best-effort)
         var hist = await _admin.GetAsync($"/admin/economy/history/{p1}?page=1&pageSize=50");
         hist.EnsureSuccessStatusCode();
-        var dto = await hist.Content.ReadFromJsonAsync<EconomyHistoryDto>();
+        var dto = await hist.Content.ReadFromJsonAsync<EconomyHistoryDto>(TestJson.Default);
 
         dto!.Items.Any(x => x.Kind == "match-complete").Should().BeTrue();
     }

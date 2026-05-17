@@ -88,16 +88,18 @@ namespace Tycoon.Backend.Application.Economy
 
             var total = await q.CountAsync(ct);
 
-            var txns = await q.Skip((page - 1) * pageSize)
+            var raw = await q.Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new EconomyTxnListItemDto(
-                    x.EventId,
-                    x.Kind,
-                    (x.Lines ?? Enumerable.Empty<EconomyTransactionLine>())
-                        .Select(l => new EconomyLineDto(l.Currency, l.Delta)).ToList(),
-                    x.CreatedAtUtc
-                ))
+                .Include(x => x.Lines)
                 .ToListAsync(ct);
+
+            var txns = raw.Select(x => new EconomyTxnListItemDto(
+                x.EventId,
+                x.Kind,
+                (x.Lines ?? Enumerable.Empty<EconomyTransactionLine>())
+                    .Select(l => new EconomyLineDto(l.Currency, l.Delta)).ToList(),
+                x.CreatedAtUtc
+            )).ToList();
 
             return new EconomyHistoryDto(playerId, page, pageSize, total, txns);
         }

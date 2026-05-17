@@ -5,7 +5,8 @@
       "Bash(grep -i \"\\\\.tests\\\\.csproj$\")",
       "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && find \"{}\" -maxdepth 2 -type f -name \"*.cs\" 2>/dev/null | head -10')",
       "Bash(Test-Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\Synaptix.Security.Kms.Tests\")",
-      "Bash(dotnet build *)"
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)"
     ]
   }
 }

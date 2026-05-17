@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Tycoon.Backend.Api.Contracts;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Moderation;
 using Tycoon.Backend.Domain.Entities;
@@ -95,7 +96,7 @@ namespace Tycoon.Backend.Api.Features.AdminModeration
                         : Enum.TryParse<ModerationStatus>(status, true, out var statusEnum) ? statusEnum : null;
 
                     if (parsed is null || !Enum.IsDefined(typeof(ModerationStatus), parsed.Value))
-                        return Results.BadRequest(new { error = "Invalid moderation status filter." });
+                        return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Invalid moderation status filter.");
 
                     q = q.Where(x => x.NewStatus == parsed.Value);
                 }

@@ -28,6 +28,10 @@ namespace Tycoon.Backend.Api.Tests.TestHost
             // that depend on it.  The PostgreSQL storage is replaced with in-memory storage
             // below via ConfigureServices, so no real database connection is made.
             builder.UseSetting("Testing:UseInMemoryDb", "true");
+            // InMemoryDbName must be set via UseSetting (host config) so it is visible
+            // when AddInfrastructure() calls cfg["Testing:InMemoryDbName"] during service
+            // registration — ConfigureAppConfiguration additions arrive too late.
+            builder.UseSetting("Testing:InMemoryDbName", _inMemoryDatabaseName);
             // Disable the relational schema startup gate — it calls GetDbConnection() which
             // is not available on the EF Core in-memory provider used during tests.
             builder.UseSetting("SchemaGate:Enabled", "false");
