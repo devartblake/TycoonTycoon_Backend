@@ -21,7 +21,12 @@
       "Bash(cd \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\" && dotnet script --help 2>/dev/null; grep -r \"IRequestBodyPipeFeature\" ~/.nuget/packages --include=\"*.cs\" -l 2>/dev/null | head -3)",
       "Read(//c/Users/lmxbl/.nuget/packages/**)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\docs\\\\releases\" -Recurse -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\Tycoon.OperatorDashboard.Django\\\\\" -Recurse -Force | Select-Object FullName)",
+      "Bash(python manage.py test dashboard --verbosity=2)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(python manage.py test dashboard.tests.test_api_clients dashboard.tests.test_views --verbosity=2)"
     ]
   }
 }

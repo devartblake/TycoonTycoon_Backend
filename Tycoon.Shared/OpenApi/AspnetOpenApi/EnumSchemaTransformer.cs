@@ -19,6 +19,7 @@ public class EnumSchemaTransformer : IOpenApiSchemaTransformer
             return Task.CompletedTask;
 
         // Clear the default enum values
+        schema.Enum ??= [];
         schema.Enum.Clear();
 
         // Add only string representations of the enum values
