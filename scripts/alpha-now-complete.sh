@@ -24,7 +24,7 @@ dotnet build "$BUILD_TARGET"
 
 echo "[NOW 3/5] Migration gate"
 if [[ "$RUN_MIGRATIONS" == "true" ]]; then
-  dotnet ef database update --project Tycoon.Backend.Migrations --startup-project Tycoon.Backend.Api
+  dotnet ef database update --project Tycoon.Backend.Migrations --startup-project Tycoon.MigrationService
 else
   echo "SKIP: RUN_MIGRATIONS=false (set true to execute DB migration gate)."
 fi

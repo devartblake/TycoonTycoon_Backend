@@ -1,14 +1,14 @@
 # Alpha Release — Known Issues
 
 **Release:** alpha-beta-2026  
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-18
 
 Issues are classified by severity:
 - **P0** — Blocks launch; must be resolved before Alpha ships
 - **P1** — Significant but has a mitigation; must be documented before launch
 - **P2** — Minor; tracked for Beta resolution
 
-No P0 issues are currently open. P1 items have documented mitigations.
+No P0 issues are currently open. P1 items have documented mitigations. The 2026-05-18 local verification pass did not introduce any new staging blockers, but staging smoke tests and rollback drill evidence are still pending.
 
 ---
 
@@ -125,3 +125,6 @@ No P0 issues are currently open. P1 items have documented mitigations.
 | — | No server-side reward grant for quiz completion | Session 3 — `POST /quiz/complete` + `CompleteQuizHandler` created |
 | — | 10+ endpoint groups had no feature flag gate | Session 3 & 4 — all systems gated |
 | — | Migration runner had no concurrent-run protection | Session 5 — `pg_advisory_lock` added |
+| — | Migration artifact generation used API startup project, which did not copy `Tycoon.Backend.Migrations.dll` into the startup output | 2026-05-18 — CI/helper EF commands now use `Tycoon.MigrationService` as the startup project |
+| — | Local compose migration failed during mission reset because seed-tracked question entities were flushed with mission claims | 2026-05-18 — `MigrationWorker` clears the change tracker after seeding; compose smoke passes |
+| — | `compose-smoke.sh` printed false `curl: Could not resolve host: GET` messages for bodyless requests | 2026-05-18 — `curl_json` argument shifting fixed; compose smoke output is clean |

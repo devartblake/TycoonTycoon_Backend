@@ -1,7 +1,7 @@
 # Alpha Release Criteria
 
 **Release:** alpha-beta-2026  
-**Last updated:** 2026-05-17
+**Last updated:** 2026-05-18
 
 All items in the **Must Pass** section must be green before the Alpha binary ships. Items in **Should Pass** are strongly recommended; any failures must have documented mitigations.
 
@@ -11,9 +11,11 @@ All items in the **Must Pass** section must be green before the Alpha binary shi
 
 ### Build & Schema
 
-- [x] `dotnet build TycoonTycoon_Backend.slnx --configuration Release` completes with **0 errors** <!-- verified 2026-05-17: Release config, 0 errors -->
-- [x] `dotnet test` — all existing test suites pass (security contract tests, personalization guardrail tests, gRPC tests) <!-- Api.Tests 417/418 pass, 1 skip (PartyPresence: requires live Redis presence backplane, documented in test); Application.Tests 198/198 pass -->
-- [x] EF schema validation passes: `bash scripts/validate-ef-schema.sh` shows no pending migrations <!-- 24 migrations applied; most recent: 20260515102821_AddMayCutoverSchemaSync; validate-ef-schema.sh confirmed present -->
+- [x] `dotnet build TycoonTycoon_Backend.slnx --configuration Release` completes with **0 errors** <!-- verified 2026-05-18: Release config, 0 errors; warnings only -->
+- [x] `dotnet test` — all existing test suites pass (security contract tests, personalization guardrail tests, gRPC tests) <!-- verified 2026-05-18: Api.Tests 417/418 pass, 1 skip (PartyPresence); Application.Tests 198/198 pass -->
+- [x] EF schema validation passes: `bash scripts/validate-ef-schema.sh` shows no pending migrations <!-- verified 2026-05-18: no pending model changes -->
+- [x] Local idempotent SQL generation succeeds <!-- verified 2026-05-18: dotnet ef migrations script --idempotent with Tycoon.MigrationService startup project generated artifacts/migrations/idempotent.sql -->
+- [x] Local compose smoke passes against full stack <!-- verified 2026-05-18: bash scripts/compose-smoke.sh completed migration, API health, admin login/profile, dashboard login, and operator BFF health probe -->
 - [ ] Idempotent SQL artifact generated in CI (`migration-artifacts` artifact on `main` branch)
 - [ ] All 24 EF migrations applied to the **staging** PostgreSQL database
 - [ ] `GET /health/ready` returns `200 OK` on staging with all dependencies healthy (PostgreSQL, Redis, RabbitMQ, MinIO)

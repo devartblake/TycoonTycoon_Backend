@@ -213,7 +213,7 @@ jobs:
           dotnet ef migrations script \
             --idempotent \
             --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
-            --startup-project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj \
+            --startup-project Tycoon.MigrationService/Tycoon.MigrationService.csproj \
             --output artifacts/migrations/idempotent.sql \
             --no-build
 

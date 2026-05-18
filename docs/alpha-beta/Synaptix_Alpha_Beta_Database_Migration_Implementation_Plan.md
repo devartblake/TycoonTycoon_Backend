@@ -818,7 +818,7 @@ This gives the project a stable, repeatable, and production-friendly migration p
 
 # 18. Implementation Status
 
-**Last updated: 2026-05-16**
+**Last updated: 2026-05-18**
 
 ## Phase Completion
 
@@ -827,13 +827,13 @@ This gives the project a stable, repeatable, and production-friendly migration p
 | Phase 1 | Migration Runner Project | ✅ Complete | `Tycoon.MigrationService` (not `Tycoon.DatabaseMigrator` as planned) — `MigrationWorker.cs` orchestrates full migration lifecycle |
 | Phase 2 | PostgreSQL Advisory Lock | ✅ Complete | `pg_advisory_lock(987654321)` / `pg_advisory_unlock` added to `MigrationWorker.ExecuteAsync` around `MigrateAsync`; using raw `DbConnection` pattern consistent with rest of the file |
 | Phase 3 | Migration Runner Logic + Logging | ✅ Complete | Three modes: `MigrateAndSeed`, `MigrateSeedAndRebuildElastic`, `RebuildElastic`; Serilog throughout; exit code `1` on failure; idempotent seeders (tiers, missions, store catalog) |
-| Phase 4 | Idempotent SQL Script Generation | ✅ Complete | Added to `schema-validation` job in `dotnet-ci.yml`; outputs `artifacts/migrations/idempotent.sql` via `dotnet ef migrations script --idempotent`; uploaded as `migration-artifacts` artifact |
+| Phase 4 | Idempotent SQL Script Generation | ✅ Complete | Added to `schema-validation` job in `dotnet-ci.yml`; outputs `artifacts/migrations/idempotent.sql` via `dotnet ef migrations script --idempotent` with `Tycoon.MigrationService` as startup project; uploaded as `migration-artifacts` artifact |
 | Phase 5 | Migration Manifest (CI artifact) | ✅ Complete | Shell step in same job writes `artifacts/migrations/migration-manifest.json` with release name, timestamp, and script reference; uploaded alongside SQL |
 | Phase 6 | Docker Migrator Image | ✅ Complete | `docker/Dockerfile.migration-service` — production-ready multi-stage build, non-root user, Kerberos PostgreSQL auth |
 | Phase 7 | Docker Compose `db-migrator` Service | ✅ Complete | `compose.yml` has `migration` service (`Dockerfile.migrate`) with `restart: "no"`; `backend-api` depends on it via `condition: service_completed_successfully` |
-| Phase 8 | GitHub Actions Migration Validation Workflow | ✅ Complete | `schema-validation` job in `dotnet-ci.yml` generates `artifacts/migrations/idempotent.sql` + `migration-manifest.json` and uploads as `migration-artifacts` artifact; `compose-smoke.yml` and `operator-cutover-readiness.yml` provide additional gate coverage |
+| Phase 8 | GitHub Actions Migration Validation Workflow | ✅ Complete | `schema-validation` job in `dotnet-ci.yml` generates `artifacts/migrations/idempotent.sql` + `migration-manifest.json` using `Tycoon.MigrationService` as startup project and uploads as `migration-artifacts` artifact; `compose-smoke.yml` and `operator-cutover-readiness.yml` provide additional gate coverage |
 | Phase 9 | Release Migration Gate | ✅ Complete | `release-gate.yml` added — chains schema artifact verification → API health smoke → readiness report; `operator-cutover-readiness.yml` provides manual evidence-collection gate for sign-off |
-| Phase 10 | Post-Migration Smoke Tests | ⚠️ Partial | `alpha-p0-smoke.yml` and `compose-smoke.yml` exist and cover golden path endpoints; not yet validated against a fully migrated staging environment |
+| Phase 10 | Post-Migration Smoke Tests | ⚠️ Partial | Local `compose-smoke.sh` passes against the full compose stack after migration; `alpha-p0-smoke.yml` and `compose-smoke.yml` exist; not yet validated against a fully migrated staging environment |
 
 ---
 
@@ -844,6 +844,10 @@ This gives the project a stable, repeatable, and production-friendly migration p
 **Advisory lock approach:** `pg_advisory_lock(987654321)` / `pg_advisory_unlock` are implemented in `MigrationWorker.ExecuteAsync` around the `MigrateAsync` call using the raw `DbConnection` pattern consistent with the rest of the file. Added in Session 5.
 
 **24 EF migrations applied:** The migration history runs from `20260325180201_InitialCreate` through `20260515102821_AddMayCutoverSchemaSync`. All core Alpha/Beta tables (users, wallet, questions, matches, leaderboard, rewards, anti-cheat) are present in the current schema.
+
+**2026-05-18 verification note:** Local idempotent SQL generation fails when using `Tycoon.Backend.Api` as the EF startup project because the API output does not include `Tycoon.Backend.Migrations.dll`. The release/CI path now uses `Tycoon.MigrationService` as the startup project, which references the migrations assembly and successfully generates `artifacts/migrations/idempotent.sql` with `--configuration Release --no-build`.
+
+**2026-05-18 compose smoke note:** Full local compose smoke initially exposed a `MigrationService` failure during `MissionResetService.ResetAsync`: stale question entities from catalog seeding were still tracked and flushed during mission reset, causing an EF optimistic concurrency exception on `question_options`. `MigrationWorker` now clears the change tracker after seeding and before mission reset. After the fix, `bash scripts/compose-smoke.sh` completed successfully.
 
 ---
 
@@ -904,13 +908,13 @@ From Section 15, progress against the definition of done:
 - [x] duplicate migrator runs are protected by advisory lock
       (pg_advisory_lock(987654321) added in MigrationWorker.ExecuteAsync around MigrateAsync call)
 - [x] CI generates idempotent SQL
-      (schema-validation job in dotnet-ci.yml: dotnet ef migrations script --idempotent → artifacts/migrations/idempotent.sql)
+      (schema-validation job in dotnet-ci.yml: dotnet ef migrations script --idempotent with Tycoon.MigrationService startup project → artifacts/migrations/idempotent.sql; local generation verified 2026-05-18)
 - [x] CI uploads migration artifacts
       (upload-artifact@v4 step in schema-validation job uploads migration-artifacts)
 - [x] APIs start only after migrations succeed in local/dev compose
       (migration service in compose.yml; backend-api depends on it via service_completed_successfully)
 - [ ] smoke tests pass after migration
-      (smoke test workflows exist; staging validation not yet completed — blocked on stable staging environment)
+      (local compose smoke passes after migration; staging validation not yet completed — blocked on stable staging environment)
 - [x] rollback notes exist for release
       (artifacts/migrations/rollback-notes.md created — 24 migrations documented with risk assessment)
 ```

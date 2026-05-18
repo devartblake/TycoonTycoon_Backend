@@ -810,3 +810,28 @@ Grant XP/Coins         ✅ POST /quiz/complete — EconomyService.ApplyAsync ide
 Update Leaderboard     ✅ Hangfire recalculation job + POST /leaderboard score record
 Return to Home         ✅ (frontend-driven; backend is stateless between sessions)
 ```
+
+---
+
+# 26. Verified Repo Status
+
+**Last updated: 2026-05-18**
+
+## Repo-side evidence confirmed
+
+- Release build passes: `dotnet build TycoonTycoon_Backend.slnx --configuration Release` completed with 0 errors.
+- Backend API tests pass: `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build` completed with 417 passed, 1 skipped, 0 failed.
+- Application tests pass: `dotnet test Tycoon.Backend.Application.Tests/Tycoon.Backend.Application.Tests.csproj --configuration Release --no-build` completed with 198 passed, 0 failed.
+- EF schema drift validation passes: `bash scripts/validate-ef-schema.sh` reported no pending model changes.
+- Local idempotent SQL generation passes when EF uses `Tycoon.MigrationService` as the startup project.
+- Local compose smoke passes: `bash scripts/compose-smoke.sh` completed after building the full compose stack, running the migration container, health checks, admin login, admin profile, dashboard session login, and operator BFF health probe.
+- MigrationService compose blocker fixed: `MigrationWorker` clears tracked seed entities before mission-claim reset so stale question option updates do not cause EF concurrency exceptions.
+- Compose smoke helper fixed: `curl_json` no longer treats `GET` as an extra URL for bodyless requests.
+- CI/helper startup project drift was corrected so migration artifact commands use `Tycoon.MigrationService`, matching the release migration architecture.
+
+## Still external / not yet proven
+
+- Staging PostgreSQL migration application has not been verified in this workspace.
+- `release-gate.yml` has not been run against staging in this workspace.
+- Flutter live smoke test against staging remains pending.
+- Rollback drill and four-role Alpha sign-off remain pending.

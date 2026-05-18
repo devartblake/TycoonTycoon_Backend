@@ -4,6 +4,23 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-18] Alpha/Beta Release Evidence Alignment
+
+### Completed
+
+- **Repo-side Alpha/Beta gates re-verified** — Release build passed with 0 errors; API tests passed 417/418 with 1 documented skip; Application tests passed 198/198; EF schema drift validation reported no pending model changes.
+- **Migration artifact generation corrected** — local `dotnet ef migrations script --idempotent` now uses `Tycoon.MigrationService` as the startup project, matching the deployed migration runner and successfully generating `artifacts/migrations/idempotent.sql`.
+- **MigrationService compose blocker fixed** — `MigrationWorker` now clears tracked seed entities before daily/weekly mission reset, preventing stale question option updates from causing EF concurrency failures during compose migration.
+- **Compose smoke hardened and verified** — `scripts/compose-smoke.sh` no longer passes `GET` as an extra curl URL for bodyless requests; full compose smoke now passes locally.
+- **CI/helper drift fixed** — `dotnet-ci.yml`, `scripts/migrate.sh`, and `scripts/alpha-now-complete.sh` now use `Tycoon.MigrationService` for EF startup instead of `Tycoon.Backend.Api`.
+- **Release docs refreshed** — Alpha/Beta release plan, migration implementation plan, release criteria, and known issues now separate repo-proven evidence from staging-only gates.
+
+### Still External
+
+- Staging migration application, `release-gate.yml` execution against staging, Flutter live backend smoke test, rollback drill, and four-role Alpha sign-off remain open until live environment evidence is attached.
+
+---
+
 ## [2026-05-14] Operator Dashboard May Cutover Evidence Readiness
 
 ### Completed

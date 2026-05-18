@@ -81,7 +81,14 @@ validate_json() {
 # curl_json METHOD URL [body] [extra_curl_args...]
 #   Returns body; exits on non-2xx response.
 curl_json() {
-  local method="$1" url="$2" body="${3:-}" ; shift 3
+  local method="$1" url="$2" body=""
+  shift 2
+
+  if [[ $# -gt 0 ]]; then
+    body="${1:-}"
+    shift
+  fi
+
   local tmp; tmp=$(mktemp)
 
   local args=( -sS -o "$tmp" -w '%{http_code}' -X "$method" "$url" )

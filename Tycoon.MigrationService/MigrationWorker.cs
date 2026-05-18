@@ -166,6 +166,10 @@ public sealed class MigrationWorker : BackgroundService
                         "Ensure MinIO is running and seed files exist at seeds/*.json.");
                 }
 
+                // Seeders may leave catalog/question entities tracked; isolate mission reset
+                // so its SaveChanges only flushes mission-claim state.
+                db.ChangeTracker.Clear();
+
                 _log.Information("Resetting Daily/Weekly mission claims (idempotent)…");
                 var reset = scope.ServiceProvider.GetRequiredService<MissionResetService>();
                 await reset.ResetAsync(db, stoppingToken);
