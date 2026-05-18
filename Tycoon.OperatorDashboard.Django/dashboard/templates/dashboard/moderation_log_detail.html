@@ -1,0 +1,41 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Moderation Log Detail{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Moderation</p>
+    <h1 class="page-title">Moderation log detail</h1>
+    <p class="page-subtitle">Read-only enforcement event detail for incident review.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-moderation-logs-view' %}">Back to logs</a>
+    {% if log.playerId %}<a class="button secondary" href="{% url 'operator-moderation-player-view' log.playerId %}">Player profile</a>{% endif %}
+  </div>
+</section>
+
+{% if log %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Enforcement event" copy="Single moderation action returned by the backend detail endpoint." %}
+  <div class="form-grid">
+    <div><span class="helper-text">Log ID</span><br><code>{{ log.id }}</code></div>
+    <div><span class="helper-text">Player ID</span><br><code>{{ log.playerId }}</code></div>
+    <div><span class="helper-text">Status</span><br><span class="chip neutral">{{ log.statusDisplay }}</span></div>
+    <div><span class="helper-text">Reason</span><br>{{ log.reason|default:"-" }}</div>
+    <div><span class="helper-text">Set by</span><br>{{ log.setByDisplay }}</div>
+    <div><span class="helper-text">Created</span><br>{{ log.createdAtUtc|default:"-" }}</div>
+    <div><span class="helper-text">Expires</span><br>{{ log.expiresAtUtc|default:"-" }}</div>
+    <div><span class="helper-text">Related flag</span><br>{{ log.relatedFlagId|default:"-" }}</div>
+  </div>
+  {% if log.notes %}<p class="surface-note mt-lg">{{ log.notes }}</p>{% endif %}
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Raw payload" copy="Full backend moderation log payload." %}
+  <pre>{{ log_json }}</pre>
+</section>
+{% else %}
+<section class="card"><div class="empty"><strong>Moderation log unavailable</strong><span>Check backend availability or permissions.</span></div></section>
+{% endif %}
+{% endblock %}

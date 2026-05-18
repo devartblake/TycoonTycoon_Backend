@@ -145,6 +145,46 @@ public sealed class AdminModerationEndpointsTests : IClassFixture<TycoonApiFacto
     }
 
     [Fact]
+    public async Task GetLogById_Returns_Single_Log()
+    {
+        var playerId = Guid.NewGuid();
+
+        var req = new SetModerationStatusRequest(
+            PlayerId: playerId,
+            Status: 1,
+            Reason: "detail lookup",
+            Notes: "detail notes",
+            ExpiresAtUtc: null,
+            RelatedFlagId: null
+        );
+
+        var setResp = await _http.PostAsJsonAsync("/admin/moderation/set-status", req);
+        setResp.IsSuccessStatusCode.Should().BeTrue();
+
+        var logsResp = await _http.GetAsync($"/admin/moderation/logs?page=1&pageSize=50&playerId={playerId}");
+        var logs = await logsResp.Content.ReadFromJsonAsync<ModerationLogListResponseDto>();
+        var id = logs!.Items.Should().ContainSingle(x => x.Reason == "detail lookup").Subject.Id;
+
+        var detailResp = await _http.GetAsync($"/admin/moderation/logs/{id}");
+
+        detailResp.IsSuccessStatusCode.Should().BeTrue();
+        var detail = await detailResp.Content.ReadFromJsonAsync<ModerationLogItemDto>();
+        detail.Should().NotBeNull();
+        detail!.Id.Should().Be(id);
+        detail.PlayerId.Should().Be(playerId);
+        detail.Notes.Should().Be("detail notes");
+    }
+
+    [Fact]
+    public async Task GetLogById_Returns_NotFound_For_Unknown_Id()
+    {
+        var resp = await _http.GetAsync($"/admin/moderation/logs/{Guid.NewGuid()}");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await resp.HasErrorCodeAsync("NOT_FOUND");
+    }
+
+    [Fact]
     public async Task GetLogs_Returns_Paged_Response()
     {
         var resp = await _http.GetAsync("/admin/moderation/logs?page=1&pageSize=25");

@@ -4,6 +4,20 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-18] Operator Dashboard Detail Drilldowns
+
+### Completed
+
+- **Django detail pages added** - Users, questions, moderation players/logs, and security audit events now have first-class operator drilldowns from their list pages.
+- **Narrow backend detail APIs added** - Moderation logs and security audit events now expose single-record admin detail endpoints for Django review pages.
+- **Cutover runbook updated** - Staging parallel-run checks now include the new detail/edit drilldowns as repo-side hardening validation.
+
+### Still External
+
+- These pages do not close May cutover gates by themselves; staging/prod evidence, sign-off, route cutover, and Blazor rollback-window completion remain external gates.
+
+---
+
 ## [2026-05-18] Operator May Cutover Gate Ledger
 
 ### Completed

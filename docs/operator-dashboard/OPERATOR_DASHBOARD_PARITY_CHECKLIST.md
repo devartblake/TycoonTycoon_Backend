@@ -57,6 +57,7 @@ Repo-evidence tasks completed on 2026-05-14:
 - [x] Incident runbook in place (`docs/OPERATOR_DASHBOARD_INCIDENT_RUNBOOK.md`)
 - [x] Legacy fallback service remains available in compose as `operator-dashboard-blazor`
 - [x] Operational investigation workbench added in Django (`/users/{userId}/investigation`) to consolidate account, activity, moderation, economy, personalization, and store-stock context behind existing permission scopes.
+- [x] Repo-side detail/edit drilldowns added for Django users, questions, moderation players/logs, and security audit events. These improve operator ergonomics but do not close live May cutover gates without staging/prod evidence.
 
 ## Release Gates
 

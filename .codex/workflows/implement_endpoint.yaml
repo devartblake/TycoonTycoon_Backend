@@ -1,0 +1,17 @@
+name: implement-endpoint
+description: Add or modify an ASP.NET Core Minimal API endpoint safely.
+steps:
+  - read_nearby_endpoints
+  - define_contract:
+      include: [route, method, auth, request, response, errors]
+  - place_logic:
+      api: binding_and_http_only
+      application: use_case_logic
+      domain: invariants
+      infrastructure: persistence_and_external_calls
+  - add_tests:
+      type: contract_or_integration
+  - verify:
+      commands:
+        - dotnet test
+  - summarize

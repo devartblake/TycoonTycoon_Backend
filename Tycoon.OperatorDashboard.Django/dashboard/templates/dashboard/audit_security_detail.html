@@ -1,0 +1,36 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Security Audit Detail{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Security</p>
+    <h1 class="page-title">Audit event detail</h1>
+    <p class="page-subtitle">Inspect one security audit event and its metadata payload.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-audit-security-view' %}">Back to audit</a>
+  </div>
+</section>
+
+{% if event %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Audit event" copy="Single event from the backend security audit stream." %}
+  <div class="form-grid">
+    <div><span class="helper-text">Event ID</span><br><code>{{ event.id }}</code></div>
+    <div><span class="helper-text">Channel</span><br>{{ event.channelKey|default:"-" }}</div>
+    <div><span class="helper-text">Title / event</span><br>{{ event.eventDisplay }}</div>
+    <div><span class="helper-text">Status</span><br><span class="chip {% if event.status == 'success' or event.status == 'sent' %}success{% elif event.status == 'failure' or event.status == 'unauthorized' %}danger{% else %}neutral{% endif %}">{{ event.status|default:"-" }}</span></div>
+    <div><span class="helper-text">Created</span><br>{{ event.createdDisplay }}</div>
+  </div>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Metadata" copy="Formatted metadata captured with the event." %}
+  <pre>{{ metadata_json }}</pre>
+</section>
+{% else %}
+<section class="card"><div class="empty"><strong>Audit event unavailable</strong><span>Check backend availability or permissions.</span></div></section>
+{% endif %}
+{% endblock %}

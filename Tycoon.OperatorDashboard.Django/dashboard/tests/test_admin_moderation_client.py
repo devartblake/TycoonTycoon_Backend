@@ -3,6 +3,7 @@ from unittest import mock
 from django.test import SimpleTestCase, override_settings
 
 from dashboard.services.admin_moderation_client import (
+    get_moderation_log,
     get_moderation_logs,
     get_moderation_profile,
     set_moderation_status,
@@ -33,6 +34,19 @@ class AdminModerationClientTests(SimpleTestCase):
         payload = get_moderation_logs("access-token", {"page": 1})
 
         self.assertEqual(1, payload["page"])
+
+    @override_settings(DOTNET_API_BASE_URL="http://backend-api:5000", ADMIN_OPS_KEY="abc123")
+    @mock.patch("dashboard.services.admin_moderation_client.httpx.get")
+    def test_get_moderation_log(self, mock_get):
+        response = mock.Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"id": "log1", "playerId": "p1"}
+        mock_get.return_value = response
+
+        payload = get_moderation_log("access-token", "log1")
+
+        self.assertEqual("log1", payload["id"])
+        self.assertEqual("http://backend-api:5000/admin/moderation/logs/log1", mock_get.call_args[0][0])
 
     @override_settings(DOTNET_API_BASE_URL="http://backend-api:5000", ADMIN_OPS_KEY="abc123")
     @mock.patch("dashboard.services.admin_moderation_client.httpx.post")

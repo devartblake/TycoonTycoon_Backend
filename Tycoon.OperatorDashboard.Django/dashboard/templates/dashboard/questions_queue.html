@@ -85,7 +85,9 @@
       <tbody>
         {% for q in items %}
         <tr>
-          <td>{{ q.text|default:"-"|truncatechars:80 }}</td>
+          <td>
+            <a href="{% url 'question-detail-view' q.id %}">{{ q.text|default:q.textPreview|default:"-"|truncatechars:80 }}</a>
+          </td>
           <td>{{ q.category|default:"-" }}</td>
           <td>{{ q.difficulty|default:"-" }}</td>
           <td>

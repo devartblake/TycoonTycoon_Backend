@@ -1,0 +1,11 @@
+name: create-safe-migration
+description: Create an EF Core/PostgreSQL migration with Alpha-safe constraints.
+steps:
+  - inspect_entity_and_dbcontext
+  - choose_migration_strategy:
+      preferred: additive
+  - generate_or_edit_migration
+  - verify_script
+  - update_seed_if_needed
+  - run_tests
+  - report_backward_compatibility

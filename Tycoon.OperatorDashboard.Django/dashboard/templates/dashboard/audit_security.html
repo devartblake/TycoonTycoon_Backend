@@ -87,13 +87,19 @@
       <tbody>
         {% for row in items %}
         <tr>
-          <td>{{ row.event|default:"-" }}</td>
+          <td>
+            {% if row.id %}
+              <a href="{% url 'operator-audit-security-detail-view' row.id %}">{{ row.eventDisplay }}</a>
+            {% else %}
+              {{ row.eventDisplay }}
+            {% endif %}
+          </td>
           <td>
             <span class="chip {% if row.status == 'success' %}success{% elif row.status == 'failure' %}danger{% else %}neutral{% endif %}">{{ row.status|default:"-" }}</span>
           </td>
           <td>{{ row.actor|default:"-" }}</td>
           <td>{{ row.ipAddress|default:"-" }}</td>
-          <td>{{ row.createdAtUtc|default:"-" }}</td>
+          <td>{{ row.createdDisplay }}</td>
         </tr>
         {% empty %}
         <tr>

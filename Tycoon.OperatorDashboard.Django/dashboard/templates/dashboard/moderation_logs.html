@@ -86,7 +86,7 @@
         <tr>
           <td>
             {% if log.playerId %}
-              <a href="{% url 'operator-user-investigation-view' log.playerId %}">{{ log.playerId }}</a>
+              <a href="{% url 'operator-moderation-player-view' log.playerId %}">{{ log.playerId }}</a>
             {% else %}
               -
             {% endif %}
@@ -96,7 +96,13 @@
               {{ log.status|default:"-" }}
             </span>
           </td>
-          <td>{{ log.reason|default:"-" }}</td>
+          <td>
+            {% if log.id %}
+              <a href="{% url 'operator-moderation-log-detail-view' log.id %}">{{ log.reason|default:"Open detail" }}</a>
+            {% else %}
+              {{ log.reason|default:"-" }}
+            {% endif %}
+          </td>
           <td>{{ log.appliedBy|default:"-" }}</td>
           <td>{{ log.createdAtUtc|default:"-" }}</td>
         </tr>

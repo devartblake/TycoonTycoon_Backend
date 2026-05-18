@@ -1,0 +1,10 @@
+name: debug-local-docker
+description: Diagnose local Docker stack failures.
+steps:
+  - inspect_compose_and_env
+  - run_config_validation
+  - inspect_healthchecks
+  - inspect_logs
+  - patch_minimal_issue
+  - verify_target_service
+  - report_root_cause

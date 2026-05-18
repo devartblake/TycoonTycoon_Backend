@@ -18,6 +18,39 @@ def list_questions(access_token: str, params: dict | None = None) -> dict[str, A
     return response.json()
 
 
+def get_question(access_token: str, question_id: str) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/questions/{question_id}"
+    response = httpx.get(
+        url,
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def update_question(access_token: str, question_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/questions/{question_id}"
+    response = httpx.patch(
+        url,
+        json=payload,
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def delete_question(access_token: str, question_id: str) -> None:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/questions/{question_id}"
+    response = httpx.delete(
+        url,
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+
+
 def approve_question(access_token: str, question_id: str) -> dict[str, Any]:
     url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/questions/{question_id}/approve"
     response = httpx.post(url, headers=_headers(access_token), timeout=settings.API_REQUEST_TIMEOUT_SECONDS)

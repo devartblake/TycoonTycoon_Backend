@@ -3,7 +3,14 @@ from unittest.mock import MagicMock, patch
 import httpx
 from django.test import TestCase, override_settings
 
-from dashboard.services.admin_questions_client import approve_question, list_questions, reject_question
+from dashboard.services.admin_questions_client import (
+    approve_question,
+    delete_question,
+    get_question,
+    list_questions,
+    reject_question,
+    update_question,
+)
 
 DOTNET_BASE = "http://backend-api:5000"
 SETTINGS = {
@@ -51,6 +58,30 @@ class TestListQuestions(TestCase):
         mock_get.return_value = _mock_response(403)
         with self.assertRaises(httpx.HTTPStatusError):
             list_questions(TOKEN)
+
+
+@override_settings(**SETTINGS)
+class TestQuestionDetail(TestCase):
+    @patch("dashboard.services.admin_questions_client.httpx.get")
+    def test_get_question_calls_detail_endpoint(self, mock_get):
+        mock_get.return_value = _mock_response(200, {"id": "q1", "text": "Q?"})
+        result = get_question(TOKEN, "q1")
+        assert mock_get.call_args[0][0] == f"{DOTNET_BASE}/admin/questions/q1"
+        assert result["text"] == "Q?"
+
+    @patch("dashboard.services.admin_questions_client.httpx.patch")
+    def test_update_question_calls_patch_endpoint(self, mock_patch):
+        mock_patch.return_value = _mock_response(200, {"id": "q1"})
+        result = update_question(TOKEN, "q1", {"text": "Q?"})
+        assert mock_patch.call_args[0][0] == f"{DOTNET_BASE}/admin/questions/q1"
+        assert mock_patch.call_args.kwargs["json"]["text"] == "Q?"
+        assert result["id"] == "q1"
+
+    @patch("dashboard.services.admin_questions_client.httpx.delete")
+    def test_delete_question_calls_delete_endpoint(self, mock_delete):
+        mock_delete.return_value = _mock_response(204)
+        delete_question(TOKEN, "q1")
+        assert mock_delete.call_args[0][0] == f"{DOTNET_BASE}/admin/questions/q1"
 
 
 @override_settings(**SETTINGS)

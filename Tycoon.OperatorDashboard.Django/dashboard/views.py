@@ -16,12 +16,12 @@ from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
 from .models import OperatorSavedView, OperatorSavedViewAuditEvent
-from .services.admin_audit_client import get_security_audit
+from .services.admin_audit_client import get_security_audit, get_security_audit_event
 from .services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError, admin_login, admin_me, admin_refresh
 from .services.admin_media_client import create_upload_intent
-from .services.admin_moderation_client import get_moderation_logs, get_moderation_profile, set_moderation_status
+from .services.admin_moderation_client import get_moderation_log, get_moderation_logs, get_moderation_profile, set_moderation_status
 from .services.admin_economy_client import create_economy_transaction, get_economy_history
-from .services.admin_questions_client import approve_question, list_questions, reject_question
+from .services.admin_questions_client import approve_question, delete_question, get_question, list_questions, reject_question, update_question
 from .services.admin_store_client import (
     bulk_reset_stock,
     cancel_flash_sale,
@@ -278,6 +278,28 @@ def _normalize_economy_history_rows(rows: list[dict] | None) -> list[dict]:
             }
         )
     return normalized
+
+
+def _normalize_audit_rows(rows: list[dict] | None) -> list[dict]:
+    return [
+        {
+            **row,
+            "eventDisplay": row.get("event") or row.get("title") or "-",
+            "createdDisplay": row.get("createdAtUtc") or row.get("createdAt") or "-",
+        }
+        for row in rows or []
+    ]
+
+
+def _normalize_moderation_rows(rows: list[dict] | None) -> list[dict]:
+    return [
+        {
+            **row,
+            "statusDisplay": row.get("status") if row.get("status") is not None else row.get("newStatus", "-"),
+            "setByDisplay": row.get("appliedBy") or row.get("setByAdmin") or "-",
+        }
+        for row in rows or []
+    ]
 
 
 def _detail_section(label: str, permission: str | None = None) -> dict:
@@ -732,6 +754,74 @@ def operator_users_view(request):
 
 @operator_login_required
 @require_permission("users:read")
+def operator_user_detail_view(request, user_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+
+    if request.method == "POST":
+        if not _has_permission(request, "users:write"):
+            return JsonResponse({"code": "FORBIDDEN", "message": "Missing required permission: users:write"}, status=403)
+
+        action = (request.POST.get("action") or "").strip().lower()
+        try:
+            if action == "update":
+                username = (request.POST.get("username") or "").strip()
+                if not username:
+                    messages.error(request, "Username is required.")
+                else:
+                    update_admin_user(access_token, user_id, {"username": username})
+                    messages.success(request, "User profile updated.")
+            elif action == "ban":
+                reason = (request.POST.get("reason") or "Operator action").strip()
+                until = (request.POST.get("until") or "").strip() or None
+                ban_admin_user(access_token, user_id, reason, until)
+                messages.success(request, "User banned.")
+            elif action == "unban":
+                unban_admin_user(access_token, user_id)
+                messages.success(request, "User unbanned.")
+            else:
+                messages.error(request, "Unknown user detail action.")
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"User action failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend user endpoint.")
+        return redirect("operator-user-detail-view", user_id=user_id)
+
+    query = {
+        "page": request.GET.get("activityPage", 1),
+        "pageSize": request.GET.get("activityPageSize", 25),
+        "type": request.GET.get("activityType"),
+    }
+    query = {k: v for k, v in query.items() if v not in (None, "")}
+    context = {
+        "user_id": user_id,
+        "user_detail": None,
+        "activity": None,
+        "activity_query": query,
+        "user_detail_json": "{}",
+        "can_write_users": _has_permission(request, "users:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        detail = get_admin_user(access_token, user_id)
+        context["user_detail"] = detail
+        context["user_detail_json"] = _to_pretty_json(detail)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"User lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend user detail endpoint.")
+
+    try:
+        context["activity"] = get_admin_user_activity(access_token, user_id, query)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"User activity lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend user activity endpoint.")
+
+    return render(request, "dashboard/user_detail.html", context)
+
+
+@operator_login_required
+@require_permission("users:read")
 def operator_user_detail(request, user_id: str):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     try:
@@ -1001,7 +1091,7 @@ def operator_audit_security_view(request):
 
     try:
         payload = get_security_audit(access_token, query)
-        context["items"] = payload.get("items", [])
+        context["items"] = _normalize_audit_rows(payload.get("items", []))
         context["page"] = payload.get("page", 1)
         context["total"] = payload.get("total", len(context["items"]))
         if request.GET.get("format") == "csv":
@@ -1016,6 +1106,29 @@ def operator_audit_security_view(request):
         messages.error(request, "Unable to reach backend security audit endpoint.")
 
     return render(request, "dashboard/audit_security.html", context)
+
+
+@operator_login_required
+@require_permission("events:read")
+def operator_audit_security_detail_view(request, event_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "event_id": event_id,
+        "event": None,
+        "metadata_json": "{}",
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        event = get_security_audit_event(access_token, event_id)
+        event["eventDisplay"] = event.get("event") or event.get("title") or "-"
+        event["createdDisplay"] = event.get("createdAt") or event.get("createdAtUtc") or "-"
+        context["event"] = event
+        context["metadata_json"] = _to_pretty_json(event.get("metadata"))
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Security audit event lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend security audit endpoint.")
+    return render(request, "dashboard/audit_security_detail.html", context)
 
 
 @operator_login_required
@@ -1066,7 +1179,7 @@ def operator_moderation_logs_view(request):
 
     try:
         payload = get_moderation_logs(access_token, query)
-        context["items"] = payload.get("items", [])
+        context["items"] = _normalize_moderation_rows(payload.get("items", []))
         context["page"] = payload.get("page", 1)
         context["total"] = payload.get("total", len(context["items"]))
         if request.GET.get("format") == "csv":
@@ -1081,6 +1194,85 @@ def operator_moderation_logs_view(request):
         messages.error(request, "Unable to reach backend moderation logs endpoint.")
 
     return render(request, "dashboard/moderation_logs.html", context)
+
+
+@operator_login_required
+@require_permission("events:read")
+def operator_moderation_player_view(request, player_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+
+    if request.method == "POST":
+        if not _has_permission(request, "events:write"):
+            return JsonResponse({"code": "FORBIDDEN", "message": "Missing required permission: events:write"}, status=403)
+        admin_profile = request.session.get(SESSION_ADMIN_PROFILE_KEY) or {}
+        payload = {
+            "playerId": player_id,
+            "status": request.POST.get("status"),
+            "reason": request.POST.get("reason"),
+            "notes": request.POST.get("notes"),
+            "expiresAtUtc": request.POST.get("expiresAtUtc"),
+            "relatedFlagId": request.POST.get("relatedFlagId"),
+        }
+        payload = {k: v for k, v in payload.items() if v not in (None, "")}
+        if not payload.get("status") or not payload.get("reason"):
+            messages.error(request, "Status and reason are required.")
+        else:
+            try:
+                set_moderation_status(access_token, admin_profile.get("email"), payload)
+                messages.success(request, "Moderation status updated.")
+            except httpx.HTTPStatusError as ex:
+                messages.error(request, f"Status update failed (HTTP {ex.response.status_code}).")
+            except httpx.RequestError:
+                messages.error(request, "Unable to reach backend moderation endpoint.")
+        return redirect("operator-moderation-player-view", player_id=player_id)
+
+    context = {
+        "player_id": player_id,
+        "profile": None,
+        "logs": None,
+        "can_write_moderation": _has_permission(request, "events:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["profile"] = get_moderation_profile(access_token, player_id)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Moderation profile lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend moderation profile endpoint.")
+
+    try:
+        logs = get_moderation_logs(access_token, {"playerId": player_id, "page": 1, "pageSize": 25})
+        logs["items"] = _normalize_moderation_rows(logs.get("items", []))
+        context["logs"] = logs
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Moderation logs lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend moderation logs endpoint.")
+
+    return render(request, "dashboard/moderation_player.html", context)
+
+
+@operator_login_required
+@require_permission("events:read")
+def operator_moderation_log_detail_view(request, log_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "log_id": log_id,
+        "log": None,
+        "log_json": "{}",
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        log = get_moderation_log(access_token, log_id)
+        log["statusDisplay"] = log.get("status") if log.get("status") is not None else log.get("newStatus", "-")
+        log["setByDisplay"] = log.get("appliedBy") or log.get("setByAdmin") or "-"
+        context["log"] = log
+        context["log_json"] = _to_pretty_json(log)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Moderation log lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend moderation log endpoint.")
+    return render(request, "dashboard/moderation_log_detail.html", context)
 
 
 @operator_login_required
@@ -1542,6 +1734,74 @@ def questions_queue_view(request):
 
 
 @operator_login_required
+@require_permission("questions:read")
+def question_detail_view(request, question_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+
+    if request.method == "POST":
+        if not _has_permission(request, "questions:write"):
+            return JsonResponse({"code": "FORBIDDEN", "message": "Missing required permission: questions:write"}, status=403)
+        payload = {
+            "text": (request.POST.get("text") or "").strip(),
+            "category": (request.POST.get("category") or "").strip(),
+            "difficulty": request.POST.get("difficulty") or "1",
+            "options": _parse_question_options(request),
+            "correctOptionId": (request.POST.get("correctOptionId") or "").strip(),
+            "tags": _parse_tags(request.POST.get("tags") or ""),
+            "mediaKey": (request.POST.get("mediaKey") or "").strip() or None,
+            "status": (request.POST.get("status") or "").strip() or None,
+        }
+        missing = [k for k in ("text", "category", "correctOptionId") if not payload.get(k)]
+        if missing:
+            messages.error(request, f"Missing required fields: {', '.join(missing)}.")
+        elif len(payload["options"]) < 2:
+            messages.error(request, "At least two options are required.")
+        else:
+            try:
+                update_question(access_token, question_id, payload)
+                messages.success(request, "Question updated.")
+            except httpx.HTTPStatusError as ex:
+                messages.error(request, f"Question update failed (HTTP {ex.response.status_code}).")
+            except httpx.RequestError:
+                messages.error(request, "Unable to reach backend question endpoint.")
+        return redirect("question-detail-view", question_id=question_id)
+
+    context = {
+        "question_id": question_id,
+        "question": None,
+        "question_json": "{}",
+        "can_write_questions": _has_permission(request, "questions:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        question = get_question(access_token, question_id)
+        context["question"] = question
+        context["question_json"] = _to_pretty_json(question)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Question lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend question endpoint.")
+    return render(request, "dashboard/question_detail.html", context)
+
+
+@operator_login_required
+@require_permission("questions:write")
+def question_delete(request, question_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        delete_question(access_token, question_id)
+        messages.success(request, f"Question {question_id} deleted.")
+        return redirect("questions-queue-view")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Delete failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend to delete question.")
+    return redirect("question-detail-view", question_id=question_id)
+
+
+@operator_login_required
 @require_permission("questions:write")
 def questions_approve(request, question_id: str):
     if request.method != "POST":
@@ -1923,6 +2183,20 @@ def _parse_json_object_field(request, field_name: str, label: str, *, required: 
 
 def _parse_variables(raw: str) -> list[str]:
     return [part.strip() for part in re.split(r"[\n,]+", raw or "") if part.strip()]
+
+
+def _parse_tags(raw: str) -> list[str]:
+    return [part.strip() for part in re.split(r"[\n,]+", raw or "") if part.strip()]
+
+
+def _parse_question_options(request) -> list[dict]:
+    options = []
+    for idx in range(1, 5):
+        option_id = (request.POST.get(f"option{idx}Id") or chr(64 + idx)).strip()
+        option_text = (request.POST.get(f"option{idx}Text") or "").strip()
+        if option_id or option_text:
+            options.append({"id": option_id, "text": option_text})
+    return options
 
 
 @operator_login_required

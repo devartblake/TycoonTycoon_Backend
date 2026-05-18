@@ -93,6 +93,7 @@ For each test below, perform the action in both dashboards and compare results. 
 | User list loads | ☐ | ☐ | ☐ |
 | Filter by email partial works | ☐ | ☐ | ☐ |
 | Filter by `banned=true` returns same set | ☐ | ☐ | ☐ |
+| `/users/{userId}` detail page loads account summary and activity | ☐ | n/a | ☐ |
 | Ban a test user | ☐ | ☐ | ☐ |
 | Unban the same user | ☐ | ☐ | ☐ |
 | User detail panel shows activity | ☐ | ☐ | ☐ |
@@ -106,6 +107,8 @@ For each test below, perform the action in both dashboards and compare results. 
 | Moderation log renders | ☐ | ☐ | ☐ |
 | Filter by date range narrows results | ☐ | ☐ | ☐ |
 | Player moderation profile loads | ☐ | ☐ | ☐ |
+| `/moderation/logs/{logId}` detail page loads reason, notes, and related flag | ☐ | n/a | ☐ |
+| `/moderation/players/{playerId}` page loads profile and filtered history | ☐ | n/a | ☐ |
 | Set moderation status succeeds | ☐ | ☐ | ☐ |
 
 ---
@@ -116,6 +119,7 @@ For each test below, perform the action in both dashboards and compare results. 
 |-------|--------|--------|--------|
 | Audit log loads | ☐ | ☐ | ☐ |
 | Filter by event type works | ☐ | ☐ | ☐ |
+| `/audit/security/{eventId}` detail page loads formatted metadata | ☐ | n/a | ☐ |
 
 ---
 
@@ -124,6 +128,7 @@ For each test below, perform the action in both dashboards and compare results. 
 | Check | Django | Blazor | Match? |
 |-------|--------|--------|--------|
 | Pending questions list renders | ☐ | ☐ | ☐ |
+| `/content/questions/{questionId}` detail/edit page loads full question and options | ☐ | n/a | ☐ |
 | Approve a question → status changes to Approved | ☐ | ☐ | ☐ |
 | Reject a question → status changes to Rejected | ☐ | ☐ | ☐ |
 | Filter by status=Approved shows only approved | ☐ | ☐ | ☐ |

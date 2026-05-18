@@ -121,6 +121,31 @@ namespace Tycoon.Backend.Api.Features.AdminModeration
 
                 return Results.Ok(new ModerationLogListResponseDto(page, pageSize, total, items));
             });
+
+            g.MapGet("/logs/{id:guid}", async (
+                [FromRoute] Guid id,
+                IAppDb db,
+                CancellationToken ct) =>
+            {
+                var item = await db.ModerationActionLogs.AsNoTracking()
+                    .Where(x => x.Id == id)
+                    .Select(x => new ModerationLogItemDto(
+                        x.Id,
+                        x.PlayerId,
+                        (int)x.NewStatus,
+                        x.Reason,
+                        x.Notes,
+                        x.SetByAdmin,
+                        x.CreatedAtUtc,
+                        x.ExpiresAtUtc,
+                        x.RelatedFlagId
+                    ))
+                    .FirstOrDefaultAsync(ct);
+
+                return item is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
+                    : Results.Ok(item);
+            });
         }
     }
 }

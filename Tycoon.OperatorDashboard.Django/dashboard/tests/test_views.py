@@ -8,6 +8,141 @@ from dashboard.models import OperatorSavedViewAuditEvent
 from dashboard.services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError
 
 
+class OperatorDetailDrilldownViewsTests(TestCase):
+    def _login(self, permissions):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions, "email": "ops@example.com"}
+        session.save()
+
+    def test_user_detail_redirects_to_login_when_not_authenticated(self):
+        response = self.client.get(reverse("operator-user-detail-view", kwargs={"user_id": "u1"}))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("operator-login"), response.url)
+
+    def test_user_detail_requires_users_read(self):
+        self._login([])
+        response = self.client.get(reverse("operator-user-detail-view", kwargs={"user_id": "u1"}))
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_admin_user_activity")
+    @mock.patch("dashboard.views.get_admin_user")
+    def test_user_detail_renders_profile_and_activity(self, mock_get_user, mock_activity):
+        self._login(["users:read"])
+        mock_get_user.return_value = {"id": "u1", "email": "user@example.com", "username": "User One", "isBanned": False}
+        mock_activity.return_value = {"items": [{"type": "LOGIN", "description": "Signed in", "createdAt": "2026-05-18T00:00:00Z"}]}
+
+        response = self.client.get(reverse("operator-user-detail-view", kwargs={"user_id": "u1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "User detail")
+        self.assertContains(response, "user@example.com")
+        self.assertContains(response, "Signed in")
+
+    @mock.patch("dashboard.views.update_admin_user")
+    def test_user_detail_update_requires_write_permission(self, mock_update):
+        self._login(["users:read"])
+        response = self.client.post(reverse("operator-user-detail-view", kwargs={"user_id": "u1"}), data={"action": "update", "username": "New"})
+        self.assertEqual(403, response.status_code)
+        mock_update.assert_not_called()
+
+    @mock.patch("dashboard.views.update_admin_user")
+    def test_user_detail_update_calls_backend(self, mock_update):
+        self._login(["users:read", "users:write"])
+        response = self.client.post(reverse("operator-user-detail-view", kwargs={"user_id": "u1"}), data={"action": "update", "username": "New"})
+        self.assertEqual(302, response.status_code)
+        mock_update.assert_called_once_with("token", "u1", {"username": "New"})
+
+    @mock.patch("dashboard.views.get_question")
+    def test_question_detail_renders_full_payload(self, mock_get_question):
+        self._login(["questions:read"])
+        mock_get_question.return_value = {
+            "id": "q1",
+            "text": "What is Synaptix?",
+            "category": "science",
+            "difficulty": "Easy",
+            "status": "Pending",
+            "correctOptionId": "A",
+            "options": [{"id": "A", "text": "A platform"}, {"id": "B", "text": "A comet"}],
+            "tags": ["alpha"],
+        }
+
+        response = self.client.get(reverse("question-detail-view", kwargs={"question_id": "q1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Question detail")
+        self.assertContains(response, "What is Synaptix?")
+        self.assertContains(response, "A platform")
+
+    @mock.patch("dashboard.views.update_question")
+    def test_question_detail_update_calls_backend(self, mock_update):
+        self._login(["questions:read", "questions:write"])
+        response = self.client.post(
+            reverse("question-detail-view", kwargs={"question_id": "q1"}),
+            data={
+                "text": "Question?",
+                "category": "science",
+                "difficulty": "2",
+                "status": "Pending",
+                "correctOptionId": "A",
+                "option1Id": "A",
+                "option1Text": "Alpha",
+                "option2Id": "B",
+                "option2Text": "Beta",
+                "tags": "alpha,beta",
+            },
+        )
+
+        self.assertEqual(302, response.status_code)
+        payload = mock_update.call_args[0][2]
+        self.assertEqual("Question?", payload["text"])
+        self.assertEqual(["alpha", "beta"], payload["tags"])
+
+    @mock.patch("dashboard.views.get_moderation_logs")
+    @mock.patch("dashboard.views.get_moderation_profile")
+    def test_moderation_player_renders_profile_and_logs(self, mock_profile, mock_logs):
+        self._login(["events:read"])
+        mock_profile.return_value = {"playerId": "p1", "status": 2, "reason": "policy"}
+        mock_logs.return_value = {"items": [{"id": "l1", "playerId": "p1", "reason": "policy", "newStatus": 2}]}
+
+        response = self.client.get(reverse("operator-moderation-player-view", kwargs={"player_id": "p1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Player moderation")
+        self.assertContains(response, "policy")
+
+    @mock.patch("dashboard.views.set_moderation_status")
+    def test_moderation_player_update_requires_write_permission(self, mock_set_status):
+        self._login(["events:read"])
+        response = self.client.post(reverse("operator-moderation-player-view", kwargs={"player_id": "p1"}), data={"status": "2", "reason": "policy"})
+        self.assertEqual(403, response.status_code)
+        mock_set_status.assert_not_called()
+
+    @mock.patch("dashboard.views.get_moderation_log")
+    def test_moderation_log_detail_renders_payload(self, mock_log):
+        self._login(["events:read"])
+        mock_log.return_value = {"id": "l1", "playerId": "p1", "reason": "policy", "notes": "notes"}
+
+        response = self.client.get(reverse("operator-moderation-log-detail-view", kwargs={"log_id": "l1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Moderation log detail")
+        self.assertContains(response, "notes")
+
+    @mock.patch("dashboard.views.get_security_audit_event")
+    def test_security_audit_detail_renders_metadata(self, mock_event):
+        self._login(["events:read"])
+        mock_event.return_value = {"id": "e1", "title": "admin_auth_login", "status": "success", "metadata": {"email": "ops@example.com"}}
+
+        response = self.client.get(reverse("operator-audit-security-detail-view", kwargs={"event_id": "e1"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Audit event detail")
+        self.assertContains(response, "admin_auth_login")
+        self.assertContains(response, "ops@example.com")
+
+
 class DashboardViewsTests(TestCase):
     @mock.patch("dashboard.views.list_service_statuses")
     @mock.patch("dashboard.views.get_overall_status")

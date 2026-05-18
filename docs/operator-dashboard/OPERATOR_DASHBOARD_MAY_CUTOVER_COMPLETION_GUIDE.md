@@ -17,6 +17,7 @@ record cutover evidence, and keep Blazor warm through the rollback window.
 As of 2026-05-14, these items can be treated as complete from repo evidence:
 
 - Django code parity is complete, including personalization, player stock, notification upgrade, user investigation, Plotly charts, and prototype-inspired UI.
+- Detail/edit drilldowns are available for users, questions, moderation players/logs, and security audit events; these are repo-side hardening and still require live staging validation.
 - Migration/seed bootstrap is documented and wired through `Tycoon.MigrationService`.
 - Rollback drill evidence is published.
 - Blazor soft-freeze is documented; Blazor is rollback fallback only after Django cutover.

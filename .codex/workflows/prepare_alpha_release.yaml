@@ -1,0 +1,38 @@
+name: prepare-alpha-release
+description: Stabilize the backend for Alpha/Beta before June 1.
+inputs:
+  target_branch: main
+  local_integration_target: docker
+steps:
+  - read:
+      - README.md
+      - CLAUDE.md
+      - TycoonTycoon_Backend.slnx
+      - docker/compose.yml
+      - Directory.Packages.props
+  - classify_scope:
+      labels: [P0 Alpha blocker, P1 Alpha important, P2 Post-Alpha, P3 Long-term platform]
+  - inspect:
+      areas:
+        - auth
+        - wallet
+        - match-submit
+        - store-catalog
+        - migrations
+        - docker-startup
+        - tests
+        - observability
+  - implement:
+      rule: smallest production-safe change
+  - verify:
+      commands:
+        - dotnet restore
+        - dotnet build
+        - dotnet test
+        - docker compose -f docker/compose.yml config
+  - report:
+      include:
+        - changed_files
+        - verification_results
+        - skipped_checks
+        - remaining_blockers
