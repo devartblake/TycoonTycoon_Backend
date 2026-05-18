@@ -24,6 +24,21 @@
 - [x] Repo verification baseline recorded.
 - [ ] Live staging/prod cutover gates completed with attached evidence.
 
+### May 18 Final Gate Ledger
+
+The May cutover remains open. Local compose evidence is useful for confidence, but
+it is not a substitute for staging/production migration logs, route evidence, or
+human sign-off.
+
+| Gate | Status | Evidence still required |
+|------|--------|-------------------------|
+| `efMigrationsApplied` | Pending | Staging and production migration job logs or DBA SQL transcripts, plus final `__EFMigrationsHistory` verification |
+| `strictReadiness` | Pending | Strict `Tycoon.MigrationService` readiness logs proving seed/readiness checks passed |
+| `parallelRun` | Pending | Completed staging parallel-run matrix with real operators, evidence links, and discrepancy notes |
+| `signOff` | Pending | QA Lead, Backend Lead, and On-call Operator approval rows populated |
+| `cutover` | Pending | Production route/upstream flip timestamp, owner, active image tags, and smoke-check results |
+| `blazorRollbackWindow` | Pending | Blazor fallback health tracked through 2026-06-12, or an approved policy exception |
+
 ### May 14 Task 1-2 Start Evidence
 
 GitHub Actions is the source of truth for deployment and readiness evidence.
@@ -72,6 +87,7 @@ Local remediation evidence:
 - [ ] Cutover timestamp and route/upstream owner recorded.
 - [ ] Post-cutover smoke-check results recorded.
 - [ ] Blazor fallback confirmed warm through 2026-06-12.
+- [ ] Final readiness artifacts regenerated with all six release gates set to `pass` after evidence is attached.
 
 ### Parallel-Run
 

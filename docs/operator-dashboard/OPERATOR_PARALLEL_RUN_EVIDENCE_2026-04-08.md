@@ -32,6 +32,20 @@
 - **Completion state:** Not complete yet (requires live staging execution).
 - **Next action:** Run the session in staging and update this file with completed evidence.
 
+## Final Cutover Completion Rules
+
+The May cutover is complete only when all release gates have live evidence. Do not
+use local compose evidence to close production gates.
+
+| Readiness gate | Completion evidence | Status |
+|----------------|---------------------|--------|
+| `efMigrationsApplied` | Staging and production migration logs or SQL transcripts, with final `__EFMigrationsHistory` row verified | Pending |
+| `strictReadiness` | Strict dashboard readiness logs from `Tycoon.MigrationService` | Pending |
+| `parallelRun` | Completed staging workflow matrix with real operator accounts and no blocking discrepancies | Pending |
+| `signOff` | QA Lead, Backend Lead, and On-call Operator approval rows populated | Pending |
+| `cutover` | Production Django route/upstream active, timestamp/owner/image tags recorded, smoke checks passed | Pending |
+| `blazorRollbackWindow` | Blazor fallback remains warm through 2026-06-12, or an approved policy exception is attached | Pending |
+
 ---
 
 ## May 2026 Active Evidence Section
@@ -52,7 +66,10 @@ Use this section for the May 14/15 completion pass described in
 | Migration evidence link | Pending staging migration job log or DBA SQL transcript |
 | Dashboard readiness log link | Pending staging `Tycoon.MigrationService` strict readiness log |
 | Staging readiness JSON artifact | Pending `operator-cutover-readiness` staging artifact |
-| Production readiness JSON artifact | |
+| Production migration evidence link | Pending production migration job log or DBA SQL transcript |
+| Production readiness JSON artifact | Pending `operator-cutover-readiness` production artifact |
+| Cutover timestamp / route owner | Pending production cutover evidence |
+| Blazor rollback-window evidence | Pending fallback health confirmation through 2026-06-12 |
 
 ### Task 1-2 Start Snapshot
 
@@ -140,3 +157,6 @@ Do not record passwords or secrets.
 | QA Lead | | | | |
 | Backend Lead | | | | |
 | On-call Operator | | | | |
+
+Sign-off is not complete until all three approval rows are populated after the
+parallel-run and pre-cutover readiness evidence are attached.

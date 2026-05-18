@@ -6,7 +6,7 @@ Validate critical operator workflows before hard cutover from `operator-dashboar
 
 ## May 2026 Completion Path
 
-**Status date: 2026-05-14.** The checked workflow items below represent repo-side Django parity.
+**Status date: 2026-05-18.** The checked workflow items below represent repo-side Django parity.
 The only remaining checklist items are external release gates requiring staging/prod access and
 human sign-off. Use
 [`docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md`](OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md)
@@ -66,12 +66,19 @@ These require staging/prod access and human sign-off; they are not repo-code tas
 - [ ] Apply pending EF migrations to staging + production. **Preferred: `Tycoon.MigrationService` with strict readiness; manual DBA fallback: `docs/pending_migrations_2026-04-29.sql`.**
 - [ ] Attach `operator-cutover-readiness.json` artifacts for staging and production.
 - [ ] Capture and attach operator sign-off notes (QA Lead + Backend Lead + On-call Operator) in `docs/OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md`.
+- [ ] Execute production route/upstream cutover to Django, then attach cutover timestamp, owner, active image tags, and post-cutover smoke results.
+- [ ] Keep Blazor fallback warm through 2026-06-12, or attach an approved policy exception before closing the rollback-window gate.
 - [x] Rollback drill executed (April 15, 2026).
 - [x] Blazor soft-freeze enforced (April 22, 2026).
 - [x] Migration/seed bootstrap documented and wired through `Tycoon.MigrationService` (`docs/OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md`).
 - [x] CI/readiness automation prepared for May cutover evidence (May 14, 2026).
 - [x] May evidence-capture package prepared (May 14, 2026).
 - [x] Repo verification baseline recorded (May 14, 2026).
+
+Final readiness artifacts should show all six release gates as `pass` only after
+the live evidence above is attached. As of 2026-05-18, `blazorRollbackWindow`
+cannot be fully closed without waiting through 2026-06-12 or documenting an
+approved exception.
 
 ## Personalization Admin Surface
 

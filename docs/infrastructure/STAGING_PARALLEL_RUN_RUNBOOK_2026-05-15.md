@@ -285,11 +285,15 @@ operator workflows.
 - All Django checks ☑ (100 %)
 - Django vs Blazor discrepancies: 0 functional differences (cosmetic/layout differences are acceptable)
 - Avatar API checks all return expected status codes
+- Staging and production migration/readiness evidence has been attached.
+- QA Lead, Backend Lead, and On-call Operator sign-off rows are complete.
 
 **HOLD — delay cutover, keep Blazor primary:**
 - Any data-altering action (ban, grant, approve, reject) produces a different result in Django vs Blazor
 - Any Django surface returns 500 on the golden path
 - Django login fails for either test account
+- Any live migration/readiness artifact is missing or failed.
+- Any required signer withholds approval.
 
 **ROLLBACK TRIGGER (post-cutover):**
 - Any production operator reports a functional regression not caught in parallel run
@@ -298,6 +302,10 @@ operator workflows.
 ---
 
 ## Sign-off
+
+The sign-off table closes only the staging parallel-run and cutover approval gate.
+The overall May cutover remains open until the production route cutover is recorded,
+post-cutover smoke passes, and Blazor stays available through 2026-06-12.
 
 | Role | Name | Date | Signature |
 |------|------|------|-----------|

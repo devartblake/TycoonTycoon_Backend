@@ -4,6 +4,20 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-18] Operator May Cutover Gate Ledger
+
+### Completed
+
+- **Final gate ledger documented** - May cutover docs now map each readiness gate to the exact evidence required before it can move from `pending` to `pass`.
+- **Evidence boundaries tightened** - release artifacts, parity checklist, parallel-run evidence pack, and staging runbook now state that local compose evidence does not close staging/prod gates.
+- **Blazor rollback-window status clarified** - `blazorRollbackWindow` remains open through 2026-06-12 unless leadership records an approved policy exception.
+
+### Still External
+
+- Staging/prod migration evidence, strict readiness logs, staging parallel-run execution, QA/backend/on-call sign-off, production route cutover evidence, post-cutover smoke results, and rollback-window completion remain pending until live evidence is attached.
+
+---
+
 ## [2026-05-18] Alpha/Beta Release Evidence Alignment
 
 ### Completed

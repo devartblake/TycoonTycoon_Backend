@@ -1,6 +1,6 @@
 # Operator Dashboard May Cutover Completion Guide
 
-**Status date:** 2026-05-14  
+**Status date:** 2026-05-18  
 **Target cutover date:** 2026-05-15  
 **Rollback window:** 2026-05-15 through 2026-06-12  
 
@@ -49,6 +49,26 @@ Known caveat: the full local `Tycoon.Backend.Api.Tests` suite is not accepted as
 | Sign-off captured | QA Lead / Backend Lead / On-call Operator | Signed table with date and notes | parity checklist, evidence pack, release artifacts |
 | Cutover executed | DevOps | Upstream/route flip timestamp, image tags, smoke-check results | release artifacts |
 | Blazor rollback window tracked | On-call / DevOps | Blazor fallback endpoint remains warm through 2026-06-12 | remaining tasks |
+
+## Final Gate Ledger
+
+As of 2026-05-18, the cutover is not complete. The readiness artifacts may show local
+compose probes passing, but the release gates must remain pending until live evidence
+is attached.
+
+| Readiness gate | Required completion condition | Current status |
+|----------------|-------------------------------|----------------|
+| `efMigrationsApplied` | Staging and production migration logs or SQL transcripts attached, with final `__EFMigrationsHistory` verification | Pending live evidence |
+| `strictReadiness` | Strict `Tycoon.MigrationService` dashboard readiness logs attached for live environments | Pending live evidence |
+| `parallelRun` | Staging runbook matrix completed with real operator accounts, evidence links, and zero blocking discrepancies | Pending live execution |
+| `signOff` | QA Lead, Backend Lead, and On-call Operator rows populated with approval dates and notes | Pending human approval |
+| `cutover` | Django route/upstream active in production, image tags/timestamp/owner recorded, post-cutover smoke passed | Pending production action |
+| `blazorRollbackWindow` | Blazor fallback remains warm through 2026-06-12, or an approved policy exception is recorded | Pending rollback-window completion |
+
+Only set the matching `GATE_*` environment variable to `pass` when the completion
+condition in this table is true. The readiness script records supplied gate status;
+it does not independently prove migrations, sign-off, cutover, or rollback-window
+completion.
 
 ## CI And Readiness Automation Evidence
 
