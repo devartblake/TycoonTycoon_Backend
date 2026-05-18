@@ -604,6 +604,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseWebSockets();
 app.UseRateLimiter();
+app.UseSecureChannel();
 
 // ✅ SWAGGER CONFIGURATION
 if (app.Environment.IsDevelopment())

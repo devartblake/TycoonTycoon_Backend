@@ -6,7 +6,20 @@
       "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && find \"{}\" -maxdepth 2 -type f -name \"*.cs\" 2>/dev/null | head -10')",
       "Bash(Test-Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\Synaptix.Security.Kms.Tests\")",
       "Bash(dotnet build *)",
-      "Bash(dotnet test *)"
+      "Bash(dotnet test *)",
+      "Bash(Select-String -Pattern \"secure_session|invalid_encrypted|BadRequest|Unauthorized\")",
+      "Bash(dotnet script *)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(dotnet run *)",
+      "Bash(xargs grep -l \"Unavailable\\\\|KmsUnavail\")",
+      "Bash(xargs grep -l \"EncryptPayloadResponse\")",
+      "Bash(Get-ChildItem -Recurse -Filter \"*.cs\" \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\")",
+      "Bash(Select-String \"EncryptPayloadResponse\")",
+      "Bash(Select-Object -First 5 -ExpandProperty Path)",
+      "Bash(Sort-Object -Unique)",
+      "Bash(cd \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\" && dotnet script --help 2>/dev/null; grep -r \"IRequestBodyPipeFeature\" ~/.nuget/packages --include=\"*.cs\" -l 2>/dev/null | head -3)",
+      "Read(//c/Users/lmxbl/.nuget/packages/**)"
     ]
   }
 }

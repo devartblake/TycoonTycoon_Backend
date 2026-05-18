@@ -73,7 +73,8 @@ public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
             builder.ConfigureAppConfiguration((_, cfg) =>
                 cfg.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["AdminAuth:AllowTrustedBffPlainJson"] = "false"
+                    ["AdminAuth:AllowTrustedBffPlainJson"] = "false",
+                    ["SecureChannel:AllowPlainJsonInTests"] = "false",
                 })));
 
         var client = factory.CreateClient().WithAdminOpsKey();
