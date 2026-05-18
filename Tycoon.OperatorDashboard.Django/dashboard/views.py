@@ -12,7 +12,9 @@ from django.db import DatabaseError
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils.dateparse import parse_datetime
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 
 from .models import OperatorSavedView, OperatorSavedViewAuditEvent
@@ -106,6 +108,17 @@ SESSION_USERS_SAVED_VIEWS_KEY = "operator_users_saved_views"
 def _saved_view_owner(request) -> str:
     profile = request.session.get(SESSION_ADMIN_PROFILE_KEY) or {}
     return (profile.get("email") or "operator@local").strip().lower()
+
+
+def _safe_return_to(request, fallback: str) -> str:
+    raw = (request.GET.get("returnTo") or request.POST.get("returnTo") or "").strip()
+    if (
+        raw.startswith("/")
+        and not raw.startswith("//")
+        and url_has_allowed_host_and_scheme(raw, allowed_hosts={request.get_host()}, require_https=request.is_secure())
+    ):
+        return raw
+    return fallback
 
 
 def _load_saved_views(request) -> dict:
@@ -797,6 +810,7 @@ def operator_user_detail_view(request, user_id: str):
         "user_detail": None,
         "activity": None,
         "activity_query": query,
+        "investigation_return_to": request.get_full_path(),
         "user_detail_json": "{}",
         "can_write_users": _has_permission(request, "users:write"),
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
@@ -889,6 +903,9 @@ def operator_user_activity(request, user_id: str):
 def operator_user_investigation_view(request, user_id: str):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     player_id = (request.GET.get("playerId") or user_id or "").strip()
+    user_detail_url = reverse("operator-user-detail-view", kwargs={"user_id": user_id})
+    users_url = reverse("operator-users-view")
+    return_to = _safe_return_to(request, user_detail_url)
     activity_query = {
         "page": request.GET.get("activityPage", 1),
         "pageSize": request.GET.get("activityPageSize", 25),
@@ -908,6 +925,10 @@ def operator_user_investigation_view(request, user_id: str):
         "personalization_profile_json": "{}",
         "player_stock": None,
         "sections": {},
+        "user_detail_url": user_detail_url,
+        "users_url": users_url,
+        "return_to": return_to,
+        "return_to_query": request.GET.get("returnTo") or return_to,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
 

@@ -10,6 +10,9 @@
     <p class="page-subtitle">Review account context, activity, moderation, economy, personalization, and store stock signals from one permission-gated operator view.</p>
   </div>
   <div class="topbar-actions">
+    <a class="button secondary" href="{{ user_detail_url }}">Back to user detail</a>
+    <a class="button secondary" href="{{ users_url }}">Back to users</a>
+    <a class="button secondary" href="{{ return_to }}">Cancel</a>
     <span class="chip neutral">User {{ user_id }}</span>
     <span class="chip neutral">Player {{ player_id }}</span>
   </div>
@@ -18,6 +21,7 @@
 <section class="card">
   {% include "dashboard/partials/section_intro.html" with title="Cross-surface lookup" copy="Use a different player UUID when the admin user ID is not the same identifier used by player-facing services." %}
   <form method="get" class="stack">
+    <input type="hidden" name="returnTo" value="{{ return_to_query }}" />
     <div class="form-grid">
       <label>
         Player ID
@@ -61,12 +65,21 @@
 <section class="card mt-lg">
   {% include "dashboard/partials/section_intro.html" with title="Investigation shortcuts" copy="Jump to the authoritative surface when an operator needs the full workflow or a mutating action." %}
   <div class="link-grid">
+    <a class="button secondary" href="{{ user_detail_url }}">User detail/edit</a>
     <a class="button secondary" href="{% url 'operator-users-view' %}?q={{ user_detail.email|default:user_id }}">Users triage</a>
+    <a class="button secondary" href="{% url 'operator-moderation-player-view' player_id %}">Moderation profile</a>
     <a class="button secondary" href="{% url 'operator-moderation-logs-view' %}?playerId={{ player_id }}">Moderation logs</a>
     <a class="button secondary" href="{% url 'economy-player-view' %}?playerId={{ player_id }}">Economy history</a>
     <a class="button secondary" href="{% url 'personalization-player-view' %}?playerId={{ player_id }}">Personalization debug</a>
     <a class="button secondary" href="{% url 'store-player-stock-view' %}?playerId={{ player_id }}">Player stock</a>
     <a class="button secondary" href="{% url 'anticheat-flags-view' %}?playerId={{ player_id }}&unreviewedOnly=true">Anti-cheat flags</a>
+  </div>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Editable actions" copy="This workbench is read-only. Use the linked authoritative pages for database updates and guarded operator actions." %}
+  <div class="surface-note">
+    Profile updates, ban/unban actions, moderation state changes, economy grants, personalization resets, stock overrides, and anti-cheat reviews are intentionally handled outside this investigation view.
   </div>
 </section>
 

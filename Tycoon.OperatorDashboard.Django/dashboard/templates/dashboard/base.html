@@ -164,11 +164,13 @@
 
         <div class="operator-sidebar-footer">
           {% if admin_profile %}
-          <div class="operator-avatar">{{ admin_profile.email|first|upper }}</div>
+          {% with operator_email=admin_profile.email|default:"operator@local" %}
+          <div class="operator-avatar">{{ operator_email|first|upper }}</div>
           <div class="operator-sidebar-footer-meta">
-            <strong>{{ admin_profile.email }}</strong>
+            <strong title="{{ operator_email }}">{{ operator_email }}</strong>
             <span>Session active</span>
           </div>
+          {% endwith %}
           <a href="{% url 'operator-logout' %}">Sign out</a>
           {% else %}
           Authenticated pages inherit the current operator session and permission-gated actions.

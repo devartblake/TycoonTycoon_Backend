@@ -11,22 +11,46 @@
   </div>
   <div class="topbar-actions">
     <a class="button secondary" href="{% url 'operator-users-view' %}">Back to users</a>
-    <a class="button secondary" href="{% url 'operator-user-investigation-view' user_id %}">Investigation</a>
+    <a class="button secondary" href="{% url 'operator-user-investigation-view' user_id %}?returnTo={{ investigation_return_to|urlencode }}">Investigation</a>
   </div>
 </section>
 
 <section class="card">
   {% include "dashboard/partials/section_intro.html" with title="Account summary" copy="Current user payload from the backend admin detail endpoint." %}
   {% if user_detail %}
-  <div class="form-grid">
-    <div><span class="helper-text">User ID</span><br><code>{{ user_detail.id|default:user_id }}</code></div>
-    <div><span class="helper-text">Email</span><br>{{ user_detail.email|default:"-" }}</div>
-    <div><span class="helper-text">Username</span><br>{{ user_detail.username|default:"-" }}</div>
-    <div><span class="helper-text">Role</span><br><span class="chip neutral">{{ user_detail.role|default:"-" }}</span></div>
-    <div><span class="helper-text">Status</span><br><span class="chip neutral">{{ user_detail.status|default:"-" }}</span></div>
-    <div><span class="helper-text">Banned</span><br><span class="chip {% if user_detail.isBanned %}danger{% else %}success{% endif %}">{{ user_detail.isBanned|yesno:"yes,no,-" }}</span></div>
-    <div><span class="helper-text">Created</span><br>{{ user_detail.createdAt|default:"-" }}</div>
-    <div><span class="helper-text">Last active</span><br>{{ user_detail.lastActive|default:"-" }}</div>
+  <div class="account-summary-grid">
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">User ID</span>
+      <code class="breakable-token">{{ user_detail.id|default:user_id }}</code>
+    </div>
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">Email</span>
+      <span class="breakable-token">{{ user_detail.email|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Username</span>
+      <span class="breakable-token">{{ user_detail.username|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Role</span>
+      <span class="chip neutral">{{ user_detail.role|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Status</span>
+      <span class="chip neutral">{{ user_detail.status|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Banned</span>
+      <span class="chip {% if user_detail.isBanned %}danger{% else %}success{% endif %}">{{ user_detail.isBanned|yesno:"yes,no,-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Created</span>
+      <span class="breakable-token">{{ user_detail.createdAt|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Last active</span>
+      <span class="breakable-token">{{ user_detail.lastActive|default:"-" }}</span>
+    </div>
   </div>
   {% else %}
   <div class="empty"><strong>User detail unavailable</strong><span>Check backend availability or permissions.</span></div>

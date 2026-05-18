@@ -39,6 +39,29 @@ class OperatorDetailDrilldownViewsTests(TestCase):
         self.assertContains(response, "User detail")
         self.assertContains(response, "user@example.com")
         self.assertContains(response, "Signed in")
+        self.assertContains(response, "ops@example.com")
+        self.assertContains(response, "account-summary-grid")
+
+    @mock.patch("dashboard.views.get_admin_user_activity")
+    @mock.patch("dashboard.views.get_admin_user")
+    def test_user_detail_investigation_link_carries_return_target(self, mock_get_user, mock_activity):
+        self._login(["users:read"])
+        long_id = "usr_03b0b24d124949d7b0ae42bd56825e26"
+        mock_get_user.return_value = {
+            "id": long_id,
+            "email": "admin.with.a.long.name@example.tycoon.local",
+            "username": "User One",
+            "isBanned": False,
+        }
+        mock_activity.return_value = {"items": []}
+
+        response = self.client.get(reverse("operator-user-detail-view", kwargs={"user_id": long_id}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "breakable-token")
+        self.assertContains(response, long_id)
+        self.assertContains(response, "admin.with.a.long.name@example.tycoon.local")
+        self.assertContains(response, "returnTo=/users/usr_03b0b24d124949d7b0ae42bd56825e26")
 
     @mock.patch("dashboard.views.update_admin_user")
     def test_user_detail_update_requires_write_permission(self, mock_update):
@@ -141,6 +164,58 @@ class OperatorDetailDrilldownViewsTests(TestCase):
         self.assertContains(response, "Audit event detail")
         self.assertContains(response, "admin_auth_login")
         self.assertContains(response, "ops@example.com")
+
+    @mock.patch("dashboard.views.unban_admin_user")
+    @mock.patch("dashboard.views.ban_admin_user")
+    @mock.patch("dashboard.views.update_admin_user")
+    @mock.patch("dashboard.views.get_player_stock")
+    @mock.patch("dashboard.views.get_player_debug")
+    @mock.patch("dashboard.views.get_player_profile")
+    @mock.patch("dashboard.views.get_economy_history")
+    @mock.patch("dashboard.views.get_moderation_profile")
+    @mock.patch("dashboard.views.get_admin_user_activity")
+    @mock.patch("dashboard.views.get_admin_user")
+    def test_investigation_workbench_navigation_and_readonly_policy(
+        self,
+        mock_get_admin_user,
+        mock_get_admin_user_activity,
+        mock_get_moderation_profile,
+        mock_get_economy_history,
+        mock_get_player_profile,
+        mock_get_player_debug,
+        mock_get_player_stock,
+        mock_update_admin_user,
+        mock_ban_admin_user,
+        mock_unban_admin_user,
+    ):
+        self._login(["users:read", "moderation:read", "economy:read", "personalization:read", "store:read"])
+        user_id = "usr_03b0b24d124949d7b0ae42bd56825e26"
+        return_to = f"/users/{user_id}"
+        mock_get_admin_user.return_value = {"id": user_id, "email": "user@example.com", "role": "user", "isVerified": True, "isBanned": False}
+        mock_get_admin_user_activity.return_value = {"items": []}
+        mock_get_moderation_profile.return_value = {"status": "clear"}
+        mock_get_economy_history.return_value = {"items": []}
+        mock_get_player_profile.return_value = {}
+        mock_get_player_debug.return_value = {"recentEvents": [], "recentAudit": []}
+        mock_get_player_stock.return_value = {"items": []}
+
+        response = self.client.get(
+            reverse("operator-user-investigation-view", kwargs={"user_id": user_id}),
+            {"returnTo": return_to, "playerId": "00000000-0000-0000-0000-000000000001", "activityPageSize": "50"},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Back to user detail")
+        self.assertContains(response, "Back to users")
+        self.assertContains(response, "Cancel")
+        self.assertContains(response, f'href="{return_to}"')
+        self.assertContains(response, f'name="returnTo" value="{return_to}"')
+        self.assertContains(response, "Editable actions")
+        self.assertContains(response, "This workbench is read-only")
+        self.assertContains(response, "readonly")
+        mock_update_admin_user.assert_not_called()
+        mock_ban_admin_user.assert_not_called()
+        mock_unban_admin_user.assert_not_called()
 
 
 class DashboardViewsTests(TestCase):
