@@ -46,7 +46,7 @@ def _fetch_text_health(url: str) -> tuple[str, str, dict[str, Any] | None]:
 
 def get_dotnet_status() -> ServiceStatus:
     base_url = settings.DOTNET_API_BASE_URL.rstrip("/")
-    status, detail, payload = _fetch_json(f"{base_url}/health")
+    status, detail, payload = _fetch_json(f"{base_url}/healthz")
     return ServiceStatus(
         service_name=".NET API",
         base_url=base_url,
