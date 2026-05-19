@@ -117,7 +117,7 @@
   </div>
   <div class="card-grid">
     {% for service in services %}
-    <article class="card probe-card">
+    <article class="card probe-card" data-probe-slug="{{ service.slug }}">
       <div class="probe-card-header">
         <div class="probe-card-title">
           <strong>{{ service.service_name }}</strong>
@@ -180,4 +180,48 @@
     {% endfor %}
   </div>
 </section>
+
+<script>
+(function () {
+  var POLL_MS = 30000;
+  var STATUS_CLASSES = ['healthy', 'degraded', 'offline', 'unknown'];
+
+  function applyUpdate(services) {
+    for (var i = 0; i < services.length; i++) {
+      var svc = services[i];
+      var card = document.querySelector('[data-probe-slug="' + svc.slug + '"]');
+      if (!card) continue;
+
+      var pill = card.querySelector('.status-pill');
+      if (pill) {
+        STATUS_CLASSES.forEach(function (c) { pill.classList.remove(c); });
+        pill.classList.add(svc.status || 'unknown');
+        pill.textContent = (svc.status || 'unknown').toUpperCase();
+      }
+
+      var footerMeta = card.querySelector('.probe-footer-meta');
+      if (footerMeta) {
+        var p95 = svc.latency_ms ? ' · p95 ' + svc.latency_ms + 'ms' : '';
+        footerMeta.textContent = 'Just now' + p95;
+      }
+
+      var payloadPre = card.querySelector('.probe-payload pre');
+      if (payloadPre && svc.payload) {
+        payloadPre.textContent = Object.entries(svc.payload)
+          .map(function (kv) { return kv[0] + ': ' + kv[1]; })
+          .join('\n');
+      }
+    }
+  }
+
+  function poll() {
+    fetch("{% url 'operator-health' %}")
+      .then(function (r) { return r.json(); })
+      .then(function (data) { applyUpdate(data.services || []); })
+      .catch(function () { /* silent — stale data stays visible */ });
+  }
+
+  setInterval(poll, POLL_MS);
+})();
+</script>
 {% endblock %}

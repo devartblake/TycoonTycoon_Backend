@@ -1,0 +1,64 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Schedule Flash Sale{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store / Flash sales</p>
+    <h1 class="page-title">Schedule flash sale</h1>
+    <p class="page-subtitle">Create a new timed discount for a store SKU. Start time must be in the future.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'store-flash-sales-view' %}">Back to sales</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Sale details" copy="All times are UTC. Only active catalog items are available." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        SKU
+        {% if catalog_items %}
+        <select name="sku" required>
+          <option value="">— select a store item —</option>
+          {% for item in catalog_items %}
+          <option value="{{ item.sku }}" {% if form.sku == item.sku %}selected{% endif %}>{{ item.name }} ({{ item.sku }})</option>
+          {% endfor %}
+        </select>
+        <span class="helper-text">Only active items shown. <a href="{% url 'store-catalog-view' %}">Manage catalog</a></span>
+        {% else %}
+        <select name="sku" disabled>
+          <option value="">No active items — add items to the catalog first</option>
+        </select>
+        <span class="helper-text" style="color:var(--bad);">No active store items found. <a href="{% url 'store-catalog-new' %}">Add an item</a> before scheduling a sale.</span>
+        {% endif %}
+      </label>
+      <label>
+        Discount %
+        <input type="number" name="discountPercent" value="{{ form.discountPercent|default:'' }}" min="1" max="99" placeholder="e.g. 20" required />
+        <span class="helper-text">1–99. Applied to the item's price.</span>
+      </label>
+      <label>
+        Starts at (UTC)
+        <input type="datetime-local" name="startsAtUtc" value="{{ form.startsAtUtc|default:'' }}" required />
+      </label>
+      <label>
+        Ends at (UTC)
+        <input type="datetime-local" name="endsAtUtc" value="{{ form.endsAtUtc|default:'' }}" required />
+      </label>
+      <label class="span-2">
+        Reason (optional)
+        <input type="text" name="reason" value="{{ form.reason|default:'' }}" placeholder="e.g. Weekend promo" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Schedule sale</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

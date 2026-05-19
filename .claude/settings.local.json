@@ -34,7 +34,20 @@
       "Bash(findstr /i \"audit\\\\|security\\\\|admin\")",
       "Bash(dir \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\")",
       "Bash(findstr Tycoon.Backend)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\" -Recurse -Directory -Name)",
+      "Bash(Select-String -Pattern \"\\(dashboard|Features\\)\")",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\" -Recurse -Directory | Where-Object {$_.Name -match \"\\(dashboard|Features\\)\" } | Select-Object -ExpandProperty FullName | head -20)",
+      "Bash(grep -E \"\\\\.html$\")",
+      "Bash(xargs grep -l \"flash\")",
+      "Bash(Get-ChildItem -Recurse -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\Tycoon.Backend.Domain\" -Filter \"*.cs\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(python manage.py test dashboard)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\" -Recurse -Directory | Where-Object {$_.Name -match \"dashboard|Django\"} | Select-Object -ExpandProperty FullName)",
+      "Bash(Get-Content \"C:\\\\Users\\\\lmxbl\\\\.claude\\\\plans\\\\can-you-tell-me-curious-lamport.md\")",
+      "Bash(Measure-Object -Line)",
+      "Bash(python manage.py test dashboard.tests.test_views.StoreCatalogViewTests dashboard.tests.test_views.StoreCatalogNewViewTests dashboard.tests.test_views.StoreCatalogDetailViewTests --verbosity=2)",
+      "Bash(python manage.py test dashboard --verbosity=1)"
     ]
   }
 }

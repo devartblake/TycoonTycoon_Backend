@@ -1,0 +1,82 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Edit Flash Sale{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store / Flash sales</p>
+    <h1 class="page-title">Edit flash sale</h1>
+    <p class="page-subtitle">Update a scheduled sale's timing or discount. Only scheduled (not-yet-started) sales can be edited.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'store-flash-sales-view' %}">Back to sales</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+{% if sale %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Sale info" copy="SKU cannot be changed after a sale is created." %}
+  <div class="account-summary-grid">
+    <div class="summary-field">
+      <span class="helper-text">SKU</span>
+      <code class="breakable-token">{{ sale.sku }}</code>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Sale ID</span>
+      <code class="breakable-token" style="font-size:0.75rem;">{{ sale.id }}</code>
+    </div>
+  </div>
+</section>
+
+{% if can_write %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Edit details" copy="All times are UTC. The sale must not have started yet." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Discount %
+        <input type="number" name="discountPercent" value="{{ form.discountPercent|default:'' }}" min="1" max="99" required />
+        <span class="helper-text">1–99.</span>
+      </label>
+      <label>
+        Starts at (UTC)
+        <input type="datetime-local" name="startsAtUtc" value="{{ form.startsAtUtc|default:'' }}" required />
+      </label>
+      <label>
+        Ends at (UTC)
+        <input type="datetime-local" name="endsAtUtc" value="{{ form.endsAtUtc|default:'' }}" required />
+      </label>
+      <label>
+        Reason (optional)
+        <input type="text" name="reason" value="{{ form.reason|default:'' }}" placeholder="e.g. Weekend promo" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Save changes</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<section class="card mt-lg">
+  <div class="empty">
+    <span class="empty-ico">!</span>
+    <strong>Insufficient permissions</strong>
+    <span>store:write permission is required to edit flash sales.</span>
+  </div>
+</section>
+{% endif %}
+
+{% else %}
+<section class="card mt-lg">
+  <div class="empty">
+    <span class="empty-ico">!</span>
+    <strong>Sale not found</strong>
+    <span>The flash sale could not be loaded. It may have been cancelled or does not exist.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

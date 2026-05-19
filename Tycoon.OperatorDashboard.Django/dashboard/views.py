@@ -12,7 +12,7 @@ import httpx
 from django.contrib import messages
 from django.db import DatabaseError
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
@@ -29,11 +29,19 @@ from .services.admin_questions_client import approve_question, delete_question, 
 from .services.admin_store_client import (
     bulk_reset_stock,
     cancel_flash_sale,
+    create_flash_sale,
+    create_store_item,
+    delete_stock_policy,
+    delete_store_item,
+    get_catalog,
     get_flash_sales,
     get_player_stock,
     get_purchase_analytics,
     get_stock_policies,
     override_player_stock,
+    update_flash_sale,
+    update_store_item,
+    upsert_stock_policy,
 )
 from .services.admin_game_events_client import (
     close_game_event,
@@ -596,6 +604,8 @@ def dashboard_home(request):
 @operator_login_required
 def operator_health(request):
     services = list_service_statuses()
+    for service in services:
+        _save_probe_record(service.service_name, service.status, service.latency_ms, service.detail)
     return JsonResponse(
         {
             "status": get_overall_status(services),
@@ -1690,20 +1700,84 @@ def _split_skus(raw: str | None) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Store — helpers
+# ---------------------------------------------------------------------------
+
+
+def _fmt_utc(dt_str: str | None) -> str:
+    if not dt_str:
+        return "—"
+    try:
+        from datetime import datetime
+        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except (ValueError, TypeError):
+        return dt_str or "—"
+
+
+def _flash_sale_status(sale: dict) -> str:
+    if not sale.get("isActive"):
+        return "cancelled"
+    from datetime import datetime, timezone as _tz
+    now = datetime.now(_tz.utc)
+    try:
+        ends = datetime.fromisoformat((sale.get("endsAtUtc") or "").replace("Z", "+00:00"))
+        starts = datetime.fromisoformat((sale.get("startsAtUtc") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return "unknown"
+    if ends < now:
+        return "expired"
+    if starts > now:
+        return "scheduled"
+    return "live"
+
+
+# ---------------------------------------------------------------------------
 # Store — Flash Sales
 # ---------------------------------------------------------------------------
 
 @operator_login_required
 @require_permission("store:read")
 def store_flash_sales_view(request):
+    from datetime import datetime, timezone as _tz, timedelta
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    show_all = request.GET.get("showAll") == "true"
     context = {
         "sales": [],
+        "live_count": 0,
+        "scheduled_count": 0,
+        "ending_soon": [],
+        "show_all": show_all,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "can_write": _has_permission(request, "store:write"),
     }
     try:
-        payload = get_flash_sales(access_token)
-        context["sales"] = payload.get("sales", [])
+        payload = get_flash_sales(access_token, show_all=show_all)
+        sales = payload.get("sales") or []
+        now = datetime.now(_tz.utc)
+        for sale in sales:
+            sale["status"] = _flash_sale_status(sale)
+            sale["startsDisplay"] = _fmt_utc(sale.get("startsAtUtc"))
+            sale["endsDisplay"] = _fmt_utc(sale.get("endsAtUtc"))
+            sale["discountDisplay"] = f"-{sale.get('discountPercent', 0)}%"
+        live_sales = [s for s in sales if s["status"] == "live"]
+        scheduled_sales = [s for s in sales if s["status"] == "scheduled"]
+        cutoff = now + timedelta(hours=24)
+        ending_soon = []
+        for s in live_sales:
+            try:
+                ends = datetime.fromisoformat((s.get("endsAtUtc") or "").replace("Z", "+00:00"))
+                if ends <= cutoff:
+                    ending_soon.append(s)
+            except ValueError:
+                pass
+        context.update({
+            "sales": sales,
+            "live_count": len(live_sales),
+            "scheduled_count": len(scheduled_sales),
+            "ending_soon": ending_soon,
+            "next_scheduled": scheduled_sales[0] if scheduled_sales else None,
+        })
     except httpx.HTTPStatusError as ex:
         messages.error(request, f"Flash sales lookup failed (HTTP {ex.response.status_code}).")
     except httpx.RequestError:
@@ -1727,14 +1801,367 @@ def store_flash_sale_cancel(request, sale_id: str):
     return redirect("store-flash-sales-view")
 
 
+@operator_login_required
+@require_permission("store:write")
+def store_flash_sale_schedule_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "catalog_items": [],
+        "form": {},
+    }
+    try:
+        catalog_payload = get_catalog(access_token, {"activeOnly": "true", "page": "1", "pageSize": "200"})
+        context["catalog_items"] = catalog_payload.get("items") or []
+    except Exception:
+        pass
+    if request.method == "POST":
+        sku = request.POST.get("sku", "").strip().lower()
+        discount_raw = request.POST.get("discountPercent", "").strip()
+        starts_raw = request.POST.get("startsAtUtc", "").strip()
+        ends_raw = request.POST.get("endsAtUtc", "").strip()
+        reason = request.POST.get("reason", "").strip() or None
+        context["form"] = {"sku": sku, "discountPercent": discount_raw,
+                           "startsAtUtc": starts_raw, "endsAtUtc": ends_raw, "reason": reason or ""}
+        errors = []
+        if not sku:
+            errors.append("SKU is required.")
+        if not discount_raw.isdigit() or not (1 <= int(discount_raw) <= 99):
+            errors.append("Discount must be between 1 and 99.")
+        if not starts_raw or not ends_raw:
+            errors.append("Start and end times are required.")
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, "dashboard/flash_sale_schedule.html", context)
+        try:
+            starts_iso = starts_raw + ":00Z" if len(starts_raw) == 16 else starts_raw
+            ends_iso = ends_raw + ":00Z" if len(ends_raw) == 16 else ends_raw
+            create_flash_sale(access_token, sku, int(discount_raw), starts_iso, ends_iso, reason)
+            messages.success(request, f"Flash sale for '{sku}' scheduled.")
+            return redirect(reverse("store-flash-sales-view"))
+        except httpx.HTTPStatusError as ex:
+            try:
+                detail = ex.response.json().get("message", "")
+            except Exception:
+                detail = ""
+            messages.error(request, f"Schedule failed (HTTP {ex.response.status_code}){': ' + detail if detail else ''}.")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend flash sales endpoint.")
+    return render(request, "dashboard/flash_sale_schedule.html", context)
+
+
+@operator_login_required
+@require_permission("store:read")
+def store_flash_sale_edit_view(request, sale_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "sale_id": sale_id,
+        "sale": None,
+        "form": {},
+        "can_write": _has_permission(request, "store:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        payload = get_flash_sales(access_token, show_all=True)
+        all_sales = payload.get("sales") or []
+        match = next((s for s in all_sales if str(s.get("id")) == sale_id), None)
+        if not match:
+            messages.error(request, "Flash sale not found.")
+            return redirect(reverse("store-flash-sales-view"))
+        context["sale"] = match
+        context["form"] = {
+            "discountPercent": match.get("discountPercent", ""),
+            "startsAtUtc": (match.get("startsAtUtc") or "")[:16].replace("T", "T"),
+            "endsAtUtc": (match.get("endsAtUtc") or "")[:16].replace("T", "T"),
+            "reason": match.get("reason") or "",
+        }
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load flash sale (HTTP {ex.response.status_code}).")
+        return redirect(reverse("store-flash-sales-view"))
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend flash sales endpoint.")
+        return redirect(reverse("store-flash-sales-view"))
+
+    if request.method == "POST":
+        if not _has_permission(request, "store:write"):
+            return HttpResponseForbidden("Requires store:write permission.")
+        discount_raw = request.POST.get("discountPercent", "").strip()
+        starts_raw = request.POST.get("startsAtUtc", "").strip()
+        ends_raw = request.POST.get("endsAtUtc", "").strip()
+        reason = request.POST.get("reason", "").strip() or None
+        context["form"] = {"discountPercent": discount_raw, "startsAtUtc": starts_raw,
+                           "endsAtUtc": ends_raw, "reason": reason or ""}
+        errors = []
+        if not discount_raw.isdigit() or not (1 <= int(discount_raw) <= 99):
+            errors.append("Discount must be between 1 and 99.")
+        if not starts_raw or not ends_raw:
+            errors.append("Start and end times are required.")
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, "dashboard/flash_sale_edit.html", context)
+        try:
+            starts_iso = starts_raw + ":00Z" if len(starts_raw) == 16 else starts_raw
+            ends_iso = ends_raw + ":00Z" if len(ends_raw) == 16 else ends_raw
+            update_flash_sale(access_token, sale_id, int(discount_raw), starts_iso, ends_iso, reason)
+            messages.success(request, "Flash sale updated.")
+            return redirect(reverse("store-flash-sales-view"))
+        except httpx.HTTPStatusError as ex:
+            try:
+                detail = ex.response.json().get("message", "")
+            except Exception:
+                detail = ""
+            messages.error(request, f"Update failed (HTTP {ex.response.status_code}){': ' + detail if detail else ''}.")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend flash sales endpoint.")
+
+    return render(request, "dashboard/flash_sale_edit.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Store — Catalog
+# ---------------------------------------------------------------------------
+
+
+@operator_login_required
+@require_permission("store:read")
+def store_catalog_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    item_type_filter = (request.GET.get("itemType") or "").strip().lower()
+    active_only = (request.GET.get("activeOnly") or "").strip()
+    params = {
+        "activeOnly": active_only if active_only in ("true", "false") else None,
+        "itemType": item_type_filter or None,
+        "page": "1",
+        "pageSize": "200",
+    }
+    context = {
+        "items": [],
+        "query": {"itemType": item_type_filter, "activeOnly": active_only},
+        "item_type_choices": _ITEM_TYPES,
+        "can_write": _has_permission(request, "store:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "total_count": 0,
+        "active_count": 0,
+        "type_count": 0,
+    }
+    try:
+        payload = get_catalog(access_token, params)
+        items = payload.get("items") or []
+        for item in items:
+            item["createdDisplay"] = _fmt_utc(item.get("createdAtUtc"))
+            item["updatedDisplay"] = _fmt_utc(item.get("updatedAtUtc"))
+        context["items"] = items
+        context["total_count"] = payload.get("total", len(items))
+        context["active_count"] = sum(1 for i in items if i.get("isActive"))
+        context["type_count"] = len({i.get("itemType", "") for i in items if i.get("itemType")})
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Catalog lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend catalog endpoint.")
+    return render(request, "dashboard/store_catalog.html", context)
+
+
+@operator_login_required
+@require_permission("store:read")
+def store_catalog_new_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "item_type_choices": _ITEM_TYPES,
+        "can_write": _has_permission(request, "store:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "form": {
+            "sku": "", "name": "", "description": "", "itemType": "misc",
+            "priceCoins": "0", "priceDiamonds": "0", "grantQuantity": "1",
+            "maxPerPlayer": "0", "sortOrder": "0", "mediaKey": "",
+        },
+    }
+    if request.method == "POST":
+        if not _has_permission(request, "store:write"):
+            return HttpResponseForbidden("Requires store:write permission.")
+        sku = request.POST.get("sku", "").strip().lower()
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description", "").strip() or None
+        item_type = request.POST.get("itemType", "misc").strip().lower() or "misc"
+        price_coins_raw = request.POST.get("priceCoins", "0").strip()
+        price_diamonds_raw = request.POST.get("priceDiamonds", "0").strip()
+        grant_qty_raw = request.POST.get("grantQuantity", "1").strip()
+        max_per_raw = request.POST.get("maxPerPlayer", "0").strip()
+        sort_raw = request.POST.get("sortOrder", "0").strip()
+        media_key = request.POST.get("mediaKey", "").strip() or None
+        context["form"] = {
+            "sku": sku, "name": name, "description": description or "",
+            "itemType": item_type, "priceCoins": price_coins_raw,
+            "priceDiamonds": price_diamonds_raw, "grantQuantity": grant_qty_raw,
+            "maxPerPlayer": max_per_raw, "sortOrder": sort_raw, "mediaKey": media_key or "",
+        }
+        errors = []
+        if not sku or " " in sku:
+            errors.append("SKU is required and must not contain spaces.")
+        if not name:
+            errors.append("Name is required.")
+        if not grant_qty_raw.isdigit() or int(grant_qty_raw) < 1:
+            errors.append("Grant quantity must be at least 1.")
+        if not price_coins_raw.isdigit() or int(price_coins_raw) < 0:
+            errors.append("Price (coins) must be 0 or more.")
+        if not price_diamonds_raw.isdigit() or int(price_diamonds_raw) < 0:
+            errors.append("Price (diamonds) must be 0 or more.")
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, "dashboard/store_catalog_new.html", context)
+        try:
+            result = create_store_item(
+                access_token, sku, name, description, item_type,
+                int(price_coins_raw), int(price_diamonds_raw),
+                int(grant_qty_raw), int(max_per_raw or "0"),
+                media_key, int(sort_raw or "0"),
+            )
+            item_id = result.get("id")
+            messages.success(request, f"Store item '{sku}' created.")
+            if item_id:
+                return redirect(reverse("store-catalog-detail", kwargs={"item_id": item_id}))
+            return redirect(reverse("store-catalog-view"))
+        except httpx.HTTPStatusError as ex:
+            try:
+                detail = ex.response.json().get("message", "")
+            except Exception:
+                detail = ""
+            messages.error(request, f"Create failed (HTTP {ex.response.status_code}){': ' + detail if detail else ''}.")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend catalog endpoint.")
+    return render(request, "dashboard/store_catalog_new.html", context)
+
+
+@operator_login_required
+@require_permission("store:read")
+def store_catalog_detail_view(request, item_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "item": None,
+        "item_id": item_id,
+        "item_type_choices": _ITEM_TYPES,
+        "can_write": _has_permission(request, "store:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "form": {},
+    }
+    try:
+        payload = get_catalog(access_token, {"page": "1", "pageSize": "200"})
+        all_items = payload.get("items") or []
+        item = next((i for i in all_items if str(i.get("id")) == item_id), None)
+        if not item:
+            messages.error(request, "Store item not found.")
+            return redirect(reverse("store-catalog-view"))
+        item["createdDisplay"] = _fmt_utc(item.get("createdAtUtc"))
+        item["updatedDisplay"] = _fmt_utc(item.get("updatedAtUtc"))
+        context["item"] = item
+        context["form"] = {
+            "name": item.get("name", ""),
+            "description": item.get("description", ""),
+            "itemType": item.get("itemType", "misc"),
+            "priceCoins": item.get("priceCoins", 0),
+            "priceDiamonds": item.get("priceDiamonds", 0),
+            "grantQuantity": item.get("grantQuantity", 1),
+            "maxPerPlayer": item.get("maxPerPlayer", 0),
+            "sortOrder": item.get("sortOrder", 0),
+            "mediaKey": item.get("mediaKey") or "",
+        }
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load catalog (HTTP {ex.response.status_code}).")
+        return redirect(reverse("store-catalog-view"))
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend catalog endpoint.")
+        return redirect(reverse("store-catalog-view"))
+
+    if request.method == "POST":
+        if not _has_permission(request, "store:write"):
+            return HttpResponseForbidden("Requires store:write permission.")
+        action = request.POST.get("_action", "save")
+        if action == "delete":
+            try:
+                delete_store_item(access_token, item_id)
+                messages.success(request, f"Item '{context['item']['sku']}' deactivated.")
+                return redirect(reverse("store-catalog-view"))
+            except httpx.HTTPStatusError as ex:
+                messages.error(request, f"Deactivate failed (HTTP {ex.response.status_code}).")
+            except httpx.RequestError:
+                messages.error(request, "Unable to reach backend catalog endpoint.")
+            return render(request, "dashboard/store_catalog_detail.html", context)
+        if action == "toggle":
+            try:
+                new_active = not (context["item"].get("isActive", True))
+                update_store_item(access_token, item_id, isActive=new_active)
+                messages.success(request, f"Item marked {'active' if new_active else 'inactive'}.")
+                return redirect(reverse("store-catalog-detail", kwargs={"item_id": item_id}))
+            except httpx.HTTPStatusError as ex:
+                messages.error(request, f"Toggle failed (HTTP {ex.response.status_code}).")
+            except httpx.RequestError:
+                messages.error(request, "Unable to reach backend catalog endpoint.")
+            return render(request, "dashboard/store_catalog_detail.html", context)
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description", "").strip() or None
+        item_type = request.POST.get("itemType", "misc").strip()
+        price_coins_raw = request.POST.get("priceCoins", "0").strip()
+        price_diamonds_raw = request.POST.get("priceDiamonds", "0").strip()
+        grant_qty_raw = request.POST.get("grantQuantity", "1").strip()
+        max_per_raw = request.POST.get("maxPerPlayer", "0").strip()
+        sort_raw = request.POST.get("sortOrder", "0").strip()
+        media_key = request.POST.get("mediaKey", "").strip() or None
+        context["form"] = {
+            "name": name, "description": description or "",
+            "itemType": item_type, "priceCoins": price_coins_raw,
+            "priceDiamonds": price_diamonds_raw, "grantQuantity": grant_qty_raw,
+            "maxPerPlayer": max_per_raw, "sortOrder": sort_raw, "mediaKey": media_key or "",
+        }
+        errors = []
+        if not name:
+            errors.append("Name is required.")
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, "dashboard/store_catalog_detail.html", context)
+        try:
+            update_store_item(
+                access_token, item_id,
+                name=name, description=description,
+                itemType=item_type,
+                priceCoins=int(price_coins_raw or "0"),
+                priceDiamonds=int(price_diamonds_raw or "0"),
+                grantQuantity=int(grant_qty_raw or "1"),
+                maxPerPlayer=int(max_per_raw or "0"),
+                sortOrder=int(sort_raw or "0"),
+                mediaKey=media_key,
+            )
+            messages.success(request, f"Item updated.")
+            return redirect(reverse("store-catalog-detail", kwargs={"item_id": item_id}))
+        except httpx.HTTPStatusError as ex:
+            try:
+                detail = ex.response.json().get("message", "")
+            except Exception:
+                detail = ""
+            messages.error(request, f"Update failed (HTTP {ex.response.status_code}){': ' + detail if detail else ''}.")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend catalog endpoint.")
+
+    return render(request, "dashboard/store_catalog_detail.html", context)
+
+
 # ---------------------------------------------------------------------------
 # Store — Stock Policies
 # ---------------------------------------------------------------------------
+
+_INTERVAL_DISPLAY = {"daily": "Daily", "weekly": "Weekly", "monthly": "Monthly", "none": "Lifetime"}
+_INTERVAL_BACKEND = {"daily": "daily", "weekly": "weekly", "monthly": "monthly", "lifetime": "none"}
+_VALID_INTERVALS = ("daily", "weekly", "monthly", "none")
+_ITEM_TYPES = ["powerup", "cosmetic", "avatar", "theme", "bundle", "currency", "misc"]
+
 
 @operator_login_required
 @require_permission("store:read")
 def store_stock_policies_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    reset_interval_filter = (request.GET.get("resetInterval") or "").strip().lower()
     params = {
         "activeOnly": request.GET.get("activeOnly"),
         "sku": request.GET.get("sku"),
@@ -1742,16 +2169,141 @@ def store_stock_policies_view(request):
     context = {
         "policies": [],
         "query": {k: v for k, v in params.items() if v not in (None, "")},
+        "reset_interval_filter": reset_interval_filter,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
     try:
         payload = get_stock_policies(access_token, params)
-        context["policies"] = payload.get("policies", [])
+        policies = payload.get("policies", [])
+        for p in policies:
+            p["intervalDisplay"] = _INTERVAL_DISPLAY.get(p.get("resetInterval", ""), "—")
+        if reset_interval_filter:
+            backend_val = _INTERVAL_BACKEND.get(reset_interval_filter, reset_interval_filter)
+            policies = [p for p in policies if (p.get("resetInterval") or "") == backend_val]
+        context["policies"] = policies
     except httpx.HTTPStatusError as ex:
         messages.error(request, f"Stock policies lookup failed (HTTP {ex.response.status_code}).")
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend stock policies endpoint.")
     return render(request, "dashboard/stock_policies.html", context)
+
+
+@operator_login_required
+@require_permission("store:read")
+def store_stock_policy_detail_view(request, sku: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "sku": sku,
+        "policy": None,
+        "active_sale": None,
+        "can_write": _has_permission(request, "store:write"),
+        "interval_choices": list(_INTERVAL_DISPLAY.items()),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        data = get_stock_policies(access_token, {"sku": sku})
+        found = (data.get("policies") or [])
+        if not found:
+            messages.error(request, f"No policy found for SKU '{sku}'.")
+            return redirect(reverse("store-stock-policies-view"))
+        policy = found[0]
+        policy["intervalDisplay"] = _INTERVAL_DISPLAY.get(policy.get("resetInterval", ""), "—")
+        policy["createdDisplay"] = _fmt_utc(policy.get("createdAtUtc"))
+        policy["updatedDisplay"] = _fmt_utc(policy.get("updatedAtUtc"))
+        context["policy"] = policy
+        try:
+            sales_payload = get_flash_sales(access_token, show_all=False)
+            all_sales = sales_payload.get("sales") or []
+            active = next((s for s in all_sales
+                           if s.get("sku", "").lower() == sku.lower()
+                           and _flash_sale_status(s) in ("live", "scheduled")), None)
+            context["active_sale"] = active
+        except Exception:
+            pass
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load policy (HTTP {ex.response.status_code}).")
+        return redirect(reverse("store-stock-policies-view"))
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend store endpoint.")
+        return redirect(reverse("store-stock-policies-view"))
+
+    if request.method == "POST":
+        if not _has_permission(request, "store:write"):
+            return HttpResponseForbidden("Requires store:write permission.")
+        action = request.POST.get("_action", "save")
+        if action == "delete":
+            try:
+                delete_stock_policy(access_token, sku)
+                messages.success(request, f"Policy '{sku}' deleted.")
+                return redirect(reverse("store-stock-policies-view"))
+            except httpx.HTTPStatusError as ex:
+                messages.error(request, f"Delete failed (HTTP {ex.response.status_code}).")
+            except httpx.RequestError:
+                messages.error(request, "Unable to reach backend store endpoint.")
+            return render(request, "dashboard/stock_policy_detail.html", context)
+        max_qty_raw = request.POST.get("maxQuantityPerUser", "").strip()
+        reset_interval = request.POST.get("resetInterval", "").strip()
+        errors = []
+        if not max_qty_raw.isdigit():
+            errors.append("Max quantity must be a non-negative integer.")
+        if reset_interval not in _VALID_INTERVALS:
+            errors.append("Reset interval must be daily, weekly, monthly, or none.")
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, "dashboard/stock_policy_detail.html", context)
+        try:
+            is_active = request.POST.get("isActive") == "on"
+            upsert_stock_policy(access_token, sku, int(max_qty_raw), reset_interval, is_active=is_active)
+            messages.success(request, f"Policy '{sku}' updated.")
+            return redirect(reverse("store-stock-policy-detail", kwargs={"sku": sku}))
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Update failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend store endpoint.")
+
+    return render(request, "dashboard/stock_policy_detail.html", context)
+
+
+@operator_login_required
+@require_permission("store:read")
+def store_stock_policy_new_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "interval_choices": list(_INTERVAL_DISPLAY.items()),
+        "can_write": _has_permission(request, "store:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "form_sku": "",
+        "form_max_qty": "",
+        "form_interval": "daily",
+    }
+    if request.method == "POST":
+        if not _has_permission(request, "store:write"):
+            return HttpResponseForbidden("Requires store:write permission.")
+        sku = request.POST.get("sku", "").strip().lower()
+        max_qty_raw = request.POST.get("maxQuantityPerUser", "").strip()
+        reset_interval = request.POST.get("resetInterval", "").strip()
+        context.update({"form_sku": sku, "form_max_qty": max_qty_raw, "form_interval": reset_interval})
+        errors = []
+        if not sku:
+            errors.append("SKU is required.")
+        if not max_qty_raw.isdigit():
+            errors.append("Max quantity must be a non-negative integer.")
+        if reset_interval not in _VALID_INTERVALS:
+            errors.append("Reset interval must be daily, weekly, or none.")
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, "dashboard/stock_policy_new.html", context)
+        try:
+            upsert_stock_policy(access_token, sku, int(max_qty_raw), reset_interval)
+            messages.success(request, f"Policy '{sku}' created.")
+            return redirect(reverse("store-stock-policy-detail", kwargs={"sku": sku}))
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Create failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend store endpoint.")
+    return render(request, "dashboard/stock_policy_new.html", context)
 
 
 @operator_login_required

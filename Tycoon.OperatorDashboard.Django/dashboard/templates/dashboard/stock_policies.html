@@ -12,6 +12,7 @@
   <div class="topbar-actions">
     <span class="badge acc"><span class="dot"></span>Policy view</span>
     <span class="chip neutral">{{ policies|length }} returned</span>
+    <a class="button" href="{% url 'store-stock-policy-new' %}">+ New policy</a>
   </div>
 </section>
 
@@ -53,6 +54,16 @@
           <option value="true" {% if query.activeOnly == "true" %}selected{% endif %}>Active</option>
         </select>
       </label>
+      <label>
+        Reset interval
+        <select name="resetInterval">
+          <option value="">Any</option>
+          <option value="daily" {% if reset_interval_filter == "daily" %}selected{% endif %}>Daily</option>
+          <option value="weekly" {% if reset_interval_filter == "weekly" %}selected{% endif %}>Weekly</option>
+          <option value="monthly" {% if reset_interval_filter == "monthly" %}selected{% endif %}>Monthly</option>
+          <option value="lifetime" {% if reset_interval_filter == "lifetime" %}selected{% endif %}>Lifetime</option>
+        </select>
+      </label>
     </div>
     <div class="toolbar-actions">
       <button type="submit">Filter</button>
@@ -62,7 +73,7 @@
 </section>
 
 <section class="card">
-  {% include "dashboard/partials/section_intro.html" with title="Policies" copy="0 = unlimited. Edit policies via the backend admin API or CLI." %}
+  {% include "dashboard/partials/section_intro.html" with title="Policies" copy="0 = unlimited. Per-SKU limits enforced before checkout." %}
   <div class="table-wrap">
     <table class="dense-table">
       <thead>
@@ -72,6 +83,7 @@
           <th>Reset interval</th>
           <th>Status</th>
           <th>Updated (UTC)</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -79,17 +91,20 @@
         <tr>
           <td>{{ policy.sku|default:"-" }}</td>
           <td>{% if policy.maxQuantityPerUser == 0 %}unlimited{% else %}{{ policy.maxQuantityPerUser }}{% endif %}</td>
-          <td>{{ policy.resetInterval|default:"-" }}</td>
+          <td>{{ policy.intervalDisplay|default:"—" }}</td>
           <td>
             <span class="chip {% if policy.isActive %}success{% else %}warning{% endif %}">
               {% if policy.isActive %}active{% else %}inactive{% endif %}
             </span>
           </td>
           <td>{{ policy.updatedAtUtc|default:"-" }}</td>
+          <td>
+            <a class="button secondary small" href="{% url 'store-stock-policy-detail' policy.sku %}">View</a>
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5">
+          <td colspan="6">
             <div class="empty">
               <span class="empty-ico">0</span>
               <strong>No stock policies found</strong>

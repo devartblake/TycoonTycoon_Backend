@@ -239,6 +239,10 @@ class DashboardViewsTests(TestCase):
         session.save()
 
         service = mock.Mock()
+        service.service_name = ".NET API"
+        service.status = "healthy"
+        service.latency_ms = 42
+        service.detail = "Request succeeded"
         service.to_dict.return_value = {
             "service_name": ".NET API",
             "base_url": "http://backend-api:5000",
@@ -2016,3 +2020,477 @@ class GeoLookupViewTests(TestCase):
         self.assertEqual("United States", data["country"])
         self.assertEqual("Mountain View", data["city"])
         self.assertFalse(data["proxy"])
+
+
+class StockPolicyDetailViewTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["store:read"]}
+        session.save()
+
+    def test_requires_login(self):
+        from django.urls import reverse
+        response = self.client.get(reverse("store-stock-policy-detail", kwargs={"sku": "powerup:skip"}))
+        self.assertEqual(302, response.status_code)
+
+    @mock.patch("dashboard.views.get_stock_policies")
+    def test_renders_policy(self, mock_get):
+        from django.urls import reverse
+        self._login(["store:read"])
+        mock_get.return_value = {"policies": [{"sku": "powerup:skip", "maxQuantityPerUser": 3, "resetInterval": "daily", "isActive": True, "createdAtUtc": "2026-01-01", "updatedAtUtc": "2026-05-01"}]}
+        response = self.client.get(reverse("store-stock-policy-detail", kwargs={"sku": "powerup:skip"}))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "powerup:skip")
+        self.assertContains(response, "Daily")
+
+    @mock.patch("dashboard.views.get_stock_policies")
+    def test_redirects_when_not_found(self, mock_get):
+        from django.urls import reverse
+        self._login(["store:read"])
+        mock_get.return_value = {"policies": []}
+        response = self.client.get(reverse("store-stock-policy-detail", kwargs={"sku": "nonexistent"}))
+        self.assertEqual(302, response.status_code)
+
+    @mock.patch("dashboard.views.upsert_stock_policy")
+    @mock.patch("dashboard.views.get_stock_policies")
+    def test_post_updates_policy_and_redirects(self, mock_get, mock_upsert):
+        from django.urls import reverse
+        self._login(["store:read", "store:write"])
+        mock_get.return_value = {"policies": [{"sku": "powerup:skip", "maxQuantityPerUser": 3, "resetInterval": "daily", "isActive": True, "createdAtUtc": "2026-01-01", "updatedAtUtc": "2026-05-01"}]}
+        mock_upsert.return_value = {}
+        response = self.client.post(
+            reverse("store-stock-policy-detail", kwargs={"sku": "powerup:skip"}),
+            data={"maxQuantityPerUser": "5", "resetInterval": "weekly"},
+        )
+        self.assertEqual(302, response.status_code)
+        mock_upsert.assert_called_once_with("token", "powerup:skip", 5, "weekly", is_active=False)
+
+    @mock.patch("dashboard.views.upsert_stock_policy")
+    @mock.patch("dashboard.views.get_stock_policies")
+    def test_post_requires_write_permission(self, mock_get, mock_upsert):
+        from django.urls import reverse
+        self._login(["store:read"])
+        mock_get.return_value = {"policies": [{"sku": "powerup:skip", "maxQuantityPerUser": 3, "resetInterval": "daily", "isActive": True, "createdAtUtc": "2026-01-01", "updatedAtUtc": "2026-05-01"}]}
+        response = self.client.post(
+            reverse("store-stock-policy-detail", kwargs={"sku": "powerup:skip"}),
+            data={"maxQuantityPerUser": "5", "resetInterval": "weekly"},
+        )
+        self.assertEqual(403, response.status_code)
+        mock_upsert.assert_not_called()
+
+
+class StockPolicyNewViewTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["store:read"]}
+        session.save()
+
+    def test_requires_login(self):
+        from django.urls import reverse
+        response = self.client.get(reverse("store-stock-policy-new"))
+        self.assertEqual(302, response.status_code)
+
+    def test_renders_form_with_write_permission(self):
+        from django.urls import reverse
+        self._login(["store:read", "store:write"])
+        response = self.client.get(reverse("store-stock-policy-new"))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "New stock policy")
+        self.assertContains(response, "Create policy")
+
+    def test_renders_403_banner_without_write_permission(self):
+        from django.urls import reverse
+        self._login(["store:read"])
+        response = self.client.get(reverse("store-stock-policy-new"))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Insufficient permissions")
+        self.assertNotContains(response, "Create policy")
+
+    @mock.patch("dashboard.views.upsert_stock_policy")
+    def test_post_creates_and_redirects(self, mock_upsert):
+        from django.urls import reverse
+        self._login(["store:read", "store:write"])
+        mock_upsert.return_value = {}
+        response = self.client.post(
+            reverse("store-stock-policy-new"),
+            data={"sku": "powerup:new", "maxQuantityPerUser": "2", "resetInterval": "daily"},
+        )
+        self.assertEqual(302, response.status_code)
+        mock_upsert.assert_called_once_with("token", "powerup:new", 2, "daily")
+
+    @mock.patch("dashboard.views.upsert_stock_policy")
+    def test_post_requires_write_permission(self, mock_upsert):
+        from django.urls import reverse
+        self._login(["store:read"])
+        response = self.client.post(
+            reverse("store-stock-policy-new"),
+            data={"sku": "powerup:new", "maxQuantityPerUser": "2", "resetInterval": "daily"},
+        )
+        self.assertEqual(403, response.status_code)
+        mock_upsert.assert_not_called()
+
+    @mock.patch("dashboard.views.upsert_stock_policy")
+    def test_post_validates_missing_sku(self, mock_upsert):
+        from django.urls import reverse
+        self._login(["store:read", "store:write"])
+        response = self.client.post(
+            reverse("store-stock-policy-new"),
+            data={"sku": "", "maxQuantityPerUser": "2", "resetInterval": "daily"},
+        )
+        self.assertEqual(200, response.status_code)
+        mock_upsert.assert_not_called()
+
+
+class FlashSaleScheduleViewTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["store:write"]}
+        session.save()
+
+    def test_requires_login(self):
+        from django.urls import reverse
+        response = self.client.get(reverse("store-flash-sale-schedule"))
+        self.assertEqual(302, response.status_code)
+
+    def test_get_renders_form(self):
+        from django.urls import reverse
+        self._login(["store:write"])
+        response = self.client.get(reverse("store-flash-sale-schedule"))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Schedule flash sale")
+
+    @mock.patch("dashboard.views.create_flash_sale")
+    def test_post_creates_and_redirects(self, mock_create):
+        from django.urls import reverse
+        self._login(["store:write"])
+        mock_create.return_value = {"id": "new-sale"}
+        response = self.client.post(
+            reverse("store-flash-sale-schedule"),
+            data={"sku": "powerup:skip", "discountPercent": "20",
+                  "startsAtUtc": "2026-07-01T10:00", "endsAtUtc": "2026-07-02T10:00", "reason": ""},
+        )
+        self.assertEqual(302, response.status_code)
+        mock_create.assert_called_once()
+
+    @mock.patch("dashboard.views.create_flash_sale")
+    def test_post_validates_discount(self, mock_create):
+        from django.urls import reverse
+        self._login(["store:write"])
+        response = self.client.post(
+            reverse("store-flash-sale-schedule"),
+            data={"sku": "powerup:skip", "discountPercent": "150",
+                  "startsAtUtc": "2026-07-01T10:00", "endsAtUtc": "2026-07-02T10:00"},
+        )
+        self.assertEqual(200, response.status_code)
+        mock_create.assert_not_called()
+
+
+class FlashSaleEditViewTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["store:read", "store:write"]}
+        session.save()
+
+    @mock.patch("dashboard.views.get_flash_sales")
+    def test_get_renders_form(self, mock_get):
+        from django.urls import reverse
+        self._login()
+        mock_get.return_value = {"sales": [
+            {"id": "sale-123", "sku": "powerup:skip", "discountPercent": 25,
+             "isActive": True, "startsAtUtc": "2026-07-01T10:00:00Z", "endsAtUtc": "2026-07-02T10:00:00Z"}
+        ]}
+        response = self.client.get(reverse("store-flash-sale-edit", kwargs={"sale_id": "sale-123"}))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Edit flash sale")
+
+    @mock.patch("dashboard.views.get_flash_sales")
+    def test_get_redirects_when_not_found(self, mock_get):
+        from django.urls import reverse
+        self._login()
+        mock_get.return_value = {"sales": []}
+        response = self.client.get(reverse("store-flash-sale-edit", kwargs={"sale_id": "missing"}))
+        self.assertEqual(302, response.status_code)
+
+    @mock.patch("dashboard.views.update_flash_sale")
+    @mock.patch("dashboard.views.get_flash_sales")
+    def test_post_updates_and_redirects(self, mock_get, mock_update):
+        from django.urls import reverse
+        self._login()
+        mock_get.return_value = {"sales": [
+            {"id": "sale-123", "sku": "powerup:skip", "discountPercent": 25,
+             "isActive": True, "startsAtUtc": "2026-07-01T10:00:00Z", "endsAtUtc": "2026-07-02T10:00:00Z"}
+        ]}
+        mock_update.return_value = {}
+        response = self.client.post(
+            reverse("store-flash-sale-edit", kwargs={"sale_id": "sale-123"}),
+            data={"discountPercent": "30", "startsAtUtc": "2026-07-01T10:00",
+                  "endsAtUtc": "2026-07-03T10:00", "reason": ""},
+        )
+        self.assertEqual(302, response.status_code)
+        mock_update.assert_called_once()
+
+
+class StockPolicyDeleteTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["store:read", "store:write"]}
+        session.save()
+
+    @mock.patch("dashboard.views.delete_stock_policy")
+    @mock.patch("dashboard.views.get_flash_sales")
+    @mock.patch("dashboard.views.get_stock_policies")
+    def test_delete_action_redirects_to_list(self, mock_get_policies, mock_get_sales, mock_delete):
+        from django.urls import reverse
+        self._login()
+        mock_get_policies.return_value = {"policies": [
+            {"sku": "powerup:skip", "maxQuantityPerUser": 3, "resetInterval": "daily",
+             "isActive": True, "createdAtUtc": "2026-01-01T00:00:00Z", "updatedAtUtc": "2026-05-01T00:00:00Z"}
+        ]}
+        mock_get_sales.return_value = {"sales": []}
+        mock_delete.return_value = None
+        response = self.client.post(
+            reverse("store-stock-policy-detail", kwargs={"sku": "powerup:skip"}),
+            data={"_action": "delete"},
+        )
+        self.assertEqual(302, response.status_code)
+        mock_delete.assert_called_once_with("token", "powerup:skip")
+
+    @mock.patch("dashboard.views.delete_stock_policy")
+    @mock.patch("dashboard.views.get_flash_sales")
+    @mock.patch("dashboard.views.get_stock_policies")
+    def test_delete_requires_write_permission(self, mock_get_policies, mock_get_sales, mock_delete):
+        from django.urls import reverse
+        self._login(["store:read"])
+        mock_get_policies.return_value = {"policies": [
+            {"sku": "powerup:skip", "maxQuantityPerUser": 3, "resetInterval": "daily",
+             "isActive": True, "createdAtUtc": "2026-01-01T00:00:00Z", "updatedAtUtc": "2026-05-01T00:00:00Z"}
+        ]}
+        mock_get_sales.return_value = {"sales": []}
+        response = self.client.post(
+            reverse("store-stock-policy-detail", kwargs={"sku": "powerup:skip"}),
+            data={"_action": "delete"},
+        )
+        self.assertEqual(403, response.status_code)
+
+
+_CATALOG_ITEM = {
+    "id": "item-abc-123",
+    "sku": "powerup:hint",
+    "name": "Hint Reveal",
+    "description": "Reveals one answer",
+    "itemType": "powerup",
+    "priceCoins": 30,
+    "priceDiamonds": 0,
+    "grantQuantity": 1,
+    "maxPerPlayer": 0,
+    "isActive": True,
+    "sortOrder": 0,
+    "mediaKey": None,
+    "createdAtUtc": "2026-01-01T00:00:00Z",
+    "updatedAtUtc": "2026-05-01T00:00:00Z",
+}
+
+
+class StoreCatalogViewTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["store:read"]}
+        session.save()
+
+    def test_requires_login(self):
+        response = self.client.get(reverse("store-catalog-view"))
+        self.assertEqual(302, response.status_code)
+        self.assertIn(reverse("operator-login"), response.url)
+
+    @mock.patch("dashboard.views.get_catalog")
+    def test_renders_items(self, mock_get):
+        self._login()
+        mock_get.return_value = {"items": [_CATALOG_ITEM], "total": 1}
+        response = self.client.get(reverse("store-catalog-view"))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Hint Reveal")
+        self.assertContains(response, "powerup:hint")
+
+    @mock.patch("dashboard.views.get_catalog")
+    def test_filter_by_item_type_passes_param(self, mock_get):
+        self._login()
+        mock_get.return_value = {"items": [_CATALOG_ITEM], "total": 1}
+        response = self.client.get(reverse("store-catalog-view") + "?itemType=powerup")
+        self.assertEqual(200, response.status_code)
+        call_params = mock_get.call_args[0][1]
+        self.assertEqual("powerup", call_params.get("itemType"))
+
+    @mock.patch("dashboard.views.get_catalog")
+    def test_shows_new_item_button_for_writer(self, mock_get):
+        self._login(["store:read", "store:write"])
+        mock_get.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("store-catalog-view"))
+        self.assertContains(response, "New item")
+
+    @mock.patch("dashboard.views.get_catalog")
+    def test_hides_new_item_button_for_reader(self, mock_get):
+        self._login(["store:read"])
+        mock_get.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("store-catalog-view"))
+        self.assertNotContains(response, "New item")
+
+
+class StoreCatalogNewViewTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["store:read", "store:write"]}
+        session.save()
+
+    def test_get_renders_form(self):
+        self._login()
+        response = self.client.get(reverse("store-catalog-new"))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Create item")
+
+    def test_get_shows_permission_error_for_reader(self):
+        self._login(["store:read"])
+        response = self.client.get(reverse("store-catalog-new"))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "permission")
+
+    @mock.patch("dashboard.views.create_store_item")
+    def test_post_creates_and_redirects(self, mock_create):
+        self._login()
+        mock_create.return_value = {"id": "item-abc-123", "sku": "powerup:hint"}
+        response = self.client.post(reverse("store-catalog-new"), data={
+            "sku": "powerup:hint", "name": "Hint Reveal", "description": "",
+            "itemType": "powerup", "priceCoins": "30", "priceDiamonds": "0",
+            "grantQuantity": "1", "maxPerPlayer": "0", "sortOrder": "0", "mediaKey": "",
+        })
+        self.assertEqual(302, response.status_code)
+        self.assertIn("item-abc-123", response.url)
+        mock_create.assert_called_once()
+
+    @mock.patch("dashboard.views.create_store_item")
+    def test_post_rejects_sku_with_spaces(self, mock_create):
+        self._login()
+        response = self.client.post(reverse("store-catalog-new"), data={
+            "sku": "bad sku", "name": "Test", "description": "",
+            "itemType": "misc", "priceCoins": "0", "priceDiamonds": "0",
+            "grantQuantity": "1", "maxPerPlayer": "0", "sortOrder": "0", "mediaKey": "",
+        })
+        self.assertEqual(200, response.status_code)
+        mock_create.assert_not_called()
+
+    @mock.patch("dashboard.views.create_store_item")
+    def test_post_rejects_empty_name(self, mock_create):
+        self._login()
+        response = self.client.post(reverse("store-catalog-new"), data={
+            "sku": "powerup:hint", "name": "", "description": "",
+            "itemType": "misc", "priceCoins": "0", "priceDiamonds": "0",
+            "grantQuantity": "1", "maxPerPlayer": "0", "sortOrder": "0", "mediaKey": "",
+        })
+        self.assertEqual(200, response.status_code)
+        mock_create.assert_not_called()
+
+    @mock.patch("dashboard.views.create_store_item")
+    def test_post_requires_write_permission(self, mock_create):
+        self._login(["store:read"])
+        response = self.client.post(reverse("store-catalog-new"), data={
+            "sku": "powerup:hint", "name": "Hint", "description": "",
+            "itemType": "misc", "priceCoins": "0", "priceDiamonds": "0",
+            "grantQuantity": "1", "maxPerPlayer": "0", "sortOrder": "0", "mediaKey": "",
+        })
+        self.assertEqual(403, response.status_code)
+        mock_create.assert_not_called()
+
+
+class StoreCatalogDetailViewTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["store:read", "store:write"]}
+        session.save()
+
+    @mock.patch("dashboard.views.get_catalog")
+    def test_get_renders_item(self, mock_get):
+        self._login()
+        mock_get.return_value = {"items": [_CATALOG_ITEM], "total": 1}
+        response = self.client.get(reverse("store-catalog-detail", kwargs={"item_id": "item-abc-123"}))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Hint Reveal")
+        self.assertContains(response, "powerup:hint")
+
+    @mock.patch("dashboard.views.get_catalog")
+    def test_get_redirects_when_item_not_found(self, mock_get):
+        self._login()
+        mock_get.return_value = {"items": [], "total": 0}
+        response = self.client.get(reverse("store-catalog-detail", kwargs={"item_id": "no-such-id"}))
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("store-catalog-view"), response.url)
+
+    @mock.patch("dashboard.views.update_store_item")
+    @mock.patch("dashboard.views.get_catalog")
+    def test_save_action_patches_item(self, mock_get, mock_update):
+        self._login()
+        mock_get.return_value = {"items": [_CATALOG_ITEM], "total": 1}
+        mock_update.return_value = {}
+        response = self.client.post(
+            reverse("store-catalog-detail", kwargs={"item_id": "item-abc-123"}),
+            data={"_action": "save", "name": "Hint Reveal v2", "description": "Updated",
+                  "itemType": "powerup", "priceCoins": "50", "priceDiamonds": "0",
+                  "grantQuantity": "1", "maxPerPlayer": "0", "sortOrder": "0", "mediaKey": ""},
+        )
+        self.assertEqual(302, response.status_code)
+        mock_update.assert_called_once()
+
+    @mock.patch("dashboard.views.update_store_item")
+    @mock.patch("dashboard.views.get_catalog")
+    def test_toggle_action_flips_active_status(self, mock_get, mock_update):
+        self._login()
+        mock_get.return_value = {"items": [_CATALOG_ITEM], "total": 1}
+        mock_update.return_value = {}
+        response = self.client.post(
+            reverse("store-catalog-detail", kwargs={"item_id": "item-abc-123"}),
+            data={"_action": "toggle"},
+        )
+        self.assertEqual(302, response.status_code)
+        mock_update.assert_called_once_with("token", "item-abc-123", isActive=False)
+
+    @mock.patch("dashboard.views.delete_store_item")
+    @mock.patch("dashboard.views.get_catalog")
+    def test_delete_action_deactivates_and_redirects(self, mock_get, mock_delete):
+        self._login()
+        mock_get.return_value = {"items": [_CATALOG_ITEM], "total": 1}
+        mock_delete.return_value = None
+        response = self.client.post(
+            reverse("store-catalog-detail", kwargs={"item_id": "item-abc-123"}),
+            data={"_action": "delete"},
+        )
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(reverse("store-catalog-view"), response.url)
+        mock_delete.assert_called_once_with("token", "item-abc-123")
+
+    @mock.patch("dashboard.views.update_store_item")
+    @mock.patch("dashboard.views.get_catalog")
+    def test_save_requires_write_permission(self, mock_get, mock_update):
+        self._login(["store:read"])
+        mock_get.return_value = {"items": [_CATALOG_ITEM], "total": 1}
+        response = self.client.post(
+            reverse("store-catalog-detail", kwargs={"item_id": "item-abc-123"}),
+            data={"_action": "save", "name": "X", "description": "", "itemType": "misc",
+                  "priceCoins": "0", "priceDiamonds": "0", "grantQuantity": "1",
+                  "maxPerPlayer": "0", "sortOrder": "0", "mediaKey": ""},
+        )
+        self.assertEqual(403, response.status_code)
+        mock_update.assert_not_called()

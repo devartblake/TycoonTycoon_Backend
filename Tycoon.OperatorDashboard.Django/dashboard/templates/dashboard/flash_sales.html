@@ -7,39 +7,46 @@
   <div>
     <p class="page-eyebrow">Store</p>
     <h1 class="page-title">Flash sales</h1>
-    <p class="page-subtitle">Active and scheduled promotional discounts. Cancel a sale to remove it from the player-facing store immediately.</p>
+    <p class="page-subtitle">Active and scheduled promotional discounts applied to the player-facing store.</p>
   </div>
   <div class="topbar-actions">
-    <span class="badge warn"><span class="dot"></span>Promo control</span>
-    <span class="chip neutral">{{ sales|length }} loaded</span>
+    <span class="badge {% if live_count > 0 %}acc{% else %}neutral{% endif %}"><span class="dot"></span>{{ live_count }} ACTIVE</span>
+    {% if can_write %}
+    <a class="button" href="{% url 'store-flash-sale-schedule' %}">+ Schedule sale</a>
+    {% endif %}
   </div>
 </section>
 
+{% include "dashboard/partials/messages.html" %}
+
 <section class="screen-kpis mt-lg">
+  <article class="screen-kpi {% if live_count > 0 %}ok{% endif %}">
+    <span class="kpi-label">Active sales</span>
+    <span class="kpi-val">{{ live_count }}</span>
+    <span class="kpi-delta">currently live</span>
+  </article>
   <article class="screen-kpi">
-    <span class="kpi-label">Sales loaded</span>
-    <span class="kpi-val">{{ sales|length }}</span>
-    <span class="kpi-delta">active and scheduled only</span>
+    <span class="kpi-label">Scheduled</span>
+    <span class="kpi-val">{{ scheduled_count }}</span>
+    <span class="kpi-delta">{% if next_scheduled %}next: {{ next_scheduled.startsDisplay }}{% else %}none upcoming{% endif %}</span>
   </article>
-  <article class="screen-kpi ok">
-    <span class="kpi-label">Player-facing</span>
-    <span class="kpi-val">Live</span>
-    <span class="kpi-delta">active sales affect catalog</span>
-  </article>
-  <article class="screen-kpi warn">
-    <span class="kpi-label">Cancel action</span>
-    <span class="kpi-val">POST</span>
-    <span class="kpi-delta">confirmation required</span>
-  </article>
-  <article class="screen-kpi bad">
-    <span class="kpi-label">Rollback</span>
-    <span class="kpi-val">Soft</span>
-    <span class="kpi-delta">sale is removed from active view</span>
+  <article class="screen-kpi {% if ending_soon %}warn{% endif %}">
+    <span class="kpi-label">Ending &lt;24h</span>
+    <span class="kpi-val">{{ ending_soon|length }}</span>
+    <span class="kpi-delta">{% if ending_soon %}first: {{ ending_soon.0.sku }}{% else %}none expiring soon{% endif %}</span>
   </article>
 </section>
 
 <section class="card">
-  {% include "dashboard/partials/section_intro.html" with title="Active & scheduled sales" copy="Only active and scheduled sales are shown. Cancelled and expired sales are excluded." %}
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+    {% include "dashboard/partials/section_intro.html" with title="Sales" copy="Live and scheduled sales. Use 'All' to include expired and cancelled." %}
+    <div style="display:flex; gap:6px;">
+      <a class="button {% if not show_all %}secondary{% else %}secondary{% endif %} small" href="?showAll=false"
+         style="{% if not show_all %}font-weight:600;{% endif %}">Live + scheduled</a>
+      <a class="button secondary small" href="?showAll=true"
+         style="{% if show_all %}font-weight:600;{% endif %}">All</a>
+    </div>
+  </div>
   <div class="table-wrap">
     <table class="dense-table">
       <thead>
@@ -56,21 +63,42 @@
       <tbody>
         {% for sale in sales %}
         <tr>
-          <td>{{ sale.sku|default:"-" }}</td>
-          <td>{{ sale.discountPercent|default:"-" }}%</td>
-          <td>{{ sale.startsAtUtc|default:"-" }}</td>
-          <td>{{ sale.endsAtUtc|default:"-" }}</td>
           <td>
-            <span class="chip {% if sale.isActive %}success{% else %}warning{% endif %}">
-              {% if sale.isActive %}active{% else %}scheduled{% endif %}
-            </span>
+            <div>{{ sale.sku|default:"-" }}</div>
+            <a class="helper-text" href="{% url 'store-stock-policy-detail' sale.sku %}" style="font-size:0.75rem; color:var(--accent);">View policy</a>
           </td>
-          <td>{{ sale.reason|default:"-" }}</td>
+          <td>{{ sale.discountDisplay|default:"-" }}</td>
+          <td>{{ sale.startsDisplay|default:"-" }}</td>
+          <td>{{ sale.endsDisplay|default:"-" }}</td>
           <td>
-            <form method="post" action="{% url 'store-flash-sale-cancel' sale.id %}" onsubmit="return confirm('Cancel sale for {{ sale.sku }}?');">
-              {% csrf_token %}
-              <button type="submit" class="button danger small">Cancel</button>
-            </form>
+            {% if sale.status == "live" %}
+              <span class="chip success">• LIVE</span>
+            {% elif sale.status == "scheduled" %}
+              <span class="chip" style="background:#e0f2f1; color:#00796b;">• SCHEDULED</span>
+            {% elif sale.status == "expired" %}
+              <span class="chip neutral">expired</span>
+            {% elif sale.status == "cancelled" %}
+              <span class="chip warning">cancelled</span>
+            {% else %}
+              <span class="chip neutral">{{ sale.status }}</span>
+            {% endif %}
+          </td>
+          <td>{{ sale.reason|default:"—" }}</td>
+          <td>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              {% if can_write %}
+                {% if sale.status == "scheduled" %}
+                  <a class="button secondary small" href="{% url 'store-flash-sale-edit' sale.id %}">Edit</a>
+                {% endif %}
+                {% if sale.status == "live" or sale.status == "scheduled" %}
+                  <form method="post" action="{% url 'store-flash-sale-cancel' sale.id %}" onsubmit="return confirm('Cancel sale for {{ sale.sku }}?');" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="button danger small">Cancel</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+              {% if sale.status != "live" and sale.status != "scheduled" %}—{% endif %}
+            </div>
           </td>
         </tr>
         {% empty %}
@@ -78,8 +106,8 @@
           <td colspan="7">
             <div class="empty">
               <span class="empty-ico">0</span>
-              <strong>No active or scheduled flash sales</strong>
-              <span>Create promotions through the backend API or seed data before reviewing this surface.</span>
+              <strong>No flash sales found</strong>
+              <span>{% if show_all %}No sales in history.{% else %}No active or scheduled sales. <a href="?showAll=true">Show all</a> or schedule a new one.{% endif %}</span>
             </div>
           </td>
         </tr>

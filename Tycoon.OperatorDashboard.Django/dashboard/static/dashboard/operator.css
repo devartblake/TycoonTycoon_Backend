@@ -1656,3 +1656,13 @@ table.density-compact td {
 .probe-log-link:hover {
   text-decoration: underline;
 }
+
+/* Apple-style iOS toggle */
+.toggle-switch { position: relative; display: inline-block; width: 51px; height: 31px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; border-radius: 31px; transition: .25s; }
+.toggle-slider::before { content: ""; position: absolute; width: 27px; height: 27px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .25s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.toggle-switch input:checked + .toggle-slider { background: #34c759; }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+.toggle-label { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.toggle-label-text { font-size: 0.875rem; color: var(--ink-2); font-weight: 500; }

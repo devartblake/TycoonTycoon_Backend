@@ -1,0 +1,58 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}New Stock Policy{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store / Stock policies</p>
+    <h1 class="page-title">New stock policy</h1>
+    <p class="page-subtitle">Create a per-SKU purchase limit. 0 = unlimited purchases.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'store-stock-policies-view' %}">Back to policies</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+{% if can_write %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Policy details" copy="Policies are identified by SKU. Creating a policy for an existing SKU will update it." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        SKU
+        <input type="text" name="sku" value="{{ form_sku }}" placeholder="e.g. powerup:skip" required />
+        <span class="helper-text">Lowercase. Must match a store item SKU.</span>
+      </label>
+      <label>
+        Max quantity per user
+        <input type="number" name="maxQuantityPerUser" value="{{ form_max_qty }}" min="0" placeholder="0" required />
+        <span class="helper-text">0 = unlimited</span>
+      </label>
+      <label>
+        Reset interval
+        <select name="resetInterval">
+          {% for val, label in interval_choices %}
+          <option value="{{ val }}" {% if form_interval == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Create policy</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<section class="card mt-lg">
+  <div class="empty">
+    <span class="empty-ico">!</span>
+    <strong>Insufficient permissions</strong>
+    <span>store:write permission is required to create policies.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
