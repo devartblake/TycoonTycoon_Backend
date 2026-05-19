@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Service log — {{ service_name }}{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Service probes</p>
+    <h1 class="page-title">{{ service_name }}</h1>
+    <p class="page-subtitle">Last 24 hours of probe check records (most recent first, up to 200 entries).</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'dashboard-home' %}">Back to command center</a>
+  </div>
+</section>
+
+<section class="card mt-lg">
+  {% if records %}
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Status</th>
+          <th>Latency</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in records %}
+        <tr>
+          <td><code class="breakable-token">{{ record.checked_at|date:"Y-m-d H:i:s" }} UTC</code></td>
+          <td><span class="chip {% if record.status == 'healthy' %}success{% elif record.status == 'degraded' %}warn{% else %}danger{% endif %}">{{ record.status }}</span></td>
+          <td>{{ record.latency_ms }}ms</td>
+          <td class="helper-text">{{ record.detail|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <strong>No probe records</strong>
+    <span>No checks recorded for {{ service_name }} in the last 24 hours. Records are saved on each command center page load.</span>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

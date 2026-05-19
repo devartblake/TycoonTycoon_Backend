@@ -117,20 +117,47 @@
   </div>
   <div class="card-grid">
     {% for service in services %}
-    <article class="card service-card">
-      <div class="section-header">
-        <div>
-          <h3>{{ service.service_name }}</h3>
-          <p class="section-copy"><code>{{ service.base_url }}</code></p>
+    <article class="card probe-card">
+      <div class="probe-card-header">
+        <div class="probe-card-title">
+          <strong>{{ service.service_name }}</strong>
+          <code class="probe-url">{{ service.base_url }}</code>
         </div>
         <span class="status-pill {{ service.status }}">{{ service.status|upper }}</span>
       </div>
-      <p class="helper-text">{{ service.detail }}</p>
+
+      <div class="probe-sparkline" title="Last 6 hours">
+        {% for bar in service.history.bars %}
+        <span class="probe-bar probe-bar-{{ bar.status }}" title="{{ bar.label }}"></span>
+        {% empty %}
+        <span class="probe-bar probe-bar-unknown" title="No history"></span>
+        {% endfor %}
+      </div>
+      <p class="probe-sparkline-label">last 6 hours</p>
+
+      <p class="helper-text probe-detail">
+        {% if service.history.degraded_since %}
+          {{ service.detail }} since {{ service.history.degraded_since }}
+        {% elif service.history.uptime_pct is not None %}
+          Uptime {{ service.history.uptime_pct|floatformat:2 }}%
+        {% else %}
+          {{ service.detail }}
+        {% endif %}
+      </p>
+
       {% if service.payload %}
-      <div class="surface-note mt-md">
-        <pre>{{ service.payload|pprint }}</pre>
+      <div class="surface-note probe-payload">
+        <pre>{% for k, v in service.payload.items %}{{ k }}: {{ v }}
+{% endfor %}</pre>
       </div>
       {% endif %}
+
+      <div class="probe-footer">
+        <span class="probe-footer-meta">
+          {{ service.history.last_checked_ago|default:"—" }}{% if service.history.p95_ms %}&nbsp;&middot;&nbsp;p95 {{ service.history.p95_ms }}ms{% endif %}
+        </span>
+        <a class="probe-log-link" href="{% url 'probe-log' service.slug %}">Open service log →</a>
+      </div>
     </article>
     {% endfor %}
   </div>

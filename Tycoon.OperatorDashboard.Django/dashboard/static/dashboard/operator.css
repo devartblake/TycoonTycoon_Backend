@@ -1549,3 +1549,110 @@ table.density-compact td {
     min-width: 580px;
   }
 }
+
+/* ── Service Probe Cards ────────────────────────────────────────────────── */
+
+.probe-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.probe-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.probe-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.probe-card-title strong {
+  font-size: 0.95rem;
+}
+
+.probe-url {
+  font-size: 0.73rem;
+  color: var(--text-2);
+  word-break: break-all;
+}
+
+/* Sparkline */
+.probe-sparkline {
+  display: flex;
+  gap: 3px;
+  height: 34px;
+  align-items: stretch;
+}
+
+.probe-sparkline-label {
+  font-size: 0.7rem;
+  color: var(--text-3, var(--text-2));
+  margin-top: -6px;
+}
+
+.probe-bar {
+  flex: 1;
+  border-radius: 3px;
+  min-width: 6px;
+  transition: opacity 0.15s;
+}
+
+.probe-bar:hover {
+  opacity: 0.7;
+}
+
+.probe-bar-healthy  { background: #22c55e; }
+.probe-bar-degraded { background: #f59e0b; }
+.probe-bar-offline  { background: #ef4444; }
+.probe-bar-unknown  { background: var(--line); }
+
+/* Detail + payload */
+.probe-detail {
+  color: var(--text-2);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.probe-payload {
+  margin: 0;
+}
+
+.probe-payload pre {
+  margin: 0;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+/* Footer */
+.probe-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-2);
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.probe-footer-meta {
+  font-variant-numeric: tabular-nums;
+}
+
+.probe-log-link {
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.probe-log-link:hover {
+  text-decoration: underline;
+}

@@ -25,3 +25,15 @@ class OperatorSavedViewAuditEvent(models.Model):
 
     class Meta:
         db_table = "operator_saved_view_audit_events"
+
+
+class ProbeCheckRecord(models.Model):
+    service_name = models.CharField(max_length=64)
+    status = models.CharField(max_length=16)  # healthy / degraded / offline
+    latency_ms = models.IntegerField()
+    detail = models.CharField(max_length=255, blank=True)
+    checked_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        db_table = "operator_probe_check_records"
+        ordering = ["-checked_at"]

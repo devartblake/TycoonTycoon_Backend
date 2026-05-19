@@ -37,6 +37,10 @@ class ApiClientsTests(SimpleTestCase):
         self.assertEqual("healthy", statuses[1].status)
         self.assertEqual("healthy", statuses[2].status)
         self.assertEqual("healthy", get_overall_status(statuses))
+        for svc in statuses:
+            self.assertIsInstance(svc.latency_ms, int)
+            self.assertGreaterEqual(svc.latency_ms, 0)
+            self.assertIn(svc.slug, ("dotnet", "fastapi", "minio"))
 
     @override_settings(
         DOTNET_API_BASE_URL="http://dotnet",

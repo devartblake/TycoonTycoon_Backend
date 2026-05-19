@@ -1,7 +1,9 @@
 import csv
 import json
 import re
+import statistics
 import uuid
+from datetime import timedelta
 from functools import wraps
 from io import StringIO
 from time import time
@@ -17,7 +19,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 
-from .models import OperatorSavedView, OperatorSavedViewAuditEvent
+from .models import OperatorSavedView, OperatorSavedViewAuditEvent, ProbeCheckRecord
 from .services.admin_audit_client import get_security_audit, get_security_audit_event
 from .services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError, admin_login, admin_me, admin_refresh
 from .services.admin_media_client import create_upload_intent
@@ -403,12 +405,114 @@ def require_permission(permission: str):
     return decorator
 
 
+def _save_probe_record(service_name: str, status: str, latency_ms: int, detail: str) -> None:
+    ProbeCheckRecord.objects.create(
+        service_name=service_name,
+        status=status,
+        latency_ms=latency_ms,
+        detail=detail,
+        checked_at=timezone.now(),
+    )
+
+
+def _prune_probe_history(cutoff) -> None:
+    ProbeCheckRecord.objects.filter(checked_at__lt=cutoff).delete()
+
+
+def _format_ago(delta_seconds: float) -> str:
+    if delta_seconds < 60:
+        return f"{int(delta_seconds)}s ago"
+    if delta_seconds < 3600:
+        return f"{int(delta_seconds // 60)}m ago"
+    return f"{int(delta_seconds // 3600)}h ago"
+
+
+def _build_probe_history_context(service_name: str, now, hours: int = 6, buckets: int = 12) -> dict:
+    window_start = now - timedelta(hours=hours)
+    records = list(
+        ProbeCheckRecord.objects.filter(
+            service_name=service_name,
+            checked_at__gte=window_start,
+        ).order_by("checked_at").values("status", "latency_ms", "checked_at")
+    )
+
+    if not records:
+        return {
+            "bars": [{"status": "unknown", "label": "—"}] * buckets,
+            "uptime_pct": None,
+            "degraded_since": None,
+            "p95_ms": None,
+            "last_checked_ago": "—",
+        }
+
+    # Sparkline bars: divide the window into equal buckets
+    bucket_seconds = (hours * 3600) / buckets
+    bars = []
+    for i in range(buckets):
+        bucket_start = window_start + timedelta(seconds=i * bucket_seconds)
+        bucket_end = bucket_start + timedelta(seconds=bucket_seconds)
+        bucket_records = [r for r in records if bucket_start <= r["checked_at"] < bucket_end]
+        if not bucket_records:
+            bucket_status = "unknown"
+        elif any(r["status"] == "offline" for r in bucket_records):
+            bucket_status = "offline"
+        elif any(r["status"] == "degraded" for r in bucket_records):
+            bucket_status = "degraded"
+        else:
+            bucket_status = "healthy"
+        bars.append({"status": bucket_status, "label": bucket_start.strftime("%H:%M")})
+
+    # Uptime %
+    total = len(records)
+    healthy_count = sum(1 for r in records if r["status"] == "healthy")
+    uptime_pct = round((healthy_count / total) * 100, 2) if total else None
+
+    # Degraded since: oldest consecutive non-healthy from now backwards
+    degraded_since = None
+    sorted_desc = sorted(records, key=lambda r: r["checked_at"], reverse=True)
+    streak_broken = False
+    for r in sorted_desc:
+        if r["status"] == "healthy":
+            streak_broken = True
+            break
+        degraded_since = r["checked_at"].strftime("%H:%M") + " UTC"
+    if streak_broken:
+        degraded_since = None
+
+    # p95 latency
+    latencies = [r["latency_ms"] for r in records]
+    if len(latencies) >= 20:
+        p95_ms = int(statistics.quantiles(latencies, n=20)[18])
+    elif len(latencies) >= 2:
+        sorted_lat = sorted(latencies)
+        p95_ms = sorted_lat[int(len(sorted_lat) * 0.95)]
+    else:
+        p95_ms = latencies[0] if latencies else None
+
+    # Last checked ago
+    most_recent = max(r["checked_at"] for r in records)
+    delta_seconds = (now - most_recent).total_seconds()
+    last_checked_ago = _format_ago(delta_seconds)
+
+    return {
+        "bars": bars,
+        "uptime_pct": uptime_pct,
+        "degraded_since": degraded_since,
+        "p95_ms": p95_ms,
+        "last_checked_ago": last_checked_ago,
+    }
+
+
 @operator_login_required
 def dashboard_home(request):
     services = list_service_statuses()
+    now = timezone.now()
 
+    _prune_probe_history(now - timedelta(hours=24))
     for service in services:
         service.css_class = STATUS_CLASSES.get(service.status, "status-unknown")
+        _save_probe_record(service.service_name, service.status, service.latency_ms, service.detail)
+        service.history = _build_probe_history_context(service.service_name, now)
 
     healthy_services = sum(1 for service in services if service.status == "healthy")
     degraded_services = sum(1 for service in services if service.status == "degraded")
@@ -2592,3 +2696,27 @@ def personalization_rule_upsert(request, rule_key: str):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend personalization rules endpoint.")
     return redirect("/personalization/rules")
+
+
+_PROBE_SLUG_TO_NAME = {
+    "dotnet": ".NET API",
+    "fastapi": "FastAPI Sidecar",
+    "minio": "MinIO",
+}
+
+
+@operator_login_required
+def probe_log_view(request, service_slug: str):
+    service_name = _PROBE_SLUG_TO_NAME.get(service_slug)
+    if not service_name:
+        return HttpResponse(status=404)
+    records = ProbeCheckRecord.objects.filter(
+        service_name=service_name,
+        checked_at__gte=timezone.now() - timedelta(hours=24),
+    ).order_by("-checked_at")[:200]
+    return render(request, "dashboard/probe_log.html", {
+        "service_name": service_name,
+        "service_slug": service_slug,
+        "records": records,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    })

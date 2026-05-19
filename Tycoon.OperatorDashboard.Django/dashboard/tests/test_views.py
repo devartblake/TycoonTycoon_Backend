@@ -1,11 +1,14 @@
+from datetime import timedelta
 from unittest import mock
 
 import httpx
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
-from dashboard.models import OperatorSavedViewAuditEvent
+from dashboard.models import OperatorSavedViewAuditEvent, ProbeCheckRecord
 from dashboard.services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError
+from dashboard.views import _build_probe_history_context, _format_ago
 
 
 class OperatorDetailDrilldownViewsTests(TestCase):
@@ -1819,3 +1822,117 @@ class PersonalizationDashboardViewsTests(TestCase):
         self.assertEqual(302, response.status_code)
         self.assertEqual("/personalization/rules", response.url)
         mock_upsert.assert_not_called()
+
+
+class ProbeHistoryTests(TestCase):
+    def _make_record(self, service_name, status, latency_ms, offset_minutes=0):
+        ProbeCheckRecord.objects.create(
+            service_name=service_name,
+            status=status,
+            latency_ms=latency_ms,
+            detail="",
+            checked_at=timezone.now() - timedelta(minutes=offset_minutes),
+        )
+
+    def test_format_ago_seconds(self):
+        self.assertEqual("5s ago", _format_ago(5))
+
+    def test_format_ago_minutes(self):
+        self.assertEqual("3m ago", _format_ago(180))
+
+    def test_format_ago_hours(self):
+        self.assertEqual("2h ago", _format_ago(7200))
+
+    def test_build_history_returns_unknown_bars_when_no_records(self):
+        now = timezone.now()
+        result = _build_probe_history_context("NoSuchService", now)
+        self.assertEqual(12, len(result["bars"]))
+        self.assertTrue(all(b["status"] == "unknown" for b in result["bars"]))
+        self.assertIsNone(result["uptime_pct"])
+        self.assertIsNone(result["p95_ms"])
+
+    def test_build_history_uptime_all_healthy(self):
+        for i in range(6):
+            self._make_record(".NET API", "healthy", 50, offset_minutes=i * 30)
+        now = timezone.now()
+        result = _build_probe_history_context(".NET API", now)
+        self.assertEqual(100.0, result["uptime_pct"])
+        self.assertIsNone(result["degraded_since"])
+
+    def test_build_history_degraded_since_set_when_consecutive_failures(self):
+        # All recent records are degraded — should set degraded_since
+        for i in range(3):
+            self._make_record(".NET API", "degraded", 400, offset_minutes=i * 10)
+        now = timezone.now()
+        result = _build_probe_history_context(".NET API", now)
+        self.assertIsNotNone(result["degraded_since"])
+        self.assertIn("UTC", result["degraded_since"])
+
+    def test_build_history_degraded_since_none_when_healthy_records_exist(self):
+        # Mix: most recent is healthy → degraded_since should be None
+        self._make_record(".NET API", "healthy", 30, offset_minutes=0)
+        self._make_record(".NET API", "degraded", 400, offset_minutes=5)
+        now = timezone.now()
+        result = _build_probe_history_context(".NET API", now)
+        self.assertIsNone(result["degraded_since"])
+
+    def test_build_history_p95_from_small_sample(self):
+        latencies = [100, 200, 300, 400, 500]
+        for i, lat in enumerate(latencies):
+            self._make_record(".NET API", "healthy", lat, offset_minutes=i)
+        now = timezone.now()
+        result = _build_probe_history_context(".NET API", now)
+        self.assertIsNotNone(result["p95_ms"])
+        self.assertIsInstance(result["p95_ms"], int)
+
+    def test_build_history_bars_count(self):
+        for i in range(12):
+            self._make_record(".NET API", "healthy", 50, offset_minutes=i * 28)
+        now = timezone.now()
+        result = _build_probe_history_context(".NET API", now)
+        self.assertEqual(12, len(result["bars"]))
+
+    def test_build_history_last_checked_ago_populated(self):
+        self._make_record(".NET API", "healthy", 50, offset_minutes=1)
+        now = timezone.now()
+        result = _build_probe_history_context(".NET API", now)
+        self.assertIn("ago", result["last_checked_ago"])
+
+
+class ProbeLogViewTests(TestCase):
+    def _login(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": [], "email": "ops@example.com"}
+        session.save()
+
+    def test_probe_log_requires_login(self):
+        response = self.client.get(reverse("probe-log", kwargs={"service_slug": "dotnet"}))
+        self.assertEqual(302, response.status_code)
+
+    def test_probe_log_returns_404_for_unknown_slug(self):
+        self._login()
+        response = self.client.get(reverse("probe-log", kwargs={"service_slug": "unknown-svc"}))
+        self.assertEqual(404, response.status_code)
+
+    def test_probe_log_renders_empty_state(self):
+        self._login()
+        response = self.client.get(reverse("probe-log", kwargs={"service_slug": "dotnet"}))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, ".NET API")
+        self.assertContains(response, "No probe records")
+
+    def test_probe_log_renders_records(self):
+        ProbeCheckRecord.objects.create(
+            service_name=".NET API",
+            status="healthy",
+            latency_ms=42,
+            detail="Request succeeded",
+            checked_at=timezone.now(),
+        )
+        self._login()
+        response = self.client.get(reverse("probe-log", kwargs={"service_slug": "dotnet"}))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "42ms")
+        self.assertContains(response, "healthy")

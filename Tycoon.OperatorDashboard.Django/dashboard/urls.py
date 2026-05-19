@@ -70,6 +70,7 @@ from .views import (
     personalization_player_reset,
     personalization_rules_view,
     personalization_rule_upsert,
+    probe_log_view,
 )
 
 urlpatterns = [
@@ -151,4 +152,6 @@ urlpatterns = [
     path("personalization/rules", personalization_rules_view, name="personalization-rules-view"),
     path("personalization/rules/<str:rule_key>/upsert", personalization_rule_upsert, name="personalization-rule-upsert"),
     path("healthz", healthz, name="dashboard-healthz"),
+    # Service probe history log
+    path("probe-log/<str:service_slug>/", probe_log_view, name="probe-log"),
 ]
