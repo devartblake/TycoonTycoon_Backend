@@ -32,6 +32,8 @@ from .views import (
     store_catalog_detail_view,
     store_catalog_new_view,
     store_catalog_view,
+    store_reward_limit_detail_view,
+    store_reward_limits_view,
     store_flash_sale_cancel,
     store_flash_sale_edit_view,
     store_flash_sale_schedule_view,
@@ -43,11 +45,14 @@ from .views import (
     store_stock_policy_detail_view,
     store_stock_policy_new_view,
     questions_queue_view,
+    question_create_view,
     question_detail_view,
     question_delete,
     questions_approve,
     questions_reject,
+    questions_bulk_import_view,
     economy_player_view,
+    economy_balance_view,
     economy_grant,
     game_events_view,
     game_event_open,
@@ -55,11 +60,14 @@ from .views import (
     game_event_close,
     anticheat_flags_view,
     anticheat_flag_review,
+    anticheat_party_flags_view,
+    anticheat_party_flag_review,
     seasons_view,
     seasons_leaderboard,
     seasons_activate,
     seasons_close,
     seasons_recompute,
+    seasons_reward_claims_view,
     notifications_view,
     notifications_send,
     notifications_schedule,
@@ -79,6 +87,9 @@ from .views import (
     personalization_rule_upsert,
     probe_log_view,
     geo_lookup_view,
+    powerups_view,
+    skills_view,
+    matches_view,
 )
 
 urlpatterns = [
@@ -123,14 +134,19 @@ urlpatterns = [
     path("store/catalog", store_catalog_view, name="store-catalog-view"),
     path("store/catalog/new", store_catalog_new_view, name="store-catalog-new"),
     path("store/catalog/<str:item_id>", store_catalog_detail_view, name="store-catalog-detail"),
+    path("store/reward-limits", store_reward_limits_view, name="store-reward-limits-view"),
+    path("store/reward-limits/<str:reward_id>", store_reward_limit_detail_view, name="store-reward-limit-detail"),
     # Questions
     path("content/questions", questions_queue_view, name="questions-queue-view"),
+    path("content/questions/new", question_create_view, name="question-create-view"),
+    path("content/questions/bulk-import", questions_bulk_import_view, name="questions-bulk-import-view"),
     path("content/questions/<str:question_id>", question_detail_view, name="question-detail-view"),
     path("content/questions/<str:question_id>/delete", question_delete, name="question-delete"),
     path("content/questions/<str:question_id>/approve", questions_approve, name="questions-approve"),
     path("content/questions/<str:question_id>/reject", questions_reject, name="questions-reject"),
     # Economy
     path("economy/player", economy_player_view, name="economy-player-view"),
+    path("economy/balance", economy_balance_view, name="economy-balance-view"),
     path("economy/grant", economy_grant, name="economy-grant"),
     # Events
     path("events/game-events", game_events_view, name="game-events-view"),
@@ -140,8 +156,11 @@ urlpatterns = [
     # Anti-Cheat
     path("security/anticheat", anticheat_flags_view, name="anticheat-flags-view"),
     path("security/anticheat/<str:flag_id>/review", anticheat_flag_review, name="anticheat-flag-review"),
+    path("security/anticheat/party", anticheat_party_flags_view, name="anticheat-party-flags-view"),
+    path("security/anticheat/party/<str:flag_id>/review", anticheat_party_flag_review, name="anticheat-party-flag-review"),
     # Seasons
     path("operations/seasons", seasons_view, name="seasons-view"),
+    path("operations/seasons/reward-claims", seasons_reward_claims_view, name="seasons-reward-claims"),
     path("operations/seasons/<str:season_id>/leaderboard", seasons_leaderboard, name="seasons-leaderboard"),
     path("operations/seasons/activate", seasons_activate, name="seasons-activate"),
     path("operations/seasons/close", seasons_close, name="seasons-close"),
@@ -171,4 +190,10 @@ urlpatterns = [
     path("probe-log/<str:service_slug>/", probe_log_view, name="probe-log"),
     # Geo lookup (server-side proxy to ip-api.com — keeps audited IP out of browser)
     path("audit/security/geo-lookup/", geo_lookup_view, name="audit-geo-lookup"),
+    # Powerups
+    path("economy/powerups", powerups_view, name="powerups-view"),
+    # Skills
+    path("economy/skills", skills_view, name="skills-view"),
+    # Matches
+    path("events/matches", matches_view, name="matches-view"),
 ]

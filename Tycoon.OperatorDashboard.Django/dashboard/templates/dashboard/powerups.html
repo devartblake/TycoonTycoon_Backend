@@ -1,0 +1,66 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Powerups{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Economy</p>
+    <h1 class="page-title">Powerups</h1>
+    <p class="page-subtitle">Look up a player's active powerup state and grant additional powerups.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'economy-player-view' %}">Player economy</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Player lookup" copy="Enter a player ID to view their current powerup inventory." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="uuid" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Look up</button>
+    </div>
+  </form>
+</section>
+
+{% if powerup_state %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Powerup state" copy="Current active powerups for this player." %}
+  <pre>{{ powerup_state|pprint }}</pre>
+</section>
+{% endif %}
+
+{% if can_write %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Grant powerup" copy="Add a powerup to a player's inventory." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="uuid" />
+      </label>
+      <label>
+        Powerup key
+        <input type="text" name="powerupKey" placeholder="e.g. double_coins" />
+      </label>
+      <label>
+        Quantity
+        <input type="number" name="quantity" value="1" min="1" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Grant powerup</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

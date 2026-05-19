@@ -12,6 +12,7 @@
   <div class="topbar-actions">
     <span class="badge warn"><span class="dot"></span>Season lifecycle</span>
     {% if season_id %}<span class="chip neutral">Season {{ season_id }}</span>{% endif %}
+    <a class="button secondary" href="{% url 'seasons-reward-claims' %}">Reward claims</a>
   </div>
 </section>
 

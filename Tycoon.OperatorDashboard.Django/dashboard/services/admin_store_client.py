@@ -228,6 +228,32 @@ def cancel_flash_sale(access_token: str, sale_id: str) -> None:
     response.raise_for_status()
 
 
+def get_reward_limits(access_token: str) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/store/reward-limits"
+    response = httpx.get(url, headers=_headers(access_token), timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_reward_limit(access_token: str, reward_id: str) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/store/reward-limits/{reward_id}"
+    response = httpx.get(url, headers=_headers(access_token), timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return response.json()
+
+
+def upsert_reward_limit(
+    access_token: str, reward_id: str, max_claims: int, reset_interval: str, is_active: bool | None = None
+) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/store/reward-limits/{reward_id}"
+    body: dict[str, Any] = {"maxClaimsPerInterval": max_claims, "resetInterval": reset_interval}
+    if is_active is not None:
+        body["isActive"] = is_active
+    response = httpx.put(url, json=body, headers=_headers(access_token), timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return response.json()
+
+
 def get_purchase_analytics(access_token: str, params: dict | None = None) -> dict[str, Any]:
     url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/store/analytics/purchases"
     response = httpx.get(

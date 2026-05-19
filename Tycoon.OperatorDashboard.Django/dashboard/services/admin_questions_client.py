@@ -63,3 +63,27 @@ def reject_question(access_token: str, question_id: str) -> dict[str, Any]:
     response = httpx.post(url, headers=_headers(access_token), timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
     response.raise_for_status()
     return response.json()
+
+
+def create_question(access_token: str, payload: dict[str, Any]) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/questions"
+    response = httpx.post(
+        url,
+        json=payload,
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def bulk_import_questions(access_token: str, questions: list[dict[str, Any]]) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/questions/bulk"
+    response = httpx.post(
+        url,
+        json={"questions": questions},
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()

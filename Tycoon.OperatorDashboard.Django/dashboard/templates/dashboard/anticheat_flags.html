@@ -11,7 +11,7 @@
   </div>
   <div class="topbar-actions">
     <span class="badge warn"><span class="dot"></span>Review queue</span>
-    <span class="chip neutral">{{ flags.items|length|default:"0" }} loaded</span>
+    <a class="button secondary" href="{% url 'anticheat-party-flags-view' %}">Party flags</a>
   </div>
 </section>
 
@@ -26,6 +26,18 @@
     <span class="kpi-val">{{ flags.total|default:"0" }}</span>
     <span class="kpi-delta">backend filtered count</span>
   </article>
+  {% if analytics %}
+  <article class="screen-kpi bad">
+    <span class="kpi-label">Severe ({{ window_hours }}h)</span>
+    <span class="kpi-val">{{ analytics.severe|default:"0" }}</span>
+    <span class="kpi-delta">of {{ analytics.total|default:"0" }} total</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Warning ({{ window_hours }}h)</span>
+    <span class="kpi-val">{{ analytics.warning|default:"0" }}</span>
+    <span class="kpi-delta">medium-severity flags</span>
+  </article>
+  {% else %}
   <article class="screen-kpi bad">
     <span class="kpi-label">Severity filter</span>
     <span class="kpi-val">{{ query.severity|default:"All" }}</span>
@@ -36,7 +48,49 @@
     <span class="kpi-val">{{ query.unreviewedOnly|default:"All" }}</span>
     <span class="kpi-delta">review queue mode</span>
   </article>
+  {% endif %}
 </section>
+
+{% if analytics %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Analytics overview" copy="Top flagged rules in the selected window. Change window with the selector." %}
+  <form method="get" class="stack" style="margin-bottom:16px;">
+    {% for k, v in query.items %}<input type="hidden" name="{{ k }}" value="{{ v }}" />{% endfor %}
+    <div class="form-grid">
+      <label>
+        Time window
+        <select name="windowHours" onchange="this.form.submit()">
+          <option value="1" {% if window_hours == 1 %}selected{% endif %}>Last 1 hour</option>
+          <option value="6" {% if window_hours == 6 %}selected{% endif %}>Last 6 hours</option>
+          <option value="24" {% if window_hours == 24 %}selected{% endif %}>Last 24 hours</option>
+          <option value="72" {% if window_hours == 72 %}selected{% endif %}>Last 3 days</option>
+          <option value="168" {% if window_hours == 168 %}selected{% endif %}>Last 7 days</option>
+        </select>
+      </label>
+    </div>
+  </form>
+  {% if analytics.byRule %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr><th>Rule key</th><th>Severity</th><th>Count</th></tr>
+      </thead>
+      <tbody>
+        {% for row in analytics.byRule %}
+        <tr>
+          <td><code style="font-size:0.75rem;">{{ row.ruleKey }}</code></td>
+          <td>{{ row.severity }}</td>
+          <td>{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty"><span class="empty-ico">0</span><strong>No flags in this window</strong></div>
+  {% endif %}
+</section>
+{% endif %}
 
 <section class="card">
   {% include "dashboard/partials/section_intro.html" with title="Filter flags" copy="Filter by severity, player, or review status." %}

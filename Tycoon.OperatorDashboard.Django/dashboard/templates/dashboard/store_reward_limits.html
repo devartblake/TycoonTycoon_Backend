@@ -1,0 +1,79 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Reward Limits{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store / Reward limits</p>
+    <h1 class="page-title">Reward limits</h1>
+    <p class="page-subtitle">Configure per-player claim caps for season rewards. Look up a reward ID to view or create a limit rule.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="chip neutral">{{ rules|length }} configured</span>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Look up reward" copy="Enter a reward ID to view or set its claim limit." %}
+  <form method="get" action="{% url 'store-reward-limits-view' %}" class="stack" id="reward-lookup-form">
+    <div class="form-grid">
+      <label class="span-2">
+        Reward ID
+        <input type="text" id="reward-lookup-input" name="_lookup" placeholder="e.g. season:tier1:coins" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="button" onclick="var v=document.getElementById('reward-lookup-input').value.trim();if(v){window.location='/store/reward-limits/'+encodeURIComponent(v);}">View / edit</button>
+    </div>
+  </form>
+</section>
+
+{% if rules %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Configured rules" copy="All reward IDs that have an active claim limit rule." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Reward ID</th>
+          <th>Max claims</th>
+          <th>Reset interval</th>
+          <th>Status</th>
+          <th>Updated</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rule in rules %}
+        <tr>
+          <td><code class="breakable-token" style="font-size:0.75rem;">{{ rule.rewardId }}</code></td>
+          <td>{{ rule.maxClaimsPerInterval }}</td>
+          <td><span class="chip neutral" style="font-size:0.7rem;">{{ rule.resetInterval }}</span></td>
+          <td>
+            <span class="chip {% if rule.isActive %}success{% else %}warning{% endif %}">
+              {% if rule.isActive %}active{% else %}inactive{% endif %}
+            </span>
+          </td>
+          <td>{{ rule.updatedDisplay|default:"-" }}</td>
+          <td>
+            <a class="button secondary small" href="{% url 'store-reward-limit-detail' rule.rewardId %}">Edit</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<section class="card mt-lg">
+  <div class="empty">
+    <span class="empty-ico">0</span>
+    <strong>No reward limits configured</strong>
+    <span>Use the lookup above to create a limit rule for a reward ID.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

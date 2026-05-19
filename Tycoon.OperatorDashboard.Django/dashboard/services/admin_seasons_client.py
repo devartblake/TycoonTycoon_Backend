@@ -59,3 +59,15 @@ def get_season_leaderboard(access_token: str, season_id: str, params: dict | Non
     )
     response.raise_for_status()
     return response.json()
+
+
+def get_reward_claims(access_token: str, params: dict | None = None) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/seasons/rewards/claims"
+    response = httpx.get(
+        url,
+        params={k: v for k, v in (params or {}).items() if v not in (None, "")},
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()

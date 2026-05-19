@@ -1,0 +1,46 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Skills{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Economy</p>
+    <h1 class="page-title">Skills</h1>
+    <p class="page-subtitle">Seed or upsert skill definitions via JSON array. Each submission is an idempotent upsert.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Write operation</span>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Skills JSON" copy="Paste a JSON array of skill objects. Each must include at minimum: key, name. Additional fields depend on the backend skill schema." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <label>
+      Skills JSON
+      <textarea name="jsonPayload" rows="20" style="font-family:monospace;font-size:0.8rem;" placeholder='[
+  {
+    "key": "double_coins",
+    "name": "Double Coins",
+    "description": "Doubles coin rewards for one match",
+    "maxLevel": 5
+  }
+]'></textarea>
+    </label>
+    <div class="toolbar-actions">
+      <button type="submit" onclick="return confirm('Seed/upsert these skills?')">Seed skills</button>
+    </div>
+  </form>
+</section>
+
+{% if seed_result %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Seed result" copy="Backend response." %}
+  <pre>{{ seed_result|pprint }}</pre>
+</section>
+{% endif %}
+{% endblock %}

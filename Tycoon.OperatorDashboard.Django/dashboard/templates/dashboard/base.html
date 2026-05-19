@@ -65,6 +65,21 @@
               <span>Player economy</span>
               <span class="operator-nav-caption">History &amp; grants</span>
             </a>
+            <a class="operator-nav-link {% if '/economy/balance' in request.path %}is-active{% endif %}" href="{% url 'economy-balance-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span>Balance config</span>
+              <span class="operator-nav-caption">Starting values &amp; simulate</span>
+            </a>
+            <a class="operator-nav-link {% if '/economy/powerups' in request.path %}is-active{% endif %}" href="{% url 'powerups-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Powerups</span>
+              <span class="operator-nav-caption">State &amp; grants</span>
+            </a>
+            <a class="operator-nav-link {% if '/economy/skills' in request.path %}is-active{% endif %}" href="{% url 'skills-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
+              <span>Skills</span>
+              <span class="operator-nav-caption">Seed / upsert</span>
+            </a>
           </div>
 
           <div class="operator-nav-group">
@@ -94,6 +109,11 @@
               <span>Purchase analytics</span>
               <span class="operator-nav-caption">Revenue signals</span>
             </a>
+            <a class="operator-nav-link {% if '/store/reward-limits' in request.path %}is-active{% endif %}" href="{% url 'store-reward-limits-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+              <span>Reward limits</span>
+              <span class="operator-nav-caption">Claim caps</span>
+            </a>
           </div>
 
           <div class="operator-nav-group">
@@ -107,6 +127,11 @@
               <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
               <span>Seasons</span>
               <span class="operator-nav-caption">Activate / close</span>
+            </a>
+            <a class="operator-nav-link {% if '/events/matches' in request.path %}is-active{% endif %}" href="{% url 'matches-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span>Match history</span>
+              <span class="operator-nav-caption">Paginated match log</span>
             </a>
           </div>
 

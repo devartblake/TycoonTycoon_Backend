@@ -46,6 +46,7 @@ public static class AdminStoreEndpoints
         g.MapDelete("/stock-policies/{sku}", DeleteStockPolicy);
 
         // P2 — Reward claim limits
+        g.MapGet("/reward-limits", ListRewardLimits);
         g.MapGet("/reward-limits/{rewardId}", GetRewardLimit);
         g.MapPut("/reward-limits/{rewardId}", UpsertRewardLimit);
 
@@ -407,6 +408,15 @@ public static class AdminStoreEndpoints
     // -------------------------------------------------------------------------
     // P2 — Reward claim limits
     // -------------------------------------------------------------------------
+
+    private static async Task<IResult> ListRewardLimits(IAppDb db, CancellationToken ct)
+    {
+        var rules = await db.RewardClaimRules.AsNoTracking()
+            .OrderBy(r => r.RewardId)
+            .Select(r => new AdminRewardLimitDto(r.RewardId, r.MaxClaimsPerInterval, r.ResetInterval, r.IsActive, r.UpdatedAtUtc))
+            .ToListAsync(ct);
+        return Results.Ok(new { items = rules, total = rules.Count });
+    }
 
     private static async Task<IResult> GetRewardLimit(
         [FromRoute] string rewardId, IAppDb db, CancellationToken ct)

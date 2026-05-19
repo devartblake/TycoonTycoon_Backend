@@ -24,8 +24,8 @@ from .services.admin_audit_client import get_security_audit, get_security_audit_
 from .services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError, admin_login, admin_me, admin_refresh
 from .services.admin_media_client import create_upload_intent
 from .services.admin_moderation_client import get_moderation_log, get_moderation_logs, get_moderation_profile, set_moderation_status
-from .services.admin_economy_client import create_economy_transaction, get_economy_history
-from .services.admin_questions_client import approve_question, delete_question, get_question, list_questions, reject_question, update_question
+from .services.admin_economy_client import create_economy_transaction, get_economy_balance, get_economy_history, rollback_economy_transaction, simulate_economy, update_economy_balance
+from .services.admin_questions_client import approve_question, bulk_import_questions, create_question, delete_question, get_question, list_questions, reject_question, update_question
 from .services.admin_store_client import (
     bulk_reset_stock,
     cancel_flash_sale,
@@ -37,10 +37,13 @@ from .services.admin_store_client import (
     get_flash_sales,
     get_player_stock,
     get_purchase_analytics,
+    get_reward_limit,
+    get_reward_limits,
     get_stock_policies,
     override_player_stock,
     update_flash_sale,
     update_store_item,
+    upsert_reward_limit,
     upsert_stock_policy,
 )
 from .services.admin_game_events_client import (
@@ -49,10 +52,17 @@ from .services.admin_game_events_client import (
     open_game_event,
     start_game_event,
 )
-from .services.admin_anticheat_client import list_anticheat_flags, review_anticheat_flag
+from .services.admin_anticheat_client import (
+    get_anticheat_analytics_summary,
+    list_anticheat_flags,
+    list_party_anticheat_flags,
+    review_anticheat_flag,
+    review_party_anticheat_flag,
+)
 from .services.admin_seasons_client import (
     activate_season,
     close_season,
+    get_reward_claims,
     get_season_leaderboard,
     list_seasons,
     recompute_season_tiers,
@@ -84,6 +94,9 @@ from .services.admin_personalization_client import (
     upsert_rule,
 )
 from .services.admin_event_queue_client import reprocess_event_queue
+from .services.admin_powerups_client import get_powerup_state, grant_powerup
+from .services.admin_skills_client import seed_skills
+from .services.admin_matches_client import get_matches
 from .services.admin_users_client import (
     ban_admin_user,
     get_admin_user,
@@ -1816,12 +1829,15 @@ def store_flash_sale_schedule_view(request):
     except Exception:
         pass
     if request.method == "POST":
-        sku = request.POST.get("sku", "").strip().lower()
+        custom_sku = request.POST.get("customSku", "").strip().lower()
+        select_sku = request.POST.get("sku", "").strip().lower()
+        sku = custom_sku or select_sku
         discount_raw = request.POST.get("discountPercent", "").strip()
         starts_raw = request.POST.get("startsAtUtc", "").strip()
         ends_raw = request.POST.get("endsAtUtc", "").strip()
         reason = request.POST.get("reason", "").strip() or None
-        context["form"] = {"sku": sku, "discountPercent": discount_raw,
+        context["form"] = {"sku": select_sku, "customSku": custom_sku,
+                           "discountPercent": discount_raw,
                            "startsAtUtc": starts_raw, "endsAtUtc": ends_raw, "reason": reason or ""}
         errors = []
         if not sku:
@@ -1841,6 +1857,15 @@ def store_flash_sale_schedule_view(request):
             messages.success(request, f"Flash sale for '{sku}' scheduled.")
             return redirect(reverse("store-flash-sales-view"))
         except httpx.HTTPStatusError as ex:
+            if ex.response.status_code == 404:
+                messages.warning(
+                    request,
+                    f"SKU '{sku}' was not found in the active catalog. Add it first, then schedule the sale.",
+                )
+                return redirect(
+                    reverse("store-catalog-new")
+                    + f"?returnTo={reverse('store-flash-sale-schedule')}&skuHint={sku}"
+                )
             try:
                 detail = ex.response.json().get("message", "")
             except Exception:
@@ -1967,12 +1992,15 @@ def store_catalog_view(request):
 @require_permission("store:read")
 def store_catalog_new_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    sku_hint = request.GET.get("skuHint", "").strip().lower()
+    return_to = _safe_return_to(request, "")
     context = {
         "item_type_choices": _ITEM_TYPES,
         "can_write": _has_permission(request, "store:write"),
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "return_to": return_to,
         "form": {
-            "sku": "", "name": "", "description": "", "itemType": "misc",
+            "sku": sku_hint, "name": "", "description": "", "itemType": "misc",
             "priceCoins": "0", "priceDiamonds": "0", "grantQuantity": "1",
             "maxPerPlayer": "0", "sortOrder": "0", "mediaKey": "",
         },
@@ -2020,6 +2048,9 @@ def store_catalog_new_view(request):
             )
             item_id = result.get("id")
             messages.success(request, f"Store item '{sku}' created.")
+            post_return_to = _safe_return_to(request, "")
+            if post_return_to:
+                return redirect(post_return_to)
             if item_id:
                 return redirect(reverse("store-catalog-detail", kwargs={"item_id": item_id}))
             return redirect(reverse("store-catalog-view"))
@@ -2436,6 +2467,95 @@ def store_analytics_view(request):
 
 
 # ---------------------------------------------------------------------------
+# Reward limits
+# ---------------------------------------------------------------------------
+
+_REWARD_LIMIT_INTERVALS = ["daily", "weekly", "none"]
+
+
+@operator_login_required
+@require_permission("store:read")
+def store_reward_limits_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "rules": [],
+        "can_write": _has_permission(request, "store:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        payload = get_reward_limits(access_token)
+        rules = payload.get("items") or []
+        for r in rules:
+            r["updatedDisplay"] = _fmt_utc(r.get("updatedAtUtc"))
+        context["rules"] = rules
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Reward limits lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend reward limits endpoint.")
+    return render(request, "dashboard/store_reward_limits.html", context)
+
+
+@operator_login_required
+@require_permission("store:read")
+def store_reward_limit_detail_view(request, reward_id: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    normalized_id = reward_id.strip().lower()
+    context = {
+        "reward_id": normalized_id,
+        "rule": None,
+        "interval_choices": _REWARD_LIMIT_INTERVALS,
+        "can_write": _has_permission(request, "store:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "form": {"maxClaimsPerInterval": "1", "resetInterval": "daily", "isActive": True},
+    }
+    try:
+        rule = get_reward_limit(access_token, normalized_id)
+        rule["updatedDisplay"] = _fmt_utc(rule.get("updatedAtUtc"))
+        context["rule"] = rule
+        context["form"] = {
+            "maxClaimsPerInterval": rule.get("maxClaimsPerInterval", 1),
+            "resetInterval": rule.get("resetInterval", "daily"),
+            "isActive": rule.get("isActive", True),
+        }
+    except httpx.HTTPStatusError as ex:
+        if ex.response.status_code != 404:
+            messages.error(request, f"Lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend reward limits endpoint.")
+
+    if request.method == "POST":
+        if not _has_permission(request, "store:write"):
+            return HttpResponseForbidden("Requires store:write permission.")
+        max_raw = request.POST.get("maxClaimsPerInterval", "1").strip()
+        interval = request.POST.get("resetInterval", "daily").strip().lower()
+        is_active = request.POST.get("isActive") == "true"
+        context["form"] = {"maxClaimsPerInterval": max_raw, "resetInterval": interval, "isActive": is_active}
+        errors = []
+        if not max_raw.isdigit() or int(max_raw) < 1:
+            errors.append("Max claims must be a positive integer.")
+        if interval not in _REWARD_LIMIT_INTERVALS:
+            errors.append(f"Reset interval must be one of: {', '.join(_REWARD_LIMIT_INTERVALS)}.")
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, "dashboard/store_reward_limit_detail.html", context)
+        try:
+            result = upsert_reward_limit(access_token, normalized_id, int(max_raw), interval, is_active)
+            result["updatedDisplay"] = _fmt_utc(result.get("updatedAtUtc"))
+            context["rule"] = result
+            messages.success(request, f"Reward limit for '{normalized_id}' saved.")
+        except httpx.HTTPStatusError as ex:
+            try:
+                detail = ex.response.json().get("message", "")
+            except Exception:
+                detail = ""
+            messages.error(request, f"Save failed (HTTP {ex.response.status_code}){': ' + detail if detail else ''}.")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend reward limits endpoint.")
+    return render(request, "dashboard/store_reward_limit_detail.html", context)
+
+
+# ---------------------------------------------------------------------------
 # Questions queue
 # ---------------------------------------------------------------------------
 
@@ -2569,6 +2689,75 @@ def questions_reject(request, question_id: str):
     return redirect(request.META.get("HTTP_REFERER", "questions-queue-view"))
 
 
+@operator_login_required
+@require_permission("questions:write")
+def question_create_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    if request.method == "POST":
+        payload = {
+            "text": (request.POST.get("text") or "").strip(),
+            "category": (request.POST.get("category") or "").strip(),
+            "difficulty": request.POST.get("difficulty") or "1",
+            "options": _parse_question_options(request),
+            "correctOptionId": (request.POST.get("correctOptionId") or "").strip(),
+            "tags": _parse_tags(request.POST.get("tags") or ""),
+            "mediaKey": (request.POST.get("mediaKey") or "").strip() or None,
+            "status": (request.POST.get("status") or "").strip() or None,
+        }
+        missing = [k for k in ("text", "category", "correctOptionId") if not payload.get(k)]
+        if missing:
+            messages.error(request, f"Missing required fields: {', '.join(missing)}.")
+        elif len(payload["options"]) < 2:
+            messages.error(request, "At least two options are required.")
+        else:
+            try:
+                result = create_question(access_token, payload)
+                new_id = result.get("id", "")
+                messages.success(request, "Question created.")
+                return redirect("question-detail-view", question_id=new_id)
+            except httpx.HTTPStatusError as ex:
+                messages.error(request, f"Create failed (HTTP {ex.response.status_code}).")
+            except httpx.RequestError:
+                messages.error(request, "Unable to reach backend question endpoint.")
+    context = {
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    return render(request, "dashboard/question_new.html", context)
+
+
+@operator_login_required
+@require_permission("questions:write")
+def questions_bulk_import_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "result": None,
+    }
+    if request.method == "POST":
+        raw = (request.POST.get("jsonPayload") or "").strip()
+        if not raw:
+            messages.error(request, "JSON payload is required.")
+            return render(request, "dashboard/questions_bulk_import.html", context)
+        try:
+            questions_list = json.loads(raw)
+        except json.JSONDecodeError as ex:
+            messages.error(request, f"Invalid JSON: {ex}")
+            return render(request, "dashboard/questions_bulk_import.html", context)
+        if not isinstance(questions_list, list):
+            messages.error(request, "JSON must be an array of question objects.")
+            return render(request, "dashboard/questions_bulk_import.html", context)
+        try:
+            result = bulk_import_questions(access_token, questions_list)
+            context["result"] = result
+            imported = result.get("imported", len(questions_list))
+            messages.success(request, f"Bulk import complete — {imported} question(s) imported.")
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Bulk import failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend bulk import endpoint.")
+    return render(request, "dashboard/questions_bulk_import.html", context)
+
+
 # ---------------------------------------------------------------------------
 # Economy — player history + coin grant
 # ---------------------------------------------------------------------------
@@ -2622,6 +2811,86 @@ def economy_grant(request):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend economy endpoint.")
     return redirect(f"/economy/player?playerId={payload.get('playerId', '')}")
+
+
+@operator_login_required
+@require_permission("economy:read")
+def economy_balance_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "balance": None,
+        "simulate_result": None,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "can_write": _has_permission(request, "economy:write"),
+    }
+
+    if request.method == "POST":
+        action = request.POST.get("_action", "")
+        if not _has_permission(request, "economy:write"):
+            messages.error(request, "Missing required permission: economy:write.")
+            return redirect("economy-balance-view")
+
+        if action == "update":
+            raw_fields = {
+                "startingCoins": request.POST.get("startingCoins"),
+                "startingXp": request.POST.get("startingXp"),
+                "dailyLoginCoins": request.POST.get("dailyLoginCoins"),
+                "maxCoins": request.POST.get("maxCoins"),
+            }
+            payload = {k: int(v) for k, v in raw_fields.items() if v not in (None, "")}
+            if not payload:
+                messages.error(request, "No fields to update.")
+            else:
+                try:
+                    update_economy_balance(access_token, payload)
+                    messages.success(request, "Economy balance updated.")
+                except httpx.HTTPStatusError as ex:
+                    messages.error(request, f"Update failed (HTTP {ex.response.status_code}).")
+                except httpx.RequestError:
+                    messages.error(request, "Unable to reach backend economy endpoint.")
+            return redirect("economy-balance-view")
+
+        if action == "simulate":
+            payload = {
+                "playerId": (request.POST.get("simulatePlayerId") or "").strip(),
+                "action": (request.POST.get("simulateAction") or "").strip(),
+                "amount": request.POST.get("simulateAmount"),
+            }
+            if payload["amount"]:
+                payload["amount"] = int(payload["amount"])
+            missing = [k for k, v in payload.items() if not v]
+            if missing:
+                messages.error(request, f"Simulation missing fields: {', '.join(missing)}.")
+            else:
+                try:
+                    context["simulate_result"] = simulate_economy(access_token, payload)
+                    messages.success(request, "Simulation complete.")
+                except httpx.HTTPStatusError as ex:
+                    messages.error(request, f"Simulation failed (HTTP {ex.response.status_code}).")
+                except httpx.RequestError:
+                    messages.error(request, "Unable to reach backend simulate endpoint.")
+
+        if action == "rollback":
+            transaction_id = (request.POST.get("transactionId") or "").strip()
+            if not transaction_id:
+                messages.error(request, "Transaction ID is required for rollback.")
+            else:
+                try:
+                    rollback_economy_transaction(access_token, transaction_id)
+                    messages.success(request, f"Transaction {transaction_id} rolled back.")
+                except httpx.HTTPStatusError as ex:
+                    messages.error(request, f"Rollback failed (HTTP {ex.response.status_code}).")
+                except httpx.RequestError:
+                    messages.error(request, "Unable to reach backend rollback endpoint.")
+            return redirect("economy-balance-view")
+
+    try:
+        context["balance"] = get_economy_balance(access_token)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Balance lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend economy balance endpoint.")
+    return render(request, "dashboard/economy_balance.html", context)
 
 
 # ---------------------------------------------------------------------------
@@ -2708,6 +2977,7 @@ def game_event_close(request, event_id: str):
 @require_permission("anticheat:read")
 def anticheat_flags_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    window_hours = int(request.GET.get("windowHours", 24) or 24)
     query = {
         "severity": request.GET.get("severity"),
         "playerId": request.GET.get("playerId"),
@@ -2718,6 +2988,8 @@ def anticheat_flags_view(request):
     query = {k: v for k, v in query.items() if v not in (None, "")}
     context = {
         "flags": None,
+        "analytics": None,
+        "window_hours": window_hours,
         "query": query,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
@@ -2727,6 +2999,10 @@ def anticheat_flags_view(request):
         messages.error(request, f"Failed to load flags (HTTP {ex.response.status_code}).")
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend anti-cheat endpoint.")
+    try:
+        context["analytics"] = get_anticheat_analytics_summary(access_token, window_hours)
+    except Exception:
+        pass
     return render(request, "dashboard/anticheat_flags.html", context)
 
 
@@ -2747,6 +3023,50 @@ def anticheat_flag_review(request, flag_id: str):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend.")
     next_url = request.POST.get("next") or "/security/anticheat"
+    return redirect(next_url)
+
+
+@operator_login_required
+@require_permission("anticheat:read")
+def anticheat_party_flags_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "ruleKeyPrefix": request.GET.get("ruleKeyPrefix", "party-"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 50),
+    }
+    context = {
+        "flags": None,
+        "query": query,
+        "can_review": _has_permission(request, "anticheat:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["flags"] = list_party_anticheat_flags(access_token, query)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load party flags (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend anti-cheat endpoint.")
+    return render(request, "dashboard/anticheat_party_flags.html", context)
+
+
+@operator_login_required
+@require_permission("anticheat:write")
+def anticheat_party_flag_review(request, flag_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    profile = request.session.get(SESSION_ADMIN_PROFILE_KEY) or {}
+    reviewed_by = profile.get("email") or "operator"
+    note = request.POST.get("note", "").strip()
+    try:
+        review_party_anticheat_flag(access_token, flag_id, reviewed_by, note)
+        messages.success(request, f"Party flag {flag_id} marked as reviewed.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Review failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend.")
+    next_url = request.POST.get("next") or "/security/anticheat/party"
     return redirect(next_url)
 
 
@@ -2845,6 +3165,34 @@ def seasons_recompute(request, season_id: str):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend.")
     return redirect("/operations/seasons")
+
+
+@operator_login_required
+@require_permission("seasons:read")
+def seasons_reward_claims_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    query = {
+        "seasonId": request.GET.get("seasonId"),
+        "playerId": request.GET.get("playerId"),
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 50),
+    }
+    context = {
+        "claims": None,
+        "query": {k: v for k, v in query.items() if v not in (None, "")},
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        payload = get_reward_claims(access_token, query)
+        items = payload.get("items") or []
+        for item in items:
+            item["createdDisplay"] = _fmt_utc(item.get("createdAtUtc"))
+        context["claims"] = {**payload, "items": items}
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Failed to load reward claims (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend seasons endpoint.")
+    return render(request, "dashboard/season_reward_claims.html", context)
 
 
 # ---------------------------------------------------------------------------
@@ -3307,6 +3655,118 @@ def personalization_rule_upsert(request, rule_key: str):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend personalization rules endpoint.")
     return redirect("/personalization/rules")
+
+
+# ---------------------------------------------------------------------------
+# Powerups
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("economy:read")
+def powerups_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    player_id = (request.GET.get("playerId") or "").strip()
+    context = {
+        "player_id": player_id,
+        "powerup_state": None,
+        "can_write": _has_permission(request, "economy:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+
+    if request.method == "POST":
+        if not _has_permission(request, "economy:write"):
+            messages.error(request, "Missing required permission: economy:write.")
+            return redirect("powerups-view")
+        grant_player_id = (request.POST.get("playerId") or "").strip()
+        powerup_key = (request.POST.get("powerupKey") or "").strip()
+        quantity_raw = request.POST.get("quantity", "1")
+        try:
+            quantity = int(quantity_raw)
+        except ValueError:
+            quantity = 1
+        if not grant_player_id or not powerup_key:
+            messages.error(request, "Player ID and powerup key are required.")
+        else:
+            try:
+                grant_powerup(access_token, grant_player_id, powerup_key, quantity)
+                messages.success(request, f"Granted {quantity}x '{powerup_key}' to player {grant_player_id}.")
+            except httpx.HTTPStatusError as ex:
+                messages.error(request, f"Grant failed (HTTP {ex.response.status_code}).")
+            except httpx.RequestError:
+                messages.error(request, "Unable to reach backend powerups endpoint.")
+        return redirect(f"/economy/powerups?playerId={grant_player_id}")
+
+    if player_id:
+        try:
+            context["powerup_state"] = get_powerup_state(access_token, player_id)
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Powerup lookup failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend powerups endpoint.")
+    return render(request, "dashboard/powerups.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Skills
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("economy:write")
+def skills_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    context = {
+        "seed_result": None,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    if request.method == "POST":
+        raw = (request.POST.get("jsonPayload") or "").strip()
+        if not raw:
+            messages.error(request, "JSON payload is required.")
+            return render(request, "dashboard/skills.html", context)
+        try:
+            skills_list = json.loads(raw)
+        except json.JSONDecodeError as ex:
+            messages.error(request, f"Invalid JSON: {ex}")
+            return render(request, "dashboard/skills.html", context)
+        if not isinstance(skills_list, list):
+            messages.error(request, "JSON must be an array of skill objects.")
+            return render(request, "dashboard/skills.html", context)
+        try:
+            result = seed_skills(access_token, skills_list)
+            context["seed_result"] = result
+            messages.success(request, f"Skills seed complete — {len(skills_list)} skill(s) submitted.")
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Seed failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend skills endpoint.")
+    return render(request, "dashboard/skills.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Matches
+# ---------------------------------------------------------------------------
+
+@operator_login_required
+@require_permission("events:read")
+def matches_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    params = {
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 25),
+        "playerId": request.GET.get("playerId"),
+    }
+    context = {
+        "matches": None,
+        "query": {k: v for k, v in params.items() if v not in (None, "")},
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    try:
+        context["matches"] = get_matches(access_token, params)
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Matches lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend matches endpoint.")
+    return render(request, "dashboard/matches.html", context)
 
 
 _PROBE_SLUG_TO_NAME = {

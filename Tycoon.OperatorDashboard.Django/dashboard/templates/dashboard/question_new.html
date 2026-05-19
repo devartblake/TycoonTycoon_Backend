@@ -1,0 +1,87 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}New Question{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Content</p>
+    <h1 class="page-title">New question</h1>
+    <p class="page-subtitle">Create a single question with options and the correct answer key.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'questions-queue-view' %}">Back to queue</a>
+    <a class="button secondary" href="{% url 'questions-bulk-import-view' %}">Bulk import</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Question details" copy="All fields except media key and tags are required." %}
+  <form method="post" class="stack" data-validate="1">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Text
+        <textarea name="text" rows="4" data-hint="Question text is required."></textarea>
+        <span class="field-error"></span>
+      </label>
+      <label>
+        Category
+        <input type="text" name="category" placeholder="e.g. science" />
+      </label>
+      <label>
+        Difficulty
+        <select name="difficulty">
+          <option value="1">Easy</option>
+          <option value="2">Medium</option>
+          <option value="3">Hard</option>
+          <option value="4">Expert</option>
+        </select>
+      </label>
+      <label>
+        Status
+        <select name="status">
+          <option value="">Default (backend)</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+        </select>
+      </label>
+      <label>
+        Correct option ID
+        <input type="text" name="correctOptionId" placeholder="e.g. A" />
+      </label>
+      <label>
+        Tags
+        <input type="text" name="tags" placeholder="comma or newline separated" />
+      </label>
+      <label>
+        Media key
+        <input type="text" name="mediaKey" placeholder="optional" />
+      </label>
+    </div>
+
+    <div>
+      {% include "dashboard/partials/section_intro.html" with title="Answer options" copy="Provide at least 2 options. Option ID must match the correct option ID above." %}
+      <div class="table-wrap">
+        <table class="dense-table">
+          <thead><tr><th>Option ID</th><th>Option text</th></tr></thead>
+          <tbody>
+            {% for i in "1234" %}
+            <tr>
+              <td><input type="text" name="option{{ i }}Id" placeholder="e.g. {{ i }}" /></td>
+              <td><input type="text" name="option{{ i }}Text" placeholder="Option text" /></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="toolbar-actions">
+      <button type="submit">Create question</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

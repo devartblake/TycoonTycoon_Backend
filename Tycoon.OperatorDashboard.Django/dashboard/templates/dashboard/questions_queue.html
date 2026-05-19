@@ -12,6 +12,8 @@
   <div class="topbar-actions">
     <span class="badge acc"><span class="dot"></span>Review queue</span>
     <span class="chip neutral">{{ items|length }} loaded</span>
+    <a class="button secondary" href="{% url 'questions-bulk-import-view' %}">Bulk import</a>
+    <a class="button" href="{% url 'question-create-view' %}">+ New question</a>
   </div>
 </section>
 

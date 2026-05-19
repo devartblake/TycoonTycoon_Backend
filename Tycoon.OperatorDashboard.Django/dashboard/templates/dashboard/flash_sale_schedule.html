@@ -22,10 +22,10 @@
     {% csrf_token %}
     <div class="form-grid">
       <label>
-        SKU
+        Select from catalog
         {% if catalog_items %}
-        <select name="sku" required>
-          <option value="">— select a store item —</option>
+        <select name="sku">
+          <option value="">— pick an existing item —</option>
           {% for item in catalog_items %}
           <option value="{{ item.sku }}" {% if form.sku == item.sku %}selected{% endif %}>{{ item.name }} ({{ item.sku }})</option>
           {% endfor %}
@@ -33,10 +33,15 @@
         <span class="helper-text">Only active items shown. <a href="{% url 'store-catalog-view' %}">Manage catalog</a></span>
         {% else %}
         <select name="sku" disabled>
-          <option value="">No active items — add items to the catalog first</option>
+          <option value="">No active items in catalog</option>
         </select>
-        <span class="helper-text" style="color:var(--bad);">No active store items found. <a href="{% url 'store-catalog-new' %}">Add an item</a> before scheduling a sale.</span>
+        <span class="helper-text"><a href="{% url 'store-catalog-new' %}">Add a catalog item</a> or type a SKU below.</span>
         {% endif %}
+      </label>
+      <label>
+        Or type a custom SKU
+        <input type="text" name="customSku" value="{{ form.customSku|default:'' }}" placeholder="e.g. powerup:hint" />
+        <span class="helper-text">Overrides the dropdown above. Item must exist and be active in the catalog. If it doesn't exist yet, you'll be redirected to create it.</span>
       </label>
       <label>
         Discount %

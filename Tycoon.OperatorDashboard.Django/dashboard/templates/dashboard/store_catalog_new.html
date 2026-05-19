@@ -19,8 +19,12 @@
 {% if can_write %}
 <section class="card mt-lg">
   {% include "dashboard/partials/section_intro.html" with title="Item details" copy="SKU must be unique. Use lowercase colon-separated format e.g. powerup:hint." %}
+  {% if return_to %}
+  <div class="helper-text" style="padding-bottom:8px;">After creating, you'll be returned to <strong>{{ return_to }}</strong>.</div>
+  {% endif %}
   <form method="post" class="stack">
     {% csrf_token %}
+    {% if return_to %}<input type="hidden" name="returnTo" value="{{ return_to }}" />{% endif %}
     <div class="form-grid">
       <label>
         SKU

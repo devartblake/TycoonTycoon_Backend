@@ -1,0 +1,100 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Match History{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Events</p>
+    <h1 class="page-title">Match history</h1>
+    <p class="page-subtitle">Paginated log of completed matches. Filter by player to debug specific match records.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="chip neutral">{{ matches.total|default:"0" }} total</span>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Filters" copy="All fields optional." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ query.playerId|default:'' }}" placeholder="uuid" />
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="25" {% if query.pageSize == "25" or not query.pageSize %}selected{% endif %}>25</option>
+          <option value="50" {% if query.pageSize == "50" %}selected{% endif %}>50</option>
+          <option value="100" {% if query.pageSize == "100" %}selected{% endif %}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Filter</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Matches" copy="Most-recent first." %}
+  {% if matches %}
+  <div class="table-meta">
+    <span class="helper-text">Page {{ matches.page|default:1 }} — {{ matches.items|length }} of {{ matches.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Match ID</th>
+          <th>Status</th>
+          <th>Players</th>
+          <th>Winner</th>
+          <th>Started (UTC)</th>
+          <th>Ended (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for match in matches.items %}
+        <tr>
+          <td class="helper-text">{{ match.id|default:"—" }}</td>
+          <td><span class="chip neutral">{{ match.status|default:"—" }}</span></td>
+          <td class="helper-text">{{ match.playerIds|join:", "|default:"—" }}</td>
+          <td class="helper-text">{{ match.winnerId|default:"—" }}</td>
+          <td>{{ match.startedAtUtc|default:"—" }}</td>
+          <td>{{ match.endedAtUtc|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No matches found</strong>
+              <span>Try clearing the player filter or adjusting page size.</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if matches.total > matches.items|length %}
+  <div class="toolbar-actions mt-sm">
+    {% if matches.page > 1 %}
+    <a class="button secondary small" href="?playerId={{ query.playerId|default:'' }}&pageSize={{ query.pageSize|default:25 }}&page={{ matches.page|add:'-1' }}">← Previous</a>
+    {% endif %}
+    <a class="button secondary small" href="?playerId={{ query.playerId|default:'' }}&pageSize={{ query.pageSize|default:25 }}&page={{ matches.page|add:'1' }}">Next →</a>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty">
+    <span class="empty-ico">0</span>
+    <strong>No match data loaded</strong>
+    <span>Check backend connectivity or permissions.</span>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
