@@ -296,14 +296,21 @@ def _normalize_economy_history_rows(rows: list[dict] | None) -> list[dict]:
 
 
 def _normalize_audit_rows(rows: list[dict] | None) -> list[dict]:
-    return [
-        {
+    result = []
+    for row in rows or []:
+        meta = row.get("metadata") or {}
+        actor = meta.get("actor") or meta.get("email") or meta.get("sub") or "-"
+        ip_address = meta.get("ip") or meta.get("ipAddress") or "-"
+        user_agent = meta.get("userAgent") or "-"
+        result.append({
             **row,
             "eventDisplay": row.get("event") or row.get("title") or "-",
             "createdDisplay": row.get("createdAtUtc") or row.get("createdAt") or "-",
-        }
-        for row in rows or []
-    ]
+            "actor": actor,
+            "ipAddress": ip_address,
+            "userAgent": user_agent,
+        })
+    return result
 
 
 def _normalize_moderation_rows(rows: list[dict] | None) -> list[dict]:
@@ -1167,7 +1174,7 @@ def operator_audit_security(request):
         "to": request.GET.get("to"),
         "status": request.GET.get("status"),
         "page": request.GET.get("page", 1),
-        "pageSize": request.GET.get("pageSize", 25),
+        "pageSize": request.GET.get("pageSize", 10),
     }
     query = {k: v for k, v in query.items() if v not in (None, "")}
 
@@ -1185,13 +1192,14 @@ def operator_audit_security(request):
 def operator_audit_security_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     preset = (request.GET.get("preset") or "").strip()
+    ip_filter = (request.GET.get("ip") or "").strip()
     now = timezone.now()
     query = {
         "from": request.GET.get("from"),
         "to": request.GET.get("to"),
         "status": request.GET.get("status"),
         "page": request.GET.get("page", 1),
-        "pageSize": request.GET.get("pageSize", 25),
+        "pageSize": request.GET.get("pageSize", 10),
     }
     if preset == "login_failures_today":
         query["status"] = "failure"
@@ -1199,30 +1207,38 @@ def operator_audit_security_view(request):
     elif preset == "login_success_today":
         query["status"] = "success"
         query["from"] = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    elif preset == "unauthorized_today":
+        query["status"] = "unauthorized"
+        query["from"] = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     query = {k: v for k, v in query.items() if v not in (None, "")}
 
     context = {
-        "query": query,
+        "query": {**query, "ip": ip_filter},
         "items": [],
         "page": 1,
         "total": 0,
         "preset": preset,
+        "ip_filter": ip_filter,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
         "audit_preset_links": [
             {"href": "?preset=login_failures_today", "label": "Login failures today"},
             {"href": "?preset=login_success_today", "label": "Login successes today"},
+            {"href": "?preset=unauthorized_today", "label": "Unauthorized today"},
         ],
     }
 
     try:
         payload = get_security_audit(access_token, query)
-        context["items"] = _normalize_audit_rows(payload.get("items", []))
+        items = _normalize_audit_rows(payload.get("items", []))
+        if ip_filter:
+            items = [r for r in items if ip_filter in (r.get("ipAddress") or "")]
+        context["items"] = items
         context["page"] = payload.get("page", 1)
         context["total"] = payload.get("total", len(context["items"]))
         if request.GET.get("format") == "csv":
             return _to_csv_response(
                 context["items"],
-                ["event", "status", "actor", "ipAddress", "createdAtUtc"],
+                ["eventDisplay", "status", "actor", "ipAddress", "userAgent", "createdDisplay"],
                 "security_audit.csv",
             )
     except httpx.HTTPStatusError as ex:
@@ -1245,8 +1261,14 @@ def operator_audit_security_detail_view(request, event_id: str):
     }
     try:
         event = get_security_audit_event(access_token, event_id)
+        meta = event.get("metadata") or {}
         event["eventDisplay"] = event.get("event") or event.get("title") or "-"
         event["createdDisplay"] = event.get("createdAt") or event.get("createdAtUtc") or "-"
+        event["actor"] = meta.get("actor") or meta.get("email") or meta.get("sub") or "-"
+        ip = meta.get("ip") or meta.get("ipAddress") or "-"
+        event["ipAddress"] = ip
+        event["ipMasked"] = (ip.rsplit(".", 1)[0] + ".xxx") if ip and ip != "-" and "." in ip else ip
+        event["userAgent"] = meta.get("userAgent") or "-"
         context["event"] = event
         context["metadata_json"] = _to_pretty_json(event.get("metadata"))
     except httpx.HTTPStatusError as ex:
@@ -1254,6 +1276,43 @@ def operator_audit_security_detail_view(request, event_id: str):
     except httpx.RequestError:
         messages.error(request, "Unable to reach backend security audit endpoint.")
     return render(request, "dashboard/audit_security_detail.html", context)
+
+
+_GEO_CACHE: dict[str, dict] = {}
+
+
+@operator_login_required
+@require_permission("events:read")
+def geo_lookup_view(request):
+    ip = (request.GET.get("ip") or "").strip()
+    if not ip or ip in ("-", "unknown"):
+        return JsonResponse({"error": "No IP provided"}, status=400)
+    if ip in _GEO_CACHE:
+        return JsonResponse(_GEO_CACHE[ip])
+    try:
+        resp = httpx.get(
+            f"http://ip-api.com/json/{ip}",
+            params={"fields": "status,country,countryCode,city,lat,lon,isp,proxy,query"},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if data.get("status") == "success":
+            result = {
+                "country": data.get("country"),
+                "countryCode": data.get("countryCode"),
+                "city": data.get("city"),
+                "lat": data.get("lat"),
+                "lon": data.get("lon"),
+                "isp": data.get("isp"),
+                "proxy": data.get("proxy", False),
+                "ip": data.get("query"),
+            }
+            _GEO_CACHE[ip] = result
+            return JsonResponse(result)
+        return JsonResponse({"error": "Geo lookup failed", "detail": data.get("message", "")}, status=502)
+    except (httpx.RequestError, httpx.HTTPStatusError):
+        return JsonResponse({"error": "Geo lookup unavailable"}, status=503)
 
 
 @operator_login_required

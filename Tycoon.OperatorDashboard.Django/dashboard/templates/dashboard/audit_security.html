@@ -11,7 +11,7 @@
   </div>
   <div class="topbar-actions">
     <span class="badge acc"><span class="dot"></span>Audited</span>
-    <a class="button secondary" href="?from={{ query.from|default:'' }}&to={{ query.to|default:'' }}&status={{ query.status|default:'' }}&format=csv">Export CSV</a>
+    <a class="button secondary" href="?from={{ query.from|default:'' }}&to={{ query.to|default:'' }}&status={{ query.status|default:'' }}&ip={{ ip_filter|default:'' }}&format=csv">Export CSV</a>
   </div>
 </section>
 
@@ -57,7 +57,13 @@
           <option value="">All</option>
           <option value="success" {% if query.status == "success" %}selected{% endif %}>success</option>
           <option value="failure" {% if query.status == "failure" %}selected{% endif %}>failure</option>
+          <option value="unauthorized" {% if query.status == "unauthorized" %}selected{% endif %}>unauthorized</option>
+          <option value="forbidden" {% if query.status == "forbidden" %}selected{% endif %}>forbidden</option>
         </select>
+      </label>
+      <label>
+        IP address
+        <input type="text" name="ip" value="{{ ip_filter|default:'' }}" placeholder="e.g. 192.168.1" maxlength="45" />
       </label>
     </div>
     <div class="toolbar-actions">

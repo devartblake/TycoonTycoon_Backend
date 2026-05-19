@@ -26,7 +26,15 @@
       "Bash(python manage.py test dashboard --verbosity=2)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(python manage.py test dashboard.tests.test_api_clients dashboard.tests.test_views --verbosity=2)"
+      "Bash(python manage.py test dashboard.tests.test_api_clients dashboard.tests.test_views --verbosity=2)",
+      "Bash(python -c \"import dashboard.views; import inspect; lines = inspect.getsource\\(dashboard.views\\); print\\(len\\(lines.splitlines\\(\\)\\)\\)\")",
+      "Bash(python -c \"print\\(sum\\(1 for _ in open\\('dashboard/views.py'\\)\\)\\)\")",
+      "Bash(python manage.py migrate --run-syncdb)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\\" -Recurse -Name | Select-Object -First 50)",
+      "Bash(findstr /i \"audit\\\\|security\\\\|admin\")",
+      "Bash(dir \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\")",
+      "Bash(findstr Tycoon.Backend)",
+      "Bash(python -c ' *)"
     ]
   }
 }

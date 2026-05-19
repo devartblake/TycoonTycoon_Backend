@@ -71,6 +71,7 @@ from .views import (
     personalization_rules_view,
     personalization_rule_upsert,
     probe_log_view,
+    geo_lookup_view,
 )
 
 urlpatterns = [
@@ -154,4 +155,6 @@ urlpatterns = [
     path("healthz", healthz, name="dashboard-healthz"),
     # Service probe history log
     path("probe-log/<str:service_slug>/", probe_log_view, name="probe-log"),
+    # Geo lookup (server-side proxy to ip-api.com — keeps audited IP out of browser)
+    path("audit/security/geo-lookup/", geo_lookup_view, name="audit-geo-lookup"),
 ]

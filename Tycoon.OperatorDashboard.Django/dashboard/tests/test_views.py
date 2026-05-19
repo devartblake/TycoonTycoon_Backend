@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from dashboard.models import OperatorSavedViewAuditEvent, ProbeCheckRecord
 from dashboard.services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError
-from dashboard.views import _build_probe_history_context, _format_ago
+from dashboard.views import _build_probe_history_context, _format_ago, _normalize_audit_rows
 
 
 class OperatorDetailDrilldownViewsTests(TestCase):
@@ -164,7 +164,7 @@ class OperatorDetailDrilldownViewsTests(TestCase):
         response = self.client.get(reverse("operator-audit-security-detail-view", kwargs={"event_id": "e1"}))
 
         self.assertEqual(200, response.status_code)
-        self.assertContains(response, "Audit event detail")
+        self.assertContains(response, "Event details")
         self.assertContains(response, "admin_auth_login")
         self.assertContains(response, "ops@example.com")
 
@@ -1936,3 +1936,83 @@ class ProbeLogViewTests(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertContains(response, "42ms")
         self.assertContains(response, "healthy")
+
+
+class NormalizeAuditRowsTests(TestCase):
+    def test_extracts_actor_and_ip_from_metadata(self):
+        rows = [{
+            "title": "admin_auth_login",
+            "status": "success",
+            "createdAt": "2026-05-19T00:00:00Z",
+            "metadata": {"actor": "admin@example.com", "ip": "1.2.3.4", "userAgent": "Mozilla/5.0"},
+        }]
+        result = _normalize_audit_rows(rows)
+        self.assertEqual("admin@example.com", result[0]["actor"])
+        self.assertEqual("1.2.3.4", result[0]["ipAddress"])
+        self.assertEqual("Mozilla/5.0", result[0]["userAgent"])
+
+    def test_falls_back_to_dash_when_no_metadata(self):
+        rows = [{"title": "admin_auth_login", "status": "success", "createdAt": "2026-05-19T00:00:00Z"}]
+        result = _normalize_audit_rows(rows)
+        self.assertEqual("-", result[0]["actor"])
+        self.assertEqual("-", result[0]["ipAddress"])
+        self.assertEqual("-", result[0]["userAgent"])
+
+    def test_falls_back_to_email_key_when_no_actor(self):
+        rows = [{"metadata": {"email": "fallback@example.com"}}]
+        result = _normalize_audit_rows(rows)
+        self.assertEqual("fallback@example.com", result[0]["actor"])
+
+    def test_returns_empty_list_for_none_input(self):
+        self.assertEqual([], _normalize_audit_rows(None))
+
+
+class GeoLookupViewTests(TestCase):
+    def _login(self, permissions=None):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": permissions or ["events:read"]}
+        session.save()
+
+    def test_requires_login(self):
+        response = self.client.get(reverse("audit-geo-lookup") + "?ip=1.2.3.4")
+        self.assertEqual(302, response.status_code)
+
+    def test_returns_400_for_missing_ip(self):
+        self._login()
+        response = self.client.get(reverse("audit-geo-lookup"))
+        self.assertEqual(400, response.status_code)
+
+    def test_returns_400_for_placeholder_ip(self):
+        self._login()
+        response = self.client.get(reverse("audit-geo-lookup") + "?ip=-")
+        self.assertEqual(400, response.status_code)
+
+    @mock.patch("dashboard.views.httpx.get")
+    def test_returns_geo_data_on_success(self, mock_get):
+        self._login()
+        geo_response = mock.Mock()
+        geo_response.json.return_value = {
+            "status": "success",
+            "country": "United States",
+            "countryCode": "US",
+            "city": "Mountain View",
+            "lat": 37.4,
+            "lon": -122.0,
+            "isp": "Google LLC",
+            "proxy": False,
+            "query": "8.8.8.8",
+        }
+        geo_response.raise_for_status.return_value = None
+        mock_get.return_value = geo_response
+
+        import dashboard.views as v
+        v._GEO_CACHE.clear()
+
+        response = self.client.get(reverse("audit-geo-lookup") + "?ip=8.8.8.8")
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual("United States", data["country"])
+        self.assertEqual("Mountain View", data["city"])
+        self.assertFalse(data["proxy"])

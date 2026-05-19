@@ -107,10 +107,10 @@ Notes:
 
 | Check | Django | Blazor | Match? |
 |-------|--------|--------|--------|
-| Login succeeds | ☐ | ☐ | ☐ |
-| Profile email shown in sidebar footer | ☐ | ☐ | ☐ |
-| All nav links visible (no 403 on any surface) | ☐ | n/a | ☐ |
-| Logout clears session | ☐ | ☐ | ☐ |
+| Login succeeds | x | x | x |
+| Profile email shown in sidebar footer | x | ☐ | ☐ |
+| All nav links visible (no 403 on any surface) | x | n/a | ☐ |
+| Logout clears session | x | x | x |
 
 **Permission verification:** After login, inspect the session profile in Django dev tools (`/api/operator/health` → verify `permissions` array contains all expected scopes: `users:read`, `store:read`, `economy:read`, `questions:read`, `events:read`, `anticheat:read`, `seasons:read`, `notifications:read`).
 
@@ -127,8 +127,8 @@ Notes:
 
 | Check | Django | Blazor | Match? |
 |-------|--------|--------|--------|
-| All service tiles render | ☐ | ☐ | ☐ |
-| Health statuses match | ☐ | ☐ | ☐ |
+| All service tiles render | x | x | x |
+| Health statuses match | x | ☐ | ☐ |
 
 **What to look for:**
 
@@ -142,13 +142,13 @@ Notes:
 
 | Check | Django | Blazor | Match? |
 |-------|--------|--------|--------|
-| User list loads | ☐ | ☐ | ☐ |
-| Filter by email partial works | ☐ | ☐ | ☐ |
-| Filter by `banned=true` returns same set | ☐ | ☐ | ☐ |
-| `/users/{userId}` detail page loads account summary and activity | ☐ | n/a | ☐ |
-| Ban a test user | ☐ | ☐ | ☐ |
-| Unban the same user | ☐ | ☐ | ☐ |
-| User detail panel shows activity | ☐ | ☐ | ☐ |
+| User list loads | x | x | x |
+| Filter by email partial works | x | ☐ | ☐ |
+| Filter by `banned=true` returns same set | x | x | x |
+| `/users/{userId}` detail page loads account summary and activity | x | n/a | ☐ |
+| Ban a test user | x | x | x |
+| Unban the same user | x | x | x |
+| User detail panel shows activity | x | x | x |
 
 **What to look for:**
 
@@ -164,12 +164,12 @@ Notes:
 
 | Check | Django | Blazor | Match? |
 |-------|--------|--------|--------|
-| Moderation log renders | ☐ | ☐ | ☐ |
-| Filter by date range narrows results | ☐ | ☐ | ☐ |
-| Player moderation profile loads | ☐ | ☐ | ☐ |
-| `/moderation/logs/{logId}` detail page loads reason, notes, and related flag | ☐ | n/a | ☐ |
-| `/moderation/players/{playerId}` page loads profile and filtered history | ☐ | n/a | ☐ |
-| Set moderation status succeeds | ☐ | ☐ | ☐ |
+| Moderation log renders | x | x | x |
+| Filter by date range narrows results | x | ☐ | ☐ |
+| Player moderation profile loads | x | ☐ | ☐ |
+| `/moderation/logs/{logId}` detail page loads reason, notes, and related flag | x | n/a | ☐ |
+| `/moderation/players/{playerId}` page loads profile and filtered history | x | n/a | ☐ |
+| Set moderation status succeeds | x | ☐ | ☐ |
 
 **What to look for:**
 
