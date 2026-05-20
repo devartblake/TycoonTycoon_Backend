@@ -2,59 +2,76 @@
 
 ## Task ID
 
-`YYYYMMDD-HHMM-short-slug`
+`20260520-alpha-runbook-reconciliation`
 
 ## Task title
 
-`<task title>`
+Alpha release heartbeat reconciliation with staging parallel-run runbook
 
 ## Status
 
-`not-started`
+`needs-review`
 
 ## Release priority
 
-`P0 Alpha blocker | P1 Alpha important | P2 Post-Alpha | P3 Long-term platform`
+`P1 Alpha important`
 
 ## Objective
 
-`<task objective>`
+Align `.codex/heartbeat` status with the Alpha release evidence and `docs/infrastructure/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` without marking live staging gates complete before proof exists.
 
 ## Affected bounded contexts
 
-- `<context>`
+- Release readiness
+- Operator dashboard cutover
+- Staging verification
+- KMS test verification
 
 ## Affected projects/directories
 
-- `<path>`
+- `.codex/heartbeat`
+- `docs/infrastructure/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`
+- `docs/releases`
+- `artifacts/operator-cutover`
 
 ## Current step
 
-`<what Codex is doing right now>`
+Heartbeat files have been reconciled and need human review against the live evidence pack.
 
 ## Planned file changes
 
 | File | Reason |
 |---|---|
-| `<path>` | `<reason>` |
+| `.codex/heartbeat/alpha-status.md` | Replace placeholder statuses with evidence-aware Alpha/Beta readiness state. |
+| `.codex/heartbeat/current-blockers.md` | Record active P0/P1 blockers and resolved repo-side blockers. |
+| `.codex/heartbeat/current-task.md` | Capture this reconciliation task and current status. |
+| `.codex/heartbeat/verification-log.md` | Record recent known pass/fail/pending verification. |
+| `.codex/heartbeat/reports/latest-alpha-review.md` | Align latest review with refreshed status board and runbook rules. |
 
 ## Actual file changes
 
 | File | Change summary |
 |---|---|
-| `<path>` | `<summary>` |
+| `.codex/heartbeat/alpha-status.md` | Updated overall status to `not-launch-ready`; marked repo-proven items verified/needs-review and staging-only gates blocked. |
+| `.codex/heartbeat/current-blockers.md` | Added active P0/P1 blocker ledger and resolved blocker notes. |
+| `.codex/heartbeat/current-task.md` | Replaced template content with current reconciliation heartbeat. |
+| `.codex/heartbeat/verification-log.md` | Added known passing, failing, and pending verification rows. |
+| `.codex/heartbeat/reports/latest-alpha-review.md` | Preserved not-launch-ready conclusion and added runbook-specific pending-evidence summary. |
 
 ## Commands planned
 
 ```bash
-# commands Codex intends to run
+git diff --check .codex/heartbeat docs/infrastructure/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md
 ```
 
 ## Commands executed
 
 | Command | Result | Notes |
 |---|---:|---|
-| `<command>` | not-run | |
+| Read `.codex/skills/alpha_release/SKILL.md` | pass | Applied P0/P1 classification and Alpha stability bias. |
+| Read `docs/infrastructure/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` | pass | Confirmed runbook rows require result/evidence before completion. |
+| Read `.codex/heartbeat/*` status files | pass | Found placeholder/stale heartbeat status. |
+| `git diff --check .codex/heartbeat docs/infrastructure/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` | pending | Run after edits. |
 
 ## Verification status
 
@@ -63,16 +80,16 @@
 - [ ] Docker config checked
 - [ ] Migration behavior checked
 - [ ] Security impact checked
-- [ ] Docs/checklists updated
+- [x] Docs/checklists updated
 
 ## Blockers
 
-None.
+See `.codex/heartbeat/current-blockers.md`.
 
 ## Next action
 
-`<next concrete step>`
+Review the updated heartbeat files, then gather staging migration/readiness and operator parallel-run evidence.
 
 ## Completion notes
 
-`<final notes>`
+This is a documentation/status reconciliation only. It does not close any live staging/prod release gate.

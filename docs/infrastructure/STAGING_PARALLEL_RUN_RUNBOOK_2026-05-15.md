@@ -219,7 +219,7 @@ Notes:
 
 | Check | Django | Blazor | Match? |
 |-------|--------|--------|--------|
-| Player lookup by UUID loads history | ☐ | ☐ | ☐ |
+| Player lookup by UUID loads history | x | ☐ | ☐ |
 | Transaction history shows correct amounts | ☐ | ☐ | ☐ |
 | Grant 10 coins to test player | ☐ | ☐ | ☐ |
 | New transaction appears in history | ☐ | ☐ | ☐ |
