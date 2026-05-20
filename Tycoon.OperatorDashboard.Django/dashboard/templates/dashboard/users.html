@@ -30,7 +30,7 @@
     <div class="form-grid">
       <label>
         Search
-        <input type="text" name="q" value="{{ query.q|default:'' }}" placeholder="email or username" />
+        <input type="text" name="q" value="{{ query.q|default:'' }}" placeholder="@handle, email, or UUID" />
       </label>
       <label>
         Status
@@ -284,9 +284,8 @@
         <thead>
           <tr>
             {% if can_write_users %}<th>Select</th>{% endif %}
-            <th>User ID</th>
+            <th>Player</th>
             <th>Email</th>
-            <th>Username</th>
             <th>Role</th>
             <th>Verified</th>
             <th>Banned</th>
@@ -297,9 +296,11 @@
           {% for user in items %}
           <tr>
             {% if can_write_users %}<td><input type="checkbox" name="userIds" value="{{ user.id }}" /></td>{% endif %}
-            <td>{{ user.id }}</td>
+            <td>
+              <strong>@{{ user.username|default:user.id }}</strong>
+              <br><code class="helper-text" style="font-size:0.68rem;">{{ user.id }}</code>
+            </td>
             <td>{{ user.email|default:"-" }}</td>
-            <td>{{ user.username|default:"-" }}</td>
             <td><span class="chip neutral">{{ user.role|default:"-" }}</span></td>
             <td><span class="chip {% if user.isVerified %}success{% else %}warning{% endif %}">{{ user.isVerified|yesno:"yes,no,-" }}</span></td>
             <td><span class="chip {% if user.isBanned %}danger{% else %}success{% endif %}">{{ user.isBanned|yesno:"yes,no,-" }}</span></td>
@@ -312,7 +313,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="{% if can_write_users %}8{% else %}7{% endif %}" class="helper-text">No users returned for this filter.</td>
+            <td colspan="{% if can_write_users %}7{% else %}6{% endif %}" class="helper-text">No users returned for this filter.</td>
           </tr>
           {% endfor %}
         </tbody>

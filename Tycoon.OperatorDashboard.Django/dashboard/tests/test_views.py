@@ -40,7 +40,7 @@ class OperatorDetailDrilldownViewsTests(TestCase):
         response = self.client.get(reverse("operator-user-detail-view", kwargs={"user_id": "u1"}))
 
         self.assertEqual(200, response.status_code)
-        self.assertContains(response, "User detail")
+        self.assertContains(response, "@User One")
         self.assertContains(response, "user@example.com")
         self.assertContains(response, "Signed in")
         self.assertContains(response, "ops@example.com")
@@ -1278,7 +1278,7 @@ class DashboardViewsTests(TestCase):
         session.save()
 
         mock_list_history.return_value = {"items": [], "total": 0, "page": 1}
-        response = self.client.get(reverse("economy-player-view"), {"playerId": "test-player-id"})
+        response = self.client.get(reverse("economy-player-view"), {"playerId": "00000000-0000-0000-0000-000000000001"})
 
         self.assertEqual(200, response.status_code)
         self.assertContains(response, 'data-validate="1"')

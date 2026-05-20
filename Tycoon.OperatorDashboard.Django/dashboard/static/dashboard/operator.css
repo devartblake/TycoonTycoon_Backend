@@ -256,6 +256,51 @@ h3 {
   color: var(--accent-ink);
 }
 
+.nav-jump-wrap {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-subtle, rgba(255,255,255,.08));
+}
+
+.nav-jump-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.nav-jump-icon {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  flex-shrink: 0;
+  opacity: .5;
+}
+
+.nav-jump-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  font-size: 0.72rem;
+  width: 100%;
+  padding: 2px 0;
+  opacity: .7;
+}
+
+.nav-jump-input::placeholder {
+  opacity: .5;
+}
+
+.nav-jump-input:focus {
+  opacity: 1;
+}
+
 .operator-sidebar-footer,
 .sidebar-foot {
   display: flex;

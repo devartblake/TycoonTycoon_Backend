@@ -192,6 +192,13 @@
           </div>
         </nav>
 
+        <div class="nav-jump-wrap">
+          <form method="get" action="{% url 'player-resolve-view' %}" class="nav-jump-form" autocomplete="off">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="nav-jump-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input name="q" class="nav-jump-input" placeholder="Jump to player (handle or UUID)" autocomplete="off" aria-label="Jump to player by handle or UUID" />
+          </form>
+        </div>
+
         <div class="operator-sidebar-footer">
           {% if admin_profile %}
           {% with operator_email=admin_profile.email|default:"operator@local" %}

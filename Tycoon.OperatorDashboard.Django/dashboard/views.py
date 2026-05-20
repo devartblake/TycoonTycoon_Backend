@@ -693,6 +693,31 @@ def operator_users(request):
 
 @operator_login_required
 @require_permission("users:read")
+def player_resolve_view(request):
+    """Global handle/UUID → investigation page resolver. Used by the nav jump form."""
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    q = (request.GET.get("q") or "").strip()
+    if not q:
+        return redirect("operator-users-view")
+    resolved = _resolve_player_id(access_token, q)
+    if resolved:
+        return redirect("operator-user-investigation-view", user_id=resolved)
+    if q:
+        try:
+            # If the backend returns a usable list, show it for disambiguation
+            results = list_admin_users(access_token, {"q": q, "pageSize": 10})
+            count = len(results.get("items", []))
+            if count == 0:
+                messages.error(request, f"No users found matching '{q}'.")
+            else:
+                messages.warning(request, f"'{q}' matches {count} users — narrow your search or pick one below.")
+        except Exception:
+            messages.error(request, f"Could not resolve '{q}'.")
+    return redirect(f"/users?q={q}")
+
+
+@operator_login_required
+@require_permission("users:read")
 def operator_users_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     bulk_result = None
@@ -2865,7 +2890,18 @@ def questions_bulk_import_view(request):
 @require_permission("economy:read")
 def economy_player_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
-    player_id = (request.GET.get("playerId") or "").strip()
+    raw_id = (request.GET.get("playerId") or "").strip()
+    # Resolve handle → UUID if the input is not already a UUID
+    player_id = raw_id
+    if raw_id:
+        try:
+            uuid.UUID(raw_id)
+        except ValueError:
+            resolved = _resolve_player_id(access_token, raw_id)
+            if resolved:
+                return redirect(f"/economy/player?playerId={resolved}")
+            messages.error(request, f"Could not find a unique player matching '{raw_id}'. Check the handle or use a UUID.")
+            player_id = ""
     params = {
         "page": request.GET.get("page", 1),
         "pageSize": request.GET.get("pageSize", 50),
@@ -3382,6 +3418,29 @@ def _parse_question_options(request) -> list[dict]:
     return options
 
 
+def _resolve_player_id(access_token: str, raw: str) -> str | None:
+    """Return UUID string if raw is already a UUID; otherwise search by handle and return the first unambiguous match.
+
+    Returns None when the handle matches zero or multiple users (ambiguous).
+    """
+    raw = raw.strip().lstrip("@")
+    if not raw:
+        return None
+    try:
+        uuid.UUID(raw)
+        return raw
+    except ValueError:
+        pass
+    try:
+        data = list_admin_users(access_token, {"q": raw, "pageSize": 5})
+        items = data.get("items", [])
+        if len(items) == 1:
+            return items[0].get("id", "").replace("usr_", "")
+        return None
+    except Exception:
+        return None
+
+
 @operator_login_required
 @require_permission("notifications:write")
 def notifications_send(request):
@@ -3764,7 +3823,18 @@ def personalization_rule_upsert(request, rule_key: str):
 @require_permission("economy:read")
 def powerups_view(request):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
-    player_id = (request.GET.get("playerId") or "").strip()
+    raw_id = (request.GET.get("playerId") or "").strip()
+    # Resolve handle → UUID if the input is not already a UUID
+    player_id = raw_id
+    if raw_id and request.method == "GET":
+        try:
+            uuid.UUID(raw_id)
+        except ValueError:
+            resolved = _resolve_player_id(access_token, raw_id)
+            if resolved:
+                return redirect(f"/economy/powerups?playerId={resolved}")
+            messages.error(request, f"Could not find a unique player matching '{raw_id}'.")
+            player_id = ""
     context = {
         "player_id": player_id,
         "powerup_state": None,

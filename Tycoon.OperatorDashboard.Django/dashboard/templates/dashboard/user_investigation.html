@@ -6,15 +6,15 @@
 <section class="topbar">
   <div>
     <p class="page-eyebrow">User operations</p>
-    <h1 class="page-title">Investigation workbench</h1>
-    <p class="page-subtitle">Review account context, activity, moderation, economy, personalization, and store stock signals from one permission-gated operator view.</p>
+    <h1 class="page-title">{% if user_detail.username %}@{{ user_detail.username }}{% else %}Investigation workbench{% endif %}</h1>
+    <p class="page-subtitle">Account context, activity, moderation, economy, personalization, and store signals.<br>
+      <code class="helper-text" style="font-size:0.72rem;">{{ user_id }}</code>
+    </p>
   </div>
   <div class="topbar-actions">
     <a class="button secondary" href="{{ user_detail_url }}">Back to user detail</a>
     <a class="button secondary" href="{{ users_url }}">Back to users</a>
     <a class="button secondary" href="{{ return_to }}">Cancel</a>
-    <span class="chip neutral">User {{ user_id }}</span>
-    <span class="chip neutral">Player {{ player_id }}</span>
   </div>
 </section>
 
@@ -25,7 +25,7 @@
     <div class="form-grid">
       <label>
         Player ID
-        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="00000000-0000-0000-0000-000000000000" />
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="@handle or UUID" />
       </label>
       <label>
         Activity page size

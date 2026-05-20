@@ -6,8 +6,10 @@
 <section class="topbar">
   <div>
     <p class="page-eyebrow">User operations</p>
-    <h1 class="page-title">User detail</h1>
-    <p class="page-subtitle">Review account state, update supported fields, and inspect recent activity.</p>
+    <h1 class="page-title">{% if user_detail.username %}@{{ user_detail.username }}{% else %}User detail{% endif %}</h1>
+    <p class="page-subtitle">Review account state, update supported fields, and inspect recent activity.<br>
+      {% if user_detail %}<code class="helper-text" style="font-size:0.72rem;">{{ user_detail.id|default:user_id }}</code>{% endif %}
+    </p>
   </div>
   <div class="topbar-actions">
     <a class="button secondary" href="{% url 'operator-users-view' %}">Back to users</a>

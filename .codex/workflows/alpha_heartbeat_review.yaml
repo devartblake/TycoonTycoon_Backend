@@ -1,0 +1,22 @@
+name: alpha-heartbeat-review
+description: Review heartbeat status for Alpha/Beta readiness.
+steps:
+  - read:
+      - .codex/heartbeat/alpha-status.md
+      - .codex/heartbeat/current-blockers.md
+      - .codex/heartbeat/verification-log.md
+      - .codex/heartbeat/deferred-post-alpha.md
+  - summarize:
+      include:
+        - active_p0_blockers
+        - unresolved_p1_items
+        - latest_verification_failures
+        - deferred_scope
+  - recommend:
+      output_groups:
+        - do_now
+        - feature_flag
+        - defer
+        - needs_user_decision
+  - update:
+      target: .codex/heartbeat/reports/latest-alpha-review.md
