@@ -55,6 +55,35 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
             dto.ExpiresAtUtc.Should().BeAfter(DateTimeOffset.UtcNow);
         }
 
+        [Theory]
+        [InlineData("image.png", "image/png", "uploads/images/")]
+        [InlineData("model.glb", "model/gltf-binary", "uploads/3d/")]
+        [InlineData("sound.mp3", "audio/mpeg", "uploads/audio/")]
+        [InlineData("clip.mp4", "video/mp4", "uploads/video/")]
+        public async Task CreateUploadIntent_Accepts_Supported_Media_Types(string fileName, string contentType, string expectedPrefix)
+        {
+            var resp = await _http.PostAsJsonAsync("/admin/media/intent", new CreateUploadIntentRequest(fileName, contentType, 12345));
+
+            resp.IsSuccessStatusCode.Should().BeTrue();
+            var dto = await resp.Content.ReadFromJsonAsync<UploadIntentDto>();
+            dto.Should().NotBeNull();
+            dto!.AssetKey.Should().Contain(expectedPrefix);
+        }
+
+        [Theory]
+        [InlineData("vector.svg", "image/svg+xml", 12345)]
+        [InlineData("archive.zip", "application/zip", 12345)]
+        [InlineData("model.glb", "model/gltf+json", 12345)]
+        [InlineData("clip.mp4", "video/mp4", 524288001)]
+        public async Task CreateUploadIntent_Rejects_Unsupported_Or_Oversized_Media(string fileName, string contentType, long sizeBytes)
+        {
+            var resp = await _http.PostAsJsonAsync("/admin/media/intent", new CreateUploadIntentRequest(fileName, contentType, sizeBytes));
+
+            resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var result = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            result.GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
+        }
+
         [Fact]
         public async Task Upload_Stores_File_And_Returns_AssetKey_And_Url()
         {
@@ -77,6 +106,18 @@ namespace Tycoon.Backend.Api.Tests.AdminMedia
             var result = await resp.Content.ReadFromJsonAsync<JsonElement>();
             result.GetProperty("assetKey").GetString().Should().Be(intent.AssetKey);
             result.GetProperty("url").GetString().Should().NotBeNullOrWhiteSpace();
+        }
+
+        [Fact]
+        public async Task StorageDiagnostics_Returns_Safe_Config_And_Status()
+        {
+            var resp = await _http.GetAsync("/admin/media/storage-diagnostics");
+
+            resp.IsSuccessStatusCode.Should().BeTrue();
+            var result = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            result.GetProperty("overallStatus").GetString().Should().NotBeNullOrWhiteSpace();
+            result.GetProperty("auth").GetString().Should().NotBeNullOrWhiteSpace();
+            result.GetProperty("checks").ValueKind.Should().Be(JsonValueKind.Object);
         }
     }
 }

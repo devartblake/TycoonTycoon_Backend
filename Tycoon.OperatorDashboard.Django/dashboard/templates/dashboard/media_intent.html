@@ -5,13 +5,13 @@
 {% block content %}
 <section class="topbar">
   <div>
-    <p class="page-eyebrow">Storage</p>
+    <p class="page-eyebrow">Operator overview / Storage / Media upload</p>
     <h1 class="page-title">Media upload intent</h1>
-    <p class="page-subtitle">Generate presigned upload intent payloads for operator verification and object-storage troubleshooting.</p>
+    <p class="page-subtitle">Generate a backend upload intent, upload the selected file to MinIO, and verify the resulting object key.</p>
   </div>
   <div class="topbar-actions">
-    <span class="badge acc"><span class="dot"></span>Payload preview</span>
-    <span class="chip neutral">Copy enabled</span>
+    <a class="button secondary" href="{% url 'operator-minio-diagnostics-view' %}">MinIO diagnostics</a>
+    <span class="badge acc"><span class="dot"></span>Upload enabled</span>
   </div>
 </section>
 
@@ -20,27 +20,49 @@
     <div class="section-header">
       <div>
         <h2>Request input</h2>
-        <p class="section-copy">Submit a representative file payload to inspect the backend-generated upload intent envelope.</p>
+        <p class="section-copy">Select a representative media file. The dashboard generates an intent, then uploads the file through the server-side MinIO path.</p>
       </div>
     </div>
-    <form method="post" class="stack">
+    <form method="post" enctype="multipart/form-data" class="stack" data-validate data-media-upload-form>
       {% csrf_token %}
+      <label class="form-field">
+        Media file
+        <input id="media-file-input" type="file" name="file" accept="{{ accept_types }}" required />
+        <span class="field-error"></span>
+      </label>
       <div class="form-grid">
         <label>
           File name
-          <input type="text" name="fileName" placeholder="avatar.png" required />
+          <input id="media-file-name" type="text" name="fileName" value="{{ form.fileName|default:'' }}" placeholder="avatar.png" required />
         </label>
         <label>
           Content type
-          <input type="text" name="contentType" placeholder="image/png" required />
+          <input id="media-content-type" type="text" name="contentType" value="{{ form.contentType|default:'' }}" placeholder="image/png" required />
         </label>
         <label>
           Size bytes
-          <input type="number" name="sizeBytes" placeholder="12345" required />
+          <input id="media-size-bytes" type="number" name="sizeBytes" value="{{ form.sizeBytes|default:'' }}" placeholder="12345" required />
+        </label>
+        <label>
+          Owner UUID
+          <input type="text" name="ownerUuid" value="{{ form.ownerUuid|default:'' }}" placeholder="optional - scopes evidence only" />
+        </label>
+        <label>
+          Bucket hint
+          <select name="bucketHint">
+            {% for value, label in bucket_hints %}
+            <option value="{{ value }}" {% if form.bucketHint == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Expiry
+          <input type="text" name="expiry" value="{{ form.expiry|default:'10 minutes' }}" readonly />
         </label>
       </div>
       <div class="toolbar-actions">
-        <button type="submit">Generate intent</button>
+        <button type="submit">Generate and upload</button>
+        <a class="button secondary" href="{% url 'operator-media-intent-view' %}">Reset</a>
       </div>
     </form>
   </article>
@@ -53,24 +75,62 @@
       </div>
     </div>
     <ul class="list">
-      <li>The object key path matches the expected naming strategy.</li>
+      <li>The object key path matches the expected media category naming strategy.</li>
       <li>Content type and size constraints are accepted by the backend.</li>
-      <li>The resulting intent is suitable for MinIO reachability and policy checks.</li>
+      <li>The selected file is uploaded to the configured MinIO bucket or API fallback path.</li>
+      <li>The presigned URL expires within the backend-defined window.</li>
     </ul>
+    <div class="detail-list mt-lg">
+      <div><dt>Backend</dt><dd><code>POST /admin/media/intent</code></dd></div>
+      <div><dt>Upload</dt><dd><code>PUT presigned URL</code> or <code>POST /admin/media/upload</code></dd></div>
+      <div><dt>Allowed</dt><dd>images, GLB/GLTF, audio, video</dd></div>
+    </div>
   </article>
 </section>
 
-{% if intent %}
 <section class="card mt-lg">
   <div class="section-header">
     <div>
-      <h2>Intent response</h2>
-      <p class="section-copy">Raw response payload returned by the upload-intent endpoint.</p>
+      <h2>Generated intent</h2>
+      <p class="section-copy">Backend response envelope and upload result for the latest submission.</p>
     </div>
+    <button type="button" class="button secondary" data-copy-target="#media-intent-payload">Copy JSON</button>
   </div>
+  {% if intent %}
+  <div class="screen-kpis">
+    <article class="screen-kpi ok">
+      <span class="kpi-label">Upload status</span>
+      <span class="kpi-val">{{ upload_result.statusCode }}</span>
+      <span class="kpi-delta">HTTP response</span>
+    </article>
+    <article class="screen-kpi">
+      <span class="kpi-label">Bytes</span>
+      <span class="kpi-val">{{ upload_result.sizeBytes }}</span>
+      <span class="kpi-delta">{{ upload_result.contentType }}</span>
+    </article>
+    <article class="screen-kpi">
+      <span class="kpi-label">Category</span>
+      <span class="kpi-val">{{ upload_result.category }}</span>
+      <span class="kpi-delta">policy matched</span>
+    </article>
+  </div>
+  <div class="surface-note mt-lg">
+    <pre id="media-intent-payload">{{ intent_json }}</pre>
+  </div>
+  <div class="surface-note mt-lg">
+    <pre id="media-upload-result">{{ upload_result_json }}</pre>
+  </div>
+  {% else %}
   <div class="surface-note">
-    <pre id="media-intent-payload">{{ intent|pprint }}</pre>
+    <pre id="media-intent-payload">{
+  "objectKey": "uploads/images/&lt;date&gt;/&lt;guid&gt;_avatar.png",
+  "uploadUrl": "https://minio:9000/...X-Amz-Signature=...",
+  "expiresAtUtc": "generated after upload",
+  "policy": {
+    "allowedTypes": ["image/png", "image/jpeg", "model/gltf-binary", "audio/mpeg", "video/mp4"]
+  }
+}</pre>
   </div>
+  {% endif %}
 </section>
-{% endif %}
 {% endblock %}

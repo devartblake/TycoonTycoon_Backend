@@ -6,6 +6,7 @@ import uuid
 from datetime import timedelta
 from functools import wraps
 from io import StringIO
+from pathlib import Path
 from time import time
 
 import httpx
@@ -22,7 +23,7 @@ from django.utils import timezone
 from .models import OperatorSavedView, OperatorSavedViewAuditEvent, ProbeCheckRecord
 from .services.admin_audit_client import get_security_audit, get_security_audit_event
 from .services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError, admin_login, admin_me, admin_refresh
-from .services.admin_media_client import create_upload_intent
+from .services.admin_media_client import create_upload_intent, upload_file_to_intent
 from .services.admin_moderation_client import get_moderation_log, get_moderation_logs, get_moderation_profile, set_moderation_status
 from .services.admin_economy_client import create_economy_transaction, get_economy_balance, get_economy_history, rollback_economy_transaction, simulate_economy, update_economy_balance
 from .services.admin_questions_client import approve_question, bulk_import_questions, create_question, delete_question, get_question, list_questions, reject_question, update_question
@@ -269,6 +270,40 @@ def _to_csv_response(rows: list[dict], fieldnames: list[str], filename: str):
 
 def _to_pretty_json(value) -> str:
     return json.dumps(value or {}, indent=2, sort_keys=True)
+
+
+MEDIA_UPLOAD_TYPES = {
+    ".jpg": ("images", 25 * 1024 * 1024, {"image/jpeg"}),
+    ".jpeg": ("images", 25 * 1024 * 1024, {"image/jpeg"}),
+    ".png": ("images", 25 * 1024 * 1024, {"image/png"}),
+    ".webp": ("images", 25 * 1024 * 1024, {"image/webp"}),
+    ".gif": ("images", 25 * 1024 * 1024, {"image/gif"}),
+    ".avif": ("images", 25 * 1024 * 1024, {"image/avif"}),
+    ".glb": ("3d", 100 * 1024 * 1024, {"model/gltf-binary", "application/octet-stream"}),
+    ".gltf": ("3d", 100 * 1024 * 1024, {"model/gltf+json"}),
+    ".mp3": ("audio", 100 * 1024 * 1024, {"audio/mpeg"}),
+    ".wav": ("audio", 100 * 1024 * 1024, {"audio/wav", "audio/x-wav"}),
+    ".ogg": ("audio", 100 * 1024 * 1024, {"audio/ogg"}),
+    ".aac": ("audio", 100 * 1024 * 1024, {"audio/aac"}),
+    ".m4a": ("audio", 100 * 1024 * 1024, {"audio/mp4"}),
+    ".mp4": ("video", 500 * 1024 * 1024, {"video/mp4"}),
+    ".webm": ("video", 500 * 1024 * 1024, {"video/webm", "audio/webm"}),
+    ".mov": ("video", 500 * 1024 * 1024, {"video/quicktime"}),
+}
+
+
+def _classify_media_upload(file_name: str, content_type: str, size_bytes: int) -> tuple[str, int] | None:
+    extension = Path(file_name).suffix.lower()
+    rule = MEDIA_UPLOAD_TYPES.get(extension)
+    if not rule:
+        return None
+    category, max_bytes, allowed_types = rule
+    normalized_content_type = (content_type or "").split(";", 1)[0].strip().lower()
+    if normalized_content_type not in allowed_types:
+        return None
+    if size_bytes <= 0 or size_bytes > max_bytes:
+        return None
+    return category, max_bytes
 
 
 def _normalize_personalization_audit_rows(rows: list[dict] | None) -> list[dict]:
@@ -1562,20 +1597,46 @@ def operator_media_intent(request):
 @operator_login_required
 @require_permission("questions:write")
 def operator_media_intent_view(request):
+    accept_types = ",".join(sorted({ext for ext in MEDIA_UPLOAD_TYPES}))
+    bucket_hints = [
+        ("images", "Images"),
+        ("3d", "3D models"),
+        ("audio", "Audio"),
+        ("video", "Video"),
+        ("general", "General"),
+    ]
     context = {
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
         "intent": None,
+        "intent_json": "{}",
+        "upload_result": None,
+        "upload_result_json": "{}",
+        "accept_types": accept_types,
+        "bucket_hints": bucket_hints,
+        "form": {
+            "bucketHint": "images",
+            "expiry": "10 minutes",
+        },
     }
 
     if request.method == "GET":
         return render(request, "dashboard/media_intent.html", context)
 
-    file_name = request.POST.get("fileName")
-    content_type = request.POST.get("contentType")
-    size_bytes = request.POST.get("sizeBytes")
+    uploaded_file = request.FILES.get("file")
+    file_name = (request.POST.get("fileName") or getattr(uploaded_file, "name", "") or "").strip()
+    content_type = (request.POST.get("contentType") or getattr(uploaded_file, "content_type", "") or "").strip()
+    size_bytes = request.POST.get("sizeBytes") or getattr(uploaded_file, "size", None)
+    context["form"] = {
+        "fileName": file_name,
+        "contentType": content_type,
+        "sizeBytes": size_bytes or "",
+        "ownerUuid": request.POST.get("ownerUuid") or "",
+        "bucketHint": request.POST.get("bucketHint") or "images",
+        "expiry": request.POST.get("expiry") or "10 minutes",
+    }
 
-    if not file_name or not content_type or not size_bytes:
-        messages.error(request, "fileName, contentType, and sizeBytes are required.")
+    if not uploaded_file:
+        messages.error(request, "Select a media file to upload.")
         return render(request, "dashboard/media_intent.html", context, status=422)
 
     try:
@@ -1584,22 +1645,41 @@ def operator_media_intent_view(request):
         messages.error(request, "sizeBytes must be an integer.")
         return render(request, "dashboard/media_intent.html", context, status=422)
 
+    policy = _classify_media_upload(file_name, content_type, size_value)
+    if policy is None:
+        messages.error(request, "Unsupported media type, extension, or file size for operator upload.")
+        return render(request, "dashboard/media_intent.html", context, status=422)
+
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     try:
-        context["intent"] = create_upload_intent(access_token, file_name, content_type, size_value)
+        intent = create_upload_intent(access_token, file_name, content_type, size_value)
+        upload_result = upload_file_to_intent(access_token, intent["uploadUrl"], uploaded_file, content_type)
+        context["intent"] = intent
+        context["intent_json"] = _to_pretty_json(intent)
+        context["upload_result"] = {
+            **upload_result,
+            "fileName": file_name,
+            "contentType": content_type,
+            "sizeBytes": size_value,
+            "category": policy[0],
+            "maxBytes": policy[1],
+            "assetKey": intent.get("assetKey"),
+        }
+        context["upload_result_json"] = _to_pretty_json(context["upload_result"])
+        messages.success(request, "Upload intent generated and file uploaded to object storage.")
         return render(request, "dashboard/media_intent.html", context)
     except httpx.HTTPStatusError as ex:
-        messages.error(request, f"Media intent failed with HTTP {ex.response.status_code}.")
+        messages.error(request, f"Media upload failed with HTTP {ex.response.status_code}.")
         return render(request, "dashboard/media_intent.html", context, status=502)
     except httpx.RequestError:
-        messages.error(request, "Unable to reach backend media intent endpoint.")
+        messages.error(request, "Unable to reach backend media or storage endpoint.")
         return render(request, "dashboard/media_intent.html", context, status=503)
 
 
 @operator_login_required
 @require_permission("users:read")
 def operator_minio_diagnostics(request):
-    payload = get_minio_diagnostics()
+    payload = get_minio_diagnostics(request.session.get(SESSION_ACCESS_TOKEN_KEY))
     status_map = {"healthy": 200, "degraded": 200, "offline": 503}
     return JsonResponse(payload, status=status_map.get(payload.get("overallStatus", "degraded"), 200))
 
@@ -1607,8 +1687,22 @@ def operator_minio_diagnostics(request):
 @operator_login_required
 @require_permission("users:read")
 def minio_diagnostics_view(request):
-    diagnostics = get_minio_diagnostics()
+    diagnostics = get_minio_diagnostics(request.session.get(SESSION_ACCESS_TOKEN_KEY))
     overall_status = diagnostics.get("overallStatus", "degraded")
+    checks = diagnostics.get("checks") or {}
+    checks_list = []
+    passing = 0
+    latencies = []
+    for name, check in checks.items():
+        status = check.get("status", "degraded")
+        latency = check.get("latencyMs")
+        if status == "healthy":
+            passing += 1
+        if isinstance(latency, (int, float)):
+            latencies.append(float(latency))
+        checks_list.append({"name": name, **check})
+
+    p95_latency = round(max(latencies), 2) if latencies else None
 
     guidance_by_status = {
         "healthy": [
@@ -1628,6 +1722,11 @@ def minio_diagnostics_view(request):
     context = {
         "diagnostics": diagnostics,
         "overall_status": overall_status,
+        "checks_list": checks_list,
+        "probes_passing": passing,
+        "probes_total": len(checks_list),
+        "p95_latency": p95_latency,
+        "total_bytes_gb": round((diagnostics.get("totalBytes") or 0) / (1024 * 1024 * 1024), 2),
         "guidance": guidance_by_status.get(overall_status, guidance_by_status["degraded"]),
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }

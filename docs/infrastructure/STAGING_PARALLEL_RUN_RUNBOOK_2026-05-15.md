@@ -184,9 +184,9 @@ Notes:
 
 | Check | Django | Blazor | Match? |
 |-------|--------|--------|--------|
-| Audit log loads | ☐ | ☐ | ☐ |
-| Filter by event type works | ☐ | ☐ | ☐ |
-| `/audit/security/{eventId}` detail page loads formatted metadata | ☐ | n/a | ☐ |
+| Audit log loads | x | ☐ | ☐ |
+| Filter by event type works | x | ☐ | ☐ |
+| `/audit/security/{eventId}` detail page loads formatted metadata | x | n/a | ☐ |
 
 **What to look for:**
 
@@ -200,8 +200,8 @@ Notes:
 
 | Check | Django | Blazor | Match? |
 |-------|--------|--------|--------|
-| Pending questions list renders | ☐ | ☐ | ☐ |
-| `/content/questions/{questionId}` detail/edit page loads full question and options | ☐ | n/a | ☐ |
+| Pending questions list renders | x | x | x |
+| `/content/questions/{questionId}` detail/edit page loads full question and options | x | n/a | ☐ |
 | Approve a question → status changes to Approved | ☐ | ☐ | ☐ |
 | Reject a question → status changes to Rejected | ☐ | ☐ | ☐ |
 | Filter by status=Approved shows only approved | ☐ | ☐ | ☐ |

@@ -167,9 +167,46 @@
     });
   }
 
+  function mediaCategoryFor(fileName, contentType) {
+    var name = (fileName || '').toLowerCase();
+    var type = (contentType || '').toLowerCase();
+    if (type.indexOf('image/') === 0 || /\.(jpg|jpeg|png|webp|gif|avif)$/.test(name)) return 'images';
+    if (type.indexOf('audio/') === 0 || /\.(mp3|wav|ogg|aac|m4a)$/.test(name)) return 'audio';
+    if (type.indexOf('video/') === 0 || /\.(mp4|webm|mov)$/.test(name)) return 'video';
+    if (type.indexOf('model/') === 0 || /\.(glb|gltf)$/.test(name)) return '3d';
+    return 'general';
+  }
+
+  function initMediaUploadForms() {
+    document.querySelectorAll('[data-media-upload-form]').forEach(function (form) {
+      var fileInput = form.querySelector('input[type="file"][name="file"]');
+      if (!fileInput) return;
+
+      fileInput.addEventListener('change', function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        var fileName = form.querySelector('[name="fileName"]');
+        var contentType = form.querySelector('[name="contentType"]');
+        var sizeBytes = form.querySelector('[name="sizeBytes"]');
+        var bucketHint = form.querySelector('[name="bucketHint"]');
+
+        if (fileName) fileName.value = file.name;
+        if (contentType) contentType.value = file.type || 'application/octet-stream';
+        if (sizeBytes) sizeBytes.value = file.size;
+        if (bucketHint) bucketHint.value = mediaCategoryFor(file.name, file.type);
+
+        [fileName, contentType, sizeBytes].forEach(function (input) {
+          if (input) clearFieldState(input);
+        });
+      });
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     initDensityBars();
     initFormValidation();
     initCopyControls();
+    initMediaUploadForms();
   });
 })();

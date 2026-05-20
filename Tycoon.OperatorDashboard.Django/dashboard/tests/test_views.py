@@ -2,6 +2,7 @@ from datetime import timedelta
 from unittest import mock
 
 import httpx
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -1087,8 +1088,9 @@ class DashboardViewsTests(TestCase):
         response = self.client.post(reverse("operator-media-intent"), data={"fileName": "avatar.png"})
         self.assertEqual(422, response.status_code)
 
+    @mock.patch("dashboard.views.upload_file_to_intent")
     @mock.patch("dashboard.views.create_upload_intent")
-    def test_operator_media_intent_view_renders_intent(self, mock_create_upload_intent):
+    def test_operator_media_intent_view_renders_intent(self, mock_create_upload_intent, mock_upload_file_to_intent):
         session = self.client.session
         session["operator_access_token"] = "token"
         session["operator_access_expires_at"] = 32503680000
@@ -1096,14 +1098,38 @@ class DashboardViewsTests(TestCase):
         session.save()
 
         mock_create_upload_intent.return_value = {"assetKey": "media/k", "uploadUrl": "https://example/upload"}
+        mock_upload_file_to_intent.return_value = {"statusCode": 200, "ok": True, "payload": {}}
+        uploaded = SimpleUploadedFile("avatar.png", b"\x89PNG", content_type="image/png")
         response = self.client.post(
             reverse("operator-media-intent-view"),
-            data={"fileName": "avatar.png", "contentType": "image/png", "sizeBytes": 321},
+            data={"file": uploaded, "fileName": "avatar.png", "contentType": "image/png", "sizeBytes": 4},
         )
 
         self.assertEqual(200, response.status_code)
-        self.assertContains(response, "Intent response")
+        self.assertContains(response, "Generated intent")
         self.assertContains(response, "media/k")
+        mock_create_upload_intent.assert_called_once_with("token", "avatar.png", "image/png", 4)
+        mock_upload_file_to_intent.assert_called_once()
+
+    @mock.patch("dashboard.views.upload_file_to_intent")
+    @mock.patch("dashboard.views.create_upload_intent")
+    def test_operator_media_intent_view_rejects_unsupported_file(self, mock_create_upload_intent, mock_upload_file_to_intent):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["questions:write"], "email": "ops@example.com"}
+        session.save()
+
+        uploaded = SimpleUploadedFile("vector.svg", b"<svg></svg>", content_type="image/svg+xml")
+        response = self.client.post(
+            reverse("operator-media-intent-view"),
+            data={"file": uploaded, "fileName": "vector.svg", "contentType": "image/svg+xml", "sizeBytes": 11},
+        )
+
+        self.assertEqual(422, response.status_code)
+        self.assertContains(response, "Unsupported media type", status_code=422)
+        mock_create_upload_intent.assert_not_called()
+        mock_upload_file_to_intent.assert_not_called()
 
     def test_operator_media_intent_view_requires_login(self):
         response = self.client.get(reverse("operator-media-intent-view"))
@@ -1154,7 +1180,8 @@ class DashboardViewsTests(TestCase):
         response = self.client.get(reverse("operator-minio-diagnostics-view"))
 
         self.assertEqual(200, response.status_code)
-        self.assertContains(response, "MinIO Diagnostics")
+        self.assertContains(response, "MinIO diagnostics")
+        self.assertContains(response, "Probes passing")
         self.assertContains(response, "Recommended actions")
         self.assertContains(response, "degraded")
 

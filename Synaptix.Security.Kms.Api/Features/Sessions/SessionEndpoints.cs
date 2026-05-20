@@ -67,7 +67,7 @@ public static class SessionEndpoints
         {
             return Results.NotFound(new { error = "session_not_found", message = ex.Message });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
             return Results.Forbid();
         }

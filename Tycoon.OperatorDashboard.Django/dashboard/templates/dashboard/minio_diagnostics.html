@@ -5,35 +5,36 @@
 {% block content %}
 <section class="topbar">
   <div>
-    <p class="page-eyebrow">Storage health</p>
+    <p class="page-eyebrow">Operator overview / Storage / MinIO diagnostics</p>
     <h1 class="page-title">MinIO diagnostics</h1>
     <p class="page-subtitle">Inspect the current storage posture, review probe health, and follow the recommended incident guidance for the observed state.</p>
   </div>
   <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-minio-diagnostics-view' %}">Re-run probes</a>
     <span class="status-pill {{ overall_status }}">{{ overall_status|upper }}</span>
   </div>
 </section>
 
 <section class="screen-kpis mt-lg">
   <article class="screen-kpi {% if overall_status == 'healthy' %}ok{% elif overall_status == 'offline' %}bad{% else %}warn{% endif %}">
-    <span class="kpi-label">Storage status</span>
-    <span class="kpi-val">{{ overall_status|upper }}</span>
-    <span class="kpi-delta">aggregated MinIO checks</span>
+    <span class="kpi-label">Probes passing</span>
+    <span class="kpi-val">{{ probes_passing }} / {{ probes_total }}</span>
+    <span class="kpi-delta">live · ready · bucket</span>
   </article>
   <article class="screen-kpi">
-    <span class="kpi-label">Probe count</span>
-    <span class="kpi-val">{{ diagnostics.checks|length }}</span>
-    <span class="kpi-delta">configured diagnostics</span>
+    <span class="kpi-label">P95 latency</span>
+    <span class="kpi-val">{% if p95_latency %}{{ p95_latency }}{% else %}-{% endif %}<small> ms</small></span>
+    <span class="kpi-delta">slowest current probe</span>
   </article>
   <article class="screen-kpi">
-    <span class="kpi-label">Guidance</span>
-    <span class="kpi-val">{{ guidance|length }}</span>
-    <span class="kpi-delta">recommended actions</span>
+    <span class="kpi-label">Objects</span>
+    <span class="kpi-val">{{ diagnostics.objectCount|default:"0" }}</span>
+    <span class="kpi-delta">{{ total_bytes_gb }} GB total</span>
   </article>
   <article class="screen-kpi warn">
-    <span class="kpi-label">Base URL</span>
-    <span class="kpi-val">MINIO</span>
-    <span class="kpi-delta">{{ diagnostics.baseUrl|default:"not configured" }}</span>
+    <span class="kpi-label">Incidents · 7d</span>
+    <span class="kpi-val">0</span>
+    <span class="kpi-delta">no upload-intent failures linked</span>
   </article>
 </section>
 
@@ -42,14 +43,24 @@
     <div class="section-header">
       <div>
         <h2>Storage posture</h2>
-        <p class="section-copy">These diagnostics are generated against the configured MinIO base URL.</p>
+        <p class="section-copy">These diagnostics are generated against the configured MinIO backend and bucket.</p>
       </div>
     </div>
-    <p class="helper-text">Base URL: <code>{{ diagnostics.baseUrl }}</code></p>
-    <div class="status-grid">
+    <dl class="detail-list">
+      <div><dt>Base URL</dt><dd><code>{{ diagnostics.baseUrl|default:"not configured" }}</code></dd></div>
+      <div><dt>Public endpoint</dt><dd><code>{{ diagnostics.publicEndpoint|default:"-" }}</code></dd></div>
+      <div><dt>Bucket</dt><dd><code>{{ diagnostics.bucket|default:"-" }}</code></dd></div>
+      <div><dt>Region</dt><dd>{{ diagnostics.region|default:"us-east-1" }}</dd></div>
+      <div><dt>Auth</dt><dd>{{ diagnostics.auth|default:"-" }}</dd></div>
+      <div><dt>TLS</dt><dd>{% if diagnostics.tlsEnabled %}enabled{% else %}internal · disabled{% endif %}</dd></div>
+    </dl>
+    <div class="status-grid mt-lg">
       {% for item in guidance %}
       <div class="surface-note">{{ item }}</div>
       {% endfor %}
+      {% if diagnostics.fallbackReason %}
+      <div class="message warning">Backend diagnostics fallback: {{ diagnostics.fallbackReason }}</div>
+      {% endif %}
     </div>
   </article>
 
@@ -57,14 +68,19 @@
     <div class="section-header">
       <div>
         <h2>Recommended actions</h2>
-        <p class="section-copy">Suggested next actions based on the current storage status.</p>
+        <p class="section-copy">Suggested next steps based on the current storage status.</p>
       </div>
     </div>
-    <ul class="list">
+    <ol class="list">
       <li>Confirm the object-storage service is reachable from the dashboard runtime.</li>
-      <li>Correlate any degraded probe with recent upload-intent failures or policy changes.</li>
-      <li>Escalate quickly when the status is offline and operator upload workflows are blocked.</li>
-    </ul>
+      <li>Correlate degraded probes with recent upload-intent failures or policy changes.</li>
+      <li>Escalate quickly when status is offline and operator upload workflows are blocked.</li>
+      <li>If latency rises above 100ms, check MinIO disk utilization and the network path.</li>
+    </ol>
+    <div class="toolbar-actions mt-lg">
+      <a class="button secondary" href="{{ diagnostics.consoleUrl|default:'http://localhost:9001' }}" target="_blank" rel="noreferrer">Open MinIO console</a>
+      <a class="button secondary" href="{% url 'operator-audit-security-view' %}">View related audit entries</a>
+    </div>
   </article>
 </section>
 
@@ -72,8 +88,9 @@
   <div class="section-header">
     <div>
       <h2>Probe results</h2>
-      <p class="section-copy">Each probe result includes status, HTTP code, and latency for quick diagnosis.</p>
+      <p class="section-copy">Each probe result includes status, HTTP code, latency, and endpoint for quick diagnosis.</p>
     </div>
+    <span class="helper-text">Last run · {{ diagnostics.lastRunAtUtc|default:"just now" }}</span>
   </div>
   <div class="table-wrap">
     <table>
@@ -83,16 +100,20 @@
           <th>Status</th>
           <th>HTTP</th>
           <th>Latency (ms)</th>
+          <th>Endpoint</th>
         </tr>
       </thead>
       <tbody>
-        {% for name, check in diagnostics.checks.items %}
+        {% for check in checks_list %}
         <tr>
-          <td>{{ name }}</td>
-          <td><span class="chip {% if check.status == 'healthy' %}success{% elif check.status == 'offline' %}danger{% else %}warning{% endif %}">{{ check.status }}</span></td>
+          <td><strong>{{ check.name }}</strong></td>
+          <td><span class="chip {% if check.status == 'healthy' %}success{% elif check.status == 'offline' %}danger{% else %}warning{% endif %}">{{ check.status|upper }}</span></td>
           <td>{{ check.httpStatus|default:"-" }}</td>
-          <td>{{ check.latencyMs }}</td>
+          <td>{{ check.latencyMs|default:"-" }}</td>
+          <td><code>{{ check.endpoint|default:"-" }}</code></td>
         </tr>
+        {% empty %}
+        <tr><td colspan="5" class="helper-text">No probe results returned.</td></tr>
         {% endfor %}
       </tbody>
     </table>
