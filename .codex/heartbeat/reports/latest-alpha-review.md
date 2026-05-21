@@ -1,6 +1,6 @@
 # Latest Alpha Heartbeat Review
 
-Generated: `2026-05-20`
+Generated: `2026-05-21`
 
 Status: `not-launch-ready`
 
@@ -33,20 +33,19 @@ The strongest current evidence is in `docs/releases/ALPHA_RELEASE_CRITERIA.md`, 
 | Store purchases | Stripe/PayPal flows exist but are not Alpha scope and are not behind a dedicated purchase flag | Keep providers unconfigured for Alpha; add `store_purchases_enabled` before public Beta |
 | Operator cutover | Compose readiness passes, but all six cutover release gates are still `pending` | Treat operator dashboard cutover as external evidence pending, not repo-complete |
 
-## Latest Verification Failures
+## Latest Verification Notes
 
-- `dotnet test Synaptix.Security.Kms.Tests/Synaptix.Security.Kms.Tests.csproj --configuration Release` failed on Windows because six secure-session tests try to create X25519 keys via CNG and receive `PlatformNotSupportedException` for OID `1.3.101.110`.
-- This failure appears platform/test-environment specific and separate from the KMS warning cleanup. It should be resolved or marked CI-platform-specific before treating the full KMS test suite as green.
+- The Windows KMS secure-session failure has been resolved. `Synaptix.Security.Kms.Tests` now passes locally with capability-aware X25519/P-256 negotiation.
+- `dotnet build TycoonTycoon_Backend.slnx --configuration Release` passes after the KMS secure-session fix; remaining warnings are unrelated nullable warnings in backend API test projects.
 - `.codex/heartbeat/verification-log.md` now records the known passing, failing, and pending checks; keep it updated as live staging evidence arrives.
 
 ## Recommended Next Actions
 
-1. Resolve or isolate the Windows X25519 KMS test failure so `Synaptix.Security.Kms.Tests` has a reliable local verification path.
-2. Run staging migration/readiness proof and attach logs to `ALPHA_RELEASE_CRITERIA.md`.
-3. Execute the staging parallel-run runbook and populate result/evidence entries for every applicable row.
-4. Run staging golden-path API smoke and Flutter live backend smoke.
-5. Execute rollback drill and collect the four release sign-offs.
-6. Run `release-gate.yml` against the release SHA and attach artifacts.
+1. Run staging migration/readiness proof and attach logs to `ALPHA_RELEASE_CRITERIA.md`.
+2. Execute the staging parallel-run runbook and populate result/evidence entries for every applicable row.
+3. Run staging golden-path API smoke and Flutter live backend smoke.
+4. Execute rollback drill and collect the four release sign-offs.
+5. Run `release-gate.yml` against the release SHA and attach artifacts.
 
 ## What To Defer
 
@@ -59,5 +58,4 @@ The strongest current evidence is in `docs/releases/ALPHA_RELEASE_CRITERIA.md`, 
 
 ## Needs User Decision
 
-- Decide whether to fix the X25519 secure-session test for Windows now, or treat it as CI/Linux-only verification for Alpha.
 - Confirm who owns staging credentials and the live evidence pack for migration, smoke, rollback, and sign-off.

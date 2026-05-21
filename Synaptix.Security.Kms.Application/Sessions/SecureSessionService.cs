@@ -2,35 +2,33 @@ using System.Security.Cryptography;
 using System.Text;
 using Synaptix.Security.Kms.Application.Abstractions;
 using Synaptix.Security.Kms.Contracts.Models;
-using Synaptix.Security.Kms.Contracts.Suites;
 
 namespace Synaptix.Security.Kms.Application.Sessions;
 
-public sealed class SecureSessionService(ISessionStore store) : ISecureSessionService
+public sealed class SecureSessionService(
+    ISessionStore store,
+    ISecureSessionKeyExchange keyExchange) : ISecureSessionService
 {
     private const string ProtocolVersion = "syn-sec-v1";
     private static readonly TimeSpan SessionTtl = TimeSpan.FromMinutes(30);
 
-    // X25519 OID — supported on .NET 8+ Linux/macOS/Windows via CNG
-    private static readonly ECCurve Curve25519 = ECCurve.CreateFromOid(new Oid("1.3.101.110"));
+    public SecureSessionService(ISessionStore store)
+        : this(store, new SecureSessionKeyExchange())
+    {
+    }
 
     public async Task<StartSessionResult> StartAsync(
         string subjectId, StartSessionCommand command, CancellationToken ct)
     {
-        var suite = SelectSuite(command.SupportedSuites);
+        var suite = keyExchange.SelectSuite(command.SupportedSuites);
         var sessionId = Guid.NewGuid();
         var serverNonceBytes = RandomNumberGenerator.GetBytes(24);
 
-        // Generate server ephemeral X25519 key pair
-        using var serverEcdh = ECDiffieHellman.Create(Curve25519);
-        var serverPublicKeySpki = serverEcdh.ExportSubjectPublicKeyInfo();
+        using var serverEcdh = keyExchange.CreatePrivateKey(suite);
+        var serverPublicKeySpki = keyExchange.ExportPublicKey(serverEcdh);
 
-        // Import client public key and derive shared secret
         var clientPubKeyBytes = Base64UrlDecode(command.ClientPublicKey);
-        using var clientEcdh = ECDiffieHellman.Create();
-        clientEcdh.ImportSubjectPublicKeyInfo(clientPubKeyBytes, out _);
-
-        var sharedSecret = serverEcdh.DeriveRawSecretAgreement(clientEcdh.PublicKey);
+        var sharedSecret = keyExchange.DeriveSharedSecret(serverEcdh, clientPubKeyBytes);
 
         // HKDF-SHA256 key derivation matching the protocol spec
         var clientNonceBytes = Base64UrlDecode(command.ClientNonce);
@@ -99,15 +97,6 @@ public sealed class SecureSessionService(ISessionStore store) : ISecureSessionSe
 
     public Task<SecureSession?> GetAsync(Guid sessionId, CancellationToken ct)
         => store.GetAsync(sessionId, ct);
-
-    private static string SelectSuite(IReadOnlyList<string> supported)
-    {
-        // Prefer ClassicalV1; HybridPqV1 accepted but not yet activated server-side
-        if (supported.Contains(SecureSuites.ClassicalV1))
-            return SecureSuites.ClassicalV1;
-
-        return supported.FirstOrDefault() ?? SecureSuites.ClassicalV1;
-    }
 
     private static byte[] Base64UrlDecode(string input)
     {

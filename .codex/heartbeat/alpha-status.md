@@ -1,6 +1,6 @@
 # Alpha/Beta Status Board
 
-Last updated: `2026-05-20 America/New_York`
+Last updated: `2026-05-21 America/New_York`
 
 ## Overall release status
 
@@ -19,8 +19,8 @@ Repo-side preparation is mostly verified, but live staging/prod evidence is stil
 | Match submit / leaderboard idempotency | blocked | wallet-economy | `POST /quiz/complete` idempotency is repo-implemented; staging quiz completion duplicate-event and leaderboard update smoke remain unchecked. |
 | Reward claim authority | blocked | wallet-economy | Server-side reward grant exists; staging golden-path reward proof remains pending. |
 | Store catalog fallback | needs-review | backend-api | Store surfaces exist and avatar API path is in staging runbook; staging store catalog/avatar purchase evidence remains pending. |
-| Admin endpoint protection | verified | security-kms | AdminOps/JWT protections and secure-channel support are in repo; KMS warning cleanup build passed, but Windows X25519 KMS tests still need platform decision. |
-| Critical tests pass | needs-review | test-quality | 2026-05-18 release docs record backend/application test passes; latest local KMS test run fails on Windows X25519 CNG support, so full security test confidence is not green locally. |
+| Admin endpoint protection | verified | security-kms | AdminOps/JWT protections and secure-channel support are in repo; KMS warning cleanup build passed, and Windows KMS secure-session tests now use capability-aware X25519/P-256 negotiation. |
+| Critical tests pass | needs-review | test-quality | 2026-05-18 release docs record backend/application test passes; 2026-05-21 local KMS tests and full release build pass. Live staging/release-gate evidence remains pending. |
 | Staging operator parallel-run | blocked | operator-dashboard | Runbook rows remain open until result/evidence columns are populated; all six cutover release gates are pending in `artifacts/operator-cutover/operator-cutover-readiness.*`. |
 | Rollback drill and sign-off | blocked | release-ops | Rollback procedure/sign-off rows remain unchecked in `docs/releases/ALPHA_RELEASE_CRITERIA.md`; four-role sign-off required before Alpha. |
 
@@ -35,7 +35,7 @@ Repo-side preparation is mostly verified, but live staging/prod evidence is stil
 | Sidecar fallback behavior | needs-review | personalization-sidecar | Non-essential Alpha modules are gated; keep sidecar/advanced personalization out of Alpha critical path. |
 | CI build/test path | needs-review | test-quality | CI/helper migration startup drift is fixed; `release-gate.yml` still needs release-SHA staging evidence. |
 | Operator dashboard cutover gates | blocked | operator-dashboard | `efMigrationsApplied`, `strictReadiness`, `parallelRun`, `signOff`, `cutover`, and `blazorRollbackWindow` all remain pending until live evidence exists. |
-| Windows X25519 KMS test path | needs-review | security-kms | `Synaptix.Security.Kms.Tests` fails locally on Windows due CNG X25519 OID support; decide fix now vs CI/Linux-only verification. |
+| Windows X25519 KMS test path | verified | security-kms | Resolved with explicit `P256-HKDF-SHA256-AES256GCM` compatibility suite and capability-aware key exchange. `Synaptix.Security.Kms.Tests` passes locally on Windows. |
 
 ## Post-Alpha deferred
 

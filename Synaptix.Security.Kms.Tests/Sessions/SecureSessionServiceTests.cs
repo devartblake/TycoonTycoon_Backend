@@ -1,6 +1,4 @@
 using System.Security.Cryptography;
-using System.Text;
-using Synaptix.Security.Kms.Application.Abstractions;
 using Synaptix.Security.Kms.Application.Sessions;
 using Synaptix.Security.Kms.Contracts.Suites;
 using Synaptix.Security.Kms.Tests.Helpers;
@@ -9,13 +7,14 @@ namespace Synaptix.Security.Kms.Tests.Sessions;
 
 public sealed class SecureSessionServiceTests
 {
-    // X25519 OID — must match what SecureSessionService uses
-    private static readonly ECCurve Curve25519 = ECCurve.CreateFromOid(new Oid("1.3.101.110"));
+    private static readonly SecureSessionKeyExchange KeyExchange = new();
 
-    private static (string PublicKeyBase64, ECDiffieHellman PrivateKey) GenerateClientKeyPair()
+    private static string SupportedSuite => KeyExchange.SelectSuite([SecureSuites.ClassicalV1, SecureSuites.P256V1]);
+
+    private static (string PublicKeyBase64, ECDiffieHellman PrivateKey) GenerateClientKeyPair(string suite)
     {
-        var ecdh = ECDiffieHellman.Create(Curve25519);
-        var spki = ecdh.ExportSubjectPublicKeyInfo();
+        var ecdh = KeyExchange.CreatePrivateKey(suite);
+        var spki = KeyExchange.ExportPublicKey(ecdh);
         return (Base64UrlEncode(spki), ecdh);
     }
 
@@ -26,16 +25,17 @@ public sealed class SecureSessionServiceTests
     {
         var store = new InMemorySessionStore();
         var svc = new SecureSessionService(store);
-        var (clientPub, clientKey) = GenerateClientKeyPair();
+        var suite = SupportedSuite;
+        var (clientPub, clientKey) = GenerateClientKeyPair(suite);
         using var disposable1 = clientKey;
 
         var result = await svc.StartAsync("user-1", new StartSessionCommand(
             "device-1", GenerateNonce(), clientPub,
-            [SecureSuites.ClassicalV1]), default);
+            [suite]), default);
 
         result.SessionId.Should().NotBeEmpty();
         result.ProtocolVersion.Should().Be("syn-sec-v1");
-        result.SelectedSuite.Should().Be(SecureSuites.ClassicalV1);
+        result.SelectedSuite.Should().Be(suite);
         result.ServerPublicKey.Should().NotBeNullOrEmpty();
         result.ServerNonce.Should().NotBeNullOrEmpty();
         result.ExpiresAtUtc.Should().BeAfter(DateTimeOffset.UtcNow);
@@ -48,19 +48,17 @@ public sealed class SecureSessionServiceTests
         var svc = new SecureSessionService(store);
         var clientNonceBytes = RandomNumberGenerator.GetBytes(24);
         var clientNonce = Base64UrlEncode(clientNonceBytes);
-        var (clientPub, clientEcdh) = GenerateClientKeyPair();
+        var suite = SupportedSuite;
+        var (clientPub, clientEcdh) = GenerateClientKeyPair(suite);
         using var disposable2 = clientEcdh;
 
         var result = await svc.StartAsync("user-2", new StartSessionCommand(
             "device-2", clientNonce, clientPub,
-            [SecureSuites.ClassicalV1]), default);
+            [suite]), default);
 
         // Client-side key derivation (mirrors the protocol spec)
         var serverPubBytes = Base64UrlDecode(result.ServerPublicKey);
-        using var serverEcdhImport = ECDiffieHellman.Create();
-        serverEcdhImport.ImportSubjectPublicKeyInfo(serverPubBytes, out int _);
-
-        var sharedSecret = clientEcdh.DeriveRawSecretAgreement(serverEcdhImport.PublicKey);
+        var sharedSecret = KeyExchange.DeriveSharedSecret(clientEcdh, serverPubBytes);
         var serverNonceBytes = Base64UrlDecode(result.ServerNonce);
         var salt = SHA256.HashData(
         [
@@ -83,18 +81,33 @@ public sealed class SecureSessionServiceTests
     }
 
     [Fact]
-    public async Task StartAsync_UnsupportedSuiteOnly_FallsBackToClassicalV1()
+    public async Task StartAsync_UnsupportedSuiteOnly_FallsBackToSupportedSuite()
     {
         var store = new InMemorySessionStore();
         var svc = new SecureSessionService(store);
-        var (clientPub, clientKey) = GenerateClientKeyPair();
+        var suite = SupportedSuite;
+        var (clientPub, clientKey) = GenerateClientKeyPair(suite);
         using var disposable3 = clientKey;
 
         var result = await svc.StartAsync("user-3", new StartSessionCommand(
             "device-3", GenerateNonce(), clientPub,
             ["some-unknown-suite"]), default);
 
-        result.SelectedSuite.Should().Be(SecureSuites.ClassicalV1);
+        result.SelectedSuite.Should().Be(suite);
+    }
+
+    [Fact]
+    public void KeyExchange_ClassicalV1_UsesX25519WhenPlatformSupportsIt()
+    {
+        if (!KeyExchange.IsSupported(SecureSuites.ClassicalV1))
+            return;
+
+        using var key = KeyExchange.CreatePrivateKey(SecureSuites.ClassicalV1);
+        var publicKey = KeyExchange.ExportPublicKey(key);
+
+        publicKey.Should().NotBeEmpty();
+        KeyExchange.SelectSuite([SecureSuites.ClassicalV1, SecureSuites.P256V1])
+            .Should().Be(SecureSuites.ClassicalV1);
     }
 
     [Fact]
@@ -105,7 +118,7 @@ public sealed class SecureSessionServiceTests
 
         var act = () => svc.StartAsync("user-4", new StartSessionCommand(
             "device-4", GenerateNonce(), "not-a-valid-key",
-            [SecureSuites.ClassicalV1]), default);
+            [SupportedSuite]), default);
 
         await act.Should().ThrowAsync<Exception>();
     }
@@ -115,12 +128,13 @@ public sealed class SecureSessionServiceTests
     {
         var store = new InMemorySessionStore();
         var svc = new SecureSessionService(store);
-        var (clientPub, clientKey) = GenerateClientKeyPair();
+        var suite = SupportedSuite;
+        var (clientPub, clientKey) = GenerateClientKeyPair(suite);
         using var disposable5 = clientKey;
 
         var start = await svc.StartAsync("user-5", new StartSessionCommand(
             "device-5", GenerateNonce(), clientPub,
-            [SecureSuites.ClassicalV1]), default);
+            [suite]), default);
 
         var renewed = await svc.RenewAsync(start.SessionId, "user-5", "device-5", default);
 
@@ -133,12 +147,13 @@ public sealed class SecureSessionServiceTests
     {
         var store = new InMemorySessionStore();
         var svc = new SecureSessionService(store);
-        var (clientPub, clientKey) = GenerateClientKeyPair();
+        var suite = SupportedSuite;
+        var (clientPub, clientKey) = GenerateClientKeyPair(suite);
         using var disposable6 = clientKey;
 
         var start = await svc.StartAsync("user-6", new StartSessionCommand(
             "device-6", GenerateNonce(), clientPub,
-            [SecureSuites.ClassicalV1]), default);
+            [suite]), default);
 
         var act = () => svc.RenewAsync(start.SessionId, "user-6", "wrong-device", default);
 
@@ -150,12 +165,13 @@ public sealed class SecureSessionServiceTests
     {
         var store = new InMemorySessionStore();
         var svc = new SecureSessionService(store);
-        var (clientPub, clientKey) = GenerateClientKeyPair();
+        var suite = SupportedSuite;
+        var (clientPub, clientKey) = GenerateClientKeyPair(suite);
         using var disposable7 = clientKey;
 
         var start = await svc.StartAsync("user-7", new StartSessionCommand(
             "device-7", GenerateNonce(), clientPub,
-            [SecureSuites.ClassicalV1]), default);
+            [suite]), default);
 
         await svc.RevokeAsync(start.SessionId, "manual-test", default);
 

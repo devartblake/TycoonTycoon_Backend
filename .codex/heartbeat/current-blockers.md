@@ -1,6 +1,6 @@
 # Current Blockers
 
-Last updated: `2026-05-20 America/New_York`
+Last updated: `2026-05-21 America/New_York`
 
 ## Active blockers
 
@@ -15,7 +15,6 @@ Last updated: `2026-05-20 America/New_York`
 | ALPHA-P0-007 | P0 Alpha blocker | Alpha sign-off | Backend Lead, QA Lead, On-Call Engineer, and Product Owner sign-offs are empty. | Sign-off table in `ALPHA_RELEASE_CRITERIA.md` is blank. | Collect dated approvals after Must Pass evidence is green. |
 | ALPHA-P0-008 | P0 Alpha blocker | Operator cutover | Staging parallel-run/cutover gates are not evidence-complete. | Runbook has open result/evidence cells; `operator-cutover-readiness.*` release gates are all `pending`. | Complete runbook checks, attach evidence, and only then move release gates from pending to pass. |
 | ALPHA-P1-001 | P1 Alpha important | Heartbeat status drift | Heartbeat board previously showed all items not-started despite newer release evidence. | Latest alpha review flags board drift. | Keep heartbeat files synchronized with release criteria after each verification pass. |
-| ALPHA-P1-002 | P1 Alpha important | KMS test verification | `Synaptix.Security.Kms.Tests` fails locally on Windows X25519 CNG support. | Local test failure: `PlatformNotSupportedException` for OID `1.3.101.110`. | Decide whether to implement cross-platform test strategy now or mark CI/Linux as authoritative for Alpha. |
 | ALPHA-P1-003 | P1 Alpha important | Migration concurrency proof | Advisory lock exists but two-container migration proof is not complete. | `ALPHA_KNOWN_ISSUES.md` KI-004 and release criteria concurrent migrator item. | Validate two migration containers on non-prod before production multi-run/blue-green patterns. |
 | ALPHA-P1-004 | P1 Alpha important | Store purchase flag gap | Stripe/PayPal purchase flows are not Alpha scope and lack dedicated purchase flag. | `ALPHA_KNOWN_ISSUES.md` KI-005. | Keep providers unconfigured for Alpha; add `store_purchases_enabled` before public Beta. |
 
@@ -26,3 +25,4 @@ Last updated: `2026-05-20 America/New_York`
 | ALPHA-RES-001 | 2026-05-18 | Local release build, backend tests, application tests, EF drift validation, idempotent SQL generation, and compose smoke were recorded as passing in release docs. |
 | ALPHA-RES-002 | 2026-05-18 | Feature flag enforcement gap closed for 14/14 Alpha/Beta gates with `403 FeatureDisabled` behavior. |
 | ALPHA-RES-003 | 2026-05-20 | KMS warning cleanup removed targeted `CS8604`, `CS9113`, `CS0168`, and `NU1510` warnings from release build. |
+| ALPHA-RES-004 | 2026-05-21 | Windows KMS secure-session failure resolved with capability-aware X25519/P-256 negotiation; `Synaptix.Security.Kms.Tests` passes locally. |
