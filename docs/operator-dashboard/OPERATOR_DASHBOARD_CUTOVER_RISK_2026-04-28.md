@@ -90,7 +90,7 @@ Django Economy page is live at `/economy/player` — player lookup, transaction 
 `AdminAuthEndpoints.cs` `DefaultPermissions` array updated 2026-04-29 to include all 12 scopes: `users`, `questions`, `events`, `store`, `economy`, `anticheat`, `notifications`, `seasons`, `eventqueue` (read + write each). Operators receive full permissions on next login.
 
 ### R5 — Vue project creates confusion about the migration target ✅ RESOLVED
-`DEPRECATED.md` added to `Tycoon.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web`. Django is the canonical path.
+`DEPRECATED.md` added to `Synaptix.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web`. Django is the canonical path.
 
 ---
 

@@ -1,6 +1,6 @@
 # Operator Dashboard Authenticated Preview
 
-Use this workflow to review authenticated `Tycoon.OperatorDashboard.Django` pages locally. A
+Use this workflow to review authenticated `Synaptix.OperatorDashboard.Django` pages locally. A
 standalone Django `runserver` can render `/login` and `/healthz`, but it cannot authenticate
 dashboard pages unless it can reach a live backend API with matching admin auth configuration.
 
@@ -89,7 +89,7 @@ Use a real player UUID for player-specific pages. The investigation workbench ac
 Use standalone Django only for quick template/static checks:
 
 ```bash
-cd Tycoon.OperatorDashboard.Django
+cd Synaptix.OperatorDashboard.Django
 python manage.py runserver 127.0.0.1:8300
 ```
 

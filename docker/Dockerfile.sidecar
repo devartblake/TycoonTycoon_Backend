@@ -3,18 +3,18 @@ FROM python:3.12-slim AS base
 WORKDIR /workspace
 
 # Install dependencies
-COPY Tycoon.Sidecar/requirements.txt ./Tycoon.Sidecar/requirements.txt
-RUN pip install --no-cache-dir -r ./Tycoon.Sidecar/requirements.txt
+COPY Synaptix.Sidecar/requirements.txt ./Synaptix.Sidecar/requirements.txt
+RUN pip install --no-cache-dir -r ./Synaptix.Sidecar/requirements.txt
 
 # Copy source + shared protos and generate gRPC stubs at build time
-COPY Tycoon.Sidecar ./Tycoon.Sidecar
+COPY Synaptix.Sidecar ./Synaptix.Sidecar
 COPY protos ./protos
 
-RUN bash ./Tycoon.Sidecar/generate_grpc.sh \
-    && test -f ./Tycoon.Sidecar/app/grpc_generated/sidecar_pb2.py \
-    && test -f ./Tycoon.Sidecar/app/grpc_generated/sidecar_pb2_grpc.py
+RUN bash ./Synaptix.Sidecar/generate_grpc.sh \
+    && test -f ./Synaptix.Sidecar/app/grpc_generated/sidecar_pb2.py \
+    && test -f ./Synaptix.Sidecar/app/grpc_generated/sidecar_pb2_grpc.py
 
-WORKDIR /workspace/Tycoon.Sidecar
+WORKDIR /workspace/Synaptix.Sidecar
 
 EXPOSE 8100
 

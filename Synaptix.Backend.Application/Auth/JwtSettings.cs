@@ -9,9 +9,9 @@ namespace Synaptix.Backend.Application.Auth
         [MinLength(32, ErrorMessage = "Jwt:Secret must be at least 32 characters for HS256.")]
         public string SecretKey { get; set; } = string.Empty;
 
-        public string Issuer { get; set; } = "TycoonBackend";
+        public string Issuer { get; set; } = "SynaptixBackend";
 
-        public string Audience { get; set; } = "TycoonBackend";
+        public string Audience { get; set; } = "SynaptixBackend";
 
         [Range(1, 1440, ErrorMessage = "Jwt:AccessTokenExpirationMinutes must be between 1 and 1440.")]
         public int AccessTokenExpirationMinutes { get; set; } = 15;

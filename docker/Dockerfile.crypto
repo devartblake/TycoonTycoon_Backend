@@ -5,11 +5,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY Tycoon.CryptoService/requirements.txt .
+COPY Synaptix.CryptoService/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
 
-COPY Tycoon.CryptoService/app ./app
+COPY Synaptix.CryptoService/app ./app
 
 # Non-root security hardening
 RUN addgroup --system crypto \

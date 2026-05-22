@@ -2,7 +2,7 @@
 
 This ASP.NET Web/BFF project is no longer an active Operator Dashboard migration target.
 
-`Tycoon.OperatorDashboard.Django` is the canonical operator dashboard for all admin/operator roles. Do not add new operator workflows, auth/session work, or cutover work to this Web/BFF project.
+`Synaptix.OperatorDashboard.Django` is the canonical operator dashboard for all admin/operator roles. Do not add new operator workflows, auth/session work, or cutover work to this Web/BFF project.
 
 ## Historical status
 
@@ -21,7 +21,7 @@ The remaining Web/BFF migration work was closed by supersession, not completed i
 
 ## Active replacement
 
-Use `Tycoon.OperatorDashboard.Django` for active operator-dashboard work. Use Django RBAC and permission scopes to distinguish super-admin, admin, support, moderation, economy, audit, and read-only operators.
+Use `Synaptix.OperatorDashboard.Django` for active operator-dashboard work. Use Django RBAC and permission scopes to distinguish super-admin, admin, support, moderation, economy, audit, and read-only operators.
 
 See also:
 

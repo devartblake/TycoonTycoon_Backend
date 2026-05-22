@@ -3,7 +3,7 @@
 # Generate Python gRPC stubs from the shared proto file.
 #
 # Run once after cloning, or whenever sidecar.proto changes:
-#   bash Tycoon.Sidecar/generate_grpc.sh
+#   bash Synaptix.Sidecar/generate_grpc.sh
 #
 # Requires: pip install grpcio-tools (listed in requirements.txt)
 # ─────────────────────────────────────────────────────────────────────────────

@@ -99,7 +99,7 @@ done
   done < "${TMP_DIR}/results.txt"
   echo
   echo "## Dashboard Target Decision"
-  echo "- Authoritative target is **Tycoon.OperatorDashboard.Django** via \`docker/Dockerfile.dashboard-django\` as configured in compose."
+  echo "- Authoritative target is **Synaptix.OperatorDashboard.Django** via \`docker/Dockerfile.dashboard-django\` as configured in compose."
   echo "- Blazor remains a rollback fallback only until the documented post-cutover rollback window ends."
   echo
   echo "## Next Actions"

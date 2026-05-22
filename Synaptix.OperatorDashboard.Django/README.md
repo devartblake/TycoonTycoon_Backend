@@ -5,7 +5,7 @@ This is the Django-based Operator Dashboard replacement target for the legacy `T
 It acts as a UI frontend/BFF layer for:
 
 - **.NET API** (`Tycoon.Backend.Api`)
-- **FastAPI sidecar** (`Tycoon.Sidecar`)
+- **FastAPI sidecar** (`Synaptix.Sidecar`)
 
 ## What this includes
 
@@ -18,7 +18,7 @@ It acts as a UI frontend/BFF layer for:
 ## Local quick start
 
 ```bash
-cd Tycoon.OperatorDashboard.Django
+cd Synaptix.OperatorDashboard.Django
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
