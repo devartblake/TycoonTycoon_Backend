@@ -1,4 +1,5 @@
 using System.IO.Pipelines;
+using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -21,6 +22,7 @@ namespace Tycoon.Backend.Api.Security;
 /// </summary>
 public sealed class SecureChannelMiddleware
 {
+    private const int MaxReplayNonceLength = 256;
     private static readonly JsonSerializerOptions _jsonOpts = new(JsonSerializerDefaults.Web);
     private readonly RequestDelegate _next;
 
@@ -52,6 +54,22 @@ public sealed class SecureChannelMiddleware
             return;
         }
 
+        if (!TryReadSequence(http, out var sequenceNumber, out var sequenceError))
+        {
+            await ApiResponses.Error(StatusCodes.Status400BadRequest,
+                "secure_sequence_required",
+                sequenceError).ExecuteAsync(http);
+            return;
+        }
+
+        if (!TryReadReplayNonce(http, out var replayNonce, out var nonceError))
+        {
+            await ApiResponses.Error(StatusCodes.Status400BadRequest,
+                "secure_replay_nonce_required",
+                nonceError).ExecuteAsync(http);
+            return;
+        }
+
         EncryptedRequestEnvelope envelope;
         try
         {
@@ -72,6 +90,8 @@ public sealed class SecureChannelMiddleware
 
         var kms = http.RequestServices.GetRequiredService<IKmsPayloadClient>();
         DecryptPayloadResponse decrypted;
+        var subjectId = GetSubjectId(http);
+        var requestAad = BuildAad("request", http, sessionId, sequenceNumber, subjectId, envelope.EncryptedAtUtc);
         try
         {
             decrypted = await kms.DecryptAsync(new DecryptPayloadRequest(
@@ -80,7 +100,11 @@ public sealed class SecureChannelMiddleware
                 envelope.Nonce,
                 envelope.Mac,
                 envelope.ContentType,
-                envelope.EncryptedAtUtc), ct);
+                envelope.EncryptedAtUtc,
+                sequenceNumber,
+                replayNonce,
+                requestAad,
+                subjectId), ct);
         }
         catch (KmsClientException ex)
         {
@@ -121,8 +145,9 @@ public sealed class SecureChannelMiddleware
         EncryptPayloadResponse encrypted;
         try
         {
+            var responseAad = BuildAad("response", http, sessionId, sequenceNumber, subjectId, envelope.EncryptedAtUtc);
             encrypted = await kms.EncryptAsync(
-                new EncryptPayloadRequest(sessionId, responseBytes, capturedContentType), ct);
+                new EncryptPayloadRequest(sessionId, responseBytes, capturedContentType, responseAad), ct);
         }
         catch (Exception ex)
         {
@@ -143,6 +168,67 @@ public sealed class SecureChannelMiddleware
         http.Response.Headers.Remove("Content-Length");
         await http.Response.WriteAsJsonAsync(encrypted, _jsonOpts, ct);
     }
+
+    private static bool TryReadSequence(HttpContext http, out long sequenceNumber, out string error)
+    {
+        sequenceNumber = 0;
+        if (!http.Request.Headers.TryGetValue("X-Syn-Sec-Seq", out var raw)
+            || !long.TryParse(raw, out sequenceNumber)
+            || sequenceNumber <= 0)
+        {
+            error = "X-Syn-Sec-Seq header is required and must be a positive integer.";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
+    }
+
+    private static bool TryReadReplayNonce(HttpContext http, out string replayNonce, out string error)
+    {
+        replayNonce = string.Empty;
+        if (!http.Request.Headers.TryGetValue("X-Syn-Sec-Nonce", out var raw)
+            || string.IsNullOrWhiteSpace(raw))
+        {
+            error = "X-Syn-Sec-Nonce header is required on this endpoint.";
+            return false;
+        }
+
+        replayNonce = raw.ToString();
+        if (replayNonce.Length > MaxReplayNonceLength)
+        {
+            error = "X-Syn-Sec-Nonce header is too long.";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
+    }
+
+    private static string BuildAad(
+        string direction,
+        HttpContext http,
+        Guid sessionId,
+        long sequenceNumber,
+        string? subjectId,
+        DateTimeOffset encryptedAtUtc)
+    {
+        var target = $"{http.Request.PathBase}{http.Request.Path}{http.Request.QueryString}";
+        return string.Join('|',
+            "syn-sec-v1",
+            direction,
+            http.Request.Method.ToUpperInvariant(),
+            target,
+            sessionId.ToString("N"),
+            sequenceNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            subjectId ?? string.Empty,
+            encryptedAtUtc.ToUniversalTime().ToString("O"));
+    }
+
+    private static string? GetSubjectId(HttpContext http)
+        => http.User.FindFirst("sub")?.Value
+           ?? http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+           ?? http.User.Identity?.Name;
 
     private static bool IsTrustedBffPlainJsonAllowed(HttpContext http, Endpoint endpoint)
     {

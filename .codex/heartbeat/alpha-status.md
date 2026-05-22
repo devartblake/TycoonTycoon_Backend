@@ -19,8 +19,8 @@ Repo-side preparation is mostly verified, but live staging/prod evidence is stil
 | Match submit / leaderboard idempotency | blocked | wallet-economy | `POST /quiz/complete` idempotency is repo-implemented; staging quiz completion duplicate-event and leaderboard update smoke remain unchecked. |
 | Reward claim authority | blocked | wallet-economy | Server-side reward grant exists; staging golden-path reward proof remains pending. |
 | Store catalog fallback | needs-review | backend-api | Store surfaces exist and avatar API path is in staging runbook; staging store catalog/avatar purchase evidence remains pending. |
-| Admin endpoint protection | verified | security-kms | AdminOps/JWT protections and secure-channel support are in repo; KMS warning cleanup build passed, and Windows KMS secure-session tests now use capability-aware X25519/P-256 negotiation. |
-| Critical tests pass | needs-review | test-quality | 2026-05-18 release docs record backend/application test passes; 2026-05-21 local KMS tests and full release build pass. Live staging/release-gate evidence remains pending. |
+| Admin endpoint protection | verified | security-kms | AdminOps/JWT protections and secure-channel support are in repo; KMS warning cleanup, Windows suite negotiation, and secure-channel replay/AAD hardening are locally verified. |
+| Critical tests pass | needs-review | test-quality | 2026-05-18 release docs record backend/application test passes; 2026-05-21 local KMS tests and secure-channel filter tests pass. Live staging/release-gate evidence remains pending. |
 | Staging operator parallel-run | blocked | operator-dashboard | Runbook rows remain open until result/evidence columns are populated; all six cutover release gates are pending in `artifacts/operator-cutover/operator-cutover-readiness.*`. |
 | Rollback drill and sign-off | blocked | release-ops | Rollback procedure/sign-off rows remain unchecked in `docs/releases/ALPHA_RELEASE_CRITERIA.md`; four-role sign-off required before Alpha. |
 

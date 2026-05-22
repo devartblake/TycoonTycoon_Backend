@@ -4,6 +4,21 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-21] Secure Channel Replay And AAD Hardening
+
+### Completed
+
+- **Replay metadata enforced** - Secure-channel protected endpoints now require `X-Syn-Sec-Seq` and `X-Syn-Sec-Nonce` before decrypting request bodies.
+- **KMS replay protection wired** - Payload decrypt now rejects reused sequence/replay nonce pairs, stale timestamps, and authenticated subject mismatches.
+- **AES-GCM AAD binding added** - The backend derives request-context AAD and passes it through KMS decrypt/encrypt so encrypted payloads are bound to method, path, session, sequence, subject, and timestamp context.
+- **Tests expanded** - KMS payload tests cover AAD, replay, timestamp, and subject failure paths; backend secure-channel tests cover header enforcement and KMS metadata pass-through.
+
+### Still External
+
+- Flutter secure-channel integration still needs to send the new sequence/replay headers and encrypt with the same AAD contract.
+
+---
+
 ## [2026-05-18] Operator Dashboard Detail Drilldowns
 
 ### Completed

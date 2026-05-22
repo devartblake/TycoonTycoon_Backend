@@ -286,6 +286,8 @@ curl -s -X POST http://localhost:5060/security/sessions/start \
 
 ### Payload encrypt (requires JWT)
 
+`aad` is optional on direct encrypt calls. Secure-channel responses use backend-derived AAD from the protected request context.
+
 ```bash
 curl -s -X POST http://localhost:5060/security/payload/encrypt \
   -H "Authorization: Bearer $DEV_TOKEN" \
@@ -294,7 +296,29 @@ curl -s -X POST http://localhost:5060/security/payload/encrypt \
     "sessionId": "<session-id-from-start>",
     "plaintext": "SGVsbG8gV29ybGQ=",
     "contentType": "application/json",
-    "sequenceNumber": 1
+    "aad": "syn-sec-v1|response|POST|/auth/refresh|<session-id-n>|1|user-123|2026-05-21T00:00:00.0000000Z"
+  }' | jq .
+```
+
+### Payload decrypt (requires JWT)
+
+Decrypt calls require replay metadata and request-context AAD. The backend secure-channel middleware derives this AAD automatically for protected API routes.
+
+```bash
+curl -s -X POST http://localhost:5060/security/payload/decrypt \
+  -H "Authorization: Bearer $DEV_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "<session-id-from-start>",
+    "ciphertext": "<base64url-ciphertext>",
+    "nonce": "<base64url-aes-gcm-nonce>",
+    "mac": "<base64url-aes-gcm-tag>",
+    "contentType": "application/json",
+    "encryptedAtUtc": "2026-05-21T00:00:00.0000000Z",
+    "sequenceNumber": 1,
+    "replayNonce": "client-random-replay-nonce",
+    "aad": "syn-sec-v1|request|POST|/auth/refresh|<session-id-n>|1|user-123|2026-05-21T00:00:00.0000000Z",
+    "subjectId": "user-123"
   }' | jq .
 ```
 

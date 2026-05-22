@@ -335,7 +335,7 @@ This gives Synaptix strong practical security today, a sane post-quantum migrati
 
 ## Implementation status
 
-_Last updated: 2026-05-09_
+_Last updated: 2026-05-21_
 
 ### Completed
 
@@ -357,6 +357,7 @@ _Last updated: 2026-05-09_
 | Redis-backed replay protection | ✅ Complete | `RedisReplayProtectionStore` tracks sequence + nonce per session via `IDistributedCache` |
 | `/security/sessions/start` and `/security/sessions/renew` | ✅ Complete | Session TTL 30 min; bound to userId + deviceId |
 | `SecureChannelFilter` endpoint filter | ✅ Complete | Decrypts incoming envelope → runs handler → encrypts response via `EncryptedResponseResult` using `IHttpResponseBodyFeature` swap |
+| Secure-channel replay + AAD hardening | Complete | Protected endpoints require `X-Syn-Sec-Seq` and `X-Syn-Sec-Nonce`; KMS decrypt enforces replay protection, subject binding, timestamp skew, and AES-GCM AAD |
 | KMS client registered in `Program.cs` | ✅ Complete | `AddKmsClient(configuration)` wired after `AddApplication()` |
 | Endpoint rollout | ✅ Complete | `RequireSecureChannel()` applied to: `/auth/refresh`, `/admin/auth/login`, `/admin/auth/refresh`, `/crypto/link-wallet`, `/crypto/withdraw`, `/crypto/stake`, `/crypto/unstake`, `/store/purchase`, `/store/iap/validate`, `/store/payments/checkout/session`, `/store/payments/paypal/order`, `/store/payments/paypal/capture`, `/store/subscription/checkout/session`, `/store/subscription/paypal/create` |
 | Docker image (backend-api) | ✅ Complete | `Dockerfile.api` updated to COPY `Tycoon.Security.Kms.Client` + `Synaptix.Security.Kms.Contracts` before `dotnet restore` |
@@ -366,9 +367,9 @@ _Last updated: 2026-05-09_
 | Item | Status | Notes |
 |---|---|---|
 | `Synaptix.Security.Kms.Tests` — Session service (7 tests) | ✅ Complete | Start, key derivation, suite fallback, invalid key, renew expiry, wrong device, revoke |
-| `Synaptix.Security.Kms.Tests` — Payload service (5 tests) | ✅ Complete | Roundtrip, tampered ciphertext, expired session, unknown session, nonce uniqueness |
+| `Synaptix.Security.Kms.Tests` — Payload service (11 tests) | Complete | Roundtrip, tampered ciphertext, expired/unknown sessions, nonce uniqueness, AAD, replayed sequence/nonce, timestamp skew, subject mismatch |
 | `Synaptix.Security.Kms.Tests` — Replay protection (5 tests) | ✅ Complete | First call, replay, incremented seq, seq below last seen, concurrent sessions |
-| `Tycoon.Backend.Api.Tests/Security/SecureChannelFilterTests.cs` (5 tests) | ✅ Complete | Missing header, malformed body, KMS 401, encrypted roundtrip, unprotected endpoint passthrough |
+| `Tycoon.Backend.Api.Tests/Security/SecureChannelFilterTests.cs` (10 tests) | Complete | Missing/invalid secure-channel headers, malformed body, KMS 401, encrypted roundtrip, AAD/replay metadata pass-through, unprotected endpoint passthrough |
 
 ---
 
@@ -404,11 +405,11 @@ _Last updated: 2026-05-09_
 | Hybrid shared secret: `HKDF(X25519 \|\| ML-KEM)` | Low | Implement server-first, then enable for mobile clients once library support is confirmed |
 | Versioned `selectedSuite` negotiation | Low | Suite registry already present; add `X25519+ML-KEM-768` entry when server-side is ready |
 
-#### Outstanding filter hardening (beyond MVP)
+#### Completed filter hardening
 
 | Item | Priority | Notes |
 |---|---|---|
-| `X-Syn-Sec-Seq` + `X-Syn-Sec-Nonce` header enforcement in filter | Medium | Current filter validates session only; full replay protection requires KMS to check sequence + nonce at decrypt time |
-| AAD binding in `SecureChannelFilter` | Medium | Spec calls for AAD = `method \|\| path \|\| sessionId \|\| sequence \|\| jwtSubject \|\| deviceId \|\| timestamp`; not yet wired into `DecryptPayloadRequest` |
-| Timestamp skew check | Medium | Reject `encryptedAtUtc` older than ±5 minutes at the filter level |
+| `X-Syn-Sec-Seq` + `X-Syn-Sec-Nonce` header enforcement in filter | Complete | Middleware fails closed before decrypt when replay metadata is missing or invalid |
+| AAD binding in `SecureChannelFilter` | Complete | Middleware derives server-side AAD from method, path/query, session, sequence, subject, and request timestamp and passes it to KMS |
+| Timestamp skew check | Complete | KMS decrypt rejects encrypted payload timestamps outside the configured +/-5 minute skew window |
 | `/auth/login` and `/auth/signup` — TLS-only note | Info | Intentionally excluded from secure channel (pre-auth, no session); covered by TLS 1.3 only |

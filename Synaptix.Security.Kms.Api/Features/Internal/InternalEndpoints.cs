@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Synaptix.Security.Kms.Api.Security;
 using Synaptix.Security.Kms.Application.Abstractions;
+using Synaptix.Security.Kms.Application.Payload;
 using Synaptix.Security.Kms.Application.Sessions;
 using Synaptix.Security.Kms.Contracts.Models;
 using Synaptix.Security.Kms.Contracts.Suites;
@@ -86,7 +87,7 @@ public static class InternalEndpoints
         try
         {
             var result = await protector.EncryptAsync(
-                body.SessionId, body.Plaintext, body.ContentType, ct);
+                body.SessionId, body.Plaintext, body.ContentType, ct, body.Aad);
 
             return Results.Ok(result);
         }
@@ -107,12 +108,23 @@ public static class InternalEndpoints
                 body.Ciphertext, body.Nonce, body.Mac,
                 body.ContentType, body.EncryptedAtUtc);
 
-            var (plaintext, contentType) = await protector.DecryptAsync(body.SessionId, payload, ct);
+            var (plaintext, contentType) = await protector.DecryptAsync(
+                body.SessionId,
+                payload,
+                ct,
+                body.SequenceNumber,
+                body.ReplayNonce,
+                body.Aad,
+                body.SubjectId);
             return Results.Ok(new { plaintext, contentType });
         }
         catch (System.Security.Cryptography.AuthenticationTagMismatchException)
         {
             return Results.BadRequest(new { error = "authentication_failed", message = "Payload authentication tag mismatch." });
+        }
+        catch (SecurePayloadException ex)
+        {
+            return Results.BadRequest(new { error = ex.Code, message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -131,7 +143,8 @@ public sealed record InternalStartSessionRequest(
 public sealed record InternalEncryptRequest(
     Guid SessionId,
     byte[] Plaintext,
-    string ContentType = "application/json");
+    string ContentType = "application/json",
+    string? Aad = null);
 
 public sealed record InternalDecryptRequest(
     Guid SessionId,
@@ -139,4 +152,8 @@ public sealed record InternalDecryptRequest(
     string Nonce,
     string Mac,
     string ContentType,
-    DateTimeOffset EncryptedAtUtc);
+    DateTimeOffset EncryptedAtUtc,
+    long? SequenceNumber = null,
+    string? ReplayNonce = null,
+    string? Aad = null,
+    string? SubjectId = null);

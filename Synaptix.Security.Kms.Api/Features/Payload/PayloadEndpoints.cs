@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Synaptix.Security.Kms.Application.Abstractions;
+using Synaptix.Security.Kms.Application.Payload;
 using Synaptix.Security.Kms.Contracts.Models;
 
 namespace Synaptix.Security.Kms.Api.Features.Payload;
@@ -28,7 +29,8 @@ public static class PayloadEndpoints
                 body.SessionId,
                 body.Plaintext,
                 body.ContentType,
-                ct);
+                ct,
+                body.Aad);
 
             return Results.Ok(result);
         }
@@ -52,13 +54,24 @@ public static class PayloadEndpoints
                 body.ContentType,
                 body.EncryptedAtUtc);
 
-            var (plaintext, contentType) = await protector.DecryptAsync(body.SessionId, payload, ct);
+            var (plaintext, contentType) = await protector.DecryptAsync(
+                body.SessionId,
+                payload,
+                ct,
+                body.SequenceNumber,
+                body.ReplayNonce,
+                body.Aad,
+                body.SubjectId);
 
             return Results.Ok(new { plaintext, contentType });
         }
         catch (AuthenticationTagMismatchException)
         {
             return Results.BadRequest(new { error = "authentication_failed", message = "Payload authentication tag mismatch." });
+        }
+        catch (SecurePayloadException ex)
+        {
+            return Results.BadRequest(new { error = ex.Code, message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -70,7 +83,8 @@ public static class PayloadEndpoints
 public sealed record EncryptRequest(
     Guid SessionId,
     byte[] Plaintext,
-    string ContentType = "application/json");
+    string ContentType = "application/json",
+    string? Aad = null);
 
 public sealed record DecryptRequest(
     Guid SessionId,
@@ -78,4 +92,8 @@ public sealed record DecryptRequest(
     string Nonce,
     string Mac,
     string ContentType,
-    DateTimeOffset EncryptedAtUtc);
+    DateTimeOffset EncryptedAtUtc,
+    long? SequenceNumber = null,
+    string? ReplayNonce = null,
+    string? Aad = null,
+    string? SubjectId = null);
