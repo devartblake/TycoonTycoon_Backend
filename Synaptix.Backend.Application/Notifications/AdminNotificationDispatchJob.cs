@@ -1,0 +1,123 @@
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Npgsql;
+using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Domain.Entities;
+
+namespace Synaptix.Backend.Application.Notifications;
+
+/// <summary>
+/// Best-effort dispatcher for scheduled admin notifications.
+/// Runs as a recurring background job and updates schedule status with retry semantics.
+/// </summary>
+public sealed class AdminNotificationDispatchJob(IAppDb db, ILogger<AdminNotificationDispatchJob> logger)
+{
+    public async Task Run(CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        List<AdminNotificationSchedule> dueSchedules;
+        try
+        {
+            dueSchedules = await db.AdminNotificationSchedules
+                .Where(x => (x.Status == "scheduled" || x.Status == "retry_pending") && x.ScheduledAt <= now)
+                .OrderBy(x => x.ScheduledAt)
+                .Take(200)
+                .ToListAsync(ct);
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedTable)
+        {
+            logger.LogWarning("AdminNotificationDispatchJob skipped because notification tables are not available yet. Ensure migrations were applied. SQLSTATE={SqlState}", ex.SqlState);
+            return;
+        }
+
+        if (dueSchedules.Count == 0)
+        {
+            logger.LogDebug("AdminNotificationDispatchJob: no due schedules.");
+            return;
+        }
+
+        foreach (var schedule in dueSchedules)
+        {
+            try
+            {
+                var channel = await db.AdminNotificationChannels
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Key == schedule.ChannelKey, ct);
+
+                if (channel is null || !channel.Enabled)
+                {
+                    schedule.MarkRetryOrFail(
+                        reason: channel is null ? "Channel not found." : "Channel disabled.",
+                        nextAttemptAt: NextRetryAt(schedule, now));
+
+                    db.AdminNotificationHistory.Add(new AdminNotificationHistory(
+                        id: $"push_job_{Guid.NewGuid():N}",
+                        channelKey: schedule.ChannelKey,
+                        title: schedule.Title,
+                        status: schedule.Status,
+                        createdAt: DateTimeOffset.UtcNow,
+                        metadataJson: JsonSerializer.Serialize(new
+                        {
+                            scheduleId = schedule.ScheduleId,
+                            reason = schedule.LastError,
+                            retryCount = schedule.RetryCount,
+                            maxRetries = schedule.MaxRetries,
+                            deadLetter = schedule.Status == "failed"
+                        })));
+
+                    continue;
+                }
+
+                schedule.MarkSent();
+
+                db.AdminNotificationHistory.Add(new AdminNotificationHistory(
+                    id: $"push_job_{Guid.NewGuid():N}",
+                    channelKey: schedule.ChannelKey,
+                    title: schedule.Title,
+                    status: "sent",
+                    createdAt: DateTimeOffset.UtcNow,
+                    metadataJson: JsonSerializer.Serialize(new
+                    {
+                        scheduleId = schedule.ScheduleId,
+                        deliveredBy = "AdminNotificationDispatchJob"
+                    })));
+            }
+            catch (Exception ex)
+            {
+                schedule.MarkRetryOrFail(ex.Message, NextRetryAt(schedule, now));
+
+                db.AdminNotificationHistory.Add(new AdminNotificationHistory(
+                    id: $"push_job_{Guid.NewGuid():N}",
+                    channelKey: schedule.ChannelKey,
+                    title: schedule.Title,
+                    status: schedule.Status,
+                    createdAt: DateTimeOffset.UtcNow,
+                    metadataJson: JsonSerializer.Serialize(new
+                    {
+                        scheduleId = schedule.ScheduleId,
+                        reason = ex.Message,
+                        retryCount = schedule.RetryCount,
+                        maxRetries = schedule.MaxRetries,
+                        deadLetter = schedule.Status == "failed"
+                    })));
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        logger.LogInformation("AdminNotificationDispatchJob processed {Count} schedules.", dueSchedules.Count);
+    }
+
+    private static DateTimeOffset NextRetryAt(AdminNotificationSchedule schedule, DateTimeOffset now)
+    {
+        // Exponential backoff with bounded jitter.
+        // Attempt number is current retry count + 1 because MarkRetryOrFail increments internally.
+        var attempt = schedule.RetryCount + 1;
+        var backoffMinutes = Math.Min(30, Math.Pow(2, Math.Min(attempt, 5))); // 2,4,8,16,30,30...
+        var jitterSeconds = Random.Shared.Next(0, 30);
+        return now.AddMinutes(backoffMinutes).AddSeconds(jitterSeconds);
+    }
+
+}

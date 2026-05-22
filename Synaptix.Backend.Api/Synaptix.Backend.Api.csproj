@@ -1,0 +1,53 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+
+	<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<NoWarn>$(NoWarn);1591</NoWarn>
+    <UserSecretsId>af199666-ec75-459f-8ac3-6ae562ca9536</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup Label="gRPC">
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <Protobuf Include="../protos/sidecar.proto" GrpcServices="Server" />
+    <Protobuf Include="../protos/mobile.proto"  GrpcServices="Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.AspNetCore" />
+    <PackageReference Include="Hangfire.Core" />
+    <PackageReference Include="Hangfire.PostgreSql" />
+    <PackageReference Include="Humanizer.Core" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Enrichers.Environment" />
+    <PackageReference Include="Stripe.net" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Synaptix.Backend.Application\Synaptix.Backend.Application.csproj" />
+    <ProjectReference Include="..\Synaptix.Backend.Infrastructure\Synaptix.Backend.Infrastructure.csproj" />
+    <ProjectReference Include="..\Synaptix.Shared.Contracts\Synaptix.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\Synaptix.Shared.Observability\Synaptix.Shared.Observability.csproj" />
+    <ProjectReference Include="..\Synaptix.Shared\Synaptix.Shared.csproj" />
+    <ProjectReference Include="..\Synaptix.Security.Kms.Client\Synaptix.Security.Kms.Client.csproj" />
+  </ItemGroup>
+
+</Project>

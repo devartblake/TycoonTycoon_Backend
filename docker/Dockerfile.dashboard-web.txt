@@ -7,7 +7,7 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable
 
-COPY Tycoon.OperatorDashboard.Web/package.json Tycoon.OperatorDashboard.Web/pnpm-lock.yaml* ./
+COPY Synaptix.OperatorDashboard.Web/package.json Synaptix.OperatorDashboard.Web/pnpm-lock.yaml* ./
 
 # Install deps but skip our postinstall (it needs source files not yet available).
 # Use .npmrc to suppress lifecycle scripts for this package only.
@@ -21,7 +21,7 @@ WORKDIR /app
 RUN corepack enable
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY Tycoon.OperatorDashboard.Web/ .
+COPY Synaptix.OperatorDashboard.Web/ .
 
 # Run icon build now that source files are available (skipped during deps stage)
 RUN pnpm exec tsx src/assets/iconify-icons/bundle-icons-css.ts
