@@ -40,15 +40,6 @@ class _BaseUserFlowTests(TestCase):
         }
         session.save()
 
-    def _make_http_error(self, status: int, url: str = "http://backend/api") -> httpx.HTTPStatusError:
-        req = httpx.Request("GET", url)
-        resp = httpx.Response(status_code=status, request=req)
-        return httpx.HTTPStatusError(f"HTTP {status}", request=req, response=resp)
-
-    def _make_request_error(self) -> httpx.RequestError:
-        req = httpx.Request("GET", "http://backend/api")
-        return httpx.ConnectError("connection refused", request=req)
-
 
 # ---------------------------------------------------------------------------
 # 1. Login / Logout flow
