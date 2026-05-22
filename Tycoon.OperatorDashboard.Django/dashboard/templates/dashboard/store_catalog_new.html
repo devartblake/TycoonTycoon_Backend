@@ -1,0 +1,99 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}New Store Item{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store / Catalog</p>
+    <h1 class="page-title">New store item</h1>
+    <p class="page-subtitle">Create a purchasable item. Once created, flash sales can be scheduled against its SKU.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'store-catalog-view' %}">Back to catalog</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+{% if can_write %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Item details" copy="SKU must be unique. Use lowercase colon-separated format e.g. powerup:hint." %}
+  {% if return_to %}
+  <div class="helper-text" style="padding-bottom:8px;">After creating, you'll be returned to <strong>{{ return_to }}</strong>.</div>
+  {% endif %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    {% if return_to %}<input type="hidden" name="returnTo" value="{{ return_to }}" />{% endif %}
+    <div class="form-grid">
+      <label>
+        SKU
+        <input type="text" name="sku" value="{{ form.sku|default:'' }}" placeholder="e.g. powerup:hint" required />
+        <span class="helper-text">Lowercase, no spaces. Must be unique.</span>
+      </label>
+      <label>
+        Name
+        <input type="text" name="name" value="{{ form.name|default:'' }}" placeholder="e.g. Hint Reveal" required />
+      </label>
+      <label class="span-2">
+        Description
+        <input type="text" name="description" value="{{ form.description|default:'' }}" placeholder="Short description shown to players" />
+      </label>
+      <label>
+        Item type
+        <select name="itemType">
+          {% for t in item_type_choices %}
+          <option value="{{ t }}" {% if form.itemType == t %}selected{% endif %}>{{ t|capfirst }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Sort order
+        <input type="number" name="sortOrder" value="{{ form.sortOrder|default:'0' }}" min="0" />
+        <span class="helper-text">Lower = shown first</span>
+      </label>
+    </div>
+    <div class="form-grid">
+      <label>
+        Price (coins)
+        <input type="number" name="priceCoins" value="{{ form.priceCoins|default:'0' }}" min="0" />
+        <span class="helper-text">0 = free (coins)</span>
+      </label>
+      <label>
+        Price (diamonds)
+        <input type="number" name="priceDiamonds" value="{{ form.priceDiamonds|default:'0' }}" min="0" />
+        <span class="helper-text">0 = free (diamonds)</span>
+      </label>
+      <label>
+        Grant quantity
+        <input type="number" name="grantQuantity" value="{{ form.grantQuantity|default:'1' }}" min="1" required />
+        <span class="helper-text">Units granted per purchase</span>
+      </label>
+      <label>
+        Max per player
+        <input type="number" name="maxPerPlayer" value="{{ form.maxPerPlayer|default:'0' }}" min="0" />
+        <span class="helper-text">0 = unlimited</span>
+      </label>
+    </div>
+    <div class="form-grid">
+      <label>
+        Media key (optional)
+        <input type="text" name="mediaKey" value="{{ form.mediaKey|default:'' }}" placeholder="e.g. assets/icons/hint.png" />
+        <span class="helper-text">Icon or image path for client display</span>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Create item</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<section class="card mt-lg">
+  <div class="empty">
+    <span class="empty-ico">!</span>
+    <strong>Insufficient permissions</strong>
+    <span>store:write permission is required to create catalog items.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}User Detail{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">User operations</p>
+    <h1 class="page-title">{% if user_detail.username %}@{{ user_detail.username }}{% else %}User detail{% endif %}</h1>
+    <p class="page-subtitle">Review account state, update supported fields, and inspect recent activity.<br>
+      {% if user_detail %}<code class="helper-text" style="font-size:0.72rem;">{{ user_detail.id|default:user_id }}</code>{% endif %}
+    </p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-users-view' %}">Back to users</a>
+    <a class="button secondary" href="{% url 'operator-user-investigation-view' user_id %}?returnTo={{ investigation_return_to|urlencode }}">Investigation</a>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Account summary" copy="Current user payload from the backend admin detail endpoint." %}
+  {% if user_detail %}
+  <div class="account-summary-grid">
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">User ID</span>
+      <code class="breakable-token">{{ user_detail.id|default:user_id }}</code>
+    </div>
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">Email</span>
+      <span class="breakable-token">{{ user_detail.email|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Username</span>
+      <span class="breakable-token">{{ user_detail.username|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Role</span>
+      <span class="chip neutral">{{ user_detail.role|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Status</span>
+      <span class="chip neutral">{{ user_detail.status|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Banned</span>
+      <span class="chip {% if user_detail.isBanned %}danger{% else %}success{% endif %}">{{ user_detail.isBanned|yesno:"yes,no,-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Created</span>
+      <span class="breakable-token">{{ user_detail.createdAt|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Last active</span>
+      <span class="breakable-token">{{ user_detail.lastActive|default:"-" }}</span>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty"><strong>User detail unavailable</strong><span>Check backend availability or permissions.</span></div>
+  {% endif %}
+</section>
+
+{% if can_write_users %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Editable fields" copy="Only backend-supported profile fields are submitted." %}
+  <form method="post" class="stack" data-validate="1">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="update" />
+    <div class="form-grid">
+      <label>
+        Username
+        <input type="text" name="username" value="{{ user_detail.username|default:'' }}" data-hint="Username is required." />
+        <span class="field-error"></span>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Save user</button>
+    </div>
+  </form>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Ban controls" copy="Use guarded actions for account restrictions." %}
+  <div class="toolbar-actions">
+    <form method="post" class="toolbar-actions">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="ban" />
+      <input type="text" name="reason" placeholder="reason" />
+      <input type="text" name="until" placeholder="optional expiry ISO timestamp" />
+      <button type="submit" class="button danger">Ban user</button>
+    </form>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="unban" />
+      <button type="submit" class="button secondary">Unban user</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Recent activity" copy="Activity timeline returned by the backend user activity endpoint." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr><th>Type</th><th>Description</th><th>Created</th><th>Metadata</th></tr>
+      </thead>
+      <tbody>
+        {% for row in activity.items %}
+        <tr>
+          <td>{{ row.type|default:"-" }}</td>
+          <td>{{ row.description|default:"-" }}</td>
+          <td>{{ row.createdAt|default:"-" }}</td>
+          <td>{{ row.metadata|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="helper-text">No activity returned for this user.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Raw payload" copy="Full backend detail payload for incident handoff." %}
+  <pre>{{ user_detail_json }}</pre>
+</section>
+{% endblock %}

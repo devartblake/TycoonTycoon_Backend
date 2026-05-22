@@ -10,6 +10,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddKmsApplication(this IServiceCollection services)
     {
+        services.AddSingleton<ISecureSessionKeyExchange, SecureSessionKeyExchange>();
         services.AddScoped<ISecureSessionService, SecureSessionService>();
         services.AddScoped<ISecurePayloadProtector, SecurePayloadService>();
         services.AddScoped<KeyRotationService>();

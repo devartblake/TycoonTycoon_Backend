@@ -10,8 +10,32 @@
     <p class="page-subtitle">Review backend security events, narrow by time window or outcome, and export the current slice for incident response or compliance review.</p>
   </div>
   <div class="topbar-actions">
-    <a class="button secondary" href="?from={{ query.from|default:'' }}&to={{ query.to|default:'' }}&status={{ query.status|default:'' }}&format=csv">Export CSV</a>
+    <span class="badge acc"><span class="dot"></span>Audited</span>
+    <a class="button secondary" href="?from={{ query.from|default:'' }}&to={{ query.to|default:'' }}&status={{ query.status|default:'' }}&ip={{ ip_filter|default:'' }}&format=csv">Export CSV</a>
   </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Rows loaded</span>
+    <span class="kpi-val">{{ items|length }}</span>
+    <span class="kpi-delta">current backend page</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Total events</span>
+    <span class="kpi-val">{{ total }}</span>
+    <span class="kpi-delta">matching active filters</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Status filter</span>
+    <span class="kpi-val">{{ query.status|default:"All" }}</span>
+    <span class="kpi-delta">success, failure, or all</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Page</span>
+    <span class="kpi-val">{{ page }}</span>
+    <span class="kpi-delta">backend pagination</span>
+  </article>
 </section>
 
 <section class="card">
@@ -33,7 +57,13 @@
           <option value="">All</option>
           <option value="success" {% if query.status == "success" %}selected{% endif %}>success</option>
           <option value="failure" {% if query.status == "failure" %}selected{% endif %}>failure</option>
+          <option value="unauthorized" {% if query.status == "unauthorized" %}selected{% endif %}>unauthorized</option>
+          <option value="forbidden" {% if query.status == "forbidden" %}selected{% endif %}>forbidden</option>
         </select>
+      </label>
+      <label>
+        IP address
+        <input type="text" name="ip" value="{{ ip_filter|default:'' }}" placeholder="e.g. 192.168.1" maxlength="45" />
       </label>
     </div>
     <div class="toolbar-actions">
@@ -63,17 +93,29 @@
       <tbody>
         {% for row in items %}
         <tr>
-          <td>{{ row.event|default:"-" }}</td>
+          <td>
+            {% if row.id %}
+              <a href="{% url 'operator-audit-security-detail-view' row.id %}">{{ row.eventDisplay }}</a>
+            {% else %}
+              {{ row.eventDisplay }}
+            {% endif %}
+          </td>
           <td>
             <span class="chip {% if row.status == 'success' %}success{% elif row.status == 'failure' %}danger{% else %}neutral{% endif %}">{{ row.status|default:"-" }}</span>
           </td>
           <td>{{ row.actor|default:"-" }}</td>
           <td>{{ row.ipAddress|default:"-" }}</td>
-          <td>{{ row.createdAtUtc|default:"-" }}</td>
+          <td>{{ row.createdDisplay }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="helper-text">No security audit events returned for this filter.</td>
+          <td colspan="5">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No security audit events returned</strong>
+              <span>Adjust the filters or use a preset to widen the audit window.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Tycoon.Backend.Api.Features.AdminAuth;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -83,6 +84,19 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
         hit.Should().NotBeNull("admin auth refresh should be rate-limited");
         hit!.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
         await hit.HasErrorCodeAsync("RATE_LIMITED");
+    }
+
+    [Fact]
+    public void AdminDefaultPermissions_IncludePersonalizationScopes()
+    {
+        var field = typeof(AdminAuthEndpoints).GetField(
+            "DefaultPermissions",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        field.Should().NotBeNull();
+        var permissions = field!.GetValue(null).Should().BeAssignableTo<string[]>().Subject;
+        permissions.Should().Contain("personalization:read");
+        permissions.Should().Contain("personalization:write");
     }
 
     private async Task<string> SignupAndGetUserTokenAsync()

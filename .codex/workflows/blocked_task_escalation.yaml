@@ -1,0 +1,18 @@
+name: blocked-task-escalation
+description: Use when Codex hits a blocker and must stop cleanly.
+steps:
+  - update_current_task:
+      status: blocked
+  - write_blocker:
+      template: .codex/heartbeat/templates/blocker-template.md
+      target: .codex/heartbeat/current-blockers.md
+  - record_verification:
+      target: .codex/heartbeat/verification-log.md
+  - stop:
+      rule: do_not_guess_or_continue_destructively
+  - output:
+      include:
+        - blocker
+        - evidence
+        - required_action
+        - safe_next_steps

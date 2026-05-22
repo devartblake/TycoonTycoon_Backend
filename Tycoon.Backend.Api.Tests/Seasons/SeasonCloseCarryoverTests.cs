@@ -24,7 +24,7 @@ public sealed class SeasonCloseCarryoverTests : IClassFixture<TycoonApiFactory>
         var created = await _admin.PostAsJsonAsync("/admin/seasons", new CreateSeasonRequest(
             10, "Season 10", DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddDays(30)));
         created.EnsureSuccessStatusCode();
-        var s = await created.Content.ReadFromJsonAsync<SeasonDto>();
+        var s = await created.Content.ReadFromJsonAsync<SeasonDto>(TestJson.Default);
 
         await _admin.PostAsJsonAsync("/admin/seasons/activate", new ActivateSeasonRequest(s!.SeasonId));
 
@@ -62,7 +62,7 @@ public sealed class SeasonCloseCarryoverTests : IClassFixture<TycoonApiFactory>
         // Active should be Season 11
         var active = await _public.GetAsync("/seasons/active");
         active.EnsureSuccessStatusCode();
-        var a = await active.Content.ReadFromJsonAsync<SeasonDto>();
+        var a = await active.Content.ReadFromJsonAsync<SeasonDto>(TestJson.Default);
         a!.Name.Should().Be("Season 11");
 
         // Player state in new active season should exist (carryover could be 0 if small, but profile should exist)

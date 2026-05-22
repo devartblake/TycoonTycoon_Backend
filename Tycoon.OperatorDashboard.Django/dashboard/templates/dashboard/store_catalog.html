@@ -1,0 +1,125 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Store Catalog{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store</p>
+    <h1 class="page-title">Catalog</h1>
+    <p class="page-subtitle">Manage store items, prices, and visibility. Only active items can have flash sales created against them.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="chip neutral">{{ total_count }} total</span>
+    {% if can_write %}
+    <a class="button" href="{% url 'store-catalog-new' %}">+ New item</a>
+    {% endif %}
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi {% if active_count > 0 %}ok{% endif %}">
+    <span class="kpi-label">Total items</span>
+    <span class="kpi-val">{{ total_count }}</span>
+    <span class="kpi-delta">in catalog</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Active</span>
+    <span class="kpi-val">{{ active_count }}</span>
+    <span class="kpi-delta">purchasable by players</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Item types</span>
+    <span class="kpi-val">{{ type_count }}</span>
+    <span class="kpi-delta">distinct types</span>
+  </article>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Filters" copy="Filter by item type or active status." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Item type
+        <select name="itemType">
+          <option value="">Any</option>
+          {% for t in item_type_choices %}
+          <option value="{{ t }}" {% if query.itemType == t %}selected{% endif %}>{{ t|capfirst }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Active only
+        <select name="activeOnly">
+          <option value="">All</option>
+          <option value="true" {% if query.activeOnly == "true" %}selected{% endif %}>Active</option>
+          <option value="false" {% if query.activeOnly == "false" %}selected{% endif %}>Inactive</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Filter</button>
+      <span class="helper-text">{{ items|length }} item{{ items|length|pluralize }} returned.</span>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Items" copy="Click View to edit, toggle active status, or remove an item." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Price</th>
+          <th>Grant qty</th>
+          <th>Max/user</th>
+          <th>Status</th>
+          <th>Updated</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td><code class="breakable-token" style="font-size:0.75rem;">{{ item.sku|default:"-" }}</code></td>
+          <td>{{ item.name|default:"-" }}</td>
+          <td><span class="chip neutral" style="font-size:0.7rem;">{{ item.itemType|default:"misc" }}</span></td>
+          <td>
+            {% if item.priceCoins %}{{ item.priceCoins }} coins{% endif %}
+            {% if item.priceCoins and item.priceDiamonds %} / {% endif %}
+            {% if item.priceDiamonds %}{{ item.priceDiamonds }} 💎{% endif %}
+            {% if not item.priceCoins and not item.priceDiamonds %}free{% endif %}
+          </td>
+          <td>{{ item.grantQuantity|default:"1" }}</td>
+          <td>{% if item.maxPerPlayer == 0 %}∞{% else %}{{ item.maxPerPlayer }}{% endif %}</td>
+          <td>
+            <span class="chip {% if item.isActive %}success{% else %}warning{% endif %}">
+              {% if item.isActive %}active{% else %}inactive{% endif %}
+            </span>
+          </td>
+          <td>{{ item.updatedDisplay|default:"-" }}</td>
+          <td>
+            <a class="button secondary small" href="{% url 'store-catalog-detail' item.id %}">View</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No store items found</strong>
+              <span>{% if can_write %}<a href="{% url 'store-catalog-new' %}">Create your first item</a> to enable flash sales.{% else %}No items match the current filter.{% endif %}</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

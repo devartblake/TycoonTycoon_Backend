@@ -1,0 +1,142 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Stock Policy — {{ sku }}{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store / Stock policies</p>
+    <h1 class="page-title">{{ sku }}</h1>
+    <p class="page-subtitle">Per-SKU purchase limit and reset interval for this policy.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'store-stock-policies-view' %}">Back to policies</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+{% if policy %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Policy" copy="SKU and timestamps are read-only." %}
+  <div class="account-summary-grid">
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">SKU</span>
+      <code class="breakable-token">{{ policy.sku }}</code>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Created (UTC)</span>
+      <span>{{ policy.createdDisplay|default:"—" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Updated (UTC)</span>
+      <span>{{ policy.updatedDisplay|default:"—" }}</span>
+    </div>
+  </div>
+</section>
+
+{% if active_sale %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Active flash sale" copy="This SKU currently has a live or scheduled flash sale." %}
+  <div class="account-summary-grid">
+    <div class="summary-field">
+      <span class="helper-text">Discount</span>
+      <span>-{{ active_sale.discountPercent }}%</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Starts (UTC)</span>
+      <span>{{ active_sale.startsAtUtc|default:"—" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Ends (UTC)</span>
+      <span>{{ active_sale.endsAtUtc|default:"—" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Sale ID</span>
+      <a class="button secondary small" href="{% url 'store-flash-sales-view' %}">View flash sales</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if can_write %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Edit policy" copy="Update the purchase limit, reset interval, and active status for this SKU." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="save" />
+    <div class="form-grid">
+      <label>
+        Max quantity per user
+        <input type="number" name="maxQuantityPerUser" value="{{ policy.maxQuantityPerUser }}" min="0" required />
+        <span class="helper-text">0 = unlimited</span>
+      </label>
+      <label>
+        Reset interval
+        <select name="resetInterval">
+          {% for val, label in interval_choices %}
+          <option value="{{ val }}" {% if policy.resetInterval == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="form-grid">
+      <div>
+        <span class="helper-text">Active</span>
+        <label class="toggle-label" style="margin-top:6px;">
+          <span class="toggle-switch">
+            <input type="checkbox" name="isActive" {% if policy.isActive %}checked{% endif %} />
+            <span class="toggle-slider"></span>
+          </span>
+          <span class="toggle-label-text">{% if policy.isActive %}Active{% else %}Inactive{% endif %}</span>
+        </label>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Save changes</button>
+    </div>
+  </form>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Danger zone" copy="Permanently removes this policy from the database. This cannot be undone." %}
+  <form method="post" onsubmit="return confirm('Delete policy \'{{ sku }}\'? This is permanent.');">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="delete" />
+    <div class="toolbar-actions">
+      <button type="submit" class="button danger">Delete policy</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Policy values" copy="You have read-only access. store:write permission is required to edit." %}
+  <div class="form-grid">
+    <div>
+      <span class="helper-text">Max quantity per user</span>
+      <p>{% if policy.maxQuantityPerUser == 0 %}Unlimited{% else %}{{ policy.maxQuantityPerUser }}{% endif %}</p>
+    </div>
+    <div>
+      <span class="helper-text">Reset interval</span>
+      <p>{{ policy.intervalDisplay }}</p>
+    </div>
+    <div>
+      <span class="helper-text">Status</span>
+      <span class="chip {% if policy.isActive %}success{% else %}warning{% endif %}">
+        {% if policy.isActive %}Active{% else %}Inactive{% endif %}
+      </span>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% else %}
+<section class="card mt-lg">
+  <div class="empty">
+    <span class="empty-ico">!</span>
+    <strong>Policy unavailable</strong>
+    <span>Check backend availability or confirm the SKU exists.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

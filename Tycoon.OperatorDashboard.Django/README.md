@@ -27,11 +27,45 @@ python manage.py migrate
 python manage.py runserver 0.0.0.0:8300
 ```
 
-Open http://localhost:8300.
+Open http://localhost:8300 only for unauthenticated template/static checks such as `/login` and `/healthz`.
+Authenticated dashboard pages still require a real `.NET` backend admin auth flow, a matching
+`ADMIN_OPS_KEY`, and a seeded admin account. Use the Docker-backed preview flow below for normal
+dashboard review.
 
 ## Docker
 
 The main compose service now builds this dashboard with `docker/Dockerfile.dashboard-django` and serves it on container port `8200`.
+
+### Authenticated local preview
+
+Use Docker Compose for authenticated dashboard review. This keeps Django, the `.NET` API,
+`Tycoon.MigrationService`, PostgreSQL, MinIO, and the sidecar wired the same way as dev/staging:
+
+```bash
+cp docker/.env.example docker/.env   # only if docker/.env does not already exist
+docker compose -f docker/compose.yml up -d --build
+```
+
+The required local values are:
+
+- `ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION`
+- `ADMIN_AUTH_ALLOW_TRUSTED_BFF_PLAIN_JSON=true`
+- `ADMIN_AUTH_TRANSPORT=auto`
+- `SUPER_ADMIN_EMAIL=admin@tycoon.local`
+- `SUPER_ADMIN_PASSWORD=ChangeMe123!`
+
+Startup order is intentional: infrastructure starts first, `migration` applies/seeds data and
+validates dashboard readiness, `backend-api` starts after migration completion, and
+`operator-dashboard` starts after the backend is healthy.
+
+Preview URL and login:
+
+- URL: `http://localhost:8200/login`
+- Email: `admin@tycoon.local`
+- Password: `ChangeMe123!`
+
+See [`../docs/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md`](../docs/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md)
+for the verification workflow and common failure checks.
 
 ## Authentication
 
@@ -42,6 +76,17 @@ The dashboard now uses session-based operator login:
 - Protected routes (`/`, `/api/operator/health`, `/api/operator/users`) require a valid operator session
 - Session middleware auto-attempts refresh via `/admin/auth/refresh` when access token is near expiry
 - API routes enforce permission checks from the operator profile (`users:read`, `users:write`)
+
+### Development login
+
+When running Docker Compose from `docker/.env.example` values after the migration service seeds the super-admin account:
+
+- URL: `http://localhost:8200/login`
+- Email: `admin@tycoon.local`
+- Password: `ChangeMe123!`
+- Required matching ops key: `ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION`
+
+Smoke compose seeds `smoke-admin@synaptix.local` / `SmokeTest123!` instead. If `docker/.env` has not been created from `docker/.env.example`, compose defaults may leave the super-admin seed blank and no dev admin account will be created.
 
 ## Basic verification
 
@@ -84,8 +129,9 @@ When running inside Docker Compose, these are overridden to:
 - `FASTAPI_BASE_URL=http://sidecar:8100`
 - `MINIO_BASE_URL=http://minio:9000`
 
-## Current Status (April 8, 2026)
+## Current Status (May 12, 2026)
 
 - Django remains the default operator dashboard service in Compose.
-- Admin auth calls now support configurable ops-key header names for deployment parity with the legacy Blazor dashboard.
-- Staging parallel-run sign-off and quarterly rollback drill execution remain open cutover gates.
+- Admin auth supports trusted internal plain JSON for dev plus secure-channel transport hooks for production.
+- Django code-level parity is complete, including personalization and player stock support.
+- Staging parallel-run sign-off, pending EF migration apply, and Blazor decommission remain external cutover gates.

@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Synaptix.Security.Kms.Infrastructure.Vault;
@@ -9,8 +8,7 @@ namespace Synaptix.Security.Kms.Infrastructure.Vault;
 /// Uses the Vault REST API directly to avoid adding VaultSharp as a dependency.
 public sealed class VaultTransitClient(
     HttpClient http,
-    IOptions<VaultOptions> opts,
-    ILogger<VaultTransitClient> logger)
+    IOptions<VaultOptions> opts)
 {
     private readonly VaultOptions _opts = opts.Value;
 

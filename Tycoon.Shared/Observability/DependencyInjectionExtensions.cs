@@ -194,11 +194,11 @@ public static class DependencyInjectionExtensions
 
         if (observabilityOptions.UseZipkinExporter)
         {
-            ArgumentNullException.ThrowIfNull(observabilityOptions.ZipkinOptions);
-            // https://github.com/open-telemetry/opentelemetry-dotnet/tree/e330e57b04fa3e51fe5d63b52bfff891fb5b7961/src/OpenTelemetry.Exporter.Zipkin
-            tracing.AddZipkinExporter(x =>
-                x.Endpoint = new Uri(observabilityOptions.ZipkinOptions.HttpExporterEndpoint)
-            ); // "http://localhost:9411/api/v2/spans"
+            tracing.AddOtlpExporter(x =>
+            {
+                x.Endpoint = new Uri(ResolveZipkinOtlpEndpoint(observabilityOptions));
+                x.Protocol = OtlpExportProtocol.Grpc;
+            });
         }
 
         if (observabilityOptions.UseConsoleExporter)
@@ -235,6 +235,21 @@ public static class DependencyInjectionExtensions
             // https://grafana.com/docs/grafana-cloud/monitor-applications/application-observability/instrument/dotnet/
             tracing.UseGrafana();
         }
+    }
+
+    private static string ResolveZipkinOtlpEndpoint(ObservabilityOptions observabilityOptions)
+    {
+        if (!string.IsNullOrWhiteSpace(observabilityOptions.ZipkinOptions?.OTLPGrpcExporterEndpoint))
+        {
+            return observabilityOptions.ZipkinOptions.OTLPGrpcExporterEndpoint;
+        }
+
+        if (!string.IsNullOrWhiteSpace(observabilityOptions.OTLPOptions?.OTLPGrpcExporterEndpoint))
+        {
+            return observabilityOptions.OTLPOptions.OTLPGrpcExporterEndpoint;
+        }
+
+        return new OTLPOptions().OTLPGrpcExporterEndpoint;
     }
 
     private static void AddMetricsExporter(ObservabilityOptions observabilityOptions, MeterProviderBuilder metrics)

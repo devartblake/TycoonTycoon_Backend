@@ -1,0 +1,144 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Personalization Player Debug{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Personalization</p>
+    <h1 class="page-title">Player debug</h1>
+    <p class="page-subtitle">Inspect a player's mind profile, recent behavior events, and personalization audit trace.</p>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Lookup" copy="Use a player ID to load profile and debug details." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="00000000-0000-0000-0000-000000000000" required />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Load player</button>
+    </div>
+  </form>
+</section>
+
+{% if profile %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Profile" copy="Current risk scores and archetype state for this player." %}
+  <div class="form-grid">
+    <div class="stat-card">
+      <div class="stat-label">Archetype</div>
+      <div class="stat-value">{{ profile.archetype|default:"-" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Churn risk</div>
+      <div class="stat-value">{{ profile.churnRiskScore|default:"0" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Frustration risk</div>
+      <div class="stat-value">{{ profile.frustrationRiskScore|default:"0" }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Confidence</div>
+      <div class="stat-value">{{ profile.confidenceLevel|default:"0" }}</div>
+    </div>
+  </div>
+  <div class="toolbar-actions">
+    <form method="post" action="{% url 'personalization-player-recalculate' player_id %}">
+      {% csrf_token %}
+      <button type="submit" class="button small">Recalculate</button>
+    </form>
+    <form method="post" action="{% url 'personalization-player-reset' player_id %}" onsubmit="return confirm('Reset this player personalization profile to safe defaults?');">
+      {% csrf_token %}
+      <button type="submit" class="button danger small">Reset profile</button>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Profile JSON" copy="Raw profile fields returned by the backend for audit-friendly inspection." %}
+  <div class="form-grid">
+    <label>
+      Preferences
+      <textarea rows="10" readonly>{{ preferences_json }}</textarea>
+    </label>
+    <label>
+      Guardrails
+      <textarea rows="10" readonly>{{ guardrails_json }}</textarea>
+    </label>
+  </div>
+  <label>
+    Full profile
+    <textarea rows="14" readonly>{{ profile_json }}</textarea>
+  </label>
+</section>
+{% endif %}
+
+{% if debug %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Recent behavior events" copy="Latest player behavior signals used by the personalization pipeline." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Source</th>
+          <th>Category</th>
+          <th>Difficulty</th>
+          <th>Occurred</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in debug.recentEvents %}
+        <tr>
+          <td>{{ event.eventType|default:"-" }}</td>
+          <td>{{ event.eventSource|default:"-" }}</td>
+          <td>{{ event.category|default:"-" }}</td>
+          <td>{{ event.difficulty|default:"-" }}</td>
+          <td>{{ event.occurredAt|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="helper-text">No recent behavior events for this player.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Recent audit trace" copy="Latest personalization decision audit rows for this player." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>Candidate type</th>
+          <th>Allowed</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in debug.recentAudit %}
+        <tr>
+          <td>{{ row.decisionDisplay|truncatechars:80 }}</td>
+          <td>{{ row.candidateDisplay }}</td>
+          <td>{{ row.allowedDisplay }}</td>
+          <td>{{ row.createdAt|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="helper-text">No recent audit rows for this player.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

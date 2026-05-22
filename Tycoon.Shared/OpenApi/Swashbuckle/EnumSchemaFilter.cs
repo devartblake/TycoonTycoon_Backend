@@ -15,6 +15,7 @@ public class EnumSchemaFilter : ISchemaFilter
         if (!context.Type.IsEnum) return;
         if (schema is not OpenApiSchema concreteSchema) return;
 
+        concreteSchema.Enum ??= [];
         concreteSchema.Enum.Clear();
         Enum.GetNames(context.Type).ToList()
             .ForEach(name => concreteSchema.Enum.Add(JsonValue.Create(name)!));

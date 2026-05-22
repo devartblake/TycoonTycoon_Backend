@@ -28,7 +28,7 @@ public sealed class SeasonFlowTests : IClassFixture<TycoonApiFactory>
             EndsAtUtc: DateTimeOffset.UtcNow.AddDays(30)
         ));
         created.EnsureSuccessStatusCode();
-        var s = await created.Content.ReadFromJsonAsync<SeasonDto>();
+        var s = await created.Content.ReadFromJsonAsync<SeasonDto>(TestJson.Default);
 
         var act = await _admin.PostAsJsonAsync("/admin/seasons/activate", new ActivateSeasonRequest(s!.SeasonId));
         act.EnsureSuccessStatusCode();
@@ -37,7 +37,7 @@ public sealed class SeasonFlowTests : IClassFixture<TycoonApiFactory>
         var p1 = Guid.NewGuid();
         var p2 = Guid.NewGuid();
 
-        var start = await _public.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "duel"));
+        var start = await _public.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "ranked"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
@@ -46,7 +46,7 @@ public sealed class SeasonFlowTests : IClassFixture<TycoonApiFactory>
         var submit = new SubmitMatchRequest(
             EventId: eventId,
             MatchId: started!.MatchId,
-            Mode: "duel",
+            Mode: "ranked",
             Category: "general",
             QuestionCount: 10,
             StartedAtUtc: started.StartedAt,

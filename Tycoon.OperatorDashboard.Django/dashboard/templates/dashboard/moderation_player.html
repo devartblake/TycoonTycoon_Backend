@@ -1,0 +1,94 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Moderation Player{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Moderation</p>
+    <h1 class="page-title">Player moderation</h1>
+    <p class="page-subtitle">Inspect current enforcement state and recent moderation history for one player.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-moderation-logs-view' %}">Back to logs</a>
+    <a class="button secondary" href="{% url 'operator-user-investigation-view' player_id %}">Investigation</a>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Current profile" copy="Effective moderation state from the backend profile endpoint." %}
+  {% if profile %}
+  <div class="form-grid">
+    <div><span class="helper-text">Player ID</span><br><code>{{ profile.playerId|default:player_id }}</code></div>
+    <div><span class="helper-text">Status</span><br><span class="chip neutral">{{ profile.status|default:"-" }}</span></div>
+    <div><span class="helper-text">Reason</span><br>{{ profile.reason|default:"-" }}</div>
+    <div><span class="helper-text">Set by</span><br>{{ profile.setByAdmin|default:"-" }}</div>
+    <div><span class="helper-text">Set at</span><br>{{ profile.setAtUtc|default:"-" }}</div>
+    <div><span class="helper-text">Expires</span><br>{{ profile.expiresAtUtc|default:"-" }}</div>
+  </div>
+  {% if profile.notes %}<p class="surface-note mt-lg">{{ profile.notes }}</p>{% endif %}
+  {% else %}
+  <div class="empty"><strong>Moderation profile unavailable</strong><span>Check backend availability or permissions.</span></div>
+  {% endif %}
+</section>
+
+{% if can_write_moderation %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Set status" copy="Apply a new moderation status with audit reason and optional expiry." %}
+  <form method="post" class="stack" data-validate="1">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Status
+        <select name="status">
+          <option value="1">Normal</option>
+          <option value="2">Restricted</option>
+          <option value="3">Suspended</option>
+          <option value="4">Banned</option>
+        </select>
+      </label>
+      <label>
+        Reason
+        <input type="text" name="reason" data-hint="Reason is required." />
+        <span class="field-error"></span>
+      </label>
+      <label>
+        Notes
+        <input type="text" name="notes" />
+      </label>
+      <label>
+        Expires at UTC
+        <input type="text" name="expiresAtUtc" placeholder="optional ISO timestamp" />
+      </label>
+      <label>
+        Related flag ID
+        <input type="text" name="relatedFlagId" />
+      </label>
+    </div>
+    <div class="toolbar-actions"><button type="submit">Apply status</button></div>
+  </form>
+</section>
+{% endif %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Recent moderation logs" copy="Latest enforcement entries filtered to this player." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead><tr><th>Log</th><th>Status</th><th>Reason</th><th>Set by</th><th>At</th></tr></thead>
+      <tbody>
+        {% for log in logs.items %}
+        <tr>
+          <td><a href="{% url 'operator-moderation-log-detail-view' log.id %}">{{ log.id }}</a></td>
+          <td>{{ log.statusDisplay }}</td>
+          <td>{{ log.reason|default:"-" }}</td>
+          <td>{{ log.setByDisplay }}</td>
+          <td>{{ log.createdAtUtc|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="helper-text">No moderation logs returned for this player.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

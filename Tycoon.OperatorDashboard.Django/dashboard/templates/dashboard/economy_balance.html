@@ -1,0 +1,136 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Economy Balance Config{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Economy</p>
+    <h1 class="page-title">Balance configuration</h1>
+    <p class="page-subtitle">View and adjust game-wide economy parameters — starting values, caps, and daily bonuses.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="badge warn"><span class="dot"></span>Write-protected</span>
+    <a class="button secondary" href="{% url 'economy-player-view' %}">Player economy</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+{% if balance %}
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Starting coins</span>
+    <span class="kpi-val">{{ balance.startingCoins|default:"—" }}</span>
+    <span class="kpi-delta">new player default</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Starting XP</span>
+    <span class="kpi-val">{{ balance.startingXp|default:"—" }}</span>
+    <span class="kpi-delta">new player default</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Daily login coins</span>
+    <span class="kpi-val">{{ balance.dailyLoginCoins|default:"—" }}</span>
+    <span class="kpi-delta">per login event</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Max coins</span>
+    <span class="kpi-val">{{ balance.maxCoins|default:"—" }}</span>
+    <span class="kpi-delta">wallet cap</span>
+  </article>
+</section>
+
+{% if can_write %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Edit balance parameters" copy="Leave a field blank to leave it unchanged." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="update" />
+    <div class="form-grid">
+      <label>
+        Starting coins
+        <input type="number" name="startingCoins" value="{{ balance.startingCoins|default:'' }}" min="0" />
+      </label>
+      <label>
+        Starting XP
+        <input type="number" name="startingXp" value="{{ balance.startingXp|default:'' }}" min="0" />
+      </label>
+      <label>
+        Daily login coins
+        <input type="number" name="dailyLoginCoins" value="{{ balance.dailyLoginCoins|default:'' }}" min="0" />
+      </label>
+      <label>
+        Max coins
+        <input type="number" name="maxCoins" value="{{ balance.maxCoins|default:'' }}" min="0" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Save changes</button>
+    </div>
+  </form>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Simulate energy spending" copy="Preview economy outcome for a player action without committing." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="simulate" />
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="simulatePlayerId" placeholder="uuid" />
+      </label>
+      <label>
+        Action
+        <input type="text" name="simulateAction" placeholder="e.g. purchase_item" />
+      </label>
+      <label>
+        Amount
+        <input type="number" name="simulateAmount" placeholder="coins" min="0" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Simulate</button>
+    </div>
+  </form>
+  {% if simulate_result %}
+  <div class="mt-lg">
+    {% include "dashboard/partials/section_intro.html" with title="Simulation result" copy="Projected outcome." %}
+    <pre>{{ simulate_result|pprint }}</pre>
+  </div>
+  {% endif %}
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Rollback transaction" copy="Reverse a specific transaction by ID. Use with caution." %}
+  <form method="post" class="stack" onsubmit="return confirm('Rollback this transaction? This may affect player balances.')">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="rollback" />
+    <div class="form-grid">
+      <label>
+        Transaction ID
+        <input type="text" name="transactionId" placeholder="uuid" />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit" class="button danger">Rollback</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Raw balance payload" copy="Full backend balance config." %}
+  <pre>{{ balance|pprint }}</pre>
+</section>
+{% else %}
+<section class="card mt-lg">
+  <div class="empty">
+    <span class="empty-ico">0</span>
+    <strong>Balance config unavailable</strong>
+    <span>Check backend connectivity or admin permissions.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Party Anti-Cheat Flags{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Security / Anti-cheat</p>
+    <h1 class="page-title">Party flags</h1>
+    <p class="page-subtitle">Anti-cheat flags triggered by party-level collusion rules. Flags where rule key starts with "party-".</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="chip neutral">{{ flags.total|default:"0" }} total</span>
+    <a class="button secondary" href="{% url 'anticheat-flags-view' %}">Player flags</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Filters" copy="Narrow by rule key prefix or page size." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Rule key prefix
+        <input type="text" name="ruleKeyPrefix" value="{{ query.ruleKeyPrefix|default:'party-' }}" placeholder="party-" />
+        <span class="helper-text">Only flags where ruleKey starts with this prefix.</span>
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="25" {% if query.pageSize == "25" %}selected{% endif %}>25</option>
+          <option value="50" {% if query.pageSize == "50" or not query.pageSize %}selected{% endif %}>50</option>
+          <option value="100" {% if query.pageSize == "100" %}selected{% endif %}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Apply</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Party flags" copy="Most-recent first. PartyId is extracted from evidence JSON." %}
+  {% if flags %}
+  <div class="table-meta">
+    <span class="helper-text">Page {{ flags.page|default:1 }} — {{ flags.items|length }} of {{ flags.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Party ID</th>
+          <th>Rule</th>
+          <th>Severity</th>
+          <th>Message</th>
+          <th>Flagged (UTC)</th>
+          <th>Review</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for flag in flags.items %}
+        <tr>
+          <td class="helper-text">
+            {% if flag.playerId %}
+            <a href="{% url 'operator-user-investigation-view' flag.playerId %}">{{ flag.playerId }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="helper-text" style="font-size:0.72rem;">{{ flag.partyId|default:"—" }}</td>
+          <td><code style="font-size:0.75rem;">{{ flag.ruleKey|default:"-" }}</code></td>
+          <td>{{ flag.severity|default:"-" }}</td>
+          <td>{{ flag.message|default:"-" }}</td>
+          <td>{{ flag.createdAtUtc|default:"-" }}</td>
+          <td>
+            {% if can_review %}
+            <form method="post" action="{% url 'anticheat-party-flag-review' flag.id %}" class="inline-form">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+              <input class="input-compact" type="text" name="note" placeholder="Review note" required />
+              <button class="btn-inline" type="submit">Mark reviewed</button>
+            </form>
+            {% else %}
+            <span class="helper-text">anticheat:write required</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No party flags found</strong>
+              <span>No flags match the current rule key prefix filter.</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <span class="empty-ico">0</span>
+    <strong>No party flags loaded</strong>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

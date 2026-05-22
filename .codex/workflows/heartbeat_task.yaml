@@ -1,0 +1,34 @@
+name: heartbeat-task
+description: Standard workflow for observable Codex tasks.
+steps:
+  - initialize_heartbeat:
+      file: .codex/heartbeat/current-task.md
+      status: in-progress
+  - classify:
+      allowed_priorities:
+        - P0 Alpha blocker
+        - P1 Alpha important
+        - P2 Post-Alpha
+        - P3 Long-term platform
+  - inspect:
+      read_before_write: true
+      include:
+        - affected_projects
+        - callers
+        - tests
+        - docs
+  - update_heartbeat:
+      checkpoint: before_changes
+  - implement:
+      rule: smallest_safe_change
+  - update_heartbeat:
+      checkpoint: after_changes
+  - verify:
+      record_to: .codex/heartbeat/verification-log.md
+  - update_status:
+      target_files:
+        - .codex/heartbeat/current-task.md
+        - .codex/heartbeat/alpha-status.md
+        - .codex/heartbeat/current-blockers.md
+  - final_report:
+      template: .codex/heartbeat/templates/task-report-template.md

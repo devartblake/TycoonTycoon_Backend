@@ -1,0 +1,134 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Security Audit — {{ event.eventDisplay|default:event_id }}{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Security</p>
+    <h1 class="page-title">Audit event</h1>
+    <p class="page-subtitle">Inspect one security audit event, its actor, originating IP, and geographic origin.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-audit-security-view' %}">Back to audit</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+{% if event %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Event details" copy="Security audit event from the admin_security channel." %}
+  <div class="account-summary-grid">
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">Event ID</span>
+      <code class="breakable-token">{{ event.id|default:event_id }}</code>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Event</span>
+      <span>{{ event.eventDisplay }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Status</span>
+      <span class="chip {% if event.status == 'success' or event.status == 'sent' %}success{% elif event.status == 'failure' or event.status == 'unauthorized' or event.status == 'forbidden' %}danger{% else %}neutral{% endif %}">{{ event.status|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Actor</span>
+      <span class="breakable-token">{{ event.actor|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">IP address</span>
+      {% if event.ipAddress and event.ipAddress != "-" %}
+      <span class="ip-reveal-target">
+        <span class="ip-masked">{{ event.ipMasked }}</span>
+        <button class="button-link" onclick="revealIp(this)">Reveal</button>
+        <span class="ip-full hidden">{{ event.ipAddress }}</span>
+      </span>
+      {% else %}
+      <span>—</span>
+      {% endif %}
+    </div>
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">User-Agent</span>
+      <span class="breakable-token helper-text">{{ event.userAgent|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Channel</span>
+      <span>{{ event.channelKey|default:"-" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Created (UTC)</span>
+      <span>{{ event.createdDisplay }}</span>
+    </div>
+  </div>
+</section>
+
+{% if event.ipAddress and event.ipAddress != "-" %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Geographic origin" copy="Approximate location derived from the IP address via ip-api.com. Lookup is server-to-server — the audited IP is not exposed to this browser. Result is not stored persistently." %}
+  <div id="geo-loading" class="helper-text">Loading location data…</div>
+  <div id="geo-result" class="hidden">
+    <div class="form-grid mb-md" id="geo-fields"></div>
+    <div id="geo-map" style="height:300px;border-radius:var(--radius-md);border:1px solid var(--line);"></div>
+  </div>
+  <div id="geo-error" class="hidden message error"></div>
+</section>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function () {
+  fetch("{% url 'audit-geo-lookup' %}?ip={{ event.ipAddress|urlencode }}")
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.error) { throw new Error(data.error); }
+      document.getElementById("geo-loading").classList.add("hidden");
+      document.getElementById("geo-result").classList.remove("hidden");
+      document.getElementById("geo-fields").innerHTML =
+        '<div><span class="helper-text">Country</span><br>' + (data.country || '—') + ' (' + (data.countryCode || '') + ')</div>' +
+        '<div><span class="helper-text">City</span><br>' + (data.city || '—') + '</div>' +
+        '<div><span class="helper-text">ISP</span><br>' + (data.isp || '—') + '</div>' +
+        '<div><span class="helper-text">Proxy / VPN</span><br><span class="chip ' + (data.proxy ? 'danger' : 'neutral') + '">' + (data.proxy ? 'Yes' : 'No') + '</span></div>';
+      if (data.lat && data.lon) {
+        var map = L.map('geo-map').setView([data.lat, data.lon], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        L.marker([data.lat, data.lon]).addTo(map)
+          .bindPopup((data.city || '') + ', ' + (data.country || '')).openPopup();
+      }
+    })
+    .catch(function (err) {
+      document.getElementById("geo-loading").classList.add("hidden");
+      var el = document.getElementById("geo-error");
+      el.classList.remove("hidden");
+      el.textContent = "Geo lookup unavailable: " + err.message;
+    });
+})();
+
+function revealIp(btn) {
+  var container = btn.closest(".ip-reveal-target");
+  container.querySelector(".ip-masked").classList.add("hidden");
+  container.querySelector(".ip-full").classList.remove("hidden");
+  btn.remove();
+}
+</script>
+{% endif %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Metadata" copy="Raw event metadata as stored in the audit record." %}
+  <div class="surface-note">
+    <pre>{{ metadata_json }}</pre>
+  </div>
+</section>
+
+{% else %}
+<section class="card">
+  <div class="empty">
+    <span class="empty-ico">!</span>
+    <strong>Audit event unavailable</strong>
+    <span>Check backend availability or event permissions.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

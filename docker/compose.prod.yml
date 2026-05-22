@@ -33,6 +33,8 @@ services:
   # backend-api — no direct port exposure in prod; route through Traefik with HTTPS labels
   backend-api:
     ports: []
+    environment:
+      AdminAuth__AllowTrustedBffPlainJson: "false"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend-api.rule=Host(`api.${DOMAIN:?DOMAIN is required in prod}`)"
@@ -52,6 +54,9 @@ services:
       DJANGO_DEBUG: "false"
       MINIO_BASE_URL: "http://minio:9000"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:?ADMIN_OPS_KEY is required in prod}"
+      ADMIN_AUTH_TRANSPORT: "${ADMIN_AUTH_TRANSPORT:-secure-channel}"
+      KMS_API_BASE_URL: "${KMS_API_BASE_URL:?KMS_API_BASE_URL is required in prod}"
+      KMS_SERVICE_TOKEN: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.operator-dashboard.rule=Host(`${DOMAIN:?DOMAIN is required in prod}`)"

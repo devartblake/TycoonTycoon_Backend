@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Abstractions;
 using Tycoon.Backend.Application.Economy;
 using Tycoon.Shared.Contracts.Dtos;
@@ -10,19 +9,17 @@ public sealed class SeasonRewardJob
 {
     private readonly IAppDb _db;
     private readonly EconomyService _economy;
-    private readonly IOptions<SeasonRewardOptions> _rewardOptions;
 
-    public SeasonRewardJob(IAppDb db, EconomyService economy, IOptions<SeasonRewardOptions> rewardOptions)
+    public SeasonRewardJob(IAppDb db, EconomyService economy)
     {
         _db = db;
         _economy = economy;
-        _rewardOptions = rewardOptions;
     }
 
     public async Task RunAsync(Guid seasonId, CancellationToken ct)
     {
-        var rules = _rewardOptions.Value.Rules;
-        if (rules is null || rules.Count == 0)
+        var rules = await _db.SeasonRewardRules.AsNoTracking().ToListAsync(ct);
+        if (rules.Count == 0)
             return;
 
         var rows = await _db.SeasonRankSnapshots

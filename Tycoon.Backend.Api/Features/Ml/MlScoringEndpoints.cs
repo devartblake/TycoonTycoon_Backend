@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Tycoon.Backend.Application.Config;
 
 namespace Tycoon.Backend.Api.Features.Ml;
 
@@ -11,7 +13,14 @@ public static class MlScoringEndpoints
 {
     public static void Map(WebApplication app)
     {
-        var g = app.MapGroup("/ml").WithTags("ML").RequireAuthorization();
+        var g = app.MapGroup("/ml").WithTags("ML").RequireAuthorization()
+            .AddEndpointFilter(async (ctx, next) =>
+            {
+                var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
+                if (!await flags.IsEnabledAsync("ai_sidecar_enabled", ctx.HttpContext.RequestAborted))
+                    return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
+                return await next(ctx);
+            });
         g.MapPost("/churn-risk", EstimateChurnRisk);
         g.MapPost("/match-quality", EstimateMatchQuality);
     }

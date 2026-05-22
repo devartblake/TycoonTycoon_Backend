@@ -36,30 +36,46 @@ public static class AdminAuthEndpoints
         "seasons:read",
         "seasons:write",
         "eventqueue:read",
-        "eventqueue:write"
+        "eventqueue:write",
+        "personalization:read",
+        "personalization:write"
     ];
 
     public static void Map(RouteGroupBuilder admin)
     {
         var g = admin.MapGroup("/auth").WithTags("Admin/Auth");
 
-        g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login").RequireSecureChannel();
-        g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh").RequireSecureChannel();
+        g.MapPost("/login", Login).RequireRateLimiting("admin-auth-login").RequireSecureChannel().AllowTrustedBffPlainJson();
+        g.MapPost("/refresh", Refresh).RequireRateLimiting("admin-auth-refresh").RequireSecureChannel().AllowTrustedBffPlainJson();
         g.MapGet("/me", Me).RequireAuthorization(AdminPolicies.AdminOpsPolicy);
     }
 
+    private static string GetClientIp(HttpContext http)
+    {
+        var forwarded = http.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(forwarded))
+            return forwarded.Split(',')[0].Trim();
+        return http.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    }
+
+    private static string GetUserAgent(HttpContext http) =>
+        http.Request.Headers["User-Agent"].ToString() is { Length: > 0 } ua ? ua : "unknown";
+
     private static async Task<IResult> Login(
         [FromBody] AdminLoginRequest request,
+        HttpContext http,
         IAuthService authService,
         IAppDb db,
         ILoggerFactory loggerFactory,
         CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
+        var ip = GetClientIp(http);
+        var ua = GetUserAgent(http);
 
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
         {
-            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "validation_error", new { reason = "missing_email_or_password" }, ct);
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "validation_error", new { ip, userAgent = ua, reason = "missing_email_or_password" }, ct);
             AdminSecurityMetrics.RecordAuth("login", "validation_error", sw);
             return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "Email and password are required.");
         }
@@ -71,7 +87,7 @@ public static class AdminAuthEndpoints
             var aclLogger = loggerFactory.CreateLogger("AdminEmailAcl");
             if (!await IsAdminEmailAsync(request.Email, db, aclLogger, ct))
             {
-                await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "forbidden", new { email = request.Email, reason = "email_not_allowlisted" }, ct);
+                await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "forbidden", new { actor = request.Email, ip, userAgent = ua, reason = "email_not_allowlisted" }, ct);
                 AdminSecurityMetrics.RecordAuth("login", "forbidden", sw);
                 return AdminApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Authenticated user is not an admin.");
             }
@@ -84,7 +100,7 @@ public static class AdminAuthEndpoints
                 Permissions: DefaultPermissions
             );
 
-            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "success", new { email = request.Email }, ct);
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "success", new { actor = request.Email, ip, userAgent = ua }, ct);
             AdminSecurityMetrics.RecordAuth("login", "success", sw);
 
             return Results.Ok(new AdminLoginResponse(
@@ -97,26 +113,29 @@ public static class AdminAuthEndpoints
         }
         catch (UnauthorizedAccessException)
         {
-            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "unauthorized", new { email = request.Email }, ct);
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "unauthorized", new { actor = request.Email, ip, userAgent = ua }, ct);
             AdminSecurityMetrics.RecordAuth("login", "unauthorized", sw);
             return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Invalid credentials.");
         }
     }
 
-    private static async Task<IResult> Refresh([FromBody] RefreshRequest request, IAuthService authService, IAppDb db, CancellationToken ct)
+    private static async Task<IResult> Refresh([FromBody] RefreshRequest request, HttpContext http, IAuthService authService, IAppDb db, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
+        var ip = GetClientIp(http);
+        var ua = GetUserAgent(http);
+        var actor = http.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? string.Empty;
 
         try
         {
             var auth = await authService.AdminRefreshAsync(request.RefreshToken);
-            await AdminSecurityAudit.WriteAsync(db, "admin_auth_refresh", "success", new { }, ct);
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_refresh", "success", new { actor, ip, userAgent = ua }, ct);
             AdminSecurityMetrics.RecordAuth("refresh", "success", sw);
             return Results.Ok(new AdminRefreshResponse(auth.AccessToken, auth.ExpiresIn, "Bearer"));
         }
         catch (UnauthorizedAccessException)
         {
-            await AdminSecurityAudit.WriteAsync(db, "admin_auth_refresh", "unauthorized", new { }, ct);
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_refresh", "unauthorized", new { actor, ip, userAgent = ua }, ct);
             AdminSecurityMetrics.RecordAuth("refresh", "unauthorized", sw);
             return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Refresh token is invalid or expired.");
         }
@@ -125,6 +144,8 @@ public static class AdminAuthEndpoints
     private static async Task<IResult> Me(HttpContext httpContext, IAppDb db, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
+        var ip = GetClientIp(httpContext);
+        var ua = GetUserAgent(httpContext);
 
         var sub = httpContext.User.FindFirst("sub")?.Value
                   ?? httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -133,12 +154,12 @@ public static class AdminAuthEndpoints
 
         if (string.IsNullOrWhiteSpace(sub))
         {
-            await AdminSecurityAudit.WriteAsync(db, "admin_auth_me", "unauthorized", new { reason = "missing_sub" }, ct);
+            await AdminSecurityAudit.WriteAsync(db, "admin_auth_me", "unauthorized", new { ip, userAgent = ua, reason = "missing_sub" }, ct);
             AdminSecurityMetrics.RecordAuth("me", "unauthorized", sw);
             return AdminApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Missing authenticated subject.");
         }
 
-        await AdminSecurityAudit.WriteAsync(db, "admin_auth_me", "success", new { sub }, ct);
+        await AdminSecurityAudit.WriteAsync(db, "admin_auth_me", "success", new { actor = sub, ip, userAgent = ua }, ct);
         AdminSecurityMetrics.RecordAuth("me", "success", sw);
 
         return Results.Ok(new AdminProfileResponse(

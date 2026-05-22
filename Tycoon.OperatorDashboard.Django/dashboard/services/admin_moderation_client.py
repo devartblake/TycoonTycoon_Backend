@@ -29,6 +29,17 @@ def get_moderation_logs(access_token: str, query: dict[str, Any]) -> dict[str, A
     return response.json()
 
 
+def get_moderation_log(access_token: str, log_id: str) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/moderation/logs/{log_id}"
+    response = httpx.get(
+        url,
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def set_moderation_status(
     access_token: str,
     admin_user: str | None,

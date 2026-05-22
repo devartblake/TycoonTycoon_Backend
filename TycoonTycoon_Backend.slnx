@@ -28,6 +28,7 @@
     <Project Path="Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj" />
     <Project Path="Tycoon.Backend.Application.Tests/Tycoon.Backend.Application.Tests.csproj" />
     <Project Path="Tycoon.Backend.Infrastructure.Tests/Tycoon.Backend.Infrastructure.Tests.csproj" />
+    <Project Path="Tycoon.MigrationService.Tests/Tycoon.MigrationService.Tests.csproj" />
     <Project Path="Synaptix.Security.Kms.Tests/Synaptix.Security.Kms.Tests.csproj" />
   </Folder>
   <Project Path="Tycoon.MigrationService/Tycoon.MigrationService.csproj" />

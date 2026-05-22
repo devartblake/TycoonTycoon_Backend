@@ -2,7 +2,9 @@
 
 ## Context
 
-The operator dashboard needs a user support workflow so admins can look up players, review their history, investigate anti-cheat flags, take moderation actions, and manage escalations — all from a single unified interface. The backend already has all the required endpoints; this plan covers the frontend pages in Tycoon.OperatorDashboard.Web.
+> **Deprecated plan notice (2026-05-12):** This Web/BFF implementation plan is historical only. `Tycoon.OperatorDashboard.Django` is the canonical Operator Dashboard, and user-support workflows should be implemented there with Django RBAC/permission scopes if additional work is needed.
+
+The operator dashboard needs a user support workflow so admins can look up players, review their history, investigate anti-cheat flags, take moderation actions, and manage escalations — all from a single unified interface. The backend already has all the required endpoints. This retired plan originally covered frontend pages in `Tycoon.OperatorDashboard.Web`; any future implementation should happen in `Tycoon.OperatorDashboard.Django`.
 
 ---
 

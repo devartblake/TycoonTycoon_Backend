@@ -13,6 +13,7 @@ public class SecuritySchemeDocumentTransformer : IOpenApiDocumentTransformer
     )
     {
         document.Components ??= new();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
 
         // Bearer token scheme
         document.Components.SecuritySchemes.Add(

@@ -70,7 +70,7 @@ namespace Tycoon.Backend.Api.Security
             await _next(ctx);
         }
 
-        internal static IResult? ValidateOpsKey(HttpContext ctx, IConfiguration cfg, ILogger? logger = null)
+        public static IResult? ValidateOpsKey(HttpContext ctx, IConfiguration cfg, ILogger? logger = null)
         {
             var headerName = cfg["AdminOps:Header"];
             if (string.IsNullOrWhiteSpace(headerName))
@@ -112,6 +112,8 @@ namespace Tycoon.Backend.Api.Security
     {
         public static RouteGroupBuilder RequireAdminOpsKey(this RouteGroupBuilder group)
         {
+            group.WithMetadata(new RequireAdminOpsKeyAttribute());
+
             group.AddEndpointFilter(async (context, next) =>
             {
                 var http = context.HttpContext;

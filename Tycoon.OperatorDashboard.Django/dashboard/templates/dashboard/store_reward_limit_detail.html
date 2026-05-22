@@ -1,0 +1,88 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Reward Limit — {{ reward_id }}{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store / Reward limits</p>
+    <h1 class="page-title">{{ reward_id }}</h1>
+    <p class="page-subtitle">{% if rule %}Claim limit rule for this reward ID.{% else %}No rule configured yet — save one below to create it.{% endif %}</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'store-reward-limits-view' %}">Back to limits</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+{% if rule %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Current rule" copy="Read-only summary." %}
+  <div class="account-summary-grid">
+    <div class="summary-field">
+      <span class="helper-text">Max claims per interval</span>
+      <span>{{ rule.maxClaimsPerInterval }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Reset interval</span>
+      <span class="chip neutral">{{ rule.resetInterval }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Status</span>
+      <span class="chip {% if rule.isActive %}success{% else %}warning{% endif %}">
+        {% if rule.isActive %}Active{% else %}Inactive{% endif %}
+      </span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Updated (UTC)</span>
+      <span>{{ rule.updatedDisplay|default:"—" }}</span>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if can_write %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="{% if rule %}Edit rule{% else %}Create rule{% endif %}" copy="PUT is an upsert — creates the rule if it does not exist yet." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Max claims per interval
+        <input type="number" name="maxClaimsPerInterval" value="{{ form.maxClaimsPerInterval|default:'1' }}" min="1" required />
+        <span class="helper-text">Players cannot claim this reward more than this many times per interval.</span>
+      </label>
+      <label>
+        Reset interval
+        <select name="resetInterval">
+          {% for iv in interval_choices %}
+          <option value="{{ iv }}" {% if form.resetInterval == iv %}selected{% endif %}>{{ iv|capfirst }}</option>
+          {% endfor %}
+        </select>
+        <span class="helper-text">"none" means the cap is lifetime (never resets).</span>
+      </label>
+      <label>
+        Active
+        <select name="isActive">
+          <option value="true" {% if form.isActive %}selected{% endif %}>Active — limit enforced</option>
+          <option value="false" {% if not form.isActive %}selected{% endif %}>Inactive — limit not enforced</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">{% if rule %}Save changes{% else %}Create rule{% endif %}</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Edit rule" copy="store:write permission required to modify reward limits." %}
+  <div class="empty">
+    <span class="empty-ico">!</span>
+    <strong>Insufficient permissions</strong>
+    <span>store:write permission is required to create or edit reward limits.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

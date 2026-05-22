@@ -80,4 +80,36 @@ public sealed class AdminAuditEndpointsTests : IClassFixture<TycoonApiFactory>
         var body = await resp.Content.ReadFromJsonAsync<AdminNotificationHistoryResponse>();
         body.Should().NotBeNull();
     }
+
+    [Fact]
+    public async Task SecurityAudit_Detail_Returns_Single_Event()
+    {
+        var loginResp = await _http.PostAsJsonAsync("/admin/auth/login", new AdminLoginRequest("nouser@example.com", "wrong"));
+        loginResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        var listResp = await _http.GetAsync("/admin/audit/security?page=1&pageSize=25");
+        listResp.IsSuccessStatusCode.Should().BeTrue();
+        var list = await listResp.Content.ReadFromJsonAsync<AdminNotificationHistoryResponse>();
+        var item = list!.Items.Should().ContainSingle(x =>
+            x.ChannelKey == "admin_security" &&
+            x.Title == "admin_auth_login" &&
+            x.Status == "unauthorized").Subject;
+
+        var detailResp = await _http.GetAsync($"/admin/audit/security/{item.Id}");
+
+        detailResp.IsSuccessStatusCode.Should().BeTrue();
+        var detail = await detailResp.Content.ReadFromJsonAsync<AdminNotificationHistoryItemDto>();
+        detail.Should().NotBeNull();
+        detail!.Id.Should().Be(item.Id);
+        detail.ChannelKey.Should().Be("admin_security");
+        detail.Title.Should().Be(item.Title);
+    }
+
+    [Fact]
+    public async Task SecurityAudit_Detail_Returns_NotFound_For_Unknown_Id()
+    {
+        var resp = await _http.GetAsync($"/admin/audit/security/{Guid.NewGuid()}");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
 }

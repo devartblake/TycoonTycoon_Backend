@@ -109,16 +109,38 @@ public sealed class AppSeeder
 
         var normalizedEmail = email.ToLowerInvariant();
         var exists = await db.Users.AsNoTracking().AnyAsync(u => u.Email == normalizedEmail, ct);
-        if (exists)
+        if (!exists)
         {
-            _log.Information("Super admin account {Email} already exists — skipping.", normalizedEmail);
-            return;
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+            var admin = new User(normalizedEmail, handle, passwordHash);
+            db.Users.Add(admin);
+
+            _log.Information("Seeded super admin account: {Email} (handle: {Handle})", normalizedEmail, handle);
+        }
+        else
+        {
+            _log.Information("Super admin account {Email} already exists — ensuring ACL entry.", normalizedEmail);
         }
 
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
-        var admin = new User(normalizedEmail, handle, passwordHash);
-        db.Users.Add(admin);
+        var acl = await db.AdminEmailAcls
+            .FirstOrDefaultAsync(e => e.NormalizedEmail == normalizedEmail, ct);
 
-        _log.Information("Seeded super admin account: {Email} (handle: {Handle})", normalizedEmail, handle);
+        const string seedActor = "migration-service";
+        const string notes = "Seeded for Django Operator Dashboard access.";
+
+        if (acl is null)
+        {
+            db.AdminEmailAcls.Add(new AdminEmailAcl(normalizedEmail, AdminAclListType.Allow, AdminRole.SuperAdmin, seedActor, notes));
+            _log.Information("Seeded super admin ACL allowlist entry: {Email}", normalizedEmail);
+        }
+        else if (acl.ListType != AdminAclListType.Allow || acl.Role != AdminRole.SuperAdmin)
+        {
+            acl.Update(AdminAclListType.Allow, AdminRole.SuperAdmin, notes);
+            _log.Information("Updated super admin ACL entry to Allow/SuperAdmin: {Email}", normalizedEmail);
+        }
+        else
+        {
+            _log.Information("Super admin ACL allowlist entry already exists: {Email}", normalizedEmail);
+        }
     }
 }

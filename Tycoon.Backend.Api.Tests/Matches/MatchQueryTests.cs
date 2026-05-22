@@ -47,7 +47,7 @@ public sealed class MatchQueryTests : IClassFixture<TycoonApiFactory>
         var get = await _http.GetAsync($"/matches/{matchId}");
         get.EnsureSuccessStatusCode();
 
-        var detail = await get.Content.ReadFromJsonAsync<MatchDetailDto>();
+        var detail = await get.Content.ReadFromJsonAsync<MatchDetailDto>(TestJson.Default);
         detail!.MatchId.Should().Be(matchId);
         detail.Category.Should().Be("science");
         detail.Participants.Should().HaveCount(1);

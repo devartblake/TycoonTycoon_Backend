@@ -28,7 +28,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
         _http = factory.CreateClient();
     }
 
-    private static StringContent ValidEnvelope(string sessionId) =>
+    private static StringContent ValidEnvelope() =>
         new(JsonSerializer.Serialize(new
         {
             ciphertext = "dGVzdA",
@@ -37,6 +37,13 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
             contentType = "application/json",
             encryptedAtUtc = DateTimeOffset.UtcNow
         }), Encoding.UTF8, "application/json");
+
+    private static void AddSecureHeaders(HttpRequestMessage req, string sessionId, long sequence = 1, string replayNonce = "replay-nonce-1")
+    {
+        req.Headers.Add("X-Syn-Sec-Session", sessionId);
+        req.Headers.Add("X-Syn-Sec-Seq", sequence.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        req.Headers.Add("X-Syn-Sec-Nonce", replayNonce);
+    }
 
     // ─── Test 1: no session header ────────────────────────────────────────────
 
@@ -60,7 +67,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
         {
             Content = new StringContent(@"{""not_an_envelope"":true}", Encoding.UTF8, "application/json")
         };
-        req.Headers.Add("X-Syn-Sec-Session", sessionId);
+        AddSecureHeaders(req, sessionId);
 
         var resp = await _http.SendAsync(req);
 
@@ -80,9 +87,9 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
         var sessionId = Guid.NewGuid().ToString();
         var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
         {
-            Content = ValidEnvelope(sessionId)
+            Content = ValidEnvelope()
         };
-        req.Headers.Add("X-Syn-Sec-Session", sessionId);
+        AddSecureHeaders(req, sessionId);
 
         var resp = await _http.SendAsync(req);
 
@@ -106,9 +113,9 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
         var sessionId = Guid.NewGuid().ToString();
         var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
         {
-            Content = ValidEnvelope(sessionId)
+            Content = ValidEnvelope()
         };
-        req.Headers.Add("X-Syn-Sec-Session", sessionId);
+        AddSecureHeaders(req, sessionId, 42, "nonce-roundtrip");
 
         var resp = await _http.SendAsync(req);
 
@@ -123,6 +130,82 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
         envelope.TryGetProperty("mac", out _).Should().BeTrue();
 
         _factory.FakeKms.DecryptResponse = null; // reset
+    }
+
+    [Fact]
+    public async Task MissingSequenceHeader_Returns400WithSequenceRequiredCode()
+    {
+        var sessionId = Guid.NewGuid().ToString();
+        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        {
+            Content = ValidEnvelope()
+        };
+        req.Headers.Add("X-Syn-Sec-Session", sessionId);
+        req.Headers.Add("X-Syn-Sec-Nonce", "nonce-without-sequence");
+
+        var resp = await _http.SendAsync(req);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await resp.Content.ReadAsStringAsync();
+        body.Should().Contain("secure_sequence_required");
+    }
+
+    [Fact]
+    public async Task InvalidSequenceHeader_Returns400WithSequenceRequiredCode()
+    {
+        var sessionId = Guid.NewGuid().ToString();
+        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        {
+            Content = ValidEnvelope()
+        };
+        req.Headers.Add("X-Syn-Sec-Session", sessionId);
+        req.Headers.Add("X-Syn-Sec-Seq", "0");
+        req.Headers.Add("X-Syn-Sec-Nonce", "nonce-invalid-sequence");
+
+        var resp = await _http.SendAsync(req);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await resp.Content.ReadAsStringAsync();
+        body.Should().Contain("secure_sequence_required");
+    }
+
+    [Fact]
+    public async Task MissingReplayNonceHeader_Returns400WithReplayNonceRequiredCode()
+    {
+        var sessionId = Guid.NewGuid().ToString();
+        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        {
+            Content = ValidEnvelope()
+        };
+        req.Headers.Add("X-Syn-Sec-Session", sessionId);
+        req.Headers.Add("X-Syn-Sec-Seq", "7");
+
+        var resp = await _http.SendAsync(req);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await resp.Content.ReadAsStringAsync();
+        body.Should().Contain("secure_replay_nonce_required");
+    }
+
+    [Fact]
+    public async Task ValidEncryptedRequest_PassesReplayMetadataAndAadToKms()
+    {
+        var sessionId = Guid.NewGuid();
+        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        {
+            Content = ValidEnvelope()
+        };
+        AddSecureHeaders(req, sessionId.ToString(), 99, "nonce-metadata");
+
+        await _http.SendAsync(req);
+
+        _factory.FakeKms.LastDecryptRequest.Should().NotBeNull();
+        _factory.FakeKms.LastDecryptRequest!.SessionId.Should().Be(sessionId);
+        _factory.FakeKms.LastDecryptRequest.SequenceNumber.Should().Be(99);
+        _factory.FakeKms.LastDecryptRequest.ReplayNonce.Should().Be("nonce-metadata");
+        _factory.FakeKms.LastDecryptRequest.Aad.Should().Contain("syn-sec-v1|request|POST|/auth/refresh");
+        _factory.FakeKms.LastEncryptRequest.Should().NotBeNull();
+        _factory.FakeKms.LastEncryptRequest!.Aad.Should().Contain("syn-sec-v1|response|POST|/auth/refresh");
     }
 
     // ─── Test 5: unprotected endpoint ignores the header ─────────────────────
@@ -164,6 +247,7 @@ public sealed class SecureChannelApiFactory : TycoonApiFactory
             {
                 // Satisfy KmsClientOptions binding; the real HTTP client is replaced below
                 ["KmsClient:BaseUrl"] = "http://test-kms-not-used",
+                ["SecureChannel:AllowPlainJsonInTests"] = "false",
             });
         });
 
@@ -180,10 +264,13 @@ public sealed class FakeKmsPayloadClient : IKmsPayloadClient
 {
     public Func<DecryptPayloadRequest, DecryptPayloadResponse>? DecryptResponse { get; set; }
     public Exception? DecryptException { get; set; }
+    public DecryptPayloadRequest? LastDecryptRequest { get; private set; }
+    public EncryptPayloadRequest? LastEncryptRequest { get; private set; }
 
     public Task<DecryptPayloadResponse> DecryptAsync(
         DecryptPayloadRequest request, CancellationToken ct = default)
     {
+        LastDecryptRequest = request;
         if (DecryptException is not null) throw DecryptException;
 
         var response = DecryptResponse?.Invoke(request)
@@ -196,10 +283,13 @@ public sealed class FakeKmsPayloadClient : IKmsPayloadClient
 
     public Task<EncryptPayloadResponse> EncryptAsync(
         EncryptPayloadRequest request, CancellationToken ct = default)
-        => Task.FromResult(new EncryptPayloadResponse(
+    {
+        LastEncryptRequest = request;
+        return Task.FromResult(new EncryptPayloadResponse(
             Convert.ToBase64String(request.Plaintext),
             "test-nonce-" + Guid.NewGuid().ToString("N")[..8],
             "test-mac",
             request.ContentType,
             DateTimeOffset.UtcNow));
+    }
 }

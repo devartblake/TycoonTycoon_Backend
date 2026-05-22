@@ -17,64 +17,98 @@
   </div>
 </section>
 
-<section class="hero-card">
-  <div class="section-header">
+<section class="command-hero">
+  <article class="hero-card command-posture">
     <div>
-      <h2>Operational posture</h2>
-      <p class="section-copy">Generated at {{ generated_at }} UTC. The cards below mirror the current service aggregation response used by operator automation.</p>
+      <p class="page-eyebrow">Operational posture</p>
+      <h2>{{ overall_status|upper }} dashboard posture</h2>
+      <p class="section-copy">
+        Generated at {{ generated_at }} UTC. This page uses the same service aggregation response as `/api/operator/health`.
+      </p>
     </div>
-  </div>
-  <div class="metric-grid">
-    <article class="metric-card">
-      <span class="metric-label">Overall status</span>
-      <span class="metric-value">{{ overall_status|upper }}</span>
-      <span class="metric-note">Aggregated across .NET API, FastAPI sidecar, and MinIO probes.</span>
+    <div class="command-actions">
+      <a class="button" href="{% url 'operator-users-view' %}">Open users triage</a>
+      <a class="button secondary" href="{% url 'operator-user-investigation-view' 'lookup' %}">Investigation workbench</a>
+      <a class="button ghost" href="{% url 'operator-audit-security-view' %}">Audit history</a>
+    </div>
+    <div class="signal-list">
+      <div class="signal-row">
+        <span>Operator session</span>
+        <strong>{{ admin_profile.email|default:"active" }}</strong>
+      </div>
+      <div class="signal-row">
+        <span>External cutover gates</span>
+        <strong>Staging, sign-off, decommission</strong>
+      </div>
+      <div class="signal-row">
+        <span>Recommended freshness</span>
+        <strong>HTTP refresh now, realtime later</strong>
+      </div>
+    </div>
+  </article>
+
+  <div class="kpi-grid">
+    <article class="kpi-card accent">
+      <span class="kpi-label">Operator routes</span>
+      <strong>{{ operator_route_count }}</strong>
+      <span>Django-only workflow surfaces</span>
     </article>
-    <article class="metric-card">
-      <span class="metric-label">Connected services</span>
-      <span class="metric-value">{{ services|length }}</span>
-      <span class="metric-note">Each probe is rendered from the same service layer used by `/api/operator/health`.</span>
+    <article class="kpi-card ok">
+      <span class="kpi-label">Healthy probes</span>
+      <strong>{{ healthy_services }}</strong>
+      <span>{{ services|length }} configured services</span>
     </article>
-    <article class="metric-card">
-      <span class="metric-label">Operator routes</span>
-      <span class="metric-value">5</span>
-      <span class="metric-note">Users, moderation, security audit, media intent, and MinIO diagnostics are live in Django.</span>
+    <article class="kpi-card warn">
+      <span class="kpi-label">Degraded probes</span>
+      <strong>{{ degraded_services }}</strong>
+      <span>Review service cards below</span>
+    </article>
+    <article class="kpi-card bad">
+      <span class="kpi-label">Offline probes</span>
+      <strong>{{ offline_services }}</strong>
+      <span>Escalate if non-zero</span>
     </article>
   </div>
 </section>
 
-<section class="card-grid" style="margin-top: 18px;">
+<section class="command-grid mt-lg">
   <article class="card">
     <div class="section-header">
       <div>
         <h2>Quick actions</h2>
-        <p class="section-copy">Use the most common operator workflows without hunting through routes.</p>
+        <p class="section-copy">Prototype-inspired launch tiles mapped to real Django routes.</p>
       </div>
     </div>
-    <div class="page-actions">
-      <a class="button" href="{% url 'operator-users-view' %}">Open users triage</a>
-      <a class="button secondary" href="{% url 'operator-moderation-logs-view' %}">Review moderation</a>
-      <a class="button ghost" href="{% url 'operator-audit-security-view' %}">Inspect audit history</a>
-      <a class="button ghost" href="{% url 'operator-minio-diagnostics-view' %}">Check MinIO</a>
+    <div class="quick-action-grid">
+      {% for card in workflow_cards %}
+      <a class="quick-action-tile" href="{% url card.href %}">
+        <span class="badge neutral">{{ card.badge }}</span>
+        <strong>{{ card.label }}</strong>
+        <span>{{ card.description }}</span>
+      </a>
+      {% endfor %}
     </div>
   </article>
 
   <article class="card">
     <div class="section-header">
       <div>
-        <h2>Backend surfaces</h2>
-        <p class="section-copy">Useful API endpoints backing this interface.</p>
+        <h2>Migration readiness</h2>
+        <p class="section-copy">Repo work is separated from environment and human approval gates.</p>
       </div>
     </div>
-    <ul class="list">
-      <li><code>/api/operator/health</code> for the aggregated health payload.</li>
-      <li><code>/api/operator/users</code> and related user workflow routes.</li>
-      <li><code>/api/operator/moderation/*</code> and <code>/api/operator/audit/security</code> for enforcement and audit review.</li>
-    </ul>
+    <div class="readiness-list">
+      {% for item in readiness_items %}
+      <div class="readiness-row">
+        <span>{{ item.label }}</span>
+        <span class="badge {{ item.tone }}">{{ item.status }}</span>
+      </div>
+      {% endfor %}
+    </div>
   </article>
 </section>
 
-<section class="card" style="margin-top: 18px;">
+<section class="mt-lg">
   <div class="section-header">
     <div>
       <h2>Service probes</h2>
@@ -83,22 +117,111 @@
   </div>
   <div class="card-grid">
     {% for service in services %}
-    <article class="card">
-      <div class="section-header">
-        <div>
-          <h3>{{ service.service_name }}</h3>
-          <p class="section-copy"><code>{{ service.base_url }}</code></p>
+    <article class="card probe-card" data-probe-slug="{{ service.slug }}">
+      <div class="probe-card-header">
+        <div class="probe-card-title">
+          <strong>{{ service.service_name }}</strong>
+          <code class="probe-url">{{ service.base_url }}</code>
         </div>
         <span class="status-pill {{ service.status }}">{{ service.status|upper }}</span>
       </div>
-      <p class="helper-text">{{ service.detail }}</p>
+
+      <div class="probe-sparkline" title="Last 6 hours">
+        {% for bar in service.history.bars %}
+        <span class="probe-bar probe-bar-{{ bar.status }}" title="{{ bar.label }}"></span>
+        {% empty %}
+        <span class="probe-bar probe-bar-unknown" title="No history"></span>
+        {% endfor %}
+      </div>
+      <p class="probe-sparkline-label">last 6 hours</p>
+
+      <p class="helper-text probe-detail">
+        {% if service.history.degraded_since %}
+          {{ service.detail }} since {{ service.history.degraded_since }}
+        {% elif service.history.uptime_pct is not None %}
+          Uptime {{ service.history.uptime_pct|floatformat:2 }}%
+        {% else %}
+          {{ service.detail }}
+        {% endif %}
+      </p>
+
       {% if service.payload %}
-      <div class="surface-note" style="margin-top: 16px;">
-        <pre>{{ service.payload|pprint }}</pre>
+      <div class="surface-note probe-payload">
+        <pre>{% for k, v in service.payload.items %}{{ k }}: {{ v }}
+{% endfor %}</pre>
       </div>
       {% endif %}
+
+      <div class="probe-footer">
+        <span class="probe-footer-meta">
+          {{ service.history.last_checked_ago|default:"—" }}{% if service.history.p95_ms %}&nbsp;&middot;&nbsp;p95 {{ service.history.p95_ms }}ms{% endif %}
+        </span>
+        <a class="probe-log-link" href="{% url 'probe-log' service.slug %}">Open service log →</a>
+      </div>
     </article>
     {% endfor %}
   </div>
 </section>
+
+<section class="card mt-lg">
+  <div class="section-header">
+    <div>
+      <h2>Backend surfaces</h2>
+      <p class="section-copy">API and Django endpoints backing the Command Center experience.</p>
+    </div>
+  </div>
+  <div class="endpoint-list">
+    {% for endpoint in endpoint_surfaces %}
+    <div class="endpoint-row">
+      <span class="endpoint-method {% if endpoint.method == 'POST' %}post{% endif %}">{{ endpoint.method }}</span>
+      <code>{{ endpoint.path }}</code>
+      <span>{{ endpoint.description }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<script>
+(function () {
+  var POLL_MS = 30000;
+  var STATUS_CLASSES = ['healthy', 'degraded', 'offline', 'unknown'];
+
+  function applyUpdate(services) {
+    for (var i = 0; i < services.length; i++) {
+      var svc = services[i];
+      var card = document.querySelector('[data-probe-slug="' + svc.slug + '"]');
+      if (!card) continue;
+
+      var pill = card.querySelector('.status-pill');
+      if (pill) {
+        STATUS_CLASSES.forEach(function (c) { pill.classList.remove(c); });
+        pill.classList.add(svc.status || 'unknown');
+        pill.textContent = (svc.status || 'unknown').toUpperCase();
+      }
+
+      var footerMeta = card.querySelector('.probe-footer-meta');
+      if (footerMeta) {
+        var p95 = svc.latency_ms ? ' · p95 ' + svc.latency_ms + 'ms' : '';
+        footerMeta.textContent = 'Just now' + p95;
+      }
+
+      var payloadPre = card.querySelector('.probe-payload pre');
+      if (payloadPre && svc.payload) {
+        payloadPre.textContent = Object.entries(svc.payload)
+          .map(function (kv) { return kv[0] + ': ' + kv[1]; })
+          .join('\n');
+      }
+    }
+  }
+
+  function poll() {
+    fetch("{% url 'operator-health' %}")
+      .then(function (r) { return r.json(); })
+      .then(function (data) { applyUpdate(data.services || []); })
+      .catch(function () { /* silent — stale data stays visible */ });
+  }
+
+  setInterval(poll, POLL_MS);
+})();
+</script>
 {% endblock %}

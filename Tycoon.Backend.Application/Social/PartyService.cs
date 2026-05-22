@@ -70,24 +70,28 @@ namespace Tycoon.Backend.Application.Social
             if (fromPlayerId == toPlayerId)
                 throw new InvalidOperationException("Cannot invite yourself.");
 
-            await using var tx = await ((DbContext)db).Database.BeginTransactionAsync(ct);
+            var dbContext = (DbContext)db;
+            var useTransaction = !IsInMemoryProvider(dbContext);
+            await using var tx = useTransaction
+                ? await dbContext.Database.BeginTransactionAsync(ct)
+                : null;
 
             var party = await db.Parties.FirstOrDefaultAsync(x => x.Id == partyId, ct);
             if (party is null)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Party not found.");
             }
 
             if (party.Status != "Open")
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException($"Cannot invite when party status is '{party.Status}'.");
             }
 
             if (party.LeaderPlayerId != fromPlayerId)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Only the party leader can invite.");
             }
 
@@ -97,7 +101,7 @@ namespace Tycoon.Backend.Application.Social
 
             if (!areFriends)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Can only invite players who are friends.");
             }
 
@@ -105,7 +109,7 @@ namespace Tycoon.Backend.Application.Social
             var memberCount = await db.PartyMembers.CountAsync(x => x.PartyId == partyId, ct);
             if (memberCount >= MaxPartySize)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Party is already full.");
             }
 
@@ -113,7 +117,7 @@ namespace Tycoon.Backend.Application.Social
             var inActiveParty = await IsInActivePartyAsync(toPlayerId, ct);
             if (inActiveParty)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Invitee is already in an active party.");
             }
 
@@ -121,7 +125,7 @@ namespace Tycoon.Backend.Application.Social
             var alreadyMember = await db.PartyMembers.AnyAsync(x => x.PartyId == partyId && x.PlayerId == toPlayerId, ct);
             if (alreadyMember)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Invitee is already a party member.");
             }
 
@@ -135,7 +139,7 @@ namespace Tycoon.Backend.Application.Social
 
             if (pending is not null)
             {
-                await tx.CommitAsync(ct);
+                if (tx is not null) await tx.CommitAsync(ct);
                 return ToDto(pending);
             }
 
@@ -143,7 +147,7 @@ namespace Tycoon.Backend.Application.Social
             db.PartyInvites.Add(invite);
 
             await db.SaveChangesAsync(ct);
-            await tx.CommitAsync(ct);
+            if (tx is not null) await tx.CommitAsync(ct);
 
             return ToDto(invite);
         }
@@ -153,18 +157,22 @@ namespace Tycoon.Backend.Application.Social
             if (inviteId == Guid.Empty || actingPlayerId == Guid.Empty)
                 throw new ArgumentException("Ids cannot be empty.");
 
-            await using var tx = await ((DbContext)db).Database.BeginTransactionAsync(ct);
+            var dbContext = (DbContext)db;
+            var useTransaction = !IsInMemoryProvider(dbContext);
+            await using var tx = useTransaction
+                ? await dbContext.Database.BeginTransactionAsync(ct)
+                : null;
 
             var invite = await db.PartyInvites.FirstOrDefaultAsync(x => x.Id == inviteId, ct);
             if (invite is null)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 return null;
             }
 
             if (invite.ToPlayerId != actingPlayerId)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Only the invite recipient can accept.");
             }
 
@@ -172,26 +180,26 @@ namespace Tycoon.Backend.Application.Social
             {
                 // Idempotency: ensure membership exists
                 await EnsureMemberAsync(invite.PartyId, invite.ToPlayerId, ct);
-                await tx.CommitAsync(ct);
+                if (tx is not null) await tx.CommitAsync(ct);
                 return ToDto(invite);
             }
 
             if (invite.Status != "Pending")
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException($"Cannot accept invite in status '{invite.Status}'.");
             }
 
             var party = await db.Parties.FirstOrDefaultAsync(x => x.Id == invite.PartyId, ct);
             if (party is null)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Party not found.");
             }
 
             if (party.Status != "Open")
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException($"Cannot accept invite when party status is '{party.Status}'.");
             }
 
@@ -199,7 +207,7 @@ namespace Tycoon.Backend.Application.Social
             var inActiveParty = await IsInActivePartyAsync(invite.ToPlayerId, ct);
             if (inActiveParty)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Player is already in an active party.");
             }
 
@@ -207,7 +215,7 @@ namespace Tycoon.Backend.Application.Social
             var memberCount = await db.PartyMembers.CountAsync(x => x.PartyId == invite.PartyId, ct);
             if (memberCount >= MaxPartySize)
             {
-                await tx.RollbackAsync(ct);
+                if (tx is not null) await tx.RollbackAsync(ct);
                 throw new InvalidOperationException("Party is already full.");
             }
 
@@ -215,12 +223,14 @@ namespace Tycoon.Backend.Application.Social
             db.PartyMembers.Add(new PartyMember(invite.PartyId, invite.ToPlayerId, PartyRole.Member));
 
             // Cancel any other pending invites for this player (optional but prevents confusion)
-            await db.PartyInvites
+            var otherPendingInvites = await db.PartyInvites
                 .Where(x => x.ToPlayerId == invite.ToPlayerId && x.Status == "Pending" && x.Id != invite.Id)
-                .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, "Cancelled"), ct);
+                .ToListAsync(ct);
+            foreach (var pendingInvite in otherPendingInvites)
+                pendingInvite.Cancel();
 
             await db.SaveChangesAsync(ct);
-            await tx.CommitAsync(ct);
+            if (tx is not null) await tx.CommitAsync(ct);
 
             await NotifyRosterAsync(invite.PartyId, ct);
 
@@ -410,6 +420,9 @@ namespace Tycoon.Backend.Application.Social
 
             return await q.AnyAsync(ct);
         }
+
+        private static bool IsInMemoryProvider(DbContext context) =>
+            string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.InMemory", StringComparison.Ordinal);
 
         private async Task EnsureMemberAsync(Guid partyId, Guid playerId, CancellationToken ct)
         {

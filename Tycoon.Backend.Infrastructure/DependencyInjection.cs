@@ -42,7 +42,8 @@ namespace Tycoon.Backend.Infrastructure
             var useInMemory = cfg.GetValue<bool>("Testing:UseInMemoryDb");
             if (useInMemory)
             {
-                services.AddDbContext<AppDb>(opt => opt.UseInMemoryDatabase("tycoon-tests"));
+                var databaseName = cfg["Testing:InMemoryDbName"] ?? "tycoon-tests";
+                services.AddDbContext<AppDb>(opt => opt.UseInMemoryDatabase(databaseName));
                 services.TryAddScoped<IAppDb>(sp => sp.GetRequiredService<AppDb>());
 
                 // Defaults (in-memory safe)

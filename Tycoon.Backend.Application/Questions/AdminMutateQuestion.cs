@@ -53,7 +53,10 @@ namespace Tycoon.Backend.Application.Questions
     {
         public async Task<QuestionDto?> Handle(AdminUpdateQuestion r, CancellationToken ct)
         {
-            var q = await db.Questions.FirstOrDefaultAsync(x => x.Id == r.Id, ct);
+            var q = await db.Questions
+                .Include(x => x.Options)
+                .Include(x => x.Tags)
+                .FirstOrDefaultAsync(x => x.Id == r.Id, ct);
             if (q is null) return null;
 
             if (string.IsNullOrWhiteSpace(r.Req.Text)) throw new ArgumentException("Question text is required.");
@@ -64,15 +67,32 @@ namespace Tycoon.Backend.Application.Questions
             if (!string.IsNullOrWhiteSpace(r.Req.Status))
                 q.SetStatus(r.Req.Status);
 
-            // Replace options
-            var existingOptions = db.QuestionOptions.Where(o => o.QuestionId == q.Id);
-            db.QuestionOptions.RemoveRange(existingOptions);
-            q.ReplaceOptions(r.Req.Options.Select(o => new QuestionOption(q.Id, o.Id, o.Text)));
+            var requestedOptions = r.Req.Options
+                .Select(o => new { Id = o.Id.Trim(), Text = o.Text })
+                .ToList();
+            var requestedOptionIds = requestedOptions.Select(o => o.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            q.Options.RemoveAll(o => !requestedOptionIds.Contains(o.OptionId));
+            foreach (var option in requestedOptions)
+            {
+                var existing = q.Options.FirstOrDefault(o => string.Equals(o.OptionId, option.Id, StringComparison.OrdinalIgnoreCase));
+                if (existing is null)
+                    q.Options.Add(new QuestionOption(q.Id, option.Id, option.Text));
+                else
+                    existing.UpdateText(option.Text);
+            }
 
-            // Replace tags
-            var existingTags = db.QuestionTags.Where(t => t.QuestionId == q.Id);
-            db.QuestionTags.RemoveRange(existingTags);
-            q.ReplaceTags(r.Req.Tags);
+            var requestedTags = (r.Req.Tags ?? Array.Empty<string>())
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var requestedTagSet = requestedTags.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            q.Tags.RemoveAll(t => !requestedTagSet.Contains(t.Tag));
+            foreach (var tag in requestedTags)
+            {
+                if (!q.Tags.Any(t => string.Equals(t.Tag, tag, StringComparison.OrdinalIgnoreCase)))
+                    q.Tags.Add(new QuestionTag(q.Id, tag));
+            }
 
             await db.SaveChangesAsync(ct);
 

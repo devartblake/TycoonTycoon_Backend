@@ -99,7 +99,8 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
         var transaction = await db.PlayerTransactions
             .Include(t => t.ItemChanges)
             .Include(t => t.Actors)
-            .FirstOrDefaultAsync(t => t.Kind == "paypal-order-payment");
+            .FirstOrDefaultAsync(t => t.Kind == "paypal-order-payment"
+                                      && t.Actors.Any(a => a.PlayerId == playerId));
 
         transaction.Should().NotBeNull();
         transaction!.Actors.Should().ContainSingle(a => a.PlayerId == playerId);
@@ -263,6 +264,8 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+        var existing = await db.StoreItems.Where(i => i.Sku == item.Sku).ToListAsync();
+        db.StoreItems.RemoveRange(existing);
         db.StoreItems.Add(item);
         await db.SaveChangesAsync();
     }

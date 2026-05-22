@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.Matchmaking;
 
 namespace Tycoon.Backend.Api.Features.Matchmaking
@@ -13,7 +15,14 @@ namespace Tycoon.Backend.Api.Features.Matchmaking
         public sealed record CancelRequest(Guid PlayerId);
         public static void Map(IEndpointRouteBuilder app)
         {
-            var g = app.MapGroup("/matchmaking").WithTags("Matchmaking");
+            var g = app.MapGroup("/matchmaking").WithTags("Matchmaking")
+                .AddEndpointFilter(async (ctx, next) =>
+                {
+                    var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
+                    if (!await flags.IsEnabledAsync("matchmaking_enabled", ctx.HttpContext.RequestAborted))
+                        return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
+                    return await next(ctx);
+                });
 
             g.MapPost("/enqueue", async (
                 [FromBody] EnqueueRequest req,
@@ -34,11 +43,11 @@ namespace Tycoon.Backend.Api.Features.Matchmaking
             .RequireRateLimiting("matches-submit");
 
             g.MapPost("/cancel", async (
-                [FromBody] Guid playerId,
+                [FromBody] CancelRequest req,
                 MatchmakingService mm,
                 CancellationToken ct) =>
             {
-                await mm.CancelAsync(playerId, ct);
+                await mm.CancelAsync(req.PlayerId, ct);
                 return Results.NoContent();
             });
 

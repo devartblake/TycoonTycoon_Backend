@@ -2,12 +2,20 @@
 
 {% block title %}Purchase Analytics{% endblock %}
 
+{% block extra_head %}
+  {{ plotly_runtime }}
+{% endblock %}
+
 {% block content %}
 <section class="topbar">
   <div>
     <p class="page-eyebrow">Store</p>
     <h1 class="page-title">Purchase analytics</h1>
     <p class="page-subtitle">Aggregate purchase statistics across the store. Filter by date range or SKU to narrow the view.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="badge acc"><span class="dot"></span>Plotly</span>
+    <span class="chip neutral">{{ analytics.topSkus|length|default:"0" }} SKUs</span>
   </div>
 </section>
 
@@ -35,31 +43,45 @@
 </section>
 
 {% if analytics %}
-<section class="card">
-  {% include "dashboard/partials/section_intro.html" with title="Summary" copy="Totals for the selected window." %}
-  <div class="form-grid">
-    <div class="stat-card">
-      <div class="stat-label">Total purchases</div>
-      <div class="stat-value">{{ analytics.totalPurchases|default:"0" }}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Total coins spent</div>
-      <div class="stat-value">{{ analytics.totalCoinsSpent|default:"0" }}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Window from</div>
-      <div class="stat-value">{{ analytics.from|default:"—" }}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Window to</div>
-      <div class="stat-value">{{ analytics.to|default:"—" }}</div>
-    </div>
+<div class="section-header">
+  <div>
+    <h2>Summary</h2>
+    <p class="section-copy">Totals for the selected analytics window.</p>
   </div>
+</div>
+<section class="screen-kpis">
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Total purchases</span>
+    <span class="kpi-val">{{ analytics.totalPurchases|default:"0" }}</span>
+    <span class="kpi-delta">selected window</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Coins spent</span>
+    <span class="kpi-val">{{ analytics.totalCoinsSpent|default:"0" }}</span>
+    <span class="kpi-delta">gross coin spend</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Top SKUs</span>
+    <span class="kpi-val">{{ analytics.topSkus|length|default:"0" }}</span>
+    <span class="kpi-delta">chart + table fallback</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">SKU filter</span>
+    <span class="kpi-val">{% if query.sku %}On{% else %}Off{% endif %}</span>
+    <span class="kpi-delta">{{ query.sku|default:"all SKUs" }}</span>
+  </article>
 </section>
 
 {% if analytics.topSkus %}
 <section class="card">
   {% include "dashboard/partials/section_intro.html" with title="Top SKUs" copy="Most-purchased items in the selected window." %}
+  {% if top_skus_chart %}
+  <div class="chart-panel" aria-label="Top purchased SKUs chart">
+    {{ top_skus_chart }}
+  </div>
+  {% else %}
+  <div class="chart-empty">No SKU chart is available for the current filter.</div>
+  {% endif %}
   <div class="table-wrap">
     <table class="dense-table">
       <thead>
@@ -84,7 +106,11 @@
 {% endif %}
 {% else %}
 <section class="card">
-  <p class="helper-text">Run the report above to see analytics.</p>
+  <div class="empty">
+    <span class="empty-ico">Run</span>
+    <strong>Run the report to see analytics</strong>
+    <span>Use the filters above to load purchase totals, charts, and SKU tables.</span>
+  </div>
 </section>
 {% endif %}
 {% endblock %}

@@ -26,5 +26,13 @@ namespace Tycoon.Backend.Domain.Entities
             IsActive && StartsAtUtc <= DateTimeOffset.UtcNow && EndsAtUtc >= DateTimeOffset.UtcNow;
 
         public void Cancel() => IsActive = false;
+
+        public void Update(int discountPercent, DateTimeOffset startsAtUtc, DateTimeOffset endsAtUtc, string? reason)
+        {
+            DiscountPercent = discountPercent;
+            StartsAtUtc = startsAtUtc;
+            EndsAtUtc = endsAtUtc;
+            Reason = reason?.Trim();
+        }
     }
 }

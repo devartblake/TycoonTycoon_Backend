@@ -33,6 +33,8 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 [FromQuery] string? category,
                 [FromQuery] string? status,
                 [FromQuery] string[]? tag,
+                [FromQuery] string[]? tags,
+                [FromQuery] string? tagMode,
                 [FromQuery] string? sortBy,
                 [FromQuery] string? sortOrder,
                 [FromQuery] int page,
@@ -40,13 +42,14 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 IMediator mediator,
                 CancellationToken ct) =>
             {
-                var tags = tag?.Where(t => !string.IsNullOrWhiteSpace(t)).ToList() ?? new List<string>();
+                var normalizedTags = NormalizeTags(tag, tags);
+                var normalizedTagMode = NormalizeTagMode(tagMode);
                 var normalizedSort = BuildSort(sortBy, sortOrder);
 
                 var dto = await mediator.Send(new AdminListQuestions(
                     Search: q,
-                    Tags: tags,
-                    TagMode: TagFilterMode.Any,
+                    Tags: normalizedTags,
+                    TagMode: normalizedTagMode,
                     Category: category,
                     Status: status,
                     Difficulty: null,
@@ -55,8 +58,7 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                     PageSize: pageSize <= 0 ? 25 : Math.Clamp(pageSize, 1, 200)
                 ), ct);
 
-                var pageEnvelope = AdminApiResponses.Page(dto.Items, dto.Page, dto.PageSize, dto.Total);
-                return Results.Ok(pageEnvelope);
+                return Results.Ok(dto);
             });
 
             g.MapGet("/{id:guid}", async (Guid id, IMediator mediator, CancellationToken ct) =>
@@ -70,7 +72,7 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
             g.MapPost("", async ([FromBody] CreateQuestionRequest req, IMediator mediator, CancellationToken ct) =>
             {
                 var dto = await mediator.Send(new AdminCreateQuestion(req), ct);
-                return Results.Created($"/admin/questions/{dto.Id}", new { id = dto.Id });
+                return Results.Created($"/admin/questions/{dto.Id}", dto);
             });
 
             g.MapPatch("/{id:guid}", async (Guid id, [FromBody] UpdateQuestionRequest req, IMediator mediator, CancellationToken ct) =>
@@ -123,14 +125,17 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                 [FromQuery] string? category,
                 [FromQuery] string? status,
                 [FromQuery] string[]? tag,
+                [FromQuery] string[]? tags,
+                [FromQuery] string? tagMode,
                 IMediator mediator,
                 CancellationToken ct) =>
             {
-                var tags = tag?.Where(t => !string.IsNullOrWhiteSpace(t)).ToList() ?? new List<string>();
+                var normalizedTags = NormalizeTags(tag, tags);
+                var normalizedTagMode = NormalizeTagMode(tagMode);
                 var dto = await mediator.Send(new AdminListQuestions(
                     Search: q,
-                    Tags: tags,
-                    TagMode: TagFilterMode.Any,
+                    Tags: normalizedTags,
+                    TagMode: normalizedTagMode,
                     Category: category,
                     Status: status,
                     Difficulty: null,
@@ -139,7 +144,7 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
                     PageSize: 1000
                 ), ct);
 
-                return Results.Ok(dto.Items);
+                return Results.Ok(dto);
             });
 
             // Legacy endpoints
@@ -208,6 +213,22 @@ namespace Tycoon.Backend.Api.Features.AdminQuestions
             var by = string.IsNullOrWhiteSpace(sortBy) ? "updated" : sortBy.Trim().ToLowerInvariant();
             var order = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "asc" : "desc";
             return $"{by}_{order}";
+        }
+
+        private static List<string> NormalizeTags(string[]? tag, string[]? tags)
+        {
+            return (tags is { Length: > 0 } ? tags : tag)
+                ?.Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .ToList()
+                ?? new List<string>();
+        }
+
+        private static TagFilterMode NormalizeTagMode(string? tagMode)
+        {
+            return string.Equals(tagMode, "All", StringComparison.OrdinalIgnoreCase)
+                ? TagFilterMode.All
+                : TagFilterMode.Any;
         }
 
         private static QuestionDifficulty EstimateDifficultyHeuristic(string text)

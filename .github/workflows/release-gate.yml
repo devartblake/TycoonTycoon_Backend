@@ -1,0 +1,241 @@
+name: release-gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      api_url:
+        description: 'Backend API base URL (e.g. https://api-staging.synaptix.app)'
+        required: true
+      sha:
+        description: 'Git SHA to verify migration artifacts against (leave blank for HEAD)'
+        required: false
+        default: ''
+
+jobs:
+  schema-check:
+    name: Verify migration artifacts exist for release SHA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve SHA
+        id: sha
+        run: |
+          if [[ -n "${{ inputs.sha }}" ]]; then
+            echo "sha=${{ inputs.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check migration artifact on dotnet-ci run for SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA="${{ steps.sha.outputs.sha }}"
+          echo "Checking for migration-artifacts on CI runs for SHA: ${SHA}"
+
+          # Find the most recent completed dotnet-ci run on this SHA
+          RUN_ID=$(gh run list \
+            --repo "${{ github.repository }}" \
+            --workflow dotnet-ci.yml \
+            --commit "${SHA}" \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId // empty')
+
+          if [[ -z "${RUN_ID}" ]]; then
+            echo "::error::No successful dotnet-ci run found for SHA ${SHA}. Run dotnet-ci first."
+            exit 1
+          fi
+
+          echo "Found dotnet-ci run: ${RUN_ID}"
+
+          # Confirm migration-artifacts artifact exists on that run
+          ARTIFACT=$(gh api \
+            "repos/${{ github.repository }}/actions/runs/${RUN_ID}/artifacts" \
+            --jq '.artifacts[] | select(.name == "migration-artifacts") | .name')
+
+          if [[ -z "${ARTIFACT}" ]]; then
+            echo "::error::migration-artifacts artifact not found on run ${RUN_ID}. Idempotent SQL was not generated for this SHA."
+            exit 1
+          fi
+
+          echo "✅ migration-artifacts confirmed on run ${RUN_ID} for SHA ${SHA}"
+          echo "RUN_ID=${RUN_ID}" >> "$GITHUB_ENV"
+
+      - name: Download and inspect migration manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p migration-check
+          gh run download "${RUN_ID}" \
+            --repo "${{ github.repository }}" \
+            --name migration-artifacts \
+            --dir migration-check
+
+          echo "--- migration-manifest.json ---"
+          cat migration-check/migration-manifest.json || echo "(not found)"
+
+          echo "--- idempotent.sql (first 20 lines) ---"
+          head -20 migration-check/idempotent.sql || echo "(not found)"
+
+  health-smoke:
+    name: Smoke-test API endpoints
+    runs-on: ubuntu-latest
+    needs: schema-check
+    env:
+      API_URL: ${{ inputs.api_url }}
+    steps:
+      - name: GET /healthz — liveness
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}/healthz")
+          if [[ "${STATUS}" != "200" ]]; then
+            echo "::error::GET /healthz returned ${STATUS} (expected 200)"
+            exit 1
+          fi
+          echo "✅ /healthz → ${STATUS}"
+
+      - name: GET /health/ready — readiness
+        run: |
+          BODY=$(curl -s "${API_URL}/health/ready")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}/health/ready")
+          echo "Status: ${STATUS}"
+          echo "Body: ${BODY}"
+          if [[ "${STATUS}" != "200" ]]; then
+            echo "::error::GET /health/ready returned ${STATUS} (expected 200). Check dependency health."
+            exit 1
+          fi
+          echo "✅ /health/ready → ${STATUS}"
+
+      - name: GET /api/v1/app/config — feature flags
+        run: |
+          BODY=$(curl -s "${API_URL}/api/v1/app/config")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}/api/v1/app/config")
+          echo "Status: ${STATUS}"
+          echo "Body: ${BODY}"
+
+          if [[ "${STATUS}" != "200" ]]; then
+            echo "::error::GET /api/v1/app/config returned ${STATUS} (expected 200)"
+            exit 1
+          fi
+
+          # Verify key disabled flags are false
+          for FLAG in realtimeMultiplayerEnabled matchmakingEnabled socialEnabled cryptoEnabled; do
+            VALUE=$(echo "${BODY}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('features',{}).get('${FLAG}','MISSING'))")
+            if [[ "${VALUE}" != "False" && "${VALUE}" != "false" ]]; then
+              echo "::warning::Feature flag ${FLAG} = ${VALUE} (expected false for Alpha)"
+            fi
+          done
+
+          echo "✅ /api/v1/app/config → ${STATUS}"
+
+      - name: Verify disabled endpoints return 403 FeatureDisabled
+        run: |
+          FAILED=0
+
+          check_disabled() {
+            local METHOD="$1"
+            local PATH="$2"
+            local BODY_ARG="$3"
+
+            STATUS=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
+              -X "${METHOD}" "${API_URL}${PATH}" \
+              -H "Content-Type: application/json" \
+              ${BODY_ARG:+-d "$BODY_ARG"})
+
+            CODE=$(cat /tmp/resp.json | python3 -c "import sys,json; print(json.load(sys.stdin).get('error',{}).get('code',''))" 2>/dev/null || echo "")
+
+            if [[ "${STATUS}" == "403" && "${CODE}" == "FeatureDisabled" ]]; then
+              echo "✅ ${METHOD} ${PATH} → 403 FeatureDisabled"
+            else
+              echo "::error::${METHOD} ${PATH} returned ${STATUS} / code=${CODE} (expected 403 FeatureDisabled)"
+              FAILED=1
+            fi
+          }
+
+          check_disabled "POST" "/matchmaking/enqueue" '{"playerId":"00000000-0000-0000-0000-000000000001","mode":"ranked","tier":1}'
+          check_disabled "POST" "/friends/request" '{"fromPlayerId":"00000000-0000-0000-0000-000000000001","toPlayerId":"00000000-0000-0000-0000-000000000002"}'
+          check_disabled "GET"  "/experiments/player/00000000-0000-0000-0000-000000000001" ""
+          check_disabled "GET"  "/skills/tree" ""
+          check_disabled "GET"  "/notifications/inbox" ""
+
+          if [[ "${FAILED}" -ne 0 ]]; then
+            echo "::error::One or more disabled endpoints did not return 403 FeatureDisabled."
+            exit 1
+          fi
+
+  readiness-report:
+    name: Publish release readiness summary
+    runs-on: ubuntu-latest
+    needs: [schema-check, health-smoke]
+    if: always()
+    steps:
+      - name: Build readiness summary
+        run: |
+          SCHEMA="${{ needs.schema-check.result }}"
+          SMOKE="${{ needs.health-smoke.result }}"
+
+          status_icon() {
+            case "$1" in
+              success) echo "✅" ;;
+              failure) echo "❌" ;;
+              skipped) echo "⏭️" ;;
+              *)        echo "⚠️" ;;
+            esac
+          }
+
+          OVERALL="PASS"
+          [[ "${SCHEMA}" != "success" || "${SMOKE}" != "success" ]] && OVERALL="FAIL"
+
+          cat > release-gate-report.md <<EOF
+          ## Release Gate — ${{ inputs.environment }} — $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          **Overall:** ${OVERALL}
+
+          | Gate | Result |
+          |------|--------|
+          | Migration artifacts verified | $(status_icon "${SCHEMA}") ${SCHEMA} |
+          | API health + smoke tests | $(status_icon "${SMOKE}") ${SMOKE} |
+
+          **API URL:** ${{ inputs.api_url }}
+          **SHA:** ${{ inputs.sha || github.sha }}
+
+          ### Next Steps
+
+          $(if [[ "${OVERALL}" == "PASS" ]]; then
+            echo "All gates passed. Proceed with:"
+            echo "1. Final sign-off via \`ALPHA_RELEASE_CRITERIA.md\`"
+            echo "2. Run Flutter integration test: \`flutter test test/integration/live_backend_smoke_test.dart\`"
+            echo "3. Take DB backup, then deploy to production"
+          else
+            echo "One or more gates failed. Do NOT deploy until all gates pass."
+            echo "Review the failed job logs above for details."
+            echo "See \`docs/releases/ALPHA_ROLLBACK_PLAN.md\` for rollback procedure."
+          fi)
+          EOF
+
+          cat release-gate-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload readiness report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-report-${{ inputs.environment }}-${{ github.run_number }}
+          path: release-gate-report.md
+          retention-days: 90
+
+      - name: Fail workflow if any gate failed
+        if: needs.schema-check.result != 'success' || needs.health-smoke.result != 'success'
+        run: |
+          echo "::error::Release gate FAILED. See summary for details."
+          exit 1

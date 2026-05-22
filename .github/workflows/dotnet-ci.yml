@@ -40,10 +40,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Start Redis
+        run: |
+          docker run -d --name ci-redis -p 6379:6379 redis:7-alpine redis-server --requirepass synaptix_redis_password_123
+          for i in {1..20}; do
+            if docker exec ci-redis redis-cli -a synaptix_redis_password_123 ping | grep -q PONG; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs ci-redis
+          exit 1
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -55,10 +67,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Guard hardened error-envelope surfaces
         run: bash scripts/check-error-envelope-hardening.sh
@@ -82,10 +94,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Start Redis
+        run: |
+          docker run -d --name ci-redis -p 6379:6379 redis:7-alpine redis-server --requirepass synaptix_redis_password_123
+          for i in {1..20}; do
+            if docker exec ci-redis redis-cli -a synaptix_redis_password_123 ping | grep -q PONG; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs ci-redis
+          exit 1
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -97,10 +121,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Guard hardened error-envelope surfaces
         run: bash scripts/check-error-envelope-hardening.sh
@@ -160,7 +184,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -175,13 +199,34 @@ jobs:
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Validate EF schema is in sync
         run: bash scripts/validate-ef-schema.sh
+
+      - name: Generate idempotent migration SQL
+        run: |
+          mkdir -p artifacts/migrations
+          dotnet ef migrations script \
+            --idempotent \
+            --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
+            --startup-project Tycoon.MigrationService/Tycoon.MigrationService.csproj \
+            --output artifacts/migrations/idempotent.sql \
+            --no-build
+
+      - name: Generate migration manifest
+        run: |
+          echo "{\"release\":\"alpha-beta-2026\",\"generatedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"scriptFile\":\"idempotent.sql\",\"migrationProject\":\"Tycoon.Backend.Migrations\"}" \
+            > artifacts/migrations/migration-manifest.json
+
+      - name: Upload migration artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-artifacts
+          path: artifacts/migrations/
 
   health-pass-report:
     runs-on: ubuntu-latest
@@ -193,7 +238,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Install dotnet-ef
         run: dotnet tool install --global dotnet-ef
@@ -237,10 +282,10 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Run personalization guardrail and sidecar tests
         run: |
@@ -265,16 +310,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Start Redis
+        run: |
+          docker run -d --name ci-redis -p 6379:6379 redis:7-alpine redis-server --requirepass synaptix_redis_password_123
+          for i in {1..20}; do
+            if docker exec ci-redis redis-cli -a synaptix_redis_password_123 ping | grep -q PONG; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs ci-redis
+          exit 1
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore TycoonTycoon_Backend.slnx
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore
 
       - name: Run gRPC-focused test suites
         run: |

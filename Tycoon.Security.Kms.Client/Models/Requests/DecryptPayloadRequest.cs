@@ -6,4 +6,8 @@ public sealed record DecryptPayloadRequest(
     string Nonce,
     string Mac,
     string ContentType,
-    DateTimeOffset EncryptedAtUtc);
+    DateTimeOffset EncryptedAtUtc,
+    long? SequenceNumber = null,
+    string? ReplayNonce = null,
+    string? Aad = null,
+    string? SubjectId = null);

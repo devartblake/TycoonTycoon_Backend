@@ -1,0 +1,170 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ item.name|default:"Store Item" }}{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Store / Catalog</p>
+    <h1 class="page-title">{{ item.name|default:"Store item" }}</h1>
+    <p class="page-subtitle">{{ item.sku|default:"" }}</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'store-catalog-view' %}">Back to catalog</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+{% if item %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Item info" copy="SKU and item ID are read-only after creation." %}
+  <div class="account-summary-grid">
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">SKU</span>
+      <code class="breakable-token">{{ item.sku }}</code>
+    </div>
+    <div class="summary-field summary-field-wide">
+      <span class="helper-text">Item ID</span>
+      <code class="breakable-token" style="font-size:0.72rem;">{{ item.id }}</code>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Created (UTC)</span>
+      <span>{{ item.createdDisplay|default:"—" }}</span>
+    </div>
+    <div class="summary-field">
+      <span class="helper-text">Updated (UTC)</span>
+      <span>{{ item.updatedDisplay|default:"—" }}</span>
+    </div>
+  </div>
+</section>
+
+{% if can_write %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Active status" copy="Inactive items are hidden from players and cannot have flash sales scheduled." %}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="toggle" />
+    <div style="display:flex; align-items:center; gap:14px; padding:4px 0;">
+      <label class="toggle-label" style="cursor:default;">
+        <span class="toggle-switch">
+          <input type="checkbox" {% if item.isActive %}checked{% endif %} disabled />
+          <span class="toggle-slider"></span>
+        </span>
+        <span class="toggle-label-text">{% if item.isActive %}Active — visible to players{% else %}Inactive — hidden from players{% endif %}</span>
+      </label>
+      <button type="submit" class="button secondary small">
+        {% if item.isActive %}Deactivate{% else %}Activate{% endif %}
+      </button>
+    </div>
+  </form>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Edit item" copy="Update prices, description, or display settings." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="save" />
+    <div class="form-grid">
+      <label>
+        Name
+        <input type="text" name="name" value="{{ form.name|default:'' }}" required />
+      </label>
+      <label>
+        Item type
+        <select name="itemType">
+          {% for t in item_type_choices %}
+          <option value="{{ t }}" {% if form.itemType == t %}selected{% endif %}>{{ t|capfirst }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="span-2">
+        Description
+        <input type="text" name="description" value="{{ form.description|default:'' }}" />
+      </label>
+    </div>
+    <div class="form-grid">
+      <label>
+        Price (coins)
+        <input type="number" name="priceCoins" value="{{ form.priceCoins|default:'0' }}" min="0" />
+      </label>
+      <label>
+        Price (diamonds)
+        <input type="number" name="priceDiamonds" value="{{ form.priceDiamonds|default:'0' }}" min="0" />
+      </label>
+      <label>
+        Grant quantity
+        <input type="number" name="grantQuantity" value="{{ form.grantQuantity|default:'1' }}" min="1" />
+        <span class="helper-text">Units granted per purchase</span>
+      </label>
+      <label>
+        Max per player
+        <input type="number" name="maxPerPlayer" value="{{ form.maxPerPlayer|default:'0' }}" min="0" />
+        <span class="helper-text">0 = unlimited</span>
+      </label>
+      <label>
+        Sort order
+        <input type="number" name="sortOrder" value="{{ form.sortOrder|default:'0' }}" min="0" />
+      </label>
+      <label>
+        Media key (optional)
+        <input type="text" name="mediaKey" value="{{ form.mediaKey|default:'' }}" placeholder="assets/icons/..." />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Save changes</button>
+    </div>
+  </form>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Danger zone" copy="Soft-deletes this item — sets it inactive. This does not remove it from the database." %}
+  <form method="post" onsubmit="return confirm('Deactivate item \'{{ item.sku }}\'? This hides it from players immediately.');">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="delete" />
+    <div class="toolbar-actions">
+      <button type="submit" class="button danger">Deactivate item</button>
+    </div>
+  </form>
+</section>
+
+{% else %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Item details" copy="Read-only. store:write permission required to edit." %}
+  <div class="form-grid">
+    <div>
+      <span class="helper-text">Name</span>
+      <p>{{ item.name }}</p>
+    </div>
+    <div>
+      <span class="helper-text">Type</span>
+      <p>{{ item.itemType }}</p>
+    </div>
+    <div>
+      <span class="helper-text">Price (coins)</span>
+      <p>{{ item.priceCoins }}</p>
+    </div>
+    <div>
+      <span class="helper-text">Price (diamonds)</span>
+      <p>{{ item.priceDiamonds }}</p>
+    </div>
+    <div>
+      <span class="helper-text">Status</span>
+      <span class="chip {% if item.isActive %}success{% else %}warning{% endif %}">
+        {% if item.isActive %}Active{% else %}Inactive{% endif %}
+      </span>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% else %}
+<section class="card mt-lg">
+  <div class="empty">
+    <span class="empty-ico">!</span>
+    <strong>Item not found</strong>
+    <span>The store item could not be loaded. It may have been removed or the ID is invalid.</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

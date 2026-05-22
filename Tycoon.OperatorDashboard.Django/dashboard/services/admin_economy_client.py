@@ -28,3 +28,36 @@ def create_economy_transaction(access_token: str, payload: dict[str, Any]) -> di
     )
     response.raise_for_status()
     return response.json()
+
+
+def get_economy_balance(access_token: str) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/economy/balance"
+    response = httpx.get(url, headers=_headers(access_token), timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return response.json()
+
+
+def update_economy_balance(access_token: str, payload: dict[str, Any]) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/economy/balance"
+    response = httpx.patch(url, json=payload, headers=_headers(access_token), timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return response.json()
+
+
+def simulate_economy(access_token: str, payload: dict[str, Any]) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/economy/simulate"
+    response = httpx.post(url, json=payload, headers=_headers(access_token), timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return response.json()
+
+
+def rollback_economy_transaction(access_token: str, transaction_id: str) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/economy/rollback"
+    response = httpx.post(
+        url,
+        json={"transactionId": transaction_id},
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()

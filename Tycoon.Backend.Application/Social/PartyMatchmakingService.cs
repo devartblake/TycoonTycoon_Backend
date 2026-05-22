@@ -32,9 +32,6 @@ namespace Tycoon.Backend.Application.Social
             if (party.LeaderPlayerId != leaderPlayerId)
                 throw new InvalidOperationException("Only the party leader can enqueue.");
 
-            if (party.Status != "Open")
-                return new PartyQueueResultDto("PartyNotReady", null, partyId, null, null);
-
             var members = await db.PartyMembers.AsNoTracking()
                 .Where(x => x.PartyId == partyId)
                 .OrderBy(x => x.JoinedAtUtc)
@@ -60,9 +57,7 @@ namespace Tycoon.Backend.Application.Social
             }
 
             // Cleanup expired tickets
-            await db.PartyMatchmakingTickets
-                .Where(t => t.Status == "Queued" && t.ExpiresAtUtc <= DateTimeOffset.UtcNow)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, "Cancelled"), ct);
+            await CancelExpiredTicketsAsync(ct);
 
             // Idempotent: only one queued ticket per party
             var existing = await db.PartyMatchmakingTickets
@@ -70,6 +65,9 @@ namespace Tycoon.Backend.Application.Social
 
             if (existing is not null)
                 return new PartyQueueResultDto("Queued", existing.Id, partyId, null, null);
+
+            if (party.Status != "Open")
+                return new PartyQueueResultDto("PartyNotReady", null, partyId, null, null);
 
             // Mark party queued + create ticket
             party.MarkQueued();
@@ -130,7 +128,11 @@ namespace Tycoon.Backend.Application.Social
             string scope,
             CancellationToken ct)
         {
-            await using var tx = await ((DbContext)db).Database.BeginTransactionAsync(ct);
+            var context = (DbContext)db;
+            if (IsInMemoryProvider(context))
+                return await TryMatchCoreAsync(ticketId, selfMembers, mode, tier, scope, ct);
+
+            await using var tx = await context.Database.BeginTransactionAsync(ct);
 
             var selfTicket = await db.PartyMatchmakingTickets
                 .FirstOrDefaultAsync(t => t.Id == ticketId, ct);
@@ -261,5 +263,132 @@ namespace Tycoon.Backend.Application.Social
                 return null;
             }
         }
+
+        private async Task<PartyQueueResultDto?> TryMatchCoreAsync(
+            Guid ticketId,
+            IReadOnlyList<Guid> selfMembers,
+            string mode,
+            int tier,
+            string scope,
+            CancellationToken ct)
+        {
+            var selfTicket = await db.PartyMatchmakingTickets
+                .FirstOrDefaultAsync(t => t.Id == ticketId, ct);
+
+            if (selfTicket is null || selfTicket.Status != "Queued")
+                return null;
+
+            var oppTicket = await db.PartyMatchmakingTickets
+                .OrderBy(t => t.CreatedAtUtc)
+                .FirstOrDefaultAsync(t =>
+                    t.Status == "Queued" &&
+                    t.Id != ticketId &&
+                    t.Mode == mode &&
+                    t.Scope == scope &&
+                    t.PartySize == selfTicket.PartySize &&
+                    (scope == "TierOnly" ? t.Tier == tier : true), ct);
+
+            if (oppTicket is null)
+                return null;
+
+            var selfParty = await db.Parties.FirstOrDefaultAsync(p => p.Id == selfTicket.PartyId, ct);
+            var oppParty = await db.Parties.FirstOrDefaultAsync(p => p.Id == oppTicket.PartyId, ct);
+
+            if (selfParty is null || oppParty is null)
+                return null;
+
+            if (selfParty.Status != "Queued" || oppParty.Status != "Queued")
+                return null;
+
+            selfTicket.MarkMatched();
+            oppTicket.MarkMatched();
+            selfParty.MarkMatched();
+            oppParty.MarkMatched();
+
+            try
+            {
+                await db.SaveChangesAsync(ct);
+
+                var oppMembers = await db.PartyMembers.AsNoTracking()
+                    .Where(x => x.PartyId == oppTicket.PartyId)
+                    .OrderBy(x => x.JoinedAtUtc)
+                    .Select(x => x.PlayerId)
+                    .ToListAsync(ct);
+
+                var hostLeader = selfParty.LeaderPlayerId.CompareTo(oppParty.LeaderPlayerId) <= 0
+                    ? selfParty.LeaderPlayerId
+                    : oppParty.LeaderPlayerId;
+
+                var startMode = $"{mode}-party";
+                var started = await mediator.Send(new StartMatch(hostLeader, startMode), ct);
+                var matchId = started.MatchId;
+
+                db.PartyMatchLinks.Add(new PartyMatchLink(selfTicket.PartyId, matchId));
+                db.PartyMatchLinks.Add(new PartyMatchLink(oppTicket.PartyId, matchId));
+                await db.SaveChangesAsync(ct);
+
+                var partyIds = new[] { selfTicket.PartyId, oppTicket.PartyId };
+                var members = await db.PartyMembers
+                    .Where(m => partyIds.Contains(m.PartyId))
+                    .Select(m => new { m.PartyId, m.PlayerId, Role = m.Role.ToString() })
+                    .ToListAsync(ct);
+
+                foreach (var m in members)
+                {
+                    db.PartyMatchMembers.Add(new PartyMatchMember(
+                        partyId: m.PartyId,
+                        matchId: matchId,
+                        playerId: m.PlayerId,
+                        role: m.Role
+                    ));
+                }
+
+                await db.SaveChangesAsync(ct);
+
+                await notifier.NotifyPartyMatchedAsync(
+                    partyId: selfTicket.PartyId,
+                    opponentPartyId: oppTicket.PartyId,
+                    matchId: matchId,
+                    memberPlayerIds: selfMembers,
+                    mode: mode,
+                    tier: tier,
+                    scope: scope,
+                    ticketId: selfTicket.Id,
+                    ct: ct);
+
+                await notifier.NotifyPartyMatchedAsync(
+                    partyId: oppTicket.PartyId,
+                    opponentPartyId: selfTicket.PartyId,
+                    matchId: matchId,
+                    memberPlayerIds: oppMembers,
+                    mode: mode,
+                    tier: tier,
+                    scope: scope,
+                    ticketId: oppTicket.Id,
+                    ct: ct);
+
+                return new PartyQueueResultDto("Matched", selfTicket.Id, selfTicket.PartyId, oppTicket.PartyId, matchId);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return null;
+            }
+        }
+
+        private async Task CancelExpiredTicketsAsync(CancellationToken ct)
+        {
+            var expiredQuery = db.PartyMatchmakingTickets
+                .Where(t => t.Status == "Queued" && t.ExpiresAtUtc <= DateTimeOffset.UtcNow);
+
+            var expired = await expiredQuery.ToListAsync(ct);
+            foreach (var ticket in expired)
+                ticket.Cancel();
+
+            if (expired.Count > 0)
+                await db.SaveChangesAsync(ct);
+        }
+
+        private static bool IsInMemoryProvider(DbContext context) =>
+            string.Equals(context.Database.ProviderName, "Microsoft.EntityFrameworkCore.InMemory", StringComparison.Ordinal);
     }
 }

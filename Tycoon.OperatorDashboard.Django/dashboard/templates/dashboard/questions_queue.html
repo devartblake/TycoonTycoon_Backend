@@ -9,6 +9,35 @@
     <h1 class="page-title">Questions queue</h1>
     <p class="page-subtitle">Review pending questions and approve or reject them for gameplay use.</p>
   </div>
+  <div class="topbar-actions">
+    <span class="badge acc"><span class="dot"></span>Review queue</span>
+    <span class="chip neutral">{{ items|length }} loaded</span>
+    <a class="button secondary" href="{% url 'questions-bulk-import-view' %}">Bulk import</a>
+    <a class="button" href="{% url 'question-create-view' %}">+ New question</a>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi warn">
+    <span class="kpi-label">Queue status</span>
+    <span class="kpi-val">{{ query.status|default:"All" }}</span>
+    <span class="kpi-delta">active content filter</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Rows loaded</span>
+    <span class="kpi-val">{{ items|length }}</span>
+    <span class="kpi-delta">current page</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Total matches</span>
+    <span class="kpi-val">{{ total }}</span>
+    <span class="kpi-delta">backend count</span>
+  </article>
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Page</span>
+    <span class="kpi-val">{{ page }}</span>
+    <span class="kpi-delta">approval workflow</span>
+  </article>
 </section>
 
 <section class="card">
@@ -58,7 +87,9 @@
       <tbody>
         {% for q in items %}
         <tr>
-          <td>{{ q.text|default:"-"|truncatechars:80 }}</td>
+          <td>
+            <a href="{% url 'question-detail-view' q.id %}">{{ q.text|default:q.textPreview|default:"-"|truncatechars:80 }}</a>
+          </td>
           <td>{{ q.category|default:"-" }}</td>
           <td>{{ q.difficulty|default:"-" }}</td>
           <td>
@@ -68,7 +99,7 @@
           </td>
           <td>{{ q.updatedAtUtc|default:"-" }}</td>
           <td>
-            <div style="display:flex;gap:4px;">
+            <div class="inline-actions">
               {% if q.status != 'Approved' %}
               <form method="post" action="{% url 'questions-approve' q.id %}">
                 {% csrf_token %}
@@ -86,14 +117,20 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="helper-text">No questions match the current filter.</td>
+          <td colspan="6">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No questions match this filter</strong>
+              <span>Change the status, category, or search term to widen the queue.</span>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% if total > items|length %}
-  <div class="toolbar-actions" style="margin-top:8px;">
+  <div class="toolbar-actions mt-sm">
     {% if page > 1 %}
     <a class="button secondary small" href="?{{ query|urlencode }}&page={{ page|add:'-1' }}">← Previous</a>
     {% endif %}

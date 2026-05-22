@@ -1,0 +1,100 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Season Reward Claims{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Events / Seasons</p>
+    <h1 class="page-title">Reward claims</h1>
+    <p class="page-subtitle">Audit which players claimed season rewards and when. Filter by season or player ID.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="chip neutral">{{ claims.total|default:"0" }} total</span>
+    <a class="button secondary" href="{% url 'seasons-view' %}">Back to seasons</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Filters" copy="All fields optional — leave blank to see all claims." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Season ID
+        <input type="text" name="seasonId" value="{{ query.seasonId|default:'' }}" placeholder="uuid" />
+      </label>
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ query.playerId|default:'' }}" placeholder="uuid" />
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="25" {% if query.pageSize == "25" %}selected{% endif %}>25</option>
+          <option value="50" {% if query.pageSize == "50" or not query.pageSize %}selected{% endif %}>50</option>
+          <option value="100" {% if query.pageSize == "100" %}selected{% endif %}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Filter</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Claims" copy="Most-recent first." %}
+  {% if claims %}
+  <div class="table-meta">
+    <span class="helper-text">Page {{ claims.page|default:1 }} — {{ claims.items|length }} of {{ claims.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Season</th>
+          <th>Reward day</th>
+          <th>Coins</th>
+          <th>XP</th>
+          <th>Claimed (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for claim in claims.items %}
+        <tr>
+          <td class="helper-text">
+            {% if claim.playerId %}
+            <a href="{% url 'operator-user-investigation-view' claim.playerId %}">{{ claim.playerId }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="helper-text" style="font-size:0.72rem;">{{ claim.seasonId|default:"—" }}</td>
+          <td>{{ claim.rewardDay|default:"—" }}</td>
+          <td>{{ claim.awardedCoins|default:"0" }}</td>
+          <td>{{ claim.awardedXp|default:"0" }}</td>
+          <td>{{ claim.createdDisplay|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No reward claims found</strong>
+              <span>Try clearing season or player filters.</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <span class="empty-ico">0</span>
+    <strong>No claims data loaded</strong>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

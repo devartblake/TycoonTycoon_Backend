@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.Personalization;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -14,7 +16,13 @@ public static class PersonalizationEndpoints
         var group = app.MapGroup("/personalization")
             .RequireAuthorization()
             .WithTags("Personalization")
-            ;
+            .AddEndpointFilter(async (ctx, next) =>
+            {
+                var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
+                if (!await flags.IsEnabledAsync("tom_personalization_enabled", ctx.HttpContext.RequestAborted))
+                    return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
+                return await next(ctx);
+            });
 
         group.MapGet("/profile/{playerId:guid}", async (
             Guid playerId,

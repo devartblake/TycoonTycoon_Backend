@@ -104,7 +104,7 @@ public sealed class MobileEconomyEndpointsTests : IClassFixture<TycoonApiFactory
         normalJson["finalGemCost"]!.GetValue<int>().Should().Be(5);
 
         almostWinJson["baseGemCost"]!.GetValue<int>().Should().Be(5);
-        almostWinJson["discountPercent"]!.GetValue<int>().Should().Be(30);
+        almostWinJson["discountPercent"]!.GetValue<int>().Should().Be(20);
         almostWinJson["finalGemCost"]!.GetValue<int>().Should().Be(4);
     }
 

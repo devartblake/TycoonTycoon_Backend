@@ -126,10 +126,6 @@ services:
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-synaptix_minio_user}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
-      MinIO__Seeds__StoreItemsKey: synaptix-assets/store-items.json
-      MinIO__Seeds__SkillNodesKey: synaptix-assets/skill-nodes.json
-      MinIO__Seeds__SeasonRewardsKey: synaptix-assets/season-rewards.json
-      MinIO__Seeds__QuestionsKey: synaptix-assets/questions.json
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -320,10 +316,24 @@ services:
 
       # Migration settings
       MigrationService__Mode: "${MIGRATION_MODE:-MigrateAndSeed}"
+      MigrationService__SeedSource: "${MIGRATION_SEED_SOURCE:-Auto}"
       MigrationService__AllowEnsureCreated: "${MIGRATION_ALLOW_ENSURE_CREATED:-false}"
       MigrationService__ResetDatabase: "${MIGRATION_RESET_DATABASE:-false}"
       MigrationService__AutoRepairOnMissingTables: "${MIGRATION_AUTO_REPAIR_MISSING_TABLES:-true}"
+      MigrationService__DashboardReadiness__Enabled: "${MIGRATION_DASHBOARD_READINESS_ENABLED:-true}"
+      MigrationService__DashboardReadiness__Strict: "${MIGRATION_DASHBOARD_READINESS_STRICT:-true}"
       MigrationService__RebuildElastic__Enabled: "${REBUILD_ELASTIC:-false}"
+
+      # Seed object keys. The bucket is MinIO__Bucket; do not include the bucket name in these keys.
+      MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
+      MinIO__Endpoint: "minio:9000"
+      MinIO__AccessKey: "${MINIO_ROOT_USER:-synaptix_minio_user}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
+      MinIO__UseSSL: "false"
+      MinIO__Seeds__StoreItemsKey: "${MINIO_SEED_STORE_ITEMS_KEY:-seeds/store-items.json}"
+      MinIO__Seeds__SkillNodesKey: "${MINIO_SEED_SKILL_NODES_KEY:-seeds/skill-nodes.json}"
+      MinIO__Seeds__SeasonRewardsKey: "${MINIO_SEED_SEASON_REWARDS_KEY:-seeds/season-rewards.json}"
+      MinIO__Seeds__QuestionsKey: "${MINIO_SEED_QUESTIONS_KEY:-seeds/questions.json}"
       
       # Observability
       Observability__ServiceName: "Synaptix.MigrationService"
@@ -338,6 +348,8 @@ services:
       elasticsearch:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     networks: [synaptix-net]
 
@@ -384,6 +396,7 @@ services:
       AdminOps__Enabled: "${ADMIN_OPS_ENABLED:-true}"
       AdminOps__Header: "X-Admin-Ops-Key"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+      AdminAuth__AllowTrustedBffPlainJson: "${ADMIN_AUTH_ALLOW_TRUSTED_BFF_PLAIN_JSON:-true}"
 
       # Admin allowlist — email(s) permitted to access the operator dashboard
       AdminAuth__AllowedEmails__0: "${SUPER_ADMIN_EMAIL:-}"
@@ -416,8 +429,11 @@ services:
       # Durable file-backed sidecar inference store path (mounted volume below).
       SIDECAR_INFERENCE_STORE_PATH: "/var/lib/synaptix-sidecar/inference-store.jsonl"
       # Comma-separated origins allowed by CORS (e.g. for mobile clients calling the API directly)
-      Cors__AllowedOrigins__0: "${CORS_ORIGIN_0:-http://localhost:8200}"
-      Cors__AllowedOrigins__1: "${CORS_ORIGIN_1:-}"
+      Cors__AllowedOrigins__0: "${CORS_ORIGIN_0:-http://localhost:63033}"
+      Cors__AllowedOrigins__1: "${CORS_ORIGIN_1:-http://127.0.0.1:63033}"
+      Cors__AllowedOrigins__2: "${CORS_ORIGIN_2:-http://localhost:8200}"
+      Cors__AllowedOrigins__3: "${CORS_ORIGIN_3:-http://localhost:3000}"
+      Cors__AllowedOrigins__4: "${CORS_ORIGIN_4:-http://localhost:8080}"
     volumes:
       - sidecar_inference_data:/var/lib/synaptix-sidecar
     depends_on:
@@ -552,6 +568,9 @@ services:
       FASTAPI_BASE_URL: "http://sidecar:8100"
       MINIO_BASE_URL: "http://minio:9000"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
+      ADMIN_AUTH_TRANSPORT: "${ADMIN_AUTH_TRANSPORT:-auto}"
+      KMS_API_BASE_URL: "${KMS_API_BASE_URL:-}"
+      KMS_SERVICE_TOKEN: "${KMS_SERVICE_TOKEN:-}"
       API_REQUEST_TIMEOUT_SECONDS: "5"
     depends_on:
       backend-api:

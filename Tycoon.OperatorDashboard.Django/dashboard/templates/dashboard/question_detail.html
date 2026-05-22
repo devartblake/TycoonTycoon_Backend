@@ -1,0 +1,116 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Question Detail{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Content</p>
+    <h1 class="page-title">Question detail</h1>
+    <p class="page-subtitle">Inspect the full question payload, edit content, and manage approval state.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'questions-queue-view' %}">Back to queue</a>
+    {% if question %}
+    <span class="chip {% if question.status == 'Approved' %}success{% elif question.status == 'Rejected' %}danger{% else %}warning{% endif %}">{{ question.status|default:"-" }}</span>
+    {% endif %}
+  </div>
+</section>
+
+{% if question %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Question summary" copy="Full backend question detail including options and answer key." %}
+  <div class="form-grid">
+    <div><span class="helper-text">Question ID</span><br><code>{{ question.id }}</code></div>
+    <div><span class="helper-text">Category</span><br>{{ question.category|default:"-" }}</div>
+    <div><span class="helper-text">Difficulty</span><br>{{ question.difficulty|default:"-" }}</div>
+    <div><span class="helper-text">Correct option</span><br><code>{{ question.correctOptionId|default:"-" }}</code></div>
+    <div><span class="helper-text">Tags</span><br>{{ question.tags|join:", "|default:"-" }}</div>
+    <div><span class="helper-text">Media key</span><br>{{ question.mediaKey|default:"-" }}</div>
+  </div>
+  <p class="surface-note mt-lg">{{ question.text }}</p>
+</section>
+
+{% if can_write_questions %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Edit question" copy="Changes are submitted to the backend admin question update endpoint." %}
+  <form method="post" class="stack" data-validate="1">
+    {% csrf_token %}
+    <div class="form-grid">
+      <label>
+        Text
+        <textarea name="text" rows="4" data-hint="Question text is required.">{{ question.text }}</textarea>
+        <span class="field-error"></span>
+      </label>
+      <label>
+        Category
+        <input type="text" name="category" value="{{ question.category }}" />
+      </label>
+      <label>
+        Difficulty
+        <select name="difficulty">
+          <option value="1" {% if question.difficulty == 1 or question.difficulty == "Easy" %}selected{% endif %}>Easy</option>
+          <option value="2" {% if question.difficulty == 2 or question.difficulty == "Medium" %}selected{% endif %}>Medium</option>
+          <option value="3" {% if question.difficulty == 3 or question.difficulty == "Hard" %}selected{% endif %}>Hard</option>
+          <option value="4" {% if question.difficulty == 4 or question.difficulty == "Expert" %}selected{% endif %}>Expert</option>
+        </select>
+      </label>
+      <label>
+        Status
+        <select name="status">
+          <option value="Pending" {% if question.status == "Pending" %}selected{% endif %}>Pending</option>
+          <option value="Approved" {% if question.status == "Approved" %}selected{% endif %}>Approved</option>
+          <option value="Rejected" {% if question.status == "Rejected" %}selected{% endif %}>Rejected</option>
+        </select>
+      </label>
+      <label>
+        Correct option ID
+        <input type="text" name="correctOptionId" value="{{ question.correctOptionId }}" />
+      </label>
+      <label>
+        Tags
+        <input type="text" name="tags" value="{{ question.tags|join:', ' }}" />
+      </label>
+      <label>
+        Media key
+        <input type="text" name="mediaKey" value="{{ question.mediaKey|default:'' }}" />
+      </label>
+    </div>
+
+    <div class="table-wrap">
+      <table class="dense-table">
+        <thead><tr><th>Option ID</th><th>Option text</th></tr></thead>
+        <tbody>
+          {% for option in question.options %}
+          <tr>
+            <td><input type="text" name="option{{ forloop.counter }}Id" value="{{ option.id }}" /></td>
+            <td><input type="text" name="option{{ forloop.counter }}Text" value="{{ option.text }}" /></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Save question</button>
+    </div>
+  </form>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Approval actions" copy="Fast state transitions for review queue work." %}
+  <div class="toolbar-actions">
+    <form method="post" action="{% url 'questions-approve' question.id %}">{% csrf_token %}<button type="submit">Approve</button></form>
+    <form method="post" action="{% url 'questions-reject' question.id %}">{% csrf_token %}<button type="submit" class="button danger">Reject</button></form>
+    <form method="post" action="{% url 'question-delete' question.id %}" onsubmit="return confirm('Delete this question?');">{% csrf_token %}<button type="submit" class="button ghost">Delete</button></form>
+  </div>
+</section>
+{% endif %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Raw payload" copy="Full backend detail payload for review handoff." %}
+  <pre>{{ question_json }}</pre>
+</section>
+{% else %}
+<section class="card"><div class="empty"><strong>Question unavailable</strong><span>Check backend availability or permissions.</span></div></section>
+{% endif %}
+{% endblock %}

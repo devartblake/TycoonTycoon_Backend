@@ -31,6 +31,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if not DEBUG:
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
 ROOT_URLCONF = "operator_dashboard.urls"
 
 TEMPLATES = [
@@ -66,6 +69,16 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+if not DEBUG:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 DOTNET_API_BASE_URL = os.getenv("DOTNET_API_BASE_URL", "http://localhost:5000")
@@ -76,4 +89,7 @@ MINIO_BASE_URL = os.getenv("MINIO_BASE_URL", "http://localhost:9000")
 
 ADMIN_OPS_HEADER = os.getenv("ADMIN_OPS_HEADER", os.getenv("AdminOps__Header", "X-Admin-Ops-Key"))
 ADMIN_OPS_KEY = os.getenv("AdminOps__Key", os.getenv("ADMIN_OPS_KEY", ""))
+ADMIN_AUTH_TRANSPORT = os.getenv("ADMIN_AUTH_TRANSPORT", "auto").strip().lower()
+KMS_API_BASE_URL = os.getenv("KMS_API_BASE_URL", "")
+KMS_SERVICE_TOKEN = os.getenv("KMS_SERVICE_TOKEN", "")
 LOGIN_URL = "/login"

@@ -39,9 +39,14 @@ public static class AdminStoreEndpoints
         // P2 — Flash sales
         g.MapGet("/flash-sales", ListFlashSales);
         g.MapPost("/flash-sales", CreateFlashSale);
+        g.MapPut("/flash-sales/{id:guid}", UpdateFlashSale);
         g.MapDelete("/flash-sales/{id:guid}", CancelFlashSale);
 
+        // P2 — Delete stock policy
+        g.MapDelete("/stock-policies/{sku}", DeleteStockPolicy);
+
         // P2 — Reward claim limits
+        g.MapGet("/reward-limits", ListRewardLimits);
         g.MapGet("/reward-limits/{rewardId}", GetRewardLimit);
         g.MapPut("/reward-limits/{rewardId}", UpsertRewardLimit);
 
@@ -196,8 +201,8 @@ public static class AdminStoreEndpoints
             return AdminApiResponses.Error(400, "VALIDATION_ERROR", "sku is required.");
         if (req.MaxQuantityPerUser < 0)
             return AdminApiResponses.Error(400, "VALIDATION_ERROR", "maxQuantityPerUser must be >= 0 (0 = unlimited).");
-        if (!new[] { "daily", "weekly", "none" }.Contains(req.ResetInterval?.ToLowerInvariant()))
-            return AdminApiResponses.Error(400, "VALIDATION_ERROR", "resetInterval must be 'daily', 'weekly', or 'none'.");
+        if (!new[] { "daily", "weekly", "monthly", "none" }.Contains(req.ResetInterval?.ToLowerInvariant()))
+            return AdminApiResponses.Error(400, "VALIDATION_ERROR", "resetInterval must be 'daily', 'weekly', 'monthly', or 'none'.");
 
         var normalizedSku = sku.Trim().ToLowerInvariant();
         var policy = await db.StoreStockPolicies.FirstOrDefaultAsync(p => p.Sku == normalizedSku, ct);
@@ -309,12 +314,16 @@ public static class AdminStoreEndpoints
     // P2 — Flash sales
     // -------------------------------------------------------------------------
 
-    private static async Task<IResult> ListFlashSales(IAppDb db, CancellationToken ct)
+    private static async Task<IResult> ListFlashSales(
+        [FromQuery] bool? showAll, IAppDb db, CancellationToken ct)
     {
-        var now = DateTimeOffset.UtcNow;
-        var sales = await db.FlashSales.AsNoTracking()
-            .Where(f => f.IsActive && f.EndsAtUtc >= now)
-            .OrderBy(f => f.StartsAtUtc)
+        var query = db.FlashSales.AsNoTracking().AsQueryable();
+        if (showAll != true)
+        {
+            var now = DateTimeOffset.UtcNow;
+            query = query.Where(f => f.IsActive && f.EndsAtUtc >= now);
+        }
+        var sales = await query.OrderBy(f => f.StartsAtUtc)
             .Select(f => new AdminFlashSaleDto(f.Id, f.Sku, f.DiscountPercent,
                 f.StartsAtUtc, f.EndsAtUtc, f.IsActive, f.Reason, f.CreatedAtUtc))
             .ToListAsync(ct);
@@ -364,9 +373,50 @@ public static class AdminStoreEndpoints
         return Results.NoContent();
     }
 
+    private static async Task<IResult> DeleteStockPolicy(
+        [FromRoute] string sku, IAppDb db, CancellationToken ct)
+    {
+        var normalized = sku.ToLowerInvariant();
+        var policy = await db.StoreStockPolicies.FirstOrDefaultAsync(p => p.Sku == normalized, ct);
+        if (policy is null)
+            return AdminApiResponses.Error(404, "NOT_FOUND", $"No policy found for SKU '{normalized}'.");
+        db.StoreStockPolicies.Remove(policy);
+        await db.SaveChangesAsync(ct);
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> UpdateFlashSale(
+        [FromRoute] Guid id, [FromBody] AdminUpdateFlashSaleRequest req, IAppDb db, CancellationToken ct)
+    {
+        var sale = await db.FlashSales.FirstOrDefaultAsync(f => f.Id == id, ct);
+        if (sale is null)
+            return AdminApiResponses.Error(404, "NOT_FOUND", "Flash sale not found.");
+        if (!sale.IsActive)
+            return AdminApiResponses.Error(409, "ALREADY_CANCELLED", "Cannot edit a cancelled sale.");
+        if (sale.StartsAtUtc <= DateTimeOffset.UtcNow)
+            return AdminApiResponses.Error(409, "ALREADY_STARTED", "Cannot edit a sale that has already started.");
+        if (req.DiscountPercent is < 1 or > 99)
+            return AdminApiResponses.Error(400, "VALIDATION_ERROR", "discountPercent must be 1–99.");
+        if (req.EndsAtUtc <= req.StartsAtUtc)
+            return AdminApiResponses.Error(400, "VALIDATION_ERROR", "endsAtUtc must be after startsAtUtc.");
+        sale.Update(req.DiscountPercent, req.StartsAtUtc, req.EndsAtUtc, req.Reason);
+        await db.SaveChangesAsync(ct);
+        return Results.Ok(new AdminFlashSaleDto(sale.Id, sale.Sku, sale.DiscountPercent,
+            sale.StartsAtUtc, sale.EndsAtUtc, sale.IsActive, sale.Reason, sale.CreatedAtUtc));
+    }
+
     // -------------------------------------------------------------------------
     // P2 — Reward claim limits
     // -------------------------------------------------------------------------
+
+    private static async Task<IResult> ListRewardLimits(IAppDb db, CancellationToken ct)
+    {
+        var rules = await db.RewardClaimRules.AsNoTracking()
+            .OrderBy(r => r.RewardId)
+            .Select(r => new AdminRewardLimitDto(r.RewardId, r.MaxClaimsPerInterval, r.ResetInterval, r.IsActive, r.UpdatedAtUtc))
+            .ToListAsync(ct);
+        return Results.Ok(new { items = rules, total = rules.Count });
+    }
 
     private static async Task<IResult> GetRewardLimit(
         [FromRoute] string rewardId, IAppDb db, CancellationToken ct)
@@ -527,6 +577,9 @@ public static class AdminStoreEndpoints
         string Sku, int DiscountPercent,
         DateTimeOffset StartsAtUtc, DateTimeOffset EndsAtUtc,
         string? Reason);
+
+    public sealed record AdminUpdateFlashSaleRequest(
+        int DiscountPercent, DateTimeOffset StartsAtUtc, DateTimeOffset EndsAtUtc, string? Reason);
 
     public sealed record AdminRewardLimitDto(
         string RewardId, int MaxClaimsPerInterval, string ResetInterval,

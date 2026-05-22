@@ -7,53 +7,377 @@
   <div>
     <p class="page-eyebrow">Operations</p>
     <h1 class="page-title">Notifications</h1>
-    <p class="page-subtitle">Send push notifications, view send history, and replay dead-letter failures.</p>
+    <p class="page-subtitle">Send, schedule, template, and recover notification jobs through audited backend admin APIs.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="badge acc"><span class="dot"></span>Audited</span>
+    <span class="chip {% if dead_letter.items %}warning{% else %}success{% endif %}">Dead-letter {{ dead_letter.items|length|default:"0" }}</span>
   </div>
 </section>
 
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Channels</span>
+    <span class="kpi-val">{{ channels|length }}</span>
+    <span class="kpi-delta">configured targets</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Scheduled</span>
+    <span class="kpi-val">{{ scheduled.items|length|default:"0" }}</span>
+    <span class="kpi-delta">queued or retry pending</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Templates</span>
+    <span class="kpi-val">{{ templates|length }}</span>
+    <span class="kpi-delta">reusable messages</span>
+  </article>
+  <article class="screen-kpi {% if dead_letter.items %}warn{% else %}ok{% endif %}">
+    <span class="kpi-label">Dead letters</span>
+    <span class="kpi-val">{{ dead_letter.items|length|default:"0" }}</span>
+    <span class="kpi-delta">failed schedules</span>
+  </article>
+</section>
+
+<section class="row-2 mt-lg">
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h3>Send notification</h3>
+        <p>Dispatch immediately to the selected channel. Audience and payload are JSON objects.</p>
+      </div>
+      <span class="badge acc"><span class="dot"></span>Send now</span>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'notifications-send' %}" class="stack" data-validate="1">
+        {% csrf_token %}
+        <div class="form-grid">
+          <label>
+            Channel
+            <select name="channelKey" required>
+              {% for ch in channels %}
+              <option value="{{ ch.key }}">{{ ch.name }} ({{ ch.key }})</option>
+              {% empty %}
+              <option value="" disabled>No channels available</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Title
+            <input type="text" name="title" placeholder="Notification title" required />
+          </label>
+          <label class="field-wide">
+            Body
+            <textarea name="body" rows="4" placeholder="Message body" required></textarea>
+          </label>
+          <label>
+            Audience JSON
+            <textarea name="audience" rows="5" required>{{ default_audience_json }}</textarea>
+          </label>
+          <label>
+            Payload JSON
+            <textarea name="payload" rows="5">{{ default_payload_json }}</textarea>
+          </label>
+        </div>
+        <div class="toolbar-actions">
+          <button type="submit" onclick="return confirm('Send this notification now?')">Send now</button>
+        </div>
+      </form>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h3>Schedule notification</h3>
+        <p>Create a scheduled notification job with optional repeat metadata.</p>
+      </div>
+      <span class="badge warn"><span class="dot"></span>Scheduled</span>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'notifications-schedule' %}" class="stack" data-validate="1">
+        {% csrf_token %}
+        <div class="form-grid">
+          <label>
+            Channel
+            <select name="channelKey" required>
+              {% for ch in channels %}
+              <option value="{{ ch.key }}">{{ ch.name }} ({{ ch.key }})</option>
+              {% empty %}
+              <option value="" disabled>No channels available</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Scheduled at
+            <input type="datetime-local" name="scheduledAt" required />
+          </label>
+          <label>
+            Title
+            <input type="text" name="title" placeholder="Scheduled title" required />
+          </label>
+          <label class="field-wide">
+            Body
+            <textarea name="body" rows="3" placeholder="Scheduled message body" required></textarea>
+          </label>
+          <label>
+            Audience JSON
+            <textarea name="audience" rows="5" required>{{ default_audience_json }}</textarea>
+          </label>
+          <label>
+            Repeat JSON
+            <textarea name="repeat" rows="5" placeholder='{"interval":"daily"}'>{{ default_repeat_json }}</textarea>
+          </label>
+        </div>
+        <div class="toolbar-actions">
+          <button type="submit" onclick="return confirm('Create this scheduled notification?')">Schedule</button>
+        </div>
+      </form>
+    </div>
+  </article>
+</section>
+
+<section class="row-2 mt-lg">
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h3>Channels</h3>
+        <p>Create or update operator-safe notification channels.</p>
+      </div>
+      <span class="muted">{{ channels|length }} loaded</span>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'notifications-channel-upsert' %}" class="stack" data-validate="1">
+        {% csrf_token %}
+        <div class="form-grid">
+          <label>
+            Key
+            <input name="key" placeholder="admin_security" required />
+          </label>
+          <label>
+            Name
+            <input name="name" placeholder="Admin Security" required />
+          </label>
+          <label>
+            Importance
+            <select name="importance">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="silent">Silent</option>
+            </select>
+          </label>
+          <label class="checkbox-line">
+            <input type="checkbox" name="enabled" checked />
+            Enabled
+          </label>
+          <label class="field-wide">
+            Description
+            <input name="description" placeholder="Purpose and audience for this channel" />
+          </label>
+        </div>
+        <div class="toolbar-actions">
+          <button type="submit">Save channel</button>
+        </div>
+      </form>
+      <div class="table-wrap mt-md">
+        <table class="dense-table">
+          <thead><tr><th>Key</th><th>Name</th><th>Importance</th><th>Enabled</th></tr></thead>
+          <tbody>
+            {% for ch in channels %}
+            <tr>
+              <td class="helper-text">{{ ch.key }}</td>
+              <td>{{ ch.name }}</td>
+              <td>{{ ch.importance }}</td>
+              <td><span class="chip {% if ch.enabled %}success{% else %}neutral{% endif %}">{{ ch.enabled|yesno:"Yes,No" }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty"><span class="empty-ico">0</span><strong>No channels found</strong><span>Save a channel or let the backend seed its default channel.</span></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h3>Templates</h3>
+        <p>Create reusable notification templates. Variables accept comma or newline-separated names.</p>
+      </div>
+      <span class="muted">{{ templates|length }} loaded</span>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'notifications-template-create' %}" class="stack" data-validate="1">
+        {% csrf_token %}
+        <div class="form-grid">
+          <label>
+            Name
+            <input name="name" placeholder="Winback campaign" required />
+          </label>
+          <label>
+            Channel
+            <select name="channelKey" required>
+              {% for ch in channels %}
+              <option value="{{ ch.key }}">{{ ch.name }} ({{ ch.key }})</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Title
+            <input name="title" placeholder="Come back for a reward" required />
+          </label>
+          <label>
+            Variables
+            <input name="variables" placeholder="playerName, rewardName" />
+          </label>
+          <label class="field-wide">
+            Body
+            <textarea name="body" rows="4" required></textarea>
+          </label>
+        </div>
+        <div class="toolbar-actions">
+          <button type="submit">Create template</button>
+        </div>
+      </form>
+    </div>
+  </article>
+</section>
+
+{% if templates %}
 <section class="card">
-  {% include "dashboard/partials/section_intro.html" with title="Send notification" copy="Dispatches immediately to the selected channel." %}
-  <form method="post" action="{% url 'notifications-send' %}" class="stack">
-    {% csrf_token %}
+  {% include "dashboard/partials/section_intro.html" with title="Template library" copy="Update or delete existing templates." %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead><tr><th>Name</th><th>Channel</th><th>Title</th><th>Body</th><th>Variables</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for tpl in templates %}
+        <tr>
+          <form method="post" action="{% url 'notifications-template-update' tpl.templateId %}">
+            {% csrf_token %}
+            <td><input class="input-compact" name="name" value="{{ tpl.name }}" required /></td>
+            <td><input class="input-compact" name="channelKey" value="{{ tpl.channelKey }}" required /></td>
+            <td><input class="input-compact" name="title" value="{{ tpl.title }}" required /></td>
+            <td><textarea class="input-compact" name="body" rows="2" required>{{ tpl.body }}</textarea></td>
+            <td><input class="input-compact" name="variables" value="{{ tpl.variables|join:', ' }}" /></td>
+            <td>
+              <div class="inline-actions">
+                <button class="btn-inline" type="submit">Save</button>
+          </form>
+                <form method="post" action="{% url 'notifications-template-delete' tpl.templateId %}">
+                  {% csrf_token %}
+                  <button class="btn-inline danger" type="submit" onclick="return confirm('Delete this template?')">Delete</button>
+                </form>
+              </div>
+            </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="row-2 mt-lg">
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h3>Scheduled queue</h3>
+        <p>Scheduled and retry-pending notifications. Cancel removes the schedule from the backend.</p>
+      </div>
+      <span class="muted">{{ scheduled.items|length|default:"0" }} of {{ scheduled.totalItems|default:"0" }} records</span>
+    </div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="dense-table">
+          <thead><tr><th>Schedule ID</th><th>Channel</th><th>Title</th><th>Scheduled (UTC)</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for item in scheduled.items %}
+            <tr>
+              <td class="helper-text">{{ item.scheduleId }}</td>
+              <td>{{ item.channelKey }}</td>
+              <td>{{ item.title }}</td>
+              <td>{{ item.scheduledAt }}</td>
+              <td><span class="chip warning">{{ item.status }}</span></td>
+              <td>
+                <form method="post" action="{% url 'notifications-scheduled-cancel' item.scheduleId %}">
+                  {% csrf_token %}
+                  <button class="btn-inline danger" type="submit" onclick="return confirm('Cancel this scheduled notification?')">Cancel</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6"><div class="empty"><span class="empty-ico">0</span><strong>No scheduled notifications</strong><span>Scheduled jobs and retry-pending records will appear here.</span></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div>
+        <h3>Dead-letter queue</h3>
+        <p>Failed scheduled notifications. Replay to re-queue against the same target.</p>
+      </div>
+      <span class="badge {% if dead_letter.items %}warn{% else %}ok{% endif %}"><span class="dot"></span>{% if dead_letter.items %}Needs review{% else %}Empty{% endif %}</span>
+    </div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="dense-table">
+          <thead><tr><th>Schedule ID</th><th>Channel</th><th>Title</th><th>Scheduled (UTC)</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for item in dead_letter.items %}
+            <tr>
+              <td class="helper-text">{{ item.scheduleId|default:"-" }}</td>
+              <td>{{ item.channelKey|default:"-" }}</td>
+              <td>{{ item.title|default:"-" }}</td>
+              <td>{{ item.scheduledAt|default:"-" }}</td>
+              <td>
+                <form method="post" action="{% url 'notifications-dead-letter-replay' item.scheduleId %}">{% csrf_token %}
+                  <button class="btn-inline" type="submit" onclick="return confirm('Re-queue this notification?')">Replay</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty"><span class="empty-ico">OK</span><strong>Dead-letter queue is empty</strong><span>No failed scheduled notifications. Failures show up here with replay actions.</span></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Send history" copy="Filter recent dispatch records across channels and statuses." %}
+  <form method="get" class="stack">
     <div class="form-grid">
       <label>
         Channel
-        <select name="channelKey" required>
-          {% for ch in channels %}
-          <option value="{{ ch.key }}">{{ ch.name }} ({{ ch.key }})</option>
-          {% empty %}
-          <option value="" disabled>No channels available</option>
-          {% endfor %}
-        </select>
+        <input name="channelKey" value="{{ history_query.channelKey|default:'' }}" placeholder="admin_basic" />
       </label>
       <label>
-        Title
-        <input type="text" name="title" placeholder="Notification title" required />
+        Status
+        <input name="status" value="{{ history_query.status|default:'' }}" placeholder="queued, sent, failed" />
+      </label>
+      <label>
+        From
+        <input name="from" value="{{ history_query.from|default:'' }}" placeholder="2026-05-13T00:00:00Z" />
+      </label>
+      <label>
+        To
+        <input name="to" value="{{ history_query.to|default:'' }}" placeholder="2026-05-14T00:00:00Z" />
       </label>
     </div>
     <div class="toolbar-actions">
-      <button type="submit" onclick="return confirm('Send this notification to all channel subscribers?')">Send now</button>
+      <button type="submit">Filter history</button>
+      <span class="helper-text">Last refreshed {{ last_refreshed|date:"Y-m-d H:i:s" }} UTC.</span>
     </div>
   </form>
-</section>
-
-{% if history %}
-<section class="card">
-  {% include "dashboard/partials/section_intro.html" with title="Send history" copy="Most-recent dispatches." %}
-  <div class="table-meta">
-    <span class="helper-text">{{ history.items|length }} of {{ history.totalItems|default:0 }} records.</span>
-  </div>
-  <div class="table-wrap">
+  <div class="table-wrap mt-md">
     <table class="dense-table">
-      <thead>
-        <tr>
-          <th>Job ID</th>
-          <th>Channel</th>
-          <th>Title</th>
-          <th>Status</th>
-          <th>Sent (UTC)</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Job ID</th><th>Channel</th><th>Title</th><th>Status</th><th>Sent (UTC)</th><th>Metadata</th></tr></thead>
       <tbody>
         {% for item in history.items %}
         <tr>
@@ -62,56 +386,13 @@
           <td>{{ item.title|default:"-" }}</td>
           <td><span class="status-badge">{{ item.status|default:"-" }}</span></td>
           <td>{{ item.createdAt|default:"-" }}</td>
+          <td class="helper-text">{{ item.metadata|default:"-" }}</td>
         </tr>
         {% empty %}
-        <tr>
-          <td colspan="5" class="helper-text">No send history.</td>
-        </tr>
+        <tr><td colspan="6"><div class="empty"><span class="empty-ico">0</span><strong>No send history</strong><span>Dispatches matching the current filters will appear here.</span></div></td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </section>
-{% endif %}
-
-{% if dead_letter %}
-<section class="card">
-  {% include "dashboard/partials/section_intro.html" with title="Dead-letter queue" copy="Failed scheduled notifications. Replay to re-queue." %}
-  <div class="table-meta">
-    <span class="helper-text">{{ dead_letter.items|length }} of {{ dead_letter.totalItems|default:0 }} failed records.</span>
-  </div>
-  <div class="table-wrap">
-    <table class="dense-table">
-      <thead>
-        <tr>
-          <th>Schedule ID</th>
-          <th>Channel</th>
-          <th>Title</th>
-          <th>Scheduled (UTC)</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in dead_letter.items %}
-        <tr>
-          <td class="helper-text">{{ item.scheduleId|default:"-" }}</td>
-          <td>{{ item.channelKey|default:"-" }}</td>
-          <td>{{ item.title|default:"-" }}</td>
-          <td>{{ item.scheduledAt|default:"-" }}</td>
-          <td>
-            <form method="post" action="{% url 'notifications-dead-letter-replay' item.scheduleId %}">{% csrf_token %}
-              <button class="btn-inline" type="submit" onclick="return confirm('Re-queue this notification?')">Replay</button>
-            </form>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="5" class="helper-text">Dead-letter queue is empty.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-{% endif %}
 {% endblock %}

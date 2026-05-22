@@ -1,0 +1,10 @@
+name: review-security-boundary
+description: Review security-sensitive changes.
+steps:
+  - identify_assets
+  - identify_trust_boundaries
+  - check_auth_and_authorization
+  - check_secrets_and_logging
+  - check_kms_boundary
+  - add_or_adjust_tests
+  - report_findings

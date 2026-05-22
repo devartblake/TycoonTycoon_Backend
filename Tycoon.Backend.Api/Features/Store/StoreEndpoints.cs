@@ -428,20 +428,23 @@ namespace Tycoon.Backend.Api.Features.Store
             if (playerId == Guid.Empty)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId cannot be empty.");
 
-            var items = await db.PlayerTransactions
+            var itemChanges = await db.PlayerTransactions
                 .AsNoTracking()
                 .Where(t => t.Status == PlayerTransactionStatus.Applied
                             && t.Actors.Any(a => a.PlayerId == playerId))
                 .SelectMany(t => t.ItemChanges)
                 .Where(i => i.ItemType.StartsWith("cosmetic:", StringComparison.OrdinalIgnoreCase)
                             || i.ItemType.StartsWith("powerup:", StringComparison.OrdinalIgnoreCase))
+                .ToListAsync(ct);
+
+            var items = itemChanges
                 .GroupBy(i => i.ItemType)
                 .Select(g => new PlayerInventoryItemDto(
                     g.Key,
                     g.Sum(i => i.Operation == ItemOperation.Revoke ? -i.Quantity : i.Quantity)))
                 .Where(x => x.Quantity > 0)
                 .OrderBy(x => x.ItemType)
-                .ToListAsync(ct);
+                .ToList();
 
             return Results.Ok(new PlayerInventoryDto(playerId, items, items.Count));
         }
@@ -490,7 +493,10 @@ namespace Tycoon.Backend.Api.Features.Store
                     ? await VerifyAppleReceiptAsync(req, appleSecret!, httpClientFactory, ct)
                     : await VerifyGooglePurchaseAsync(req, googlePackage!, cfg["Iap:GoogleApiAccessToken"], httpClientFactory, ct);
 
-                if (!strictValid && cfg.GetValue("Testing:UseInMemoryDb", false))
+                if (!strictValid
+                    && cfg.GetValue("Testing:UseInMemoryDb", false)
+                    && !string.IsNullOrWhiteSpace(req.ProductId)
+                    && !string.IsNullOrWhiteSpace(req.ExternalTransactionId))
                     strictValid = true;
 
                 if (!strictValid)

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Tycoon.Backend.Api.Tests.TestHost;
 using Tycoon.Shared.Contracts.Dtos;
@@ -62,7 +63,7 @@ public sealed class AdminSkillSeedTests : IClassFixture<TycoonApiFactory>
         var r = await _admin.PostAsJsonAsync("/admin/skills/seed", req);
         r.EnsureSuccessStatusCode();
 
-        var body = await r.Content.ReadFromJsonAsync<dynamic>();
-        ((int)body!.upserted).Should().BeGreaterThanOrEqualTo(1);
+        var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("upserted").GetInt32().Should().BeGreaterThanOrEqualTo(1);
     }
 }

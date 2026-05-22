@@ -85,7 +85,7 @@ run_status() {
     wait_for_postgres
     dotnet ef migrations list \
       --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
-      --startup-project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj \
+      --startup-project Tycoon.MigrationService/Tycoon.MigrationService.csproj \
       --context AppDb
   fi
 }

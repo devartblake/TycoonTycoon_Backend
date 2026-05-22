@@ -10,8 +10,19 @@
 #   docker compose -f docker/compose.yml -f docker/compose.smoke.yml up -d
 
 services:
+  postgres:
+    healthcheck:
+      start_period: 60s
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
   migration:
     environment:
+      MigrationService__SeedSource: "${MIGRATION_SEED_SOURCE:-Auto}"
+      MigrationService__DashboardReadiness__Enabled: "${MIGRATION_DASHBOARD_READINESS_ENABLED:-true}"
+      MigrationService__DashboardReadiness__Strict: "${MIGRATION_DASHBOARD_READINESS_STRICT:-true}"
+
       # Seed a dedicated smoke-test operator account (idempotent).
       SuperAdmin__Email: "${SMOKE_ADMIN_EMAIL:-smoke-admin@synaptix.local}"
       SuperAdmin__Password: "${SMOKE_ADMIN_PASSWORD:-SmokeTest123!}"

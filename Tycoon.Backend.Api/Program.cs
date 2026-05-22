@@ -32,6 +32,8 @@ using Tycoon.Backend.Api.Features.AdminMatches;
 using Tycoon.Backend.Api.Features.AdminMedia;
 using Tycoon.Backend.Api.Features.AdminModeration;
 using Tycoon.Backend.Api.Features.AdminNotifications;
+using Tycoon.Backend.Api.Features.AppConfig;
+using Tycoon.Backend.Api.Features.Quiz;
 using Tycoon.Backend.Api.Features.AdminConfig;
 using Tycoon.Backend.Api.Features.AdminEmailAcl;
 using Tycoon.Backend.Api.Features.AdminPowerups;
@@ -95,6 +97,7 @@ using Tycoon.Backend.Application.Personalization;
 using Tycoon.Backend.Application.Analytics.Abstractions;
 using Tycoon.Backend.Application.Analytics.Writers;
 using Tycoon.Backend.Application.Auth;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.GameEvents;
 using Tycoon.Backend.Application.Guardians;
 using Tycoon.Backend.Application.Matchmaking;
@@ -111,6 +114,7 @@ using Tycoon.Shared.Observability;
 using Tycoon.Backend.Api.Grpc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Hosting;
+using Tycoon.Backend.Api.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -230,6 +234,11 @@ builder.Services.AddSwaggerGen(c =>
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? [];
+allowedOrigins = allowedOrigins
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Select(origin => origin.Trim())
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
 
 builder.Services.AddCors(options =>
 {
@@ -312,8 +321,13 @@ builder.Services.AddSingleton<ISidecarInferenceStore>(_ =>
     }
 });
 
-var signalr = builder.Services.AddSignalR();
-if (!string.IsNullOrWhiteSpace(redis))
+var signalr = builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+    });
+var useInMemoryDbForTesting = builder.Configuration.GetValue("Testing:UseInMemoryDb", false);
+if (!useInMemoryDbForTesting && !string.IsNullOrWhiteSpace(redis))
 {
     Console.WriteLine($"✅ Configuring SignalR with Redis: {redis}");
     signalr.AddStackExchangeRedis(redis);
@@ -325,7 +339,6 @@ else
 
 // Hangfire
 var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", true);
-var useInMemoryDbForTesting = builder.Configuration.GetValue("Testing:UseInMemoryDb", false);
 
 if (useInMemoryDbForTesting)
 {
@@ -415,6 +428,27 @@ builder.Services
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                if (context.Response.HasStarted)
+                    return Task.CompletedTask;
+
+                context.HandleResponse();
+                return ApiResponses.Error(
+                    StatusCodes.Status401Unauthorized,
+                    "UNAUTHORIZED",
+                    "Authentication required.").ExecuteAsync(context.HttpContext);
+            },
+            OnForbidden = context =>
+            {
+                if (context.Response.HasStarted)
+                    return Task.CompletedTask;
+
+                return ApiResponses.Error(
+                    StatusCodes.Status403Forbidden,
+                    "FORBIDDEN",
+                    "Authorization requirements not satisfied.").ExecuteAsync(context.HttpContext);
             }
         };
     });
@@ -565,11 +599,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("Frontend");
+app.UseMiddleware<AdminOpsKeyMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseWebSockets();
 app.UseRateLimiter();
-app.UseMiddleware<AdminOpsKeyMiddleware>();
+app.UseSecureChannel();
 
 // ✅ SWAGGER CONFIGURATION
 if (app.Environment.IsDevelopment())
@@ -814,7 +849,21 @@ app.Map("/ws", async context =>
 
 // app.MapControllers();
 
-// SignalR hubs
+// SignalR hubs — gated by realtime_multiplayer_enabled feature flag
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.Path.StartsWithSegments("/ws"))
+    {
+        var flags = ctx.RequestServices.GetRequiredService<FeatureFlagService>();
+        if (!await flags.IsEnabledAsync("realtime_multiplayer_enabled", ctx.RequestAborted))
+        {
+            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await ctx.Response.WriteAsJsonAsync(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } });
+            return;
+        }
+    }
+    await next(ctx);
+});
 app.MapHub<MatchHub>("/ws/match");
 app.MapHub<PresenceHub>("/ws/presence");
 app.MapHub<NotificationHub>("/ws/notify");
@@ -828,7 +877,8 @@ app.MapGrpcService<MobileMatchGrpcService>();
 // Route ownership note:
 // - /questions/* = gameplay-safe question retrieval and grading
 // - /modules/* = learning and mastery flows
-// - /quiz/* is intentionally not mapped in this backend
+// - /quiz/* = solo quiz completion and reward grant (POST /quiz/complete)
+AppConfigEndpoints.Map(app);
 AnalyticsEndpoints.Map(app);
 AuthEndpoints.Map(app);
 UsersEndpoints.Map(app);
@@ -836,6 +886,7 @@ UserFriendsEndpoints.Map(app);
 PlayerPreferencesEndpoints.Map(app);
 PlayersEndpoints.Map(app);
 MatchesEndpoints.Map(app);
+QuizEndpoints.Map(app);
 MatchmakingEndpoints.Map(app);
 MissionsEndpoints.Map(app);
 LeaderboardsEndpoints.Map(app);

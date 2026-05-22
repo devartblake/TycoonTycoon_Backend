@@ -8,10 +8,15 @@ public interface ISecurePayloadProtector
         Guid sessionId,
         byte[] plaintext,
         string contentType,
-        CancellationToken ct);
+        CancellationToken ct,
+        string? aad = null);
 
     Task<(byte[] Plaintext, string ContentType)> DecryptAsync(
         Guid sessionId,
         EncryptedPayload payload,
-        CancellationToken ct);
+        CancellationToken ct,
+        long? sequenceNumber = null,
+        string? replayNonce = null,
+        string? aad = null,
+        string? subjectId = null);
 }

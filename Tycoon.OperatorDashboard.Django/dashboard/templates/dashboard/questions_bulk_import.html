@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Bulk Import Questions{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Content</p>
+    <h1 class="page-title">Bulk import questions</h1>
+    <p class="page-subtitle">Paste a JSON array of question objects to import multiple questions at once.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'questions-queue-view' %}">Back to queue</a>
+    <a class="button secondary" href="{% url 'question-create-view' %}">+ New question</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="JSON payload" copy="Paste a JSON array. Each object must include: text, category, difficulty (1–4), options ([{id, text}]), correctOptionId. Tags, mediaKey, and status are optional." %}
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <label>
+      Questions JSON
+      <textarea name="jsonPayload" rows="20" style="font-family:monospace;font-size:0.8rem;" placeholder='[
+  {
+    "text": "What is 2 + 2?",
+    "category": "math",
+    "difficulty": 1,
+    "options": [
+      {"id": "A", "text": "3"},
+      {"id": "B", "text": "4"},
+      {"id": "C", "text": "5"},
+      {"id": "D", "text": "6"}
+    ],
+    "correctOptionId": "B",
+    "tags": ["arithmetic"],
+    "status": "Approved"
+  }
+]'></textarea>
+    </label>
+    <div class="toolbar-actions">
+      <button type="submit">Import questions</button>
+    </div>
+  </form>
+</section>
+
+{% if result %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Import result" copy="Backend response for the bulk import request." %}
+  <pre>{{ result|pprint }}</pre>
+</section>
+{% endif %}
+{% endblock %}

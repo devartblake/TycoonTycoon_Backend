@@ -3,12 +3,19 @@ using Hangfire.InMemory;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using Tycoon.Backend.Domain.Entities;
+using Tycoon.Backend.Infrastructure.Persistence;
+using Tycoon.Shared.Contracts.Dtos;
 
 namespace Tycoon.Backend.Api.Tests.TestHost
 {
     public class TycoonApiFactory : WebApplicationFactory<Program>
     {
         public const string TestAdminKey = "test-admin-ops-key";
+        private readonly string _inMemoryDatabaseName = $"tycoon-tests-{Guid.NewGuid():N}";
 
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
         {
@@ -21,6 +28,10 @@ namespace Tycoon.Backend.Api.Tests.TestHost
             // that depend on it.  The PostgreSQL storage is replaced with in-memory storage
             // below via ConfigureServices, so no real database connection is made.
             builder.UseSetting("Testing:UseInMemoryDb", "true");
+            // InMemoryDbName must be set via UseSetting (host config) so it is visible
+            // when AddInfrastructure() calls cfg["Testing:InMemoryDbName"] during service
+            // registration — ConfigureAppConfiguration additions arrive too late.
+            builder.UseSetting("Testing:InMemoryDbName", _inMemoryDatabaseName);
             // Disable the relational schema startup gate — it calls GetDbConnection() which
             // is not available on the EF Core in-memory provider used during tests.
             builder.UseSetting("SchemaGate:Enabled", "false");
@@ -31,6 +42,7 @@ namespace Tycoon.Backend.Api.Tests.TestHost
                 var dict = new Dictionary<string, string?>
                 {
                     ["Testing:UseInMemoryDb"] = "true",
+                    ["Testing:InMemoryDbName"] = _inMemoryDatabaseName,
                     ["SchemaGate:Enabled"] = "false",
                     ["SchemaGate:StartupGateEnabled"] = "false",
 
@@ -38,6 +50,8 @@ namespace Tycoon.Backend.Api.Tests.TestHost
                     ["AdminOps:Enabled"] = "true",
                     ["AdminOps:Header"] = "X-Admin-Ops-Key",
                     ["AdminOps:Key"] = TestAdminKey,
+                    ["AdminAuth:AllowTrustedBffPlainJson"] = "true",
+                    ["SecureChannel:AllowPlainJsonInTests"] = "true",
                 };
 
                 cfg.AddInMemoryCollection(dict);
@@ -65,7 +79,57 @@ namespace Tycoon.Backend.Api.Tests.TestHost
                        .UseRecommendedSerializerSettings()
                        .UseInMemoryStorage());
                 services.AddHangfireServer();
+                services.AddHostedService<TestBaselineDataSeeder>();
             });
         }
+    }
+
+    internal sealed class TestBaselineDataSeeder(IServiceProvider services) : IHostedService
+    {
+        private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await using var scope = services.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+
+            if (!await db.SkillNodes.AnyAsync(cancellationToken))
+            {
+                db.SkillNodes.AddRange(
+                    Skill("str.steady_timer", SkillBranch.Strategy, 1, "Steady Timer", "Improve timer control.", [], [new SkillCostDto(CurrencyType.Coins, 100)]),
+                    Skill("str.combo_master", SkillBranch.Strategy, 2, "Combo Master", "Improve combo scoring.", ["str.steady_timer"], [new SkillCostDto(CurrencyType.Coins, 100)]),
+                    Skill("know.quick_learner", SkillBranch.Knowledge, 1, "Quick Learner", "Improve knowledge gains.", [], [new SkillCostDto(CurrencyType.Coins, 100)]));
+            }
+
+            if (!await db.SeasonRewardRules.AnyAsync(cancellationToken))
+            {
+                db.SeasonRewardRules.AddRange(
+                    new SeasonRewardRule(tier: 1, maxTierRank: 100, xp: 100, coins: 50),
+                    new SeasonRewardRule(tier: 2, maxTierRank: 100, xp: 200, coins: 100),
+                    new SeasonRewardRule(tier: 3, maxTierRank: 100, xp: 300, coins: 150));
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        private static SkillNode Skill(
+            string key,
+            SkillBranch branch,
+            int tier,
+            string title,
+            string description,
+            IReadOnlyList<string> prereqs,
+            IReadOnlyList<SkillCostDto> costs) =>
+            new(
+                key,
+                branch,
+                tier,
+                title,
+                description,
+                JsonSerializer.Serialize(prereqs, JsonOptions),
+                JsonSerializer.Serialize(costs, JsonOptions),
+                JsonSerializer.Serialize(new Dictionary<string, double>(), JsonOptions));
     }
 }

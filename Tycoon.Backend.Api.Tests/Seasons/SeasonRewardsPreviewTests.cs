@@ -45,6 +45,7 @@ public sealed class SeasonRewardsPreviewTests : IClassFixture<TycoonApiFactory>
 
             var profile = new PlayerSeasonProfile(seasonId, playerId, initialPoints: 100);
             profile.SetRanks(tier: 1, tierRank: 10, seasonRank: 10);
+            for (var i = 0; i < 5; i++) profile.RecordRankedMatchCompleted(); // satisfy placement gate
             db.PlayerSeasonProfiles.Add(profile);
 
             await db.SaveChangesAsync();

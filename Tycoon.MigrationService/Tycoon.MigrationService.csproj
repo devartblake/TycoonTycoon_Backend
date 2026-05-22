@@ -32,4 +32,8 @@
     <ProjectReference Include="..\Tycoon.Shared.Contracts\Tycoon.Shared.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="seeds\**\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

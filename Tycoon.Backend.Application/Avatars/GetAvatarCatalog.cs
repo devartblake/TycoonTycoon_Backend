@@ -28,12 +28,13 @@ namespace Tycoon.Backend.Application.Avatars
             if (request.PlayerId.HasValue)
             {
                 var playerId = request.PlayerId.Value;
+                var avatarSkus = items.Select(i => i.Sku).ToList();
                 var owned = await _db.PlayerTransactions
                     .AsNoTracking()
                     .Where(t => t.Status == PlayerTransactionStatus.Applied
                                 && t.Actors.Any(a => a.PlayerId == playerId))
                     .SelectMany(t => t.ItemChanges)
-                    .Where(i => i.ItemType.StartsWith("avatar:"))
+                    .Where(i => avatarSkus.Contains(i.ItemType))
                     .GroupBy(i => i.ItemType)
                     .Select(g => new
                     {

@@ -51,7 +51,7 @@ public sealed class AdminEconomyRollbackTests : IClassFixture<TycoonApiFactory>
 
         resp1.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var rollback1 = await resp1.Content.ReadFromJsonAsync<EconomyTxnResultDto>();
+        var rollback1 = await resp1.Content.ReadFromJsonAsync<EconomyTxnResultDto>(TestJson.Default);
         rollback1.Should().NotBeNull();
         rollback1!.EventId.Should().NotBe(Guid.Empty);
 

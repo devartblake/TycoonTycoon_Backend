@@ -1,0 +1,21 @@
+name: review-feature-for-alpha
+description: Decide whether a feature belongs in Alpha or should be flagged/postponed.
+steps:
+  - identify_bounded_context
+  - classify_priority:
+      allowed: [P0, P1, P2, P3]
+  - check_dependencies:
+      include: [api, db, auth, docker, frontend_contract, tests]
+  - decision:
+      options:
+        - ship_now
+        - feature_flag
+        - defer
+        - remove_from_alpha_scope
+  - output:
+      format: markdown
+      include:
+        - recommendation
+        - risk
+        - test_plan
+        - rollout_notes

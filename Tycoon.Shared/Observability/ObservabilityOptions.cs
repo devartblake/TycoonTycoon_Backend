@@ -24,9 +24,14 @@ public class ObservabilityOptions
 public class ZipkinOptions
 {
     /// <summary>
-    /// Gets or sets endpoint address to receive telemetry
+    /// Gets or sets legacy Zipkin HTTP endpoint address. Kept for configuration compatibility.
     /// </summary>
     public string HttpExporterEndpoint { get; set; } = "http://localhost:9411/api/v2/spans";
+
+    /// <summary>
+    /// Gets or sets the OTLP gRPC endpoint used when Zipkin export is enabled.
+    /// </summary>
+    public string OTLPGrpcExporterEndpoint { get; set; } = "http://localhost:4317";
 }
 
 public class JaegerOptions

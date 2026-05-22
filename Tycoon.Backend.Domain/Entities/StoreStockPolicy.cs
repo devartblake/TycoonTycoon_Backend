@@ -10,7 +10,7 @@ namespace Tycoon.Backend.Domain.Entities
         /// <summary>Max units a player may buy per reset interval. 0 = unlimited.</summary>
         public int MaxQuantityPerUser { get; private set; }
 
-        /// <summary>"daily", "weekly", or "none" (no automatic reset).</summary>
+        /// <summary>"daily", "weekly", "monthly", or "none" (no automatic reset).</summary>
         public string ResetInterval { get; private set; } = "daily";
 
         public bool IsActive { get; private set; } = true;
@@ -39,8 +39,9 @@ namespace Tycoon.Backend.Domain.Entities
             var todayUtc = from.UtcDateTime.Date;
             return ResetInterval switch
             {
-                "weekly" => new DateTimeOffset(todayUtc.AddDays(7), TimeSpan.Zero),
-                _        => new DateTimeOffset(todayUtc.AddDays(1), TimeSpan.Zero)
+                "weekly"  => new DateTimeOffset(todayUtc.AddDays(7), TimeSpan.Zero),
+                "monthly" => new DateTimeOffset(todayUtc.AddMonths(1), TimeSpan.Zero),
+                _         => new DateTimeOffset(todayUtc.AddDays(1), TimeSpan.Zero),
             };
         }
     }

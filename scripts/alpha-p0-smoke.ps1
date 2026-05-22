@@ -108,7 +108,7 @@ try {
 }
 
 Write-Host "[7/8] Crypto history route health check"
-Invoke-RestMethod -Method Get -Uri "$BaseUrl/crypto/history/$playerId?page=1&pageSize=1" -Headers $headers | Out-Null
+Invoke-RestMethod -Method Get -Uri "$BaseUrl/crypto/history/${playerId}?page=1&pageSize=1" -Headers $headers | Out-Null
 
 Write-Host "[8/8] Leaderboards route health check"
 Invoke-RestMethod -Method Get -Uri "$BaseUrl/leaderboards/tiers/1?page=1&pageSize=10" | Out-Null

@@ -1,16 +1,20 @@
 using System.Security.Cryptography;
+using System.Text;
 using Synaptix.Security.Kms.Application.Abstractions;
 using Synaptix.Security.Kms.Contracts.Models;
 
 namespace Synaptix.Security.Kms.Application.Payload;
 
-public sealed class SecurePayloadService(ISessionStore store) : ISecurePayloadProtector
+public sealed class SecurePayloadService(
+    ISessionStore store,
+    IReplayProtectionStore replayProtection) : ISecurePayloadProtector
 {
     private const int NonceSizeBytes = 12;  // 96-bit nonce for AES-GCM
     private const int TagSizeBytes = 16;    // 128-bit authentication tag
+    private static readonly TimeSpan MaxClockSkew = TimeSpan.FromMinutes(5);
 
     public async Task<EncryptedPayload> EncryptAsync(
-        Guid sessionId, byte[] plaintext, string contentType, CancellationToken ct)
+        Guid sessionId, byte[] plaintext, string contentType, CancellationToken ct, string? aad = null)
     {
         var session = await RequireSessionAsync(sessionId, ct);
 
@@ -19,7 +23,7 @@ public sealed class SecurePayloadService(ISessionStore store) : ISecurePayloadPr
         var tag = new byte[TagSizeBytes];
 
         using var aes = new AesGcm(session.ServerToClientKey, TagSizeBytes);
-        aes.Encrypt(nonce, plaintext, ciphertext, tag);
+        aes.Encrypt(nonce, plaintext, ciphertext, tag, AdditionalData(aad));
 
         return new EncryptedPayload(
             Base64UrlEncode(ciphertext),
@@ -30,9 +34,18 @@ public sealed class SecurePayloadService(ISessionStore store) : ISecurePayloadPr
     }
 
     public async Task<(byte[] Plaintext, string ContentType)> DecryptAsync(
-        Guid sessionId, EncryptedPayload payload, CancellationToken ct)
+        Guid sessionId,
+        EncryptedPayload payload,
+        CancellationToken ct,
+        long? sequenceNumber = null,
+        string? replayNonce = null,
+        string? aad = null,
+        string? subjectId = null)
     {
         var session = await RequireSessionAsync(sessionId, ct);
+        ValidateSubject(session, subjectId);
+        ValidateReplayMetadata(sequenceNumber, replayNonce);
+        ValidateTimestamp(payload.EncryptedAtUtc);
 
         var ciphertext = Base64UrlDecode(payload.Ciphertext);
         var nonce = Base64UrlDecode(payload.Nonce);
@@ -40,7 +53,17 @@ public sealed class SecurePayloadService(ISessionStore store) : ISecurePayloadPr
         var plaintext = new byte[ciphertext.Length];
 
         using var aes = new AesGcm(session.ClientToServerKey, TagSizeBytes);
-        aes.Decrypt(nonce, ciphertext, tag, plaintext);
+        aes.Decrypt(nonce, ciphertext, tag, plaintext, AdditionalData(aad));
+
+        var ttl = ReplayTtl(session);
+        var accepted = await replayProtection.TryAcceptAsync(
+            sessionId,
+            sequenceNumber!.Value,
+            replayNonce!,
+            ttl,
+            ct);
+        if (!accepted)
+            throw new SecurePayloadException("replay_detected", "Secure payload sequence or replay nonce has already been used.");
 
         return (plaintext, payload.ContentType);
     }
@@ -55,6 +78,48 @@ public sealed class SecurePayloadService(ISessionStore store) : ISecurePayloadPr
 
         return session;
     }
+
+    private static void ValidateSubject(SecureSession session, string? subjectId)
+    {
+        if (!string.IsNullOrWhiteSpace(subjectId)
+            && !string.Equals(session.SubjectId, subjectId, StringComparison.Ordinal))
+        {
+            throw new SecurePayloadException("session_subject_mismatch", "Secure session subject does not match the authenticated subject.");
+        }
+    }
+
+    private static void ValidateReplayMetadata(long? sequenceNumber, string? replayNonce)
+    {
+        if (sequenceNumber is null or <= 0)
+            throw new SecurePayloadException("sequence_invalid", "A positive secure payload sequence number is required.");
+
+        if (string.IsNullOrWhiteSpace(replayNonce))
+            throw new SecurePayloadException("replay_nonce_required", "A secure payload replay nonce is required.");
+
+        if (replayNonce.Length > 256)
+            throw new SecurePayloadException("replay_nonce_invalid", "Secure payload replay nonce is too long.");
+    }
+
+    private static void ValidateTimestamp(DateTimeOffset encryptedAtUtc)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (encryptedAtUtc < now.Subtract(MaxClockSkew) || encryptedAtUtc > now.Add(MaxClockSkew))
+        {
+            throw new SecurePayloadException("payload_expired", "Secure payload timestamp is outside the allowed clock skew window.");
+        }
+    }
+
+    private static TimeSpan ReplayTtl(SecureSession session)
+    {
+        var remainingSessionTtl = session.ExpiresAtUtc - DateTimeOffset.UtcNow;
+        if (remainingSessionTtl <= TimeSpan.Zero)
+            return TimeSpan.FromSeconds(1);
+
+        return remainingSessionTtl < MaxClockSkew ? remainingSessionTtl : MaxClockSkew;
+    }
+
+    private static byte[]? AdditionalData(string? aad)
+        => string.IsNullOrEmpty(aad) ? null : Encoding.UTF8.GetBytes(aad);
 
     private static byte[] Base64UrlDecode(string input)
     {

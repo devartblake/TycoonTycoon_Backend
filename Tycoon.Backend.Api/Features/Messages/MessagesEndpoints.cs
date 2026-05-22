@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Tycoon.Backend.Api.Contracts;
+using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.Messaging;
 using Tycoon.Shared.Contracts.Dtos;
 
@@ -13,7 +15,14 @@ namespace Tycoon.Backend.Api.Features.Messages
         {
             var group = app.MapGroup("/messages")
                 .WithTags("Messages")
-                .RequireAuthorization();
+                .RequireAuthorization()
+                .AddEndpointFilter(async (ctx, next) =>
+                {
+                    var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
+                    if (!await flags.IsEnabledAsync("social_enabled", ctx.HttpContext.RequestAborted))
+                        return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
+                    return await next(ctx);
+                });
 
             group.MapGet("/conversations", GetConversations);
             group.MapPost("/conversations/direct", CreateDirectConversation);

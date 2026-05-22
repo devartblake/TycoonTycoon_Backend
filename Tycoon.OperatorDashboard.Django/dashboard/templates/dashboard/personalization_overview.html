@@ -1,0 +1,134 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Personalization Overview{% endblock %}
+
+{% block extra_head %}
+  {{ plotly_runtime }}
+{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Personalization</p>
+    <h1 class="page-title">Personalization overview</h1>
+    <p class="page-subtitle">Monitor player archetypes, risk counts, and recommendation outcomes from the unified personalization layer.</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="badge acc"><span class="dot"></span>Risk signals</span>
+    <span class="chip neutral">{{ archetypes|length }} archetypes</span>
+  </div>
+</section>
+
+{% if summary %}
+<section class="screen-kpis">
+  <article class="screen-kpi ok">
+    <span class="kpi-label">Total profiles</span>
+    <span class="kpi-val">{{ summary.totalProfiles|default:"0" }}</span>
+    <span class="kpi-delta">personalization profiles</span>
+  </article>
+  <article class="screen-kpi warn">
+    <span class="kpi-label">High churn risk</span>
+    <span class="kpi-val">{{ summary.highChurnRiskCount|default:"0" }}</span>
+    <span class="kpi-delta">needs retention review</span>
+  </article>
+  <article class="screen-kpi bad">
+    <span class="kpi-label">High frustration</span>
+    <span class="kpi-val">{{ summary.highFrustrationRiskCount|default:"0" }}</span>
+    <span class="kpi-delta">support-sensitive cohort</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Generated</span>
+    <span class="kpi-val">{{ archetypes|length }}</span>
+    <span class="kpi-delta">{{ summary.generatedAt|default:"latest backend snapshot" }}</span>
+  </article>
+</section>
+{% endif %}
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Archetypes" copy="Distribution of player mind profile archetypes." %}
+  {% if archetypes_chart %}
+  <div class="chart-panel" aria-label="Player archetype distribution chart">
+    {{ archetypes_chart }}
+  </div>
+  {% else %}
+  <div class="chart-empty">No archetype chart is available yet.</div>
+  {% endif %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Archetype</th>
+          <th>Profiles</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in archetypes %}
+        <tr>
+          <td>{{ row.archetype|default:"-" }}</td>
+          <td>{{ row.count|default:"0" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="2">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No archetype data available</strong>
+              <span>Profiles will appear after personalization events are processed.</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Recommendation performance" copy="Acceptance, dismissal, and pending counts grouped by recommendation type." %}
+  {% if performance_chart %}
+  <div class="chart-panel" aria-label="Recommendation performance chart">
+    {{ performance_chart }}
+  </div>
+  {% else %}
+  <div class="chart-empty">No recommendation performance chart is available yet.</div>
+  {% endif %}
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Total</th>
+          <th>Accepted</th>
+          <th>Dismissed</th>
+          <th>Pending</th>
+          <th>Acceptance rate</th>
+          <th>Dismissal rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in performance %}
+        <tr>
+          <td>{{ row.type|default:"-" }}</td>
+          <td>{{ row.total|default:"0" }}</td>
+          <td>{{ row.accepted|default:"0" }}</td>
+          <td>{{ row.dismissed|default:"0" }}</td>
+          <td>{{ row.pending|default:"0" }}</td>
+          <td>{{ row.acceptanceRate|default:"0" }}</td>
+          <td>{{ row.dismissalRate|default:"0" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No recommendation performance data</strong>
+              <span>Accepted, dismissed, and pending rows appear after recommendation activity.</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

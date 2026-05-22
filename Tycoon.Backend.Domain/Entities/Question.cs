@@ -90,6 +90,11 @@ namespace Tycoon.Backend.Domain.Entities
             OptionId = optionId.Trim();
             Text = text.Trim();
         }
+
+        public void UpdateText(string text)
+        {
+            Text = text.Trim();
+        }
     }
 
     public sealed class QuestionTag

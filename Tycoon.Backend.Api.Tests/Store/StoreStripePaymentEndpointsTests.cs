@@ -171,7 +171,8 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
         var transactions = db.PlayerTransactions
             .Include(t => t.Actors)
             .Include(t => t.ItemChanges)
-            .Where(t => t.Kind == "stripe-checkout-payment")
+            .Where(t => t.Kind == "stripe-checkout-payment"
+                        && t.Actors.Any(a => a.PlayerId == playerId))
             .ToList();
 
         transactions.Should().HaveCount(1);
@@ -236,6 +237,8 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+        var existing = await db.StoreItems.Where(i => i.Sku == item.Sku).ToListAsync();
+        db.StoreItems.RemoveRange(existing);
         db.StoreItems.Add(item);
         await db.SaveChangesAsync();
     }

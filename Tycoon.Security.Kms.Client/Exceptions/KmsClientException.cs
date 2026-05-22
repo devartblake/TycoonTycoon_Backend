@@ -10,7 +10,7 @@ public class KmsClientException : Exception
         StatusCode = statusCode;
     }
 
-    public KmsClientException(string message, Exception inner, int? statusCode = null)
+    public KmsClientException(string message, Exception? inner, int? statusCode = null)
         : base(message, inner)
     {
         StatusCode = statusCode;

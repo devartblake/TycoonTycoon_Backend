@@ -687,6 +687,39 @@ namespace Tycoon.Backend.Migrations.Migrations
                     b.ToTable("anti_cheat_flags", (string)null);
                 });
 
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.DailyRewardClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("ClaimDate")
+                        .HasColumnType("date")
+                        .HasColumnName("claim_date");
+
+                    b.Property<DateTimeOffset>("ClaimedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_at_utc");
+
+                    b.Property<int>("CoinsGranted")
+                        .HasColumnType("integer")
+                        .HasColumnName("coins_granted");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_daily_reward_claims");
+
+                    b.HasIndex("PlayerId", "ClaimDate")
+                        .IsUnique()
+                        .HasDatabaseName("ix_daily_reward_claims_player_id_claim_date");
+
+                    b.ToTable("daily_reward_claims", (string)null);
+                });
+
             modelBuilder.Entity("Tycoon.Backend.Domain.Entities.DirectMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4384,6 +4417,45 @@ namespace Tycoon.Backend.Migrations.Migrations
                         .HasDatabaseName("ix_votes_player_id_topic");
 
                     b.ToTable("votes", (string)null);
+                });
+
+            modelBuilder.Entity("Tycoon.Backend.Domain.Entities.WeeklyStreakState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ClaimedDaysJson")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("claimed_days_json");
+
+                    b.Property<int>("CurrentDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_day");
+
+                    b.Property<DateOnly>("CycleStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("cycle_start_date");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_weekly_streak_states");
+
+                    b.HasIndex("PlayerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_weekly_streak_states_player_id");
+
+                    b.ToTable("weekly_streak_states", (string)null);
                 });
 
             modelBuilder.Entity("Tycoon.Backend.Domain.Experiments.Experiment", b =>

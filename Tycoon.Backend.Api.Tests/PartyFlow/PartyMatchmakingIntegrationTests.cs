@@ -30,6 +30,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
         var aMate = Guid.NewGuid();
         var bLeader = Guid.NewGuid();
         var bMate = Guid.NewGuid();
+        var mode = $"ranked-{Guid.NewGuid():N}";
 
         // Friend edges are required for invites (leader -> invitee).
         await MakeFriendsAsync(aLeader, aMate);
@@ -48,7 +49,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
 
         // Enqueue Party A -> should queue
         var q1 = await _http.PostAsJsonAsync($"/party/{partyA.PartyId}/enqueue",
-            new PartyEnqueueBody(aLeader, "ranked", 1));
+            new PartyEnqueueBody(aLeader, mode, 1));
 
         q1.StatusCode.Should().Be(HttpStatusCode.Accepted);
         var qr1 = await q1.Content.ReadFromJsonAsync<PartyQueueResultDto>();
@@ -58,7 +59,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
 
         // Enqueue Party B -> should match and respond OK
         var q2 = await _http.PostAsJsonAsync($"/party/{partyB.PartyId}/enqueue",
-            new PartyEnqueueBody(bLeader, "ranked", 1));
+            new PartyEnqueueBody(bLeader, mode, 1));
 
         q2.StatusCode.Should().Be(HttpStatusCode.OK);
         var qr2 = await q2.Content.ReadFromJsonAsync<PartyQueueResultDto>();
@@ -79,6 +80,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
     {
         var leader = Guid.NewGuid();
         var mate = Guid.NewGuid();
+        var mode = $"ranked-{Guid.NewGuid():N}";
 
         await MakeFriendsAsync(leader, mate);
 
@@ -86,7 +88,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
 
         // 1st enqueue => queued
         var r1 = await _http.PostAsJsonAsync($"/party/{party.PartyId}/enqueue",
-            new PartyEnqueueBody(leader, "ranked", 1));
+            new PartyEnqueueBody(leader, mode, 1));
 
         r1.StatusCode.Should().Be(HttpStatusCode.Accepted);
         var q1 = await r1.Content.ReadFromJsonAsync<PartyQueueResultDto>();
@@ -95,7 +97,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
 
         // 2nd enqueue => still queued; should return the same queued ticket (or at least a queued ticket)
         var r2 = await _http.PostAsJsonAsync($"/party/{party.PartyId}/enqueue",
-            new PartyEnqueueBody(leader, "ranked", 1));
+            new PartyEnqueueBody(leader, mode, 1));
 
         r2.StatusCode.Should().Be(HttpStatusCode.Accepted);
         var q2 = await r2.Content.ReadFromJsonAsync<PartyQueueResultDto>();
@@ -112,6 +114,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
     {
         var leader = Guid.NewGuid();
         var mate = Guid.NewGuid();
+        var mode = $"ranked-{Guid.NewGuid():N}";
 
         await MakeFriendsAsync(leader, mate);
         var party = await CreatePartyWithMemberAsync(leader, mate);
@@ -121,7 +124,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
         set.EnsureSuccessStatusCode();
 
         var resp = await _http.PostAsJsonAsync($"/party/{party.PartyId}/enqueue",
-            new PartyEnqueueBody(leader, "ranked", 1));
+            new PartyEnqueueBody(leader, mode, 1));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await resp.HasErrorCodeAsync("FORBIDDEN");

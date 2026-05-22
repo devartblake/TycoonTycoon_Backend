@@ -1,12 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Synaptix.Security.Kms.Api.Security;
 using Synaptix.Security.Kms.Application.Abstractions;
+using Synaptix.Security.Kms.Application.Payload;
+using Synaptix.Security.Kms.Application.Sessions;
 using Synaptix.Security.Kms.Contracts.Models;
+using Synaptix.Security.Kms.Contracts.Suites;
+using System.Security.Cryptography;
 
 namespace Synaptix.Security.Kms.Api.Features.Internal;
 
 /// Internal service-to-service endpoints.
-/// All routes require a valid X-Service-Token header — not exposed to public callers.
+/// All routes require a valid X-Service-Token header and are not exposed to public callers.
 public static class InternalEndpoints
 {
     public static void Map(WebApplication app)
@@ -16,6 +20,7 @@ public static class InternalEndpoints
             .AddEndpointFilter<ServiceTokenFilter>();
 
         group.MapPost("/datakey", HandleGenerateDataKey);
+        group.MapPost("/sessions/start", HandleStartSession);
         group.MapPost("/encrypt", HandleEncrypt);
         group.MapPost("/decrypt", HandleDecrypt);
     }
@@ -36,6 +41,44 @@ public static class InternalEndpoints
         }
     }
 
+    public static async Task<IResult> HandleStartSession(
+        [FromBody] InternalStartSessionRequest body,
+        ISessionStore sessions,
+        CancellationToken ct)
+    {
+        var subjectId = string.IsNullOrWhiteSpace(body.SubjectId) ? "trusted-service" : body.SubjectId.Trim();
+        var deviceId = string.IsNullOrWhiteSpace(body.DeviceId) ? "service-bff" : body.DeviceId.Trim();
+        var sessionId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var expiresAt = now.AddMinutes(30);
+        var suite = body.SupportedSuites?.Contains(SecureSuites.ClassicalV1) == true
+            ? SecureSuites.ClassicalV1
+            : SecureSuites.ClassicalV1;
+
+        var session = new SecureSession(
+            sessionId,
+            subjectId,
+            deviceId,
+            "syn-sec-v1",
+            suite,
+            RandomNumberGenerator.GetBytes(32),
+            RandomNumberGenerator.GetBytes(32),
+            now,
+            expiresAt,
+            0L);
+
+        await sessions.SaveAsync(session, ct);
+
+        return Results.Ok(new StartSessionResult(
+            sessionId,
+            "syn-sec-v1",
+            suite,
+            "internal-service-session",
+            "internal-service-session",
+            expiresAt,
+            "internal-service-session"));
+    }
+
     private static async Task<IResult> HandleEncrypt(
         [FromBody] InternalEncryptRequest body,
         ISecurePayloadProtector protector,
@@ -44,7 +87,7 @@ public static class InternalEndpoints
         try
         {
             var result = await protector.EncryptAsync(
-                body.SessionId, body.Plaintext, body.ContentType, ct);
+                body.SessionId, body.Plaintext, body.ContentType, ct, body.Aad);
 
             return Results.Ok(result);
         }
@@ -65,12 +108,23 @@ public static class InternalEndpoints
                 body.Ciphertext, body.Nonce, body.Mac,
                 body.ContentType, body.EncryptedAtUtc);
 
-            var (plaintext, contentType) = await protector.DecryptAsync(body.SessionId, payload, ct);
+            var (plaintext, contentType) = await protector.DecryptAsync(
+                body.SessionId,
+                payload,
+                ct,
+                body.SequenceNumber,
+                body.ReplayNonce,
+                body.Aad,
+                body.SubjectId);
             return Results.Ok(new { plaintext, contentType });
         }
         catch (System.Security.Cryptography.AuthenticationTagMismatchException)
         {
             return Results.BadRequest(new { error = "authentication_failed", message = "Payload authentication tag mismatch." });
+        }
+        catch (SecurePayloadException ex)
+        {
+            return Results.BadRequest(new { error = ex.Code, message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -81,10 +135,16 @@ public static class InternalEndpoints
 
 public sealed record DataKeyRequest(string KeyName);
 
+public sealed record InternalStartSessionRequest(
+    string? SubjectId,
+    string? DeviceId,
+    IReadOnlyList<string>? SupportedSuites);
+
 public sealed record InternalEncryptRequest(
     Guid SessionId,
     byte[] Plaintext,
-    string ContentType = "application/json");
+    string ContentType = "application/json",
+    string? Aad = null);
 
 public sealed record InternalDecryptRequest(
     Guid SessionId,
@@ -92,4 +152,8 @@ public sealed record InternalDecryptRequest(
     string Nonce,
     string Mac,
     string ContentType,
-    DateTimeOffset EncryptedAtUtc);
+    DateTimeOffset EncryptedAtUtc,
+    long? SequenceNumber = null,
+    string? ReplayNonce = null,
+    string? Aad = null,
+    string? SubjectId = null);

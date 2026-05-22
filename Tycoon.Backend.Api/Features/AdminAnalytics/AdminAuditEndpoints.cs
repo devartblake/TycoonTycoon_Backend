@@ -52,6 +52,34 @@ public static class AdminAuditEndpoints
 
             return Results.Ok(new AdminNotificationHistoryResponse(items, page, pageSize, totalItems, totalPages));
         });
+
+        g.MapGet("/security/{id}", async (
+            [FromRoute] string id,
+            IAppDb db,
+            CancellationToken ct) =>
+        {
+            var row = await db.AdminNotificationHistory
+                .AsNoTracking()
+                .Where(x => x.ChannelKey == "admin_security" && x.Id == id)
+                .FirstOrDefaultAsync(ct);
+
+            if (row is null)
+            {
+                return Results.NotFound(new
+                {
+                    code = "NOT_FOUND",
+                    message = "Resource not found."
+                });
+            }
+
+            return Results.Ok(new AdminNotificationHistoryItemDto(
+                row.Id,
+                row.ChannelKey,
+                row.Title,
+                row.Status,
+                row.CreatedAt,
+                DeserializeMetadata(row.MetadataJson)));
+        });
     }
 
     private static Dictionary<string, object>? DeserializeMetadata(string? json)

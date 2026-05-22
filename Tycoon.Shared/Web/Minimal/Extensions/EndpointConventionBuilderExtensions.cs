@@ -1,6 +1,8 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
 
 namespace Tycoon.Shared.Web.Minimal.Extensions;
 
@@ -15,11 +17,10 @@ public static class EndpointConventionBuilderExtensions
         params string[] additionalContentTypes
     )
     {
-        // WithOpenApi should placed before versioning and other things - this fixed in Aps.Versioning.Http 7.0.0-preview.1
-        builder.WithOpenApi(operation =>
+        builder.AddOpenApiOperationTransformer((operation, _, _) =>
         {
-            operation.Responses[statusCode.ToString(CultureInfo.InvariantCulture)].Description = description;
-            return operation;
+            SetResponseDescription(operation, statusCode, description);
+            return Task.CompletedTask;
         });
 
         builder.Produces(
@@ -40,10 +41,10 @@ public static class EndpointConventionBuilderExtensions
         params string[] additionalContentTypes
     )
     {
-        builder.WithOpenApi(operation =>
+        builder.AddOpenApiOperationTransformer((operation, _, _) =>
         {
-            operation.Responses[statusCode.ToString(CultureInfo.InvariantCulture)].Description = description;
-            return operation;
+            SetResponseDescription(operation, statusCode, description);
+            return Task.CompletedTask;
         });
 
         builder.Produces<TResponse>(
@@ -62,10 +63,10 @@ public static class EndpointConventionBuilderExtensions
         string? contentType = null
     )
     {
-        builder.WithOpenApi(operation =>
+        builder.AddOpenApiOperationTransformer((operation, _, _) =>
         {
-            operation.Responses[statusCode.ToString(CultureInfo.InvariantCulture)].Description = description;
-            return operation;
+            SetResponseDescription(operation, statusCode, description);
+            return Task.CompletedTask;
         });
 
         builder.ProducesProblem(statusCode, contentType: contentType);
@@ -80,13 +81,22 @@ public static class EndpointConventionBuilderExtensions
         string? contentType = null
     )
     {
-        builder.WithOpenApi(operation =>
+        builder.AddOpenApiOperationTransformer((operation, _, _) =>
         {
-            operation.Responses[statusCode.ToString(CultureInfo.InvariantCulture)].Description = description;
-            return operation;
+            SetResponseDescription(operation, statusCode, description);
+            return Task.CompletedTask;
         });
         builder.ProducesValidationProblem(statusCode, contentType: contentType);
 
         return builder;
+    }
+
+    private static void SetResponseDescription(OpenApiOperation operation, int statusCode, string description)
+    {
+        var responseKey = statusCode.ToString(CultureInfo.InvariantCulture);
+        if (operation.Responses?.TryGetValue(responseKey, out var response) == true)
+        {
+            response.Description = description;
+        }
     }
 }

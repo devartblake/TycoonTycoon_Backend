@@ -1,0 +1,9 @@
+name: add-contract-tests
+description: Add backend contract tests for frontend/mobile/admin alignment.
+steps:
+  - identify_contract
+  - define_success_and_failure_cases
+  - create_test_data
+  - implement_tests
+  - run_target_test_project
+  - report_contract_shape

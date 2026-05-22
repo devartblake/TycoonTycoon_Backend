@@ -1,9 +1,7 @@
-/* Operator dashboard — progressive-enhancement layer */
+/* Operator dashboard progressive-enhancement layer. */
 
 (function () {
   'use strict';
-
-  /* ─── Table density toggle ──────────────────────────────────────────────── */
 
   var DENSITY_OPTIONS = ['standard', 'compact', 'comfortable'];
 
@@ -42,25 +40,11 @@
     });
   }
 
-  /* ─── Inline form validation ─────────────────────────────────────────────
-   *
-   * Forms decorated with data-validate="1" run client-side checks on submit.
-   * Required fields must have the `required` attribute set. An optional
-   * data-hint attribute on the input provides the error message text.
-   *
-   * Markup example:
-   *   <div class="form-field">
-   *     <label for="f-reason">Reason</label>
-   *     <input id="f-reason" name="reason" required
-   *            data-hint="A reason is required for audit purposes." />
-   *     <span class="field-error" data-error-for="f-reason"></span>
-   *   </div>
-   */
-
   function clearFieldState(input) {
     input.classList.remove('invalid', 'valid');
-    var errorEl = input.closest('.form-field')
-      ? input.closest('.form-field').querySelector('.field-error')
+    var closestField = input.closest('.form-field');
+    var errorEl = closestField
+      ? closestField.querySelector('.field-error')
       : document.querySelector('[data-error-for="' + input.id + '"]');
     if (errorEl) {
       errorEl.textContent = '';
@@ -71,8 +55,9 @@
   function markFieldInvalid(input, message) {
     input.classList.add('invalid');
     input.classList.remove('valid');
-    var errorEl = input.closest('.form-field')
-      ? input.closest('.form-field').querySelector('.field-error')
+    var closestField = input.closest('.form-field');
+    var errorEl = closestField
+      ? closestField.querySelector('.field-error')
       : (input.id ? document.querySelector('[data-error-for="' + input.id + '"]') : null);
     if (errorEl) {
       errorEl.textContent = message || 'This field is required.';
@@ -83,8 +68,9 @@
   function markFieldValid(input) {
     input.classList.add('valid');
     input.classList.remove('invalid');
-    var errorEl = input.closest('.form-field')
-      ? input.closest('.form-field').querySelector('.field-error')
+    var closestField = input.closest('.form-field');
+    var errorEl = closestField
+      ? closestField.querySelector('.field-error')
       : (input.id ? document.querySelector('[data-error-for="' + input.id + '"]') : null);
     if (errorEl) {
       errorEl.textContent = '';
@@ -98,8 +84,7 @@
       clearFieldState(input);
       var value = input.value.trim();
       if (!value) {
-        var hint = input.dataset.hint || 'This field is required.';
-        markFieldInvalid(input, hint);
+        markFieldInvalid(input, input.dataset.hint || 'This field is required.');
         valid = false;
       } else {
         markFieldValid(input);
@@ -110,7 +95,6 @@
 
   function initFormValidation() {
     document.querySelectorAll('form[data-validate]').forEach(function (form) {
-      /* Clear state on input so errors disappear as the user types */
       form.querySelectorAll('[required]').forEach(function (input) {
         input.addEventListener('input', function () {
           clearFieldState(input);
@@ -127,10 +111,102 @@
     });
   }
 
-  /* ─── Boot ───────────────────────────────────────────────────────────────── */
+  function copyText(text, button) {
+    if (!text) return;
+    function done() {
+      if (!button) return;
+      var original = button.textContent;
+      button.textContent = 'Copied';
+      window.setTimeout(function () {
+        button.textContent = original;
+      }, 1400);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function () {});
+      return;
+    }
+
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'absolute';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      done();
+    } finally {
+      document.body.removeChild(ta);
+    }
+  }
+
+  function initCopyControls() {
+    document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = document.querySelector(btn.dataset.copyTarget);
+        copyText(target ? target.textContent : '', btn);
+      });
+    });
+
+    document.querySelectorAll('.surface-note pre').forEach(function (pre, idx) {
+      var wrapper = pre.closest('.surface-note');
+      if (!wrapper || wrapper.querySelector('.copy-inline')) return;
+      wrapper.classList.add('copyable');
+      if (!pre.id) pre.id = 'copyable-payload-' + idx;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'button secondary copy-inline';
+      btn.textContent = 'Copy';
+      btn.setAttribute('data-copy-target', '#' + pre.id);
+      btn.addEventListener('click', function () {
+        copyText(pre.textContent, btn);
+      });
+      wrapper.appendChild(btn);
+    });
+  }
+
+  function mediaCategoryFor(fileName, contentType) {
+    var name = (fileName || '').toLowerCase();
+    var type = (contentType || '').toLowerCase();
+    if (type.indexOf('image/') === 0 || /\.(jpg|jpeg|png|webp|gif|avif)$/.test(name)) return 'images';
+    if (type.indexOf('audio/') === 0 || /\.(mp3|wav|ogg|aac|m4a)$/.test(name)) return 'audio';
+    if (type.indexOf('video/') === 0 || /\.(mp4|webm|mov)$/.test(name)) return 'video';
+    if (type.indexOf('model/') === 0 || /\.(glb|gltf)$/.test(name)) return '3d';
+    return 'general';
+  }
+
+  function initMediaUploadForms() {
+    document.querySelectorAll('[data-media-upload-form]').forEach(function (form) {
+      var fileInput = form.querySelector('input[type="file"][name="file"]');
+      if (!fileInput) return;
+
+      fileInput.addEventListener('change', function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        var fileName = form.querySelector('[name="fileName"]');
+        var contentType = form.querySelector('[name="contentType"]');
+        var sizeBytes = form.querySelector('[name="sizeBytes"]');
+        var bucketHint = form.querySelector('[name="bucketHint"]');
+
+        if (fileName) fileName.value = file.name;
+        if (contentType) contentType.value = file.type || 'application/octet-stream';
+        if (sizeBytes) sizeBytes.value = file.size;
+        if (bucketHint) bucketHint.value = mediaCategoryFor(file.name, file.type);
+
+        [fileName, contentType, sizeBytes].forEach(function (input) {
+          if (input) clearFieldState(input);
+        });
+      });
+    });
+  }
 
   document.addEventListener('DOMContentLoaded', function () {
     initDensityBars();
     initFormValidation();
+    initCopyControls();
+    initMediaUploadForms();
   });
 })();
