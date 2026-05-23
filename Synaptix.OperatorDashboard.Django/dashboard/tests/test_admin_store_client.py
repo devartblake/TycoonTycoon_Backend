@@ -386,7 +386,7 @@ class TestUpdateStoreItem(TestCase):
     def test_patches_correct_fields(self, mock_patch):
         mock_patch.return_value = _mock_response(200, {"id": "item-uuid", "updatedAt": "2026-05-18"})
         from dashboard.services.admin_store_client import update_store_item
-        result = update_store_item(TOKEN, "item-uuid", name="New Name", priceCoins=50)
+        update_store_item(TOKEN, "item-uuid", name="New Name", priceCoins=50)
         call_url = mock_patch.call_args[0][0]
         self.assertIn("/admin/store/catalog/item-uuid", call_url)
         _, kwargs = mock_patch.call_args
