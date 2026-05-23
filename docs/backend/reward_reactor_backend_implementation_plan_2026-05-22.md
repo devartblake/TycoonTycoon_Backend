@@ -687,6 +687,10 @@ Use this appendix to map each documented contract example to a concrete existing
 
 ## Frontend Handoff After Backend Completion
 
+Cross-repo handoff note for trivia_tycoon frontend team:
+
+- docs/handoffs/reward_reactor_frontend_handoff_trivia_tycoon_2026-05-22.md
+
 Once the above contracts are available, frontend can implement:
 
 - Reactor chain state machine and Chain Bonus banner.

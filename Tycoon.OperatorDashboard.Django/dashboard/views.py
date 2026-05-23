@@ -2288,7 +2288,7 @@ def store_catalog_detail_view(request, item_id: str):
                 sortOrder=int(sort_raw or "0"),
                 mediaKey=media_key,
             )
-            messages.success(request, f"Item updated.")
+            messages.success(request, "Item updated.")
             return redirect(reverse("store-catalog-detail", kwargs={"item_id": item_id}))
         except httpx.HTTPStatusError as ex:
             try:
