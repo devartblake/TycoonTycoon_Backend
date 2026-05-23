@@ -113,6 +113,11 @@ namespace Tycoon.Backend.Infrastructure.Persistence
         public DbSet<ModuleCompletion> ModuleCompletions => Set<ModuleCompletion>();
         public DbSet<StudySession> StudySessions => Set<StudySession>();
 
+        // Reward Reactor
+        public DbSet<RewardSession> RewardSessions => Set<RewardSession>();
+        public DbSet<RewardClaimLedger> RewardClaimLedger => Set<RewardClaimLedger>();
+        public DbSet<RewardChainTicket> RewardChainTickets => Set<RewardChainTicket>();
+
         // Personalization
         public DbSet<PlayerMindProfile> PlayerMindProfiles => Set<PlayerMindProfile>();
         public DbSet<PlayerBehaviorEvent> PlayerBehaviorEvents => Set<PlayerBehaviorEvent>();

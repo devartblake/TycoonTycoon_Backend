@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Tycoon.Backend.Application.Missions;
+using Tycoon.Backend.Application.Rewards;
 using Tycoon.Backend.Domain.Entities;
 using Tycoon.Backend.Infrastructure.Persistence;
 
@@ -18,6 +20,19 @@ public sealed class ClaimMissionHandlerTests
 
     private static Mission MakeMission(string type = "Daily", string key = "daily_play_3", int goal = 3) =>
         new(type, key, "Title", "Desc", goal, rewardXp: 50, rewardCoins: 10);
+
+    private static ClaimMissionHandler NewHandlerWithRewards(
+        AppDb db,
+        Tycoon.Backend.Application.Personalization.IPlayerMindProfileService? mindProfiles = null,
+        IReadOnlyList<string>? allowlistedKeys = null)
+        => new(
+            db,
+            mindProfiles,
+            new RewardOutcomeService(new FixedRewardRng()),
+            Options.Create(new MissionRewardOptions
+            {
+                ReactorMissionKeys = allowlistedKeys ?? []
+            }));
 
     [Fact]
     public async Task Handle_Returns_NotFound_WhenNoClaim()
@@ -228,6 +243,84 @@ public sealed class ClaimMissionHandlerTests
         result.Status.Should().Be(ClaimMissionStatus.Claimed);
     }
 
+    [Fact]
+    public async Task Handle_ReactorMission_Claimed_ReturnsReactorPayload()
+    {
+        await using var db = NewDb();
+        var mission = MakeMission(type: "Daily", key: "reactor_daily_score", goal: 3);
+        db.Missions.Add(mission);
+
+        var playerId = Guid.NewGuid();
+        var claim = new MissionClaim(playerId, mission.Id);
+        claim.AddProgress(3, mission.Goal);
+        db.MissionClaims.Add(claim);
+        await db.SaveChangesAsync();
+
+        var handler = NewHandlerWithRewards(db, allowlistedKeys: ["reactor_daily_score"]);
+        var result = await handler.Handle(new ClaimMission(playerId, mission.Id, ""), CancellationToken.None);
+
+        result.Status.Should().Be(ClaimMissionStatus.Claimed);
+        result.RewardMechanismId.Should().Be("reactor");
+        result.ReactorSpinPayload.Should().NotBeNull();
+        result.ReactorSpinPayload!.SpinId.Should().StartWith("rr_");
+        result.ReactorSpinPayload.ClaimToken.Should().NotBeNullOrWhiteSpace();
+
+        var createdSession = await db.RewardSessions
+            .SingleOrDefaultAsync(s => s.PlayerId == playerId && s.ReactorId == "mission-reactor");
+        createdSession.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Handle_ReactorMission_AlreadyClaimed_IsIdempotent_AndDoesNotCreateDuplicateSpin()
+    {
+        await using var db = NewDb();
+        var mission = MakeMission(type: "Daily", key: "reactor_daily_score", goal: 3);
+        db.Missions.Add(mission);
+
+        var playerId = Guid.NewGuid();
+        var claim = new MissionClaim(playerId, mission.Id);
+        claim.AddProgress(3, mission.Goal);
+        db.MissionClaims.Add(claim);
+        await db.SaveChangesAsync();
+
+        var handler = NewHandlerWithRewards(db, allowlistedKeys: ["reactor_daily_score"]);
+        var first = await handler.Handle(new ClaimMission(playerId, mission.Id, ""), CancellationToken.None);
+        var second = await handler.Handle(new ClaimMission(playerId, mission.Id, ""), CancellationToken.None);
+
+        first.Status.Should().Be(ClaimMissionStatus.Claimed);
+        second.Status.Should().Be(ClaimMissionStatus.AlreadyClaimed);
+        second.RewardMechanismId.Should().Be("reactor");
+        second.ReactorSpinPayload.Should().NotBeNull();
+        second.ReactorSpinPayload!.SpinId.Should().Be(first.ReactorSpinPayload!.SpinId);
+
+        var count = await db.RewardSessions.CountAsync(s => s.PlayerId == playerId && s.ReactorId == "mission-reactor");
+        count.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Handle_MissionNotInAllowlist_UsesDirectMechanism()
+    {
+        await using var db = NewDb();
+        var mission = MakeMission(type: "Daily", key: "reactor_daily_score", goal: 3);
+        db.Missions.Add(mission);
+
+        var playerId = Guid.NewGuid();
+        var claim = new MissionClaim(playerId, mission.Id);
+        claim.AddProgress(3, mission.Goal);
+        db.MissionClaims.Add(claim);
+        await db.SaveChangesAsync();
+
+        var handler = NewHandlerWithRewards(db, allowlistedKeys: []);
+        var result = await handler.Handle(new ClaimMission(playerId, mission.Id, ""), CancellationToken.None);
+
+        result.Status.Should().Be(ClaimMissionStatus.Claimed);
+        result.RewardMechanismId.Should().Be("direct");
+        result.ReactorSpinPayload.Should().BeNull();
+
+        var count = await db.RewardSessions.CountAsync(s => s.PlayerId == playerId && s.ReactorId == "mission-reactor");
+        count.Should().Be(0);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private sealed record RecordedEvent(Guid PlayerId, string EventType);
@@ -259,5 +352,10 @@ public sealed class ClaimMissionHandlerTests
 
         public Task<Tycoon.Shared.Contracts.Dtos.PlayerMindProfileDto> RecalculateAsync(Guid playerId, CancellationToken ct = default)
             => throw new InvalidOperationException("test failure");
+    }
+
+    private sealed class FixedRewardRng : IRewardRng
+    {
+        public double NextDouble() => 0.01;
     }
 }

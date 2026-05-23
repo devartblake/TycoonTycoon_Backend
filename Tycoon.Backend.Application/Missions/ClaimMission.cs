@@ -44,6 +44,36 @@ namespace Tycoon.Backend.Application.Missions
         int Goal,
 
         // Updated list returned to client
-        IReadOnlyList<MissionListItem> UpdatedMissions
+        IReadOnlyList<MissionListItem> UpdatedMissions,
+
+        // Beta reward mechanism contract additions
+        string? RewardMechanismId = null,
+        MissionReactorSpinPayload? ReactorSpinPayload = null
     );
+
+    public sealed record MissionReactorSpinPayload(
+        string SpinId,
+        string Status,
+        DateTimeOffset ExpiresAtUtc,
+        DateTimeOffset? CooldownUntilUtc,
+        MissionReactorAnimationPayload Animation,
+        MissionReactorRewardPreviewPayload RewardPreview,
+        string ClaimToken
+    );
+
+    public sealed record MissionReactorAnimationPayload(
+        string Layout,
+        string[] Symbols,
+        int[] WinningSymbolIndexes,
+        string Rarity,
+        string Intensity
+    );
+
+    public sealed record MissionReactorRewardPreviewPayload(
+        string RewardId,
+        string DisplayName,
+        IReadOnlyList<MissionReactorRewardLinePayload> Lines
+    );
+
+    public sealed record MissionReactorRewardLinePayload(string Type, int Amount);
 }

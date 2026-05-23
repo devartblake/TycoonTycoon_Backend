@@ -74,8 +74,10 @@ using Tycoon.Backend.Api.Features.Crypto;
 using Tycoon.Backend.Api.Features.Store;
 using Tycoon.Backend.Api.Features.Arcade;
 using Tycoon.Backend.Api.Features.Rewards;
+using Tycoon.Backend.Application.Rewards;
 using Tycoon.Backend.Api.Features.Spins;
 using Tycoon.Backend.Api.Features.Referrals;
+using Tycoon.Backend.Api.Features.Events;
 using Tycoon.Backend.Api.Features.GameEvents;
 using Tycoon.Backend.Api.Features.Guardians;
 using Tycoon.Backend.Api.Features.Territory;
@@ -100,6 +102,7 @@ using Tycoon.Backend.Application.Auth;
 using Tycoon.Backend.Application.Config;
 using Tycoon.Backend.Application.GameEvents;
 using Tycoon.Backend.Application.Guardians;
+using Tycoon.Backend.Application.Missions;
 using Tycoon.Backend.Application.Matchmaking;
 using Tycoon.Backend.Application.Notifications;
 using Tycoon.Backend.Application.Realtime;
@@ -147,6 +150,22 @@ builder.Services
     .BindConfiguration("JwtSettings")   // binds appsettings "JwtSettings" section
     .ValidateDataAnnotations()          // enforces [Required], [MinLength], [Range]
     .ValidateOnStart();                 // fails at startup, not first request
+
+builder.Services
+    .AddOptions<MissionRewardOptions>()
+    .BindConfiguration("RewardReactor:Missions");
+
+builder.Services
+    .AddOptions<RewardReactorRuntimeOptions>()
+    .BindConfiguration("RewardReactor");
+
+builder.Services.AddSingleton<RewardReactorRuntimeContextService>();
+
+// Reward Reactor services
+builder.Services.AddSingleton<IRewardRng, CryptoRewardRng>();
+builder.Services.AddScoped<RewardOutcomeService>();
+builder.Services.AddScoped<RewardPolicyService>();
+builder.Services.AddScoped<RewardClaimService>();
 
 // Register IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -908,6 +927,9 @@ StudySessionsEndpoints.Map(app);
 VoteEndpoints.Map(app);
 StoreEndpoints.Map(app);
 ArcadeSpinEndpoints.Map(app);
+ReactorEndpoints.Map(app);
+ActiveEventsEndpoints.Map(app);
+UserRewardsEndpoints.Map(app);
 RewardsEndpoints.Map(app);
 SpinsEndpoints.Map(app);
 AvatarEndpoints.Map(app);
