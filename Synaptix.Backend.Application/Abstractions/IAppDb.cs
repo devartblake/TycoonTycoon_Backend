@@ -93,6 +93,11 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<ModuleCompletion> ModuleCompletions { get; }
         DbSet<StudySession> StudySessions { get; }
 
+        // Reward Reactor
+        DbSet<RewardSession> RewardSessions { get; }
+        DbSet<RewardClaimLedger> RewardClaimLedger { get; }
+        DbSet<RewardChainTicket> RewardChainTickets { get; }
+
         // Personalization
         DbSet<PlayerMindProfile> PlayerMindProfiles { get; }
         DbSet<PlayerBehaviorEvent> PlayerBehaviorEvents { get; }

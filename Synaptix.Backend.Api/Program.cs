@@ -73,6 +73,7 @@ using Synaptix.Backend.Api.Features.Questions;
 using Synaptix.Backend.Api.Features.Crypto;
 using Synaptix.Backend.Api.Features.Store;
 using Synaptix.Backend.Api.Features.Arcade;
+using Synaptix.Backend.Api.Features.Events;
 using Synaptix.Backend.Api.Features.Rewards;
 using Synaptix.Backend.Api.Features.Spins;
 using Synaptix.Backend.Api.Features.Referrals;
@@ -99,6 +100,8 @@ using Synaptix.Backend.Application.Analytics.Writers;
 using Synaptix.Backend.Application.Auth;
 using Synaptix.Backend.Application.Config;
 using Synaptix.Backend.Application.GameEvents;
+using Synaptix.Backend.Application.Missions;
+using Synaptix.Backend.Application.Rewards;
 using Synaptix.Backend.Application.Guardians;
 using Synaptix.Backend.Application.Matchmaking;
 using Synaptix.Backend.Application.Notifications;
@@ -147,6 +150,22 @@ builder.Services
     .BindConfiguration("JwtSettings")   // binds appsettings "JwtSettings" section
     .ValidateDataAnnotations()          // enforces [Required], [MinLength], [Range]
     .ValidateOnStart();                 // fails at startup, not first request
+
+builder.Services
+    .AddOptions<MissionRewardOptions>()
+    .BindConfiguration("RewardReactor:Missions");
+
+builder.Services
+    .AddOptions<RewardReactorRuntimeOptions>()
+    .BindConfiguration("RewardReactor");
+
+builder.Services.AddSingleton<RewardReactorRuntimeContextService>();
+
+// Reward Reactor services
+builder.Services.AddSingleton<IRewardRng, CryptoRewardRng>();
+builder.Services.AddScoped<RewardOutcomeService>();
+builder.Services.AddScoped<RewardPolicyService>();
+builder.Services.AddScoped<RewardClaimService>();
 
 // Register IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -908,6 +927,9 @@ StudySessionsEndpoints.Map(app);
 VoteEndpoints.Map(app);
 StoreEndpoints.Map(app);
 ArcadeSpinEndpoints.Map(app);
+ReactorEndpoints.Map(app);
+ActiveEventsEndpoints.Map(app);
+UserRewardsEndpoints.Map(app);
 RewardsEndpoints.Map(app);
 SpinsEndpoints.Map(app);
 AvatarEndpoints.Map(app);
