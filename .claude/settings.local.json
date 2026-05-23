@@ -75,7 +75,8 @@
       "Bash(find \"c:\\\\Users\\\\lmxbl\" -maxdepth 4 -type d -name \"*trivia*\" 2>/dev/null)",
       "Read(//c/Users/lmxbl/**)",
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\lmxbl\\\\StudioProjects\\\\trivia_tycoon\\\\docs\" -File | Sort-Object LastWriteTime -Descending | Select-Object -First 5 Name, @{N=\"Modified\";E={$_.LastWriteTime}})",
-      "Bash(grep -E \"\\\\.cs$\")"
+      "Bash(grep -E \"\\\\.cs$\")",
+      "Bash(xargs ls -la)"
     ],
     "additionalDirectories": [
       "c:\\Users\\lmxbl\\.claude\\projects\\c--Users-lmxbl-Documents-TycoonTycoon_Backend\\memory"

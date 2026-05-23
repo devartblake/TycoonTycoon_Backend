@@ -1,6 +1,8 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-05-14 — Operator dashboard direction reconciled ✅; Django admin auth recovery ✅; Django player stock support surface ✅; migration/seed bootstrap for Django readiness ✅; CI/readiness automation for May cutover evidence ✅; evidence-capture package prepared ✅; repo verification baseline recorded ✅; Vue/Web migration backlog closed by Django supersession ✅; Personalization Django UI implemented ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅; Secure channel endpoint rollout ✅; Secure channel tests (KMS unit + filter integration) ✅; JWT placeholder key hardening ✅_
+_Last updated: 2026-05-23 — Reward Reactor frontend complete ✅; Study Hub frontend complete ✅; Crypto economy frontend complete ✅; test coverage updated to ~19.4% (240 test files / 1,239 lib files)_
+
+_Previous: 2026-05-14 — Operator dashboard direction reconciled ✅; Django admin auth recovery ✅; Django player stock support surface ✅; migration/seed bootstrap for Django readiness ✅; CI/readiness automation for May cutover evidence ✅; evidence-capture package prepared ✅; repo verification baseline recorded ✅; Vue/Web migration backlog closed by Django supersession ✅; Personalization Django UI implemented ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅; Secure channel endpoint rollout ✅; Secure channel tests (KMS unit + filter integration) ✅; JWT placeholder key hardening ✅_
 
 > This file is the canonical "what is left to do" reference.
 > For completed work, see [`docs/ALPHA_TASK_AUDIT.md`](ALPHA_TASK_AUDIT.md).
@@ -13,7 +15,7 @@ _Last updated: 2026-05-14 — Operator dashboard direction reconciled ✅; Djang
 
 | Area | Priority | Status | Blocked? |
 |------|----------|--------|----------|
-| Frontend/backend alpha handoff | High | Store, profile/social, question gameplay complete; crypto + ML remain | No |
+| Frontend/backend alpha handoff | High | Store, profile/social, questions, Study Hub, Reward Reactor, crypto complete; ML remains | No |
 | **3D Avatar purchase path (Browse → Buy → Download)** | **High** | **Complete** | **No** |
 | **Avatar handler unit tests (18 tests)** | **High** | **Complete — `Tycoon.Backend.Application.Tests/Avatars/AvatarHandlerTests.cs`** | **No** |
 | **MinIO catalog seeders (StoreItems, SkillNodes, SeasonRewards, Questions)** | **High** | **Complete** | **No** |
@@ -232,55 +234,33 @@ _Last updated: 2026-05-14 — Operator dashboard direction reconciled ✅; Djang
   - decision on whether local fallback should remain in production once backend parity is proven
   - deeper observability metrics beyond the new source banner/logging (success ratios, latency, coverage drift)
 
-### 1f. Study Hub COMPLETE ✅ — all frontend surfaces implemented
-- Backend now supports:
-  - generated category study sets
-  - generated weak-area study sets
-  - favorites-backed generated study set
-  - due-review generated study set from persisted study card state
-  - custom saved study sets
-  - resumable study sessions
-  - flashcard/self-test mode persistence
-  - explicit flashcard interaction state persistence
-- Frontend still needed:
-  - `StudyHubScreen`
-  - `/study` route scaffolding
-  - favorites review UI
-  - category / weak-area / due-review Study entry points
-  - custom-set create/edit UI
-  - flashcard session UI consuming `StudySessionDto.interactions`
-  - self-test UI consuming `StudySessionDto.answeredQuestionIds`
-  - recent-session resume wiring
-- Primary handoff:
-  - `docs/study_frontend_backend_handoff_2026-04-18.md`
+### 1f. Study Hub COMPLETE ✅ — backend and frontend fully implemented
 
-### 1d. Crypto economy player surfaces REMAINING
-- Still needed:
-- Broader player-facing wallet balance integration beyond the main menu sync
-- Transaction/history integration
-- Wallet link / withdraw UX
-- Staking and unstaking UI
-- Feature-flag strategy for staged rollout
-- Newly completed:
-  - `main_menu_screen.dart` now syncs coin/gem display from backend player wallet data during economy refresh
-  - duplicate green energy strip under the menu currency display was removed
-- Backend endpoints available for consumption:
-- `POST /crypto/link-wallet`
-- `GET /crypto/balance/{playerId}`
-- `GET /crypto/history/{playerId}`
-- `POST /crypto/withdraw`
-- `POST /crypto/stake`
-- `POST /crypto/unstake`
-- `GET /crypto/staking/{playerId}`
-- Recommended file targets:
-- `lib/core/services/crypto/crypto_service.dart`
-- `lib/core/models/crypto/`
-- `lib/game/providers/crypto_providers.dart`
-- `lib/screens/store/crypto_wallet_screen.dart`
-- `lib/screens/store/crypto_history_screen.dart`
-- `lib/screens/store/crypto_staking_screen.dart`
-- `test/core/services/crypto/`
-- `test/game/providers/crypto_providers_test.dart`
+**Frontend verified complete 2026-05-23** in `trivia_tycoon` Flutter project:
+
+- `StudyHubScreen` at `/study` route ✅
+- `/study/favorites`, `/study/weak-areas`, `/study/set/:setId`, `/study/session/:sessionId`, `/study/create`, `/study/set/:setId/edit` routes ✅
+- `StudySessionScreen` with flashcard action handling and session resume ✅
+- Custom set create/edit UI (`StudyCustomSetScreen`) ✅
+- Providers: `studySetsProvider`, `recommendedStudySetsProvider`, `activeStudySessionsProvider`, `favoritedQuestionIdsProvider` ✅
+- Full `StudySetListItem`, `StudySetDetail`, `StudyQuestion`, `StudySession`, `StudyOption` DTOs ✅
+
+Backend supports: generated category/weak-area/favorites/due-review study sets, custom saved sets, resumable sessions, flashcard/self-test mode persistence.
+
+### 1d. Crypto economy player surfaces COMPLETE ✅
+
+**Frontend verified complete 2026-05-23** in `trivia_tycoon` Flutter project:
+
+- `CryptoWalletScreen` at `/store/crypto-wallet` ✅
+- Wallet balance display via `currentUserCryptoBalanceProvider` ✅
+- Transaction history with polling via `currentUserCryptoHistoryProvider` ✅
+- Wallet link (`linkWalletProvider`), withdraw (`withdrawCryptoProvider`) ✅
+- Staking / unstaking (`stakeCryptoProvider`, `unstakeCryptoProvider`) ✅
+- Prize pool funding (`fundPrizePoolProvider`) ✅
+- 21 crypto model files in `lib/core/models/crypto/` ✅
+- `CryptoService` with all backend CRUD operations ✅
+- Feature flags: `surfacesEnabled`, `writesEnabled`, `enabledNetworkKeys` ✅
+- 11 dedicated test files (`crypto_models_test.dart`, `crypto_service_test.dart`, `crypto_wallet_screen_test.dart`, `crypto_providers_test.dart`, `crypto_address_validator_test.dart`, etc.) ✅
 
 ### 1e. ML enhancement signal consumption REMAINING
 - Still needed:
@@ -384,7 +364,7 @@ dotnet ef database update \
 
 ## 3. Phase 3 - Test Coverage Remaining Gaps
 
-**Current:** 45 test files / 1,088 source files ~= **4.1%** (target: **40%** on `lib/game/` and `lib/core/`)
+**Current:** 240 test files / 1,239 source files ~= **19.4%** (target: **40%** on `lib/game/` and `lib/core/`) — up from 4.1% baseline (45 files)
 
 ### 3a. Arcade game controllers COMPLETE
 
@@ -591,12 +571,12 @@ or use conditional imports to provide web-safe stubs.
 
 | Item | Status |
 |------|--------|
-| Alpha handoff core frontend wiring | Complete for store/profile/questions; crypto + ML remain |
+| Alpha handoff core frontend wiring | Complete for store/profile/questions, Study Hub, Reward Reactor, crypto; ML remains |
 | Zero `debugPrint` in production business logic | Done |
 | Zero `UnimplementedError` in user-facing paths | Done - intentional design-time guards documented |
 | Web startup crash (`dart:io` cascade) | Fixed - `api_service.dart` + `auth_error_messages.dart` |
 | Crash recovery tested on iOS and Android | Not yet validated on device |
-| Test coverage >= 40% on `lib/game/` and `lib/core/` | Not yet, ~4.1% currently (45 test files) |
+| Test coverage >= 40% on `lib/game/` and `lib/core/` | Not yet, ~19.4% currently (240 test files / 1,239 lib files) — progress from 4.1% baseline |
 | No critical CVEs in dependency tree | Pending `flutter pub outdated` |
 | No single Dart file exceeds 1,700 lines | Done |
 | CI pipeline enforces coverage + lint + no raw prints | Not configured |
