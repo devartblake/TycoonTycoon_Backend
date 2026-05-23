@@ -10,6 +10,8 @@ COPY Synaptix.OperatorDashboard.Django/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY Synaptix.OperatorDashboard.Django/ .
+COPY docker/entrypoint-django.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 RUN python manage.py collectstatic --noinput
 
@@ -18,4 +20,4 @@ EXPOSE 8200
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8200/healthz', timeout=5)"
 
-CMD ["gunicorn", "operator_dashboard.wsgi:application", "--bind", "0.0.0.0:8200", "--workers", "2", "--timeout", "30"]
+CMD ["/entrypoint.sh"]

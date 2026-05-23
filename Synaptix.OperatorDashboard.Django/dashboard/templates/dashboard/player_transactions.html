@@ -1,0 +1,129 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Player Transactions{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Economy</p>
+    <h1 class="page-title">Player transactions</h1>
+    <p class="page-subtitle">View transaction history for a player. Operators with economy:write can dispute or reverse individual transactions.</p>
+  </div>
+  {% if transactions %}
+  <div class="topbar-actions">
+    <span class="chip neutral">{{ transactions.total|default:"0" }} total</span>
+  </div>
+  {% endif %}
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Player lookup" copy="Enter a player UUID or handle." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="uuid or @handle" />
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="25" {% if query.pageSize == "25" %}selected{% endif %}>25</option>
+          <option value="50" {% if query.pageSize == "50" or not query.pageSize %}selected{% endif %}>50</option>
+          <option value="100" {% if query.pageSize == "100" %}selected{% endif %}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Load transactions</button>
+    </div>
+  </form>
+</section>
+
+{% if player_id %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Transactions" copy="Most-recent first." %}
+  {% if transactions %}
+  <div class="table-meta">
+    <span class="helper-text">Page {{ transactions.page|default:1 }} — {{ transactions.items|length }} of {{ transactions.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Created (UTC)</th>
+          {% if can_write %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn in transactions.items %}
+        <tr>
+          <td class="helper-text">{{ txn.id|default:"—" }}</td>
+          <td><span class="chip neutral">{{ txn.type|default:"—" }}</span></td>
+          <td>{{ txn.amount|default:"—" }}</td>
+          <td><span class="chip neutral">{{ txn.status|default:"—" }}</span></td>
+          <td>{{ txn.createdAtUtc|default:"—" }}</td>
+          {% if can_write %}
+          <td>
+            <details class="inline-action">
+              <summary class="button small secondary">Dispute</summary>
+              <form method="post" action="{% url 'player-transaction-dispute' txn.id %}" style="padding:0.5rem 0;">
+                {% csrf_token %}
+                <input type="hidden" name="playerId" value="{{ player_id }}" />
+                <label>Reason <input type="text" name="reason" placeholder="required" required /></label>
+                <div class="toolbar-actions mt-sm">
+                  <button type="submit" class="small">Confirm dispute</button>
+                </div>
+              </form>
+            </details>
+            <details class="inline-action" style="margin-left:0.5rem;">
+              <summary class="button small secondary">Reverse</summary>
+              <form method="post" action="{% url 'player-transaction-reverse' txn.id %}" style="padding:0.5rem 0;">
+                {% csrf_token %}
+                <input type="hidden" name="playerId" value="{{ player_id }}" />
+                <label>Reason <input type="text" name="reason" placeholder="required" required /></label>
+                <div class="toolbar-actions mt-sm">
+                  <button type="submit" class="small danger">Confirm reverse</button>
+                </div>
+              </form>
+            </details>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{% if can_write %}6{% else %}5{% endif %}">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No transactions found</strong>
+              <span>This player has no recorded transactions.</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if transactions.total > transactions.items|length %}
+  <div class="toolbar-actions mt-sm">
+    {% if transactions.page > 1 %}
+    <a class="button secondary small" href="?playerId={{ player_id }}&pageSize={{ query.pageSize|default:50 }}&page={{ transactions.page|add:'-1' }}">← Previous</a>
+    {% endif %}
+    <a class="button secondary small" href="?playerId={{ player_id }}&pageSize={{ query.pageSize|default:50 }}&page={{ transactions.page|add:'1' }}">Next →</a>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty">
+    <span class="empty-ico">0</span>
+    <strong>No transaction data loaded</strong>
+    <span>Check backend connectivity or permissions.</span>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

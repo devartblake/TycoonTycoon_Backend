@@ -2,7 +2,7 @@
 @attribute [Authorize]
 @inject AdminApiClient Api
 @inject AdminAuthService Auth
-@using Tycoon.OperatorDashboard.Components.Common
+@using Synaptix.OperatorDashboard.Components.Common
 
 <h1>Seasons</h1>
 
@@ -107,7 +107,7 @@ else
 @code {
     private string _tab = "Seasons";
     private bool _authFailed;
-    private Services.PagedResult<Tycoon.Shared.Contracts.Dtos.SeasonDto>? _seasons;
+    private Services.PagedResult<Synaptix.Shared.Contracts.Dtos.SeasonDto>? _seasons;
     private JsonDocument? _claims;
     private string _message = string.Empty;
     private string _rewardSeasonId = string.Empty, _rewardPlayerId = string.Empty;

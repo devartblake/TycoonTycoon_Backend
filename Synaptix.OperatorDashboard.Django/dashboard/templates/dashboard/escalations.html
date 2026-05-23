@@ -1,0 +1,78 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Escalations{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Moderation</p>
+    <h1 class="page-title">Escalations</h1>
+    <p class="page-subtitle">Run a moderation escalation pass across a player scope. Use dry-run mode to preview affected players before applying.</p>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<form method="post">
+  {% csrf_token %}
+  <section class="card mt-lg">
+    {% include "dashboard/partials/section_intro.html" with title="Run escalation" copy="Select scope and optionally enable dry-run to preview without making changes." %}
+    <div class="form-grid">
+      <label>
+        Scope
+        <select name="scope">
+          <option value="all" {% if form.scope == "all" %}selected{% endif %}>All players</option>
+          <option value="suspected" {% if form.scope == "suspected" %}selected{% endif %}>Suspected</option>
+          <option value="high-risk" {% if form.scope == "high-risk" %}selected{% endif %}>High-risk</option>
+        </select>
+      </label>
+      <div>
+        <span class="helper-text">Mode</span>
+        <label class="toggle-label" style="margin-top:6px;">
+          <span class="toggle-switch">
+            <input type="checkbox" name="dryRun" {% if form.dryRun %}checked{% endif %} />
+            <span class="toggle-slider"></span>
+          </span>
+          <span class="toggle-label-text">Dry run (preview only — no changes applied)</span>
+        </label>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      {% if can_write %}
+      <button type="submit">Run escalation</button>
+      {% else %}
+      <p class="helper-text">Read-only — you need <code>moderation:write</code> to run escalations.</p>
+      {% endif %}
+    </div>
+  </section>
+</form>
+
+{% if result %}
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Result" copy="Summary from the escalation run." %}
+  <div class="form-grid">
+    {% if result.affected is not None %}
+    <div>
+      <span class="helper-text">Affected players</span>
+      <p class="page-title" style="font-size:1.5rem;">{{ result.affected }}</p>
+    </div>
+    {% endif %}
+    {% if result.actionsApplied is not None %}
+    <div>
+      <span class="helper-text">Actions applied</span>
+      <p class="page-title" style="font-size:1.5rem;">{{ result.actionsApplied }}</p>
+    </div>
+    {% endif %}
+    {% if result.errors is not None %}
+    <div>
+      <span class="helper-text">Errors</span>
+      <p class="page-title" style="font-size:1.5rem;">{{ result.errors }}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% if result.dryRun %}
+  <p class="helper-text" style="margin-top:0.5rem;">This was a dry run — no changes were committed.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

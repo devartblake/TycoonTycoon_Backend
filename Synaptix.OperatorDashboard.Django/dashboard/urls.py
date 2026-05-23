@@ -91,6 +91,13 @@ from .views import (
     powerups_view,
     skills_view,
     matches_view,
+    feature_flags_view,
+    escalations_view,
+    player_transactions_view,
+    player_transaction_dispute,
+    player_transaction_reverse,
+    season_points_view,
+    season_points_apply,
 )
 
 urlpatterns = [
@@ -198,4 +205,15 @@ urlpatterns = [
     path("economy/skills", skills_view, name="skills-view"),
     # Matches
     path("events/matches", matches_view, name="matches-view"),
+    # Config
+    path("config/feature-flags", feature_flags_view, name="feature-flags-view"),
+    # Escalations
+    path("moderation/escalations", escalations_view, name="escalations-view"),
+    # Player Transactions
+    path("economy/player-transactions", player_transactions_view, name="player-transactions-view"),
+    path("economy/player-transactions/<str:txn_id>/dispute", player_transaction_dispute, name="player-transaction-dispute"),
+    path("economy/player-transactions/<str:txn_id>/reverse", player_transaction_reverse, name="player-transaction-reverse"),
+    # Season Points
+    path("operations/season-points", season_points_view, name="season-points-view"),
+    path("operations/season-points/apply", season_points_apply, name="season-points-apply"),
 ]

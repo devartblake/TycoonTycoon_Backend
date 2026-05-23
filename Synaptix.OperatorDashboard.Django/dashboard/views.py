@@ -1,4 +1,5 @@
 import csv
+import ipaddress
 import json
 import re
 import statistics
@@ -97,6 +98,14 @@ from .services.admin_personalization_client import (
 from .services.admin_event_queue_client import reprocess_event_queue
 from .services.admin_powerups_client import get_powerup_state, grant_powerup
 from .services.admin_skills_client import seed_skills
+from .services.admin_config_client import get_admin_config, update_feature_flags
+from .services.admin_escalation_client import run_escalation
+from .services.admin_player_transactions_client import (
+    dispute_player_transaction,
+    get_player_transaction_history,
+    reverse_player_transaction,
+)
+from .services.admin_season_points_client import apply_season_points, get_season_points_history
 from .services.admin_matches_client import get_matches
 from .services.admin_users_client import (
     ban_admin_user,
@@ -369,6 +378,41 @@ def _normalize_audit_rows(rows: list[dict] | None) -> list[dict]:
     return result
 
 
+def _is_private_ip(ip: str) -> bool:
+    try:
+        return ipaddress.ip_address(ip.split(":")[0]).is_private
+    except ValueError:
+        return True
+
+
+def _geolocate_ips(ips: list[str]) -> dict[str, dict]:
+    public = list(dict.fromkeys(ip for ip in ips if ip and ip != "-" and not _is_private_ip(ip)))[:100]
+    if not public:
+        return {}
+    try:
+        r = httpx.post(
+            "http://ip-api.com/batch",
+            json=[{"query": ip, "fields": "status,lat,lon,country,city,query"} for ip in public],
+            timeout=5.0,
+        )
+        r.raise_for_status()
+        return {
+            e["query"]: {"lat": e["lat"], "lon": e["lon"], "city": e.get("city", ""), "country": e.get("country", "")}
+            for e in r.json()
+            if e.get("status") == "success"
+        }
+    except Exception:
+        return {}
+
+
+_AUDIT_STATUS_COLOR = {
+    "success": "#22c55e",
+    "failure": "#ef4444",
+    "unauthorized": "#f59e0b",
+    "forbidden": "#a855f7",
+}
+
+
 def _normalize_moderation_rows(rows: list[dict] | None) -> list[dict]:
     return [
         {
@@ -457,6 +501,10 @@ def require_permission(permission: str):
         @wraps(view_func)
         def _wrapped(request, *args, **kwargs):
             if not _has_permission(request, permission):
+                accept = request.META.get("HTTP_ACCEPT", "")
+                if "text/html" in accept:
+                    messages.error(request, f"Access denied — you need the '{permission}' permission.")
+                    return redirect("dashboard-home")
                 return JsonResponse(
                     {"code": "FORBIDDEN", "message": f"Missing required permission: {permission}"},
                     status=403,
@@ -490,6 +538,14 @@ def _format_ago(delta_seconds: float) -> str:
     return f"{int(delta_seconds // 3600)}h ago"
 
 
+_PROBE_STATUS_COLOR = {
+    "healthy": "#22c55e",
+    "degraded": "#f59e0b",
+    "offline": "#ef4444",
+    "unknown": "#94a3b8",
+}
+
+
 def _build_probe_history_context(service_name: str, now, hours: int = 6, buckets: int = 12) -> dict:
     window_start = now - timedelta(hours=hours)
     records = list(
@@ -502,6 +558,7 @@ def _build_probe_history_context(service_name: str, now, hours: int = 6, buckets
     if not records:
         return {
             "bars": [{"status": "unknown", "label": "—"}] * buckets,
+            "chart_json": json.dumps({"labels": [], "values": [], "colors": []}),
             "uptime_pct": None,
             "degraded_since": None,
             "p95_ms": None,
@@ -511,6 +568,9 @@ def _build_probe_history_context(service_name: str, now, hours: int = 6, buckets
     # Sparkline bars: divide the window into equal buckets
     bucket_seconds = (hours * 3600) / buckets
     bars = []
+    chart_labels = []
+    chart_values = []
+    chart_colors = []
     for i in range(buckets):
         bucket_start = window_start + timedelta(seconds=i * bucket_seconds)
         bucket_end = bucket_start + timedelta(seconds=bucket_seconds)
@@ -523,7 +583,13 @@ def _build_probe_history_context(service_name: str, now, hours: int = 6, buckets
             bucket_status = "degraded"
         else:
             bucket_status = "healthy"
-        bars.append({"status": bucket_status, "label": bucket_start.strftime("%H:%M")})
+        label = bucket_start.strftime("%H:%M")
+        lats = [r["latency_ms"] for r in bucket_records if r["latency_ms"] is not None]
+        avg_lat = round(sum(lats) / len(lats)) if lats else 0
+        bars.append({"status": bucket_status, "label": label})
+        chart_labels.append(label)
+        chart_values.append(avg_lat)
+        chart_colors.append(_PROBE_STATUS_COLOR.get(bucket_status, "#94a3b8"))
 
     # Uptime %
     total = len(records)
@@ -559,6 +625,7 @@ def _build_probe_history_context(service_name: str, now, hours: int = 6, buckets
 
     return {
         "bars": bars,
+        "chart_json": json.dumps({"labels": chart_labels, "values": chart_values, "colors": chart_colors}),
         "uptime_pct": uptime_pct,
         "degraded_since": degraded_since,
         "p95_ms": p95_ms,
@@ -652,13 +719,19 @@ def dashboard_home(request):
 @operator_login_required
 def operator_health(request):
     services = list_service_statuses()
+    now = timezone.now()
     for service in services:
         _save_probe_record(service.service_name, service.status, service.latency_ms, service.detail)
+    charts = {
+        s.slug: json.loads(_build_probe_history_context(s.service_name, now)["chart_json"])
+        for s in services
+    }
     return JsonResponse(
         {
             "status": get_overall_status(services),
             "services": [service.to_dict() for service in services],
-            "generatedAt": timezone.now().isoformat(),
+            "charts": charts,
+            "generatedAt": now.isoformat(),
             "admin": request.session.get(SESSION_ADMIN_PROFILE_KEY),
         }
     )
@@ -1302,6 +1375,7 @@ def operator_audit_security_view(request):
         "total": 0,
         "preset": preset,
         "ip_filter": ip_filter,
+        "map_points_json": json.dumps([]),
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
         "audit_preset_links": [
             {"href": "?preset=login_failures_today", "label": "Login failures today"},
@@ -1318,6 +1392,26 @@ def operator_audit_security_view(request):
         context["items"] = items
         context["page"] = payload.get("page", 1)
         context["total"] = payload.get("total", len(context["items"]))
+
+        # Geolocate IPs for map overlay
+        geo = _geolocate_ips([r.get("ipAddress", "") for r in items])
+        map_points = []
+        for row in items:
+            ip = row.get("ipAddress", "")
+            if ip in geo:
+                g = geo[ip]
+                status = row.get("status", "unknown")
+                map_points.append({
+                    "lat": g["lat"],
+                    "lon": g["lon"],
+                    "label": f"{row.get('eventDisplay', '-')} ({ip})",
+                    "detail": f"{row.get('actor', '-')} · {row.get('createdDisplay', '-')}",
+                    "city": f"{g['city']}, {g['country']}".strip(", "),
+                    "status": status,
+                    "color": _AUDIT_STATUS_COLOR.get(status, "#94a3b8"),
+                })
+        context["map_points_json"] = json.dumps(map_points)
+
         if request.GET.get("format") == "csv":
             return _to_csv_response(
                 context["items"],
@@ -3938,6 +4032,68 @@ def matches_view(request):
     return render(request, "dashboard/matches.html", context)
 
 
+# ---------------------------------------------------------------------------
+# Config — feature flags
+# ---------------------------------------------------------------------------
+
+_FLAG_DEFS = [
+    # (key, label, description, group, default_on)
+    ("core_trivia_enabled",          "Core Trivia",          "Main question-and-answer gameplay loop.",               "Core",        True),
+    ("wallet_enabled",               "Wallet",               "In-game currency wallet and balance display.",           "Core",        True),
+    ("leaderboard_enabled",          "Leaderboard",          "Global and seasonal leaderboard screens.",               "Core",        True),
+    ("store_enabled",                "Store",                "Item and cosmetic store.",                               "Core",        True),
+    ("missions_enabled",             "Missions",             "Daily and weekly mission system.",                       "Core",        True),
+    ("realtime_multiplayer_enabled", "Realtime Multiplayer", "Live head-to-head matches.",                             "Competitive", False),
+    ("matchmaking_enabled",          "Matchmaking",          "Automated skill-based matchmaking.",                     "Competitive", False),
+    ("tournaments_enabled",          "Tournaments",          "Bracket and league tournaments.",                        "Competitive", False),
+    ("social_enabled",               "Social",               "Friends, parties, and chat.",                            "Competitive", False),
+    ("crypto_enabled",               "Crypto",               "Crypto wallet integration and on-chain rewards.",        "Economy",     False),
+    ("skill_tree_enabled",           "Skill Tree",           "Persistent player skill progression tree.",              "Economy",     False),
+    ("notifications_enabled",        "Notifications",        "Push notification delivery.",                            "Platform",    False),
+    ("tom_personalization_enabled",  "TOM Personalization",  "AI-driven content personalization engine.",              "Platform",    False),
+    ("experiments_enabled",          "Experiments",          "A/B experiment assignment and tracking.",                "Platform",    False),
+    ("ai_sidecar_enabled",           "AI Sidecar",           "On-device AI model inference sidecar.",                  "Platform",    False),
+    ("dev_tester_enabled",           "Dev Tester Mode",      "Bypass onboarding for accounts with the tester role.",   "Developer",   False),
+]
+
+_FLAG_GROUPS = ["Core", "Competitive", "Economy", "Platform", "Developer"]
+
+
+@operator_login_required
+def feature_flags_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    stored_flags: dict[str, bool] = {}
+
+    if request.method == "POST":
+        new_flags = {key: (request.POST.get(key) == "on") for key, *_ in _FLAG_DEFS}
+        try:
+            update_feature_flags(access_token, new_flags)
+            messages.success(request, "Feature flags saved.")
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Save failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend config endpoint.")
+        return redirect("feature-flags-view")
+
+    try:
+        config = get_admin_config(access_token)
+        stored_flags = config.get("featureFlags") or {}
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Could not load config (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend config endpoint.")
+
+    current = {key: stored_flags.get(key, default) for key, _, _, _, default in _FLAG_DEFS}
+    grouped = {g: [] for g in _FLAG_GROUPS}
+    for key, label, desc, group, _ in _FLAG_DEFS:
+        grouped[group].append({"key": key, "label": label, "description": desc, "value": current[key]})
+
+    return render(request, "dashboard/feature_flags.html", {
+        "grouped_flags": [(g, grouped[g]) for g in _FLAG_GROUPS],
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    })
+
+
 _PROBE_SLUG_TO_NAME = {
     "dotnet": ".NET API",
     "fastapi": "FastAPI Sidecar",
@@ -3960,3 +4116,190 @@ def probe_log_view(request, service_slug: str):
         "records": records,
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     })
+
+
+# ---------------------------------------------------------------------------
+# Moderation — Escalations
+# ---------------------------------------------------------------------------
+
+
+@operator_login_required
+@require_permission("moderation:read")
+def escalations_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    can_write = _has_permission(request, "moderation:write")
+    context = {
+        "result": None,
+        "form": {"scope": "all", "dryRun": True},
+        "can_write": can_write,
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    if request.method == "POST":
+        if not can_write:
+            messages.error(request, "You need moderation:write permission to run escalations.")
+            return render(request, "dashboard/escalations.html", context)
+        scope = (request.POST.get("scope") or "all").strip()
+        dry_run = request.POST.get("dryRun") == "on"
+        context["form"] = {"scope": scope, "dryRun": dry_run}
+        try:
+            result = run_escalation(access_token, scope, dry_run)
+            context["result"] = result
+            label = "Dry run" if dry_run else "Escalation"
+            messages.success(request, f"{label} complete — scope: {scope}.")
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Escalation failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend escalation endpoint.")
+    return render(request, "dashboard/escalations.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Economy — Player Transactions
+# ---------------------------------------------------------------------------
+
+
+@operator_login_required
+@require_permission("economy:read")
+def player_transactions_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    raw_id = (request.GET.get("playerId") or "").strip()
+    player_id = raw_id
+    if raw_id:
+        try:
+            uuid.UUID(raw_id)
+        except ValueError:
+            resolved = _resolve_player_id(access_token, raw_id)
+            if resolved:
+                return redirect(f"/economy/player-transactions?playerId={resolved}")
+            messages.error(request, f"Could not find a unique player matching '{raw_id}'.")
+            player_id = ""
+    params = {
+        "playerId": player_id or None,
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 50),
+    }
+    context = {
+        "player_id": player_id,
+        "transactions": None,
+        "query": {k: v for k, v in params.items() if v not in (None, "")},
+        "can_write": _has_permission(request, "economy:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    if player_id:
+        try:
+            context["transactions"] = get_player_transaction_history(access_token, params)
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Transaction history lookup failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend player-transactions endpoint.")
+    return render(request, "dashboard/player_transactions.html", context)
+
+
+@operator_login_required
+@require_permission("economy:write")
+def player_transaction_dispute(request, txn_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    reason = (request.POST.get("reason") or "").strip()
+    player_id = (request.POST.get("playerId") or "").strip()
+    if not reason:
+        messages.error(request, "Reason is required to dispute a transaction.")
+        return redirect(f"/economy/player-transactions?playerId={player_id}")
+    try:
+        dispute_player_transaction(access_token, txn_id, reason)
+        messages.success(request, f"Transaction {txn_id} disputed.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Dispute failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend player-transactions endpoint.")
+    return redirect(f"/economy/player-transactions?playerId={player_id}")
+
+
+@operator_login_required
+@require_permission("economy:write")
+def player_transaction_reverse(request, txn_id: str):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    reason = (request.POST.get("reason") or "").strip()
+    player_id = (request.POST.get("playerId") or "").strip()
+    if not reason:
+        messages.error(request, "Reason is required to reverse a transaction.")
+        return redirect(f"/economy/player-transactions?playerId={player_id}")
+    try:
+        reverse_player_transaction(access_token, txn_id, reason)
+        messages.success(request, f"Transaction {txn_id} reversed.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Reverse failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend player-transactions endpoint.")
+    return redirect(f"/economy/player-transactions?playerId={player_id}")
+
+
+# ---------------------------------------------------------------------------
+# Operations — Season Points
+# ---------------------------------------------------------------------------
+
+
+@operator_login_required
+@require_permission("seasons:read")
+def season_points_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    raw_id = (request.GET.get("playerId") or "").strip()
+    player_id = raw_id
+    if raw_id:
+        try:
+            uuid.UUID(raw_id)
+        except ValueError:
+            resolved = _resolve_player_id(access_token, raw_id)
+            if resolved:
+                return redirect(f"/operations/season-points?playerId={resolved}")
+            messages.error(request, f"Could not find a unique player matching '{raw_id}'.")
+            player_id = ""
+    params = {
+        "page": request.GET.get("page", 1),
+        "pageSize": request.GET.get("pageSize", 50),
+    }
+    context = {
+        "player_id": player_id,
+        "history": None,
+        "query": params,
+        "can_write": _has_permission(request, "seasons:write"),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    if player_id:
+        try:
+            context["history"] = get_season_points_history(access_token, player_id, params)
+        except httpx.HTTPStatusError as ex:
+            messages.error(request, f"Season points lookup failed (HTTP {ex.response.status_code}).")
+        except httpx.RequestError:
+            messages.error(request, "Unable to reach backend season-points endpoint.")
+    return render(request, "dashboard/season_points.html", context)
+
+
+@operator_login_required
+@require_permission("seasons:write")
+def season_points_apply(request):
+    if request.method != "POST":
+        return JsonResponse({"code": "METHOD_NOT_ALLOWED"}, status=405)
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    player_id = (request.POST.get("playerId") or "").strip()
+    delta_raw = (request.POST.get("delta") or "").strip()
+    reason = (request.POST.get("reason") or "").strip()
+    if not player_id or not delta_raw or not reason:
+        messages.error(request, "Player ID, delta, and reason are all required.")
+        return redirect(f"/operations/season-points?playerId={player_id}")
+    try:
+        delta = int(delta_raw)
+    except ValueError:
+        messages.error(request, "Delta must be an integer.")
+        return redirect(f"/operations/season-points?playerId={player_id}")
+    try:
+        apply_season_points(access_token, player_id, delta, reason)
+        messages.success(request, f"Applied {delta:+d} season points to player {player_id}.")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Apply failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend season-points endpoint.")
+    return redirect(f"/operations/season-points?playerId={player_id}")

@@ -62,8 +62,7 @@ var migrator = builder
 
 api.WaitFor(migrator);
 
-// Operator dashboard moved to Synaptix.OperatorDashboard.Web (Next.js).
-// Run separately: cd Synaptix.OperatorDashboard.Web && pnpm dev
+// Operator dashboard — Blazor Server (legacy Aspire host; production uses Django via Docker Compose)
 var dashboard = builder
     .AddProject("tycoon-dashboard", "../Synaptix.OperatorDashboard/Synaptix.OperatorDashboard.csproj")
     .WithReference(api)

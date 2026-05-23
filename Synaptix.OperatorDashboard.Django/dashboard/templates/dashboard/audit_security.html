@@ -2,6 +2,17 @@
 
 {% block title %}Security Audit{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  #audit-map { height: 420px; border-radius: 8px; border: 1px solid var(--border,#e2e8f0); }
+  .audit-map-legend { display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:0.5rem; font-size:0.78rem; color:var(--text-muted,#64748b); }
+  .audit-map-legend-item { display:flex; align-items:center; gap:0.35rem; }
+  .audit-map-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="topbar">
   <div>
@@ -36,6 +47,25 @@
     <span class="kpi-val">{{ page }}</span>
     <span class="kpi-delta">backend pagination</span>
   </article>
+</section>
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Geographic overview" copy="Source IPs plotted by geolocation. Private and unresolvable addresses are excluded." %}
+  <div id="audit-map"></div>
+  <div class="audit-map-legend">
+    <span class="audit-map-legend-item"><span class="audit-map-dot" style="background:#22c55e;"></span>Success</span>
+    <span class="audit-map-legend-item"><span class="audit-map-dot" style="background:#ef4444;"></span>Failure</span>
+    <span class="audit-map-legend-item"><span class="audit-map-dot" style="background:#f59e0b;"></span>Unauthorized</span>
+    <span class="audit-map-legend-item"><span class="audit-map-dot" style="background:#a855f7;"></span>Forbidden</span>
+    <span class="audit-map-legend-item"><span class="audit-map-dot" style="background:#94a3b8;"></span>Other</span>
+  </div>
+  <p class="helper-text" style="margin-top:0.5rem;">
+    {% if items %}
+      {{ items|length }} event{{ items|length|pluralize }} loaded — map shows geolocatable public IPs only.
+    {% else %}
+      No events loaded. Adjust filters and reload.
+    {% endif %}
+  </p>
 </section>
 
 <section class="card">
@@ -122,4 +152,43 @@
     </table>
   </div>
 </section>
+
+<script>
+(function () {
+  var points = {{ map_points_json }};
+  var map = L.map('audit-map', { zoomControl: true, attributionControl: true });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 18,
+  }).addTo(map);
+
+  var bounds = [];
+
+  points.forEach(function (pt) {
+    var marker = L.circleMarker([pt.lat, pt.lon], {
+      radius: 7,
+      fillColor: pt.color,
+      color: '#fff',
+      weight: 1.5,
+      opacity: 1,
+      fillOpacity: 0.85,
+    }).addTo(map);
+
+    marker.bindPopup(
+      '<strong>' + pt.label + '</strong><br>' +
+      pt.detail + '<br>' +
+      '<span style="color:#64748b;">' + (pt.city || 'Unknown location') + '</span>'
+    );
+
+    bounds.push([pt.lat, pt.lon]);
+  });
+
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [40, 40] });
+  } else {
+    map.setView([20, 0], 2);
+  }
+})();
+</script>
 {% endblock %}

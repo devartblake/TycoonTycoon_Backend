@@ -1,0 +1,126 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Season Points{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Operations</p>
+    <h1 class="page-title">Season points</h1>
+    <p class="page-subtitle">View and adjust season point totals for individual players. Positive delta adds points; negative delta deducts.</p>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<section class="card mt-lg">
+  {% include "dashboard/partials/section_intro.html" with title="Player lookup" copy="Enter a player UUID or handle." %}
+  <form method="get" class="stack">
+    <div class="form-grid">
+      <label>
+        Player ID
+        <input type="text" name="playerId" value="{{ player_id|default:'' }}" placeholder="uuid or @handle" />
+      </label>
+      <label>
+        Page size
+        <select name="pageSize">
+          <option value="25" {% if query.pageSize == "25" %}selected{% endif %}>25</option>
+          <option value="50" {% if query.pageSize == "50" or not query.pageSize %}selected{% endif %}>50</option>
+          <option value="100" {% if query.pageSize == "100" %}selected{% endif %}>100</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Load history</button>
+    </div>
+  </form>
+</section>
+
+{% if player_id and can_write %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Apply points adjustment" copy="Positive delta grants points; negative delta deducts. A reason is required for audit purposes." %}
+  <form method="post" action="{% url 'season-points-apply' %}">
+    {% csrf_token %}
+    <input type="hidden" name="playerId" value="{{ player_id }}" />
+    <div class="form-grid">
+      <label>
+        Delta
+        <input type="number" name="delta" placeholder="e.g. 500 or -100" required />
+      </label>
+      <label>
+        Reason
+        <input type="text" name="reason" placeholder="Operator note (required)" required />
+      </label>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit">Apply adjustment</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+{% if player_id %}
+<section class="card">
+  {% include "dashboard/partials/section_intro.html" with title="Point history" copy="Most-recent first." %}
+  {% if history %}
+  <div class="table-meta">
+    <span class="helper-text">Page {{ history.page|default:1 }} — {{ history.items|length }} of {{ history.total|default:0 }} records.</span>
+  </div>
+  <div class="table-wrap">
+    <table class="dense-table">
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>Delta</th>
+          <th>Running total</th>
+          <th>Reason</th>
+          <th>Created (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in history.items %}
+        <tr>
+          <td class="helper-text">{{ row.id|default:"—" }}</td>
+          <td>
+            {% if row.delta >= 0 %}
+            <span class="chip ok">+{{ row.delta }}</span>
+            {% else %}
+            <span class="chip warn">{{ row.delta }}</span>
+            {% endif %}
+          </td>
+          <td>{{ row.runningTotal|default:"—" }}</td>
+          <td>{{ row.reason|default:"—" }}</td>
+          <td>{{ row.createdAtUtc|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="empty">
+              <span class="empty-ico">0</span>
+              <strong>No history found</strong>
+              <span>This player has no season point transactions.</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if history.total > history.items|length %}
+  <div class="toolbar-actions mt-sm">
+    {% if history.page > 1 %}
+    <a class="button secondary small" href="?playerId={{ player_id }}&pageSize={{ query.pageSize|default:50 }}&page={{ history.page|add:'-1' }}">← Previous</a>
+    {% endif %}
+    <a class="button secondary small" href="?playerId={{ player_id }}&pageSize={{ query.pageSize|default:50 }}&page={{ history.page|add:'1' }}">Next →</a>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty">
+    <span class="empty-ico">0</span>
+    <strong>No season points data loaded</strong>
+    <span>Check backend connectivity or permissions.</span>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

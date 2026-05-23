@@ -21,6 +21,8 @@ public static class AdminAuthEndpoints
     [
         "users:read",
         "users:write",
+        "moderation:read",
+        "moderation:write",
         "questions:read",
         "questions:write",
         "events:read",

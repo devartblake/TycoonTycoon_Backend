@@ -267,16 +267,15 @@ services:
     command:
       - "--api.dashboard=true"
       - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=synaptix-net"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--log.level=INFO"
     ports:
       - "${TRAEFIK_HTTP_PORT:-80}:80"
       - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
       - letsencrypt:/letsencrypt
     networks: [synaptix-net]
 
@@ -452,15 +451,6 @@ services:
       migration:
         condition: service_completed_successfully
     networks: [synaptix-net]
-    labels:
-      - "traefik.enable=true"
-      # Route /api/* to the backend; strip the /api prefix before forwarding
-      - "traefik.http.routers.backend-api.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.backend-api.entrypoints=web"
-      - "traefik.http.routers.backend-api.priority=10"
-      - "traefik.http.services.backend-api.loadbalancer.server.port=5000"
-      - "traefik.http.middlewares.backend-api-strip.stripprefix.prefixes=/api"
-      - "traefik.http.routers.backend-api.middlewares=backend-api-strip"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
       interval: 30s
@@ -578,12 +568,6 @@ services:
       sidecar:
         condition: service_healthy
     networks: [synaptix-net]
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.operator-dashboard.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.operator-dashboard.entrypoints=web"
-      - "traefik.http.routers.operator-dashboard.priority=1"
-      - "traefik.http.services.operator-dashboard.loadbalancer.server.port=8200"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8200/healthz', timeout=5)"]
       interval: 30s
