@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace Tycoon.Backend.Application.Rewards;
+namespace Synaptix.Backend.Application.Rewards;
 
 public sealed class RewardReactorRuntimeOptions
 {

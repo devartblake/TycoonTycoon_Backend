@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Tycoon.Backend.Application.Abstractions;
-using Tycoon.Backend.Domain.Entities;
+using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Domain.Entities;
 
-namespace Tycoon.Backend.Application.Rewards;
+namespace Synaptix.Backend.Application.Rewards;
 
 public sealed class RewardPolicyService
 {
-    // Alpha policy constants
     private const int DailyReactorCap = 1;
     private static readonly TimeSpan ReactorCooldown = TimeSpan.FromHours(24);
     private static readonly TimeSpan ArcadeSpinCooldown = TimeSpan.FromHours(8);
@@ -48,7 +47,6 @@ public sealed class RewardPolicyService
                 "Daily reward limit reached.", resetAt);
         }
 
-        // Check cooldown from most recent pending or applied session
         var lastSession = await _db.RewardSessions
             .Where(s =>
                 s.PlayerId == playerId &&

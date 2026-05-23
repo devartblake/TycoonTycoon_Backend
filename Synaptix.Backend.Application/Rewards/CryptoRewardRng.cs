@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Tycoon.Backend.Application.Rewards;
+namespace Synaptix.Backend.Application.Rewards;
 
 public sealed class CryptoRewardRng : IRewardRng
 {

@@ -4,15 +4,15 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Tycoon.Backend.Application.Rewards;
-using Tycoon.Backend.Api.Features.Arcade;
-using Tycoon.Backend.Api.Tests.TestHost;
-using Tycoon.Backend.Domain.Entities;
-using Tycoon.Backend.Infrastructure.Persistence;
-using Tycoon.Shared.Contracts.Dtos;
+using Synaptix.Backend.Application.Rewards;
+using Synaptix.Backend.Api.Features.Arcade;
+using Synaptix.Backend.Api.Tests.TestHost;
+using Synaptix.Backend.Domain.Entities;
+using Synaptix.Backend.Infrastructure.Persistence;
+using Synaptix.Shared.Contracts.Dtos;
 using Xunit;
 
-namespace Tycoon.Backend.Api.Tests.Arcade;
+namespace Synaptix.Backend.Api.Tests.Arcade;
 
 public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
 {
@@ -288,7 +288,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         var (client, _) = await CreateAuthenticatedClient();
 
         var claimResp = await client.PostAsJsonAsync("/arcade/reactor/claim",
-            new ReactorClaimRequest("rr_nonexistent", $"claim-nonexistent", "some-token"));
+            new ReactorClaimRequest("rr_nonexistent", "claim-nonexistent", "some-token"));
 
         claimResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

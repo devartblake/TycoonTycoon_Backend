@@ -1,6 +1,5 @@
-namespace Tycoon.Backend.Application.Rewards;
+namespace Synaptix.Backend.Application.Rewards;
 
-// Alpha reward catalog for the Reactor. Only XP, coins, and diamonds for now.
 public static class ReactorRewardPool
 {
     public static readonly IReadOnlyList<RewardPoolEntry> Entries =

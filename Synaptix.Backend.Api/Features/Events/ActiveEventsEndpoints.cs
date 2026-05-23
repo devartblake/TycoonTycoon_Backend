@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Tycoon.Backend.Application.Rewards;
+using Synaptix.Backend.Application.Rewards;
 
-namespace Tycoon.Backend.Api.Features.Events;
+namespace Synaptix.Backend.Api.Features.Events;
 
 public static class ActiveEventsEndpoints
 {

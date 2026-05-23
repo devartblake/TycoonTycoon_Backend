@@ -1,4 +1,4 @@
-namespace Tycoon.Backend.Application.Rewards;
+namespace Synaptix.Backend.Application.Rewards;
 
 public interface IRewardRng
 {

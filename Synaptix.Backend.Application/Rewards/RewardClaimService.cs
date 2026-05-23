@@ -2,10 +2,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Tycoon.Backend.Application.Abstractions;
-using Tycoon.Backend.Domain.Entities;
+using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Domain.Entities;
 
-namespace Tycoon.Backend.Application.Rewards;
+namespace Synaptix.Backend.Application.Rewards;
 
 public sealed class RewardClaimService
 {
@@ -26,7 +26,6 @@ public sealed class RewardClaimService
         string? claimToken,
         CancellationToken ct)
     {
-        // Idempotency check — return prior result if this key was already processed
         var existingLedger = await _db.RewardClaimLedger
             .FirstOrDefaultAsync(l =>
                 l.PlayerId == playerId &&

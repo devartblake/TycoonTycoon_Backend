@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option csharp_namespace = "Tycoon.Backend.Api.Grpc";
+option csharp_namespace = "Synaptix.Backend.Api.Grpc";
 
 package tycoon.sidecar;
 
