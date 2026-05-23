@@ -105,7 +105,7 @@ production-complete across all layers.
 - Timeout driven by `SidecarPersonalization:TimeoutSeconds` ✅ (was hardcoded)
 
 #### 10. Sidecar FastAPI (Python)
-- `POST /personalization/score-player` ✅ — exists in `Tycoon.Sidecar/app/routers/personalization.py`
+- `POST /personalization/score-player` ✅ — exists in `Synaptix.Sidecar/app/routers/personalization.py`
 - `POST /personalization/recommendation-candidates` ✅ — exists in same file
 
 ---
@@ -116,7 +116,7 @@ production-complete across all layers.
 |---|---|
 | ❗ 1. Missing `Reason` field | ✅ Added to domain model, EF config, DTO, migration, populated from sidecar |
 | ❗ 2. Recommendation persistence flaw | ✅ `Add()` moved inside allowed-branch; blocked recs go to audit only |
-| ❗ 3. Sidecar FastAPI routes not found | ✅ Verified — routes already existed in `Tycoon.Sidecar/app/routers/personalization.py` |
+| ❗ 3. Sidecar FastAPI routes not found | ✅ Verified — routes already existed in `Synaptix.Sidecar/app/routers/personalization.py` |
 | ❗ 4. Config timeout not used | ✅ `SidecarPersonalization:TimeoutSeconds` now wired in `Program.cs` |
 | ❗ 5. DB migration not verified | ⚠️ Migration files exist and are correct; `dotnet ef database update` must run on staging/prod |
 | ❗ 6. Missing ownership validation | ✅ `IsOwner()` check on all 9 player-facing endpoints (403 on mismatch) |

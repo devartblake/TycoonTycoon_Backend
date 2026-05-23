@@ -10,27 +10,27 @@ COPY ["Directory.Build.props", "./"]
 COPY ["Directory.Packages.props", "./"]
 
 # Copy project files for dependency graph
-COPY ["Tycoon.MigrationService/Tycoon.MigrationService.csproj", "Tycoon.MigrationService/"]
-COPY ["Tycoon.Backend.Application/Tycoon.Backend.Application.csproj", "Tycoon.Backend.Application/"]
-COPY ["Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj", "Tycoon.Backend.Infrastructure/"]
-COPY ["Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj", "Tycoon.Backend.Migrations/"]
-COPY ["Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj", "Tycoon.Backend.Domain/"]
-COPY ["Tycoon.Shared/Tycoon.Shared.csproj", "Tycoon.Shared/"]
-COPY ["Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj", "Tycoon.Shared.Contracts/"]
-COPY ["Tycoon.Shared.Observability/Tycoon.Shared.Observability.csproj", "Tycoon.Shared.Observability/"]
-COPY ["Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj", "Tycoon.ServiceDefaults/"]
+COPY ["Synaptix.MigrationService/Synaptix.MigrationService.csproj", "Synaptix.MigrationService/"]
+COPY ["Synaptix.Backend.Application/Synaptix.Backend.Application.csproj", "Synaptix.Backend.Application/"]
+COPY ["Synaptix.Backend.Infrastructure/Synaptix.Backend.Infrastructure.csproj", "Synaptix.Backend.Infrastructure/"]
+COPY ["Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj", "Synaptix.Backend.Migrations/"]
+COPY ["Synaptix.Backend.Domain/Synaptix.Backend.Domain.csproj", "Synaptix.Backend.Domain/"]
+COPY ["Synaptix.Shared/Synaptix.Shared.csproj", "Synaptix.Shared/"]
+COPY ["Synaptix.Shared.Contracts/Synaptix.Shared.Contracts.csproj", "Synaptix.Shared.Contracts/"]
+COPY ["Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj", "Synaptix.Shared.Observability/"]
+COPY ["Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj", "Synaptix.ServiceDefaults/"]
 
 # Restore packages - cached layer
-RUN dotnet restore "Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+RUN dotnet restore "Synaptix.MigrationService/Synaptix.MigrationService.csproj"
 
 # Copy everything else
 COPY . .
 
 # Build and publish
-WORKDIR "/src/Tycoon.MigrationService"
-RUN dotnet build "Tycoon.MigrationService.csproj" -c ${BUILD_CONFIGURATION} --no-restore
+WORKDIR "/src/Synaptix.MigrationService"
+RUN dotnet build "Synaptix.MigrationService.csproj" -c ${BUILD_CONFIGURATION} --no-restore
 
-RUN dotnet publish "Tycoon.MigrationService.csproj" \
+RUN dotnet publish "Synaptix.MigrationService.csproj" \
     -c ${BUILD_CONFIGURATION} \
     -o /app/publish \
     /p:UseAppHost=false \
@@ -60,4 +60,4 @@ RUN groupadd --system --gid 1001 appuser && \
 
 USER appuser
 
-ENTRYPOINT ["dotnet", "Tycoon.MigrationService.dll"]
+ENTRYPOINT ["dotnet", "Synaptix.MigrationService.dll"]

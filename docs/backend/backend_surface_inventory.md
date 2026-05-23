@@ -32,7 +32,7 @@
 
 ---
 
-## 3. Vue Operator Dashboard (Tycoon.OperatorDashboard.Vue) ✅
+## 3. Vue Operator Dashboard (Synaptix.OperatorDashboard.Vue) ✅
 
 | File | Line(s) | Current Value | Target Value | Status |
 |---|---|---|---|---|

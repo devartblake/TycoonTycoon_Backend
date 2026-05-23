@@ -1,16 +1,16 @@
 <Solution>
   <Folder Name="/Backend/">
-    <Project Path="Tycoon.Backend.Api/Tycoon.Backend.Api.csproj" />
-    <Project Path="Tycoon.Backend.Application/Tycoon.Backend.Application.csproj" />
-    <Project Path="Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj" />
-    <Project Path="Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj" />
-    <Project Path="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj" />
+    <Project Path="Synaptix.Backend.Api/Synaptix.Backend.Api.csproj" />
+    <Project Path="Synaptix.Backend.Application/Synaptix.Backend.Application.csproj" />
+    <Project Path="Synaptix.Backend.Domain/Synaptix.Backend.Domain.csproj" />
+    <Project Path="Synaptix.Backend.Infrastructure/Synaptix.Backend.Infrastructure.csproj" />
+    <Project Path="Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj" />
   </Folder>
   <Folder Name="/Hosting/">
-    <Project Path="Tycoon.AppHost/Tycoon.AppHost.csproj" />
-    <Project Path="Tycoon.Hosting.Elasticsearch/Tycoon.Hosting.Elasticsearch.csproj" />
-    <Project Path="Tycoon.Hosting.Minio/Tycoon.Hosting.Minio.csproj" />
-    <Project Path="Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj" />
+    <Project Path="Synaptix.AppHost/Synaptix.AppHost.csproj" />
+    <Project Path="Synaptix.Hosting.Elasticsearch/Synaptix.Hosting.Elasticsearch.csproj" />
+    <Project Path="Synaptix.Hosting.Minio/Synaptix.Hosting.Minio.csproj" />
+    <Project Path="Synaptix.OperatorDashboard/Synaptix.OperatorDashboard.csproj" />
   </Folder>
   <Folder Name="/services/" />
   <Folder Name="/Services/Synaptix.Security.Kms/">
@@ -20,18 +20,18 @@
     <Project Path="Synaptix.Security.Kms.Infrastructure/Synaptix.Security.Kms.Infrastructure.csproj" Id="68a6f7e6-02aa-4c4b-bc62-b70e3efc3c1a" />
   </Folder>
   <Folder Name="/Shared/">
-    <Project Path="Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj" />
-    <Project Path="Tycoon.Shared.Observability/Tycoon.Shared.Observability.csproj" />
-    <Project Path="Tycoon.Shared/Tycoon.Shared.csproj" />
+    <Project Path="Synaptix.Shared.Contracts/Synaptix.Shared.Contracts.csproj" />
+    <Project Path="Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj" />
+    <Project Path="Synaptix.Shared/Synaptix.Shared.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj" />
-    <Project Path="Tycoon.Backend.Application.Tests/Tycoon.Backend.Application.Tests.csproj" />
-    <Project Path="Tycoon.Backend.Infrastructure.Tests/Tycoon.Backend.Infrastructure.Tests.csproj" />
-    <Project Path="Tycoon.MigrationService.Tests/Tycoon.MigrationService.Tests.csproj" />
+    <Project Path="Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj" />
+    <Project Path="Synaptix.Backend.Application.Tests/Synaptix.Backend.Application.Tests.csproj" />
+    <Project Path="Synaptix.Backend.Infrastructure.Tests/Synaptix.Backend.Infrastructure.Tests.csproj" />
+    <Project Path="Synaptix.MigrationService.Tests/Synaptix.MigrationService.Tests.csproj" />
     <Project Path="Synaptix.Security.Kms.Tests/Synaptix.Security.Kms.Tests.csproj" />
   </Folder>
-  <Project Path="Tycoon.MigrationService/Tycoon.MigrationService.csproj" />
-  <Project Path="Tycoon.Security.Kms.Client/Tycoon.Security.Kms.Client.csproj" />
-  <Project Path="Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj" />
+  <Project Path="Synaptix.MigrationService/Synaptix.MigrationService.csproj" />
+  <Project Path="Synaptix.Security.Kms.Client/Synaptix.Security.Kms.Client.csproj" />
+  <Project Path="Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj" />
 </Solution>

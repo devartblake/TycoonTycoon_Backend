@@ -10,28 +10,28 @@ COPY ["Directory.Packages.props", "./"]
 
 # Copy ALL project files for dependency graph (changes infrequently)
 # This allows Docker to cache the restore layer when only source code changes
-COPY ["Tycoon.Backend.Api/Tycoon.Backend.Api.csproj", "Tycoon.Backend.Api/"]
-COPY ["Tycoon.Backend.Application/Tycoon.Backend.Application.csproj", "Tycoon.Backend.Application/"]
-COPY ["Tycoon.Backend.Infrastructure/Tycoon.Backend.Infrastructure.csproj", "Tycoon.Backend.Infrastructure/"]
-COPY ["Tycoon.Backend.Domain/Tycoon.Backend.Domain.csproj", "Tycoon.Backend.Domain/"]
-COPY ["Tycoon.Shared/Tycoon.Shared.csproj", "Tycoon.Shared/"]
-COPY ["Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj", "Tycoon.Shared.Contracts/"]
-COPY ["Tycoon.Shared.Observability/Tycoon.Shared.Observability.csproj", "Tycoon.Shared.Observability/"]
-COPY ["Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj", "Tycoon.ServiceDefaults/"]
-COPY ["Tycoon.Security.Kms.Client/Tycoon.Security.Kms.Client.csproj", "Tycoon.Security.Kms.Client/"]
+COPY ["Synaptix.Backend.Api/Synaptix.Backend.Api.csproj", "Synaptix.Backend.Api/"]
+COPY ["Synaptix.Backend.Application/Synaptix.Backend.Application.csproj", "Synaptix.Backend.Application/"]
+COPY ["Synaptix.Backend.Infrastructure/Synaptix.Backend.Infrastructure.csproj", "Synaptix.Backend.Infrastructure/"]
+COPY ["Synaptix.Backend.Domain/Synaptix.Backend.Domain.csproj", "Synaptix.Backend.Domain/"]
+COPY ["Synaptix.Shared/Synaptix.Shared.csproj", "Synaptix.Shared/"]
+COPY ["Synaptix.Shared.Contracts/Synaptix.Shared.Contracts.csproj", "Synaptix.Shared.Contracts/"]
+COPY ["Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj", "Synaptix.Shared.Observability/"]
+COPY ["Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj", "Synaptix.ServiceDefaults/"]
+COPY ["Synaptix.Security.Kms.Client/Synaptix.Security.Kms.Client.csproj", "Synaptix.Security.Kms.Client/"]
 COPY ["Synaptix.Security.Kms.Contracts/Synaptix.Security.Kms.Contracts.csproj", "Synaptix.Security.Kms.Contracts/"]
 
 # Restore packages - This layer is cached unless .csproj or Directory.Packages.props changes
-RUN dotnet restore "Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+RUN dotnet restore "Synaptix.Backend.Api/Synaptix.Backend.Api.csproj"
 
 # Copy everything else (source code - changes frequently)
 COPY . .
 
 # Build and publish
-WORKDIR "/src/Tycoon.Backend.Api"
-RUN dotnet build "Tycoon.Backend.Api.csproj" -c Release --no-restore
+WORKDIR "/src/Synaptix.Backend.Api"
+RUN dotnet build "Synaptix.Backend.Api.csproj" -c Release --no-restore
 
-RUN dotnet publish "Tycoon.Backend.Api.csproj" \
+RUN dotnet publish "Synaptix.Backend.Api.csproj" \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false \
@@ -68,4 +68,4 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:5000/healthz || exit 1
 
-ENTRYPOINT ["dotnet", "Tycoon.Backend.Api.dll"]
+ENTRYPOINT ["dotnet", "Synaptix.Backend.Api.dll"]

@@ -12,12 +12,12 @@
 
 ## 1. Purpose and Contract Status
 
-This document is the source of truth for how question-related responsibilities are split across the `.NET API`, `Tycoon.Sidecar`, and mobile gRPC surfaces after backend `/quiz/*` retirement.
+This document is the source of truth for how question-related responsibilities are split across the `.NET API`, `Synaptix.Sidecar`, and mobile gRPC surfaces after backend `/quiz/*` retirement.
 
 Core decisions:
 
 - **API remains the only public contract boundary for gameplay question retrieval and grading**
-- **`Tycoon.Sidecar` remains an internal capability/orchestration service behind the API**
+- **`Synaptix.Sidecar` remains an internal capability/orchestration service behind the API**
 - **mobile gRPC remains limited to live match/session behavior**
 - **`/quiz/*` is not a supported backend contract surface**
 
@@ -36,7 +36,7 @@ Core decisions:
 | REST/API | `/study-sessions/*` | `canonical` | Supported resumable flashcard/self-test session routes |
 | REST/API | `/quiz/*` backend routes | `retired` | Not mapped in the backend API; do not assume legacy compatibility exists |
 | REST/API | question discovery/stats routes beyond `/questions/set` | `implemented` | `GET /questions/categories`, `GET /questions/metadata`, and `POST /questions/preview-set` are available |
-| `Tycoon.Sidecar` | enrichment, inference, curation helpers | `planned` | Internal-only behind API if and when profiling justifies offload |
+| `Synaptix.Sidecar` | enrichment, inference, curation helpers | `planned` | Internal-only behind API if and when profiling justifies offload |
 | mobile gRPC | live match/session streaming | `canonical` | Correct place for low-latency gameplay flows |
 | mobile gRPC | repository/discovery/training flows | `unsupported` | Do not move question discovery or module browsing here in this phase |
 
@@ -57,16 +57,16 @@ The `.NET API` owns:
 
 The API does **not** currently own a `/quiz/*` compatibility family.
 
-### `Tycoon.Sidecar` ownership
+### `Synaptix.Sidecar` ownership
 
-`Tycoon.Sidecar` owns internal support capabilities such as:
+`Synaptix.Sidecar` owns internal support capabilities such as:
 
 - difficulty estimation
 - recommendation/inference helpers
 - orchestration-heavy or compute-heavy support logic
 - internal utility processing
 
-`Tycoon.Sidecar` does **not** own:
+`Synaptix.Sidecar` does **not** own:
 
 - public question or learning contracts
 - frontend-facing compatibility policy
@@ -189,7 +189,7 @@ If the frontend still has local fallback behavior or old route names, that behav
 ### Phase 3: Internal offload
 
 1. Profile gameplay question flows.
-2. Move only worthwhile enrichment/curation work behind the API into `Tycoon.Sidecar`.
+2. Move only worthwhile enrichment/curation work behind the API into `Synaptix.Sidecar`.
 3. Keep the API responsible for public envelopes and public contract stability.
 
 ### Phase 4: Future expansion
@@ -239,7 +239,7 @@ Use a **monorepo with separate apps**:
 
 - Flutter frontend remains separate
 - `.NET API` remains separate
-- `Tycoon.Sidecar` remains separate
+- `Synaptix.Sidecar` remains separate
 - contract/tooling/docs stay coordinated in one repo
 
 ### Why not merge everything into one app
@@ -300,6 +300,6 @@ The architecture direction should be backed by:
 
 ### Platform team
 
-- keep `Tycoon.Sidecar` behind the API
+- keep `Synaptix.Sidecar` behind the API
 - keep mobile gRPC focused on live session performance paths
 - prefer explicit contract tooling over implicit compatibility

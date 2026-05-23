@@ -1,0 +1,37 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Synaptix.Backend.Domain.Entities;
+
+namespace Synaptix.Backend.Infrastructure.Persistence.Configurations
+{
+    public sealed class PlayerSeasonProfileConfiguration : IEntityTypeConfiguration<PlayerSeasonProfile>
+    {
+        public void Configure(EntityTypeBuilder<PlayerSeasonProfile> b)
+        {
+            b.ToTable("player_season_profiles");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.SeasonId).IsRequired();
+            b.Property(x => x.PlayerId).IsRequired();
+
+            b.HasIndex(x => new { x.SeasonId, x.PlayerId }).IsUnique();
+
+            b.Property(x => x.RankPoints).IsRequired();
+            b.Property(x => x.Wins).IsRequired();
+            b.Property(x => x.Losses).IsRequired();
+            b.Property(x => x.Draws).IsRequired();
+            b.Property(x => x.MatchesPlayed).IsRequired();
+
+            b.Property(x => x.Tier).IsRequired();
+            b.Property(x => x.TierRank).IsRequired();
+            b.Property(x => x.SeasonRank).IsRequired();
+
+            b.Property(x => x.UpdatedAtUtc).IsRequired();
+
+            // Helpful indexes for leadeboard/tier queries
+            b.HasIndex(x => new { x.SeasonId, x.RankPoints });
+            b.HasIndex(x => new {x.SeasonId, x.SeasonRank });
+            b.HasIndex(x => new { x.SeasonId, x.Tier, x.TierRank });
+        }
+    }
+}

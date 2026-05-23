@@ -292,7 +292,7 @@ Recommended tick-loop behavior:
 
 The backend already exposes realtime infrastructure through SignalR hubs (`/ws/match`, `/ws/presence`, `/ws/notify`) and a raw WebSocket presence endpoint (`/ws`). These endpoints are primarily player/mobile-facing today.
 
-`Tycoon.OperatorDashboard.Django` should remain the canonical operator UI, but it should not assume all dashboard data needs full push-based realtime delivery. Most operator views are administrative, auditable, and permission-gated, so near-realtime freshness is usually safer and simpler than persistent browser subscriptions.
+`Synaptix.OperatorDashboard.Django` should remain the canonical operator UI, but it should not assume all dashboard data needs full push-based realtime delivery. Most operator views are administrative, auditable, and permission-gated, so near-realtime freshness is usually safer and simpler than persistent browser subscriptions.
 
 Recommended strategy:
 

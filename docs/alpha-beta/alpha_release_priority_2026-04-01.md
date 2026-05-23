@@ -32,8 +32,8 @@ Release target: 2026-04-02 00:00 UTC
    - Impact: weaker production diagnosability and UX during failures.
 
 ### Medium/low priority (safe to defer if alpha scope is backend + release stability)
-- Vuetify/layout/scss TODOs in `Tycoon.OperatorDashboard.Vue` (mostly design-system cleanup or upstream issue references).
-- Formatter research TODO in `Tycoon.OperatorDashboard.Vue/src/@core/utils/formatters.ts`.
+- Vuetify/layout/scss TODOs in `Synaptix.OperatorDashboard.Vue` (mostly design-system cleanup or upstream issue references).
+- Formatter research TODO in `Synaptix.OperatorDashboard.Vue/src/@core/utils/formatters.ts`.
 
 ## Cross-comparison docs status (as of 2026-04-01)
 

@@ -485,7 +485,7 @@ It does **not** perform:
 ### Primary targets
 - Swagger/OpenAPI configuration
 - `Tycoon.OperatorDashboard/...`
-- `Tycoon.OperatorDashboard.Vue/...`
+- `Synaptix.OperatorDashboard.Vue/...`
 - `Tycoon.OperatorDashboard.Web/...`
 - backend docs headings that operators or implementation AIs use directly
 

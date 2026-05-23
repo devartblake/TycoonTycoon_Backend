@@ -78,7 +78,7 @@ jobs:
       - name: Test
         run: |
           mkdir -p TestResults
-          dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults/build-test-results.trx"
+          dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults/build-test-results.trx"
 
       - name: Upload build test results
         if: always()
@@ -156,7 +156,7 @@ jobs:
           )
           for f in "${filters[@]}"; do
             echo "=== Running tests for filter: $f ==="
-            dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~${f}" --logger "trx;LogFileName=TestResults/${f}.trx" || exit_code=1
+            dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~${f}" --logger "trx;LogFileName=TestResults/${f}.trx" || exit_code=1
           done
           if [[ $exit_code -ne 0 ]]; then
             echo "One or more security contract tests failed."
@@ -212,14 +212,14 @@ jobs:
           mkdir -p artifacts/migrations
           dotnet ef migrations script \
             --idempotent \
-            --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
-            --startup-project Tycoon.MigrationService/Tycoon.MigrationService.csproj \
+            --project Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj \
+            --startup-project Synaptix.MigrationService/Synaptix.MigrationService.csproj \
             --output artifacts/migrations/idempotent.sql \
             --no-build
 
       - name: Generate migration manifest
         run: |
-          echo "{\"release\":\"alpha-beta-2026\",\"generatedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"scriptFile\":\"idempotent.sql\",\"migrationProject\":\"Tycoon.Backend.Migrations\"}" \
+          echo "{\"release\":\"alpha-beta-2026\",\"generatedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"scriptFile\":\"idempotent.sql\",\"migrationProject\":\"Synaptix.Backend.Migrations\"}" \
             > artifacts/migrations/migration-manifest.json
 
       - name: Upload migration artifacts
@@ -289,7 +289,7 @@ jobs:
 
       - name: Run personalization guardrail and sidecar tests
         run: |
-          dotnet test Tycoon.Backend.Application.Tests/Tycoon.Backend.Application.Tests.csproj \
+          dotnet test Synaptix.Backend.Application.Tests/Synaptix.Backend.Application.Tests.csproj \
             --configuration Release --no-build \
             --filter "FullyQualifiedName~Personalization" \
             --verbosity normal \
@@ -335,7 +335,7 @@ jobs:
 
       - name: Run gRPC-focused test suites
         run: |
-          dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~SidecarGrpcServiceTests"
-          dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~SidecarInferenceStoreTests"
-          dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~MobileMatchGrpcServiceTests"
-          dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~MobileMatchSessionTests"
+          dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~SidecarGrpcServiceTests"
+          dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~SidecarInferenceStoreTests"
+          dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~MobileMatchGrpcServiceTests"
+          dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~MobileMatchSessionTests"

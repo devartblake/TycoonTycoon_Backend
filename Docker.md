@@ -33,7 +33,7 @@ TycoonTycoon_Backend/
 ├─ Tycoon.Backend.Api/
 ├─ Tycoon.MigrationService/
 ├─ Tycoon.OperatorDashboard/
-└─ Tycoon.Sidecar/
+└─ Synaptix.Sidecar/
 ```
 
 This keeps Docker concerns isolated and avoids polluting the solution root.

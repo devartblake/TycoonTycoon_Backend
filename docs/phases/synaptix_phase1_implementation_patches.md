@@ -58,7 +58,7 @@ This phase should **not** change:
 ### Backend-visible surfaces
 - `Tycoon.Backend.Api/Program.cs` or Swagger config location
 - `Tycoon.OperatorDashboard/...`
-- `Tycoon.OperatorDashboard.Vue/...`
+- `Synaptix.OperatorDashboard.Vue/...`
 - product-facing docs headings only
 
 ---

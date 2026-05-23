@@ -1,6 +1,6 @@
-# Tycoon.OperatorDashboard → Tycoon.OperatorDashboard.Vue Migration Plan (Historical — Superseded)
+# Tycoon.OperatorDashboard → Synaptix.OperatorDashboard.Vue Migration Plan (Historical — Superseded)
 
-> **Status as of 2026-05-12:** Superseded by `Tycoon.OperatorDashboard.Django`.
+> **Status as of 2026-05-12:** Superseded by `Synaptix.OperatorDashboard.Django`.
 >
 > This document is preserved for migration history only. It is not an active delivery plan.
 
@@ -25,7 +25,7 @@ That work should not be resumed for the current operator-dashboard cutover.
 
 Use the Django dashboard and associated cutover docs instead:
 
-- `Tycoon.OperatorDashboard.Django` — canonical operator dashboard.
+- `Synaptix.OperatorDashboard.Django` — canonical operator dashboard.
 - `README.md` — current project status.
 - `docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md` — parity and release gates.
 - `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md` — staging validation checklist.

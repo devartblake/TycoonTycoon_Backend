@@ -2,11 +2,11 @@
 
 > **Status as of 2026-05-12:** Superseded by the Django operator dashboard.
 >
-> This Vue + ASP.NET Web BFF migration plan is retained only as historical context. Do not use it as an active backlog, and do not add new operator workflows to `Tycoon.OperatorDashboard.Vue` or `Tycoon.OperatorDashboard.Web`.
+> This Vue + ASP.NET Web BFF migration plan is retained only as historical context. Do not use it as an active backlog, and do not add new operator workflows to `Synaptix.OperatorDashboard.Vue` or `Tycoon.OperatorDashboard.Web`.
 
 ## Current decision
 
-`Tycoon.OperatorDashboard.Django` is the canonical Operator Dashboard for all operator/admin roles. Role separation must be implemented through Django-backed RBAC and permission scopes, not by splitting super-admin and operator workflows across different frontend stacks.
+`Synaptix.OperatorDashboard.Django` is the canonical Operator Dashboard for all operator/admin roles. Role separation must be implemented through Django-backed RBAC and permission scopes, not by splitting super-admin and operator workflows across different frontend stacks.
 
 ## Why this plan was closed
 
@@ -29,7 +29,7 @@ Use these documents for active work instead:
 
 The retired plan was to move the Blazor dashboard into:
 
-- `Tycoon.OperatorDashboard.Vue` for the frontend UI.
+- `Synaptix.OperatorDashboard.Vue` for the frontend UI.
 - `Tycoon.OperatorDashboard.Web` for the API facade and auth/session layer.
 
 That approach is no longer active. Any remaining work items from the old plan should be treated as closed-by-supersession, not incomplete implementation tasks.

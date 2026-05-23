@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" />
+    <PackageReference Include="Aspire.Hosting.MongoDB" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" />
+    <PackageReference Include="Aspire.Hosting.Redis" />
+    <PackageReference Include="Humanizer.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Synaptix.Backend.Api\Synaptix.Backend.Api.csproj" />
+    <ProjectReference Include="..\Synaptix.Hosting.Elasticsearch\Synaptix.Hosting.Elasticsearch.csproj" />
+    <ProjectReference Include="..\Synaptix.Hosting.Minio\Synaptix.Hosting.Minio.csproj" />
+    <ProjectReference Include="..\Synaptix.MigrationService\Synaptix.MigrationService.csproj" />
+  </ItemGroup>
+
+</Project>

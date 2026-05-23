@@ -1,6 +1,6 @@
 # Operator Dashboard Migration and Seed Bootstrap
 
-`Tycoon.OperatorDashboard.Django` does not run backend database migrations directly. The dashboard depends on the backend API, and the backend API depends on the one-shot `migration` service completing successfully.
+`Synaptix.OperatorDashboard.Django` does not run backend database migrations directly. The dashboard depends on the backend API, and the backend API depends on the one-shot `migration` service completing successfully.
 
 ## Dev Bootstrap
 

@@ -17,7 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Synaptix.Security.Kms.Application\Synaptix.Security.Kms.Application.csproj" />
     <ProjectReference Include="..\Synaptix.Security.Kms.Infrastructure\Synaptix.Security.Kms.Infrastructure.csproj" />
-    <ProjectReference Include="..\Tycoon.ServiceDefaults\Tycoon.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Synaptix.ServiceDefaults\Synaptix.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

@@ -174,7 +174,7 @@ All notable changes to this project.
 
 ### Skipped / N/A
 
-- Gap #3 (Sidecar FastAPI routes) — routes `POST /personalization/score-player` and `POST /personalization/recommendation-candidates` already exist in `Tycoon.Sidecar/app/routers/personalization.py`.
+- Gap #3 (Sidecar FastAPI routes) — routes `POST /personalization/score-player` and `POST /personalization/recommendation-candidates` already exist in `Synaptix.Sidecar/app/routers/personalization.py`.
 - Gap #5 (DB migrations) — migration files exist; `dotnet ef database update` must be run against staging/production.
 - Gap #7 (`.WithOpenApi()`) — intentionally removed in the .NET 10 upgrade session; deprecated (`ASPDEPR002`) in ASP.NET Core 10.
 
@@ -253,7 +253,7 @@ All notable changes to this project.
 - **Django Wave C — Notifications** — `admin_notifications_client.py`, views (list, send, dead-letter/replay), URL patterns, `notifications.html` template.
 - **Django Wave C — Event Queue** — `admin_event_queue_client.py`, views (view, reprocess), URL patterns, `event_queue.html` template (intentional: upload endpoint not exposed — API-only card added).
 - **Django base.html nav** — Events, Security, Notifications, Event Queue groups added to sidebar.
-- **Vue/Web deprecated** — `DEPRECATED.md` added to both `Tycoon.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web`.
+- **Vue/Web deprecated** — `DEPRECATED.md` added to both `Synaptix.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web`.
 - **Avatar handler tests** — 18 xUnit tests in `Tycoon.Backend.Application.Tests/Avatars/AvatarHandlerTests.cs` covering `GetAvatarCatalog` (7), `PurchaseAvatar` (6), `GetAvatarAsset` (5). Correct seeding via `EconomyService.ApplyAsync` and `PlayerTransaction.MarkApplied()`.
 - **Pending migrations SQL** — `docs/pending_migrations_2026-04-29.sql`: idempotent PostgreSQL DDL for all 6 pending EF migrations (`AddStoreItemAvatarFields`, `AddSeasonRewardRules`, `AddStoreStockSystem`, `AddFlashSale`, `AddRewardClaimRule`, `AddEffectiveMaxQuantity`). Wrapped in `BEGIN/COMMIT`. Safe to re-run.
 - **Staging parallel-run runbook** — `docs/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`: 14 surface checklists (Django vs Blazor), avatar API curl tests, pass/fail/rollback criteria, sign-off table.
@@ -702,7 +702,7 @@ All notable changes to this project.
 - `Economy.razor`: Wallet labels "Coins" → "Credits", "XP" → "Neural XP"
 - `Economy.razor`: Grant currency dropdown "Coins" → "Credits", "XP" → "Neural XP"
 
-**Vue Operator Dashboard** (`Tycoon.OperatorDashboard.Vue/`):
+**Vue Operator Dashboard** (`Synaptix.OperatorDashboard.Vue/`):
 - `economy.vue`: Table headers "XP" → "Neural XP", "Coins" → "Credits"
 - `economy.vue`: Form labels "XP Delta" → "Neural XP Delta", "Coins Delta" → "Credits Delta"
 - `economy.vue`: Transaction/rollback balance messages updated
@@ -808,7 +808,7 @@ All notable changes to this project.
 - Sidebar brand: "Tycoon Ops" → "Synaptix Command"
 - Dashboard API-unreachable banner: "tycoon-api" → "synaptix-api"
 
-**Vue Operator Dashboard** (`Tycoon.OperatorDashboard.Vue/`):
+**Vue Operator Dashboard** (`Synaptix.OperatorDashboard.Vue/`):
 - HTML title: "Materio - Vuetify Vuejs Admin Template" → "Synaptix Command"
 - Nav header: "Tycoon Ops" → "Synaptix Command"
 
@@ -2364,10 +2364,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -2456,10 +2456,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -2550,10 +2550,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -2646,10 +2646,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -2743,10 +2743,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -2841,10 +2841,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -2941,10 +2941,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -3042,10 +3042,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -3144,10 +3144,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -3247,10 +3247,10 @@ All notable changes to this project.
 ## [2026-04-04] Operator Dashboard Migration Progress (Wave A Foundations)
 
 - Added Vue Wave A shared API client conventions:
-  - `Tycoon.OperatorDashboard.Vue/src/lib/apiClient.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/dashboard.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/auditLog.js`
-  - `Tycoon.OperatorDashboard.Vue/src/api/users.js`
+  - `Synaptix.OperatorDashboard.Vue/src/lib/apiClient.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/dashboard.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/auditLog.js`
+  - `Synaptix.OperatorDashboard.Vue/src/api/users.js`
 - Upgraded Vue Wave A views (`DashboardView`, `AuditLogView`, `UsersView`) from static placeholders to API-backed loading/error/data states.
 - Wired Vue router guard to `/api/me` session bootstrap (`src/lib/session.js`) instead of hardcoded permissions.
 - Expanded Web BFF bootstrap with:
@@ -3429,7 +3429,7 @@ Adds two new services to the solution:
 - Registered in `Tycoon.AppHost` with Aspire service discovery (`WithReference(api)`)
 - Docker: `docker/Dockerfile.dashboard`, exposed on port `8200`
 
-### `Tycoon.Sidecar` — FastAPI Python service
+### `Synaptix.Sidecar` — FastAPI Python service
 - `/ml` — match quality scoring, churn risk prediction, question difficulty estimation
 - `/analytics` — season KPIs, event funnel, D1/D7/D30 retention (wire up Motor/Elasticsearch)
 - `/webhooks` — Stripe payments, generic signed webhooks, push notification proxy

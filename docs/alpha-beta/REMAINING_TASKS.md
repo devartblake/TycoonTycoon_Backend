@@ -50,9 +50,9 @@ _Last updated: 2026-05-14 — Operator dashboard direction reconciled ✅; Djang
 
 ## Operator Dashboard Direction — 2026-05-12 Decision
 
-- `Tycoon.OperatorDashboard.Django` is the canonical Operator Dashboard for all operator/admin roles.
+- `Synaptix.OperatorDashboard.Django` is the canonical Operator Dashboard for all operator/admin roles.
 - Super-admin, admin, support, moderation, economy, audit, and read-only access must be separated with Django RBAC/permission scopes, not by splitting users across Django and Vue/Web.
-- `Tycoon.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web` are deprecated migration experiments. Do not add new workflows there.
+- `Synaptix.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web` are deprecated migration experiments. Do not add new workflows there.
 - Active cutover work is now limited to external release gates: apply pending EF migrations, complete the staging parallel-run, capture operator sign-off, then decommission Blazor after the rollback window.
 - Post-cutover product work remains in Django; personalization admin UI, player stock support workflows, and the first operational investigation workbench are implemented.
 - Migration and seed bootstrap is handled by `Tycoon.MigrationService`; see [`docs/OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md`](OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md).

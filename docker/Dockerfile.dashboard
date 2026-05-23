@@ -10,21 +10,21 @@ COPY ["Directory.Packages.props", "./"]
 COPY ["global.json", "./"]
 
 # Copy project files for restore layer caching
-COPY ["Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj", "Tycoon.OperatorDashboard/"]
-COPY ["Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj", "Tycoon.ServiceDefaults/"]
-COPY ["Tycoon.Shared.Contracts/Tycoon.Shared.Contracts.csproj", "Tycoon.Shared.Contracts/"]
-COPY ["Tycoon.Shared/Tycoon.Shared.csproj", "Tycoon.Shared/"]
+COPY ["Synaptix.OperatorDashboard/Synaptix.OperatorDashboard.csproj", "Synaptix.OperatorDashboard/"]
+COPY ["Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj", "Synaptix.ServiceDefaults/"]
+COPY ["Synaptix.Shared.Contracts/Synaptix.Shared.Contracts.csproj", "Synaptix.Shared.Contracts/"]
+COPY ["Synaptix.Shared/Synaptix.Shared.csproj", "Synaptix.Shared/"]
 
-RUN dotnet restore "Tycoon.OperatorDashboard/Tycoon.OperatorDashboard.csproj"
+RUN dotnet restore "Synaptix.OperatorDashboard/Synaptix.OperatorDashboard.csproj"
 
 # Copy everything else (source code - changes frequently)
 COPY . .
 
 # Build and publish
-WORKDIR "/src/Tycoon.OperatorDashboard"
-RUN dotnet build "Tycoon.OperatorDashboard.csproj" -c Release --no-restore
+WORKDIR "/src/Synaptix.OperatorDashboard"
+RUN dotnet build "Synaptix.OperatorDashboard.csproj" -c Release --no-restore
 
-RUN dotnet publish "Tycoon.OperatorDashboard.csproj" \
+RUN dotnet publish "Synaptix.OperatorDashboard.csproj" \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false \
@@ -48,4 +48,4 @@ EXPOSE 8200
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:8200 || exit 1
 
-ENTRYPOINT ["dotnet", "Tycoon.OperatorDashboard.dll"]
+ENTRYPOINT ["dotnet", "Synaptix.OperatorDashboard.dll"]

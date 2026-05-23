@@ -5,7 +5,7 @@
 This runbook covers incidents affecting the Django-based `operator-dashboard` service and its required dependencies:
 
 - `backend-api` (`Tycoon.Backend.Api`)
-- `sidecar` (`Tycoon.Sidecar`)
+- `sidecar` (`Synaptix.Sidecar`)
 - `minio`
 
 ## Primary Health Checks

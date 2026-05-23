@@ -2,7 +2,7 @@
 
 ## Executive Status
 
-The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired as the default `operator-dashboard` in Docker Compose. It currently provides:
+The new `Synaptix.OperatorDashboard.Django` service is now containerized and wired as the default `operator-dashboard` in Docker Compose. It currently provides:
 
 - a web UI status page (`/`)
 - service aggregation endpoint (`/api/operator/health`)
@@ -100,7 +100,7 @@ The new `Tycoon.OperatorDashboard.Django` service is now containerized and wired
 ## Execution Update — April 7, 2026
 
 - ✅ Fixed Sidecar Docker build pathing so `generate_grpc.sh` is executed from a stable workspace location during image build.
-- ✅ Verified local gRPC stub generation script execution (`bash Tycoon.Sidecar/generate_grpc.sh`).
+- ✅ Verified local gRPC stub generation script execution (`bash Synaptix.Sidecar/generate_grpc.sh`).
 - ✅ Added governance controls for team-shared saved views (archive + ownership transfer + audit events).
 - ✅ Added parity checklist doc (`docs/OPERATOR_DASHBOARD_PARITY_CHECKLIST.md`).
 - ✅ Added drill checklist doc (`docs/OPERATOR_DASHBOARD_DRILL_CHECKLIST.md`).

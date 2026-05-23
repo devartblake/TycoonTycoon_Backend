@@ -4,7 +4,7 @@
 Implement the requested **energy/lives economy**, **mode balancing**, **anti-frustration safeguards**, and **automation flows** across:
 
 - `Tycoon.Backend.Api` + application/domain/infrastructure projects (authoritative game rules)
-- `Tycoon.Sidecar` (FastAPI automation, adaptive analytics, rule suggestions)
+- `Synaptix.Sidecar` (FastAPI automation, adaptive analytics, rule suggestions)
 - `Tycoon.OperatorDashboard` (operator controls + visibility)
 
 ## 1) Target Launch Baseline (authoritative defaults)
@@ -87,7 +87,7 @@ Introduce an application service, e.g. `IGameBalancePolicyService`, that:
 
 All callers (mobile endpoints, jobs, sidecar callbacks) must use this service.
 
-## 3) Tycoon.Sidecar Automation Plan (FastAPI)
+## 3) Synaptix.Sidecar Automation Plan (FastAPI)
 
 Use sidecar for **automation/orchestration**, while .NET remains source of truth.
 
