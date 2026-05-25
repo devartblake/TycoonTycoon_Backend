@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Players;
@@ -27,6 +28,11 @@ namespace Synaptix.Backend.Api.Features.Players
                 return Results.Created($"/players/{p.Id}",
                     new PlayerDto(p.Id, p.Username, p.CountryCode, p.Level, p.Xp));
             });
+
+            // Must be registered before /{id:guid} to avoid route ambiguity
+            g.MapGet("/me", GetOrCreateMyPlayer)
+                .WithName("GetMyPlayer")
+                .RequireAuthorization();
 
             g.MapGet("/{id:guid}", async (Guid id, IMediator mediator, CancellationToken ct) =>
             {
@@ -105,6 +111,37 @@ namespace Synaptix.Backend.Api.Features.Players
                 AvgScore: Math.Round(stats.AvgScore, 1),
                 AvgAnswerTimeMs: Math.Round(stats.AvgAnswerTimeMs, 1)
             ));
+        }
+
+        private static async Task<IResult> GetOrCreateMyPlayer(
+            HttpContext httpContext,
+            AppDb db,
+            CancellationToken ct)
+        {
+            var claim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)
+                        ?? httpContext.User.FindFirst("sub");
+
+            if (claim is null || !Guid.TryParse(claim.Value, out var userId) || userId == Guid.Empty)
+                return Results.Unauthorized();
+
+            var user = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId, ct);
+
+            if (user is null)
+                return Results.Unauthorized();
+
+            var player = await db.Players
+                .FirstOrDefaultAsync(p => p.Username == user.Handle, ct);
+
+            if (player is null)
+            {
+                player = new Player(user.Handle, user.Country ?? "US");
+                db.Players.Add(player);
+                await db.SaveChangesAsync(ct);
+            }
+
+            return Results.Ok(new PlayerDto(player.Id, player.Username, player.CountryCode, player.Level, player.Xp));
         }
     }
 }
