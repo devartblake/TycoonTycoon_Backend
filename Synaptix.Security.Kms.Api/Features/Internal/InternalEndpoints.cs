@@ -55,14 +55,15 @@ public static class InternalEndpoints
             ? SecureSuites.ClassicalV1
             : SecureSuites.ClassicalV1;
 
+        var sharedPayloadKey = RandomNumberGenerator.GetBytes(32);
         var session = new SecureSession(
             sessionId,
             subjectId,
             deviceId,
             "syn-sec-v1",
             suite,
-            RandomNumberGenerator.GetBytes(32),
-            RandomNumberGenerator.GetBytes(32),
+            sharedPayloadKey,
+            sharedPayloadKey,
             now,
             expiresAt,
             0L);
@@ -87,7 +88,12 @@ public static class InternalEndpoints
         try
         {
             var result = await protector.EncryptAsync(
-                body.SessionId, body.Plaintext, body.ContentType, ct, body.Aad);
+                body.SessionId,
+                body.Plaintext,
+                body.ContentType,
+                ct,
+                body.Aad,
+                body.Direction);
 
             return Results.Ok(result);
         }
@@ -115,8 +121,14 @@ public static class InternalEndpoints
                 body.SequenceNumber,
                 body.ReplayNonce,
                 body.Aad,
-                body.SubjectId);
+                body.SubjectId,
+                body.Direction,
+                body.EnforceReplay ?? !string.Equals(body.Direction, "server-to-client", StringComparison.OrdinalIgnoreCase));
             return Results.Ok(new { plaintext, contentType });
+        }
+        catch (SecurePayloadException ex) when (ex.Code == "direction_invalid")
+        {
+            return Results.BadRequest(new { error = ex.Code, message = ex.Message });
         }
         catch (System.Security.Cryptography.AuthenticationTagMismatchException)
         {
@@ -144,7 +156,8 @@ public sealed record InternalEncryptRequest(
     Guid SessionId,
     byte[] Plaintext,
     string ContentType = "application/json",
-    string? Aad = null);
+    string? Aad = null,
+    string Direction = "server-to-client");
 
 public sealed record InternalDecryptRequest(
     Guid SessionId,
@@ -156,4 +169,6 @@ public sealed record InternalDecryptRequest(
     long? SequenceNumber = null,
     string? ReplayNonce = null,
     string? Aad = null,
-    string? SubjectId = null);
+    string? SubjectId = null,
+    string Direction = "client-to-server",
+    bool? EnforceReplay = null);

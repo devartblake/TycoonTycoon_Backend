@@ -29,6 +29,18 @@ def get_admin_user(access_token: str, user_id: str) -> dict[str, Any]:
     return response.json()
 
 
+def resolve_player_lookup(access_token: str, query: str) -> dict[str, Any]:
+    url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/player-lookup/resolve"
+    response = httpx.get(
+        url,
+        params={"query": query},
+        headers=_headers(access_token),
+        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def update_admin_user(access_token: str, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/users/{user_id}"
     response = httpx.patch(

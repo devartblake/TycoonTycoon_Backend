@@ -35,6 +35,9 @@ services:
     ports: []
     environment:
       AdminAuth__AllowTrustedBffPlainJson: "false"
+      KmsClient__BaseUrl: "${KMS_API_BASE_URL:?KMS_API_BASE_URL is required in prod}"
+      KmsClient__ServiceToken: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"
+      KmsClient__Required: "true"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend-api.rule=Host(`api.${DOMAIN:?DOMAIN is required in prod}`)"
@@ -86,6 +89,9 @@ services:
     environment:
       MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:?MONGO_INITDB_ROOT_PASSWORD is required in prod}"
       MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required in prod}"
+      MONGO_AUTH_DB: "${MONGO_AUTH_DB:-synaptix_analytics}"
+      MONGO_ANALYTICS_DB: "${MONGO_ANALYTICS_DB:-synaptix_analytics}"
+      MONGO_CRYPTO_DB: "${MONGO_CRYPTO_DB:-synaptix_crypto}"
     logging:
       driver: "json-file"
       options:
@@ -161,3 +167,11 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  crypto-service:
+    environment:
+      CRYPTO_SERVICE_JWT: "${CRYPTO_SERVICE_JWT:-}"
+      CRYPTO_SERVICE_JWT_FILE: "${CRYPTO_SERVICE_JWT_FILE:-}"
+      REQUIRE_CRYPTO_SERVICE_JWT: "true"
+      KMS_API_BASE_URL: "${KMS_API_BASE_URL:?KMS_API_BASE_URL is required in prod}"
+      KMS_SERVICE_TOKEN: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"

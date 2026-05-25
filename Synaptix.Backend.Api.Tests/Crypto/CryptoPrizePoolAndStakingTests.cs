@@ -1,11 +1,17 @@
 using System.Net;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Synaptix.Backend.Api.Features.Crypto;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Application.Auth;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -39,6 +45,7 @@ public sealed class CryptoPrizePoolAndStakingTests : IClassFixture<TycoonApiFact
         pool!.Units.Should().Be(40);
 
         _http.WithAdminOpsKey();
+        SetCryptoServiceAuthorization(_http);
         var payoutResp = await _http.PostAsJsonAsync("/crypto/prize-pool/distribute",
             new CryptoEconomyEndpoints.CryptoPrizePoolDistributeRequest("alpha",
                 new List<CryptoEconomyEndpoints.CryptoPrizePoolWinner> { new(playerId, 25) }));
@@ -111,5 +118,25 @@ public sealed class CryptoPrizePoolAndStakingTests : IClassFixture<TycoonApiFact
 
         db.PlayerTransactions.Add(tx);
         await db.SaveChangesAsync();
+    }
+
+    private void SetCryptoServiceAuthorization(HttpClient http)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var jwt = scope.ServiceProvider.GetRequiredService<IOptions<JwtSettings>>().Value;
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey));
+        var token = new JwtSecurityToken(
+            issuer: jwt.Issuer,
+            audience: "crypto-service",
+            claims:
+            [
+                new Claim(JwtRegisteredClaimNames.Sub, "synaptix-crypto-service"),
+                new Claim("role", "service"),
+                new Claim("scope", "crypto:settlement")
+            ],
+            expires: DateTime.UtcNow.AddMinutes(10),
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+
+        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", new JwtSecurityTokenHandler().WriteToken(token));
     }
 }

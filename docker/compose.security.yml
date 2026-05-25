@@ -10,8 +10,7 @@
 #
 # Alongside main stack (Redis + shared network):
 #   docker compose -f docker/compose.yml up -d
-#   docker compose -f docker/compose.security.yml \
-#     --profile full up -d
+#   docker compose -f docker/compose.security.yml up -d
 #
 # Transit keys provisioned by vault-init:
 #   synaptix-session-wrap        (aes256-gcm96)
@@ -118,7 +117,7 @@ services:
     depends_on:
       vault-init:
         condition: service_completed_successfully
-    networks: [security-net]
+    networks: [security-net, synaptix-net]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5050/health"]
       interval: 30s
@@ -131,4 +130,7 @@ services:
 # ================================
 networks:
   security-net:
+    driver: bridge
+  synaptix-net:
+    name: synaptix-net
     driver: bridge

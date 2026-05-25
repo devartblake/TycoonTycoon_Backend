@@ -9,7 +9,8 @@ public interface ISecurePayloadProtector
         byte[] plaintext,
         string contentType,
         CancellationToken ct,
-        string? aad = null);
+        string? aad = null,
+        string direction = "server-to-client");
 
     Task<(byte[] Plaintext, string ContentType)> DecryptAsync(
         Guid sessionId,
@@ -18,5 +19,7 @@ public interface ISecurePayloadProtector
         long? sequenceNumber = null,
         string? replayNonce = null,
         string? aad = null,
-        string? subjectId = null);
+        string? subjectId = null,
+        string direction = "client-to-server",
+        bool enforceReplay = true);
 }

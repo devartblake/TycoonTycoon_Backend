@@ -10,6 +10,7 @@ namespace Synaptix.Backend.Application.Abstractions
     public interface IAppDb
     {
         DbSet<Player> Players { get; }
+        DbSet<PlayerLookupCode> PlayerLookupCodes { get; }
         DbSet<Match> Matches { get; }
         DbSet<MatchRound> MatchRounds { get; }
         DbSet<MatchResult> MatchResults { get; }

@@ -112,6 +112,7 @@ from .services.admin_users_client import (
     get_admin_user,
     get_admin_user_activity,
     list_admin_users,
+    resolve_player_lookup,
     unban_admin_user,
     update_admin_user,
 )
@@ -123,6 +124,7 @@ from .services.charting import (
     top_skus_chart,
 )
 from .services.minio_diagnostics import get_minio_diagnostics
+from .services.mongodb_diagnostics import get_mongodb_diagnostics
 from .services.upstream_error import build_upstream_http_error_response, build_upstream_unavailable_response
 
 STATUS_CLASSES = {
@@ -1852,6 +1854,37 @@ def minio_diagnostics_view(request):
     return render(request, "dashboard/minio_diagnostics.html", context)
 
 
+@operator_login_required
+@require_permission("users:read")
+def operator_mongodb_status(request):
+    payload = get_mongodb_diagnostics(request.session.get(SESSION_ACCESS_TOKEN_KEY))
+    status_map = {"healthy": 200, "degraded": 200, "offline": 503}
+    return JsonResponse(payload, status=status_map.get(payload.get("overallStatus", "degraded"), 200))
+
+
+@operator_login_required
+@require_permission("users:read")
+def mongodb_status_view(request):
+    diagnostics = get_mongodb_diagnostics(request.session.get(SESSION_ACCESS_TOKEN_KEY))
+    overall_status = diagnostics.get("overallStatus", "degraded")
+    collections = diagnostics.get("collections") or []
+    warnings = diagnostics.get("warnings") or []
+    total_docs = sum(int(item.get("count") or 0) for item in collections)
+    existing = sum(1 for item in collections if item.get("exists"))
+
+    context = {
+        "diagnostics": diagnostics,
+        "overall_status": overall_status,
+        "collections": collections,
+        "warnings": warnings,
+        "total_docs": total_docs,
+        "collections_existing": existing,
+        "collections_total": len(collections),
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    return render(request, "dashboard/mongodb_status.html", context)
+
+
 def login_view(request):
     if request.method == "GET":
         if request.session.get(SESSION_ACCESS_TOKEN_KEY):
@@ -3524,6 +3557,13 @@ def _resolve_player_id(access_token: str, raw: str) -> str | None:
         uuid.UUID(raw)
         return raw
     except ValueError:
+        pass
+    try:
+        resolved = resolve_player_lookup(access_token, raw)
+        player_id = (resolved.get("playerId") or "").replace("ply_", "")
+        if player_id:
+            return player_id
+    except Exception:
         pass
     try:
         data = list_admin_users(access_token, {"q": raw, "pageSize": 5})

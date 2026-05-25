@@ -31,6 +31,7 @@ using Synaptix.Backend.Api.Features.AdminEventQueue;
 using Synaptix.Backend.Api.Features.AdminMatches;
 using Synaptix.Backend.Api.Features.AdminMedia;
 using Synaptix.Backend.Api.Features.AdminModeration;
+using Synaptix.Backend.Api.Features.AdminMongo;
 using Synaptix.Backend.Api.Features.AdminNotifications;
 using Synaptix.Backend.Api.Features.AppConfig;
 using Synaptix.Backend.Api.Features.Quiz;
@@ -42,6 +43,7 @@ using Synaptix.Backend.Api.Features.AdminStore;
 using Synaptix.Backend.Api.Features.AdminSeasons;
 using Synaptix.Backend.Api.Features.AdminExperiments;
 using Synaptix.Backend.Api.Features.AdminPersonalization;
+using Synaptix.Backend.Api.Features.AdminPlayerLookup;
 using Synaptix.Backend.Api.Features.Experiments;
 using Synaptix.Backend.Api.Features.AdminSkills;
 using Synaptix.Backend.Api.Features.AdminUsers;
@@ -426,7 +428,7 @@ builder.Services
             ValidateIssuer = true,
             ValidIssuer = jwtSettings.Issuer,
             ValidateAudience = true,
-            ValidAudiences = new[] { "mobile-app", "admin-app", jwtSettings.Audience },
+            ValidAudiences = new[] { "mobile-app", "admin-app", "crypto-service", jwtSettings.Audience },
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
             ValidateLifetime = true,
@@ -963,10 +965,12 @@ var admin = app.MapGroup("/admin")
 AdminGameEventsEndpoints.Map(admin);
 AdminQuestionsEndpoints.Map(admin);
 AdminUsersEndpoints.Map(admin);
+AdminPlayerLookupEndpoints.Map(admin);
 AdminEventQueueEndpoints.Map(admin);
 AdminNotificationsEndpoints.Map(admin);
 AdminConfigEndpoints.Map(admin);
 AdminMediaEndpoints.Map(admin);
+AdminMongoEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
 AdminAuditEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);

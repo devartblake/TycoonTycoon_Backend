@@ -14,7 +14,12 @@ public sealed class SecurePayloadService(
     private static readonly TimeSpan MaxClockSkew = TimeSpan.FromMinutes(5);
 
     public async Task<EncryptedPayload> EncryptAsync(
-        Guid sessionId, byte[] plaintext, string contentType, CancellationToken ct, string? aad = null)
+        Guid sessionId,
+        byte[] plaintext,
+        string contentType,
+        CancellationToken ct,
+        string? aad = null,
+        string direction = "server-to-client")
     {
         var session = await RequireSessionAsync(sessionId, ct);
 
@@ -22,7 +27,7 @@ public sealed class SecurePayloadService(
         var ciphertext = new byte[plaintext.Length];
         var tag = new byte[TagSizeBytes];
 
-        using var aes = new AesGcm(session.ServerToClientKey, TagSizeBytes);
+        using var aes = new AesGcm(KeyForDirection(session, direction), TagSizeBytes);
         aes.Encrypt(nonce, plaintext, ciphertext, tag, AdditionalData(aad));
 
         return new EncryptedPayload(
@@ -40,11 +45,14 @@ public sealed class SecurePayloadService(
         long? sequenceNumber = null,
         string? replayNonce = null,
         string? aad = null,
-        string? subjectId = null)
+        string? subjectId = null,
+        string direction = "client-to-server",
+        bool enforceReplay = true)
     {
         var session = await RequireSessionAsync(sessionId, ct);
         ValidateSubject(session, subjectId);
-        ValidateReplayMetadata(sequenceNumber, replayNonce);
+        if (enforceReplay)
+            ValidateReplayMetadata(sequenceNumber, replayNonce);
         ValidateTimestamp(payload.EncryptedAtUtc);
 
         var ciphertext = Base64UrlDecode(payload.Ciphertext);
@@ -52,20 +60,32 @@ public sealed class SecurePayloadService(
         var tag = Base64UrlDecode(payload.Mac);
         var plaintext = new byte[ciphertext.Length];
 
-        using var aes = new AesGcm(session.ClientToServerKey, TagSizeBytes);
+        using var aes = new AesGcm(KeyForDirection(session, direction), TagSizeBytes);
         aes.Decrypt(nonce, ciphertext, tag, plaintext, AdditionalData(aad));
 
-        var ttl = ReplayTtl(session);
-        var accepted = await replayProtection.TryAcceptAsync(
-            sessionId,
-            sequenceNumber!.Value,
-            replayNonce!,
-            ttl,
-            ct);
-        if (!accepted)
-            throw new SecurePayloadException("replay_detected", "Secure payload sequence or replay nonce has already been used.");
+        if (enforceReplay)
+        {
+            var ttl = ReplayTtl(session);
+            var accepted = await replayProtection.TryAcceptAsync(
+                sessionId,
+                sequenceNumber!.Value,
+                replayNonce!,
+                ttl,
+                ct);
+            if (!accepted)
+                throw new SecurePayloadException("replay_detected", "Secure payload sequence or replay nonce has already been used.");
+        }
 
         return (plaintext, payload.ContentType);
+    }
+
+    private static byte[] KeyForDirection(SecureSession session, string? direction)
+    {
+        return string.Equals(direction, "client-to-server", StringComparison.OrdinalIgnoreCase)
+            ? session.ClientToServerKey
+            : string.Equals(direction, "server-to-client", StringComparison.OrdinalIgnoreCase)
+                ? session.ServerToClientKey
+                : throw new SecurePayloadException("direction_invalid", "Secure payload direction must be client-to-server or server-to-client.");
     }
 
     private async Task<SecureSession> RequireSessionAsync(Guid sessionId, CancellationToken ct)

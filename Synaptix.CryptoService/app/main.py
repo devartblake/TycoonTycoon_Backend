@@ -20,7 +20,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from app.backend_client import BackendClient
+from app.backend_client import BackendClient, service_jwt
 from app.blockchain.evm_client import EvmErc20Client
 from app.blockchain.solana_client import SnxSplClient, SolanaClient
 from app.blockchain.xrpl_client import XrplClient
@@ -38,6 +38,11 @@ log = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.require_crypto_service_jwt and not service_jwt():
+        raise RuntimeError(
+            "CRYPTO_SERVICE_JWT or CRYPTO_SERVICE_JWT_FILE is required when REQUIRE_CRYPTO_SERVICE_JWT=true."
+        )
+
     # ── MongoDB ───────────────────────────────────────────────────────────────
     mongo = AsyncIOMotorClient(settings.mongo_url)
     app.state.mongo_db = mongo[settings.mongo_db]

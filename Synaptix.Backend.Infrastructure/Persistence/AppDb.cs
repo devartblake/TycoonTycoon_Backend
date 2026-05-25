@@ -27,6 +27,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         }
 
         public DbSet<Player> Players => Set<Player>();
+        public DbSet<PlayerLookupCode> PlayerLookupCodes => Set<PlayerLookupCode>();
         public DbSet<Match> Matches => Set<Match>();
         public DbSet<MatchRound> MatchRounds => Set<MatchRound>();
         public DbSet<MatchResult> MatchResults => Set<MatchResult>();

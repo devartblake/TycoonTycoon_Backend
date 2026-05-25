@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import base64
 import json
+import secrets
 from typing import Any
 
 import httpx
@@ -80,7 +81,21 @@ def _start_internal_session() -> str:
     return payload["sessionId"]
 
 
-def _kms_encrypt(session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+def _secure_channel_aad(direction: str, method: str, path: str, session_id: str, sequence: int, subject_id: str = "") -> str:
+    return "|".join(
+        [
+            "syn-sec-v1",
+            direction,
+            method.upper(),
+            path,
+            session_id.replace("-", ""),
+            str(sequence),
+            subject_id,
+        ]
+    )
+
+
+def _kms_encrypt(session_id: str, payload: dict[str, Any], aad: str) -> dict[str, Any]:
     base_url = getattr(settings, "KMS_API_BASE_URL", "").rstrip("/")
     plaintext = json.dumps(payload).encode("utf-8")
     response = httpx.post(
@@ -89,6 +104,8 @@ def _kms_encrypt(session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
             "sessionId": session_id,
             "plaintext": base64.b64encode(plaintext).decode("ascii"),
             "contentType": "application/json",
+            "aad": aad,
+            "direction": "client-to-server",
         },
         headers=_kms_headers(),
         timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
@@ -97,11 +114,19 @@ def _kms_encrypt(session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     return response.json()
 
 
-def _kms_decrypt(session_id: str, envelope: dict[str, Any]) -> dict[str, Any]:
+def _kms_decrypt(session_id: str, envelope: dict[str, Any], sequence: int, replay_nonce: str, aad: str) -> dict[str, Any]:
     base_url = getattr(settings, "KMS_API_BASE_URL", "").rstrip("/")
     response = httpx.post(
         f"{base_url}/internal/security/decrypt",
-        json={"sessionId": session_id, **envelope},
+        json={
+            "sessionId": session_id,
+            **envelope,
+            "sequenceNumber": sequence,
+            "replayNonce": replay_nonce,
+            "aad": aad,
+            "direction": "server-to-client",
+            "enforceReplay": False,
+        },
         headers=_kms_headers(),
         timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
     )
@@ -125,9 +150,16 @@ def _post_admin_auth(path: str, payload: dict[str, Any]) -> dict[str, Any]:
 
     try:
         session_id = _start_internal_session()
-        encrypted = _kms_encrypt(session_id, payload)
+        sequence = 1
+        request_nonce = secrets.token_urlsafe(18)
+        response_nonce = secrets.token_urlsafe(18)
+        request_aad = _secure_channel_aad("request", "POST", path, session_id, sequence)
+        response_aad = _secure_channel_aad("response", "POST", path, session_id, sequence)
+        encrypted = _kms_encrypt(session_id, payload, request_aad)
         headers = _headers()
         headers["X-Syn-Sec-Session"] = session_id
+        headers["X-Syn-Sec-Seq"] = str(sequence)
+        headers["X-Syn-Sec-Nonce"] = request_nonce
         response = httpx.post(
             url,
             json=encrypted,
@@ -135,7 +167,7 @@ def _post_admin_auth(path: str, payload: dict[str, Any]) -> dict[str, Any]:
             timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
         )
         response.raise_for_status()
-        return _kms_decrypt(session_id, response.json())
+        return _kms_decrypt(session_id, response.json(), sequence, response_nonce, response_aad)
     except httpx.RequestError as ex:
         raise KmsUnavailableError("Unable to complete secure-channel admin auth.") from ex
 

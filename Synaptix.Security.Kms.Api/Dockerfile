@@ -19,7 +19,7 @@ COPY ["Synaptix.Security.Kms.Api/Synaptix.Security.Kms.Api.csproj",             
 COPY ["Synaptix.Security.Kms.Application/Synaptix.Security.Kms.Application.csproj", "Synaptix.Security.Kms.Application/"]
 COPY ["Synaptix.Security.Kms.Infrastructure/Synaptix.Security.Kms.Infrastructure.csproj", "Synaptix.Security.Kms.Infrastructure/"]
 COPY ["Synaptix.Security.Kms.Contracts/Synaptix.Security.Kms.Contracts.csproj",   "Synaptix.Security.Kms.Contracts/"]
-COPY ["Tycoon.ServiceDefaults/Tycoon.ServiceDefaults.csproj",                      "Tycoon.ServiceDefaults/"]
+COPY ["Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj",                  "Synaptix.ServiceDefaults/"]
 
 RUN dotnet restore "Synaptix.Security.Kms.Api/Synaptix.Security.Kms.Api.csproj"
 
