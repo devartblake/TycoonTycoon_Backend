@@ -6,6 +6,22 @@ from django.conf import settings
 from .admin_auth_client import _headers
 
 
+def find_mongodb_collection(diagnostics: dict[str, Any], database: str, collection: str) -> dict[str, Any] | None:
+    for item in diagnostics.get("collections") or []:
+        if item.get("database") == database and item.get("collection") == collection:
+            return item
+    return None
+
+
+def collection_warnings(diagnostics: dict[str, Any], selected: dict[str, Any]) -> list[str]:
+    warnings = list(selected.get("warnings") or [])
+    prefix = f"{selected.get('database')}.{selected.get('collection')}"
+    for warning in diagnostics.get("warnings") or []:
+        if isinstance(warning, str) and warning.startswith(prefix) and warning not in warnings:
+            warnings.append(warning)
+    return warnings
+
+
 def get_mongodb_diagnostics(access_token: str | None = None) -> dict[str, Any]:
     if not access_token:
         return {

@@ -14,7 +14,7 @@ import httpx
 from django.contrib import messages
 from django.db import DatabaseError
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
@@ -124,7 +124,7 @@ from .services.charting import (
     top_skus_chart,
 )
 from .services.minio_diagnostics import get_minio_diagnostics
-from .services.mongodb_diagnostics import get_mongodb_diagnostics
+from .services.mongodb_diagnostics import collection_warnings, find_mongodb_collection, get_mongodb_diagnostics
 from .services.upstream_error import build_upstream_http_error_response, build_upstream_unavailable_response
 
 STATUS_CLASSES = {
@@ -1883,6 +1883,34 @@ def mongodb_status_view(request):
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
     return render(request, "dashboard/mongodb_status.html", context)
+
+
+@operator_login_required
+@require_permission("users:read")
+def mongodb_collection_detail_view(request, database: str, collection: str):
+    diagnostics = get_mongodb_diagnostics(request.session.get(SESSION_ACCESS_TOKEN_KEY))
+    selected = find_mongodb_collection(diagnostics, database, collection)
+    if selected is None:
+        raise Http404("MongoDB collection diagnostics were not returned.")
+
+    warnings = collection_warnings(diagnostics, selected)
+    index_details = selected.get("indexDetails") or []
+    missing_indexes = set(selected.get("missingIndexes") or [])
+
+    for index in index_details:
+        index["status"] = "missing" if index.get("name") in missing_indexes else "present"
+
+    context = {
+        "diagnostics": diagnostics,
+        "overall_status": diagnostics.get("overallStatus", "degraded"),
+        "collection": selected,
+        "warnings": warnings,
+        "index_details": index_details,
+        "missing_indexes": selected.get("missingIndexes") or [],
+        "expected_indexes": selected.get("expectedIndexes") or [],
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+    }
+    return render(request, "dashboard/mongodb_collection_detail.html", context)
 
 
 def login_view(request):

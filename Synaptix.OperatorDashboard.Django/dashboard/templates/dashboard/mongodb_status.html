@@ -92,7 +92,12 @@
         {% for item in collections %}
         <tr>
           <td><code>{{ item.database }}</code></td>
-          <td><strong>{{ item.collection }}</strong></td>
+          <td>
+            <a href="{% url 'operator-mongodb-collection-detail-view' item.database item.collection %}"><strong>{{ item.collection }}</strong></a>
+            {% if item.missingIndexes %}
+            <span class="chip danger">{{ item.missingIndexes|length }} missing</span>
+            {% endif %}
+          </td>
           <td><span class="chip {% if item.exists %}success{% else %}danger{% endif %}">{{ item.exists|yesno:"yes,no" }}</span></td>
           <td>{{ item.count }}</td>
           <td>

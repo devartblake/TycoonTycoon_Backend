@@ -20,9 +20,9 @@ def _admin_headers() -> dict[str, str]:
     headers: dict[str, str] = {"Content-Type": "application/json"}
     if settings.admin_ops_key:
         headers["X-Admin-Ops-Key"] = settings.admin_ops_key
-    service_jwt = service_jwt()
-    if service_jwt:
-        headers["Authorization"] = f"Bearer {service_jwt}"
+    token = service_jwt()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     return headers
 
 
