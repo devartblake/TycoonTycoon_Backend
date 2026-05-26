@@ -16,6 +16,20 @@ Use `-DryRun` to validate the manifest and print the upload plan without requiri
 
 For real uploads, install the MinIO client (`mc`) and configure MinIO through `docker/.env` or process environment variables. The default bucket is `synaptix-assets`.
 
+The Django operator dashboard also exposes a native installer page at `/installer`. It accepts an asset ZIP, validates or generates the manifest, uploads the objects directly to MinIO, and then shows the migration-service command to import seed JSON from MinIO.
+
+The current `assets.zip` bundle was extracted to:
+
+```text
+c:\Users\lmxbl\StudioProjects\trivia_tycoon\installer-bundle
+```
+
+The generated manifest is:
+
+```text
+c:\Users\lmxbl\StudioProjects\trivia_tycoon\installer-bundle\installer.manifest.json
+```
+
 ## Manifest
 
 Place `installer.manifest.json` in the bundle root:

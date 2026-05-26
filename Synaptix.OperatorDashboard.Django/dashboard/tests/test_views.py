@@ -447,6 +447,82 @@ class DashboardViewsTests(TestCase):
         self.assertContains(response, "ix_analytics_events_type_received")
         self.assertContains(response, "missing index")
 
+    @mock.patch("dashboard.views.inspect_bundle")
+    def test_backend_installer_validate_renders_bundle_summary(self, mock_inspect_bundle):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["questions:write"], "email": "ops@example.com"}
+        session.save()
+        mock_inspect_bundle.return_value = {
+            "ok": True,
+            "seed_count": 4,
+            "asset_count": 2,
+            "total_bytes": 128,
+            "warnings": [],
+            "preview": [{"kind": "seed", "source": "assets/seeds/questions.json", "key": "seeds/questions.json", "content_type": "application/json", "bytes": 64}],
+        }
+
+        response = self.client.post(
+            reverse("backend-installer-validate"),
+            {"bundle": SimpleUploadedFile("assets.zip", b"zip", content_type="application/zip")},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Backend installer")
+        self.assertContains(response, "seeds/questions.json")
+        mock_inspect_bundle.assert_called_once()
+
+    def test_backend_installer_requires_questions_write(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+
+        response = self.client.get(reverse("backend-installer-view"))
+
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.list_admin_email_acl")
+    def test_admin_permissions_view_renders_acl_entries(self, mock_list_acl):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["acl:write"], "email": "ops@example.com"}
+        session.save()
+        mock_list_acl.return_value = {
+            "items": [{"id": "acl-1", "email": "mod@example.com", "listType": "Allow", "role": "Moderator", "notes": "triage", "addedBy": "ops", "updatedAtUtc": "2026-05-26T00:00:00Z"}],
+            "totalItems": 1,
+        }
+
+        response = self.client.get(reverse("admin-permissions-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Admin permissions")
+        self.assertContains(response, "mod@example.com")
+        self.assertContains(response, "Moderator")
+
+    @mock.patch("dashboard.views.create_admin_email_acl")
+    def test_admin_permissions_create_calls_backend(self, mock_create_acl):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["acl:write"], "email": "ops@example.com"}
+        session.save()
+        mock_create_acl.return_value = {"id": "acl-1"}
+
+        response = self.client.post(
+            reverse("admin-permissions-view"),
+            {"action": "create", "email": "mod@example.com", "listType": "Allow", "role": "Moderator", "notes": "triage"},
+        )
+
+        self.assertEqual(302, response.status_code)
+        mock_create_acl.assert_called_once_with(
+            "token",
+            {"email": "mod@example.com", "listType": "Allow", "role": "Moderator", "notes": "triage"},
+        )
+
     @mock.patch("dashboard.views.list_admin_users")
     def test_operator_users_endpoint_returns_payload(self, mock_list_admin_users):
         session = self.client.session

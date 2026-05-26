@@ -1,15 +1,11 @@
 using System;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Synaptix.Backend.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace Synaptix.Backend.Migrations.Migrations
 {
     /// <inheritdoc />
-    [DbContext(typeof(AppDb))]
-    [Migration("20260512150000_AddQuestionStatusColumns")]
     public partial class AddQuestionStatusColumns : Migration
     {
         /// <inheritdoc />

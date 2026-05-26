@@ -74,7 +74,7 @@ public static class AdminEmailAclEndpoints
                 return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "ListType must be 'Allow' or 'Block'.");
 
             if (!Enum.TryParse<AdminRole>(request.Role, ignoreCase: true, out var role))
-                return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "Role must be 'Viewer', 'Admin', or 'SuperAdmin'.");
+                return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "Role must be 'Viewer', 'Moderator', 'Admin', or 'SuperAdmin'.");
 
             var normalized = request.Email.Trim().ToLowerInvariant();
             var existing = await db.AdminEmailAcls.FirstOrDefaultAsync(e => e.NormalizedEmail == normalized, ct);
@@ -116,7 +116,7 @@ public static class AdminEmailAclEndpoints
                 return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "ListType must be 'Allow' or 'Block'.");
 
             if (!Enum.TryParse<AdminRole>(request.Role, ignoreCase: true, out var role))
-                return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "Role must be 'Viewer', 'Admin', or 'SuperAdmin'.");
+                return AdminApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", "Role must be 'Viewer', 'Moderator', 'Admin', or 'SuperAdmin'.");
 
             var actor = httpContext.User.FindFirst("sub")?.Value
                         ?? httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value

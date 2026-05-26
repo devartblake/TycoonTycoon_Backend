@@ -24,6 +24,7 @@ from django.utils import timezone
 from .models import OperatorSavedView, OperatorSavedViewAuditEvent, ProbeCheckRecord
 from .services.admin_audit_client import get_security_audit, get_security_audit_event
 from .services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError, admin_login, admin_me, admin_refresh
+from .services.admin_email_acl_client import create_admin_email_acl, delete_admin_email_acl, list_admin_email_acl, update_admin_email_acl
 from .services.admin_media_client import create_upload_intent, upload_file_to_intent
 from .services.admin_moderation_client import get_moderation_log, get_moderation_logs, get_moderation_profile, set_moderation_status
 from .services.admin_economy_client import create_economy_transaction, get_economy_balance, get_economy_history, rollback_economy_transaction, simulate_economy, update_economy_balance
@@ -117,6 +118,7 @@ from .services.admin_users_client import (
     update_admin_user,
 )
 from .services.api_clients import get_overall_status, list_service_statuses
+from .services.backend_installer import inspect_bundle, upload_bundle
 from .services.charting import (
     archetype_distribution_chart,
     plotly_runtime_script,
@@ -1911,6 +1913,100 @@ def mongodb_collection_detail_view(request, database: str, collection: str):
         "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
     }
     return render(request, "dashboard/mongodb_collection_detail.html", context)
+
+
+@operator_login_required
+@require_permission("questions:write")
+def backend_installer_view(request):
+    context = {
+        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "result": None,
+        "mode": "idle",
+    }
+    return render(request, "dashboard/backend_installer.html", context)
+
+
+@operator_login_required
+@require_permission("questions:write")
+def backend_installer_validate(request):
+    uploaded = request.FILES.get("bundle")
+    context = {"admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY), "mode": "validate"}
+    if not uploaded:
+        messages.error(request, "Upload an installer ZIP bundle first.")
+        return render(request, "dashboard/backend_installer.html", context, status=400)
+    try:
+        context["result"] = inspect_bundle(uploaded)
+    except Exception as ex:
+        context["result"] = {"ok": False, "warnings": [str(ex)], "preview": []}
+        return render(request, "dashboard/backend_installer.html", context, status=400)
+    return render(request, "dashboard/backend_installer.html", context)
+
+
+@operator_login_required
+@require_permission("questions:write")
+def backend_installer_upload(request):
+    uploaded = request.FILES.get("bundle")
+    context = {"admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY), "mode": "upload"}
+    if not uploaded:
+        messages.error(request, "Upload an installer ZIP bundle first.")
+        return render(request, "dashboard/backend_installer.html", context, status=400)
+    try:
+        context["result"] = upload_bundle(uploaded)
+        if context["result"].get("ok"):
+            messages.success(request, "Installer bundle uploaded to MinIO.")
+        else:
+            messages.error(request, "Installer upload did not complete.")
+    except Exception as ex:
+        context["result"] = {"ok": False, "warnings": [str(ex)], "preview": []}
+        return render(request, "dashboard/backend_installer.html", context, status=502)
+    return render(request, "dashboard/backend_installer.html", context)
+
+
+@operator_login_required
+@require_permission("acl:write")
+def admin_permissions_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    if request.method == "POST":
+        action = request.POST.get("action")
+        payload = {
+            "email": request.POST.get("email", "").strip(),
+            "listType": request.POST.get("listType", "Allow"),
+            "role": request.POST.get("role", "Viewer"),
+            "notes": request.POST.get("notes", "").strip() or None,
+        }
+        try:
+            if action == "create":
+                create_admin_email_acl(access_token, payload)
+                messages.success(request, "Admin permission entry created.")
+            elif action == "update":
+                update_admin_email_acl(access_token, request.POST.get("entryId", ""), {k: payload[k] for k in ("listType", "role", "notes")})
+                messages.success(request, "Admin permission entry updated.")
+            elif action == "delete":
+                delete_admin_email_acl(access_token, request.POST.get("entryId", ""))
+                messages.success(request, "Admin permission entry deleted.")
+        except httpx.HTTPError as ex:
+            messages.error(request, f"Permission update failed: {ex}")
+        return redirect("admin-permissions-view")
+
+    list_type = request.GET.get("listType") or ""
+    try:
+        data = list_admin_email_acl(access_token, {"listType": list_type, "pageSize": 200})
+    except httpx.HTTPError as ex:
+        data = {"items": [], "totalItems": 0, "error": str(ex)}
+
+    return render(
+        request,
+        "dashboard/admin_permissions.html",
+        {
+            "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+            "items": data.get("items") or [],
+            "total": data.get("totalItems") or 0,
+            "error": data.get("error"),
+            "list_type": list_type,
+            "roles": ["Viewer", "Moderator", "Admin", "SuperAdmin"],
+            "list_types": ["Allow", "Block"],
+        },
+    )
 
 
 def login_view(request):

@@ -51,6 +51,7 @@ public enum AdminAclListType
 public enum AdminRole
 {
     Viewer = 0,
-    Admin = 1,
-    SuperAdmin = 2
+    Moderator = 1,
+    Admin = 2,
+    SuperAdmin = 3
 }

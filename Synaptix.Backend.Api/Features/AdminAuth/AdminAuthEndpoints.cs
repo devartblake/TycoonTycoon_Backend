@@ -17,32 +17,6 @@ namespace Synaptix.Backend.Api.Features.AdminAuth;
 
 public static class AdminAuthEndpoints
 {
-    private static readonly string[] DefaultPermissions =
-    [
-        "users:read",
-        "users:write",
-        "moderation:read",
-        "moderation:write",
-        "questions:read",
-        "questions:write",
-        "events:read",
-        "events:write",
-        "store:read",
-        "store:write",
-        "economy:read",
-        "economy:write",
-        "anticheat:read",
-        "anticheat:write",
-        "notifications:read",
-        "notifications:write",
-        "seasons:read",
-        "seasons:write",
-        "eventqueue:read",
-        "eventqueue:write",
-        "personalization:read",
-        "personalization:write"
-    ];
-
     public static void Map(RouteGroupBuilder admin)
     {
         var g = admin.MapGroup("/auth").WithTags("Admin/Auth");
@@ -87,19 +61,21 @@ public static class AdminAuthEndpoints
             var auth = await authService.AdminLoginAsync(request.Email, request.Password, deviceId: "admin-web");
 
             var aclLogger = loggerFactory.CreateLogger("AdminEmailAcl");
-            if (!await IsAdminEmailAsync(request.Email, db, aclLogger, ct))
+            var adminRole = await GetAllowedAdminRoleAsync(request.Email, db, aclLogger, ct);
+            if (adminRole is null)
             {
                 await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "forbidden", new { actor = request.Email, ip, userAgent = ua, reason = "email_not_allowlisted" }, ct);
                 AdminSecurityMetrics.RecordAuth("login", "forbidden", sw);
                 return AdminApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Authenticated user is not an admin.");
             }
 
+            var permissions = AdminPermissionProfiles.ForRole(adminRole.Value);
             var profile = new AdminProfileResponse(
                 Id: $"adm_{auth.User.Id:N}",
                 Email: auth.User.Email,
                 DisplayName: auth.User.Handle,
-                Roles: ["admin"],
-                Permissions: DefaultPermissions
+                Roles: permissions.Roles,
+                Permissions: permissions.Permissions
             );
 
             await AdminSecurityAudit.WriteAsync(db, "admin_auth_login", "success", new { actor = request.Email, ip, userAgent = ua }, ct);
@@ -164,16 +140,24 @@ public static class AdminAuthEndpoints
         await AdminSecurityAudit.WriteAsync(db, "admin_auth_me", "success", new { actor = sub, ip, userAgent = ua }, ct);
         AdminSecurityMetrics.RecordAuth("me", "success", sw);
 
+        var roleClaim = httpContext.User.FindFirst("admin_role")?.Value;
+        var role = Enum.TryParse<AdminRole>(roleClaim, ignoreCase: true, out var parsed)
+            ? parsed
+            : httpContext.User.FindFirst("scope")?.Value?.Split(' ', StringSplitOptions.RemoveEmptyEntries).Contains("acl:write", StringComparer.OrdinalIgnoreCase) == true
+                ? AdminRole.SuperAdmin
+                : AdminRole.Admin;
+        var permissions = AdminPermissionProfiles.ForRole(role);
+
         return Results.Ok(new AdminProfileResponse(
             Id: $"adm_{sub}",
             Email: email,
             DisplayName: name,
-            Roles: ["admin"],
-            Permissions: DefaultPermissions
+            Roles: permissions.Roles,
+            Permissions: permissions.Permissions
         ));
     }
 
-    private static async Task<bool> IsAdminEmailAsync(string email, IAppDb db, ILogger logger, CancellationToken ct)
+    private static async Task<AdminRole?> GetAllowedAdminRoleAsync(string email, IAppDb db, ILogger logger, CancellationToken ct)
     {
         try
         {
@@ -182,22 +166,23 @@ public static class AdminAuthEndpoints
             // Blocklist always wins
             var isBlocked = await db.AdminEmailAcls.AsNoTracking()
                 .AnyAsync(e => e.NormalizedEmail == normalized && e.ListType == AdminAclListType.Block, ct);
-            if (isBlocked) return false;
+            if (isBlocked) return null;
 
             // If no allowlist entries exist, permit all (open access)
             var hasAllowEntries = await db.AdminEmailAcls.AsNoTracking()
                 .AnyAsync(e => e.ListType == AdminAclListType.Allow, ct);
-            if (!hasAllowEntries) return true;
+            if (!hasAllowEntries) return AdminRole.SuperAdmin;
 
             // Email must be on the allowlist
-            return await db.AdminEmailAcls.AsNoTracking()
-                .AnyAsync(e => e.NormalizedEmail == normalized && e.ListType == AdminAclListType.Allow, ct);
+            var entry = await db.AdminEmailAcls.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.NormalizedEmail == normalized && e.ListType == AdminAclListType.Allow, ct);
+            return entry?.Role;
         }
         catch (Exception ex)
         {
             // Table may not exist yet; fall back to open access (same as empty allowlist).
             logger.LogWarning(ex, "AdminEmailAcls query failed (table may not exist yet). Falling back to open access.");
-            return true;
+            return AdminRole.SuperAdmin;
         }
     }
 }

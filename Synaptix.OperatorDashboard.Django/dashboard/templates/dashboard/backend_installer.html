@@ -1,0 +1,111 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Backend Installer{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Storage / Backend installer</p>
+    <h1 class="page-title">Backend installer</h1>
+    <p class="page-subtitle">Validate and upload seed data plus app assets into MinIO. Database imports still run through the migration service.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-minio-diagnostics-view' %}">MinIO diagnostics</a>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-header">
+    <div>
+      <h2>Upload bundle</h2>
+      <p class="section-copy">Use the exported asset ZIP or a bundle that contains an installer manifest.</p>
+    </div>
+  </div>
+  <div class="split">
+    <form method="post" action="{% url 'backend-installer-validate' %}" enctype="multipart/form-data" class="stack">
+      {% csrf_token %}
+      <label>
+        Installer ZIP
+        <input type="file" name="bundle" accept=".zip" required />
+      </label>
+      <button type="submit">Validate bundle</button>
+    </form>
+    <form method="post" action="{% url 'backend-installer-upload' %}" enctype="multipart/form-data" class="stack">
+      {% csrf_token %}
+      <label>
+        Installer ZIP
+        <input type="file" name="bundle" accept=".zip" required />
+      </label>
+      <button type="submit">Upload to MinIO</button>
+    </form>
+  </div>
+</section>
+
+{% if result %}
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi {% if result.ok %}ok{% else %}warn{% endif %}">
+    <span class="kpi-label">Result</span>
+    <span class="kpi-val">{% if result.ok %}READY{% else %}CHECK{% endif %}</span>
+    <span class="kpi-delta">{{ mode }}</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Seeds</span>
+    <span class="kpi-val">{{ result.seed_count|default:0 }}</span>
+    <span class="kpi-delta">migration inputs</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Assets</span>
+    <span class="kpi-val">{{ result.asset_count|default:0 }}</span>
+    <span class="kpi-delta">media objects</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Bytes</span>
+    <span class="kpi-val">{{ result.total_bytes|default:0|filesizeformat }}</span>
+    <span class="kpi-delta">planned upload</span>
+  </article>
+</section>
+
+<section class="split">
+  <article class="card">
+    <h2>Warnings</h2>
+    <div class="status-grid">
+      {% for warning in result.warnings %}
+      <div class="surface-note">{{ warning }}</div>
+      {% empty %}
+      <div class="surface-note">No validation warnings.</div>
+      {% endfor %}
+      {% for failure in result.failures %}
+      <div class="surface-note">{{ failure }}</div>
+      {% endfor %}
+    </div>
+  </article>
+  <article class="card">
+    <h2>Migration import</h2>
+    <p class="section-copy">After upload, run the migration service with MinIO seed source.</p>
+    <code>{{ result.migration_command|default:"$env:MIGRATION_SEED_SOURCE='MinIO'; ./scripts/run-dashboard-bootstrap.ps1 -Mode docker" }}</code>
+  </article>
+</section>
+
+<section class="card mt-lg">
+  <h2>Object preview</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Kind</th><th>Source</th><th>MinIO key</th><th>Type</th><th>Bytes</th></tr></thead>
+      <tbody>
+        {% for item in result.preview %}
+        <tr>
+          <td>{{ item.kind }}</td>
+          <td><code>{{ item.source }}</code></td>
+          <td><code>{{ item.key }}</code></td>
+          <td>{{ item.content_type }}</td>
+          <td>{{ item.bytes|filesizeformat }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="helper-text">No preview items available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

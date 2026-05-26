@@ -252,6 +252,13 @@
               <span class="operator-nav-caption">Storage health</span>
             </a>
             {% endif %}
+            {% if 'questions:write' in perms %}
+            <a class="operator-nav-link {% if '/installer' in request.path %}is-active{% endif %}" href="{% url 'backend-installer-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v5H4z"/><path d="M4 15h16v5H4z"/><path d="M7 9v6"/><path d="M17 9v6"/></svg>
+              <span>Backend installer</span>
+              <span class="operator-nav-caption">Seed assets</span>
+            </a>
+            {% endif %}
           </div>
           <div class="operator-nav-group">
             <div class="operator-nav-label">Config</div>
@@ -260,6 +267,13 @@
               <span>Feature flags</span>
               <span class="operator-nav-caption">Frontend toggles</span>
             </a>
+            {% if 'acl:write' in perms %}
+            <a class="operator-nav-link {% if '/config/admin-permissions' in request.path %}is-active{% endif %}" href="{% url 'admin-permissions-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>
+              <span>Admin permissions</span>
+              <span class="operator-nav-caption">ACL roles</span>
+            </a>
+            {% endif %}
           </div>
           {% endwith %}
         </nav>

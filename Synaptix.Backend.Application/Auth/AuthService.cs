@@ -207,13 +207,10 @@ namespace Synaptix.Backend.Application.Auth
         {
             var isAdmin = clientType.Equals("admin", StringComparison.OrdinalIgnoreCase);
 
+            var adminProfile = isAdmin ? AdminPermissionProfiles.ForRole(aclRole ?? AdminRole.SuperAdmin) : null;
             var scopes = isAdmin
-                ? "users:read users:write questions:read questions:write events:read events:write notifications:write config:write"
+                ? adminProfile!.Scope
                 : "profile:read profile:write gameplay:read gameplay:write";
-
-            // Super admins get ACL management scope
-            if (isAdmin && aclRole == AdminRole.SuperAdmin)
-                scopes += " acl:write";
 
             var role = isAdmin ? "admin" : "user";
             var audience = isAdmin ? "admin-app" : "mobile-app";
@@ -228,6 +225,9 @@ namespace Synaptix.Backend.Application.Auth
                 new("client_type", clientType),
                 new(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString())
             };
+
+            if (adminProfile is not null)
+                userClaims.Add(new("admin_role", adminProfile.Role.ToString()));
 
             var signingKeyBytes = Encoding.UTF8.GetBytes(_jwt.SecretKey);
             var securityKey = new SymmetricSecurityKey(signingKeyBytes);

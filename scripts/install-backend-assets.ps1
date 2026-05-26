@@ -78,8 +78,12 @@ function Get-ContentType {
 
     switch ([System.IO.Path]::GetExtension($Path).ToLowerInvariant()) {
         ".json" { "application/json"; break }
+        ".jsonl" { "application/x-ndjson"; break }
         ".glb" { "model/gltf-binary"; break }
         ".gltf" { "model/gltf+json"; break }
+        ".fbx" { "application/octet-stream"; break }
+        ".obj" { "text/plain"; break }
+        ".mtl" { "text/plain"; break }
         ".zip" { "application/zip"; break }
         ".mp3" { "audio/mpeg"; break }
         ".wav" { "audio/wav"; break }
@@ -97,7 +101,8 @@ function Get-ContentType {
         ".js" { "text/javascript"; break }
         ".html" { "text/html"; break }
         ".txt" { "text/plain"; break }
-        default { throw "Unsupported content type for '$Path'. Add contentType in installer.manifest.json." }
+        ".frag" { "text/plain"; break }
+        default { "application/octet-stream"; break }
     }
 }
 

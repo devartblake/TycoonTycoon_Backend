@@ -86,6 +86,14 @@ FASTAPI_BASE_URL = os.getenv("FASTAPI_BASE_URL", "http://localhost:8100")
 API_REQUEST_TIMEOUT_SECONDS = float(os.getenv("API_REQUEST_TIMEOUT_SECONDS", "5"))
 
 MINIO_BASE_URL = os.getenv("MINIO_BASE_URL", "http://localhost:9000")
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", MINIO_BASE_URL)
+MINIO_PUBLIC_ENDPOINT = os.getenv("MINIO_PUBLIC_ENDPOINT", MINIO_BASE_URL)
+MINIO_BUCKET = os.getenv("MINIO_BUCKET", "synaptix-assets")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", os.getenv("MINIO_ROOT_USER", ""))
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", os.getenv("MINIO_ROOT_PASSWORD", ""))
+MINIO_USE_SSL = os.getenv("MINIO_USE_SSL", "false").lower() == "true"
+INSTALLER_MAX_UPLOAD_BYTES = int(os.getenv("INSTALLER_MAX_UPLOAD_BYTES", str(1024 * 1024 * 1024)))
+INSTALLER_ALLOW_LOCAL_MIGRATION_RUN = os.getenv("INSTALLER_ALLOW_LOCAL_MIGRATION_RUN", "false").lower() == "true"
 
 ADMIN_OPS_HEADER = os.getenv("ADMIN_OPS_HEADER", os.getenv("AdminOps__Header", "X-Admin-Ops-Key"))
 ADMIN_OPS_KEY = os.getenv("AdminOps__Key", os.getenv("ADMIN_OPS_KEY", ""))
