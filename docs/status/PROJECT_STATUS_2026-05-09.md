@@ -1,6 +1,6 @@
 # Project Status — 2026-05-09
 
-_Derived from all docs in `/docs/`. Reflects state after Packets A–D completion, Security KMS implementation, Rewards/Spins backend endpoints, and start of BE Packet E._
+_Derived from all docs in `/docs/`. Reflects state after Packets A–D completion, Security KMS implementation, Rewards/Spins backend endpoints, and BE Packet E completion. Last updated: 2026-05-26._
 
 ---
 
@@ -105,7 +105,7 @@ _Derived from all docs in `/docs/`. Reflects state after Packets A–D completio
 | Tests: wrong nonce/sequence, expiry renewal, logout clear, web fallback | MED |
 | Backend schema + replay/sequence semantics validated against staging | HIGH |
 
-### BE Packet E — In Progress
+### BE Packet E — Complete ✅
 
 | Item | Status | Notes |
 |---|---|---|
@@ -113,16 +113,18 @@ _Derived from all docs in `/docs/`. Reflects state after Packets A–D completio
 | Docker container names rename (`tycoon_*` → `synaptix_*`) | ✅ 2026-05-09 | compose.yml + supporting compose files |
 | Telemetry `ServiceName` rename | ✅ 2026-05-09 | All appsettings and compose env vars |
 | CI/monitoring identifiers | ✅ 2026-05-09 | prometheus.yml, compose-smoke.yml, scripts |
-| C# namespace rename (`Tycoon.Backend.*` → `Synaptix.Backend.*`) | ⏸️ Deferred | Post-alpha; dedicated modernisation sprint |
+| C# namespace rename (`Tycoon.Backend.*` → `Synaptix.Backend.*`) | ✅ 2026-05-22 | 987 namespace declarations + 1,491 using statements across 1,001 files; solution + csproj ProjectReferences updated |
+| Non-C# service rename (CryptoService, OperatorDashboard.Django/Vue, Sidecar) | ✅ 2026-05-22 | `git mv` with Dockerfile + compose + CI references updated |
+| JWT issuer/audience update | ✅ 2026-05-22 | `SynaptixBackendApi` / `SynaptixFrontendApp`; Flutter team handoff doc created |
 
 ### Deferred — Intentional (Post-Alpha)
 
 | Item | Reason |
 |---|---|
-| C# namespace rename (`Tycoon.Backend.*` → `Synaptix.Backend.*`) | High blast radius; requires dedicated sprint |
 | FE Packet E WS2 — `package:trivia_tycoon` → `synaptix` (564 imports) | Blocked: awaiting store/legal bundle ID transition plan |
 | Android app ID + iOS bundle ID change | Store/legal plan required; treated as new app by stores |
 | IAP `GooglePackageName` (`com.tycoon.app.*` → `com.synaptix.app.*`) | Must coordinate with bundle ID change |
+| Reward Reactor endpoints (`/arcade/reactor/spin`, `/arcade/reactor/claim`) | Planning docs exist; implementation not started; legacy `/arcade/spin/claim` serves Alpha |
 
 ---
 
@@ -138,6 +140,8 @@ _Derived from all docs in `/docs/`. Reflects state after Packets A–D completio
 | 2026-05-08 | FE-E Workstream 1 complete (commit `79bc788`) |
 | 2026-05-09 | Rewards + Spins backend endpoints implemented |
 | 2026-05-09 | BE Packet E: Elasticsearch, Docker, CI, telemetry renames |
+| 2026-05-22 | BE Packet E: C# namespace rename complete; non-C# services, JWT contracts, frontend handoff doc |
+| 2026-05-26 | store_purchases_enabled flag; Designer.cs fix; production config template; CHANGELOG update |
 | **2026-05-08–14** | Operator Dashboard staging parallel-run window |
 | **2026-05-15** | Operator Dashboard hard cutover (Django only) |
 | **2026-06-12** | Blazor rollback window closes |
@@ -149,7 +153,7 @@ _Derived from all docs in `/docs/`. Reflects state after Packets A–D completio
 | Area | Completion | Notes |
 |---|---|---|
 | **Backend core systems** | ~97% | All gameplay, economy, personalization, security implemented |
-| **BE Packet E (infra rename)** | ~60% | ES + Docker + telemetry done; C# namespace deferred |
+| **BE Packet E (infra rename)** | 100% | ES, Docker, telemetry, C# namespaces, non-C# services, JWT contracts all complete (2026-05-22) |
 | **Frontend** | ~75% | Rebrand, Hub, onboarding done; crypto/monetization/networking open |
 | **Operator Dashboard** | 100% code | Awaiting May 8–14 parallel-run and May 15 cutover |
-| **Soft launch readiness** | Blocked | 4 go/no-go blockers: build verify, migration run, smoke suite, runtime terminology |
+| **Soft launch readiness** | Blocked (staging) | Repo-side prep 100% complete; 8 P0 blockers all require live staging environment |

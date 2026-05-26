@@ -4,6 +4,95 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-26] Merge, P0 Prep, and Release Doc Update
+
+### Completed
+
+- **Merged main (PRs #383–#385, 14 commits)** — Django full-user-flow tests (58), Reward Reactor endpoints, player lookup, Mongo admin, crypto auth, account rewards routes, user system roles, admin dashboard features, MongoDB diagnostics, and installer tooling all integrated into branch.
+- **Designer.cs gap fixed** — `20260512150000_AddQuestionStatusColumns.Designer.cs` created; all 24 migrations now have corresponding snapshot files.
+- **`appsettings.Production.example.json` added** — Production deploy checklist template covering all required config keys (JWT, DB, Redis, MinIO, Elastic, Observability, KMS, Vault, Hangfire). No secrets committed.
+- **`store_purchases_enabled` feature flag added** — Payment endpoints (`POST /store/purchase`, `/store/payments/*`, `/store/subscription/*`, `/store/iap/validate`) now return `403 FeatureDisabled` when the flag is off (default false for Alpha), replacing the previous `503 PAYMENTS_DISABLED` on unconfigured providers.
+- **Heartbeat files synced** — Alpha status, blockers, verification log, and current task updated to reflect complete Packet E rename, JWT contract update, and P0 prep work.
+- **ALPHA_RELEASE_CRITERIA.md updated** — Repo-verified items checked; 8 staging-dependent P0 blockers remain documented.
+- **PROJECT_STATUS updated** — Packet E marked complete; BE Packet E progress updated from ~60% to 100%.
+
+### Still External (P0 blockers — require staging infrastructure)
+
+- Apply EF migrations to staging PostgreSQL
+- Capture staging `GET /health/ready` with all dependencies healthy
+- Run `scripts/alpha-p0-smoke.sh` against live staging
+- Flutter `test/integration/live_backend_smoke_test.dart` against staging
+- Execute `.github/workflows/release-gate.yml` on release SHA
+- Complete rollback drill (3 levels) on non-production
+- Operator parallel-run runbook (`docs/infrastructure/STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md`)
+- Four-role sign-off (Backend Lead, QA Lead, On-Call, Product Owner)
+
+---
+
+## [2026-05-25] MongoDB Diagnostics and Installer Tooling
+
+### Completed
+
+- **MongoDB diagnostics expanded** — Admin MongoDB health endpoint now includes collection-level stats, index info, and slow-query diagnostics details.
+- **Backend installer tooling added** — `scripts/install-backend-assets.ps1` and `docs/infrastructure/backend-installer.md` added to streamline local/staging environment bootstrap.
+- **MongoDB usage audit documented** — `docs/infrastructure/mongodb-usage-audit.md` captures analytics and crypto collection schemas.
+
+---
+
+## [2026-05-24] Player Lookup, Mongo Admin, and Crypto Auth
+
+### Completed
+
+- **Player lookup codes** — Admin player lookup by invite/referral code added; SQL migration `docs/migrations/player_lookup_codes_2026-05-25.sql` provided.
+- **Mongo admin endpoints** — Admin MongoDB collection browser and diagnostics wired into operator dashboard.
+- **Crypto service auth** — Crypto service JWT auth integrated; service-to-service token validation added.
+
+---
+
+## [2026-05-23] Account Rewards Routes and Players/Me Fix
+
+### Completed
+
+- **Account rewards routes added** — `GET /account/rewards/status` and `POST /account/rewards/claim` added to complement Reward Reactor flow.
+- **`GET /players/me` fixed** — 404 error resolved; endpoint now correctly resolves authenticated player profile.
+
+---
+
+## [2026-05-22] Reward Reactor Feature Endpoints
+
+### Completed
+
+- **Reward Reactor implemented** — `POST /arcade/reactor/spin` and `POST /arcade/reactor/claim` added; backend-authoritative RNG replaces client-provided segment IDs.
+- **Study Hub and Crypto docs finalised** — Reward Reactor, Study Hub, and Crypto endpoint handoff docs updated to reflect final API contracts.
+- **User system role added** — `SystemRole` field added to user entity for platform-level permissions distinct from RBAC.
+- **Admin dashboard features** — Additional operator dashboard admin features added for user management and system role assignment.
+
+---
+
+## [2026-05-22] Packet E — Full Synaptix Rename Complete
+
+### Completed
+
+- **C# project and namespace rename** — All 20 C# projects renamed from `Tycoon.*` to `Synaptix.*`; 987 namespace declarations and 1,491 using statements updated across 1,001 files.
+- **Non-C# service rename** — `Tycoon.CryptoService`, `Tycoon.OperatorDashboard.Django`, `Tycoon.OperatorDashboard.Vue`, `Tycoon.Sidecar` renamed to `Synaptix.*` equivalents; Dockerfiles, CI, and docs updated.
+- **JWT issuer/audience updated** — `TycoonBackendApi` → `SynaptixBackendApi`, `TycoonFrontendApp` → `SynaptixFrontendApp` across all appsettings and `JwtSettings.cs`.
+- **Frontend handoff doc created** — `docs/handoffs/FRONTEND_REBRAND_HANDOFF.md` guides Flutter team on JWT claim update, re-auth coordination, and what to search in their codebase.
+- **Django full-user-flow tests** — 58 new tests covering complete user lifecycle in Django operator dashboard (PR #383).
+
+---
+
+## [2026-05-22] Packet E — Elasticsearch, Docker, CI, Telemetry Rename
+
+### Completed
+
+- **Elasticsearch aliases renamed** — `tycoon-qa-*` → `synaptix-*` in `ElasticOptions.cs`, `ElasticAdmin.cs`, and all appsettings environments.
+- **Docker compose renamed** — Project name, 20+ container names (`tycoon_*` → `synaptix_*`), network (`tycoon-net` → `synaptix-net`), all credential/bucket/database defaults renamed.
+- **Telemetry ServiceName updated** — `Tycoon.Backend.Api` → `Synaptix.Backend.Api`, `Tycoon.MigrationService` → `Synaptix.MigrationService`.
+- **Scripts, CI, monitoring updated** — `setup-dev.sh`, `setup-dev.ps1`, `compose-smoke.sh`, `prometheus.yml`, `.github/workflows/compose-smoke.yml` all updated.
+- **`docs/PROJECT_STATUS_2026-05-09.md` created** — Full project completion snapshot.
+
+---
+
 ## [2026-05-21] Secure Channel Replay And AAD Hardening
 
 ### Completed

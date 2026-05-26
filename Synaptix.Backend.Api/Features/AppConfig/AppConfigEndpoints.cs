@@ -43,6 +43,7 @@ public static class AppConfigEndpoints
                 walletEnabled              = Flag("wallet_enabled",                true),
                 leaderboardEnabled         = Flag("leaderboard_enabled",           true),
                 storeEnabled               = Flag("store_enabled",                 true),
+                storePurchasesEnabled      = Flag("store_purchases_enabled",       false),
                 missionsEnabled            = Flag("missions_enabled",              true),
                 skillTreeEnabled           = Flag("skill_tree_enabled",            false),
                 realtimeMultiplayerEnabled = Flag("realtime_multiplayer_enabled",  false),

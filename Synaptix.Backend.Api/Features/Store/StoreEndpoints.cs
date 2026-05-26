@@ -2043,6 +2043,13 @@ namespace Synaptix.Backend.Api.Features.Store
             IConfiguration configuration,
             CancellationToken ct)
         {
+            var flags = await StoreSystemStatusSupport.LoadFlagsAsync(db, ct);
+            var purchasesEnabled = flags.GetValueOrDefault(StoreSystemStatusSupport.StorePurchasesEnabledFlag, false);
+            if (!purchasesEnabled)
+                return Results.Json(
+                    new { error = new { code = "FeatureDisabled", message = "Store purchases are not available in the current release.", details = new { } } },
+                    statusCode: StatusCodes.Status403Forbidden);
+
             var status = await StoreSystemStatusSupport.GetStatusAsync(db, configuration, ct);
             if (!status.StoreEnabled)
             {

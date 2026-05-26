@@ -19,6 +19,14 @@ Records build, test, Docker, migration, and smoke-check results from Codex tasks
 | 2026-05-21 | secure-channel-replay-aad | `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --filter SecureChannel` | pass | 10 passed; middleware requires secure sequence/replay nonce headers and passes derived AAD/replay metadata to KMS. |
 | 2026-05-20 | admin-media-minio | `python Tycoon.OperatorDashboard.Django/manage.py test dashboard.tests` | pass | 284 Django dashboard tests passed after MinIO diagnostics/media upload changes. |
 | 2026-05-20 | admin-media-minio | `dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --filter "AdminMedia"` | pass | 13 AdminMedia tests passed. |
+| 2026-05-22 | packet-e-rename | C# namespace rename (`Tycoon.*` → `Synaptix.*`) across 1,001 files | pass | 987 namespace declarations + 1,491 using statements updated; solution file and all .csproj ProjectReferences updated. |
+| 2026-05-22 | packet-e-rename | Non-C# service rename (CryptoService, OperatorDashboard.Django/Vue, Sidecar) | pass | Directory renames via `git mv`; Dockerfiles, service names, and compose references updated. |
+| 2026-05-22 | packet-e-rename | JWT issuer/audience update (`TycoonBackendApi`/`TycoonFrontendApp` → `SynaptixBackendApi`/`SynaptixFrontendApp`) | pass | `JwtSettings.cs` defaults updated; `FRONTEND_REBRAND_HANDOFF.md` created for Flutter team. |
+| 2026-05-26 | merge-and-p0-prep | `git merge --no-ff origin/main` (14 commits, PRs #383–#385) | pass | Clean merge, no conflicts. |
+| 2026-05-26 | merge-and-p0-prep | Created `20260512150000_AddQuestionStatusColumns.Designer.cs` | pass | Missing stub added; matches empty `BuildTargetModel` pattern of all other Designer files. |
+| 2026-05-26 | merge-and-p0-prep | Created `appsettings.Production.example.json` | pass | All required production keys documented; all secrets are `<REPLACE>` placeholders. |
+| 2026-05-26 | merge-and-p0-prep | Added `store_purchases_enabled` flag to `StoreSystemStatusSupport.cs` and `StoreEndpoints.cs` | pass | `EnsurePaymentsEnabledAsync` returns `403 FeatureDisabled` when flag is off; default `false`. |
+| 2026-05-26 | merge-and-p0-prep | Added `storePurchasesEnabled` to `AppConfigEndpoints.cs` feature flag response | pass | Flag now visible to clients in `GET /api/v1/app/config`. |
 | pending | alpha-live-staging | Staging EF migration application | pending | Requires live staging migration log or DBA transcript plus final `__EFMigrationsHistory` row. |
 | pending | alpha-live-staging | Staging `GET /health/ready` | pending | Must prove PostgreSQL, Redis, RabbitMQ, and MinIO healthy. |
 | pending | alpha-live-staging | Staging API golden-path smoke | pending | Auth, wallet, quiz completion idempotency, leaderboard, disabled endpoint `403 FeatureDisabled`. |
