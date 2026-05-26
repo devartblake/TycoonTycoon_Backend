@@ -85,13 +85,13 @@ _Derived from all docs in `/docs/`. Reflects state after Packets A–D completio
 | `hybrid_mission_state.dart` stub fix (line 388) | 🔴 HIGH | No | Replace hardcoded `'current-user-id'` with `currentUserIdProvider` from `profile_providers.dart` |
 | Avatar MinIO upload integration | HIGH | Ready | `POST /users/me/avatar/upload-url` exists; Flutter upload client needed |
 | Retention hooks (streak, bonus challenge, session-end trigger) | HIGH | No | Sound layer still missing |
-| Crypto economy surfaces (wallet, history, staking UX) | HIGH | Ready | All 10 crypto endpoints exist |
+| ~~Crypto economy surfaces (wallet, history, staking UX)~~ | ~~HIGH~~ | ~~Ready~~ | ✅ Complete 2026-05-23 — `CryptoWalletScreen`, all providers, 11 test files |
 | Onboarding runtime validation (restore, reward reveal, handoff) | HIGH | Yes | Needs live device + backend |
 | Sprint 2 networking layer | HIGH | No | ~70 min; 4 files + 3 Riverpod providers |
 | Full QA pass all modes (kids/teen/adult) | MED | No | Needs device |
-| Study Hub UI (`StudyHubScreen`, `/study` route, flashcard UI) | MED | Ready | Backend contract complete since 2026-04-18 |
+| ~~Study Hub UI (`StudyHubScreen`, `/study` route, flashcard UI)~~ | ~~MED~~ | ~~Ready~~ | ✅ Complete 2026-05-23 — all 6 routes, session resume, custom sets |
 | Synaptix runtime validation (all screens, no Trivia Tycoon strings) | MED | Yes | Blocked — needs device + live backend |
-| Test coverage (4.1% → 40% target on `lib/game/` + `lib/core/`) | MED | No | `RichPresenceService`, auth edge cases, widget tree tests |
+| Test coverage (~19.4% → 40% target on `lib/game/` + `lib/core/`) | MED | No | 240/1,239 files; `RichPresenceService`, auth edge cases, widget tree tests remain |
 | ML signal consumption (`POST /ml/churn-risk`, `POST /ml/match-quality`) | LOW | Ready | Optional enhancement signals |
 | 19 `dart:io` screen files — web guards needed | LOW | No | App loads on web but affected screens throw |
 | Sound cue layer | LOW | No | Haptics + motion present; audio missing |

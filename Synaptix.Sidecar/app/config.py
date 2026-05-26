@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     backend_grpc_url: str = "localhost:5001"
 
     # MongoDB (analytics DB)
-    mongo_url: str = "mongodb://tycoon_app_user:tycoon_app_password_123@localhost:27017/tycoon_db?authSource=tycoon_db"
-    mongo_db: str = "tycoon_analytics"
+    mongo_url: str = "mongodb://tycoon_app_user:tycoon_app_password_123@localhost:27017/synaptix_analytics?authSource=synaptix_analytics"
+    mongo_db: str = "synaptix_analytics"
 
     # Elasticsearch
     elasticsearch_url: str = "http://localhost:9200"

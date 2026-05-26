@@ -9,6 +9,7 @@ namespace Synaptix.Backend.Infrastructure.Analytics.Mongo
 
         public MongoClientFactory(IOptions<MongoOptions> opt)
         {
+            MongoBsonMappings.Register();
             var client = new MongoClient(opt.Value.ConnectionString);
             _db = client.GetDatabase(opt.Value.Database);
         }

@@ -8,7 +8,12 @@ class Settings(BaseSettings):
 
     # MongoDB — settlement log
     mongo_url: str = "mongodb://localhost:27017"
-    mongo_db: str = "tycoon_crypto"
+    mongo_db: str = "synaptix_crypto"
+    crypto_service_jwt: str = ""
+    crypto_service_jwt_file: str = ""
+    require_crypto_service_jwt: bool = False
+    kms_api_base_url: str = ""
+    kms_service_token: str = ""
 
     # ── Solana (SOL native + SNX SPL token) ──────────────────────────────────
     solana_rpc_url: str = "https://api.devnet.solana.com"

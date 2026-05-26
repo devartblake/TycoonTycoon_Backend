@@ -52,7 +52,8 @@ namespace Synaptix.Backend.Api.Features.Users
                 currentUser.Country,
                 currentUser.AvatarUrl,
                 currentUser.Tier,
-                currentUser.Mmr
+                currentUser.Mmr,
+                currentUser.SystemRole is not null ? [currentUser.SystemRole] : null
             ));
         }
 
@@ -151,7 +152,8 @@ namespace Synaptix.Backend.Api.Features.Users
                 currentUser.Country,
                 currentUser.AvatarUrl,
                 currentUser.Tier,
-                currentUser.Mmr
+                currentUser.Mmr,
+                currentUser.SystemRole is not null ? [currentUser.SystemRole] : null
             );
 
             return Results.Ok(updatedProfile);

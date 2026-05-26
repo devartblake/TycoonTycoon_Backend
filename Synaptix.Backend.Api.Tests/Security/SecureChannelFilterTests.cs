@@ -254,13 +254,15 @@ public sealed class SecureChannelApiFactory : TycoonApiFactory
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IKmsPayloadClient>();
+            services.RemoveAll<IKmsInternalClient>();
             services.AddSingleton<IKmsPayloadClient>(FakeKms);
+            services.AddSingleton<IKmsInternalClient>(FakeKms);
         });
     }
 }
 
 /// Controllable test double for IKmsPayloadClient.
-public sealed class FakeKmsPayloadClient : IKmsPayloadClient
+public sealed class FakeKmsPayloadClient : IKmsPayloadClient, IKmsInternalClient
 {
     public Func<DecryptPayloadRequest, DecryptPayloadResponse>? DecryptResponse { get; set; }
     public Exception? DecryptException { get; set; }
@@ -292,4 +294,12 @@ public sealed class FakeKmsPayloadClient : IKmsPayloadClient
             request.ContentType,
             DateTimeOffset.UtcNow));
     }
+
+    public Task<GenerateDataKeyResponse> GenerateDataKeyAsync(
+        GenerateDataKeyRequest request,
+        CancellationToken ct = default)
+        => Task.FromResult(new GenerateDataKeyResponse(
+            new byte[32],
+            "test-encrypted-key",
+            "test-key-version"));
 }

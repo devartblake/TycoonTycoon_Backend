@@ -1,0 +1,118 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}MongoDB Status{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Operator overview / Data / MongoDB</p>
+    <h1 class="page-title">MongoDB status</h1>
+    <p class="page-subtitle">Inspect analytics and settlement collections, index readiness, and warnings from the backend MongoDB diagnostics endpoint.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-mongodb-status-view' %}">Refresh</a>
+    <span class="status-pill {{ overall_status }}">{{ overall_status|upper }}</span>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi {% if overall_status == 'healthy' %}ok{% elif overall_status == 'offline' %}bad{% else %}warn{% endif %}">
+    <span class="kpi-label">Status</span>
+    <span class="kpi-val">{{ overall_status|upper }}</span>
+    <span class="kpi-delta">{{ diagnostics.source|default:"backend" }}</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Collections</span>
+    <span class="kpi-val">{{ collections_existing }} / {{ collections_total }}</span>
+    <span class="kpi-delta">expected collections present</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Documents</span>
+    <span class="kpi-val">{{ total_docs }}</span>
+    <span class="kpi-delta">across monitored collections</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Server</span>
+    <span class="kpi-val">{{ diagnostics.serverVersion|default:"-" }}</span>
+    <span class="kpi-delta">MongoDB version</span>
+  </article>
+</section>
+
+<section class="split">
+  <article class="card">
+    <div class="section-header">
+      <div>
+        <h2>Configured databases</h2>
+        <p class="section-copy">The backend reports the analytics and settlement database names it is using.</p>
+      </div>
+    </div>
+    <dl class="detail-list">
+      <div><dt>Configured</dt><dd>{{ diagnostics.configured|yesno:"yes,no" }}</dd></div>
+      <div><dt>Analytics</dt><dd><code>{{ diagnostics.analyticsDatabase|default:"-" }}</code></dd></div>
+      <div><dt>Crypto settlement</dt><dd><code>{{ diagnostics.cryptoDatabase|default:"-" }}</code></dd></div>
+    </dl>
+  </article>
+
+  <article class="card">
+    <div class="section-header">
+      <div>
+        <h2>Warnings</h2>
+        <p class="section-copy">Empty collections are expected before real traffic, but missing collections or auth errors need attention.</p>
+      </div>
+    </div>
+    <div class="status-grid">
+      {% for warning in warnings %}
+      <div class="surface-note">{{ warning }}</div>
+      {% empty %}
+      <div class="surface-note">No warnings returned.</div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="card mt-lg">
+  <div class="section-header">
+    <div>
+      <h2>Collections and indexes</h2>
+      <p class="section-copy">Expected MongoDB collections used by analytics, sidecar workflows, and crypto settlement.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Database</th>
+          <th>Collection</th>
+          <th>Exists</th>
+          <th>Docs</th>
+          <th>Indexes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in collections %}
+        <tr>
+          <td><code>{{ item.database }}</code></td>
+          <td>
+            <a href="{% url 'operator-mongodb-collection-detail-view' item.database item.collection %}"><strong>{{ item.collection }}</strong></a>
+            {% if item.missingIndexes %}
+            <span class="chip danger">{{ item.missingIndexes|length }} missing</span>
+            {% endif %}
+          </td>
+          <td><span class="chip {% if item.exists %}success{% else %}danger{% endif %}">{{ item.exists|yesno:"yes,no" }}</span></td>
+          <td>{{ item.count }}</td>
+          <td>
+            {% for index in item.indexes %}
+            <code>{{ index }}</code>{% if not forloop.last %}, {% endif %}
+            {% empty %}
+            <span class="helper-text">none</span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="helper-text">No MongoDB collection diagnostics returned.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

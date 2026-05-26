@@ -13,6 +13,7 @@ namespace Synaptix.Backend.Domain.Entities
         public string? Tier { get; private set; }
         public int Mmr { get; private set; }
         public Dictionary<string, object> Flags { get; private set; }
+        public string? SystemRole { get; private set; }
         public DateTimeOffset CreatedAt { get; private set; }
         public DateTimeOffset? LastLoginAt { get; private set; }
         public bool IsActive { get; private set; }
@@ -54,6 +55,11 @@ namespace Synaptix.Backend.Domain.Entities
         public void SetActive(bool isActive)
         {
             IsActive = isActive;
+        }
+
+        public void SetSystemRole(string? role)
+        {
+            SystemRole = string.IsNullOrWhiteSpace(role) ? null : role.Trim().ToLowerInvariant();
         }
     }
 }

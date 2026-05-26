@@ -2,6 +2,10 @@
 
 {% block title %}Synaptix Command{% endblock %}
 
+{% block extra_head %}
+<script src="https://cdn.plot.ly/plotly-basic-2.32.0.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <section class="topbar">
   <div>
@@ -126,14 +130,8 @@
         <span class="status-pill {{ service.status }}">{{ service.status|upper }}</span>
       </div>
 
-      <div class="probe-sparkline" title="Last 6 hours">
-        {% for bar in service.history.bars %}
-        <span class="probe-bar probe-bar-{{ bar.status }}" title="{{ bar.label }}"></span>
-        {% empty %}
-        <span class="probe-bar probe-bar-unknown" title="No history"></span>
-        {% endfor %}
-      </div>
-      <p class="probe-sparkline-label">last 6 hours</p>
+      <div class="probe-plotly" id="chart-{{ service.slug }}" data-chart="{{ service.history.chart_json }}" style="height:120px;"></div>
+      <p class="probe-sparkline-label">last 6 hours · avg latency per bucket</p>
 
       <p class="helper-text probe-detail">
         {% if service.history.degraded_since %}
@@ -185,6 +183,34 @@
 (function () {
   var POLL_MS = 30000;
   var STATUS_CLASSES = ['healthy', 'degraded', 'offline', 'unknown'];
+  var PLOTLY_LAYOUT = {
+    margin: { t: 4, r: 4, b: 28, l: 36 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    xaxis: { showgrid: false, tickfont: { size: 10, color: '#64748b' }, fixedrange: true },
+    yaxis: { showgrid: true, gridcolor: '#e2e8f0', tickfont: { size: 10, color: '#64748b' }, title: { text: 'ms', font: { size: 10, color: '#94a3b8' }, standoff: 2 }, fixedrange: true },
+    showlegend: false,
+    bargap: 0.15,
+  };
+  var PLOTLY_CONFIG = { responsive: true, displayModeBar: false, staticPlot: false };
+
+  // Initialise Plotly charts on page load
+  document.querySelectorAll('.probe-plotly').forEach(function (el) {
+    try {
+      var data = JSON.parse(el.getAttribute('data-chart') || '{}');
+      if (!data.labels || !data.labels.length) {
+        el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:0.75rem;">No history yet</div>';
+        return;
+      }
+      Plotly.newPlot(el, [{
+        type: 'bar',
+        x: data.labels,
+        y: data.values,
+        marker: { color: data.colors },
+        hovertemplate: '%{x}: %{y}ms<extra></extra>',
+      }], PLOTLY_LAYOUT, PLOTLY_CONFIG);
+    } catch (e) { /* leave div empty on error */ }
+  });
 
   function applyUpdate(services) {
     for (var i = 0; i < services.length; i++) {
@@ -214,10 +240,31 @@
     }
   }
 
+  function updateCharts(charts) {
+    for (var slug in charts) {
+      var el = document.getElementById('chart-' + slug);
+      if (!el) continue;
+      var cd = charts[slug];
+      if (!cd.labels || !cd.labels.length) continue;
+      try {
+        Plotly.react(el, [{
+          type: 'bar',
+          x: cd.labels,
+          y: cd.values,
+          marker: { color: cd.colors },
+          hovertemplate: '%{x}: %{y}ms<extra></extra>',
+        }], PLOTLY_LAYOUT, PLOTLY_CONFIG);
+      } catch (e) {}
+    }
+  }
+
   function poll() {
     fetch("{% url 'operator-health' %}")
       .then(function (r) { return r.json(); })
-      .then(function (data) { applyUpdate(data.services || []); })
+      .then(function (data) {
+        applyUpdate(data.services || []);
+        if (data.charts) updateCharts(data.charts);
+      })
       .catch(function () { /* silent — stale data stays visible */ });
   }
 

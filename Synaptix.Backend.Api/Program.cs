@@ -31,6 +31,7 @@ using Synaptix.Backend.Api.Features.AdminEventQueue;
 using Synaptix.Backend.Api.Features.AdminMatches;
 using Synaptix.Backend.Api.Features.AdminMedia;
 using Synaptix.Backend.Api.Features.AdminModeration;
+using Synaptix.Backend.Api.Features.AdminMongo;
 using Synaptix.Backend.Api.Features.AdminNotifications;
 using Synaptix.Backend.Api.Features.AppConfig;
 using Synaptix.Backend.Api.Features.Quiz;
@@ -42,6 +43,7 @@ using Synaptix.Backend.Api.Features.AdminStore;
 using Synaptix.Backend.Api.Features.AdminSeasons;
 using Synaptix.Backend.Api.Features.AdminExperiments;
 using Synaptix.Backend.Api.Features.AdminPersonalization;
+using Synaptix.Backend.Api.Features.AdminPlayerLookup;
 using Synaptix.Backend.Api.Features.Experiments;
 using Synaptix.Backend.Api.Features.AdminSkills;
 using Synaptix.Backend.Api.Features.AdminUsers;
@@ -73,7 +75,9 @@ using Synaptix.Backend.Api.Features.Questions;
 using Synaptix.Backend.Api.Features.Crypto;
 using Synaptix.Backend.Api.Features.Store;
 using Synaptix.Backend.Api.Features.Arcade;
+using Synaptix.Backend.Api.Features.Events;
 using Synaptix.Backend.Api.Features.Rewards;
+using Synaptix.Backend.Api.Features.Account;
 using Synaptix.Backend.Api.Features.Spins;
 using Synaptix.Backend.Api.Features.Referrals;
 using Synaptix.Backend.Api.Features.GameEvents;
@@ -99,6 +103,8 @@ using Synaptix.Backend.Application.Analytics.Writers;
 using Synaptix.Backend.Application.Auth;
 using Synaptix.Backend.Application.Config;
 using Synaptix.Backend.Application.GameEvents;
+using Synaptix.Backend.Application.Missions;
+using Synaptix.Backend.Application.Rewards;
 using Synaptix.Backend.Application.Guardians;
 using Synaptix.Backend.Application.Matchmaking;
 using Synaptix.Backend.Application.Notifications;
@@ -147,6 +153,22 @@ builder.Services
     .BindConfiguration("JwtSettings")   // binds appsettings "JwtSettings" section
     .ValidateDataAnnotations()          // enforces [Required], [MinLength], [Range]
     .ValidateOnStart();                 // fails at startup, not first request
+
+builder.Services
+    .AddOptions<MissionRewardOptions>()
+    .BindConfiguration("RewardReactor:Missions");
+
+builder.Services
+    .AddOptions<RewardReactorRuntimeOptions>()
+    .BindConfiguration("RewardReactor");
+
+builder.Services.AddSingleton<RewardReactorRuntimeContextService>();
+
+// Reward Reactor services
+builder.Services.AddSingleton<IRewardRng, CryptoRewardRng>();
+builder.Services.AddScoped<RewardOutcomeService>();
+builder.Services.AddScoped<RewardPolicyService>();
+builder.Services.AddScoped<RewardClaimService>();
 
 // Register IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -407,7 +429,7 @@ builder.Services
             ValidateIssuer = true,
             ValidIssuer = jwtSettings.Issuer,
             ValidateAudience = true,
-            ValidAudiences = new[] { "mobile-app", "admin-app", jwtSettings.Audience },
+            ValidAudiences = new[] { "mobile-app", "admin-app", "crypto-service", jwtSettings.Audience },
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
             ValidateLifetime = true,
@@ -908,7 +930,11 @@ StudySessionsEndpoints.Map(app);
 VoteEndpoints.Map(app);
 StoreEndpoints.Map(app);
 ArcadeSpinEndpoints.Map(app);
+ReactorEndpoints.Map(app);
+ActiveEventsEndpoints.Map(app);
+UserRewardsEndpoints.Map(app);
 RewardsEndpoints.Map(app);
+AccountRewardsEndpoints.Map(app);
 SpinsEndpoints.Map(app);
 AvatarEndpoints.Map(app);
 PersonalizationEndpoints.Map(app);
@@ -941,10 +967,12 @@ var admin = app.MapGroup("/admin")
 AdminGameEventsEndpoints.Map(admin);
 AdminQuestionsEndpoints.Map(admin);
 AdminUsersEndpoints.Map(admin);
+AdminPlayerLookupEndpoints.Map(admin);
 AdminEventQueueEndpoints.Map(admin);
 AdminNotificationsEndpoints.Map(admin);
 AdminConfigEndpoints.Map(admin);
 AdminMediaEndpoints.Map(admin);
+AdminMongoEndpoints.Map(admin);
 AdminAnalyticsEndpoints.Map(admin);
 AdminAuditEndpoints.Map(admin);
 AdminEconomyEndpoints.Map(admin);

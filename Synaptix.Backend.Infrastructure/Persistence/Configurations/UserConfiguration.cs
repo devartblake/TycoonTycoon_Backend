@@ -36,6 +36,9 @@ namespace Synaptix.Backend.Infrastructure.Persistence.Configurations
             builder.Property(u => u.IsActive)
                 .IsRequired();
 
+            builder.Property(u => u.SystemRole)
+                .HasMaxLength(32);
+
             // Ignore the Flags dictionary as it's not mapped to database
             builder.Ignore(u => u.Flags);
 

@@ -1,0 +1,137 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}MongoDB Collection Detail{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Operator overview / Data / MongoDB / {{ collection.database }}</p>
+    <h1 class="page-title">{{ collection.collection }}</h1>
+    <p class="page-subtitle">Collection storage, index metadata, and readiness warnings returned by the backend diagnostics endpoint.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-mongodb-status-view' %}">Back to overview</a>
+    <a class="button secondary" href="{% url 'operator-mongodb-collection-detail-view' collection.database collection.collection %}">Refresh</a>
+    <span class="status-pill {% if collection.exists and not missing_indexes %}healthy{% elif collection.exists %}degraded{% else %}offline{% endif %}">
+      {% if collection.exists and not missing_indexes %}READY{% elif collection.exists %}DEGRADED{% else %}MISSING{% endif %}
+    </span>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi {% if collection.exists %}ok{% else %}bad{% endif %}">
+    <span class="kpi-label">Documents</span>
+    <span class="kpi-val">{{ collection.count|default:0 }}</span>
+    <span class="kpi-delta">{{ collection.exists|yesno:"collection exists,collection missing" }}</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Storage</span>
+    <span class="kpi-val">{{ collection.storageSizeBytes|default:0|filesizeformat }}</span>
+    <span class="kpi-delta">allocated storage</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Data size</span>
+    <span class="kpi-val">{{ collection.sizeBytes|default:0|filesizeformat }}</span>
+    <span class="kpi-delta">logical document size</span>
+  </article>
+  <article class="screen-kpi {% if missing_indexes %}warn{% endif %}">
+    <span class="kpi-label">Indexes</span>
+    <span class="kpi-val">{{ index_details|length }} / {{ expected_indexes|length }}</span>
+    <span class="kpi-delta">{{ collection.totalIndexSizeBytes|default:0|filesizeformat }} total index size</span>
+  </article>
+</section>
+
+<section class="split">
+  <article class="card">
+    <div class="section-header">
+      <div>
+        <h2>Collection metadata</h2>
+        <p class="section-copy">Backend configuration and MongoDB storage stats for this collection.</p>
+      </div>
+    </div>
+    <dl class="detail-list">
+      <div><dt>Database</dt><dd><code>{{ collection.database }}</code></dd></div>
+      <div><dt>Collection</dt><dd><code>{{ collection.collection }}</code></dd></div>
+      <div><dt>Exists</dt><dd>{{ collection.exists|yesno:"yes,no" }}</dd></div>
+      <div><dt>Average object size</dt><dd>{{ collection.averageObjectSizeBytes|default:0|filesizeformat }}</dd></div>
+    </dl>
+  </article>
+
+  <article class="card">
+    <div class="section-header">
+      <div>
+        <h2>Collection warnings</h2>
+        <p class="section-copy">Warnings are scoped to this collection when the backend can identify the source.</p>
+      </div>
+    </div>
+    <div class="status-grid">
+      {% for warning in warnings %}
+      <div class="surface-note">{{ warning }}</div>
+      {% empty %}
+      <div class="surface-note">No collection-specific warnings returned.</div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="card mt-lg">
+  <div class="section-header">
+    <div>
+      <h2>Index details</h2>
+      <p class="section-copy">Key patterns, uniqueness, TTL, sparse, and partial filter metadata reported by MongoDB.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Key pattern</th>
+          <th>Unique</th>
+          <th>Sparse</th>
+          <th>TTL</th>
+          <th>Partial filter</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for index in index_details %}
+        <tr>
+          <td><code>{{ index.name }}</code></td>
+          <td>
+            {% for key, direction in index.keyPattern.items %}
+            <code>{{ key }}: {{ direction }}</code>{% if not forloop.last %}, {% endif %}
+            {% empty %}
+            <span class="helper-text">none</span>
+            {% endfor %}
+          </td>
+          <td>{{ index.unique|yesno:"yes,no" }}</td>
+          <td>{{ index.sparse|yesno:"yes,no" }}</td>
+          <td>{% if index.expireAfterSeconds %}{{ index.expireAfterSeconds }}s{% else %}-{% endif %}</td>
+          <td>{% if index.partialFilterExpression %}<code>{{ index.partialFilterExpression }}</code>{% else %}-{% endif %}</td>
+          <td><span class="chip {% if index.status == 'present' %}success{% else %}danger{% endif %}">{{ index.status|default:"present" }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="helper-text">No MongoDB index diagnostics returned.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if missing_indexes %}
+<section class="card mt-lg">
+  <div class="section-header">
+    <div>
+      <h2>Missing expected indexes</h2>
+      <p class="section-copy">These index names are part of the required Mongo index set but were not returned by MongoDB.</p>
+    </div>
+  </div>
+  <div class="status-grid">
+    {% for index in missing_indexes %}
+    <div class="surface-note"><code>{{ index }}</code></div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

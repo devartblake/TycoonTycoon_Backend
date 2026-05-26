@@ -10,6 +10,7 @@ namespace Synaptix.Backend.Application.Abstractions
     public interface IAppDb
     {
         DbSet<Player> Players { get; }
+        DbSet<PlayerLookupCode> PlayerLookupCodes { get; }
         DbSet<Match> Matches { get; }
         DbSet<MatchRound> MatchRounds { get; }
         DbSet<MatchResult> MatchResults { get; }
@@ -92,6 +93,11 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<ModuleLesson> ModuleLessons { get; }
         DbSet<ModuleCompletion> ModuleCompletions { get; }
         DbSet<StudySession> StudySessions { get; }
+
+        // Reward Reactor
+        DbSet<RewardSession> RewardSessions { get; }
+        DbSet<RewardClaimLedger> RewardClaimLedger { get; }
+        DbSet<RewardChainTicket> RewardChainTickets { get; }
 
         // Personalization
         DbSet<PlayerMindProfile> PlayerMindProfiles { get; }

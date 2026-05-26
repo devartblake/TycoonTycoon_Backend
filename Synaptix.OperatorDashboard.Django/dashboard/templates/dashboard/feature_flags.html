@@ -1,0 +1,45 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Feature Flags{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Config</p>
+    <h1 class="page-title">Feature flags</h1>
+    <p class="page-subtitle">Toggle which features are enabled for all frontend clients. Changes take effect on the next app config fetch.</p>
+  </div>
+</section>
+
+{% include "dashboard/partials/messages.html" %}
+
+<form method="post">
+  {% csrf_token %}
+
+  {% for group_name, flags in grouped_flags %}
+  <section class="card mt-lg">
+    {% include "dashboard/partials/section_intro.html" with title=group_name copy="" %}
+    <div class="form-grid">
+      {% for flag in flags %}
+      <div>
+        <span class="helper-text">{{ flag.label }}</span>
+        <label class="toggle-label" style="margin-top:6px;">
+          <span class="toggle-switch">
+            <input type="checkbox" name="{{ flag.key }}" {% if flag.value %}checked{% endif %} />
+            <span class="toggle-slider"></span>
+          </span>
+          <span class="toggle-label-text">{{ flag.description }}</span>
+        </label>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <section class="card mt-lg">
+    <div class="toolbar-actions">
+      <button type="submit">Save changes</button>
+    </div>
+  </section>
+</form>
+{% endblock %}

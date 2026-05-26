@@ -27,6 +27,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         }
 
         public DbSet<Player> Players => Set<Player>();
+        public DbSet<PlayerLookupCode> PlayerLookupCodes => Set<PlayerLookupCode>();
         public DbSet<Match> Matches => Set<Match>();
         public DbSet<MatchRound> MatchRounds => Set<MatchRound>();
         public DbSet<MatchResult> MatchResults => Set<MatchResult>();
@@ -112,6 +113,11 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<ModuleLesson> ModuleLessons => Set<ModuleLesson>();
         public DbSet<ModuleCompletion> ModuleCompletions => Set<ModuleCompletion>();
         public DbSet<StudySession> StudySessions => Set<StudySession>();
+
+        // Reward Reactor
+        public DbSet<RewardSession> RewardSessions => Set<RewardSession>();
+        public DbSet<RewardClaimLedger> RewardClaimLedger => Set<RewardClaimLedger>();
+        public DbSet<RewardChainTicket> RewardChainTickets => Set<RewardChainTicket>();
 
         // Personalization
         public DbSet<PlayerMindProfile> PlayerMindProfiles => Set<PlayerMindProfile>();

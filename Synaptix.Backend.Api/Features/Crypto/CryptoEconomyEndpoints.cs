@@ -32,16 +32,16 @@ public static class CryptoEconomyEndpoints
         g.MapPost("/withdraw", RequestWithdrawal).RequireAuthorization().RequireSecureChannel();
         g.MapPost("/prize-pool/fund", FundPrizePool).RequireAuthorization();
         g.MapGet("/prize-pool/{poolId}", GetPrizePool).RequireAuthorization();
-        g.MapPost("/prize-pool/distribute", DistributePrizePool).RequireAuthorization()
+        g.MapPost("/prize-pool/distribute", DistributePrizePool).RequireAuthorization(AdminPolicies.CryptoSettlementPolicy)
             .WithMetadata(new Security.RequireAdminOpsKeyAttribute());
         g.MapPost("/stake", Stake).RequireAuthorization().RequireSecureChannel();
         g.MapPost("/unstake", Unstake).RequireAuthorization().RequireSecureChannel();
         g.MapGet("/staking/{playerId:guid}", GetStakingPosition).RequireAuthorization();
-        g.MapGet("/withdraw/pending", ListPendingWithdrawals).RequireAuthorization()
+        g.MapGet("/withdraw/pending", ListPendingWithdrawals).RequireAuthorization(AdminPolicies.CryptoSettlementPolicy)
             .WithMetadata(new Security.RequireAdminOpsKeyAttribute());
-        g.MapPost("/withdraw/{transactionId:guid}/approve", ApproveWithdrawal).RequireAuthorization()
+        g.MapPost("/withdraw/{transactionId:guid}/approve", ApproveWithdrawal).RequireAuthorization(AdminPolicies.CryptoSettlementPolicy)
             .WithMetadata(new Security.RequireAdminOpsKeyAttribute());
-        g.MapPost("/withdraw/{transactionId:guid}/reject", RejectWithdrawal).RequireAuthorization()
+        g.MapPost("/withdraw/{transactionId:guid}/reject", RejectWithdrawal).RequireAuthorization(AdminPolicies.CryptoSettlementPolicy)
             .WithMetadata(new Security.RequireAdminOpsKeyAttribute());
     }
 

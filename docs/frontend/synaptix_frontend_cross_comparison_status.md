@@ -171,9 +171,23 @@ Deferred:
 
 ---
 
-## 6. Remaining frontend work that **does depend** on backend work
+## 6. Frontend/backend dependency work — status as of 2026-05-23
 
-These are the main true frontend/backend dependency gaps still open.
+### 6.0 Reward Reactor ✅ COMPLETE — 2026-05-23
+
+Verified in `trivia_tycoon` Flutter project:
+- Full chain state machine (idle → spinning → pendingClaim → claiming → applied → cooldown → error) via `ReactorNotifier`
+- `RewardReactorScreen` at `/rewards/reactor`; 3-reel slot machine widget with animations
+- `RewardReactorService` with `startSpin()` / `claimReward()`; 9 DTO models
+- 4 dedicated test files
+
+### 6.0b Study Hub ✅ COMPLETE — 2026-05-23
+
+Verified in `trivia_tycoon` Flutter project:
+- `StudyHubScreen` at `/study`; routes: favorites, weak-areas, set/:setId, session/:sessionId, create, edit
+- `StudySessionScreen` with flashcard action handling and session resume
+- `StudyCustomSetScreen` for create/edit
+- Providers: `studySetsProvider`, `recommendedStudySetsProvider`, `activeStudySessionsProvider`, `favoritedQuestionIdsProvider`
 
 ### 6.1 Full monetization backend integration
 Not started end-to-end:
@@ -183,12 +197,14 @@ Not started end-to-end:
 - live grant/claim loops
 - shared purchase outcomes
 
-### 6.2 Crypto economy integration
-Not started:
-- crypto rewards
-- prize pool visibility
-- crypto balance/history UI
-- withdrawal / wallet-linking UX
+### 6.2 Crypto economy integration ✅ COMPLETE — 2026-05-23
+
+Verified in `trivia_tycoon` Flutter project:
+- `CryptoWalletScreen` at `/store/crypto-wallet` — balance, history, link wallet, withdraw
+- Staking / unstaking UI with `stakeCryptoProvider` / `unstakeCryptoProvider`
+- Prize pool funding via `fundPrizePoolProvider`
+- Feature flags: `surfacesEnabled`, `writesEnabled`, `enabledNetworkKeys`
+- 21 crypto model files; 11 dedicated test files
 
 ### 6.3 Backend-driven onboarding rewards (optional later)
 Current onboarding rewards are deterministic/local-first.

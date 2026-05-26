@@ -214,6 +214,8 @@ All environment variables for `compose.security.yml`. Set in your shell or in `d
 | `JWT_SECRET_KEY` | `your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long` | Must match `JwtSettings:SecretKey` in the main Tycoon backend |
 | `VAULT_REQUIRED` | `false` | Set to `true` to refuse startup if Vault is unreachable |
 | `KMS_REDIS_URL` | *(empty)* | Redis connection string. Empty → in-memory cache |
+| `KMS_API_BASE_URL` | `http://kms-api:5050` | Main-stack services use this to call Synaptix KMS over the shared Docker network |
+| `KMS_CLIENT_REQUIRED` | `false` | Set `true` when backend secure-channel endpoints must fail fast if KMS is unavailable |
 | `ASPNETCORE_ENVIRONMENT` | `Development` | `Development` allows dev-mode JWT passthrough |
 | `LOG_LEVEL` | `Information` | Serilog minimum level |
 | `BUILD_CONFIGURATION` | `Release` | `Debug` for local development builds |

@@ -12,6 +12,7 @@ from .views import (
     operator_media_intent,
     operator_media_intent_view,
     operator_minio_diagnostics,
+    operator_mongodb_status,
     operator_moderation_logs,
     operator_moderation_log_detail_view,
     operator_moderation_logs_view,
@@ -27,6 +28,8 @@ from .views import (
     operator_user_unban,
     operator_user_update,
     player_resolve_view,
+    mongodb_status_view,
+    mongodb_collection_detail_view,
     operator_users_view,
     operator_users,
     store_analytics_view,
@@ -91,6 +94,13 @@ from .views import (
     powerups_view,
     skills_view,
     matches_view,
+    feature_flags_view,
+    escalations_view,
+    player_transactions_view,
+    player_transaction_dispute,
+    player_transaction_reverse,
+    season_points_view,
+    season_points_apply,
 )
 
 urlpatterns = [
@@ -105,6 +115,9 @@ urlpatterns = [
     path("media/intent", operator_media_intent_view, name="operator-media-intent-view"),
     path("api/operator/minio/diagnostics", operator_minio_diagnostics, name="operator-minio-diagnostics"),
     path("minio/diagnostics", minio_diagnostics_view, name="operator-minio-diagnostics-view"),
+    path("api/operator/mongodb/status", operator_mongodb_status, name="operator-mongodb-status"),
+    path("mongodb/status", mongodb_status_view, name="operator-mongodb-status-view"),
+    path("mongodb/status/<str:database>/<str:collection>", mongodb_collection_detail_view, name="operator-mongodb-collection-detail-view"),
     path("api/operator/moderation/logs", operator_moderation_logs, name="operator-moderation-logs"),
     path("moderation/logs", operator_moderation_logs_view, name="operator-moderation-logs-view"),
     path("moderation/logs/<str:log_id>", operator_moderation_log_detail_view, name="operator-moderation-log-detail-view"),
@@ -198,4 +211,15 @@ urlpatterns = [
     path("economy/skills", skills_view, name="skills-view"),
     # Matches
     path("events/matches", matches_view, name="matches-view"),
+    # Config
+    path("config/feature-flags", feature_flags_view, name="feature-flags-view"),
+    # Escalations
+    path("moderation/escalations", escalations_view, name="escalations-view"),
+    # Player Transactions
+    path("economy/player-transactions", player_transactions_view, name="player-transactions-view"),
+    path("economy/player-transactions/<str:txn_id>/dispute", player_transaction_dispute, name="player-transaction-dispute"),
+    path("economy/player-transactions/<str:txn_id>/reverse", player_transaction_reverse, name="player-transaction-reverse"),
+    # Season Points
+    path("operations/season-points", season_points_view, name="season-points-view"),
+    path("operations/season-points/apply", season_points_apply, name="season-points-apply"),
 ]

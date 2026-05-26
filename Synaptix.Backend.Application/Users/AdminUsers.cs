@@ -141,6 +141,9 @@ public sealed class AdminUpdateUserHandler(IAppDb db, ILogger<AdminUpdateUserHan
 
         user.UpdateProfile(r.Request.Username, user.Country);
 
+        if (r.Request.Role is not null)
+            user.SetSystemRole(r.Request.Role);
+
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Admin user updated: UserId={UserId}, Username={Username}", user.Id, user.Handle);
         return new AdminUpdateUserResponse(AdminUsersMapper.ToContractId(user.Id), DateTimeOffset.UtcNow);
@@ -249,7 +252,7 @@ internal static class AdminUsersMapper
             Username: user.Handle,
             Email: user.Email,
             Status: status,
-            Role: "user",
+            Role: user.SystemRole ?? "user",
             AgeGroup: "adult",
             CreatedAt: user.CreatedAt,
             LastActive: user.LastLoginAt,

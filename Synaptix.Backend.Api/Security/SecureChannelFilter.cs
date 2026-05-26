@@ -88,10 +88,10 @@ public sealed class SecureChannelMiddleware
             return;
         }
 
-        var kms = http.RequestServices.GetRequiredService<IKmsPayloadClient>();
+        var kms = http.RequestServices.GetRequiredService<IKmsInternalClient>();
         DecryptPayloadResponse decrypted;
         var subjectId = GetSubjectId(http);
-        var requestAad = BuildAad("request", http, sessionId, sequenceNumber, subjectId, envelope.EncryptedAtUtc);
+        var requestAad = BuildAad("request", http, sessionId, sequenceNumber, subjectId);
         try
         {
             decrypted = await kms.DecryptAsync(new DecryptPayloadRequest(
@@ -145,7 +145,7 @@ public sealed class SecureChannelMiddleware
         EncryptPayloadResponse encrypted;
         try
         {
-            var responseAad = BuildAad("response", http, sessionId, sequenceNumber, subjectId, envelope.EncryptedAtUtc);
+            var responseAad = BuildAad("response", http, sessionId, sequenceNumber, subjectId);
             encrypted = await kms.EncryptAsync(
                 new EncryptPayloadRequest(sessionId, responseBytes, capturedContentType, responseAad), ct);
         }
@@ -210,8 +210,7 @@ public sealed class SecureChannelMiddleware
         HttpContext http,
         Guid sessionId,
         long sequenceNumber,
-        string? subjectId,
-        DateTimeOffset encryptedAtUtc)
+        string? subjectId)
     {
         var target = $"{http.Request.PathBase}{http.Request.Path}{http.Request.QueryString}";
         return string.Join('|',
@@ -221,8 +220,7 @@ public sealed class SecureChannelMiddleware
             target,
             sessionId.ToString("N"),
             sequenceNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            subjectId ?? string.Empty,
-            encryptedAtUtc.ToUniversalTime().ToString("O"));
+            subjectId ?? string.Empty);
     }
 
     private static string? GetSubjectId(HttpContext http)

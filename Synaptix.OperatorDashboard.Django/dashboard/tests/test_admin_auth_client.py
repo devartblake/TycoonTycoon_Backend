@@ -152,5 +152,23 @@ class AdminAuthClientTests(SimpleTestCase):
         self.assertEqual("http://kms-api:5050/internal/security/sessions/start", mock_post.call_args_list[0][0][0])
         self.assertEqual("http://kms-api:5050/internal/security/encrypt", mock_post.call_args_list[1][0][0])
         self.assertEqual("http://backend-api:5000/admin/auth/login", mock_post.call_args_list[2][0][0])
-        self.assertEqual("11111111-1111-1111-1111-111111111111", mock_post.call_args_list[2].kwargs["headers"]["X-Syn-Sec-Session"])
+        encrypt_payload = mock_post.call_args_list[1].kwargs["json"]
+        self.assertEqual(
+            "syn-sec-v1|request|POST|/admin/auth/login|11111111111111111111111111111111|1|",
+            encrypt_payload["aad"],
+        )
+        self.assertEqual("client-to-server", encrypt_payload["direction"])
+        backend_headers = mock_post.call_args_list[2].kwargs["headers"]
+        self.assertEqual("11111111-1111-1111-1111-111111111111", backend_headers["X-Syn-Sec-Session"])
+        self.assertEqual("1", backend_headers["X-Syn-Sec-Seq"])
+        self.assertTrue(backend_headers["X-Syn-Sec-Nonce"])
         self.assertEqual("http://kms-api:5050/internal/security/decrypt", mock_post.call_args_list[3][0][0])
+        decrypt_payload = mock_post.call_args_list[3].kwargs["json"]
+        self.assertEqual(
+            "syn-sec-v1|response|POST|/admin/auth/login|11111111111111111111111111111111|1|",
+            decrypt_payload["aad"],
+        )
+        self.assertEqual("server-to-client", decrypt_payload["direction"])
+        self.assertFalse(decrypt_payload["enforceReplay"])
+        self.assertEqual(1, decrypt_payload["sequenceNumber"])
+        self.assertTrue(decrypt_payload["replayNonce"])

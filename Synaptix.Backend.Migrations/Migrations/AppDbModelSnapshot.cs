@@ -4357,6 +4357,11 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("SystemRole")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("system_role");
+
                     b.Property<string>("Tier")
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")

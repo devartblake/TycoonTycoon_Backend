@@ -1,0 +1,30 @@
+http:
+  routers:
+    backend-api:
+      rule: "PathPrefix(`/api`)"
+      entryPoints: [web]
+      priority: 10
+      service: backend-api
+      middlewares: [backend-api-strip]
+
+    operator-dashboard:
+      rule: "PathPrefix(`/`)"
+      entryPoints: [web]
+      priority: 1
+      service: operator-dashboard
+
+  middlewares:
+    backend-api-strip:
+      stripPrefix:
+        prefixes: ["/api"]
+
+  services:
+    backend-api:
+      loadBalancer:
+        servers:
+          - url: "http://backend-api:5000"
+
+    operator-dashboard:
+      loadBalancer:
+        servers:
+          - url: "http://operator-dashboard:8200"

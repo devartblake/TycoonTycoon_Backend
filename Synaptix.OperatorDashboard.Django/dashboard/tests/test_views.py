@@ -370,6 +370,83 @@ class DashboardViewsTests(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("new-token", self.client.session.get("operator_access_token"))
 
+    def _mongodb_payload(self):
+        return {
+            "overallStatus": "degraded",
+            "configured": True,
+            "analyticsDatabase": "synaptix_analytics",
+            "cryptoDatabase": "synaptix_crypto",
+            "warnings": ["synaptix_analytics.analytics_events missing index ix_analytics_events_type_received."],
+            "collections": [
+                {
+                    "database": "synaptix_analytics",
+                    "collection": "analytics_events",
+                    "exists": True,
+                    "count": 3,
+                    "indexes": ["_id_", "ux_analytics_events_event_id"],
+                    "sizeBytes": 1024,
+                    "storageSizeBytes": 4096,
+                    "totalIndexSizeBytes": 2048,
+                    "averageObjectSizeBytes": 341,
+                    "indexDetails": [
+                        {
+                            "name": "_id_",
+                            "keyPattern": {"_id": "1"},
+                            "unique": False,
+                            "sparse": False,
+                            "expireAfterSeconds": None,
+                            "partialFilterExpression": None,
+                        },
+                        {
+                            "name": "ux_analytics_events_event_id",
+                            "keyPattern": {"event_id": "1"},
+                            "unique": True,
+                            "sparse": False,
+                            "expireAfterSeconds": None,
+                            "partialFilterExpression": None,
+                        },
+                    ],
+                    "expectedIndexes": ["_id_", "ux_analytics_events_event_id", "ix_analytics_events_type_received"],
+                    "missingIndexes": ["ix_analytics_events_type_received"],
+                    "warnings": ["synaptix_analytics.analytics_events missing index ix_analytics_events_type_received."],
+                }
+            ],
+        }
+
+    @mock.patch("dashboard.views.get_mongodb_diagnostics")
+    def test_operator_mongodb_status_overview_links_to_collection_detail(self, mock_get_mongodb_diagnostics):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+        mock_get_mongodb_diagnostics.return_value = self._mongodb_payload()
+
+        response = self.client.get(reverse("operator-mongodb-status-view"))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "analytics_events")
+        self.assertContains(response, reverse("operator-mongodb-collection-detail-view", kwargs={"database": "synaptix_analytics", "collection": "analytics_events"}))
+        self.assertContains(response, "1 missing")
+
+    @mock.patch("dashboard.views.get_mongodb_diagnostics")
+    def test_operator_mongodb_collection_detail_renders_indexes_and_warnings(self, mock_get_mongodb_diagnostics):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
+        session.save()
+        mock_get_mongodb_diagnostics.return_value = self._mongodb_payload()
+
+        response = self.client.get(reverse("operator-mongodb-collection-detail-view", kwargs={"database": "synaptix_analytics", "collection": "analytics_events"}))
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Collection metadata")
+        self.assertContains(response, "ux_analytics_events_event_id")
+        self.assertContains(response, "event_id: 1")
+        self.assertContains(response, "ix_analytics_events_type_received")
+        self.assertContains(response, "missing index")
+
     @mock.patch("dashboard.views.list_admin_users")
     def test_operator_users_endpoint_returns_payload(self, mock_list_admin_users):
         session = self.client.session

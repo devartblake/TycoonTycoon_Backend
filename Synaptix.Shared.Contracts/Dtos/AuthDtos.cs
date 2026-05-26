@@ -24,7 +24,8 @@ namespace Synaptix.Shared.Contracts.Dtos
         string? Country,
         string? AvatarUrl,
         string? Tier,
-        int Mmr
+        int Mmr,
+        IReadOnlyList<string>? UserRoles = null
     );
 
     public record UserCareerSummaryDto(

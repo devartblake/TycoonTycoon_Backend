@@ -4,19 +4,40 @@ All calls include the X-Admin-Ops-Key header.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import httpx
 
 from app.config import settings
 
+log = logging.getLogger(__name__)
+
 
 def _admin_headers() -> dict[str, str]:
     headers: dict[str, str] = {"Content-Type": "application/json"}
     if settings.admin_ops_key:
         headers["X-Admin-Ops-Key"] = settings.admin_ops_key
+    token = service_jwt()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     return headers
+
+
+def service_jwt() -> str:
+    if settings.crypto_service_jwt:
+        return settings.crypto_service_jwt.strip()
+
+    if settings.crypto_service_jwt_file:
+        try:
+            return Path(settings.crypto_service_jwt_file).read_text(encoding="utf-8").strip()
+        except OSError as exc:
+            log.warning("Unable to read CRYPTO_SERVICE_JWT_FILE=%s: %s", settings.crypto_service_jwt_file, exc)
+            return ""
+
+    return ""
 
 
 @dataclass
