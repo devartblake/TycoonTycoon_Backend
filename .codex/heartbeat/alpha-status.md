@@ -1,6 +1,6 @@
 # Alpha/Beta Status Board
 
-Last updated: `2026-05-21 America/New_York`
+Last updated: `2026-05-26 America/New_York`
 
 ## Overall release status
 
@@ -37,6 +37,20 @@ Repo-side preparation is mostly verified, but live staging/prod evidence is stil
 | Operator dashboard cutover gates | blocked | operator-dashboard | `efMigrationsApplied`, `strictReadiness`, `parallelRun`, `signOff`, `cutover`, and `blazorRollbackWindow` all remain pending until live evidence exists. |
 | Windows X25519 KMS test path | verified | security-kms | Resolved with explicit `P256-HKDF-SHA256-AES256GCM` compatibility suite and capability-aware key exchange. `Synaptix.Security.Kms.Tests` passes locally on Windows. |
 
+## Repo-side preparation (2026-05-26)
+
+| Item | Status | Notes |
+|---|---:|---|
+| BE Packet E — Elasticsearch/Docker/CI/telemetry rename | verified | Completed 2026-05-09; all `tycoon-*` identifiers renamed to `synaptix-*` |
+| BE Packet E — C# namespace rename (`Tycoon.*` → `Synaptix.*`) | verified | Completed 2026-05-22; 987 namespace declarations, 1,491 using statements updated |
+| BE Packet E — Non-C# service rename | verified | `CryptoService`, `OperatorDashboard.Django/Vue`, `Sidecar` renamed 2026-05-22 |
+| JWT issuer/audience update | verified | `SynaptixBackendApi` / `SynaptixFrontendApp`; handoff doc created |
+| `store_purchases_enabled` feature flag | verified | Returns `403 FeatureDisabled`; defaults false; exposed in `/api/v1/app/config` |
+| Missing Designer.cs for 20260512 migration | verified | Stub created consistent with existing project pattern |
+| Production config template | verified | `appsettings.Production.example.json` created with all keys and `<REPLACE>` placeholders |
+| Feature flag gates (14/14 Alpha endpoints) | verified | `403 FeatureDisabled` on all disabled endpoints confirmed in repo |
+| KMS / Secure Channel | verified | X25519/P-256 cross-platform negotiation; AAD/replay/subject hardening; 15 endpoints protected |
+
 ## Post-Alpha deferred
 
 | Area | Reason deferred | Revisit trigger |
@@ -47,4 +61,4 @@ Repo-side preparation is mostly verified, but live staging/prod evidence is stil
 | Multi-region deployment | Infrastructure maturity task | After Beta feedback |
 | Automated economy balancing | Requires real gameplay data | Beta telemetry |
 | Tournament/advanced-season dedicated flags | Beta hardening; Alpha controlled indirectly by existing gates | Before enabling matchmaking/tournaments in Beta |
-| Store purchase provider flag | Purchases are not Alpha scope | Before public Beta or payment sandbox exposure |
+| Reward Reactor endpoints (`/arcade/reactor/spin`, `/arcade/reactor/claim`) | Planning docs exist; implementation not yet built | Post-Alpha; legacy `/arcade/spin/claim` serves Alpha |

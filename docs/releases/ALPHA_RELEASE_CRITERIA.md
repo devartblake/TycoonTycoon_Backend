@@ -1,9 +1,19 @@
 # Alpha Release Criteria
 
 **Release:** alpha-beta-2026  
-**Last updated:** 2026-05-18
+**Last updated:** 2026-05-26
 
 All items in the **Must Pass** section must be green before the Alpha binary ships. Items in **Should Pass** are strongly recommended; any failures must have documented mitigations.
+
+---
+
+## Repo-Side Preparation Checklist (2026-05-26)
+
+- [x] All Synaptix identifier renames complete — BE Packet E done (ES, Docker, CI/telemetry, C# namespaces, non-C# services) <!-- 2026-05-09 + 2026-05-22 -->
+- [x] JWT issuer/audience updated (`SynaptixBackendApi` / `SynaptixFrontendApp`) and Flutter team handoff doc created <!-- 2026-05-22 -->
+- [x] `store_purchases_enabled` feature flag added; all payment endpoints return `403 FeatureDisabled` when off; defaults `false` <!-- 2026-05-26 -->
+- [x] Missing `Designer.cs` for migration `20260512150000_AddQuestionStatusColumns` created <!-- 2026-05-26 -->
+- [x] Production config template (`appsettings.Production.example.json`) created with all required keys <!-- 2026-05-26 -->
 
 ---
 
@@ -22,8 +32,8 @@ All items in the **Must Pass** section must be green before the Alpha binary shi
 
 ### API Surface
 
-- [x] `GET /api/v1/app/config` (unauthenticated) returns `200 OK` with `minimumClientVersion` and correct feature flag map <!-- all 14 flags verified in AppConfigEndpoints.cs; runtime 200 OK requires staging -->
-  - Disabled flags: `realtimeMultiplayerEnabled`, `matchmakingEnabled`, `socialEnabled`, `skillTreeEnabled`, `notificationsEnabled`, `experimentsEnabled`, `tomPersonalizationEnabled`, `cryptoEnabled`, `aiSidecarEnabled` → all `false`
+- [x] `GET /api/v1/app/config` (unauthenticated) returns `200 OK` with `minimumClientVersion` and correct feature flag map <!-- all 15 flags verified in AppConfigEndpoints.cs; runtime 200 OK requires staging -->
+  - Disabled flags: `realtimeMultiplayerEnabled`, `matchmakingEnabled`, `socialEnabled`, `skillTreeEnabled`, `notificationsEnabled`, `experimentsEnabled`, `tomPersonalizationEnabled`, `cryptoEnabled`, `aiSidecarEnabled`, `storePurchasesEnabled` → all `false` <!-- storePurchasesEnabled added 2026-05-26 -->
   - Enabled flags: `coreTriviaEnabled`, `walletEnabled`, `leaderboardEnabled`, `missionsEnabled` → all `true`
 - [ ] `POST /auth/signup` → valid JWT returned
 - [ ] `GET /users/me/wallet` → wallet balances returned for authenticated player

@@ -10,6 +10,7 @@ namespace Synaptix.Backend.Api.Features.Store;
 internal static class StoreSystemStatusSupport
 {
     public const string StoreEnabledFlag = "store_enabled";
+    public const string StorePurchasesEnabledFlag = "store_purchases_enabled";
     public const string PaymentsEnabledFlag = "payments_enabled";
     public const string StripeEnabledFlag = "stripe_payments_enabled";
     public const string PayPalEnabledFlag = "paypal_payments_enabled";
@@ -54,6 +55,7 @@ internal static class StoreSystemStatusSupport
             ["guardian_enabled"] = true,
             ["territory_enabled"] = true,
             [StoreEnabledFlag] = true,
+            [StorePurchasesEnabledFlag] = false,
             [PaymentsEnabledFlag] = true,
             [StripeEnabledFlag] = true,
             [PayPalEnabledFlag] = true
