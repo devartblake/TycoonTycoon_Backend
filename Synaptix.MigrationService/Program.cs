@@ -26,6 +26,7 @@ try
             services.AddObservability(ctx.Configuration, serviceName: "Synaptix.MigrationService");
 
             // Infrastructure (EF Core, Mongo, Elastic, Redis, clock, dispatcher, etc.)
+            services.AddSingleton<Mediator.IPublisher, NoOpDomainEventPublisher>();
             services.AddInfrastructure(ctx.Configuration);
 
             // Bind MigrationServiceOptions from config section "MigrationService"

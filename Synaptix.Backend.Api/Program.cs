@@ -288,7 +288,7 @@ if (analyticsEnabled)
 }
 
 // Infrastructure & Application
-builder.Services.AddMediator();
+builder.Services.AddMediator(options => options.ServiceLifetime = ServiceLifetime.Scoped);
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
 

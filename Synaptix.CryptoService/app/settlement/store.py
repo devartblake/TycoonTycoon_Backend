@@ -11,16 +11,33 @@ from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ASCENDING
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, OperationFailure
 
 
 COLLECTION = "crypto_settlements"
 
 
 async def ensure_indexes(db: AsyncIOMotorDatabase) -> None:
-    await db[COLLECTION].create_index(
-        [("withdrawal_id", ASCENDING)], unique=True, background=True
-    )
+    collection = db[COLLECTION]
+    expected_key = [("withdrawal_id", ASCENDING)]
+    async for index in collection.list_indexes():
+        if list(index.get("key", {}).items()) == expected_key and index.get("unique") is True:
+            return
+
+    try:
+        await collection.create_index(
+            expected_key,
+            unique=True,
+            background=True,
+            name="ux_crypto_settlements_withdrawal_id",
+        )
+    except OperationFailure as exc:
+        if exc.code != 85:
+            raise
+        async for index in collection.list_indexes():
+            if list(index.get("key", {}).items()) == expected_key and index.get("unique") is True:
+                return
+        raise
 
 
 async def is_settled(db: AsyncIOMotorDatabase, withdrawal_id: str) -> bool:
