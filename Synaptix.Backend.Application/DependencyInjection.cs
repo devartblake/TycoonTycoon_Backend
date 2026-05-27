@@ -1,9 +1,7 @@
 ﻿using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Reflection;
 using Synaptix.Backend.Application.Config;
 using Synaptix.Backend.Application.EventStats;
 using Synaptix.Backend.Application.GameEvents;
@@ -19,9 +17,8 @@ namespace Synaptix.Backend.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
-            var asm = Assembly.GetExecutingAssembly();
+            var asm = System.Reflection.Assembly.GetExecutingAssembly();
 
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(asm));
             services.AddValidatorsFromAssembly(asm);
 
             // Match

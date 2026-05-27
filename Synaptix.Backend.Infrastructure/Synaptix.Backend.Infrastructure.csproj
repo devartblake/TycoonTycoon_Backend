@@ -10,7 +10,7 @@
     <PackageReference Include="Elastic.Clients.Elasticsearch" />
     <PackageReference Include="Elastic.Transport" />
     <PackageReference Include="Hangfire.Core" />
-    <PackageReference Include="MediatR" />
+    <PackageReference Include="Mediator.Abstractions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />

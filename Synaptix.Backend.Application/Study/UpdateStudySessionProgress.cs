@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Synaptix.Backend.Application.Abstractions;
@@ -31,7 +31,7 @@ namespace Synaptix.Backend.Application.Study
 
         public UpdateStudySessionProgressHandler(IAppDb db) => _db = db;
 
-        public async Task<StudySessionProgressResult> Handle(UpdateStudySessionProgress request, CancellationToken ct)
+        public async ValueTask<StudySessionProgressResult> Handle(UpdateStudySessionProgress request, CancellationToken ct)
         {
             var session = await _db.StudySessions
                 .FirstOrDefaultAsync(x => x.Id == request.SessionId && x.PlayerId == request.PlayerId, ct);

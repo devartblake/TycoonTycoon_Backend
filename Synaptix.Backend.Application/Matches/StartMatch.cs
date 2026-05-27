@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Config;
@@ -17,7 +17,7 @@ namespace Synaptix.Backend.Application.Matches
     public sealed class StartMatchHandler(IAppDb db, IGameBalancePolicyService policy)
         : IRequestHandler<StartMatch, StartMatchResponse>
     {
-        public async Task<StartMatchResponse> Handle(StartMatch r, CancellationToken ct)
+        public async ValueTask<StartMatchResponse> Handle(StartMatch r, CancellationToken ct)
         {
             // Return existing active match idempotently (no energy charge).
             var existing = await db.Matches

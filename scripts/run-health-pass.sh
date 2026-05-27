@@ -13,7 +13,7 @@ mkdir -p "${LOG_DIR}"
 declare -a COMMANDS=(
   "dotnet restore TycoonTycoon_Backend.slnx"
   "dotnet build TycoonTycoon_Backend.slnx --configuration Release --no-restore"
-  "dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj --configuration Release --no-build"
+  "dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build"
   "bash scripts/check-error-envelope-hardening.sh"
   "bash scripts/validate-ef-schema.sh"
   "docker compose -f docker/compose.yml build operator-dashboard"

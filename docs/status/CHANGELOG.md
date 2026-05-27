@@ -4,6 +4,18 @@ All notable changes to this project.
 
 ---
 
+## [2026-05-26] MediatR → Mediator (martinsson) Migration
+
+### Completed
+
+- **Replaced MediatR 14.x (Lucky Penny licensed) with Mediator 3.0.2 (martinsson, MIT)** — eliminates the production license warning and removes the commercial dependency entirely.
+- **`Mediator.SourceGenerator 3.0.2` added to `Synaptix.Backend.Api.csproj`** — source generator is installed in the outermost project so it discovers all handlers across Application, Domain, Infrastructure, and Api at compile time; no reflection-based assembly scanning at runtime.
+- **`MediatR` package removed from `Directory.Packages.props`** and from all four referencing projects (`Application`, `Infrastructure`, `Domain`, `MigrationService`); each now references `Mediator.Abstractions` instead.
+- **`AddMediatR()` replaced with `AddMediator()`** — call moved to `Program.cs` in `Synaptix.Backend.Api`; `DependencyInjection.cs` in Application no longer references MediatR.
+- **104 C# files updated** — `using MediatR` → `using Mediator`; all `IRequestHandler<,>` implementations updated from `Task<T>` to `ValueTask<T>`; all `INotificationHandler<>` implementations updated from `Task` to `ValueTask`; `Task.CompletedTask` / `Task.FromResult` in handler bodies updated to their `ValueTask` equivalents; test mock `IMediator` implementations updated to match the new interface contract.
+
+---
+
 ## [2026-05-26] Merge, P0 Prep, and Release Doc Update
 
 ### Completed

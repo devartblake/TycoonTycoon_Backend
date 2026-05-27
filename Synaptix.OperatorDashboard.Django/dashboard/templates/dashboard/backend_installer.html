@@ -14,6 +14,8 @@
   </div>
 </section>
 
+{% include "dashboard/partials/storage_connection_panel.html" %}
+
 <section class="card">
   <div class="section-header">
     <div>
@@ -35,6 +37,10 @@
       <label>
         Installer ZIP
         <input type="file" name="bundle" accept=".zip" required />
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="overwrite" />
+        Confirm overwrite for existing MinIO keys, including canonical seed files
       </label>
       <button type="submit">Upload to MinIO</button>
     </form>
@@ -81,7 +87,7 @@
   </article>
   <article class="card">
     <h2>Migration import</h2>
-    <p class="section-copy">After upload, run the migration service with MinIO seed source.</p>
+    <p class="section-copy">Uploads are routed through the backend storage policy. After upload, run the migration service with MinIO seed source.</p>
     <code>{{ result.migration_command|default:"$env:MIGRATION_SEED_SOURCE='MinIO'; ./scripts/run-dashboard-bootstrap.ps1 -Mode docker" }}</code>
   </article>
 </section>

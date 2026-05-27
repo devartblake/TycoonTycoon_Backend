@@ -18,14 +18,20 @@ from django.http import Http404, HttpResponse, HttpResponseForbidden, JsonRespon
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.http import url_has_allowed_host_and_scheme, urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils import timezone
 
 from .models import OperatorSavedView, OperatorSavedViewAuditEvent, ProbeCheckRecord
 from .services.admin_audit_client import get_security_audit, get_security_audit_event
 from .services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError, admin_login, admin_me, admin_refresh
 from .services.admin_email_acl_client import create_admin_email_acl, delete_admin_email_acl, list_admin_email_acl, update_admin_email_acl
-from .services.admin_media_client import create_upload_intent, upload_file_to_intent
+from .services.admin_media_client import create_upload_intent, get_storage_diagnostics, upload_file_to_intent
+from .services.admin_storage_client import (
+    get_storage_object_metadata,
+    list_storage_objects,
+    list_storage_prefixes,
+    upload_storage_object_proxy,
+)
 from .services.admin_moderation_client import get_moderation_log, get_moderation_logs, get_moderation_profile, set_moderation_status
 from .services.admin_economy_client import create_economy_transaction, get_economy_balance, get_economy_history, rollback_economy_transaction, simulate_economy, update_economy_balance
 from .services.admin_questions_client import approve_question, bulk_import_questions, create_question, delete_question, get_question, list_questions, reject_question, update_question
@@ -118,7 +124,7 @@ from .services.admin_users_client import (
     update_admin_user,
 )
 from .services.api_clients import get_overall_status, list_service_statuses
-from .services.backend_installer import inspect_bundle, upload_bundle
+from .services.backend_installer import inspect_bundle, upload_bundle_via_backend
 from .services.charting import (
     archetype_distribution_chart,
     plotly_runtime_script,
@@ -506,6 +512,9 @@ def require_permission(permission: str):
         def _wrapped(request, *args, **kwargs):
             if not _has_permission(request, permission):
                 accept = request.META.get("HTTP_ACCEPT", "")
+                if "text/html" in accept and permission.startswith("storage:"):
+                    messages.error(request, f"Access denied - you need '{permission}'. Sign out and sign back in after storage role changes.")
+                    return redirect("dashboard-home")
                 if "text/html" in accept:
                     messages.error(request, f"Access denied — you need the '{permission}' permission.")
                     return redirect("dashboard-home")
@@ -1915,22 +1924,193 @@ def mongodb_collection_detail_view(request, database: str, collection: str):
     return render(request, "dashboard/mongodb_collection_detail.html", context)
 
 
-@operator_login_required
-@require_permission("questions:write")
-def backend_installer_view(request):
+def _storage_context(request, extra: dict | None = None) -> dict:
+    profile = request.session.get(SESSION_ADMIN_PROFILE_KEY) or {}
+    permissions = set(profile.get("permissions") or [])
     context = {
-        "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+        "admin_profile": profile,
+        "prefixes": [],
+        "extensions": [],
+        "protected_keys": [],
+        "storage_connection": {
+            "backendReachable": False,
+            "backendMinioReachable": False,
+            "browserPublicEndpoint": None,
+            "overallStatus": "degraded",
+            "bucket": None,
+            "bucketExists": False,
+            "objectCount": 0,
+            "totalBytes": 0,
+            "auth": "-",
+            "warnings": [],
+        },
+        "has_storage_read": "storage:read" in permissions,
+        "has_storage_write": "storage:write" in permissions,
+    }
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        policy = list_storage_prefixes(access_token)
+        context["prefixes"] = policy.get("prefixes") or []
+        context["extensions"] = policy.get("extensions") or []
+        context["protected_keys"] = policy.get("protectedKeys") or []
+    except httpx.HTTPError as ex:
+        context["policy_error"] = str(ex)
+        context["storage_connection"]["warnings"].append("Backend storage policy endpoint is unavailable.")
+
+    try:
+        diagnostics = get_storage_diagnostics(access_token)
+        overall = diagnostics.get("overallStatus", "degraded")
+        auth = diagnostics.get("auth", "")
+        bucket_exists = bool(diagnostics.get("bucketExists"))
+        context["storage_connection"].update(
+            {
+                "backendReachable": True,
+                "backendMinioReachable": overall == "healthy" and auth != "local-storage" and bucket_exists,
+                "browserPublicEndpoint": diagnostics.get("publicEndpoint"),
+                "overallStatus": overall,
+                "bucket": diagnostics.get("bucket"),
+                "bucketExists": bucket_exists,
+                "objectCount": diagnostics.get("objectCount") or 0,
+                "totalBytes": diagnostics.get("totalBytes") or 0,
+                "checks": diagnostics.get("checks") or {},
+                "auth": auth,
+            }
+        )
+        if auth == "local-storage":
+            context["storage_connection"]["warnings"].append("Backend is using local object storage. Configure MinIO__Endpoint on the backend API.")
+        if diagnostics.get("bucket") and not bucket_exists:
+            context["storage_connection"]["warnings"].append("Configured bucket is missing. Confirm MinIO bucket creation and credentials.")
+        if overall != "healthy":
+            context["storage_connection"]["warnings"].append("Backend MinIO diagnostics are degraded. Check MinIO container health, credentials, and Docker DNS.")
+    except httpx.HTTPError as ex:
+        context["storage_connection"]["warnings"].append(f"Backend storage diagnostics unavailable: {ex}")
+
+    if not context["has_storage_read"] or not context["has_storage_write"]:
+        context["storage_connection"]["warnings"].append("Your current session may not include storage scopes. Sign out and sign back in after role changes.")
+    if extra:
+        context.update(extra)
+    return context
+
+
+def _encode_storage_key(key: str) -> str:
+    return urlsafe_base64_encode(key.encode("utf-8")).rstrip("=")
+
+
+def _decode_storage_key(encoded: str) -> str:
+    padding = "=" * (-len(encoded) % 4)
+    return urlsafe_base64_decode(f"{encoded}{padding}").decode("utf-8")
+
+
+@operator_login_required
+@require_permission("storage:read")
+def storage_objects_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    prefix = request.GET.get("prefix") or ""
+    cursor = request.GET.get("cursor") or ""
+    page_size = request.GET.get("pageSize") or "50"
+    query = {"prefix": prefix, "pageSize": page_size}
+    if cursor:
+        query["cursor"] = cursor
+
+    context = _storage_context(request, {"objects": [], "selected_prefix": prefix, "query": query})
+    try:
+        payload = list_storage_objects(access_token, query)
+        for item in payload.get("items") or []:
+            item["encodedKey"] = _encode_storage_key(item.get("key", ""))
+        context["objects"] = payload.get("items") or []
+        context["bucket"] = payload.get("bucket")
+        context["next_cursor"] = payload.get("nextCursor")
+    except httpx.HTTPStatusError as ex:
+        messages.error(request, f"Storage lookup failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend storage endpoint.")
+
+    return render(request, "dashboard/storage_objects.html", context)
+
+
+@operator_login_required
+@require_permission("storage:read")
+def storage_object_detail_view(request, encoded_key: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        key = _decode_storage_key(encoded_key)
+    except Exception:
+        raise Http404("Invalid object key.")
+
+    context = _storage_context(request, {"object_key": key, "object": None})
+    try:
+        context["object"] = get_storage_object_metadata(access_token, key)
+    except httpx.HTTPStatusError as ex:
+        if ex.response.status_code == 404:
+            raise Http404("Object metadata was not found.")
+        messages.error(request, f"Storage metadata failed (HTTP {ex.response.status_code}).")
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend storage metadata endpoint.")
+
+    return render(request, "dashboard/storage_object_detail.html", context)
+
+
+@operator_login_required
+@require_permission("storage:write")
+def storage_upload_view(request):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    result = None
+    selected_prefix = request.POST.get("prefix") or request.GET.get("prefix") or ""
+    if request.method == "POST":
+        uploaded_files = request.FILES.getlist("files")
+        prefix = request.POST.get("prefix", "").strip()
+        overwrite = request.POST.get("overwrite") == "on"
+        subdirectory = (request.POST.get("subdirectory") or "").strip().strip("/").replace("\\", "/")
+        uploaded = 0
+        failed = 0
+        failures: list[str] = []
+        for file in uploaded_files:
+            key_parts = [prefix.rstrip("/")]
+            if subdirectory:
+                key_parts.append(subdirectory)
+            key_parts.append(file.name)
+            key = "/".join(part for part in key_parts if part)
+            try:
+                upload_storage_object_proxy(
+                    access_token,
+                    key=key,
+                    file_name=file.name,
+                    content_type=file.content_type or "application/octet-stream",
+                    file_obj=file,
+                    overwrite=overwrite,
+                )
+                uploaded += 1
+            except httpx.HTTPStatusError as ex:
+                failed += 1
+                failures.append(f"{file.name}: HTTP {ex.response.status_code} {ex.response.text[:180]}")
+            except httpx.RequestError as ex:
+                failed += 1
+                failures.append(f"{file.name}: {ex}")
+
+        result = {"uploaded": uploaded, "failed": failed, "failures": failures, "ok": failed == 0}
+        if failed:
+            messages.error(request, "Some storage uploads failed.")
+        else:
+            messages.success(request, "Storage upload completed.")
+
+    return render(request, "dashboard/storage_upload.html", _storage_context(request, {"result": result, "selected_prefix": selected_prefix}))
+
+
+@operator_login_required
+@require_permission("storage:write")
+def backend_installer_view(request):
+    context = _storage_context(request, {
         "result": None,
         "mode": "idle",
-    }
+    })
     return render(request, "dashboard/backend_installer.html", context)
 
 
 @operator_login_required
-@require_permission("questions:write")
+@require_permission("storage:write")
 def backend_installer_validate(request):
     uploaded = request.FILES.get("bundle")
-    context = {"admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY), "mode": "validate"}
+    context = _storage_context(request, {"mode": "validate"})
     if not uploaded:
         messages.error(request, "Upload an installer ZIP bundle first.")
         return render(request, "dashboard/backend_installer.html", context, status=400)
@@ -1943,15 +2123,28 @@ def backend_installer_validate(request):
 
 
 @operator_login_required
-@require_permission("questions:write")
+@require_permission("storage:write")
 def backend_installer_upload(request):
     uploaded = request.FILES.get("bundle")
-    context = {"admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY), "mode": "upload"}
+    context = _storage_context(request, {"mode": "upload"})
     if not uploaded:
         messages.error(request, "Upload an installer ZIP bundle first.")
         return render(request, "dashboard/backend_installer.html", context, status=400)
     try:
-        context["result"] = upload_bundle(uploaded)
+        access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+        overwrite = request.POST.get("overwrite") == "on"
+
+        def upload_one(item, body):
+            upload_storage_object_proxy(
+                access_token,
+                key=item.key,
+                file_name=item.source.rsplit("/", 1)[-1],
+                content_type=item.content_type,
+                file_obj=body,
+                overwrite=overwrite,
+            )
+
+        context["result"] = upload_bundle_via_backend(uploaded, upload_one, overwrite=overwrite)
         if context["result"].get("ok"):
             messages.success(request, "Installer bundle uploaded to MinIO.")
         else:

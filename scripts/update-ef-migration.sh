@@ -4,8 +4,8 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
-STARTUP_PROJECT="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+PROJECT="Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj"
+STARTUP_PROJECT="Synaptix.MigrationService/Synaptix.MigrationService.csproj"
 CONTEXT="AppDb"
 OUTPUT_DIR="Migrations"
 MIGRATION_NAME=""
@@ -127,7 +127,7 @@ set -e
 echo "$ADD_OUTPUT"
 
 if [[ $ADD_STATUS -ne 0 ]]; then
-  if echo "$ADD_OUTPUT" | grep -q "Tycoon.Backend.Migrations.dll' not found"; then
+  if echo "$ADD_OUTPUT" | grep -q "Synaptix.Backend.Migrations.dll' not found"; then
     log "Primary startup project output did not include migrations assembly; retrying with migrations project as startup..."
     RETRY_ARGS=()
     if $NO_BUILD; then
@@ -156,4 +156,4 @@ if $APPLY_DATABASE; then
 fi
 
 log "Done."
-log "Migration created under Tycoon.Backend.Migrations/$OUTPUT_DIR"
+log "Migration created under Synaptix.Backend.Migrations/$OUTPUT_DIR"

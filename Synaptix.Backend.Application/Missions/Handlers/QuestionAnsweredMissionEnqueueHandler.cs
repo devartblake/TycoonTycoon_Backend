@@ -1,5 +1,5 @@
 ﻿using Hangfire;
-using MediatR;
+using Mediator;
 using Synaptix.Backend.Domain.Events;
 using Synaptix.Backend.Application.Missions.Jobs;
 using Synaptix.Backend.Domain.Notifications;
@@ -15,9 +15,9 @@ namespace Synaptix.Backend.Application.Missions.Handlers
             _jobs = jobs;
         }
 
-        public Task Handle(DomainEventNotification notification, CancellationToken ct)
+        public ValueTask Handle(DomainEventNotification notification, CancellationToken ct)
         {
-            if (notification.DomainEvent is not QuestionAnsweredEvent e) return Task.CompletedTask;
+            if (notification.DomainEvent is not QuestionAnsweredEvent e) return ValueTask.CompletedTask;
 
             // Enqueue. If volume becomes huge, convert to batching via RoundCompleted only.
             _jobs.Enqueue<QuestionAnsweredMissionJob>(job =>
@@ -31,7 +31,7 @@ namespace Synaptix.Backend.Application.Missions.Handlers
                     e.AnswerTimeMs,
                     default));
 
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 }

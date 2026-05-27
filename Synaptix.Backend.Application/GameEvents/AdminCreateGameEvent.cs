@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Application.GameEvents
             "millionaire", "global_crown", "champion_battle"
         };
 
-        public async Task<GameEventSummaryDto> Handle(AdminCreateGameEvent r, CancellationToken ct)
+        public async ValueTask<GameEventSummaryDto> Handle(AdminCreateGameEvent r, CancellationToken ct)
         {
             var req = r.Request;
 

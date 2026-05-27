@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Synaptix.Backend.Domain.Events;
 using Synaptix.Backend.Domain.Notifications;
 
@@ -13,7 +13,7 @@ namespace Synaptix.Backend.Application.Missions.Handlers
             _missions = missions;
         }
 
-        public async Task Handle(DomainEventNotification notification, CancellationToken ct)
+        public async ValueTask Handle(DomainEventNotification notification, CancellationToken ct)
         {
             if (notification.DomainEvent is not MatchCompletedEvent e) return;
 

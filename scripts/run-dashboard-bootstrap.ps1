@@ -93,5 +93,5 @@ if ($Mode -eq "docker") {
         $env:SuperAdmin__Handle = $env:SUPER_ADMIN_HANDLE
     }
 
-    dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+    dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj
 }

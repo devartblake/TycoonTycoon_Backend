@@ -6,7 +6,7 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO, Callable
 
 from django.conf import settings
 
@@ -180,22 +180,12 @@ def inspect_bundle(uploaded_file) -> dict[str, Any]:
     }
 
 
-def _s3_client():
-    import boto3
-
-    endpoint = settings.MINIO_ENDPOINT
-    if endpoint and not endpoint.startswith(("http://", "https://")):
-        endpoint = f"{'https' if settings.MINIO_USE_SSL else 'http'}://{endpoint}"
-    return boto3.client(
-        "s3",
-        endpoint_url=endpoint,
-        aws_access_key_id=settings.MINIO_ACCESS_KEY,
-        aws_secret_access_key=settings.MINIO_SECRET_KEY,
-        use_ssl=settings.MINIO_USE_SSL,
-    )
-
-
-def upload_bundle(uploaded_file) -> dict[str, Any]:
+def upload_bundle_via_backend(
+    uploaded_file,
+    upload_one: Callable[[InstallerItem, BinaryIO], dict[str, Any]],
+    *,
+    overwrite: bool = False,
+) -> dict[str, Any]:
     tmp_path = _save_upload_to_temp(uploaded_file)
     try:
         manifest = load_manifest_from_zip(tmp_path)
@@ -203,13 +193,7 @@ def upload_bundle(uploaded_file) -> dict[str, Any]:
             available = {info.filename: info.file_size for info in archive.infolist() if not info.is_dir()}
             items, warnings = _items_from_manifest(manifest, available)
             if warnings:
-                return {"ok": False, "warnings": warnings, "uploaded": 0, "failed": 0, "total_bytes": sum(item.bytes for item in items)}
-
-            client = _s3_client()
-            try:
-                client.head_bucket(Bucket=settings.MINIO_BUCKET)
-            except Exception:
-                client.create_bucket(Bucket=settings.MINIO_BUCKET)
+                return {"ok": False, "warnings": warnings, "uploaded": 0, "failed": 0, "total_bytes": sum(item.bytes for item in items), "preview": items[:40]}
 
             uploaded = 0
             failed = 0
@@ -217,7 +201,7 @@ def upload_bundle(uploaded_file) -> dict[str, Any]:
             for item in items:
                 try:
                     with archive.open(item.source) as body:
-                        client.put_object(Bucket=settings.MINIO_BUCKET, Key=item.key, Body=body.read(), ContentType=item.content_type)
+                        upload_one(item, body)
                     uploaded += 1
                 except Exception as ex:
                     failed += 1
@@ -230,6 +214,8 @@ def upload_bundle(uploaded_file) -> dict[str, Any]:
             "failed": failed,
             "failures": failures,
             "total_bytes": sum(item.bytes for item in items),
+            "preview": items[:40],
+            "overwrite": overwrite,
             "migration_command": "$env:MIGRATION_SEED_SOURCE='MinIO'; ./scripts/run-dashboard-bootstrap.ps1 -Mode docker",
         }
     finally:

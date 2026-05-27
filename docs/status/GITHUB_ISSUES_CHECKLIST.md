@@ -71,7 +71,7 @@ This checklist converts the actionable plan into issue-ready work items with dep
 - [x] Added changelog entry documenting Sidecar gRPC wiring progress and dashboard build source-of-truth decisions.
 - [x] Checked off completed SEQ-3 scope/acceptance items after Sidecar gRPC implementation landed.
 - [x] Added `SidecarGrpcServiceTests` for SEQ-3 behavior coverage (execution pending environment/tool availability).
-- [x] Started SEQ-4 implementation by replacing MobileMatch leaderboard placeholder snapshots with live MediatR leaderboard queries.
+- [x] Started SEQ-4 implementation by replacing MobileMatch leaderboard placeholder snapshots with live Mediator leaderboard queries.
 - [x] Expanded SEQ-4 answer flow to emit real correctness/points/running-score updates based on persisted question answer keys.
 - [x] Added initial `MatchSession` streaming tests for SEQ-4 score propagation and participant fan-out behavior.
 - [x] Added `MobileMatchGrpcServiceTests` to cover answer-result streaming and live leaderboard update streaming behavior.

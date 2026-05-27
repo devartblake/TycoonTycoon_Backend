@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Application.Leaderboards
     public sealed class GetMyTierHandler(IAppDb db)
         : IRequestHandler<GetMyTier, MyTierDto?>
     {
-        public async Task<MyTierDto?> Handle(GetMyTier r, CancellationToken ct)
+        public async ValueTask<MyTierDto?> Handle(GetMyTier r, CancellationToken ct)
         {
             var e = await db.LeaderboardEntries.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.PlayerId == r.PlayerId, ct);

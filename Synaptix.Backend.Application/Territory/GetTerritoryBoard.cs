@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Application.Territory
 
     public sealed class GetTerritoryBoardHandler(IAppDb db) : IRequestHandler<GetTerritoryBoard, TerritoryBoardDto>
     {
-        public async Task<TerritoryBoardDto> Handle(GetTerritoryBoard r, CancellationToken ct)
+        public async ValueTask<TerritoryBoardDto> Handle(GetTerritoryBoard r, CancellationToken ct)
         {
             var tiles = await db.TerritoryTiles.AsNoTracking()
                 .Where(x => x.SeasonId == r.SeasonId && x.TierNumber == r.TierNumber)

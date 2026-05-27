@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -18,7 +18,7 @@ namespace Synaptix.Backend.Application.LearningModules
 
         public AdminCreateLearningModuleHandler(IAppDb db) => _db = db;
 
-        public async Task<AdminLearningModuleListItemDto> Handle(
+        public async ValueTask<AdminLearningModuleListItemDto> Handle(
             AdminCreateLearningModule request,
             CancellationToken ct)
         {
@@ -46,7 +46,7 @@ namespace Synaptix.Backend.Application.LearningModules
 
         public AdminUpdateLearningModuleHandler(IAppDb db) => _db = db;
 
-        public async Task<AdminLearningModuleListItemDto?> Handle(
+        public async ValueTask<AdminLearningModuleListItemDto?> Handle(
             AdminUpdateLearningModule request,
             CancellationToken ct)
         {
@@ -76,7 +76,7 @@ namespace Synaptix.Backend.Application.LearningModules
 
         public AdminPublishLearningModuleHandler(IAppDb db) => _db = db;
 
-        public async Task<bool> Handle(AdminPublishLearningModule request, CancellationToken ct)
+        public async ValueTask<bool> Handle(AdminPublishLearningModule request, CancellationToken ct)
         {
             var module = await _db.LearningModules.FindAsync(new object[] { request.ModuleId }, ct);
             if (module is null) return false;
@@ -96,7 +96,7 @@ namespace Synaptix.Backend.Application.LearningModules
 
         public AdminUnpublishLearningModuleHandler(IAppDb db) => _db = db;
 
-        public async Task<bool> Handle(AdminUnpublishLearningModule request, CancellationToken ct)
+        public async ValueTask<bool> Handle(AdminUnpublishLearningModule request, CancellationToken ct)
         {
             var module = await _db.LearningModules.FindAsync(new object[] { request.ModuleId }, ct);
             if (module is null) return false;
@@ -121,7 +121,7 @@ namespace Synaptix.Backend.Application.LearningModules
 
         public AdminAddLessonHandler(IAppDb db) => _db = db;
 
-        public async Task<AdminAddLessonResult> Handle(AdminAddLesson request, CancellationToken ct)
+        public async ValueTask<AdminAddLessonResult> Handle(AdminAddLesson request, CancellationToken ct)
         {
             var moduleExists = await _db.LearningModules
                 .AsNoTracking()
@@ -182,7 +182,7 @@ namespace Synaptix.Backend.Application.LearningModules
 
         public AdminRemoveLessonHandler(IAppDb db) => _db = db;
 
-        public async Task<bool> Handle(AdminRemoveLesson request, CancellationToken ct)
+        public async ValueTask<bool> Handle(AdminRemoveLesson request, CancellationToken ct)
         {
             var lesson = await _db.ModuleLessons
                 .FirstOrDefaultAsync(
@@ -209,7 +209,7 @@ namespace Synaptix.Backend.Application.LearningModules
 
         public AdminListLearningModulesHandler(IAppDb db) => _db = db;
 
-        public async Task<IReadOnlyList<AdminLearningModuleListItemDto>> Handle(
+        public async ValueTask<IReadOnlyList<AdminLearningModuleListItemDto>> Handle(
             AdminListLearningModules request,
             CancellationToken ct)
         {

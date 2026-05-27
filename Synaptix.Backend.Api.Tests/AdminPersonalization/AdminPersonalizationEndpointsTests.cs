@@ -213,7 +213,7 @@ public sealed class AdminPersonalizationEndpointsTests : IClassFixture<TycoonApi
         // Two result entries are returned (one per input item), but they resolve
         // to the same persisted rule entity — the final state should be disabled.
         rules!.Should().OnlyContain(r => r.RuleKey == ruleKey);
-        rules.Last().IsEnabled.Should().BeFalse();
+        rules!.Last().IsEnabled.Should().BeFalse();
     }
 
     // ── PUT /admin/personalization/rules/{ruleKey} (individual) ──────────

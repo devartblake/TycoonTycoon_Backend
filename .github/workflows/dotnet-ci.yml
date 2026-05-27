@@ -134,6 +134,7 @@ jobs:
           mkdir -p TestResults
           exit_code=0
           declare -a filters=(
+            "AdminStorageEndpointsTests"
             "AdminAuthSecurityContractTests"
             "AdminNotificationsSecurityContractTests"
             "AdminSecurityAuditEndpointsTests"

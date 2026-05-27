@@ -1,4 +1,5 @@
-﻿using Hangfire;
+﻿using Mediator;
+using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,6 +41,7 @@ using Synaptix.Backend.Api.Features.AdminEmailAcl;
 using Synaptix.Backend.Api.Features.AdminPowerups;
 using Synaptix.Backend.Api.Features.AdminQuestions;
 using Synaptix.Backend.Api.Features.AdminStore;
+using Synaptix.Backend.Api.Features.AdminStorage;
 using Synaptix.Backend.Api.Features.AdminSeasons;
 using Synaptix.Backend.Api.Features.AdminExperiments;
 using Synaptix.Backend.Api.Features.AdminPersonalization;
@@ -286,6 +288,7 @@ if (analyticsEnabled)
 }
 
 // Infrastructure & Application
+builder.Services.AddMediator();
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
 
@@ -475,9 +478,10 @@ builder.Services
         };
     });
 
+var dpKeysPath = builder.Configuration["DataProtection:KeysPath"] ?? "/app/dp-keys";
 builder.Services
     .AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo("var/dpkeys"));
+    .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -991,6 +995,7 @@ AdminSeasonLifecycleEndpoints.Map(admin);
 AdminSeasonPointsEndpoints.Map(admin);
 AdminEmailAclEndpoints.Map(admin);
 AdminStoreEndpoints.Map(admin);
+AdminStorageEndpoints.Map(admin);
 AdminLearningModulesEndpoints.Map(admin);
 AdminPersonalizationEndpoints.Map(admin);
 AdminExperimentEndpoints.Map(admin);

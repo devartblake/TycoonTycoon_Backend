@@ -27,11 +27,11 @@ if [[ "$SMOKE_MODE" == "routes" ]]; then
   fi
 
   echo "[route-check] verifying required endpoint maps exist"
-  rg -n 'MapPost\("/login"' Tycoon.Backend.Api/Features/Auth/AuthEndpoints.cs >/dev/null
-  rg -n 'MapGet\("/set"|MapPost\("/check"|MapPost\("/check-batch"' Tycoon.Backend.Api/Features/Questions/QuestionsEndpoints.cs >/dev/null
-  rg -n 'MapGet\("/catalog"|MapPost\("/purchase"|MapPost\("/iap/validate"' Tycoon.Backend.Api/Features/Store/StoreEndpoints.cs >/dev/null
-  rg -n 'MapPost\("/link-wallet"|MapGet\("/balance|MapGet\("/history|MapPost\("/withdraw"' Tycoon.Backend.Api/Features/Crypto/CryptoEconomyEndpoints.cs >/dev/null
-  rg -n 'MapGet\("/tiers/\{tierId:int\}"' Tycoon.Backend.Api/Features/Leaderboards/LeaderboardsEndpoints.cs >/dev/null
+  rg -n 'MapPost\("/login"' Synaptix.Backend.Api/Features/Auth/AuthEndpoints.cs >/dev/null
+  rg -n 'MapGet\("/set"|MapPost\("/check"|MapPost\("/check-batch"' Synaptix.Backend.Api/Features/Questions/QuestionsEndpoints.cs >/dev/null
+  rg -n 'MapGet\("/catalog"|MapPost\("/purchase"|MapPost\("/iap/validate"' Synaptix.Backend.Api/Features/Store/StoreEndpoints.cs >/dev/null
+  rg -n 'MapPost\("/link-wallet"|MapGet\("/balance|MapGet\("/history|MapPost\("/withdraw"' Synaptix.Backend.Api/Features/Crypto/CryptoEconomyEndpoints.cs >/dev/null
+  rg -n 'MapGet\("/tiers/\{tierId:int\}"' Synaptix.Backend.Api/Features/Leaderboards/LeaderboardsEndpoints.cs >/dev/null
 
   echo "P0 smoke route-check completed."
   exit 0

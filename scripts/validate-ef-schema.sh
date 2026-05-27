@@ -10,8 +10,8 @@ export ASPNETCORE_ENVIRONMENT=Development
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
-STARTUP="Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+PROJECT="Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj"
+STARTUP="Synaptix.MigrationService/Synaptix.MigrationService.csproj"
 CONTEXT="AppDb"
 AUTO_FIX=false
 AUTO_FIX_NAME=""
@@ -178,7 +178,7 @@ if $AUTO_FIX; then
   exit $?
 fi
 
-echo "Please add/update migrations in Tycoon.Backend.Migrations and commit them."
+echo "Please add/update migrations in Synaptix.Backend.Migrations and commit them."
 echo "Tip: ./scripts/update-ef-migration.sh --name <MigrationName>"
 echo "Or:  ./scripts/validate-ef-schema.sh --auto-fix --name <MigrationName>"
 exit 1

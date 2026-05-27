@@ -4,9 +4,9 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-MIGRATIONS_DIR="Tycoon.Backend.Migrations/Migrations"
-PROJECT="Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj"
-STARTUP_PROJECT="Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+MIGRATIONS_DIR="Synaptix.Backend.Migrations/Migrations"
+PROJECT="Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj"
+STARTUP_PROJECT="Synaptix.Backend.Api/Synaptix.Backend.Api.csproj"
 CONTEXT="AppDb"
 MIGRATION_NAME="InitialCreate"
 SKIP_ADD=false
@@ -16,7 +16,7 @@ usage() {
   cat <<USAGE
 Usage: ./scripts/reset-migrations.sh [options]
 
-Resets Tycoon.Backend.Migrations/Migrations and optionally recreates a fresh baseline migration.
+Resets Synaptix.Backend.Migrations/Migrations and optionally recreates a fresh baseline migration.
 
 Options:
   --name <MigrationName>  Name for the new baseline migration (default: InitialCreate)

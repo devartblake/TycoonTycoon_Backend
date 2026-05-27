@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -18,7 +18,7 @@ namespace Synaptix.Backend.Application.Study
 
         public CreateCustomStudySetHandler(IAppDb db) => _db = db;
 
-        public async Task<StudySetDetailDto?> Handle(CreateCustomStudySet request, CancellationToken ct)
+        public async ValueTask<StudySetDetailDto?> Handle(CreateCustomStudySet request, CancellationToken ct)
         {
             var approvedQuestionIds = await GetApprovedQuestionIdsAsync(request.QuestionIds, ct);
             if (approvedQuestionIds.Count == 0 || string.IsNullOrWhiteSpace(request.Title))
@@ -55,7 +55,7 @@ namespace Synaptix.Backend.Application.Study
 
         public UpdateCustomStudySetHandler(IAppDb db) => _db = db;
 
-        public async Task<StudySetDetailDto?> Handle(UpdateCustomStudySet request, CancellationToken ct)
+        public async ValueTask<StudySetDetailDto?> Handle(UpdateCustomStudySet request, CancellationToken ct)
         {
             var studySet = await _db.StudySets
                 .Include(x => x.Items)

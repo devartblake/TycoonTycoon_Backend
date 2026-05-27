@@ -64,7 +64,7 @@ Feature:
 
 ## Commands
 ```bash
-dotnet test ...
+dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~<TestClass>"
 ```
 
 ## Acceptance Criteria

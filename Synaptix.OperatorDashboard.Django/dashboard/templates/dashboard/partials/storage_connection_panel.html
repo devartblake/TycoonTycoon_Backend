@@ -1,0 +1,41 @@
+<section class="card mt-lg">
+  <div class="section-header">
+    <div>
+      <h2>Backend storage connection</h2>
+      <p class="section-copy">Django talks to the backend API; the backend owns MinIO credentials, bucket access, policies, and audit logging.</p>
+    </div>
+    <span class="status-pill {{ storage_connection.overallStatus|default:'degraded' }}">{{ storage_connection.overallStatus|default:"degraded"|upper }}</span>
+  </div>
+  <section class="screen-kpis">
+    <article class="screen-kpi {% if storage_connection.backendReachable %}ok{% else %}bad{% endif %}">
+      <span class="kpi-label">Django to backend</span>
+      <span class="kpi-val">{% if storage_connection.backendReachable %}OK{% else %}CHECK{% endif %}</span>
+      <span class="kpi-delta">admin API</span>
+    </article>
+    <article class="screen-kpi {% if storage_connection.backendMinioReachable %}ok{% else %}warn{% endif %}">
+      <span class="kpi-label">Backend to MinIO</span>
+      <span class="kpi-val">{% if storage_connection.backendMinioReachable %}OK{% else %}CHECK{% endif %}</span>
+      <span class="kpi-delta">{{ storage_connection.auth|default:"-" }}</span>
+    </article>
+    <article class="screen-kpi">
+      <span class="kpi-label">Bucket</span>
+      <span class="kpi-val">{{ storage_connection.bucket|default:"-" }}</span>
+      <span class="kpi-delta">{% if storage_connection.bucketExists %}exists{% else %}not confirmed{% endif %}</span>
+    </article>
+    <article class="screen-kpi">
+      <span class="kpi-label">Objects</span>
+      <span class="kpi-val">{{ storage_connection.objectCount|default:0 }}</span>
+      <span class="kpi-delta">{{ storage_connection.totalBytes|default:0|filesizeformat }}</span>
+    </article>
+  </section>
+  <dl class="detail-list mt-lg">
+    <div><dt>Browser public endpoint</dt><dd><code>{{ storage_connection.browserPublicEndpoint|default:"reported by backend when configured" }}</code></dd></div>
+  </dl>
+  <div class="status-grid mt-lg">
+    {% for warning in storage_connection.warnings %}
+    <div class="surface-note">{{ warning }}</div>
+    {% empty %}
+    <div class="surface-note">Storage connection checks are healthy.</div>
+    {% endfor %}
+  </div>
+</section>

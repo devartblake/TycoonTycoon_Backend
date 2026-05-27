@@ -71,8 +71,8 @@ run_status() {
     log "Querying migration history via Docker..."
     docker compose -f "$COMPOSE_FILE" run --rm -e MIGRATION_MODE=Migrate migration \
       dotnet ef migrations list \
-        --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
-        --startup-project Tycoon.MigrationService/Tycoon.MigrationService.csproj \
+        --project Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj \
+        --startup-project Synaptix.MigrationService/Synaptix.MigrationService.csproj \
         --context AppDb 2>/dev/null || {
       # Fallback: query __EFMigrationsHistory directly
       log "Falling back to direct DB query..."
@@ -84,8 +84,8 @@ run_status() {
   else
     wait_for_postgres
     dotnet ef migrations list \
-      --project Tycoon.Backend.Migrations/Tycoon.Backend.Migrations.csproj \
-      --startup-project Tycoon.MigrationService/Tycoon.MigrationService.csproj \
+      --project Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj \
+      --startup-project Synaptix.MigrationService/Synaptix.MigrationService.csproj \
       --context AppDb
   fi
 }
@@ -121,7 +121,7 @@ run_migrate() {
  
     export ASPNETCORE_ENVIRONMENT="${ASPNETCORE_ENVIRONMENT:-Local}"
     log "Running migrations locally..."
-    dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+    dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj
  
     log "Verifying schema..."
     verify_schema_local

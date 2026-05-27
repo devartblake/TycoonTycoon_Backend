@@ -17,4 +17,4 @@ export ConnectionStrings__db="${ConnectionStrings__db:-Host=${POSTGRES_HOST:-loc
 export SuperAdmin__Email="${SuperAdmin__Email:-${SUPER_ADMIN_EMAIL:-}}"
 export SuperAdmin__Password="${SuperAdmin__Password:-${SUPER_ADMIN_PASSWORD:-}}"
 export SuperAdmin__Handle="${SuperAdmin__Handle:-${SUPER_ADMIN_HANDLE:-superadmin}}"
-exec dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+exec dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj

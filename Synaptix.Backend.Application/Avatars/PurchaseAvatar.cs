@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.PlayerTransactions;
@@ -28,7 +28,7 @@ namespace Synaptix.Backend.Application.Avatars
             _txnService = txnService;
         }
 
-        public async Task<PurchaseAvatarResult> Handle(PurchaseAvatar request, CancellationToken ct)
+        public async ValueTask<PurchaseAvatarResult> Handle(PurchaseAvatar request, CancellationToken ct)
         {
             var item = await _db.StoreItems
                 .AsNoTracking()

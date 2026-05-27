@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Economy;
@@ -24,18 +24,18 @@ namespace Synaptix.Backend.Application.Territory
         private const int MaxMultiplierBps = 1000;
         private const int TerritoryCaptureBonusXp = 100;
 
-        public async Task Handle(ResolveTerritoryDuel r, CancellationToken ct)
+        public async ValueTask<Unit> Handle(ResolveTerritoryDuel r, CancellationToken ct)
         {
             var duel = await db.TerritoryDuels
                 .FirstOrDefaultAsync(x => x.MatchId == r.MatchId, ct);
 
             if (duel is null || duel.Outcome.HasValue)
-                return;
+                return Unit.Value;
 
             var result = await db.MatchResults.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.MatchId == r.MatchId, ct);
 
-            if (result is null) return;
+            if (result is null) return Unit.Value;
 
             var parts = await db.MatchParticipantResults.AsNoTracking()
                 .Where(x => x.MatchResultId == result.Id)
@@ -113,6 +113,7 @@ namespace Synaptix.Backend.Application.Territory
             {
                 await db.SaveChangesAsync(ct);
             }
+            return Unit.Value;
         }
 
         private static Guid DeterministicGuid(Guid a, Guid b)

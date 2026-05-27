@@ -9,11 +9,10 @@
        StyleCop.Analyzers 1.2.0-beta.556      (1.2.x series has no stable release)
        NBomber / Http     5.11.0              (breaking 5→6 API; perf-test only)
        ═══════════════════════════════════════════════════════════════════════════ -->
-  <ItemGroup Label="MediatR">
+  <ItemGroup Label="Mediator">
     <PackageVersion Include="Hangfire.InMemory" Version="1.0.0" />
-    <PackageVersion Include="MediatR" Version="14.1.0" />
-    <!-- MediatR.Extensions.Microsoft.DependencyInjection merged into MediatR 12+; removed -->
     <PackageVersion Include="Mediator.Abstractions" Version="3.0.2" />
+    <PackageVersion Include="Mediator.SourceGenerator" Version="3.0.2" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageVersion Include="Npgsql" Version="10.0.2" />

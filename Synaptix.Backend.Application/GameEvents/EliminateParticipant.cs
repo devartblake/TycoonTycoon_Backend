@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -13,13 +13,13 @@ namespace Synaptix.Backend.Application.GameEvents
     {
         private const int ChampionBattleEliminationIncrement = 50;
 
-        public async Task Handle(EliminateParticipant r, CancellationToken ct)
+        public async ValueTask<Unit> Handle(EliminateParticipant r, CancellationToken ct)
         {
             var participant = await db.GameEventParticipants
                 .FirstOrDefaultAsync(x => x.GameEventId == r.GameEventId && x.PlayerId == r.PlayerId, ct);
 
             if (participant is null || participant.EliminatedAt.HasValue)
-                return;
+                return Unit.Value;
 
             participant.EliminatedAt = r.At;
 
@@ -34,6 +34,7 @@ namespace Synaptix.Backend.Application.GameEvents
 
             await notifier.NotifyEliminationAsync(new GameEventEliminationMessage(
                 r.GameEventId, r.PlayerId, survivors, r.At), ct);
+            return Unit.Value;
         }
     }
 }

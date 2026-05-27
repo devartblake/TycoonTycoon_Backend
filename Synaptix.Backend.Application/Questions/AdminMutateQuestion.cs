@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Synaptix.Backend.Application.Abstractions;
@@ -16,7 +16,7 @@ namespace Synaptix.Backend.Application.Questions
 
     public sealed class AdminCreateQuestionHandler(IAppDb db, ILogger<AdminCreateQuestionHandler> logger) : IRequestHandler<AdminCreateQuestion, QuestionDto>
     {
-        public async Task<QuestionDto> Handle(AdminCreateQuestion r, CancellationToken ct)
+        public async ValueTask<QuestionDto> Handle(AdminCreateQuestion r, CancellationToken ct)
         {
             Validate(r.Req);
 
@@ -51,7 +51,7 @@ namespace Synaptix.Backend.Application.Questions
 
     public sealed class AdminUpdateQuestionHandler(IAppDb db, ILogger<AdminUpdateQuestionHandler> logger) : IRequestHandler<AdminUpdateQuestion, QuestionDto?>
     {
-        public async Task<QuestionDto?> Handle(AdminUpdateQuestion r, CancellationToken ct)
+        public async ValueTask<QuestionDto?> Handle(AdminUpdateQuestion r, CancellationToken ct)
         {
             var q = await db.Questions
                 .Include(x => x.Options)
@@ -105,7 +105,7 @@ namespace Synaptix.Backend.Application.Questions
     public sealed class AdminSetQuestionStatusHandler(IAppDb db, ILogger<AdminSetQuestionStatusHandler> logger)
         : IRequestHandler<AdminSetQuestionStatus, QuestionDto?>
     {
-        public async Task<QuestionDto?> Handle(AdminSetQuestionStatus r, CancellationToken ct)
+        public async ValueTask<QuestionDto?> Handle(AdminSetQuestionStatus r, CancellationToken ct)
         {
             var q = await db.Questions.FirstOrDefaultAsync(x => x.Id == r.Id, ct);
             if (q is null) return null;
@@ -120,7 +120,7 @@ namespace Synaptix.Backend.Application.Questions
 
     public sealed class AdminDeleteQuestionHandler(IAppDb db, ILogger<AdminDeleteQuestionHandler> logger) : IRequestHandler<AdminDeleteQuestion, bool>
     {
-        public async Task<bool> Handle(AdminDeleteQuestion r, CancellationToken ct)
+        public async ValueTask<bool> Handle(AdminDeleteQuestion r, CancellationToken ct)
         {
             var q = await db.Questions.FirstOrDefaultAsync(x => x.Id == r.Id, ct);
             if (q is null) return false;
@@ -134,7 +134,7 @@ namespace Synaptix.Backend.Application.Questions
 
     public sealed class AdminBulkDeleteHandler(IAppDb db, ILogger<AdminBulkDeleteHandler> logger) : IRequestHandler<AdminBulkDelete, BulkDeleteResultDto>
     {
-        public async Task<BulkDeleteResultDto> Handle(AdminBulkDelete r, CancellationToken ct)
+        public async ValueTask<BulkDeleteResultDto> Handle(AdminBulkDelete r, CancellationToken ct)
         {
             var ids = (r.Req.Ids ?? Array.Empty<Guid>()).Distinct().ToArray();
             if (ids.Length == 0) return new BulkDeleteResultDto(0, 0);
@@ -151,7 +151,7 @@ namespace Synaptix.Backend.Application.Questions
 
     public sealed class AdminImportQuestionsHandler(IAppDb db, ILogger<AdminImportQuestionsHandler> logger) : IRequestHandler<AdminImportQuestions, ImportQuestionsResultDto>
     {
-        public async Task<ImportQuestionsResultDto> Handle(AdminImportQuestions r, CancellationToken ct)
+        public async ValueTask<ImportQuestionsResultDto> Handle(AdminImportQuestions r, CancellationToken ct)
         {
             var received = r.Req.Questions?.Count ?? 0;
             var created = 0;

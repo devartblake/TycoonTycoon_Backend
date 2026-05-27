@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -14,7 +14,7 @@ namespace Synaptix.Backend.Application.Leaderboards
     public sealed class GetTierLeaderboardHandler(IAppDb db)
         : IRequestHandler<GetTierLeaderboard, TierLeaderboardDto>
     {
-        public async Task<TierLeaderboardDto> Handle(GetTierLeaderboard r, CancellationToken ct)
+        public async ValueTask<TierLeaderboardDto> Handle(GetTierLeaderboard r, CancellationToken ct)
         {
             var page = Math.Max(1, r.Page);
             var pageSize = Math.Clamp(r.PageSize, 1, 100);

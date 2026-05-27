@@ -7,7 +7,7 @@ set -euo pipefail
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
 RUN_LIVE_SMOKE="${RUN_LIVE_SMOKE:-false}"
 EXPECT_IAP_STRICT_READY="${EXPECT_IAP_STRICT_READY:-false}"
-BUILD_TARGET="${BUILD_TARGET:-Tycoon.Backend.Api/Tycoon.Backend.Api.csproj}"
+BUILD_TARGET="${BUILD_TARGET:-Synaptix.Backend.Api/Synaptix.Backend.Api.csproj}"
 BASE_URL="${BASE_URL:-http://localhost:5000}"
 EMAIL="${EMAIL:-demo@example.com}"
 PASSWORD="${PASSWORD:-demo}"
@@ -24,7 +24,7 @@ dotnet build "$BUILD_TARGET"
 
 echo "[NOW 3/5] Migration gate"
 if [[ "$RUN_MIGRATIONS" == "true" ]]; then
-  dotnet ef database update --project Tycoon.Backend.Migrations --startup-project Tycoon.MigrationService
+  dotnet ef database update --project Synaptix.Backend.Migrations --startup-project Synaptix.MigrationService
 else
   echo "SKIP: RUN_MIGRATIONS=false (set true to execute DB migration gate)."
 fi

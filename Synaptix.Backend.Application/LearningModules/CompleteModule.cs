@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Economy;
@@ -25,7 +25,7 @@ namespace Synaptix.Backend.Application.LearningModules
             _mindProfiles = mindProfiles;
         }
 
-        public async Task<CompleteModuleResultDto> Handle(
+        public async ValueTask<CompleteModuleResultDto> Handle(
             CompleteModule request,
             CancellationToken ct)
         {

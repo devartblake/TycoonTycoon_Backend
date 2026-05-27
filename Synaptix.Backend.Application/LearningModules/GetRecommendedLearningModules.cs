@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
@@ -26,7 +26,7 @@ namespace Synaptix.Backend.Application.LearningModules
             _mindProfiles = mindProfiles;
         }
 
-        public async Task<RecommendedLearningModulesResponseDto> Handle(
+        public async ValueTask<RecommendedLearningModulesResponseDto> Handle(
             GetRecommendedLearningModules request,
             CancellationToken ct)
         {

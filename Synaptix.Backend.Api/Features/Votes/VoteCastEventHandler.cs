@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.SignalR;
 using Synaptix.Backend.Api.Realtime;
 using Synaptix.Backend.Api.Realtime.Clients;
@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Domain.Events
     public sealed class VoteCastEventHandler(IHubContext<NotificationHub, INotificationClient> hub)
         : INotificationHandler<VoteCastEvent>
     {
-        public async Task Handle(VoteCastEvent evt, CancellationToken ct)
+        public async ValueTask Handle(VoteCastEvent evt, CancellationToken ct)
         {
             var message = new VoteCastMessage(
                 evt.VoteId,

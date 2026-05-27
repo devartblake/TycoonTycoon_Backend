@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -17,7 +17,7 @@ namespace Synaptix.Backend.Application.Study
 
         public AddStudyFavoriteQuestionHandler(IAppDb db) => _db = db;
 
-        public async Task<ManageStudyFavoriteQuestionResult> Handle(AddStudyFavoriteQuestion request, CancellationToken ct)
+        public async ValueTask<ManageStudyFavoriteQuestionResult> Handle(AddStudyFavoriteQuestion request, CancellationToken ct)
         {
             var questionExists = await _db.Questions
                 .AsNoTracking()
@@ -50,7 +50,7 @@ namespace Synaptix.Backend.Application.Study
 
         public RemoveStudyFavoriteQuestionHandler(IAppDb db) => _db = db;
 
-        public async Task<ManageStudyFavoriteQuestionResult> Handle(RemoveStudyFavoriteQuestion request, CancellationToken ct)
+        public async ValueTask<ManageStudyFavoriteQuestionResult> Handle(RemoveStudyFavoriteQuestion request, CancellationToken ct)
         {
             var favorite = await _db.QuestionStudyFavorites
                 .FirstOrDefaultAsync(x => x.PlayerId == request.PlayerId && x.QuestionId == request.QuestionId, ct);

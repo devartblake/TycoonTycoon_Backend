@@ -1,0 +1,84 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Storage Upload{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Storage / Upload</p>
+    <h1 class="page-title">Storage upload</h1>
+    <p class="page-subtitle">Upload files into backend-approved MinIO prefixes. The backend validates keys, size, content type, and overwrite intent.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'storage-objects-view' %}">Browse objects</a>
+  </div>
+</section>
+
+{% include "dashboard/partials/storage_connection_panel.html" %}
+
+<section class="split">
+  <article class="card">
+    <h2>Upload files</h2>
+    <form method="post" enctype="multipart/form-data" class="stack">
+      {% csrf_token %}
+      <label>
+        Destination prefix
+        <select name="prefix" required>
+          {% for item in prefixes %}
+          <option value="{{ item.prefix }}" {% if selected_prefix == item.prefix %}selected{% endif %}>{{ item.label }} - {{ item.prefix }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Optional subdirectory
+        <input type="text" name="subdirectory" placeholder="characters/season-01" />
+      </label>
+      <label>
+        Files
+        <input type="file" name="files" multiple required />
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="overwrite" />
+        Confirm overwrite when an object with the same key already exists
+      </label>
+      <button type="submit">Upload through backend policy</button>
+    </form>
+  </article>
+
+  <article class="card">
+    <h2>Allowed prefixes</h2>
+    <div class="status-grid">
+      {% for item in prefixes %}
+      <div class="surface-note"><strong>{{ item.prefix }}</strong><br />{{ item.description }}</div>
+      {% empty %}
+      <div class="surface-note">Storage policy is unavailable.</div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+{% if result %}
+<section class="card mt-lg">
+  <h2>Upload result</h2>
+  <div class="screen-kpis">
+    <article class="screen-kpi {% if result.ok %}ok{% else %}warn{% endif %}">
+      <span class="kpi-label">Uploaded</span>
+      <span class="kpi-val">{{ result.uploaded }}</span>
+      <span class="kpi-delta">objects accepted</span>
+    </article>
+    <article class="screen-kpi {% if result.failed %}bad{% endif %}">
+      <span class="kpi-label">Failed</span>
+      <span class="kpi-val">{{ result.failed }}</span>
+      <span class="kpi-delta">backend rejections</span>
+    </article>
+  </div>
+  <div class="status-grid mt-lg">
+    {% for failure in result.failures %}
+    <div class="surface-note">{{ failure }}</div>
+    {% empty %}
+    <div class="surface-note">No upload failures.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

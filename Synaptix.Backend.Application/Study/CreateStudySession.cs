@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
@@ -18,7 +18,7 @@ namespace Synaptix.Backend.Application.Study
 
         public CreateStudySessionHandler(IAppDb db) => _db = db;
 
-        public async Task<StudySessionDto?> Handle(CreateStudySession request, CancellationToken ct)
+        public async ValueTask<StudySessionDto?> Handle(CreateStudySession request, CancellationToken ct)
         {
             var detail = await StudySetHelpers.BuildStudySetDetailAsync(_db, request.StudySetId, request.PlayerId, request.Count, ct);
             if (detail is null)

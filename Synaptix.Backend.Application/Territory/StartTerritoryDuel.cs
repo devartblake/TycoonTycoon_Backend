@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Config;
@@ -19,7 +19,7 @@ namespace Synaptix.Backend.Application.Territory
     public sealed class StartTerritoryDuelHandler(IAppDb db, IMediator mediator, FeatureFlagService flags)
         : IRequestHandler<StartTerritoryDuel, StartTerritoryDuelResponse>
     {
-        public async Task<StartTerritoryDuelResponse> Handle(StartTerritoryDuel r, CancellationToken ct)
+        public async ValueTask<StartTerritoryDuelResponse> Handle(StartTerritoryDuel r, CancellationToken ct)
         {
             if (!await flags.IsEnabledAsync(FeatureFlagService.TerritoryEnabled, ct))
                 return new StartTerritoryDuelResponse(Guid.Empty, null, "FeatureDisabled");

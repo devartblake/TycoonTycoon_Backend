@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.Extensions.Logging;
 using Synaptix.Backend.Domain.Abstractions;
 using Synaptix.Backend.Domain.Notifications;

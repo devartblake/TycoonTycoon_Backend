@@ -382,6 +382,8 @@ services:
       Elastic__Password: "${ELASTIC_PASSWORD:-synaptix_elastic_password_123}"
       Elastic__DailyWriteAlias: "synaptix-daily-rollups"
       Elastic__PlayerDailyWriteAlias: "synaptix-player-daily-rollups"
+      # Dev only: allow self-signed certs. Do NOT set this in production.
+      Elastic__SkipCertificateValidation: "${ELASTIC_SKIP_CERT_VALIDATION:-false}"
       
       # MongoDB
       Mongo__Database: "${MONGO_ANALYTICS_DB:-synaptix_analytics}"
@@ -430,7 +432,7 @@ services:
       # Observability
       Observability__ServiceName: "Synaptix.Backend.Api"
       Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
-      DataProtection__KeysPath: "${DATA_PROTECTION_KEYS_PATH:-/tmp/synaptix-dpkeys}"
+      DataProtection__KeysPath: "${DATA_PROTECTION_KEYS_PATH:-/app/dp-keys}"
       # Durable file-backed sidecar inference store path (mounted volume below).
       SIDECAR_INFERENCE_STORE_PATH: "/var/lib/synaptix-sidecar/inference-store.jsonl"
       # Comma-separated origins allowed by CORS (e.g. for mobile clients calling the API directly)
@@ -440,6 +442,7 @@ services:
       Cors__AllowedOrigins__3: "${CORS_ORIGIN_3:-http://localhost:3000}"
       Cors__AllowedOrigins__4: "${CORS_ORIGIN_4:-http://localhost:8080}"
     volumes:
+      - backend_dp_keys:/app/dp-keys
       - sidecar_inference_data:/var/lib/synaptix-sidecar
     depends_on:
       postgres:
@@ -568,12 +571,6 @@ services:
       DOTNET_API_BASE_URL: "http://backend-api:5000"
       FASTAPI_BASE_URL: "http://sidecar:8100"
       MINIO_BASE_URL: "http://minio:9000"
-      MINIO_ENDPOINT: "http://minio:9000"
-      MINIO_PUBLIC_ENDPOINT: "http://localhost:${MINIO_API_PORT:-9000}"
-      MINIO_BUCKET: "${MINIO_BUCKET:-synaptix-assets}"
-      MINIO_ACCESS_KEY: "${MINIO_ROOT_USER:-synaptix_minio_user}"
-      MINIO_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
-      MINIO_USE_SSL: "false"
       INSTALLER_MAX_UPLOAD_BYTES: "${INSTALLER_MAX_UPLOAD_BYTES:-1073741824}"
       INSTALLER_ALLOW_LOCAL_MIGRATION_RUN: "${INSTALLER_ALLOW_LOCAL_MIGRATION_RUN:-false}"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
@@ -650,6 +647,7 @@ volumes:
   pgadmin_data:
   prometheus_data:
   grafana_data:
+  backend_dp_keys:
   dashboard_dp_keys:
   # Back-compat alias for older compose service variants that still reference
   # `blazor_dp_keys` (for example `operator-dashboard-blazor`).

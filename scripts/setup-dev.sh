@@ -162,18 +162,18 @@ setup_env_file() {
 validate_appsettings() {
     print_header "Validating Configuration Files"
     
-    API_SETTINGS="$PROJECT_ROOT/Tycoon.Backend.Api/appsettings.json"
-    MIGRATION_SETTINGS="$PROJECT_ROOT/Tycoon.MigrationService/appsettings.json"
-    
+    API_SETTINGS="$PROJECT_ROOT/Synaptix.Backend.Api/appsettings.json"
+    MIGRATION_SETTINGS="$PROJECT_ROOT/Synaptix.MigrationService/appsettings.json"
+
     if [ -f "$API_SETTINGS" ]; then
-        print_success "Found: Tycoon.Backend.Api/appsettings.json"
+        print_success "Found: Synaptix.Backend.Api/appsettings.json"
     else
         print_error "Missing: $API_SETTINGS"
         return 1
     fi
-    
+
     if [ -f "$MIGRATION_SETTINGS" ]; then
-        print_success "Found: Tycoon.MigrationService/appsettings.json"
+        print_success "Found: Synaptix.MigrationService/appsettings.json"
     else
         print_error "Missing: $MIGRATION_SETTINGS"
         return 1
@@ -274,10 +274,10 @@ main() {
         
         print_header "Next Steps"
         echo "1. Run database migrations:"
-        echo "   dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+        echo "   dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj"
         echo ""
         echo "2. Start the API:"
-        echo "   dotnet run --project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+        echo "   dotnet run --project Synaptix.Backend.Api/Synaptix.Backend.Api.csproj"
         echo ""
         echo "3. Access the application:"
         echo "   API:        http://localhost:5000"
@@ -294,10 +294,10 @@ main() {
         echo "   make -f docker/MakeFile up"
         echo ""
         echo "2. Run migrations:"
-        echo "   dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj"
+        echo "   dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj"
         echo ""
         echo "3. Start the API:"
-        echo "   dotnet run --project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj"
+        echo "   dotnet run --project Synaptix.Backend.Api/Synaptix.Backend.Api.csproj"
     fi
     
     print_success "Development environment is ready! 🚀"

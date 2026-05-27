@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Synaptix.Backend.Application.Abstractions;
@@ -13,7 +13,7 @@ public sealed record AdminReprocessEventQueue(AdminEventQueueReprocessRequest Re
 public sealed class AdminUploadEventQueueHandler(IAppDb db, ILogger<AdminUploadEventQueueHandler> logger)
     : IRequestHandler<AdminUploadEventQueue, AdminEventQueueUploadResponse>
 {
-    public async Task<AdminEventQueueUploadResponse> Handle(AdminUploadEventQueue r, CancellationToken ct)
+    public async ValueTask<AdminEventQueueUploadResponse> Handle(AdminUploadEventQueue r, CancellationToken ct)
     {
         var accepted = 0;
         var rejected = 0;
@@ -79,7 +79,7 @@ public sealed class AdminUploadEventQueueHandler(IAppDb db, ILogger<AdminUploadE
 public sealed class AdminReprocessEventQueueHandler(ILogger<AdminReprocessEventQueueHandler> logger)
     : IRequestHandler<AdminReprocessEventQueue, AdminEventQueueReprocessResponse>
 {
-    public Task<AdminEventQueueReprocessResponse> Handle(AdminReprocessEventQueue r, CancellationToken ct)
+    public ValueTask<AdminEventQueueReprocessResponse> Handle(AdminReprocessEventQueue r, CancellationToken ct)
     {
         var jobId = $"job_{Guid.NewGuid():N}";
 
@@ -90,6 +90,6 @@ public sealed class AdminReprocessEventQueueHandler(ILogger<AdminReprocessEventQ
             r.Request.Scope,
             r.Request.Limit);
 
-        return Task.FromResult(new AdminEventQueueReprocessResponse(jobId, "queued"));
+        return ValueTask.FromResult(new AdminEventQueueReprocessResponse(jobId, "queued"));
     }
 }

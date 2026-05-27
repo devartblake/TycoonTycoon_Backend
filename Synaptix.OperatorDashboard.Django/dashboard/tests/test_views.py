@@ -447,13 +447,17 @@ class DashboardViewsTests(TestCase):
         self.assertContains(response, "ix_analytics_events_type_received")
         self.assertContains(response, "missing index")
 
+    @mock.patch("dashboard.views.get_storage_diagnostics")
+    @mock.patch("dashboard.views.list_storage_prefixes")
     @mock.patch("dashboard.views.inspect_bundle")
-    def test_backend_installer_validate_renders_bundle_summary(self, mock_inspect_bundle):
+    def test_backend_installer_validate_renders_bundle_summary(self, mock_inspect_bundle, mock_prefixes, mock_diagnostics):
         session = self.client.session
         session["operator_access_token"] = "token"
         session["operator_access_expires_at"] = 32503680000
-        session["operator_admin_profile"] = {"permissions": ["questions:write"], "email": "ops@example.com"}
+        session["operator_admin_profile"] = {"permissions": ["storage:write"], "email": "ops@example.com"}
         session.save()
+        mock_prefixes.return_value = {"prefixes": [], "extensions": [], "protectedKeys": []}
+        mock_diagnostics.return_value = {"overallStatus": "healthy", "auth": "access-key", "bucket": "synaptix-assets", "bucketExists": True, "objectCount": 1, "totalBytes": 128}
         mock_inspect_bundle.return_value = {
             "ok": True,
             "seed_count": 4,
@@ -473,7 +477,7 @@ class DashboardViewsTests(TestCase):
         self.assertContains(response, "seeds/questions.json")
         mock_inspect_bundle.assert_called_once()
 
-    def test_backend_installer_requires_questions_write(self):
+    def test_backend_installer_requires_storage_write(self):
         session = self.client.session
         session["operator_access_token"] = "token"
         session["operator_access_expires_at"] = 32503680000
@@ -481,6 +485,40 @@ class DashboardViewsTests(TestCase):
         session.save()
 
         response = self.client.get(reverse("backend-installer-view"))
+
+        self.assertEqual(403, response.status_code)
+
+    @mock.patch("dashboard.views.get_storage_diagnostics")
+    @mock.patch("dashboard.views.list_storage_prefixes")
+    @mock.patch("dashboard.views.list_storage_objects")
+    def test_storage_objects_view_renders_backend_objects(self, mock_list_objects, mock_prefixes, mock_diagnostics):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["storage:read"], "email": "ops@example.com"}
+        session.save()
+        mock_prefixes.return_value = {"prefixes": [{"prefix": "models/", "label": "3D models", "description": "Models"}], "extensions": [], "protectedKeys": []}
+        mock_diagnostics.return_value = {"overallStatus": "healthy", "auth": "access-key", "bucket": "synaptix-assets", "bucketExists": True, "objectCount": 1, "totalBytes": 12}
+        mock_list_objects.return_value = {
+            "bucket": "synaptix-assets",
+            "items": [{"key": "models/amy.glb", "category": "models", "sizeBytes": 12, "contentType": "model/gltf-binary", "lastModifiedUtc": "2026-05-26T00:00:00Z"}],
+            "nextCursor": None,
+        }
+
+        response = self.client.get(reverse("storage-objects-view"), {"prefix": "models/"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "models/amy.glb")
+        mock_list_objects.assert_called_once()
+
+    def test_storage_upload_requires_storage_write(self):
+        session = self.client.session
+        session["operator_access_token"] = "token"
+        session["operator_access_expires_at"] = 32503680000
+        session["operator_admin_profile"] = {"permissions": ["storage:read"], "email": "ops@example.com"}
+        session.save()
+
+        response = self.client.get(reverse("storage-upload-view"))
 
         self.assertEqual(403, response.status_code)
 

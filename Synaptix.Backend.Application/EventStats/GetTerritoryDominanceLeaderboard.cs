@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Application.EventStats
     public sealed class GetTerritoryDominanceLeaderboardHandler(IAppDb db)
         : IRequestHandler<GetTerritoryDominanceLeaderboard, List<TerritoryDominanceDto>>
     {
-        public async Task<List<TerritoryDominanceDto>> Handle(GetTerritoryDominanceLeaderboard r, CancellationToken ct)
+        public async ValueTask<List<TerritoryDominanceDto>> Handle(GetTerritoryDominanceLeaderboard r, CancellationToken ct)
         {
             var top = Math.Clamp(r.Top, 1, 100);
 

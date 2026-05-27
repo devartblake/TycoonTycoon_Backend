@@ -1,5 +1,5 @@
 using Grpc.Core;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Synaptix.Backend.Api.Grpc;
@@ -113,16 +113,16 @@ public sealed class MobileMatchGrpcServiceTests
 
     private sealed class FakeMediator : IMediator
     {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification => Task.CompletedTask;
+        public ValueTask Publish(object notification, CancellationToken cancellationToken = default) => ValueTask.CompletedTask;
+        public ValueTask Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification => ValueTask.CompletedTask;
 
-        public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+        public ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
         {
             return request switch
             {
-                EvaluateMatchAnswer => Task.FromResult((TResponse)(object)new MatchAnswerEvaluationResult("A", true, 100)),
-                GetMyTier => Task.FromResult((TResponse)(object)new MyTierDto(Guid.NewGuid(), 1, 7, 42, 1234, 0.5)),
-                GetTierLeaderboard => Task.FromResult((TResponse)(object)new TierLeaderboardDto(
+                EvaluateMatchAnswer => ValueTask.FromResult((TResponse)(object)new MatchAnswerEvaluationResult("A", true, 100)),
+                GetMyTier => ValueTask.FromResult((TResponse)(object)new MyTierDto(Guid.NewGuid(), 1, 7, 42, 1234, 0.5)),
+                GetTierLeaderboard => ValueTask.FromResult((TResponse)(object)new TierLeaderboardDto(
                     1,
                     1,
                     5,
@@ -132,11 +132,11 @@ public sealed class MobileMatchGrpcServiceTests
             };
         }
 
-        public Task Send<TRequest>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest
-            => Task.CompletedTask;
+        public ValueTask Send<TRequest>(TRequest request, CancellationToken cancellationToken = default) where TRequest : IRequest
+            => ValueTask.CompletedTask;
 
-        public Task<object?> Send(object request, CancellationToken cancellationToken = default)
-            => Task.FromResult<object?>(null);
+        public ValueTask<object?> Send(object request, CancellationToken cancellationToken = default)
+            => ValueTask.FromResult<object?>(null);
 
         public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = default)
             => AsyncEnumerable.Empty<TResponse>();

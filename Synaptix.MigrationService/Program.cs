@@ -25,13 +25,6 @@ try
             // IMPORTANT: This is the correct place because THIS is the host you actually run.
             services.AddObservability(ctx.Configuration, serviceName: "Synaptix.MigrationService");
 
-            // Register MediatR (required by DomainEventDispatcher)
-            services.AddMediatR(cfg =>
-            {
-                // Register from the Infrastructure assembly
-                cfg.RegisterServicesFromAssembly(typeof(Synaptix.Backend.Infrastructure.DependencyInjection).Assembly);
-            });
-
             // Infrastructure (EF Core, Mongo, Elastic, Redis, clock, dispatcher, etc.)
             services.AddInfrastructure(ctx.Configuration);
 

@@ -157,10 +157,10 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
 
         response.Should().NotBeNull();
         response!.Should().HaveCount(2);
-        response[0].Order.Should().Be(1);
-        response[0].CorrectOptionId.Should().Be("A");
-        response[1].Order.Should().Be(2);
-        response[1].CorrectOptionId.Should().Be("B");
+        response![0].Order.Should().Be(1);
+        response![0].CorrectOptionId.Should().Be("A");
+        response![1].Order.Should().Be(2);
+        response![1].CorrectOptionId.Should().Be("B");
     }
 
     [Fact]

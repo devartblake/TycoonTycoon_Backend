@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Application.Votes
 
     public sealed class GetVoteResultsHandler(IAppDb db) : IRequestHandler<GetVoteResults, VoteResultsResponse>
     {
-        public async Task<VoteResultsResponse> Handle(GetVoteResults r, CancellationToken ct)
+        public async ValueTask<VoteResultsResponse> Handle(GetVoteResults r, CancellationToken ct)
         {
             var tally = await db.Votes
                 .AsNoTracking()

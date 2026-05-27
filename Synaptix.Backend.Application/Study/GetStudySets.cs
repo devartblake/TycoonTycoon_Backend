@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Application.Study
 
         public GetStudySetsHandler(IAppDb db) => _db = db;
 
-        public async Task<StudySetsResponseDto> Handle(GetStudySets request, CancellationToken ct)
+        public async ValueTask<StudySetsResponseDto> Handle(GetStudySets request, CancellationToken ct)
         {
             var take = request.Count <= 0 ? 20 : Math.Clamp(request.Count, 1, 100);
 

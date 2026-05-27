@@ -111,7 +111,7 @@ public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
         var messages = await recipientClient.GetFromJsonAsync<List<DirectMessageDto>>($"/messages/conversations/{conversation.Id}/messages");
         messages.Should().NotBeNull();
         messages!.Should().ContainSingle();
-        messages[0].Content.Should().Be("hello there");
+        messages![0].Content.Should().Be("hello there");
 
         var readResponse = await recipientClient.PostAsync($"/messages/conversations/{conversation.Id}/read", null);
         readResponse.StatusCode.Should().Be(HttpStatusCode.OK);

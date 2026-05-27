@@ -24,7 +24,7 @@
         /// When true, drops and re-migrates the database if critical tables are
         /// missing after a migration run (schema drift recovery).
         /// </summary>
-        public bool AutoRepairOnMissingTables { get; set; } = true;
+        public bool AutoRepairOnMissingTables { get; set; } = false;
 
         /// <summary>
         /// When true, suppresses the EF PendingModelChangesWarning.

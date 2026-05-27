@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Application.GameEvents
 
     public sealed class GetGameEventStatusHandler(IAppDb db) : IRequestHandler<GetGameEventStatus, GameEventStatusDto?>
     {
-        public async Task<GameEventStatusDto?> Handle(GetGameEventStatus r, CancellationToken ct)
+        public async ValueTask<GameEventStatusDto?> Handle(GetGameEventStatus r, CancellationToken ct)
         {
             var ev = await db.GameEvents.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == r.GameEventId, ct);

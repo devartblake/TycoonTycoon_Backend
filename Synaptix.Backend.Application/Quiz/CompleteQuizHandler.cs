@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Economy;
@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Application.Quiz;
 public sealed class CompleteQuizHandler(EconomyService economy, IAppDb db)
     : IRequestHandler<CompleteQuiz, CompleteQuizResponse>
 {
-    public async Task<CompleteQuizResponse> Handle(CompleteQuiz request, CancellationToken ct)
+    public async ValueTask<CompleteQuizResponse> Handle(CompleteQuiz request, CancellationToken ct)
     {
         var lines = new List<EconomyLineDto>();
         if (request.XpEarned > 0)    lines.Add(new EconomyLineDto(CurrencyType.Xp, request.XpEarned));

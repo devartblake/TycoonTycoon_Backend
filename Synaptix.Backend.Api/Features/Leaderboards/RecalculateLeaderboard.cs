@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.Leaderboards
@@ -8,7 +8,7 @@ namespace Synaptix.Backend.Application.Leaderboards
     public sealed class RecalculateLeaderboardHandler(LeaderboardRecalculator recalculator)
         : IRequestHandler<RecalculateLeaderboard, LeaderboardRecalcResultDto>
     {
-        public async Task<LeaderboardRecalcResultDto> Handle(RecalculateLeaderboard r, CancellationToken ct)
+        public async ValueTask<LeaderboardRecalcResultDto> Handle(RecalculateLeaderboard r, CancellationToken ct)
             => await recalculator.RecalculateAsync(ct);
     }
 }

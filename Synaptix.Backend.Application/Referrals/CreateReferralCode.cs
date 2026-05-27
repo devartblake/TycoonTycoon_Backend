@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Application.Referrals
     public sealed class CreateReferralCodeHandler(IAppDb db)
         : IRequestHandler<CreateReferralCode, ReferralCodeDto>
     {
-        public async Task<ReferralCodeDto> Handle(CreateReferralCode r, CancellationToken ct)
+        public async ValueTask<ReferralCodeDto> Handle(CreateReferralCode r, CancellationToken ct)
         {
             // One active code per owner (simple rule; can be changed later)
             var existing = await db.ReferralCodes.AsNoTracking()

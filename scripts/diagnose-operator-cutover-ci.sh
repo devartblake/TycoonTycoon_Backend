@@ -156,7 +156,7 @@ if [[ "${RUN_API_TESTS}" == "true" ]]; then
   done
 
   test_cmd=(
-    dotnet test Tycoon.Backend.Api.Tests/Tycoon.Backend.Api.Tests.csproj
+    dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj
     --configuration Release
     --no-build
     --verbosity minimal

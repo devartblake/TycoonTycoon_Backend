@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Application.Missions
     public sealed class ListMissionsHandler(IAppDb db)
         : IRequestHandler<ListMissions, IReadOnlyList<MissionDto>>
     {
-        public async Task<IReadOnlyList<MissionDto>> Handle(ListMissions r, CancellationToken ct)
+        public async ValueTask<IReadOnlyList<MissionDto>> Handle(ListMissions r, CancellationToken ct)
         {
             var type = r.Type?.Trim() ?? "";
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 
@@ -8,7 +8,7 @@ namespace Synaptix.Backend.Application.Territory
 
     public sealed class GetPlayerTileMultiplierHandler(IAppDb db) : IRequestHandler<GetPlayerTileMultiplier, int>
     {
-        public async Task<int> Handle(GetPlayerTileMultiplier r, CancellationToken ct)
+        public async ValueTask<int> Handle(GetPlayerTileMultiplier r, CancellationToken ct)
         {
             return await db.TerritoryTiles.AsNoTracking()
                 .Where(x => x.SeasonId == r.SeasonId

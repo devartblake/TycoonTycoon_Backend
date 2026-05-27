@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Economy;
@@ -17,7 +17,7 @@ namespace Synaptix.Backend.Application.GameEvents
     {
         private const int ChampionBattleEliminationIncrement = 50;
 
-        public async Task<EnterGameEventResponse> Handle(EnterGameEvent r, CancellationToken ct)
+        public async ValueTask<EnterGameEventResponse> Handle(EnterGameEvent r, CancellationToken ct)
         {
             if (!await flags.IsEnabledAsync(FeatureFlagService.GameEventsEnabled, ct))
                 return new EnterGameEventResponse(r.EventId, "FeatureDisabled");

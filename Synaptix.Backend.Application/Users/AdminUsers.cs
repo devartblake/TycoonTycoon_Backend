@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Synaptix.Backend.Application.Abstractions;
@@ -18,7 +18,7 @@ public sealed record AdminUserActivity(string UserId, DateTimeOffset? From, Date
 
 public sealed class AdminListUsersHandler(IAppDb db) : IRequestHandler<AdminListUsers, AdminUsersListResponse>
 {
-    public async Task<AdminUsersListResponse> Handle(AdminListUsers r, CancellationToken ct)
+    public async ValueTask<AdminUsersListResponse> Handle(AdminListUsers r, CancellationToken ct)
     {
         var req = r.Request;
         var q = db.Users.AsNoTracking().AsQueryable();
@@ -66,7 +66,7 @@ public sealed class AdminListUsersHandler(IAppDb db) : IRequestHandler<AdminList
 
 public sealed class AdminGetUserHandler(IAppDb db) : IRequestHandler<AdminGetUser, AdminUserDetailDto?>
 {
-    public async Task<AdminUserDetailDto?> Handle(AdminGetUser r, CancellationToken ct)
+    public async ValueTask<AdminUserDetailDto?> Handle(AdminGetUser r, CancellationToken ct)
     {
         var id = AdminUsersMapper.ParseUserId(r.UserId);
         if (id is null) return null;
@@ -100,7 +100,7 @@ public sealed class AdminGetUserHandler(IAppDb db) : IRequestHandler<AdminGetUse
 
 public sealed class AdminCreateUserHandler(IAppDb db, ILogger<AdminCreateUserHandler> logger) : IRequestHandler<AdminCreateUser, AdminCreateUserResponse>
 {
-    public async Task<AdminCreateUserResponse> Handle(AdminCreateUser r, CancellationToken ct)
+    public async ValueTask<AdminCreateUserResponse> Handle(AdminCreateUser r, CancellationToken ct)
     {
         if (await db.Users.AnyAsync(x => x.Email == r.Request.Email.ToLowerInvariant(), ct))
         {
@@ -131,7 +131,7 @@ public sealed class AdminCreateUserHandler(IAppDb db, ILogger<AdminCreateUserHan
 
 public sealed class AdminUpdateUserHandler(IAppDb db, ILogger<AdminUpdateUserHandler> logger) : IRequestHandler<AdminUpdateUser, AdminUpdateUserResponse?>
 {
-    public async Task<AdminUpdateUserResponse?> Handle(AdminUpdateUser r, CancellationToken ct)
+    public async ValueTask<AdminUpdateUserResponse?> Handle(AdminUpdateUser r, CancellationToken ct)
     {
         var id = AdminUsersMapper.ParseUserId(r.UserId);
         if (id is null) return null;
@@ -152,7 +152,7 @@ public sealed class AdminUpdateUserHandler(IAppDb db, ILogger<AdminUpdateUserHan
 
 public sealed class AdminBanUserHandler(IAppDb db, ILogger<AdminBanUserHandler> logger) : IRequestHandler<AdminBanUser, AdminBanUserResponse?>
 {
-    public async Task<AdminBanUserResponse?> Handle(AdminBanUser r, CancellationToken ct)
+    public async ValueTask<AdminBanUserResponse?> Handle(AdminBanUser r, CancellationToken ct)
     {
         var id = AdminUsersMapper.ParseUserId(r.UserId);
         if (id is null) return null;
@@ -171,7 +171,7 @@ public sealed class AdminBanUserHandler(IAppDb db, ILogger<AdminBanUserHandler> 
 
 public sealed class AdminUnbanUserHandler(IAppDb db, ILogger<AdminUnbanUserHandler> logger) : IRequestHandler<AdminUnbanUser, AdminUnbanUserResponse?>
 {
-    public async Task<AdminUnbanUserResponse?> Handle(AdminUnbanUser r, CancellationToken ct)
+    public async ValueTask<AdminUnbanUserResponse?> Handle(AdminUnbanUser r, CancellationToken ct)
     {
         var id = AdminUsersMapper.ParseUserId(r.UserId);
         if (id is null) return null;
@@ -190,7 +190,7 @@ public sealed class AdminUnbanUserHandler(IAppDb db, ILogger<AdminUnbanUserHandl
 
 public sealed class AdminDeleteUserHandler(IAppDb db, ILogger<AdminDeleteUserHandler> logger) : IRequestHandler<AdminDeleteUser, bool>
 {
-    public async Task<bool> Handle(AdminDeleteUser r, CancellationToken ct)
+    public async ValueTask<bool> Handle(AdminDeleteUser r, CancellationToken ct)
     {
         var id = AdminUsersMapper.ParseUserId(r.UserId);
         if (id is null) return false;
@@ -207,7 +207,7 @@ public sealed class AdminDeleteUserHandler(IAppDb db, ILogger<AdminDeleteUserHan
 
 public sealed class AdminUserActivityHandler(IAppDb db) : IRequestHandler<AdminUserActivity, AdminUserActivityResponse?>
 {
-    public async Task<AdminUserActivityResponse?> Handle(AdminUserActivity r, CancellationToken ct)
+    public async ValueTask<AdminUserActivityResponse?> Handle(AdminUserActivity r, CancellationToken ct)
     {
         var id = AdminUsersMapper.ParseUserId(r.UserId);
         if (id is null) return null;

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Economy;
@@ -25,7 +25,7 @@ namespace Synaptix.Backend.Application.GameEvents
         private const int WinnerBonusXp = 500;
         private const int WinnerBonusCoins = 250;
 
-        public async Task<CloseGameEventResponse> Handle(CloseGameEventAndDistributePrizes r, CancellationToken ct)
+        public async ValueTask<CloseGameEventResponse> Handle(CloseGameEventAndDistributePrizes r, CancellationToken ct)
         {
             var ev = await db.GameEvents.FirstOrDefaultAsync(x => x.Id == r.GameEventId, ct);
             if (ev is null || ev.Status == GameEventStatus.Closed)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 
@@ -16,7 +16,7 @@ public sealed record MatchAnswerEvaluationResult(
 public sealed class EvaluateMatchAnswerHandler(IAppDb db)
     : IRequestHandler<EvaluateMatchAnswer, MatchAnswerEvaluationResult>
 {
-    public async Task<MatchAnswerEvaluationResult> Handle(EvaluateMatchAnswer r, CancellationToken ct)
+    public async ValueTask<MatchAnswerEvaluationResult> Handle(EvaluateMatchAnswer r, CancellationToken ct)
     {
         var question = await db.Questions.AsNoTracking()
             .FirstOrDefaultAsync(q => q.Id == r.QuestionId, ct);

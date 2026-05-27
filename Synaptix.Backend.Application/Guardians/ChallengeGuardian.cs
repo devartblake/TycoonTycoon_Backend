@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Config;
@@ -18,7 +18,7 @@ namespace Synaptix.Backend.Application.Guardians
     public sealed class ChallengeGuardianHandler(IAppDb db, IMediator mediator, FeatureFlagService flags)
         : IRequestHandler<ChallengeGuardian, ChallengeGuardianResponse>
     {
-        public async Task<ChallengeGuardianResponse> Handle(ChallengeGuardian r, CancellationToken ct)
+        public async ValueTask<ChallengeGuardianResponse> Handle(ChallengeGuardian r, CancellationToken ct)
         {
             if (!await flags.IsEnabledAsync(FeatureFlagService.GuardianEnabled, ct))
                 return new ChallengeGuardianResponse(r.EventId, "FeatureDisabled", Guid.Empty);

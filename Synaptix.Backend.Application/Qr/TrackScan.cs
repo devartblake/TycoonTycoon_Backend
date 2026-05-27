@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Application.Qr
     public sealed class TrackScanHandler(IAppDb db)
         : IRequestHandler<TrackScan, TrackScanResultDto>
     {
-        public async Task<TrackScanResultDto> Handle(TrackScan r, CancellationToken ct)
+        public async ValueTask<TrackScanResultDto> Handle(TrackScan r, CancellationToken ct)
         {
             var now = DateTimeOffset.UtcNow;
 

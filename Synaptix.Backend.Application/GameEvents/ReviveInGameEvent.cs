@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Economy;
@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Application.GameEvents
 
     public sealed class ReviveInGameEventHandler(IAppDb db, EconomyService econ) : IRequestHandler<ReviveInGameEvent, ReviveResponse>
     {
-        public async Task<ReviveResponse> Handle(ReviveInGameEvent r, CancellationToken ct)
+        public async ValueTask<ReviveResponse> Handle(ReviveInGameEvent r, CancellationToken ct)
         {
             var ev = await db.GameEvents.FirstOrDefaultAsync(x => x.Id == r.GameEventId, ct);
             if (ev is null)

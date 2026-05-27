@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -13,7 +13,7 @@ namespace Synaptix.Backend.Application.Missions
         MissionProgressService progress)
         : IRequestHandler<ApplyMatchCompletedProgress, ProgressAppliedDto>
     {
-        public async Task<ProgressAppliedDto> Handle(ApplyMatchCompletedProgress r, CancellationToken ct)
+        public async ValueTask<ProgressAppliedDto> Handle(ApplyMatchCompletedProgress r, CancellationToken ct)
         {
             var dto = r.Dto;
             var now = DateTimeOffset.UtcNow;

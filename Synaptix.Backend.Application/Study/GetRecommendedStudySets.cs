@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
@@ -21,7 +21,7 @@ namespace Synaptix.Backend.Application.Study
             _mindProfiles = mindProfiles;
         }
 
-        public async Task<RecommendedStudySetsResponseDto> Handle(GetRecommendedStudySets request, CancellationToken ct)
+        public async ValueTask<RecommendedStudySetsResponseDto> Handle(GetRecommendedStudySets request, CancellationToken ct)
         {
             var take = request.Count <= 0 ? 5 : Math.Clamp(request.Count, 1, 20);
             var rows = await StudySetHelpers.BuildCategoryCountsQuery(_db)

@@ -1,5 +1,5 @@
 using Grpc.Core;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using Synaptix.Backend.Application.Analytics.Abstractions;

@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Text.Json;
 using Grpc.Core;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging.Abstractions;
 using Synaptix.Backend.Api.Grpc;
 using Synaptix.Backend.Application.Analytics.Abstractions;
@@ -250,35 +250,35 @@ public sealed class SidecarGrpcServiceTests
     {
         public List<object> SentRequests { get; } = [];
 
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        public ValueTask Publish(object notification, CancellationToken cancellationToken = default)
+            => ValueTask.CompletedTask;
 
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public ValueTask Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
             where TNotification : INotification
-            => Task.CompletedTask;
+            => ValueTask.CompletedTask;
 
-        public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+        public ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
         {
             SentRequests.Add(request);
             if (request is AdminReprocessEventQueue)
             {
-                return Task.FromResult((TResponse)(object)new AdminEventQueueReprocessResponse("job_1", "queued"));
+                return ValueTask.FromResult((TResponse)(object)new AdminEventQueueReprocessResponse("job_1", "queued"));
             }
 
             throw new InvalidOperationException($"Unsupported request type: {request.GetType().Name}");
         }
 
-        public Task Send<TRequest>(TRequest request, CancellationToken cancellationToken = default)
+        public ValueTask Send<TRequest>(TRequest request, CancellationToken cancellationToken = default)
             where TRequest : IRequest
         {
             SentRequests.Add(request!);
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
-        public Task<object?> Send(object request, CancellationToken cancellationToken = default)
+        public ValueTask<object?> Send(object request, CancellationToken cancellationToken = default)
         {
             SentRequests.Add(request);
-            return Task.FromResult<object?>(new { status = "queued" });
+            return ValueTask.FromResult<object?>(new { status = "queued" });
         }
 
         public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = default)

@@ -11,7 +11,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Api.Payments.PayPal;

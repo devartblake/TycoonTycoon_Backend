@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Storage Objects{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Storage / MinIO objects</p>
+    <h1 class="page-title">Storage objects</h1>
+    <p class="page-subtitle">Browse object metadata through backend-admin storage policies. Credentials and bucket controls stay server-side.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'operator-minio-diagnostics-view' %}">MinIO diagnostics</a>
+    {% if 'storage:write' in admin_profile.permissions %}
+    <a class="button" href="{% url 'storage-upload-view' %}">Upload</a>
+    {% endif %}
+  </div>
+</section>
+
+{% include "dashboard/partials/storage_connection_panel.html" %}
+
+<section class="card">
+  <form method="get" class="form-grid">
+    <label>
+      Prefix
+      <select name="prefix">
+        <option value="" {% if not selected_prefix %}selected{% endif %}>All approved objects</option>
+        {% for item in prefixes %}
+        <option value="{{ item.prefix }}" {% if selected_prefix == item.prefix %}selected{% endif %}>{{ item.label }} - {{ item.prefix }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Page size
+      <input type="number" name="pageSize" value="{{ query.pageSize|default:50 }}" min="1" max="200" />
+    </label>
+    <div class="toolbar-actions">
+      <button type="submit">Refresh</button>
+    </div>
+  </form>
+</section>
+
+<section class="card mt-lg">
+  <div class="section-header">
+    <div>
+      <h2>Objects</h2>
+      <p class="section-copy">Bucket: <code>{{ bucket|default:"not available" }}</code></p>
+    </div>
+    {% if next_cursor %}
+    <a class="button secondary" href="?prefix={{ selected_prefix|urlencode }}&pageSize={{ query.pageSize|default:50 }}&cursor={{ next_cursor|urlencode }}">Next page</a>
+    {% endif %}
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Key</th><th>Category</th><th>Size</th><th>Type</th><th>Last modified</th></tr>
+      </thead>
+      <tbody>
+        {% for item in objects %}
+        <tr>
+          <td><a href="{% url 'storage-object-detail-view' item.encodedKey %}"><code>{{ item.key }}</code></a></td>
+          <td>{{ item.category }}</td>
+          <td>{{ item.sizeBytes|filesizeformat }}</td>
+          <td>{{ item.contentType|default:"-" }}</td>
+          <td>{{ item.lastModifiedUtc|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="helper-text">No objects returned for this prefix.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

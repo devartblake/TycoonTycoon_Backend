@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -38,7 +38,7 @@ namespace Synaptix.Backend.Application.Matches
     {
         private readonly RankedSeasonOptions _ranked = rankedOptions.Value;
         private readonly ILogger<SubmitMatchHandler> _logger = logger;
-        public async Task<SubmitMatchResponse> Handle(SubmitMatch r, CancellationToken ct)
+        public async ValueTask<SubmitMatchResponse> Handle(SubmitMatch r, CancellationToken ct)
         {
             var req = r.Request;
 

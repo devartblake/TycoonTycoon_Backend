@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -19,7 +19,7 @@ namespace Synaptix.Backend.Application.LearningModules
 
         public ListLearningModulesHandler(IAppDb db) => _db = db;
 
-        public async Task<IReadOnlyList<LearningModuleListItemDto>> Handle(
+        public async ValueTask<IReadOnlyList<LearningModuleListItemDto>> Handle(
             ListLearningModules request,
             CancellationToken ct)
         {

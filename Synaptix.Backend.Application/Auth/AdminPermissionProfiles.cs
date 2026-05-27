@@ -47,6 +47,8 @@ public static class AdminPermissionProfiles
         "eventqueue:write",
         "personalization:write",
         "config:write",
+        "storage:read",
+        "storage:write",
     ];
 
     private static readonly string[] SuperAdminPermissions =

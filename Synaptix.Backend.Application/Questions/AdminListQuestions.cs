@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -20,7 +20,7 @@ namespace Synaptix.Backend.Application.Questions
     public sealed class AdminListQuestionsHandler(IAppDb db)
         : IRequestHandler<AdminListQuestions, QuestionListResponseDto>
     {
-        public async Task<QuestionListResponseDto> Handle(AdminListQuestions r, CancellationToken ct)
+        public async ValueTask<QuestionListResponseDto> Handle(AdminListQuestions r, CancellationToken ct)
         {
             var page = Math.Max(1, r.Page);
             var pageSize = Math.Clamp(r.PageSize, 1, 100);

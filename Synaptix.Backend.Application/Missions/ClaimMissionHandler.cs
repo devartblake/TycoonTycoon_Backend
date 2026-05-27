@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
@@ -37,7 +37,7 @@ namespace Synaptix.Backend.Application.Missions
                 ?? [];
         }
 
-        public async Task<ClaimMissionResult> Handle(ClaimMission request, CancellationToken ct)
+        public async ValueTask<ClaimMissionResult> Handle(ClaimMission request, CancellationToken ct)
         {
             // Load claim (progress record)
             var claim = await _db.MissionClaims

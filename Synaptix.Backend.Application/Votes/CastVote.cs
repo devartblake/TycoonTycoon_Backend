@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -23,7 +23,7 @@ namespace Synaptix.Backend.Application.Votes
 
     public sealed class CastVoteHandler(IAppDb db) : IRequestHandler<CastVote, CastVoteResult>
     {
-        public async Task<CastVoteResult> Handle(CastVote r, CancellationToken ct)
+        public async ValueTask<CastVoteResult> Handle(CastVote r, CancellationToken ct)
         {
             if (!VoteOptions.Valid.Contains(r.Option))
                 return new CastVoteResult(CastVoteStatus.InvalidOption);

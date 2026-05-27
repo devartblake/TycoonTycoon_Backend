@@ -3,17 +3,17 @@ set -euo pipefail
 
 # Hardened surfaces should not regress back to status-only error responses.
 TARGETS=(
-  "Tycoon.Backend.Api/Features/AdminAuth"
-  "Tycoon.Backend.Api/Features/AdminNotifications"
-  "Tycoon.Backend.Api/Features/AdminSeasons"
-  "Tycoon.Backend.Api/Features/AdminAntiCheat"
-  "Tycoon.Backend.Api/Features/Party"
-  "Tycoon.Backend.Api/Features/Matches"
-  "Tycoon.Backend.Api/Features/Matchmaking"
-  "Tycoon.Backend.Api/Features/Mobile/Matches"
-  "Tycoon.Backend.Api/Features/Users"
-  "Tycoon.Backend.Api/Features/Friends"
-  "Tycoon.Backend.Api/Features/Missions"
+  "Synaptix.Backend.Api/Features/AdminAuth"
+  "Synaptix.Backend.Api/Features/AdminNotifications"
+  "Synaptix.Backend.Api/Features/AdminSeasons"
+  "Synaptix.Backend.Api/Features/AdminAntiCheat"
+  "Synaptix.Backend.Api/Features/Party"
+  "Synaptix.Backend.Api/Features/Matches"
+  "Synaptix.Backend.Api/Features/Matchmaking"
+  "Synaptix.Backend.Api/Features/Mobile/Matches"
+  "Synaptix.Backend.Api/Features/Users"
+  "Synaptix.Backend.Api/Features/Friends"
+  "Synaptix.Backend.Api/Features/Missions"
 )
 
 PATTERN='Results\.(NotFound|BadRequest|Conflict|Unauthorized|Forbid|Problem|StatusCode)\('

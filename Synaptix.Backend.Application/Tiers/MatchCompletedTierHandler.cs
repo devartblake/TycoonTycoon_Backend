@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Domain.Events;
 using Synaptix.Backend.Application.Abstractions;
@@ -19,7 +19,7 @@ namespace Synaptix.Backend.Application.Tiers
             _tierResolver = tierResolver;
         }
 
-        public async Task Handle(MatchCompletedEvent notification, CancellationToken ct)
+        public async ValueTask Handle(MatchCompletedEvent notification, CancellationToken ct)
         {
             // Load player in the same transaction boundary as other sync updates.
             var player = await _db.Players.SingleOrDefaultAsync(p => p.Id == notification.PlayerId, ct);

@@ -199,19 +199,19 @@ function Initialize-EnvFile {
 function Test-AppSettings {
     Write-Header "Validating Configuration Files"
     
-    $apiSettings = Join-Path $ProjectRoot "Tycoon.Backend.Api\appsettings.json"
-    $migrationSettings = Join-Path $ProjectRoot "Tycoon.MigrationService\appsettings.json"
-    
+    $apiSettings = Join-Path $ProjectRoot "Synaptix.Backend.Api\appsettings.json"
+    $migrationSettings = Join-Path $ProjectRoot "Synaptix.MigrationService\appsettings.json"
+
     if (Test-Path $apiSettings) {
-        Write-Success "Found: Tycoon.Backend.Api\appsettings.json"
+        Write-Success "Found: Synaptix.Backend.Api\appsettings.json"
     }
     else {
         Write-ErrorMsg "Missing: $apiSettings"
         return $false
     }
-    
+
     if (Test-Path $migrationSettings) {
-        Write-Success "Found: Tycoon.MigrationService\appsettings.json"
+        Write-Success "Found: Synaptix.MigrationService\appsettings.json"
     }
     else {
         Write-ErrorMsg "Missing: $migrationSettings"
@@ -343,10 +343,10 @@ function Main {
         
         Write-Header "Next Steps"
         Write-Host "1. Run database migrations:"
-        Write-Host "   dotnet run --project Tycoon.MigrationService\Tycoon.MigrationService.csproj"
+        Write-Host "   dotnet run --project Synaptix.MigrationService\Synaptix.MigrationService.csproj"
         Write-Host ""
         Write-Host "2. Start the API:"
-        Write-Host "   dotnet run --project Tycoon.Backend.Api\Tycoon.Backend.Api.csproj"
+        Write-Host "   dotnet run --project Synaptix.Backend.Api\Synaptix.Backend.Api.csproj"
         Write-Host ""
         Write-Host "3. Access the application:"
         Write-Host "   API:        http://localhost:5000"
@@ -365,10 +365,10 @@ function Main {
         Write-Host "   OR: docker compose -f docker/compose.yml up -d"
         Write-Host ""
         Write-Host "2. Run migrations:"
-        Write-Host "   dotnet run --project Tycoon.MigrationService\Tycoon.MigrationService.csproj"
+        Write-Host "   dotnet run --project Synaptix.MigrationService\Synaptix.MigrationService.csproj"
         Write-Host ""
         Write-Host "3. Start the API:"
-        Write-Host "   dotnet run --project Tycoon.Backend.Api\Tycoon.Backend.Api.csproj"
+        Write-Host "   dotnet run --project Synaptix.Backend.Api\Synaptix.Backend.Api.csproj"
     }
     
     Write-Success "Development environment is ready! 🚀"

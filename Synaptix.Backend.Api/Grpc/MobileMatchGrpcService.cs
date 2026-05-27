@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Synaptix.Backend.Application.Leaderboards;
 using Synaptix.Backend.Application.Matches;

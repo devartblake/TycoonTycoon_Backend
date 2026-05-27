@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -16,7 +16,7 @@ namespace Synaptix.Backend.Application.GameEvents
             GameEventStatus.Live
         };
 
-        public async Task<List<GameEventSummaryDto>> Handle(ListUpcomingGameEvents r, CancellationToken ct)
+        public async ValueTask<List<GameEventSummaryDto>> Handle(ListUpcomingGameEvents r, CancellationToken ct)
         {
             var query = db.GameEvents.AsNoTracking()
                 .Where(x => ActiveStatuses.Contains(x.Status));

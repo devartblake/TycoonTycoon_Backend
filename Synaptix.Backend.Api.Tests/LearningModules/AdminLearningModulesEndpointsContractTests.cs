@@ -124,9 +124,9 @@ public sealed class AdminLearningModulesEndpointsContractTests : IClassFixture<T
         var publicLessons = await _factory.CreateClient().GetFromJsonAsync<List<ModuleLessonDto>>($"/modules/{module.Id}/lessons");
         publicLessons.Should().NotBeNull();
         publicLessons!.Should().ContainSingle();
-        publicLessons[0].QuestionId.Should().Be(question.Id);
-        publicLessons[0].Explanation.Should().Be("Water is made from hydrogen and oxygen.");
-        publicLessons[0].Order.Should().Be(1);
+        publicLessons![0].QuestionId.Should().Be(question.Id);
+        publicLessons![0].Explanation.Should().Be("Water is made from hydrogen and oxygen.");
+        publicLessons![0].Order.Should().Be(1);
 
         var deleteResponse = await _http.DeleteAsync($"/admin/modules/{module.Id}/lessons/{added.LessonId}");
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);

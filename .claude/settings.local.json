@@ -76,7 +76,20 @@
       "Read(//c/Users/lmxbl/**)",
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\lmxbl\\\\StudioProjects\\\\trivia_tycoon\\\\docs\" -File | Sort-Object LastWriteTime -Descending | Select-Object -First 5 Name, @{N=\"Modified\";E={$_.LastWriteTime}})",
       "Bash(grep -E \"\\\\.cs$\")",
-      "Bash(xargs ls -la)"
+      "Bash(xargs ls -la)",
+      "Bash(xargs grep -l \"using MediatR\")",
+      "Bash(py --version)",
+      "Bash(where python3 *)",
+      "PowerShell($projects = @\\(\"Synaptix.Backend.Api\", \"Synaptix.MigrationService\"\\); foreach \\($proj in $projects\\) { $programPath = \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\$proj\\\\Program.cs\"; if \\(Test-Path $programPath\\) { $hasAddMediator = Get-Content $programPath | Select-String \"AddMediator\\\\\\(\\\\\\)\" | Select-Object -First 1; if \\($hasAddMediator\\) { $projPath = \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\$proj\\\\$proj.csproj\"; $hasSourceGen = Get-Content $projPath | Select-String \"Mediator.SourceGenerator\" | Select-Object -First 1; Write-Host \"$proj : AddMediator=$\\($hasAddMediator -ne $null\\), SourceGenerator=$\\($hasSourceGen -ne $null\\)\"; if \\($hasAddMediator -and !$hasSourceGen\\) { Write-Host \"  ⚠️ CRITICAL: AddMediator\\(\\) without SourceGenerator\" } } } })",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\docs\" -Recurse -File)",
+      "Bash(dir \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\\\\docker\")",
+      "Bash(findstr \"Dockerfile\")",
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Include '*appsettings.Production*' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName\")",
+      "Bash(powershell -Command '@\\('\\\\''postgres'\\\\'', '\\\\''mongodb'\\\\'', '\\\\''redis'\\\\'', '\\\\''elasticsearch'\\\\'', '\\\\''rabbitmq'\\\\'', '\\\\''minio'\\\\'', '\\\\''prometheus'\\\\'', '\\\\''grafana'\\\\'', '\\\\''kibana'\\\\'', '\\\\''pgadmin'\\\\'', '\\\\''mongo-express'\\\\'', '\\\\''traefik'\\\\''\\) | ForEach-Object { '\\\\''Service: '\\\\'' + $_ }')",
+      "Bash(xargs -I {} basename {})",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\" -Recurse -Filter \"DependencyInjection.cs\")",
+      "Bash(Select-Object -First 5)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\lmxbl\\\\Documents\\\\TycoonTycoon_Backend\" -Recurse -Directory | Where-Object { $_.Name -match \"Synaptix\" } | Select-Object -ExpandProperty FullName)"
     ],
     "additionalDirectories": [
       "c:\\Users\\lmxbl\\.claude\\projects\\c--Users-lmxbl-Documents-TycoonTycoon_Backend\\memory"

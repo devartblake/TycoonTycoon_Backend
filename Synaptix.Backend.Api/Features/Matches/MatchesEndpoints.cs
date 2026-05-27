@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +10,7 @@ using Synaptix.Backend.Application.Matches;
 using Synaptix.Backend.Application.Moderation;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
+using System.Security.Claims;
 
 namespace Synaptix.Backend.Api.Features.Matches
 {
@@ -21,11 +22,16 @@ namespace Synaptix.Backend.Api.Features.Matches
 
             g.MapPost("/start", async (
                 [FromBody] StartMatchRequest req,
+                ClaimsPrincipal user,
                 EnforcementService enforcement,
                 ModerationService moderation,
                 IMediator mediator,
                 CancellationToken ct) =>
             {
+                var sub = user.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!Guid.TryParse(sub, out var callerId) || callerId != req.HostPlayerId)
+                    return Results.Forbid();
+
                 var decision = await enforcement.EvaluateAsync(req.HostPlayerId, ct);
                 if (!decision.CanStartMatch)
                     return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Player is not allowed to start matches.");
@@ -51,7 +57,7 @@ namespace Synaptix.Backend.Api.Features.Matches
                 {
                     return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message);
                 }
-            });
+            }).RequireAuthorization();
 
             g.MapPost("/submit", async (
                 [FromBody] SubmitMatchRequest req,
@@ -60,7 +66,7 @@ namespace Synaptix.Backend.Api.Features.Matches
             {
                 var res = await mediator.Send(new SubmitMatch(req), ct);
                 return Results.Ok(res);
-            }).RequireRateLimiting("matches-submit");
+            }).RequireRateLimiting("matches-submit").RequireAuthorization();
 
             g.MapGet("/{matchId:guid}", async ([FromRoute] Guid matchId, IAppDb db, CancellationToken ct) =>
             {

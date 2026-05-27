@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Synaptix.Backend.Application.Abstractions;
@@ -22,20 +22,20 @@ namespace Synaptix.Backend.Application.Guardians
         PlayerEventStatsService eventStats)
         : IRequestHandler<ResolveGuardianChallenge>
     {
-        public async Task Handle(ResolveGuardianChallenge r, CancellationToken ct)
+        public async ValueTask<Unit> Handle(ResolveGuardianChallenge r, CancellationToken ct)
         {
             var challenge = await db.GuardianChallenges
                 .FirstOrDefaultAsync(x => x.MatchId == r.MatchId, ct);
 
             if (challenge is null || challenge.Status != ChallengeStatus.Pending)
-                return;
+                return Unit.Value;
 
             // Determine winner from match result
             var result = await db.MatchResults
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.MatchId == r.MatchId, ct);
 
-            if (result is null) return;
+            if (result is null) return Unit.Value;
 
             var parts = await db.MatchParticipantResults
                 .AsNoTracking()
@@ -124,6 +124,7 @@ namespace Synaptix.Backend.Application.Guardians
 
                 await db.SaveChangesAsync(ct);
             }
+            return Unit.Value;
         }
 
         private static Guid DeterministicGuid(Guid a, Guid b)

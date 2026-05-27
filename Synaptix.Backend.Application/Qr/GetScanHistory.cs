@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -17,7 +17,7 @@ namespace Synaptix.Backend.Application.Qr
     public sealed class GetScanHistoryHandler(IAppDb db)
         : IRequestHandler<GetScanHistory, ScanHistoryDto>
     {
-        public async Task<ScanHistoryDto> Handle(GetScanHistory r, CancellationToken ct)
+        public async ValueTask<ScanHistoryDto> Handle(GetScanHistory r, CancellationToken ct)
         {
             var page = Math.Max(1, r.Page);
             var pageSize = Math.Clamp(r.PageSize, 1, 100);

@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -17,7 +17,7 @@ namespace Synaptix.Backend.Application.Referrals
         private const int RedeemerXp = 20;
         private const int RedeemerCoins = 50;
 
-        public async Task<RedeemReferralResultDto> Handle(RedeemReferralCode r, CancellationToken ct)
+        public async ValueTask<RedeemReferralResultDto> Handle(RedeemReferralCode r, CancellationToken ct)
         {
             var now = DateTimeOffset.UtcNow;
 

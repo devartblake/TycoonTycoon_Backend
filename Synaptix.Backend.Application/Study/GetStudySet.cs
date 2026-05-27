@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Application.Study
 
         public GetStudySetHandler(IAppDb db) => _db = db;
 
-        public async Task<StudySetDetailDto?> Handle(GetStudySet request, CancellationToken ct)
+        public async ValueTask<StudySetDetailDto?> Handle(GetStudySet request, CancellationToken ct)
         {
             return await StudySetHelpers.BuildStudySetDetailAsync(_db, request.Id, request.PlayerId, request.Count, ct);
         }

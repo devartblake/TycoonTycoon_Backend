@@ -13,11 +13,11 @@ $ErrorActionPreference = "Stop"
 
 if ($SmokeMode -eq "routes") {
   Write-Host "[route-check] verifying required endpoint maps exist"
-  Select-String -Path "Tycoon.Backend.Api/Features/Auth/AuthEndpoints.cs" -Pattern 'MapPost\("/login"' | Out-Null
-  Select-String -Path "Tycoon.Backend.Api/Features/Questions/QuestionsEndpoints.cs" -Pattern 'MapGet\("/set"|MapPost\("/check"|MapPost\("/check-batch"' | Out-Null
-  Select-String -Path "Tycoon.Backend.Api/Features/Store/StoreEndpoints.cs" -Pattern 'MapGet\("/catalog"|MapPost\("/purchase"|MapPost\("/iap/validate"' | Out-Null
-  Select-String -Path "Tycoon.Backend.Api/Features/Crypto/CryptoEconomyEndpoints.cs" -Pattern 'MapPost\("/link-wallet"|MapGet\("/balance|MapGet\("/history|MapPost\("/withdraw"' | Out-Null
-  Select-String -Path "Tycoon.Backend.Api/Features/Leaderboards/LeaderboardsEndpoints.cs" -Pattern 'MapGet\("/tiers/\{tierId:int\}"' | Out-Null
+  Select-String -Path "Synaptix.Backend.Api/Features/Auth/AuthEndpoints.cs" -Pattern 'MapPost\("/login"' | Out-Null
+  Select-String -Path "Synaptix.Backend.Api/Features/Questions/QuestionsEndpoints.cs" -Pattern 'MapGet\("/set"|MapPost\("/check"|MapPost\("/check-batch"' | Out-Null
+  Select-String -Path "Synaptix.Backend.Api/Features/Store/StoreEndpoints.cs" -Pattern 'MapGet\("/catalog"|MapPost\("/purchase"|MapPost\("/iap/validate"' | Out-Null
+  Select-String -Path "Synaptix.Backend.Api/Features/Crypto/CryptoEconomyEndpoints.cs" -Pattern 'MapPost\("/link-wallet"|MapGet\("/balance|MapGet\("/history|MapPost\("/withdraw"' | Out-Null
+  Select-String -Path "Synaptix.Backend.Api/Features/Leaderboards/LeaderboardsEndpoints.cs" -Pattern 'MapGet\("/tiers/\{tierId:int\}"' | Out-Null
   Write-Host "P0 smoke route-check completed."
   exit 0
 }

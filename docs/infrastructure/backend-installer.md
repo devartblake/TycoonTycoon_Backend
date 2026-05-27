@@ -16,7 +16,12 @@ Use `-DryRun` to validate the manifest and print the upload plan without requiri
 
 For real uploads, install the MinIO client (`mc`) and configure MinIO through `docker/.env` or process environment variables. The default bucket is `synaptix-assets`.
 
-The Django operator dashboard also exposes a native installer page at `/installer`. It accepts an asset ZIP, validates or generates the manifest, uploads the objects directly to MinIO, and then shows the migration-service command to import seed JSON from MinIO.
+The Django operator dashboard also exposes a native installer page at `/installer`. It accepts an asset ZIP, validates or generates the manifest, routes uploads through the backend `/admin/storage` policy endpoints, and then shows the migration-service command to import seed JSON from MinIO. Operators need `storage:write`; raw MinIO credentials are not configured in Django or exposed to the browser.
+
+The dashboard storage console is available at:
+
+- `/storage/objects` for approved-prefix object browsing and metadata drill-down.
+- `/storage/upload` for policy-validated uploads into approved MinIO prefixes.
 
 The current `assets.zip` bundle was extracted to:
 
@@ -63,4 +68,4 @@ Seed keys default to the migration service paths:
 - `seeds/season-rewards.json`
 - `seeds/questions.json`
 
-Assets can either provide an explicit `key` or let the installer infer a stable prefix from the file extension: `avatars/`, `avatar-packages/`, `songs/`, `images/`, `videos/`, or `frontend/`.
+Assets can either provide an explicit `key` or let the installer infer a stable prefix. Backend policy allows only approved prefixes such as `seeds/`, `avatars/`, `avatar-packages/`, `songs/`, `audio/`, `models/`, `images/`, `videos/`, `frontend/assets/`, and `questions/`.

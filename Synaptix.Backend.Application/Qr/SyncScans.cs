@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.Qr
@@ -8,7 +8,7 @@ namespace Synaptix.Backend.Application.Qr
     public sealed class SyncScansHandler(IMediator mediator)
         : IRequestHandler<SyncScans, SyncScansResultDto>
     {
-        public async Task<SyncScansResultDto> Handle(SyncScans r, CancellationToken ct)
+        public async ValueTask<SyncScansResultDto> Handle(SyncScans r, CancellationToken ct)
         {
             var tracked = 0;
             var dup = 0;

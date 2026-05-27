@@ -252,7 +252,21 @@
               <span class="operator-nav-caption">Storage health</span>
             </a>
             {% endif %}
-            {% if 'questions:write' in perms %}
+            {% if 'storage:read' in perms %}
+            <a class="operator-nav-link {% if '/storage/objects' in request.path %}is-active{% endif %}" href="{% url 'storage-objects-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/><path d="M8 4v16"/></svg>
+              <span>Storage objects</span>
+              <span class="operator-nav-caption">Browse MinIO</span>
+            </a>
+            {% endif %}
+            {% if 'storage:write' in perms %}
+            <a class="operator-nav-link {% if '/storage/upload' in request.path %}is-active{% endif %}" href="{% url 'storage-upload-view' %}">
+              <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v3h16v-3"/></svg>
+              <span>Storage upload</span>
+              <span class="operator-nav-caption">Approved prefixes</span>
+            </a>
+            {% endif %}
+            {% if 'storage:write' in perms %}
             <a class="operator-nav-link {% if '/installer' in request.path %}is-active{% endif %}" href="{% url 'backend-installer-view' %}">
               <svg class="operator-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v5H4z"/><path d="M4 15h16v5H4z"/><path d="M7 9v6"/><path d="M17 9v6"/></svg>
               <span>Backend installer</span>

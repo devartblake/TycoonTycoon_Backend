@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Storage Object{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Storage / Object detail</p>
+    <h1 class="page-title">Object detail</h1>
+    <p class="page-subtitle"><code>{{ object_key }}</code></p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{% url 'storage-objects-view' %}">Back to objects</a>
+  </div>
+</section>
+
+<section class="screen-kpis mt-lg">
+  <article class="screen-kpi">
+    <span class="kpi-label">Category</span>
+    <span class="kpi-val">{{ object.category|default:"-" }}</span>
+    <span class="kpi-delta">approved prefix</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">Size</span>
+    <span class="kpi-val">{{ object.sizeBytes|default:0|filesizeformat }}</span>
+    <span class="kpi-delta">{{ object.contentType|default:"unknown type" }}</span>
+  </article>
+  <article class="screen-kpi">
+    <span class="kpi-label">ETag</span>
+    <span class="kpi-val">{{ object.etag|default:"-" }}</span>
+    <span class="kpi-delta">storage checksum</span>
+  </article>
+</section>
+
+<section class="card mt-lg">
+  <h2>Metadata</h2>
+  <dl class="detail-list">
+    <div><dt>Key</dt><dd><code>{{ object.key|default:object_key }}</code></dd></div>
+    <div><dt>Content type</dt><dd>{{ object.contentType|default:"-" }}</dd></div>
+    <div><dt>Last modified</dt><dd>{{ object.lastModifiedUtc|default:"-" }}</dd></div>
+  </dl>
+  <div class="table-wrap mt-lg">
+    <table>
+      <thead><tr><th>Name</th><th>Value</th></tr></thead>
+      <tbody>
+        {% for key, value in object.metadata.items %}
+        <tr><td>{{ key }}</td><td><code>{{ value }}</code></td></tr>
+        {% empty %}
+        <tr><td colspan="2" class="helper-text">No custom metadata returned.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

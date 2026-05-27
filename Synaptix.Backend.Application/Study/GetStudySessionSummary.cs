@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Application.Study
 
         public GetStudySessionSummaryHandler(IAppDb db) => _db = db;
 
-        public async Task<StudySessionDto?> Handle(GetStudySessionSummary request, CancellationToken ct)
+        public async ValueTask<StudySessionDto?> Handle(GetStudySessionSummary request, CancellationToken ct)
         {
             var session = await _db.StudySessions
                 .AsNoTracking()

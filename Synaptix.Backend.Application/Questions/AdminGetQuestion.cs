@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Application.Questions
     public sealed class AdminGetQuestionHandler(IAppDb db)
         : IRequestHandler<AdminGetQuestion, QuestionDto?>
     {
-        public async Task<QuestionDto?> Handle(AdminGetQuestion r, CancellationToken ct)
+        public async ValueTask<QuestionDto?> Handle(AdminGetQuestion r, CancellationToken ct)
         {
             var q = await db.Questions.AsNoTracking().FirstOrDefaultAsync(x => x.Id == r.Id, ct);
             if (q is null) return null;

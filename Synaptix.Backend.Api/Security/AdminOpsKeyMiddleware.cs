@@ -207,11 +207,12 @@ namespace Synaptix.Backend.Api.Security
                         return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Admin email is blocked.");
                     }
 
-                    // If ACL entries exist, require the email to be on the allowlist
+                    // Fail-closed: require the email to be explicitly on the allowlist.
+                    // An empty allowlist table means no one is permitted (not everyone is permitted).
                     var hasAclEntries = await db.AdminEmailAcls.AsNoTracking()
                         .AnyAsync(e => e.ListType == AdminAclListType.Allow, http.RequestAborted);
 
-                    if (hasAclEntries && (aclEntry is null || aclEntry.ListType != AdminAclListType.Allow))
+                    if (!hasAclEntries || aclEntry is null || aclEntry.ListType != AdminAclListType.Allow)
                     {
                         logger.LogWarning("AdminRoleClaims email allowlist FAILED for {Method} {Path}: email={Email}",
                             http.Request.Method, http.Request.Path, normalizedEmail ?? "(no email claim)");

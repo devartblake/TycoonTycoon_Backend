@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Application.Guardians
 
     public sealed class GetGuardiansForTierHandler(IAppDb db) : IRequestHandler<GetGuardiansForTier, List<TierGuardianDto>>
     {
-        public async Task<List<TierGuardianDto>> Handle(GetGuardiansForTier r, CancellationToken ct)
+        public async ValueTask<List<TierGuardianDto>> Handle(GetGuardiansForTier r, CancellationToken ct)
         {
             var now = DateTimeOffset.UtcNow;
 

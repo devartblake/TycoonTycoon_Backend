@@ -7,7 +7,7 @@ set -euo pipefail
 RUN_BUILD="${RUN_BUILD:-false}"
 RUN_ROUTE_SMOKE="${RUN_ROUTE_SMOKE:-true}"
 RUN_PWSH_ROUTE_SMOKE="${RUN_PWSH_ROUTE_SMOKE:-false}"
-BUILD_TARGET="${BUILD_TARGET:-Tycoon.Backend.Api/Tycoon.Backend.Api.csproj}"
+BUILD_TARGET="${BUILD_TARGET:-Synaptix.Backend.Api/Synaptix.Backend.Api.csproj}"
 
 pass_count=0
 warn_count=0
@@ -34,7 +34,7 @@ echo "Alpha NOW status (backend-only)"
 echo "Date (UTC): $(date -u +'%Y-%m-%d %H:%M:%S')"
 echo
 
-if rg -n "GetExtensionMethod\\(this Type t, string methodName\\)" Tycoon.Shared/Core/Extensions/TypeExtensions.cs >/dev/null 2>&1; then
+if rg -n "GetExtensionMethod\\(this Type t, string methodName\\)" Synaptix.Shared/Core/Extensions/TypeExtensions.cs >/dev/null 2>&1; then
   report PASS "TypeExtensions compile-fix guard (methodName signature present)"
 else
   report FAIL "TypeExtensions compile-fix guard (methodName signature missing)" "Expected fixed GetExtensionMethod signature not found."

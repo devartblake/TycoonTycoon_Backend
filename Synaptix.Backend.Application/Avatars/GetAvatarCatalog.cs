@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -14,7 +14,7 @@ namespace Synaptix.Backend.Application.Avatars
 
         public GetAvatarCatalogHandler(IAppDb db) => _db = db;
 
-        public async Task<AvatarCatalogDto> Handle(GetAvatarCatalog request, CancellationToken ct)
+        public async ValueTask<AvatarCatalogDto> Handle(GetAvatarCatalog request, CancellationToken ct)
         {
             var items = await _db.StoreItems
                 .AsNoTracking()

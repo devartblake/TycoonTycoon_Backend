@@ -189,8 +189,9 @@ namespace Synaptix.Backend.Infrastructure
                         settings = settings.Authentication(new BasicAuthentication(opt.Username, opt.Password));
                     }
 
-                    // DEV convenience: allow self-signed certs when https
-                    if (uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
+                    // DEV/staging only: allow self-signed certs when explicitly opted in via config
+                    if (uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase)
+                        && cfg.GetValue<bool>("Elastic:SkipCertificateValidation"))
                     {
                         settings = settings.ServerCertificateValidationCallback((_, _, _, _) => true);
                     }

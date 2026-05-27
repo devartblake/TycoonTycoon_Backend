@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -14,7 +14,7 @@ public sealed class AdminResolvePlayerLookupHandler(IAppDb db)
 {
     private const string Alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
-    public async Task<AdminPlayerLookupResponse?> Handle(AdminResolvePlayerLookup request, CancellationToken ct)
+    public async ValueTask<AdminPlayerLookupResponse?> Handle(AdminResolvePlayerLookup request, CancellationToken ct)
     {
         var query = (request.Query ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(query)) return null;

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Domain.Entities;
@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Application.EventStats
     public sealed class GetEventSeasonLeaderboardHandler(IAppDb db)
         : IRequestHandler<GetEventSeasonLeaderboard, List<EventSeasonLeaderboardEntryDto>>
     {
-        public async Task<List<EventSeasonLeaderboardEntryDto>> Handle(GetEventSeasonLeaderboard r, CancellationToken ct)
+        public async ValueTask<List<EventSeasonLeaderboardEntryDto>> Handle(GetEventSeasonLeaderboard r, CancellationToken ct)
         {
             var page = Math.Max(1, r.Page);
             var pageSize = Math.Clamp(r.PageSize, 1, 200);
