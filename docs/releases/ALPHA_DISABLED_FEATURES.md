@@ -1,7 +1,7 @@
 # Alpha Release — Disabled Features
 
 **Release:** alpha-beta-2026  
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-26
 
 All features listed here are **disabled for the Alpha release** via server-side feature flag gates. Any request to these endpoints returns:
 
@@ -156,6 +156,23 @@ Affected endpoints:
 - `POST /ml/match-quality`
 
 **Reason disabled:** ML model endpoints proxy to the Python FastAPI sidecar. Alpha scope is REST + quiz; ML scoring is a Beta enhancement.
+
+---
+
+## Store Purchases (Stripe / PayPal)
+
+**Flag:** `store_purchases_enabled = false`  
+**Gate:** `EnsurePaymentsEnabledAsync` in `StoreEndpoints.cs` — fires before any payment-provider check
+
+Affected endpoints:
+- `POST /store/purchase`
+- `POST /store/payments/*` (Stripe + PayPal flows)
+- `POST /store/subscription/*`
+- `POST /store/iap/validate`
+
+**Reason disabled:** Payment provider sandbox credentials are not configured for Alpha. Purchase flows are internal-only scope and require regulatory/compliance review before player-facing exposure. Store catalog browsing (`GET /store/*`) remains active.
+
+**Note:** If the flag is enabled without configured payment credentials, the existing `503 PAYMENTS_DISABLED` / `503 STRIPE_NOT_READY` / `503 PAYPAL_NOT_READY` responses from the provider check serve as a secondary guard.
 
 ---
 

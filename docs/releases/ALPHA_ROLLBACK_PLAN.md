@@ -1,7 +1,7 @@
 # Alpha Release — Rollback Plan
 
 **Release:** alpha-beta-2026  
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-26
 
 This document defines the rollback procedure if the Alpha deployment needs to be reverted. Three levels of rollback are available, ordered from fastest to most comprehensive.
 
@@ -72,7 +72,7 @@ Use this when the API itself is broken (startup failure, crash loop, regression)
      --network synaptix-net \
      -p 5000:5000 \
      [same environment variables as current deployment] \
-     ghcr.io/devartblake/tycoon-backend:${PREVIOUS_TAG}
+     ghcr.io/devartblake/synaptix-backend:${PREVIOUS_TAG}
    ```
 
 4. Verify health:
