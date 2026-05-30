@@ -130,7 +130,7 @@ jobs:
           fi
 
           # Verify key disabled flags are false
-          for FLAG in realtimeMultiplayerEnabled matchmakingEnabled socialEnabled cryptoEnabled; do
+          for FLAG in realtimeMultiplayerEnabled matchmakingEnabled socialEnabled cryptoEnabled storePurchasesEnabled; do
             VALUE=$(echo "${BODY}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('features',{}).get('${FLAG}','MISSING'))")
             if [[ "${VALUE}" != "False" && "${VALUE}" != "false" ]]; then
               echo "::warning::Feature flag ${FLAG} = ${VALUE} (expected false for Alpha)"

@@ -1,7 +1,7 @@
 # Alpha Release — Known Issues
 
 **Release:** alpha-beta-2026  
-**Last updated:** 2026-05-18
+**Last updated:** 2026-05-26
 
 Issues are classified by severity:
 - **P0** — Blocks launch; must be resolved before Alpha ships
@@ -66,21 +66,17 @@ No P0 issues are currently open. P1 items have documented mitigations. The 2026-
 
 **Mitigation:** Alpha uses single-container migration (Docker Compose with `restart: "no"`). The advisory lock is a precautionary measure for future blue-green deployments.
 
-**Resolution target:** Before blue-green production deployment; validate with `docker-compose scale migration=2` on staging
+**Resolution target:** Before blue-green production deployment. To validate locally: temporarily remove `container_name: synaptix_migration` from `docker/compose.yml` and run `docker compose up --scale migration=2` — confirm only one container completes migration and the other waits or exits cleanly. Do not commit the `container_name` removal.
 
 ---
 
-### KI-005: Store purchase flows (Stripe/PayPal) exist but are not Alpha scope
+### ~~KI-005: Store purchase flows (Stripe/PayPal) exist but are not Alpha scope~~ — RESOLVED 2026-05-26
 
-**Severity:** P1  
+**Severity:** P1 → Resolved  
 **Component:** Store  
-**Status:** Built, not in Alpha scope
+**Status:** ✅ Resolved
 
-**Description:** `StoreEndpoints.cs` contains full Stripe and PayPal purchase flows. These are not behind a feature flag and will respond if called. Stripe/PayPal credentials are not configured for staging, so purchase attempts will return `503 STRIPE_NOT_READY` or `503 PAYPAL_NOT_READY`.
-
-**Mitigation:** Store purchase flows return 503 if payment provider is not configured — safe for unconfigured staging. Alpha testers are internal only and are not expected to attempt purchases.
-
-**Resolution target:** Before public Beta — add `store_purchases_enabled` feature flag gate; configure payment sandbox credentials
+**Resolution:** `store_purchases_enabled` feature flag added to `StoreEndpoints.cs`. `EnsurePaymentsEnabledAsync` now returns `403 FeatureDisabled` (not `503`) when the flag is off. Flag defaults `false` in `AdminAppConfig`. Flag is exposed in `GET /api/v1/app/config` so clients can gate UI purchase flows. Payment provider 503 checks remain in place as a secondary guard if the flag is ever enabled without provider configuration.
 
 ---
 
@@ -125,6 +121,6 @@ No P0 issues are currently open. P1 items have documented mitigations. The 2026-
 | — | No server-side reward grant for quiz completion | Session 3 — `POST /quiz/complete` + `CompleteQuizHandler` created |
 | — | 10+ endpoint groups had no feature flag gate | Session 3 & 4 — all systems gated |
 | — | Migration runner had no concurrent-run protection | Session 5 — `pg_advisory_lock` added |
-| — | Migration artifact generation used API startup project, which did not copy `Tycoon.Backend.Migrations.dll` into the startup output | 2026-05-18 — CI/helper EF commands now use `Tycoon.MigrationService` as the startup project |
+| — | Migration artifact generation used API startup project, which did not copy `Tycoon.Backend.Migrations.dll` into the startup output | 2026-05-18 — CI/helper EF commands now use `Synaptix.MigrationService` as the startup project |
 | — | Local compose migration failed during mission reset because seed-tracked question entities were flushed with mission claims | 2026-05-18 — `MigrationWorker` clears the change tracker after seeding; compose smoke passes |
 | — | `compose-smoke.sh` printed false `curl: Could not resolve host: GET` messages for bodyless requests | 2026-05-18 — `curl_json` argument shifting fixed; compose smoke output is clean |
