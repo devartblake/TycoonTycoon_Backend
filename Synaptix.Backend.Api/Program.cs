@@ -272,7 +272,16 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod();
 
-        if (allowedOrigins.Length > 0)
+        if (builder.Environment.IsDevelopment())
+        {
+            // Dynamic dev servers (Flutter, Dart, etc.) use ephemeral ports — allow any localhost origin.
+            policy.SetIsOriginAllowed(origin =>
+            {
+                var host = new Uri(origin).Host;
+                return host is "localhost" or "127.0.0.1" or "::1";
+            });
+        }
+        else if (allowedOrigins.Length > 0)
         {
             policy.WithOrigins(allowedOrigins);
         }
