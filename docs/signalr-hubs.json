@@ -1,0 +1,52 @@
+{
+  "signalRHubs": [
+    {
+      "name": "MatchHub",
+      "class": "Synaptix.Backend.Api.Realtime.MatchHub",
+      "route": "/ws/match",
+      "typedClient": null,
+      "serverMethods": [
+        "JoinMatch(Guid matchId)",
+        "SubmitAnswer(Guid matchId, string answerId)"
+      ],
+      "lifecycleMethods": [
+        "OnConnectedAsync()",
+        "OnDisconnectedAsync(Exception? exception)"
+      ]
+    },
+    {
+      "name": "PresenceHub",
+      "class": "Synaptix.Backend.Api.Realtime.PresenceHub",
+      "route": "/ws/presence",
+      "typedClient": null,
+      "serverMethods": [],
+      "lifecycleMethods": []
+    },
+    {
+      "name": "NotificationHub",
+      "class": "Synaptix.Backend.Api.Realtime.NotificationHub",
+      "route": "/ws/notify",
+      "typedClient": "Synaptix.Backend.Api.Realtime.Clients.INotificationClient",
+      "serverMethods": [
+        "JoinPlayer(Guid playerId)",
+        "JoinTopic(string topic)",
+        "JoinGameEvent(Guid gameEventId)",
+        "JoinGuardianWatch(Guid seasonId, int tierNumber)",
+        "JoinTerritory(Guid seasonId, int tierNumber)"
+      ],
+      "lifecycleMethods": [
+        "OnConnectedAsync()"
+      ],
+      "clientMethods": [
+        "MissionClaimed(MissionClaimedMessage message)",
+        "VoteCast(VoteCastMessage message)",
+        "GameEventElimination(GameEventEliminationMessage message)",
+        "GameEventClosed(GameEventClosedMessage message)",
+        "GuardianChanged(GuardianChangedMessage message)",
+        "TerritoryCapture(TerritoryCaptureMesage message)",
+        "NotificationInboxUpdated(NotificationInboxUpdatedMessage message)",
+        "DirectMessagesUpdated(DirectMessagesUpdatedMessage message)"
+      ]
+    }
+  ]
+}
