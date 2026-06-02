@@ -19,15 +19,17 @@ public sealed class MigrationSeedBootstrapTests
     public async Task AppSeeder_SeedsSuperAdminAcl_Idempotently()
     {
         await using var db = NewDb();
-        var seeder = new AppSeeder(Config(("SuperAdmin:Email", "Admin@Synaptix.Local"), ("SuperAdmin:Password", "ChangeMe123!")));
+        const string configuredEmail = "Admin@Synaptix.Local";
+        var expectedEmail = configuredEmail.ToLowerInvariant();
+        var seeder = new AppSeeder(Config(("SuperAdmin:Email", configuredEmail), ("SuperAdmin:Password", "ChangeMe123!")));
 
         await seeder.SeedAsync(db, CancellationToken.None);
         await seeder.SeedAsync(db, CancellationToken.None);
 
-        db.Users.Count(u => u.Email == "admin@tycoon.local").Should().Be(1);
-        db.AdminEmailAcls.Count(e => e.NormalizedEmail == "admin@tycoon.local").Should().Be(1);
+        db.Users.Count(u => u.Email == expectedEmail).Should().Be(1);
+        db.AdminEmailAcls.Count(e => e.NormalizedEmail == expectedEmail).Should().Be(1);
 
-        var acl = await db.AdminEmailAcls.SingleAsync(e => e.NormalizedEmail == "admin@tycoon.local");
+        var acl = await db.AdminEmailAcls.SingleAsync(e => e.NormalizedEmail == expectedEmail);
         acl.ListType.Should().Be(AdminAclListType.Allow);
         acl.Role.Should().Be(AdminRole.SuperAdmin);
     }

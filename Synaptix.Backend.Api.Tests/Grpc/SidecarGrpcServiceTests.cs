@@ -257,6 +257,14 @@ public sealed class SidecarGrpcServiceTests
             where TNotification : INotification
             => ValueTask.CompletedTask;
 
+        public ValueTask<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken cancellationToken = default)
+            where TResponse : notnull
+            => Send((IRequest<TResponse>)command, cancellationToken);
+
+        public ValueTask<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken cancellationToken = default)
+            where TResponse : notnull
+            => Send((IRequest<TResponse>)query, cancellationToken);
+
         public ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
         {
             SentRequests.Add(request);
@@ -283,6 +291,14 @@ public sealed class SidecarGrpcServiceTests
 
         public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = default)
             => AsyncEnumerable.Empty<TResponse>();
+
+        public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamQuery<TResponse> query, CancellationToken cancellationToken = default)
+            where TResponse : notnull
+            => CreateStream((IStreamRequest<TResponse>)query, cancellationToken);
+
+        public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamCommand<TResponse> command, CancellationToken cancellationToken = default)
+            where TResponse : notnull
+            => CreateStream((IStreamRequest<TResponse>)command, cancellationToken);
 
         public IAsyncEnumerable<object?> CreateStream(object request, CancellationToken cancellationToken = default)
             => AsyncEnumerable.Empty<object?>();
