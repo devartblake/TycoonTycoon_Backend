@@ -1,0 +1,352 @@
+[
+  {
+    "id": "science_001",
+    "category": "science",
+    "question": "Which planet is known as the Red Planet?",
+    "answers": [
+      { "text": "Mars", "isCorrect": true },
+      { "text": "Venus", "isCorrect": false },
+      { "text": "Jupiter", "isCorrect": false },
+      { "text": "Saturn", "isCorrect": false }
+    ],
+    "correctAnswer": "Mars",
+    "difficulty": 1,
+    "tags": ["astronomy", "planet", "starter"]
+  },
+  {
+    "id": "science_002",
+    "category": "science",
+    "question": "What is the atomic number of carbon?",
+    "answers": [
+      { "text": "4", "isCorrect": false },
+      { "text": "6", "isCorrect": true },
+      { "text": "8", "isCorrect": false },
+      { "text": "12", "isCorrect": false }
+    ],
+    "correctAnswer": "6",
+    "difficulty": 2,
+    "tags": ["chemistry", "elements"]
+  },
+  {
+    "id": "science_003",
+    "category": "science",
+    "question": "What type of bond holds water molecules together?",
+    "answers": [
+      { "text": "Ionic bond", "isCorrect": false },
+      { "text": "Covalent bond", "isCorrect": false },
+      { "text": "Hydrogen bond", "isCorrect": true },
+      { "text": "Metallic bond", "isCorrect": false }
+    ],
+    "correctAnswer": "Hydrogen bond",
+    "difficulty": 3,
+    "tags": ["chemistry", "bonding"]
+  },
+  {
+    "id": "science_004",
+    "category": "science",
+    "question": "Which organ produces insulin in the human body?",
+    "answers": [
+      { "text": "Liver", "isCorrect": false },
+      { "text": "Kidney", "isCorrect": false },
+      { "text": "Pancreas", "isCorrect": true },
+      { "text": "Spleen", "isCorrect": false }
+    ],
+    "correctAnswer": "Pancreas",
+    "difficulty": 2,
+    "tags": ["biology", "anatomy", "medicine"]
+  },
+  {
+    "id": "science_005",
+    "category": "science",
+    "question": "What force keeps planets in orbit around the Sun?",
+    "answers": [
+      { "text": "Electromagnetic force", "isCorrect": false },
+      { "text": "Nuclear force", "isCorrect": false },
+      { "text": "Gravity", "isCorrect": true },
+      { "text": "Centripetal inertia", "isCorrect": false }
+    ],
+    "correctAnswer": "Gravity",
+    "difficulty": 1,
+    "tags": ["physics", "astronomy", "starter"]
+  },
+  {
+    "id": "science_006",
+    "category": "science",
+    "question": "What is the most abundant element in the universe?",
+    "answers": [
+      { "text": "Oxygen", "isCorrect": false },
+      { "text": "Helium", "isCorrect": false },
+      { "text": "Carbon", "isCorrect": false },
+      { "text": "Hydrogen", "isCorrect": true }
+    ],
+    "correctAnswer": "Hydrogen",
+    "difficulty": 2,
+    "tags": ["chemistry", "universe", "elements"]
+  },
+  {
+    "id": "science_007",
+    "category": "science",
+    "question": "What is the unit of electric current?",
+    "answers": [
+      { "text": "Volt", "isCorrect": false },
+      { "text": "Ohm", "isCorrect": false },
+      { "text": "Watt", "isCorrect": false },
+      { "text": "Ampere", "isCorrect": true }
+    ],
+    "correctAnswer": "Ampere",
+    "difficulty": 2,
+    "tags": ["physics", "electricity"]
+  },
+  {
+    "id": "science_008",
+    "category": "science",
+    "question": "Which scientist proposed the heliocentric model of the solar system?",
+    "answers": [
+      { "text": "Galileo Galilei", "isCorrect": false },
+      { "text": "Nicolaus Copernicus", "isCorrect": true },
+      { "text": "Johannes Kepler", "isCorrect": false },
+      { "text": "Tycho Brahe", "isCorrect": false }
+    ],
+    "correctAnswer": "Nicolaus Copernicus",
+    "difficulty": 2,
+    "tags": ["astronomy", "history-of-science"]
+  },
+  {
+    "id": "science_009",
+    "category": "science",
+    "question": "What is the process by which plants make food using sunlight?",
+    "answers": [
+      { "text": "Respiration", "isCorrect": false },
+      { "text": "Transpiration", "isCorrect": false },
+      { "text": "Photosynthesis", "isCorrect": true },
+      { "text": "Fermentation", "isCorrect": false }
+    ],
+    "correctAnswer": "Photosynthesis",
+    "difficulty": 1,
+    "tags": ["biology", "plants", "starter"]
+  },
+  {
+    "id": "science_010",
+    "category": "science",
+    "question": "What is the half-life of Carbon-14?",
+    "answers": [
+      { "text": "570 years", "isCorrect": false },
+      { "text": "5,730 years", "isCorrect": true },
+      { "text": "57,300 years", "isCorrect": false },
+      { "text": "573 years", "isCorrect": false }
+    ],
+    "correctAnswer": "5,730 years",
+    "difficulty": 4,
+    "tags": ["chemistry", "nuclear", "dating"]
+  },
+  {
+    "id": "science_011",
+    "category": "science",
+    "question": "What is Newton's second law of motion?",
+    "answers": [
+      { "text": "Every action has an equal and opposite reaction", "isCorrect": false },
+      { "text": "An object in motion stays in motion", "isCorrect": false },
+      { "text": "Force equals mass times acceleration", "isCorrect": true },
+      { "text": "Energy is neither created nor destroyed", "isCorrect": false }
+    ],
+    "correctAnswer": "Force equals mass times acceleration",
+    "difficulty": 2,
+    "tags": ["physics", "mechanics", "newton"]
+  },
+  {
+    "id": "science_012",
+    "category": "science",
+    "question": "What is the pH of pure water at 25°C?",
+    "answers": [
+      { "text": "6", "isCorrect": false },
+      { "text": "8", "isCorrect": false },
+      { "text": "7", "isCorrect": true },
+      { "text": "9", "isCorrect": false }
+    ],
+    "correctAnswer": "7",
+    "difficulty": 2,
+    "tags": ["chemistry", "pH"]
+  },
+  {
+    "id": "science_013",
+    "category": "science",
+    "question": "Which particle in an atom has a negative charge?",
+    "answers": [
+      { "text": "Proton", "isCorrect": false },
+      { "text": "Neutron", "isCorrect": false },
+      { "text": "Electron", "isCorrect": true },
+      { "text": "Positron", "isCorrect": false }
+    ],
+    "correctAnswer": "Electron",
+    "difficulty": 1,
+    "tags": ["physics", "atomic", "starter"]
+  },
+  {
+    "id": "science_014",
+    "category": "science",
+    "question": "What is the SI unit of energy?",
+    "answers": [
+      { "text": "Watt", "isCorrect": false },
+      { "text": "Newton", "isCorrect": false },
+      { "text": "Joule", "isCorrect": true },
+      { "text": "Pascal", "isCorrect": false }
+    ],
+    "correctAnswer": "Joule",
+    "difficulty": 2,
+    "tags": ["physics", "units"]
+  },
+  {
+    "id": "science_015",
+    "category": "science",
+    "question": "What type of blood cells fight infection?",
+    "answers": [
+      { "text": "Red blood cells", "isCorrect": false },
+      { "text": "Platelets", "isCorrect": false },
+      { "text": "Plasma cells", "isCorrect": false },
+      { "text": "White blood cells", "isCorrect": true }
+    ],
+    "correctAnswer": "White blood cells",
+    "difficulty": 1,
+    "tags": ["biology", "medicine", "starter"]
+  },
+  {
+    "id": "science_016",
+    "category": "science",
+    "question": "What is the chemical formula for table salt?",
+    "answers": [
+      { "text": "NaCl", "isCorrect": true },
+      { "text": "KCl", "isCorrect": false },
+      { "text": "MgCl2", "isCorrect": false },
+      { "text": "CaCl2", "isCorrect": false }
+    ],
+    "correctAnswer": "NaCl",
+    "difficulty": 1,
+    "tags": ["chemistry", "starter"]
+  },
+  {
+    "id": "science_017",
+    "category": "science",
+    "question": "What is the name of the galaxy that contains our solar system?",
+    "answers": [
+      { "text": "Andromeda", "isCorrect": false },
+      { "text": "Milky Way", "isCorrect": true },
+      { "text": "Triangulum", "isCorrect": false },
+      { "text": "Centaurus A", "isCorrect": false }
+    ],
+    "correctAnswer": "Milky Way",
+    "difficulty": 1,
+    "tags": ["astronomy", "galaxy", "starter"]
+  },
+  {
+    "id": "science_018",
+    "category": "science",
+    "question": "Which vitamin is produced by the human body when exposed to sunlight?",
+    "answers": [
+      { "text": "Vitamin A", "isCorrect": false },
+      { "text": "Vitamin B12", "isCorrect": false },
+      { "text": "Vitamin C", "isCorrect": false },
+      { "text": "Vitamin D", "isCorrect": true }
+    ],
+    "correctAnswer": "Vitamin D",
+    "difficulty": 2,
+    "tags": ["biology", "medicine", "vitamins"]
+  },
+  {
+    "id": "science_019",
+    "category": "science",
+    "question": "What is the Schrödinger's cat thought experiment designed to illustrate?",
+    "answers": [
+      { "text": "The double-slit experiment", "isCorrect": false },
+      { "text": "Problems with quantum superposition applied to macroscopic objects", "isCorrect": true },
+      { "text": "The uncertainty principle", "isCorrect": false },
+      { "text": "Wave-particle duality", "isCorrect": false }
+    ],
+    "correctAnswer": "Problems with quantum superposition applied to macroscopic objects",
+    "difficulty": 4,
+    "tags": ["physics", "quantum", "thought-experiment"]
+  },
+  {
+    "id": "science_020",
+    "category": "science",
+    "question": "How many chambers does the human heart have?",
+    "answers": [
+      { "text": "2", "isCorrect": false },
+      { "text": "3", "isCorrect": false },
+      { "text": "4", "isCorrect": true },
+      { "text": "6", "isCorrect": false }
+    ],
+    "correctAnswer": "4",
+    "difficulty": 1,
+    "tags": ["biology", "anatomy", "starter"]
+  },
+  {
+    "id": "science_021",
+    "category": "science",
+    "question": "What is the name of the process by which a solid changes directly to a gas?",
+    "answers": [
+      { "text": "Evaporation", "isCorrect": false },
+      { "text": "Condensation", "isCorrect": false },
+      { "text": "Sublimation", "isCorrect": true },
+      { "text": "Melting", "isCorrect": false }
+    ],
+    "correctAnswer": "Sublimation",
+    "difficulty": 3,
+    "tags": ["chemistry", "states-of-matter"]
+  },
+  {
+    "id": "science_022",
+    "category": "science",
+    "question": "What is the main gas released during cellular respiration?",
+    "answers": [
+      { "text": "Oxygen", "isCorrect": false },
+      { "text": "Nitrogen", "isCorrect": false },
+      { "text": "Carbon Dioxide", "isCorrect": true },
+      { "text": "Hydrogen", "isCorrect": false }
+    ],
+    "correctAnswer": "Carbon Dioxide",
+    "difficulty": 2,
+    "tags": ["biology", "respiration"]
+  },
+  {
+    "id": "science_023",
+    "category": "science",
+    "question": "Which scientist is credited with discovering penicillin?",
+    "answers": [
+      { "text": "Louis Pasteur", "isCorrect": false },
+      { "text": "Joseph Lister", "isCorrect": false },
+      { "text": "Alexander Fleming", "isCorrect": true },
+      { "text": "Robert Koch", "isCorrect": false }
+    ],
+    "correctAnswer": "Alexander Fleming",
+    "difficulty": 2,
+    "tags": ["biology", "medicine", "history-of-science"]
+  },
+  {
+    "id": "science_024",
+    "category": "science",
+    "question": "What is the boiling point of water at standard atmospheric pressure?",
+    "answers": [
+      { "text": "90°C", "isCorrect": false },
+      { "text": "95°C", "isCorrect": false },
+      { "text": "105°C", "isCorrect": false },
+      { "text": "100°C", "isCorrect": true }
+    ],
+    "correctAnswer": "100°C",
+    "difficulty": 1,
+    "tags": ["chemistry", "starter"]
+  },
+  {
+    "id": "science_025",
+    "category": "science",
+    "question": "What does CRISPR stand for in gene editing?",
+    "answers": [
+      { "text": "Clustered Regularly Interspaced Short Palindromic Repeats", "isCorrect": true },
+      { "text": "Controlled Restriction In Sequencing Protein Replications", "isCorrect": false },
+      { "text": "Chemical RNA Interference Sequence Primer Repeats", "isCorrect": false },
+      { "text": "Clustered Recombinant Intergenic Splicing Protein Repair", "isCorrect": false }
+    ],
+    "correctAnswer": "Clustered Regularly Interspaced Short Palindromic Repeats",
+    "difficulty": 4,
+    "tags": ["biology", "genetics", "biotechnology"]
+  }
+]

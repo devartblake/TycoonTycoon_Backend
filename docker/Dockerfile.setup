@@ -1,0 +1,60 @@
+# ================================
+# Build Stage
+# ================================
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /src
+
+# Copy Central Package Management files first for layer caching
+COPY ["Directory.Build.props", "./"]
+COPY ["Directory.Packages.props", "./"]
+
+# Copy project files for dependency graph
+COPY ["Synaptix.Setup/Synaptix.Setup.csproj", "Synaptix.Setup/"]
+COPY ["Synaptix.Backend.Infrastructure/Synaptix.Backend.Infrastructure.csproj", "Synaptix.Backend.Infrastructure/"]
+COPY ["Synaptix.Backend.Application/Synaptix.Backend.Application.csproj", "Synaptix.Backend.Application/"]
+COPY ["Synaptix.Backend.Domain/Synaptix.Backend.Domain.csproj", "Synaptix.Backend.Domain/"]
+COPY ["Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj", "Synaptix.Backend.Migrations/"]
+COPY ["Synaptix.Shared/Synaptix.Shared.csproj", "Synaptix.Shared/"]
+COPY ["Synaptix.Shared.Contracts/Synaptix.Shared.Contracts.csproj", "Synaptix.Shared.Contracts/"]
+COPY ["Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj", "Synaptix.Shared.Observability/"]
+COPY ["Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj", "Synaptix.ServiceDefaults/"]
+
+# Restore packages — cached layer
+RUN dotnet restore "Synaptix.Setup/Synaptix.Setup.csproj"
+
+# Copy everything else
+COPY . .
+
+# Build and publish
+WORKDIR "/src/Synaptix.Setup"
+RUN dotnet build "Synaptix.Setup.csproj" -c ${BUILD_CONFIGURATION} --no-restore
+
+RUN dotnet publish "Synaptix.Setup.csproj" \
+    -c ${BUILD_CONFIGURATION} \
+    -o /app/publish \
+    /p:UseAppHost=false \
+    --no-restore
+
+# ================================
+# Runtime Stage
+# ================================
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+
+# Npgsql Kerberos-capable auth paths
+RUN apt-get update && apt-get install -y --no-install-recommends libgssapi-krb5-2 && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/publish .
+
+# Bundle seed files so the setup container can upload them to MinIO
+COPY ["Synaptix.MigrationService/seeds", "/app/seeds"]
+
+RUN groupadd --system --gid 1001 appuser && \
+    useradd --system --uid 1001 --gid appuser --shell /bin/false --no-create-home appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+# Default command: provision-services (overridable via compose environment Setup__Command)
+ENTRYPOINT ["dotnet", "Synaptix.Setup.dll", "provision-services"]

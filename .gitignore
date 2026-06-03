@@ -35,6 +35,16 @@ appsettings.*.json.user
 .env.*
 !.env.example
 
+# Generated local secrets and bootstrap state
+.local/
+docker/.env
+docker/.env.local
+docker/.env.local.generated
+config/bootstrap/bootstrap.local.json
+*.local.secret
+*.generated.secret
+bootstrap.secrets.enc.json
+
 # OS
 .DS_Store
 Thumbs.db

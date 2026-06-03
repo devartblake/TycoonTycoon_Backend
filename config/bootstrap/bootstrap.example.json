@@ -1,0 +1,66 @@
+{
+  "environment": "local",
+  "project": "synaptix",
+  "services": {
+    "postgres": {
+      "database": "synaptix_db",
+      "appUser": "synaptix_user",
+      "port": 5432,
+      "passwordSecret": "POSTGRES_PASSWORD"
+    },
+    "mongo": {
+      "rootUser": "synaptix_admin",
+      "appUser": "synaptix_app_user",
+      "databases": ["synaptix_analytics", "synaptix_crypto"],
+      "passwordSecret": "MONGO_APP_PASSWORD"
+    },
+    "redis": {
+      "logicalDatabases": {
+        "cache": 0,
+        "rateLimit": 1,
+        "sessions": 2,
+        "locks": 3,
+        "jobs": 4
+      },
+      "prefixes": {
+        "cache": "synaptix:cache:",
+        "rateLimit": "synaptix:rate-limit:",
+        "session": "synaptix:session:",
+        "lock": "synaptix:lock:"
+      },
+      "passwordSecret": "REDIS_PASSWORD"
+    },
+    "rabbitmq": {
+      "vhost": "synaptix",
+      "appUser": "synaptix_user",
+      "queues": [
+        { "name": "synaptix.background.jobs", "durable": true }
+      ],
+      "passwordSecret": "RABBITMQ_PASSWORD"
+    },
+    "minio": {
+      "bucket": "synaptix-assets",
+      "seedPrefix": "seeds/",
+      "rootUserSecret": "MINIO_ROOT_USER",
+      "rootPasswordSecret": "MINIO_ROOT_PASSWORD"
+    },
+    "elasticsearch": {
+      "enabled": true,
+      "indices": [
+        "synaptix-analytics-rollups",
+        "synaptix-player-daily-rollups",
+        "synaptix-events"
+      ]
+    }
+  },
+  "superAdmin": {
+    "emailSecret": "SUPER_ADMIN_EMAIL",
+    "passwordSecret": "SUPER_ADMIN_PASSWORD",
+    "handle": "superadmin"
+  },
+  "seed": {
+    "source": "Auto",
+    "manifest": "config/seeds/seed-manifest.json",
+    "strict": true
+  }
+}

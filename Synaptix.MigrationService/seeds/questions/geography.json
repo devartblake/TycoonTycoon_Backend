@@ -1,0 +1,352 @@
+[
+  {
+    "id": "geo_001",
+    "category": "geography",
+    "question": "What is the largest country in the world by land area?",
+    "answers": [
+      { "text": "Canada", "isCorrect": false },
+      { "text": "China", "isCorrect": false },
+      { "text": "Russia", "isCorrect": true },
+      { "text": "USA", "isCorrect": false }
+    ],
+    "correctAnswer": "Russia",
+    "difficulty": 1,
+    "tags": ["countries", "area", "starter"]
+  },
+  {
+    "id": "geo_002",
+    "category": "geography",
+    "question": "What is the longest river in the world?",
+    "answers": [
+      { "text": "Amazon", "isCorrect": false },
+      { "text": "Nile", "isCorrect": true },
+      { "text": "Yangtze", "isCorrect": false },
+      { "text": "Mississippi", "isCorrect": false }
+    ],
+    "correctAnswer": "Nile",
+    "difficulty": 1,
+    "tags": ["rivers", "africa", "starter"]
+  },
+  {
+    "id": "geo_003",
+    "category": "geography",
+    "question": "Which continent is the Sahara Desert located on?",
+    "answers": [
+      { "text": "Asia", "isCorrect": false },
+      { "text": "South America", "isCorrect": false },
+      { "text": "Africa", "isCorrect": true },
+      { "text": "Australia", "isCorrect": false }
+    ],
+    "correctAnswer": "Africa",
+    "difficulty": 1,
+    "tags": ["desert", "africa", "starter"]
+  },
+  {
+    "id": "geo_004",
+    "category": "geography",
+    "question": "What is the capital of Australia?",
+    "answers": [
+      { "text": "Sydney", "isCorrect": false },
+      { "text": "Melbourne", "isCorrect": false },
+      { "text": "Brisbane", "isCorrect": false },
+      { "text": "Canberra", "isCorrect": true }
+    ],
+    "correctAnswer": "Canberra",
+    "difficulty": 2,
+    "tags": ["capitals", "australia"]
+  },
+  {
+    "id": "geo_005",
+    "category": "geography",
+    "question": "Which is the smallest country in the world?",
+    "answers": [
+      { "text": "Monaco", "isCorrect": false },
+      { "text": "San Marino", "isCorrect": false },
+      { "text": "Liechtenstein", "isCorrect": false },
+      { "text": "Vatican City", "isCorrect": true }
+    ],
+    "correctAnswer": "Vatican City",
+    "difficulty": 2,
+    "tags": ["countries", "europe"]
+  },
+  {
+    "id": "geo_006",
+    "category": "geography",
+    "question": "Which mountain is the tallest in the world?",
+    "answers": [
+      { "text": "K2", "isCorrect": false },
+      { "text": "Kangchenjunga", "isCorrect": false },
+      { "text": "Mount Everest", "isCorrect": true },
+      { "text": "Lhotse", "isCorrect": false }
+    ],
+    "correctAnswer": "Mount Everest",
+    "difficulty": 1,
+    "tags": ["mountains", "asia", "starter"]
+  },
+  {
+    "id": "geo_007",
+    "category": "geography",
+    "question": "Through how many countries does the Amazon River flow?",
+    "answers": [
+      { "text": "2", "isCorrect": false },
+      { "text": "5", "isCorrect": false },
+      { "text": "9", "isCorrect": true },
+      { "text": "12", "isCorrect": false }
+    ],
+    "correctAnswer": "9",
+    "difficulty": 3,
+    "tags": ["rivers", "south-america"]
+  },
+  {
+    "id": "geo_008",
+    "category": "geography",
+    "question": "What is the capital of Canada?",
+    "answers": [
+      { "text": "Toronto", "isCorrect": false },
+      { "text": "Montreal", "isCorrect": false },
+      { "text": "Vancouver", "isCorrect": false },
+      { "text": "Ottawa", "isCorrect": true }
+    ],
+    "correctAnswer": "Ottawa",
+    "difficulty": 2,
+    "tags": ["capitals", "north-america"]
+  },
+  {
+    "id": "geo_009",
+    "category": "geography",
+    "question": "Which country has the most time zones?",
+    "answers": [
+      { "text": "Russia", "isCorrect": true },
+      { "text": "USA", "isCorrect": false },
+      { "text": "China", "isCorrect": false },
+      { "text": "France", "isCorrect": false }
+    ],
+    "correctAnswer": "Russia",
+    "difficulty": 3,
+    "tags": ["countries", "time-zones"]
+  },
+  {
+    "id": "geo_010",
+    "category": "geography",
+    "question": "What is the deepest lake in the world?",
+    "answers": [
+      { "text": "Caspian Sea", "isCorrect": false },
+      { "text": "Lake Superior", "isCorrect": false },
+      { "text": "Lake Baikal", "isCorrect": true },
+      { "text": "Lake Tanganyika", "isCorrect": false }
+    ],
+    "correctAnswer": "Lake Baikal",
+    "difficulty": 2,
+    "tags": ["lakes", "russia"]
+  },
+  {
+    "id": "geo_011",
+    "category": "geography",
+    "question": "Which continent has no countries?",
+    "answers": [
+      { "text": "Arctic", "isCorrect": false },
+      { "text": "Antarctica", "isCorrect": true },
+      { "text": "Greenland", "isCorrect": false },
+      { "text": "Oceania", "isCorrect": false }
+    ],
+    "correctAnswer": "Antarctica",
+    "difficulty": 1,
+    "tags": ["continents", "polar", "starter"]
+  },
+  {
+    "id": "geo_012",
+    "category": "geography",
+    "question": "The Panama Canal connects which two oceans?",
+    "answers": [
+      { "text": "Atlantic and Indian", "isCorrect": false },
+      { "text": "Pacific and Indian", "isCorrect": false },
+      { "text": "Atlantic and Pacific", "isCorrect": true },
+      { "text": "Arctic and Atlantic", "isCorrect": false }
+    ],
+    "correctAnswer": "Atlantic and Pacific",
+    "difficulty": 2,
+    "tags": ["canals", "central-america"]
+  },
+  {
+    "id": "geo_013",
+    "category": "geography",
+    "question": "What is the capital of Brazil?",
+    "answers": [
+      { "text": "São Paulo", "isCorrect": false },
+      { "text": "Rio de Janeiro", "isCorrect": false },
+      { "text": "Salvador", "isCorrect": false },
+      { "text": "Brasília", "isCorrect": true }
+    ],
+    "correctAnswer": "Brasília",
+    "difficulty": 2,
+    "tags": ["capitals", "south-america"]
+  },
+  {
+    "id": "geo_014",
+    "category": "geography",
+    "question": "Which US state is the largest by area?",
+    "answers": [
+      { "text": "Texas", "isCorrect": false },
+      { "text": "California", "isCorrect": false },
+      { "text": "Alaska", "isCorrect": true },
+      { "text": "Montana", "isCorrect": false }
+    ],
+    "correctAnswer": "Alaska",
+    "difficulty": 1,
+    "tags": ["usa", "states", "starter"]
+  },
+  {
+    "id": "geo_015",
+    "category": "geography",
+    "question": "What is the name of the world's largest hot desert?",
+    "answers": [
+      { "text": "Arabian Desert", "isCorrect": false },
+      { "text": "Gobi Desert", "isCorrect": false },
+      { "text": "Kalahari Desert", "isCorrect": false },
+      { "text": "Sahara Desert", "isCorrect": true }
+    ],
+    "correctAnswer": "Sahara Desert",
+    "difficulty": 1,
+    "tags": ["deserts", "africa", "starter"]
+  },
+  {
+    "id": "geo_016",
+    "category": "geography",
+    "question": "Which country is home to the most UNESCO World Heritage Sites?",
+    "answers": [
+      { "text": "France", "isCorrect": false },
+      { "text": "Italy", "isCorrect": true },
+      { "text": "China", "isCorrect": false },
+      { "text": "Spain", "isCorrect": false }
+    ],
+    "correctAnswer": "Italy",
+    "difficulty": 3,
+    "tags": ["culture", "europe", "heritage"]
+  },
+  {
+    "id": "geo_017",
+    "category": "geography",
+    "question": "What is the largest island in the world?",
+    "answers": [
+      { "text": "Borneo", "isCorrect": false },
+      { "text": "Madagascar", "isCorrect": false },
+      { "text": "New Guinea", "isCorrect": false },
+      { "text": "Greenland", "isCorrect": true }
+    ],
+    "correctAnswer": "Greenland",
+    "difficulty": 2,
+    "tags": ["islands", "arctic"]
+  },
+  {
+    "id": "geo_018",
+    "category": "geography",
+    "question": "On which continent is the Gobi Desert?",
+    "answers": [
+      { "text": "Africa", "isCorrect": false },
+      { "text": "South America", "isCorrect": false },
+      { "text": "Asia", "isCorrect": true },
+      { "text": "Australia", "isCorrect": false }
+    ],
+    "correctAnswer": "Asia",
+    "difficulty": 2,
+    "tags": ["deserts", "asia"]
+  },
+  {
+    "id": "geo_019",
+    "category": "geography",
+    "question": "Which city is known as the 'City of Canals'?",
+    "answers": [
+      { "text": "Amsterdam", "isCorrect": false },
+      { "text": "Bangkok", "isCorrect": false },
+      { "text": "Venice", "isCorrect": true },
+      { "text": "Bruges", "isCorrect": false }
+    ],
+    "correctAnswer": "Venice",
+    "difficulty": 1,
+    "tags": ["cities", "europe", "starter"]
+  },
+  {
+    "id": "geo_020",
+    "category": "geography",
+    "question": "The Andes mountain range runs along which continent?",
+    "answers": [
+      { "text": "North America", "isCorrect": false },
+      { "text": "Africa", "isCorrect": false },
+      { "text": "South America", "isCorrect": true },
+      { "text": "Asia", "isCorrect": false }
+    ],
+    "correctAnswer": "South America",
+    "difficulty": 2,
+    "tags": ["mountains", "south-america"]
+  },
+  {
+    "id": "geo_021",
+    "category": "geography",
+    "question": "What is the capital of Japan?",
+    "answers": [
+      { "text": "Osaka", "isCorrect": false },
+      { "text": "Kyoto", "isCorrect": false },
+      { "text": "Hiroshima", "isCorrect": false },
+      { "text": "Tokyo", "isCorrect": true }
+    ],
+    "correctAnswer": "Tokyo",
+    "difficulty": 1,
+    "tags": ["capitals", "asia", "starter"]
+  },
+  {
+    "id": "geo_022",
+    "category": "geography",
+    "question": "Which African country has the largest population?",
+    "answers": [
+      { "text": "Ethiopia", "isCorrect": false },
+      { "text": "Egypt", "isCorrect": false },
+      { "text": "Nigeria", "isCorrect": true },
+      { "text": "South Africa", "isCorrect": false }
+    ],
+    "correctAnswer": "Nigeria",
+    "difficulty": 2,
+    "tags": ["africa", "population"]
+  },
+  {
+    "id": "geo_023",
+    "category": "geography",
+    "question": "The Strait of Gibraltar separates which two landmasses?",
+    "answers": [
+      { "text": "Europe and Asia", "isCorrect": false },
+      { "text": "Africa and Asia", "isCorrect": false },
+      { "text": "Europe and Africa", "isCorrect": true },
+      { "text": "North America and South America", "isCorrect": false }
+    ],
+    "correctAnswer": "Europe and Africa",
+    "difficulty": 2,
+    "tags": ["straits", "europe", "africa"]
+  },
+  {
+    "id": "geo_024",
+    "category": "geography",
+    "question": "What is the currency used in Japan?",
+    "answers": [
+      { "text": "Yuan", "isCorrect": false },
+      { "text": "Won", "isCorrect": false },
+      { "text": "Yen", "isCorrect": true },
+      { "text": "Ringgit", "isCorrect": false }
+    ],
+    "correctAnswer": "Yen",
+    "difficulty": 1,
+    "tags": ["currency", "asia", "starter"]
+  },
+  {
+    "id": "geo_025",
+    "category": "geography",
+    "question": "What is the most populated city in the world?",
+    "answers": [
+      { "text": "Shanghai", "isCorrect": false },
+      { "text": "Delhi", "isCorrect": false },
+      { "text": "Tokyo", "isCorrect": true },
+      { "text": "Mumbai", "isCorrect": false }
+    ],
+    "correctAnswer": "Tokyo",
+    "difficulty": 2,
+    "tags": ["cities", "population"]
+  }
+]

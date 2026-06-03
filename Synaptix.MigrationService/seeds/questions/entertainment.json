@@ -1,0 +1,352 @@
+[
+  {
+    "id": "ent_001",
+    "category": "entertainment",
+    "question": "Who played Iron Man in the Marvel Cinematic Universe?",
+    "answers": [
+      { "text": "Chris Evans", "isCorrect": false },
+      { "text": "Robert Downey Jr.", "isCorrect": true },
+      { "text": "Chris Hemsworth", "isCorrect": false },
+      { "text": "Mark Ruffalo", "isCorrect": false }
+    ],
+    "correctAnswer": "Robert Downey Jr.",
+    "difficulty": 1,
+    "tags": ["marvel", "movies", "starter"]
+  },
+  {
+    "id": "ent_002",
+    "category": "entertainment",
+    "question": "Which TV show features the Stark, Lannister, and Targaryen families?",
+    "answers": [
+      { "text": "The Witcher", "isCorrect": false },
+      { "text": "Vikings", "isCorrect": false },
+      { "text": "Game of Thrones", "isCorrect": true },
+      { "text": "Outlander", "isCorrect": false }
+    ],
+    "correctAnswer": "Game of Thrones",
+    "difficulty": 1,
+    "tags": ["tv", "fantasy", "starter"]
+  },
+  {
+    "id": "ent_003",
+    "category": "entertainment",
+    "question": "Which singer is known as the 'Queen of Pop'?",
+    "answers": [
+      { "text": "Beyoncé", "isCorrect": false },
+      { "text": "Lady Gaga", "isCorrect": false },
+      { "text": "Madonna", "isCorrect": true },
+      { "text": "Britney Spears", "isCorrect": false }
+    ],
+    "correctAnswer": "Madonna",
+    "difficulty": 1,
+    "tags": ["music", "pop", "starter"]
+  },
+  {
+    "id": "ent_004",
+    "category": "entertainment",
+    "question": "The movie 'Titanic' (1997) was directed by whom?",
+    "answers": [
+      { "text": "Steven Spielberg", "isCorrect": false },
+      { "text": "Ridley Scott", "isCorrect": false },
+      { "text": "James Cameron", "isCorrect": true },
+      { "text": "Michael Bay", "isCorrect": false }
+    ],
+    "correctAnswer": "James Cameron",
+    "difficulty": 1,
+    "tags": ["movies", "directors", "starter"]
+  },
+  {
+    "id": "ent_005",
+    "category": "entertainment",
+    "question": "Which video game franchise features a character named Master Chief?",
+    "answers": [
+      { "text": "Call of Duty", "isCorrect": false },
+      { "text": "Halo", "isCorrect": true },
+      { "text": "Gears of War", "isCorrect": false },
+      { "text": "Destiny", "isCorrect": false }
+    ],
+    "correctAnswer": "Halo",
+    "difficulty": 1,
+    "tags": ["gaming", "xbox", "starter"]
+  },
+  {
+    "id": "ent_006",
+    "category": "entertainment",
+    "question": "Which artist released the album 'Thriller' in 1982?",
+    "answers": [
+      { "text": "Prince", "isCorrect": false },
+      { "text": "Michael Jackson", "isCorrect": true },
+      { "text": "David Bowie", "isCorrect": false },
+      { "text": "Elton John", "isCorrect": false }
+    ],
+    "correctAnswer": "Michael Jackson",
+    "difficulty": 1,
+    "tags": ["music", "pop", "starter"]
+  },
+  {
+    "id": "ent_007",
+    "category": "entertainment",
+    "question": "In 'The Lord of the Rings', what type of creature is Gollum?",
+    "answers": [
+      { "text": "Hobbit", "isCorrect": true },
+      { "text": "Elf", "isCorrect": false },
+      { "text": "Dwarf", "isCorrect": false },
+      { "text": "Orc", "isCorrect": false }
+    ],
+    "correctAnswer": "Hobbit",
+    "difficulty": 2,
+    "tags": ["movies", "fantasy", "tolkien"]
+  },
+  {
+    "id": "ent_008",
+    "category": "entertainment",
+    "question": "Which streaming service produced 'Stranger Things'?",
+    "answers": [
+      { "text": "HBO", "isCorrect": false },
+      { "text": "Amazon Prime", "isCorrect": false },
+      { "text": "Netflix", "isCorrect": true },
+      { "text": "Disney+", "isCorrect": false }
+    ],
+    "correctAnswer": "Netflix",
+    "difficulty": 1,
+    "tags": ["tv", "streaming", "starter"]
+  },
+  {
+    "id": "ent_009",
+    "category": "entertainment",
+    "question": "What is the best-selling video game of all time?",
+    "answers": [
+      { "text": "Minecraft", "isCorrect": true },
+      { "text": "Tetris", "isCorrect": false },
+      { "text": "Grand Theft Auto V", "isCorrect": false },
+      { "text": "Super Mario Bros.", "isCorrect": false }
+    ],
+    "correctAnswer": "Minecraft",
+    "difficulty": 2,
+    "tags": ["gaming", "records"]
+  },
+  {
+    "id": "ent_010",
+    "category": "entertainment",
+    "question": "Who wrote the 'Harry Potter' book series?",
+    "answers": [
+      { "text": "Philip Pullman", "isCorrect": false },
+      { "text": "J.R.R. Tolkien", "isCorrect": false },
+      { "text": "J.K. Rowling", "isCorrect": true },
+      { "text": "Roald Dahl", "isCorrect": false }
+    ],
+    "correctAnswer": "J.K. Rowling",
+    "difficulty": 1,
+    "tags": ["books", "fantasy", "starter"]
+  },
+  {
+    "id": "ent_011",
+    "category": "entertainment",
+    "question": "Which band is known for the song 'Bohemian Rhapsody'?",
+    "answers": [
+      { "text": "The Rolling Stones", "isCorrect": false },
+      { "text": "Led Zeppelin", "isCorrect": false },
+      { "text": "Queen", "isCorrect": true },
+      { "text": "Pink Floyd", "isCorrect": false }
+    ],
+    "correctAnswer": "Queen",
+    "difficulty": 1,
+    "tags": ["music", "rock", "starter"]
+  },
+  {
+    "id": "ent_012",
+    "category": "entertainment",
+    "question": "The Oscar for Best Picture at the first Academy Awards in 1929 went to which film?",
+    "answers": [
+      { "text": "Wings", "isCorrect": true },
+      { "text": "Sunrise", "isCorrect": false },
+      { "text": "The Jazz Singer", "isCorrect": false },
+      { "text": "7th Heaven", "isCorrect": false }
+    ],
+    "correctAnswer": "Wings",
+    "difficulty": 4,
+    "tags": ["movies", "oscars", "history"]
+  },
+  {
+    "id": "ent_013",
+    "category": "entertainment",
+    "question": "Which Nintendo character is known for the catchphrase 'It's-a me, Mario!'?",
+    "answers": [
+      { "text": "Luigi", "isCorrect": false },
+      { "text": "Yoshi", "isCorrect": false },
+      { "text": "Mario", "isCorrect": true },
+      { "text": "Toad", "isCorrect": false }
+    ],
+    "correctAnswer": "Mario",
+    "difficulty": 1,
+    "tags": ["gaming", "nintendo", "starter"]
+  },
+  {
+    "id": "ent_014",
+    "category": "entertainment",
+    "question": "In which year was the first 'Star Wars' film released?",
+    "answers": [
+      { "text": "1975", "isCorrect": false },
+      { "text": "1977", "isCorrect": true },
+      { "text": "1979", "isCorrect": false },
+      { "text": "1981", "isCorrect": false }
+    ],
+    "correctAnswer": "1977",
+    "difficulty": 2,
+    "tags": ["movies", "sci-fi", "star-wars"]
+  },
+  {
+    "id": "ent_015",
+    "category": "entertainment",
+    "question": "The song 'Rolling in the Deep' was performed by which artist?",
+    "answers": [
+      { "text": "Rihanna", "isCorrect": false },
+      { "text": "Beyoncé", "isCorrect": false },
+      { "text": "Adele", "isCorrect": true },
+      { "text": "Amy Winehouse", "isCorrect": false }
+    ],
+    "correctAnswer": "Adele",
+    "difficulty": 1,
+    "tags": ["music", "pop", "starter"]
+  },
+  {
+    "id": "ent_016",
+    "category": "entertainment",
+    "question": "What is the highest-grossing film of all time (not adjusted for inflation)?",
+    "answers": [
+      { "text": "Avengers: Endgame", "isCorrect": false },
+      { "text": "Titanic", "isCorrect": false },
+      { "text": "Avatar", "isCorrect": true },
+      { "text": "Star Wars: The Force Awakens", "isCorrect": false }
+    ],
+    "correctAnswer": "Avatar",
+    "difficulty": 2,
+    "tags": ["movies", "box-office"]
+  },
+  {
+    "id": "ent_017",
+    "category": "entertainment",
+    "question": "Which animated film features a fish named Nemo?",
+    "answers": [
+      { "text": "Shark Tale", "isCorrect": false },
+      { "text": "Finding Nemo", "isCorrect": true },
+      { "text": "The Little Mermaid", "isCorrect": false },
+      { "text": "Atlantis", "isCorrect": false }
+    ],
+    "correctAnswer": "Finding Nemo",
+    "difficulty": 1,
+    "tags": ["animation", "pixar", "starter"]
+  },
+  {
+    "id": "ent_018",
+    "category": "entertainment",
+    "question": "The Beatles were originally from which UK city?",
+    "answers": [
+      { "text": "London", "isCorrect": false },
+      { "text": "Manchester", "isCorrect": false },
+      { "text": "Liverpool", "isCorrect": true },
+      { "text": "Birmingham", "isCorrect": false }
+    ],
+    "correctAnswer": "Liverpool",
+    "difficulty": 1,
+    "tags": ["music", "rock", "uk", "starter"]
+  },
+  {
+    "id": "ent_019",
+    "category": "entertainment",
+    "question": "Which superhero is also known as the 'Dark Knight'?",
+    "answers": [
+      { "text": "Superman", "isCorrect": false },
+      { "text": "Batman", "isCorrect": true },
+      { "text": "Green Lantern", "isCorrect": false },
+      { "text": "The Flash", "isCorrect": false }
+    ],
+    "correctAnswer": "Batman",
+    "difficulty": 1,
+    "tags": ["dc", "comics", "movies", "starter"]
+  },
+  {
+    "id": "ent_020",
+    "category": "entertainment",
+    "question": "In 'Breaking Bad', what is Walter White's alter ego called?",
+    "answers": [
+      { "text": "The Cook", "isCorrect": false },
+      { "text": "Blue Sky", "isCorrect": false },
+      { "text": "Heisenberg", "isCorrect": true },
+      { "text": "Mr. White", "isCorrect": false }
+    ],
+    "correctAnswer": "Heisenberg",
+    "difficulty": 2,
+    "tags": ["tv", "drama"]
+  },
+  {
+    "id": "ent_021",
+    "category": "entertainment",
+    "question": "Which video game is famous for the phrase 'The Cake is a Lie'?",
+    "answers": [
+      { "text": "Half-Life 2", "isCorrect": false },
+      { "text": "Portal", "isCorrect": true },
+      { "text": "Bioshock", "isCorrect": false },
+      { "text": "System Shock", "isCorrect": false }
+    ],
+    "correctAnswer": "Portal",
+    "difficulty": 2,
+    "tags": ["gaming", "valve", "puzzle"]
+  },
+  {
+    "id": "ent_022",
+    "category": "entertainment",
+    "question": "Which '90s sitcom is set in the fictional city of Pawnee, Indiana?",
+    "answers": [
+      { "text": "Friends", "isCorrect": false },
+      { "text": "Seinfeld", "isCorrect": false },
+      { "text": "Parks and Recreation", "isCorrect": true },
+      { "text": "The Office", "isCorrect": false }
+    ],
+    "correctAnswer": "Parks and Recreation",
+    "difficulty": 2,
+    "tags": ["tv", "comedy"]
+  },
+  {
+    "id": "ent_023",
+    "category": "entertainment",
+    "question": "Who directed 'Pulp Fiction' (1994)?",
+    "answers": [
+      { "text": "Martin Scorsese", "isCorrect": false },
+      { "text": "Quentin Tarantino", "isCorrect": true },
+      { "text": "Joel Coen", "isCorrect": false },
+      { "text": "David Fincher", "isCorrect": false }
+    ],
+    "correctAnswer": "Quentin Tarantino",
+    "difficulty": 2,
+    "tags": ["movies", "directors"]
+  },
+  {
+    "id": "ent_024",
+    "category": "entertainment",
+    "question": "What is the name of the hobbit hole where Bilbo and Frodo Baggins live?",
+    "answers": [
+      { "text": "Rivendell", "isCorrect": false },
+      { "text": "The Burrow", "isCorrect": false },
+      { "text": "Bag End", "isCorrect": true },
+      { "text": "Bywater", "isCorrect": false }
+    ],
+    "correctAnswer": "Bag End",
+    "difficulty": 2,
+    "tags": ["books", "tolkien", "fantasy"]
+  },
+  {
+    "id": "ent_025",
+    "category": "entertainment",
+    "question": "The band Metallica is primarily known for which music genre?",
+    "answers": [
+      { "text": "Classic Rock", "isCorrect": false },
+      { "text": "Punk", "isCorrect": false },
+      { "text": "Heavy Metal", "isCorrect": true },
+      { "text": "Grunge", "isCorrect": false }
+    ],
+    "correctAnswer": "Heavy Metal",
+    "difficulty": 1,
+    "tags": ["music", "metal", "starter"]
+  }
+]

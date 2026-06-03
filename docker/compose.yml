@@ -13,7 +13,7 @@ services:
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-synaptix_db}"
       POSTGRES_USER: "${POSTGRES_USER:-synaptix_user}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-synaptix_password_123}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -33,10 +33,10 @@ services:
       - "${MONGO_PORT:-27017}:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}"
-      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:?MONGO_INITDB_ROOT_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       MONGO_INITDB_DATABASE: "${MONGO_INITDB_DATABASE:-synaptix_db}"
       MONGO_APP_USER: "${MONGO_APP_USER:-synaptix_app_user}"
-      MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:-synaptix_app_password_123}"
+      MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       MONGO_APP_DB: "${MONGO_APP_DB:-synaptix_analytics}"
       MONGO_AUTH_DB: "${MONGO_AUTH_DB:-synaptix_analytics}"
       MONGO_ANALYTICS_DB: "${MONGO_ANALYTICS_DB:-synaptix_analytics}"
@@ -61,12 +61,12 @@ services:
     restart: unless-stopped
     ports:
       - "${REDIS_PORT:-6379}:6379"
-    command: ["sh", "-c", "redis-server --appendonly yes --requirepass '${REDIS_PASSWORD:-synaptix_redis_password_123}'"]
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass '${REDIS_PASSWORD:?REDIS_PASSWORD is required}'"]
     volumes:
       - redis_data:/data
     networks: [synaptix-net]
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD:-synaptix_redis_password_123}' ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD}' ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -82,13 +82,13 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=true
       - xpack.security.enrollment.enabled=false
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-synaptix_elastic_password_123}
+      - "ELASTIC_PASSWORD=${ELASTIC_PASSWORD:?ELASTIC_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks: [synaptix-net]
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -u elastic:${ELASTIC_PASSWORD:-synaptix_elastic_password_123} http://localhost:9200/_cluster/health?pretty >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health?pretty >/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -105,7 +105,7 @@ services:
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     environment:
       RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-synaptix_user}"
-      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-synaptix_rabbitmq_password_123}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       RABBITMQ_DEFAULT_VHOST: "${RABBITMQ_VHOST:-synaptix}"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -128,7 +128,7 @@ services:
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-synaptix_minio_user}"
-      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -168,7 +168,7 @@ services:
       - "${GRAFANA_PORT:-3000}:3000"
     environment:
       GF_SECURITY_ADMIN_USER: "${GRAFANA_USER:-admin}"
-      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-admin_password_123}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
     volumes:
       - grafana_data:/var/lib/grafana
@@ -204,7 +204,7 @@ services:
       - "${PGADMIN_PORT:-5050}:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@synaptix.app}"
-      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-admin_password_123}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       PGADMIN_CONFIG_SERVER_MODE: "False"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
@@ -221,10 +221,10 @@ services:
       - "${MONGO_EXPRESS_PORT:-8081}:8081"
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: "${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}"
-      ME_CONFIG_MONGODB_ADMINPASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}"
-      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}:${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}@mongodb:27017/"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "${MONGO_INITDB_ROOT_PASSWORD}"
+      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/"
       ME_CONFIG_BASICAUTH_USERNAME: "${MONGO_EXPRESS_USERNAME:-admin}"
-      ME_CONFIG_BASICAUTH_PASSWORD: "${MONGO_EXPRESS_PASSWORD:-admin_password_123}"
+      ME_CONFIG_BASICAUTH_PASSWORD: "${MONGO_EXPRESS_PASSWORD:?MONGO_EXPRESS_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
     depends_on:
       - mongodb
     networks: [synaptix-net]
@@ -244,7 +244,7 @@ services:
         PORT_synaptix_postgres: 5432
         ENGINE_synaptix_postgres: postgres@dbgate-plugin-postgres
         USER_synaptix_postgres: "${POSTGRES_USER:-synaptix_user}"
-        PASSWORD_synaptix_postgres: "${POSTGRES_PASSWORD:-synaptix_password_123}"
+        PASSWORD_synaptix_postgres: "${POSTGRES_PASSWORD}"
         DATABASE_synaptix_postgres: "${POSTGRES_DB:-synaptix_db}"
 
         LABEL_synaptix_mongodb: "Synaptix MongoDB"
@@ -252,9 +252,9 @@ services:
         PORT_synaptix_mongodb: 27017
         ENGINE_synaptix_mongodb: mongo@dbgate-plugin-mongo
         USER_synaptix_mongodb: "${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}"
-        PASSWORD_synaptix_mongodb: "${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}"
+        PASSWORD_synaptix_mongodb: "${MONGO_INITDB_ROOT_PASSWORD}"
         DATABASE_synaptix_mongodb: "${MONGO_INITDB_DATABASE:-synaptix_db}"
-        URL_synaptix_mongodb: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}:${MONGO_INITDB_ROOT_PASSWORD:-synaptix_mongo_password_123}@mongodb:27017/${MONGO_INITDB_DATABASE:-synaptix_db}?authSource=admin"
+        URL_synaptix_mongodb: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/${MONGO_INITDB_DATABASE:-synaptix_db}?authSource=admin"
       depends_on:
         - postgres
         - mongodb
@@ -285,6 +285,51 @@ services:
   # ================================
   # Backend Services
   # ================================
+
+  # One-shot setup container: provisions MinIO bucket, uploads seed files,
+  # validates secrets, and creates the super admin. Runs before migration.
+  setup:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.setup
+      args:
+        - BUILD_CONFIGURATION="${BUILD_CONFIGURATION:-Release}"
+    container_name: synaptix_setup
+    restart: "no"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      DOTNET_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD}"
+      MinIO__Endpoint: "minio:9000"
+      MinIO__AccessKey: "${MINIO_ROOT_USER:-synaptix_minio_user}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
+      MinIO__UseSSL: "false"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Port: "${RABBITMQ_PORT:-5672}"
+      RabbitMQ__User: "${RABBITMQ_USER:-synaptix_user}"
+      RabbitMQ__Password: "${RABBITMQ_PASSWORD}"
+      RabbitMQ__Vhost: "${RABBITMQ_VHOST:-synaptix}"
+      RabbitMQ__ManagementPort: "${RABBITMQ_MANAGEMENT_PORT:-15672}"
+      SuperAdmin__Email: "${SUPER_ADMIN_EMAIL:-}"
+      SuperAdmin__Password: "${SUPER_ADMIN_PASSWORD:-}"
+      SuperAdmin__Handle: "${SUPER_ADMIN_HANDLE:-superadmin}"
+      Setup__Command: "provision-services"
+      Setup__SeedsSourcePath: "/app/seeds"
+      Serilog__MinimumLevel: "${LOG_LEVEL:-Information}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks: [synaptix-net]
+
   migration:
     build:
       context: ..
@@ -298,15 +343,15 @@ services:
       DOTNET_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       
       # Database connections
-      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD:-synaptix_password_123}"
-      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-synaptix_redis_password_123}"
-      ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD:-synaptix_app_password_123}@mongodb:27017/${MONGO_ANALYTICS_DB:-synaptix_analytics}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}"
+      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD}"
+      ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD}@mongodb:27017/${MONGO_ANALYTICS_DB:-synaptix_analytics}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}"
       ConnectionStrings__elasticsearch: "http://elasticsearch:9200"
-      
+
       # Elasticsearch
       Elastic__Url: "http://elasticsearch:9200"
       Elastic__Username: "elastic"
-      Elastic__Password: "${ELASTIC_PASSWORD:-synaptix_elastic_password_123}"
+      Elastic__Password: "${ELASTIC_PASSWORD}"
       
       # MongoDB
       MongoSettings__Database: "${MONGO_ANALYTICS_DB:-synaptix_analytics}"
@@ -330,7 +375,7 @@ services:
       MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
       MinIO__Endpoint: "minio:9000"
       MinIO__AccessKey: "${MINIO_ROOT_USER:-synaptix_minio_user}"
-      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
       MinIO__UseSSL: "false"
       MinIO__Seeds__StoreItemsKey: "${MINIO_SEED_STORE_ITEMS_KEY:-seeds/store-items.json}"
       MinIO__Seeds__SkillNodesKey: "${MINIO_SEED_SKILL_NODES_KEY:-seeds/skill-nodes.json}"
@@ -353,6 +398,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      setup:
+        condition: service_completed_successfully
     networks: [synaptix-net]
 
   backend-api:
@@ -371,15 +418,15 @@ services:
       ASPNETCORE_URLS: ""   # Kestrel dual-port config in Program.cs overrides this
       
       # Database connections
-      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD:-synaptix_password_123}"
-      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD:-synaptix_redis_password_123},defaultDatabase=0"
-      ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD:-synaptix_app_password_123}@mongodb:27017/${MONGO_ANALYTICS_DB:-synaptix_analytics}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}"
-      ConnectionStrings__elasticsearch: "http://elastic:${ELASTIC_PASSWORD:-synaptix_elastic_password_123}@elasticsearch:9200"
-      
+      ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD},defaultDatabase=0"
+      ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD}@mongodb:27017/${MONGO_ANALYTICS_DB:-synaptix_analytics}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}"
+      ConnectionStrings__elasticsearch: "http://elastic:${ELASTIC_PASSWORD}@elasticsearch:9200"
+
       # Elasticsearch
       Elastic__Url: "http://elasticsearch:9200"
       Elastic__Username: "elastic"
-      Elastic__Password: "${ELASTIC_PASSWORD:-synaptix_elastic_password_123}"
+      Elastic__Password: "${ELASTIC_PASSWORD}"
       Elastic__DailyWriteAlias: "synaptix-daily-rollups"
       Elastic__PlayerDailyWriteAlias: "synaptix-player-daily-rollups"
       # Dev only: allow self-signed certs. Do NOT set this in production.
@@ -409,15 +456,15 @@ services:
       AdminAuth__AllowedEmails__0: "${SUPER_ADMIN_EMAIL:-}"
       
       # Auth
-      JwtSettings__SecretKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
+      JwtSettings__SecretKey: "${JWT_SECRET_KEY}"
       # Legacy keys kept for backwards compatibility across services/config readers.
-      Auth__JwtKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
-      JWT__Secret: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
+      Auth__JwtKey: "${JWT_SECRET_KEY}"
+      JWT__Secret: "${JWT_SECRET_KEY}"
       
       # Object storage (MinIO)
       MinIO__Endpoint: "minio:9000"
       MinIO__AccessKey: "${MINIO_ROOT_USER:-synaptix_minio_user}"
-      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD:-synaptix_minio_password_123}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
       MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
       MinIO__UseSSL: "false"
       MinIO__PublicEndpoint: "${MINIO_PUBLIC_ENDPOINT:-localhost:9000}"
@@ -481,11 +528,11 @@ services:
     environment:
       BACKEND_BASE_URL: "http://backend-api:5000"
       BACKEND_GRPC_URL: "backend-api:5001"
-      MONGO_URL: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD:-synaptix_app_password_123}@mongodb:27017/${MONGO_ANALYTICS_DB:-synaptix_analytics}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}"
+      MONGO_URL: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD}@mongodb:27017/${MONGO_ANALYTICS_DB:-synaptix_analytics}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}"
       MONGO_DB: "${MONGO_ANALYTICS_DB:-synaptix_analytics}"
       ELASTICSEARCH_URL: "http://elasticsearch:9200"
       ELASTICSEARCH_USER: "elastic"
-      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD:-synaptix_elastic_password_123}"
+      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
       # Passed through so the config proxy can authenticate against /admin/config
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"

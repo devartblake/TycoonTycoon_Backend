@@ -1,0 +1,352 @@
+[
+  {
+    "id": "tech_001",
+    "category": "technology",
+    "question": "What does CPU stand for?",
+    "answers": [
+      { "text": "Central Processing Unit", "isCorrect": true },
+      { "text": "Computer Processing Unit", "isCorrect": false },
+      { "text": "Central Program Unit", "isCorrect": false },
+      { "text": "Core Processing Utility", "isCorrect": false }
+    ],
+    "correctAnswer": "Central Processing Unit",
+    "difficulty": 1,
+    "tags": ["hardware", "computing", "starter"]
+  },
+  {
+    "id": "tech_002",
+    "category": "technology",
+    "question": "Who is considered the father of the World Wide Web?",
+    "answers": [
+      { "text": "Bill Gates", "isCorrect": false },
+      { "text": "Tim Berners-Lee", "isCorrect": true },
+      { "text": "Vint Cerf", "isCorrect": false },
+      { "text": "Steve Jobs", "isCorrect": false }
+    ],
+    "correctAnswer": "Tim Berners-Lee",
+    "difficulty": 2,
+    "tags": ["internet", "web", "history"]
+  },
+  {
+    "id": "tech_003",
+    "category": "technology",
+    "question": "What does HTML stand for?",
+    "answers": [
+      { "text": "Hyper Text Markup Language", "isCorrect": true },
+      { "text": "High Transfer Markup Language", "isCorrect": false },
+      { "text": "Hyper Transfer Mode Language", "isCorrect": false },
+      { "text": "Hyper Text Management Listing", "isCorrect": false }
+    ],
+    "correctAnswer": "Hyper Text Markup Language",
+    "difficulty": 1,
+    "tags": ["web", "development", "starter"]
+  },
+  {
+    "id": "tech_004",
+    "category": "technology",
+    "question": "What is the binary representation of the decimal number 10?",
+    "answers": [
+      { "text": "1010", "isCorrect": true },
+      { "text": "1100", "isCorrect": false },
+      { "text": "0110", "isCorrect": false },
+      { "text": "1001", "isCorrect": false }
+    ],
+    "correctAnswer": "1010",
+    "difficulty": 2,
+    "tags": ["binary", "computing", "math"]
+  },
+  {
+    "id": "tech_005",
+    "category": "technology",
+    "question": "Which programming language was created by Guido van Rossum?",
+    "answers": [
+      { "text": "Java", "isCorrect": false },
+      { "text": "Ruby", "isCorrect": false },
+      { "text": "Python", "isCorrect": true },
+      { "text": "Perl", "isCorrect": false }
+    ],
+    "correctAnswer": "Python",
+    "difficulty": 2,
+    "tags": ["programming", "languages"]
+  },
+  {
+    "id": "tech_006",
+    "category": "technology",
+    "question": "What does RAM stand for?",
+    "answers": [
+      { "text": "Random Access Memory", "isCorrect": true },
+      { "text": "Rapid Access Module", "isCorrect": false },
+      { "text": "Read Access Memory", "isCorrect": false },
+      { "text": "Random Application Memory", "isCorrect": false }
+    ],
+    "correctAnswer": "Random Access Memory",
+    "difficulty": 1,
+    "tags": ["hardware", "memory", "starter"]
+  },
+  {
+    "id": "tech_007",
+    "category": "technology",
+    "question": "Which company developed the Android operating system?",
+    "answers": [
+      { "text": "Apple", "isCorrect": false },
+      { "text": "Microsoft", "isCorrect": false },
+      { "text": "Google", "isCorrect": true },
+      { "text": "Samsung", "isCorrect": false }
+    ],
+    "correctAnswer": "Google",
+    "difficulty": 1,
+    "tags": ["mobile", "os", "starter"]
+  },
+  {
+    "id": "tech_008",
+    "category": "technology",
+    "question": "What is a 'byte' composed of?",
+    "answers": [
+      { "text": "4 bits", "isCorrect": false },
+      { "text": "8 bits", "isCorrect": true },
+      { "text": "16 bits", "isCorrect": false },
+      { "text": "32 bits", "isCorrect": false }
+    ],
+    "correctAnswer": "8 bits",
+    "difficulty": 1,
+    "tags": ["computing", "data", "starter"]
+  },
+  {
+    "id": "tech_009",
+    "category": "technology",
+    "question": "What does HTTP stand for?",
+    "answers": [
+      { "text": "HyperText Transfer Protocol", "isCorrect": true },
+      { "text": "High Transfer Text Protocol", "isCorrect": false },
+      { "text": "Hyper Transfer Type Protocol", "isCorrect": false },
+      { "text": "HyperText Transmission Protocol", "isCorrect": false }
+    ],
+    "correctAnswer": "HyperText Transfer Protocol",
+    "difficulty": 2,
+    "tags": ["internet", "web", "networking"]
+  },
+  {
+    "id": "tech_010",
+    "category": "technology",
+    "question": "What is the name of the first computer virus?",
+    "answers": [
+      { "text": "ILOVEYOU", "isCorrect": false },
+      { "text": "Morris Worm", "isCorrect": false },
+      { "text": "Creeper", "isCorrect": true },
+      { "text": "Melissa", "isCorrect": false }
+    ],
+    "correctAnswer": "Creeper",
+    "difficulty": 4,
+    "tags": ["security", "history"]
+  },
+  {
+    "id": "tech_011",
+    "category": "technology",
+    "question": "Which sorting algorithm has the best average-case time complexity?",
+    "answers": [
+      { "text": "Bubble Sort", "isCorrect": false },
+      { "text": "Insertion Sort", "isCorrect": false },
+      { "text": "Quicksort", "isCorrect": true },
+      { "text": "Selection Sort", "isCorrect": false }
+    ],
+    "correctAnswer": "Quicksort",
+    "difficulty": 3,
+    "tags": ["algorithms", "programming"]
+  },
+  {
+    "id": "tech_012",
+    "category": "technology",
+    "question": "What is the main purpose of a firewall in networking?",
+    "answers": [
+      { "text": "Speed up internet connection", "isCorrect": false },
+      { "text": "Store network data", "isCorrect": false },
+      { "text": "Monitor and filter network traffic", "isCorrect": true },
+      { "text": "Compress files for transfer", "isCorrect": false }
+    ],
+    "correctAnswer": "Monitor and filter network traffic",
+    "difficulty": 2,
+    "tags": ["networking", "security"]
+  },
+  {
+    "id": "tech_013",
+    "category": "technology",
+    "question": "In which year was the first iPhone released?",
+    "answers": [
+      { "text": "2005", "isCorrect": false },
+      { "text": "2006", "isCorrect": false },
+      { "text": "2007", "isCorrect": true },
+      { "text": "2008", "isCorrect": false }
+    ],
+    "correctAnswer": "2007",
+    "difficulty": 2,
+    "tags": ["mobile", "apple", "history"]
+  },
+  {
+    "id": "tech_014",
+    "category": "technology",
+    "question": "What does SQL stand for?",
+    "answers": [
+      { "text": "Structured Query Language", "isCorrect": true },
+      { "text": "Sequential Query Language", "isCorrect": false },
+      { "text": "Standard Query Logic", "isCorrect": false },
+      { "text": "Simple Question Language", "isCorrect": false }
+    ],
+    "correctAnswer": "Structured Query Language",
+    "difficulty": 1,
+    "tags": ["databases", "programming", "starter"]
+  },
+  {
+    "id": "tech_015",
+    "category": "technology",
+    "question": "What does GPU stand for?",
+    "answers": [
+      { "text": "General Processing Unit", "isCorrect": false },
+      { "text": "Graphics Processing Unit", "isCorrect": true },
+      { "text": "Graphical Program Unit", "isCorrect": false },
+      { "text": "Global Processing Utility", "isCorrect": false }
+    ],
+    "correctAnswer": "Graphics Processing Unit",
+    "difficulty": 1,
+    "tags": ["hardware", "computing", "starter"]
+  },
+  {
+    "id": "tech_016",
+    "category": "technology",
+    "question": "Which data structure works on LIFO (Last In First Out) principle?",
+    "answers": [
+      { "text": "Queue", "isCorrect": false },
+      { "text": "Linked List", "isCorrect": false },
+      { "text": "Stack", "isCorrect": true },
+      { "text": "Tree", "isCorrect": false }
+    ],
+    "correctAnswer": "Stack",
+    "difficulty": 2,
+    "tags": ["data-structures", "programming"]
+  },
+  {
+    "id": "tech_017",
+    "category": "technology",
+    "question": "What does API stand for?",
+    "answers": [
+      { "text": "Application Programming Interface", "isCorrect": true },
+      { "text": "Automated Program Integration", "isCorrect": false },
+      { "text": "Application Protocol Interface", "isCorrect": false },
+      { "text": "Automated Programming Input", "isCorrect": false }
+    ],
+    "correctAnswer": "Application Programming Interface",
+    "difficulty": 1,
+    "tags": ["programming", "web", "starter"]
+  },
+  {
+    "id": "tech_018",
+    "category": "technology",
+    "question": "Which company is known for the Java programming language?",
+    "answers": [
+      { "text": "Microsoft", "isCorrect": false },
+      { "text": "Oracle (originally Sun Microsystems)", "isCorrect": true },
+      { "text": "IBM", "isCorrect": false },
+      { "text": "Apple", "isCorrect": false }
+    ],
+    "correctAnswer": "Oracle (originally Sun Microsystems)",
+    "difficulty": 3,
+    "tags": ["programming", "languages", "history"]
+  },
+  {
+    "id": "tech_019",
+    "category": "technology",
+    "question": "What is the maximum value that can be stored in an 8-bit unsigned integer?",
+    "answers": [
+      { "text": "128", "isCorrect": false },
+      { "text": "255", "isCorrect": true },
+      { "text": "256", "isCorrect": false },
+      { "text": "512", "isCorrect": false }
+    ],
+    "correctAnswer": "255",
+    "difficulty": 3,
+    "tags": ["computing", "binary", "data"]
+  },
+  {
+    "id": "tech_020",
+    "category": "technology",
+    "question": "What does DNS stand for?",
+    "answers": [
+      { "text": "Data Network System", "isCorrect": false },
+      { "text": "Domain Name System", "isCorrect": true },
+      { "text": "Digital Name Service", "isCorrect": false },
+      { "text": "Dynamic Network Server", "isCorrect": false }
+    ],
+    "correctAnswer": "Domain Name System",
+    "difficulty": 2,
+    "tags": ["networking", "internet"]
+  },
+  {
+    "id": "tech_021",
+    "category": "technology",
+    "question": "What is the most widely used version control system?",
+    "answers": [
+      { "text": "SVN", "isCorrect": false },
+      { "text": "Mercurial", "isCorrect": false },
+      { "text": "Git", "isCorrect": true },
+      { "text": "CVS", "isCorrect": false }
+    ],
+    "correctAnswer": "Git",
+    "difficulty": 1,
+    "tags": ["development", "tools", "starter"]
+  },
+  {
+    "id": "tech_022",
+    "category": "technology",
+    "question": "In Object-Oriented Programming, what does 'polymorphism' mean?",
+    "answers": [
+      { "text": "A class having only one form", "isCorrect": false },
+      { "text": "An object inheriting from multiple parents", "isCorrect": false },
+      { "text": "The ability of an object to take many forms", "isCorrect": true },
+      { "text": "Hiding internal implementation details", "isCorrect": false }
+    ],
+    "correctAnswer": "The ability of an object to take many forms",
+    "difficulty": 3,
+    "tags": ["programming", "oop"]
+  },
+  {
+    "id": "tech_023",
+    "category": "technology",
+    "question": "What does 'SSD' stand for in computer storage?",
+    "answers": [
+      { "text": "Solid State Drive", "isCorrect": true },
+      { "text": "Super Speed Disk", "isCorrect": false },
+      { "text": "Static Storage Device", "isCorrect": false },
+      { "text": "Secure Static Disk", "isCorrect": false }
+    ],
+    "correctAnswer": "Solid State Drive",
+    "difficulty": 1,
+    "tags": ["hardware", "storage", "starter"]
+  },
+  {
+    "id": "tech_024",
+    "category": "technology",
+    "question": "What is a 'blockchain' primarily associated with?",
+    "answers": [
+      { "text": "Cloud storage", "isCorrect": false },
+      { "text": "Distributed ledger and cryptocurrency", "isCorrect": true },
+      { "text": "Database indexing", "isCorrect": false },
+      { "text": "Network security protocols", "isCorrect": false }
+    ],
+    "correctAnswer": "Distributed ledger and cryptocurrency",
+    "difficulty": 2,
+    "tags": ["blockchain", "crypto", "fintech"]
+  },
+  {
+    "id": "tech_025",
+    "category": "technology",
+    "question": "Which layer of the OSI model is responsible for routing?",
+    "answers": [
+      { "text": "Data Link Layer", "isCorrect": false },
+      { "text": "Transport Layer", "isCorrect": false },
+      { "text": "Network Layer", "isCorrect": true },
+      { "text": "Session Layer", "isCorrect": false }
+    ],
+    "correctAnswer": "Network Layer",
+    "difficulty": 4,
+    "tags": ["networking", "osi", "advanced"]
+  }
+]

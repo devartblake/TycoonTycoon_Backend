@@ -1,0 +1,74 @@
+[
+  {
+    "id": "env_arena_default",
+    "type": "environment",
+    "name": "Default Arena",
+    "key": "models/environments/arena_default.glb",
+    "thumbnailKey": "images/environments/arena_default_thumb.webp",
+    "version": "1.0.0",
+    "sha256": ""
+  },
+  {
+    "id": "env_arena_neon",
+    "type": "environment",
+    "name": "Neon Arena",
+    "key": "models/environments/arena_neon.glb",
+    "thumbnailKey": "images/environments/arena_neon_thumb.webp",
+    "version": "1.0.0",
+    "sha256": ""
+  },
+  {
+    "id": "avatar_hero_001",
+    "type": "avatar",
+    "name": "Hero",
+    "key": "models/avatars/hero_001.glb",
+    "thumbnailKey": "images/avatars/hero_001_thumb.webp",
+    "version": "1.0.0",
+    "sha256": ""
+  },
+  {
+    "id": "avatar_scholar_001",
+    "type": "avatar",
+    "name": "Scholar",
+    "key": "models/avatars/scholar_001.glb",
+    "thumbnailKey": "images/avatars/scholar_001_thumb.webp",
+    "version": "1.0.0",
+    "sha256": ""
+  },
+  {
+    "id": "gear_sword_001",
+    "type": "gear",
+    "name": "Iron Sword",
+    "key": "models/gear/sword_001.glb",
+    "thumbnailKey": "images/gear/sword_001_thumb.webp",
+    "version": "1.0.0",
+    "sha256": ""
+  },
+  {
+    "id": "gear_shield_001",
+    "type": "gear",
+    "name": "Iron Shield",
+    "key": "models/gear/shield_001.glb",
+    "thumbnailKey": "images/gear/shield_001_thumb.webp",
+    "version": "1.0.0",
+    "sha256": ""
+  },
+  {
+    "id": "effect_sparkle_correct",
+    "type": "effect",
+    "name": "Correct Answer Sparkle",
+    "key": "models/effects/sparkle_correct.glb",
+    "thumbnailKey": null,
+    "version": "1.0.0",
+    "sha256": ""
+  },
+  {
+    "id": "effect_zap_wrong",
+    "type": "effect",
+    "name": "Wrong Answer Zap",
+    "key": "models/effects/zap_wrong.glb",
+    "thumbnailKey": null,
+    "version": "1.0.0",
+    "sha256": ""
+  }
+]

@@ -32,6 +32,7 @@
     <Project Path="Synaptix.Security.Kms.Tests/Synaptix.Security.Kms.Tests.csproj" />
   </Folder>
   <Project Path="Synaptix.MigrationService/Synaptix.MigrationService.csproj" />
+  <Project Path="Synaptix.Setup/Synaptix.Setup.csproj" />
   <Project Path="Synaptix.Security.Kms.Client/Synaptix.Security.Kms.Client.csproj" />
   <Project Path="Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj" />
 </Solution>

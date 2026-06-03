@@ -36,8 +36,13 @@ public sealed class MinioSeeder
         var storeTask    = ReadJsonAsync<List<StoreItemSeedModel>>(_seedOptions.StoreItemsKey, ct);
         var skillTask    = ReadJsonAsync<List<SkillNodeSeedModel>>(_seedOptions.SkillNodesKey, ct);
         var seasonTask   = ReadJsonAsync<List<SeasonRewardSeedModel>>(_seedOptions.SeasonRewardsKey, ct);
-        var questionTask = ReadJsonAsync<List<QuestionSeedModel>>(_seedOptions.QuestionsKey, ct);
-        await Task.WhenAll(storeTask, skillTask, seasonTask, questionTask);
+        var questionTask = ReadAllQuestionsAsync(ct);
+        var catalogTask  = ReadJsonAsync<List<AssetCatalogSeedModel>>(_seedOptions.AssetCatalogKey, ct);
+        await Task.WhenAll(storeTask, skillTask, seasonTask, questionTask, catalogTask);
+
+        // Upload bundled images and models to MinIO before seeding (idempotent — skips existing keys).
+        await UploadBundledImagesAsync(ct);
+        await UploadBundledModelsAsync(ct);
 
         var strategy = db.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
@@ -47,6 +52,117 @@ public sealed class MinioSeeder
             await SeedSeasonRewardsAsync(db, await seasonTask, ct);
             await SeedQuestionsAsync(db, await questionTask, ct);
         });
+
+        // Write the asset manifest last so it reflects the final seeded state.
+        await SeedAssetCatalogAsync(await catalogTask, ct);
+    }
+
+    // ── Multi-file question loading ──────────────────────────────────────────
+
+    private async Task<List<QuestionSeedModel>> ReadAllQuestionsAsync(CancellationToken ct)
+    {
+        var keys = _seedOptions.QuestionDatasetKeys.Count > 0
+            ? _seedOptions.QuestionDatasetKeys
+            : new List<string> { _seedOptions.QuestionsKey };
+
+        var batches = await Task.WhenAll(keys.Select(k => ReadJsonAsync<List<QuestionSeedModel>>(k, ct)));
+
+        return batches
+            .Where(b => b is not null)
+            .SelectMany(b => b!)
+            .GroupBy(m => (m.Text ?? m.Question ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+    }
+
+    // ── Bundled image upload ─────────────────────────────────────────────────
+
+    private async Task UploadBundledImagesAsync(CancellationToken ct)
+    {
+        var root = _seedOptions.BundledRootPath ?? AppContext.BaseDirectory;
+        var imagesDir = Path.Combine(root, "seeds", "images");
+        if (!Directory.Exists(imagesDir)) return;
+
+        var uploaded = 0;
+        foreach (var file in Directory.EnumerateFiles(imagesDir, "*.*", SearchOption.AllDirectories))
+        {
+            var ext = Path.GetExtension(file).ToLowerInvariant();
+            if (ext is not (".png" or ".webp" or ".jpg" or ".jpeg")) continue;
+
+            var key = "questions/images/" + Path.GetFileName(file);
+            await using var existing = await _storage.GetAsync(key, ct);
+            if (existing is not null) continue;
+
+            var contentType = ext switch
+            {
+                ".webp"  => "image/webp",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                _ => "image/png",
+            };
+
+            await using var stream = File.OpenRead(file);
+            await _storage.PutAsync(key, stream, contentType, new FileInfo(file).Length, ct);
+            uploaded++;
+        }
+
+        if (uploaded > 0)
+            _log.Information("MinioSeeder: uploaded {Count} bundled question image(s).", uploaded);
+    }
+
+    // ── Bundled 3D model upload ──────────────────────────────────────────────
+
+    private async Task UploadBundledModelsAsync(CancellationToken ct)
+    {
+        var root = _seedOptions.BundledRootPath ?? AppContext.BaseDirectory;
+        var modelsDir = Path.Combine(root, "seeds", "models");
+        if (!Directory.Exists(modelsDir)) return;
+
+        var uploaded = 0;
+        foreach (var file in Directory.EnumerateFiles(modelsDir, "*.*", SearchOption.AllDirectories))
+        {
+            var ext = Path.GetExtension(file).ToLowerInvariant();
+            if (ext is not (".glb" or ".gltf" or ".fbx")) continue;
+
+            // Preserve sub-directory structure under models/
+            var relative = Path.GetRelativePath(modelsDir, file).Replace('\\', '/');
+            var key = "models/" + relative;
+
+            await using var existing = await _storage.GetAsync(key, ct);
+            if (existing is not null) continue;
+
+            var contentType = ext switch
+            {
+                ".glb" => "model/gltf-binary",
+                ".gltf" => "model/gltf+json",
+                _ => "application/octet-stream",
+            };
+
+            await using var stream = File.OpenRead(file);
+            await _storage.PutAsync(key, stream, contentType, new FileInfo(file).Length, ct);
+            uploaded++;
+        }
+
+        if (uploaded > 0)
+            _log.Information("MinioSeeder: uploaded {Count} bundled 3D model(s).", uploaded);
+    }
+
+    // ── Asset catalog → frontend manifest ───────────────────────────────────
+
+    private async Task SeedAssetCatalogAsync(List<AssetCatalogSeedModel>? models, CancellationToken ct)
+    {
+        if (models is null or { Count: 0 })
+        {
+            _log.Information("MinioSeeder: no asset catalog entries — skipping manifest write.");
+            return;
+        }
+
+        var entries = models.Select(m => new AssetManifestEntry(
+            m.Id, m.Type, m.Name, m.Key, m.ThumbnailKey, m.Version, m.Sha256)).ToList();
+
+        var json = JsonSerializer.SerializeToUtf8Bytes(entries, JsonOpts);
+        using var ms = new MemoryStream(json);
+        await _storage.PutAsync("frontend/assets/manifest.json", ms, "application/json", json.Length, ct);
+        _log.Information("MinioSeeder: wrote asset manifest with {Count} entr(ies).", entries.Count);
     }
 
     // ── Store Items ──────────────────────────────────────────────────────────

@@ -124,7 +124,8 @@
         string Category,
         QuestionDifficulty Difficulty,
         IReadOnlyList<QuestionOptionDto> Options,
-        string? MediaKey
+        string? MediaKey,
+        string? MediaUrl
     );
 
     /// <summary>A set of questions served for a match or practice session.</summary>

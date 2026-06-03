@@ -4,6 +4,115 @@ All notable changes to this project.
 
 ---
 
+## [2026-06-03] Synaptix.Setup Bug Fixes, Config Key Normalization, and Security Layer (Phase 1)
+
+### Bug Fixes
+
+- **`docker/compose.yml` — `unknown flag: --profile`** — `--profile dev` is a global `docker compose` flag; it must precede the subcommand. Fixed `bootstrap-local.ps1` to split compose args into `$globalArgs` (which includes `--profile dev`) and `$services`, then call `docker compose @globalArgs up -d @services`.
+- **`docker/Dockerfile.setup` missing** — the `setup` service in `compose.yml` referenced a Dockerfile that didn't exist. Created `docker/Dockerfile.setup` modelled on `Dockerfile.migrate`; copies `Synaptix.MigrationService/seeds/` into `/app/seeds` so the container can upload bundled seeds to MinIO without a volume mount. Default `ENTRYPOINT` runs `provision-services`.
+- **`provision-services` — all tasks failing with "connection string could not be constructed"** — `.NET`'s `AddEnvironmentVariables()` normalizes `__` to `:` when loading env vars (e.g. `MinIO__Endpoint` → `cfg["MinIO:Endpoint"]`), but `DotEnvConfigurationExtensions` was storing keys verbatim with `__`. Service tasks then used `__`-keyed lookups that worked locally but not in Docker containers where env vars were set via `compose.yml` using `MinIO__Endpoint` notation. Fixed in two layers:
+  1. `DotEnvConfigurationSource.cs` — added `key.Replace("__", ":")` normalization so `.env` file keys match Docker env var behaviour.
+  2. All six service tasks updated to use `:` separator: `cfg["MinIO:Endpoint"]`, `cfg["RabbitMQ:Password"]`, `cfg["ConnectionStrings:db"]`/`cfg.GetConnectionString("db")`, `cfg["Elastic:Url"]`, `cfg["SuperAdmin:Email"]`, `cfg["Setup:SeedsSourcePath"]`, etc.
+- **Duplicate validation warnings** — `SecretValidationService` was emitting `Log.Warning` for each weak secret, then `ValidateCommand` emitted the same list again. Removed the inner log loop from `SecretValidationService`; `ValidateCommand` is now the sole emitter.
+
+### Security Layer — Phase 1 (per `synaptix_setup_security_kms_reuse_recommendation.md`)
+
+New `Synaptix.Setup/Security/` namespace implementing the Phase 1 abstractions from the KMS reuse recommendation:
+
+| File | Purpose |
+|------|---------|
+| `SetupSecretOptions.cs` | Binding class for `SetupSecrets:ProtectionMode` — values: `PlaintextLocal` (default), `KmsPreferred`, `KmsRequired`, `ExternalOnly` |
+| `ISetupSecretProtector.cs` | Interface: `ProtectAsync(name, plaintext)` / `UnprotectAsync(secret)` |
+| `ProtectedSetupSecret.cs` | Record: name, ciphertext, provider, key name, key version, timestamp |
+| `SetupSecretManifest.cs` | Serializable manifest written to `.local/bootstrap/bootstrap.secrets.enc.json` |
+| `PlaintextLocalSetupSecretProtector.cs` | Phase 1 no-op implementation (Provider="Plaintext"); replace with `KmsSetupSecretProtector` in Phase 2 |
+| `SetupSecretValidator.cs` | Wraps `SecretValidationService` + adds KMS availability check when `ProtectionMode` is `KmsRequired`/`KmsPreferred` |
+
+- **`InitLocalCommand`** — now writes `.local/bootstrap/bootstrap.secrets.enc.json` after generating secrets, using the active `ISetupSecretProtector`.
+- **`ValidateCommand`** — now reads `SetupSecrets:ProtectionMode` from config, constructs `SetupSecretValidator` with KMS options, and reports the active protection mode in the log.
+- **`.gitignore`** — `bootstrap.secrets.enc.json` added (contains plaintext secrets in Phase 1).
+
+### Responsibility Boundary (implemented)
+
+```
+Synaptix.Security.Kms  — encryption, key wrapping, Vault Transit, KMS API/client (unchanged)
+Synaptix.Setup         — bootstrap workflow, env generation, service provisioning, seed validation
+Synaptix.Setup/Security — bridges setup secrets to KMS; owns protection mode selection
+```
+
+KMS client integration (Phase 2 — `KmsSetupSecretProtector` backed by `Synaptix.Security.Kms.Client`) and secret rotation commands (Phase 3) are deferred to post-Alpha.
+
+---
+
+## [2026-06-03] Question Seeder Expansion, MinIO Asset Pipeline, and Bootstrap Setup System
+
+### Seeder — Question Dataset Expansion
+
+- **`MinioSeedOptions.QuestionDatasetKeys`** — new `List<string>` property on `MinioSeedOptions`; when non-empty it replaces `QuestionsKey` and all listed files are loaded concurrently and deduplicated on question text before seeding.
+- **`MinioSeeder.ReadAllQuestionsAsync`** — new helper that merges multiple question JSON files into a single deduplicated list.
+- **175 new seed questions** across 7 category JSON files in `Synaptix.MigrationService/seeds/questions/`: `general.json` (30), `science.json` (25), `history.json` (25), `geography.json` (25), `technology.json` (25), `sports.json` (25), `entertainment.json` (25). Difficulties span 1–4 (Easy–Expert).
+- **`appsettings.json` updated** — `MinIO:Seeds:QuestionDatasetKeys` wired to all 7 category files; `MinIO:Seeds:AssetCatalogKey` added.
+
+### Seeder — MinIO Asset Bootstrapping
+
+- **`MinioSeeder.UploadBundledImagesAsync`** — scans `seeds/images/` and uploads `.png/.webp/.jpg` files to `questions/images/` in MinIO on each migration run (idempotent — skips existing keys).
+- **`MinioSeeder.UploadBundledModelsAsync`** — scans `seeds/models/` and uploads `.glb/.gltf/.fbx` files to `models/` in MinIO (idempotent).
+- **`AssetCatalogSeedModel`** — new seed model in `Synaptix.MigrationService/Seeding/SeedModels/` for non-purchasable 3D asset entries (id, type, name, key, thumbnailKey, version, sha256).
+- **`seeds/asset-catalog.json`** — 8 placeholder entries (2 environments, 2 avatars, 2 gear, 2 effects) shipped as bundled seed.
+- **`MinioSeeder.SeedAssetCatalogAsync`** — writes `frontend/assets/manifest.json` to MinIO after each seed run so the frontend can always fetch the latest asset list.
+
+### API — Asset Manifest Endpoint
+
+- **`GET /v1/assets/manifest`** — new public endpoint in `Synaptix.Backend.Api/Features/Assets/AssetManifestEndpoints.cs`. Reads `frontend/assets/manifest.json` from MinIO, generates 10-minute presigned download URLs for each asset's `.glb` and thumbnail, returns `AssetManifestResponse`. Falls back to `GetPublicUrl` when `IPresignedStorage` is unavailable (local storage mode).
+- **`AssetDtos.cs`** — new file in `Synaptix.Shared.Contracts/Dtos/` containing `AssetManifestEntry` (record), `AssetManifestResponse`, and `AssetManifestItemDto`.
+
+### API — Question Media URLs
+
+- **`GameplayQuestionDto.MediaUrl`** — new nullable `string?` field added to `GameplayQuestionDto` in `QuestionDtos.cs`. `QuestionsEndpoints` injects `IObjectStorage` and resolves `q.MediaKey → storage.GetPublicUrl(q.MediaKey)` in `GET /questions/set` and `POST /questions/preview-set` responses. Clients no longer need to construct image URLs manually.
+
+### Synaptix.Setup — New Bootstrap CLI Project
+
+New standalone CLI tool `Synaptix.Setup` (added to solution and `.slnx`):
+
+| Command | Description |
+|---------|-------------|
+| `init-local` | Reads `docker/.env.example`, generates strong random secrets for all placeholder fields, writes `docker/.env`, saves super admin credentials to `.local/bootstrap/super-admin.local.txt` |
+| `validate` | Checks `docker/.env` for placeholder values, known weak defaults, and unsafe flags (`MIGRATION_RESET_DATABASE=true` outside local) |
+| `provision-services` | Runs all service setup tasks in sequence + uploads bundled seeds to MinIO |
+| `provision-minio` | Creates MinIO bucket if it doesn't exist |
+| `upload-seeds` | Uploads all JSON files from `Synaptix.MigrationService/seeds/` to `seeds/` prefix in MinIO |
+| `validate-seeds` | Checks that all required MinIO seed keys are present |
+| `create-super-admin` | Creates super admin user + ACL entry directly via Npgsql |
+| `rotate-super-admin-password` | Updates super admin password hash in PostgreSQL |
+| `status` | Reads `.local/bootstrap/bootstrap-status.json` and prints a status report |
+
+Service setup tasks implemented: `PostgresSetupTask`, `MongoSetupTask`, `RedisSetupTask`, `RabbitMqSetupTask` (uses management HTTP API), `MinioSetupTask`, `ElasticsearchSetupTask`, `SuperAdminSetupTask`.
+
+Secret generation uses `System.Security.Cryptography.RandomNumberGenerator` — no external dependency.
+
+### Docker and Infrastructure Hardening
+
+- **`docker/.env.example`** — all 14 secrets replaced with `<generated-by-synaptix-setup>` placeholders. `MIGRATION_RESET_DATABASE` and `MIGRATION_ALLOW_ENSURE_CREATED` now default to `false`.
+- **`docker/compose.yml`** — 12 secrets now use `:?required_message` syntax (fail loudly instead of silently using weak defaults): `POSTGRES_PASSWORD`, `MONGO_INITDB_ROOT_PASSWORD`, `MONGO_APP_PASSWORD`, `REDIS_PASSWORD`, `ELASTIC_PASSWORD`, `RABBITMQ_PASSWORD`, `MINIO_ROOT_PASSWORD`, `JWT_SECRET_KEY`, `GRAFANA_PASSWORD`, `PGADMIN_DEFAULT_PASSWORD`, `MONGO_EXPRESS_PASSWORD`, and backend connection string passwords. New `setup` service runs `provision-services` before `migration`; `migration` now `depends_on: setup: condition: service_completed_successfully`.
+- **`.gitignore`** — added `.local/`, `docker/.env`, `docker/.env.local`, `docker/.env.local.generated`, `config/bootstrap/bootstrap.local.json`, `*.local.secret`, `*.generated.secret`.
+
+### Bootstrap Scripts
+
+- **`scripts/bootstrap-local.ps1`** — new PowerShell 5.1+ script for full local bootstrap: generates secrets → validates → starts infra → provisions services → runs migrations → starts API/dashboard. Supports `-SkipInfra`, `-SkipMigration`, `-Force`, `-DevTools` flags.
+- **`scripts/bootstrap-local.sh`** — equivalent Bash script with `--skip-infra`, `--skip-migration`, `--force`, `--dev-tools` flags.
+
+### Config Manifests
+
+- **`config/bootstrap/bootstrap.example.json`** — declarative bootstrap manifest describing all service credentials, databases, queues, and seed configuration. `bootstrap.local.json` (gitignored) is the generated per-developer copy.
+- **`config/seeds/seed-manifest.json`** — lists all relational, object-storage, Redis, and MongoDB seed operations with `required`, `mode` (upsert/insert-missing/ensure), and source path metadata.
+
+### Bug Fixes (same PR, follow-up)
+
+- **`docker/compose.yml` line 85** — `ELASTIC_PASSWORD` `:?` entry now double-quoted to prevent YAML parsing the colon-space in the error message as a map key-value separator (`unexpected type map[string]interface {}`).
+- **`scripts/bootstrap-local.ps1`** — Unicode box-drawing characters (╔ ╝ ║ ═) and symbols (✓ ✗ ⚠) replaced with ASCII equivalents (`+`, `|`, `[OK]`, `[FAIL]`, `[!!]`). PowerShell 5.x on Windows interprets UTF-8 without BOM using the system ANSI code page, causing multi-byte sequences to be misread as string terminators.
+
+---
+
 ## [2026-05-26] MediatR → Mediator (martinsson) Migration
 
 ### Completed

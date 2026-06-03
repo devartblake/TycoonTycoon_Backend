@@ -1,0 +1,422 @@
+[
+  {
+    "id": "general_001",
+    "category": "general",
+    "question": "What is the capital city of France?",
+    "answers": [
+      { "text": "Paris", "isCorrect": true },
+      { "text": "Berlin", "isCorrect": false },
+      { "text": "Madrid", "isCorrect": false },
+      { "text": "Rome", "isCorrect": false }
+    ],
+    "correctAnswer": "Paris",
+    "difficulty": 1,
+    "tags": ["capital", "europe", "starter"]
+  },
+  {
+    "id": "general_002",
+    "category": "general",
+    "question": "How many days are in a leap year?",
+    "answers": [
+      { "text": "365", "isCorrect": false },
+      { "text": "366", "isCorrect": true },
+      { "text": "364", "isCorrect": false },
+      { "text": "367", "isCorrect": false }
+    ],
+    "correctAnswer": "366",
+    "difficulty": 1,
+    "tags": ["calendar", "starter"]
+  },
+  {
+    "id": "general_003",
+    "category": "general",
+    "question": "Which is the largest ocean on Earth?",
+    "answers": [
+      { "text": "Atlantic Ocean", "isCorrect": false },
+      { "text": "Indian Ocean", "isCorrect": false },
+      { "text": "Pacific Ocean", "isCorrect": true },
+      { "text": "Arctic Ocean", "isCorrect": false }
+    ],
+    "correctAnswer": "Pacific Ocean",
+    "difficulty": 1,
+    "tags": ["geography", "ocean", "starter"]
+  },
+  {
+    "id": "general_004",
+    "category": "general",
+    "question": "What is the chemical symbol for gold?",
+    "answers": [
+      { "text": "Go", "isCorrect": false },
+      { "text": "Gd", "isCorrect": false },
+      { "text": "Ag", "isCorrect": false },
+      { "text": "Au", "isCorrect": true }
+    ],
+    "correctAnswer": "Au",
+    "difficulty": 1,
+    "tags": ["chemistry", "elements", "starter"]
+  },
+  {
+    "id": "general_005",
+    "category": "general",
+    "question": "Which planet is known as the Red Planet?",
+    "answers": [
+      { "text": "Venus", "isCorrect": false },
+      { "text": "Jupiter", "isCorrect": false },
+      { "text": "Mars", "isCorrect": true },
+      { "text": "Saturn", "isCorrect": false }
+    ],
+    "correctAnswer": "Mars",
+    "difficulty": 1,
+    "tags": ["space", "planets", "starter"]
+  },
+  {
+    "id": "general_006",
+    "category": "general",
+    "question": "Who wrote the play 'Romeo and Juliet'?",
+    "answers": [
+      { "text": "Charles Dickens", "isCorrect": false },
+      { "text": "William Shakespeare", "isCorrect": true },
+      { "text": "Mark Twain", "isCorrect": false },
+      { "text": "Jane Austen", "isCorrect": false }
+    ],
+    "correctAnswer": "William Shakespeare",
+    "difficulty": 1,
+    "tags": ["literature", "shakespeare", "starter"]
+  },
+  {
+    "id": "general_007",
+    "category": "general",
+    "question": "What is the hardest natural substance on Earth?",
+    "answers": [
+      { "text": "Quartz", "isCorrect": false },
+      { "text": "Diamond", "isCorrect": true },
+      { "text": "Titanium", "isCorrect": false },
+      { "text": "Graphite", "isCorrect": false }
+    ],
+    "correctAnswer": "Diamond",
+    "difficulty": 1,
+    "tags": ["science", "minerals"]
+  },
+  {
+    "id": "general_008",
+    "category": "general",
+    "question": "How many sides does a hexagon have?",
+    "answers": [
+      { "text": "5", "isCorrect": false },
+      { "text": "7", "isCorrect": false },
+      { "text": "8", "isCorrect": false },
+      { "text": "6", "isCorrect": true }
+    ],
+    "correctAnswer": "6",
+    "difficulty": 1,
+    "tags": ["math", "shapes", "starter"]
+  },
+  {
+    "id": "general_009",
+    "category": "general",
+    "question": "What is the speed of light in a vacuum (approximately)?",
+    "answers": [
+      { "text": "300,000 km/s", "isCorrect": true },
+      { "text": "150,000 km/s", "isCorrect": false },
+      { "text": "450,000 km/s", "isCorrect": false },
+      { "text": "3,000 km/s", "isCorrect": false }
+    ],
+    "correctAnswer": "300,000 km/s",
+    "difficulty": 2,
+    "tags": ["physics", "light"]
+  },
+  {
+    "id": "general_010",
+    "category": "general",
+    "question": "Which country has the most natural lakes?",
+    "answers": [
+      { "text": "Russia", "isCorrect": false },
+      { "text": "USA", "isCorrect": false },
+      { "text": "Canada", "isCorrect": true },
+      { "text": "Brazil", "isCorrect": false }
+    ],
+    "correctAnswer": "Canada",
+    "difficulty": 2,
+    "tags": ["geography", "nature"]
+  },
+  {
+    "id": "general_011",
+    "category": "general",
+    "question": "What does DNA stand for?",
+    "answers": [
+      { "text": "Deoxyribonucleic Acid", "isCorrect": true },
+      { "text": "Dinitrogen Acid", "isCorrect": false },
+      { "text": "Dynamic Nucleic Acid", "isCorrect": false },
+      { "text": "Deoxyribose Nucleic Acid", "isCorrect": false }
+    ],
+    "correctAnswer": "Deoxyribonucleic Acid",
+    "difficulty": 2,
+    "tags": ["biology", "genetics"]
+  },
+  {
+    "id": "general_012",
+    "category": "general",
+    "question": "In which year did the Berlin Wall fall?",
+    "answers": [
+      { "text": "1987", "isCorrect": false },
+      { "text": "1989", "isCorrect": true },
+      { "text": "1991", "isCorrect": false },
+      { "text": "1993", "isCorrect": false }
+    ],
+    "correctAnswer": "1989",
+    "difficulty": 2,
+    "tags": ["history", "europe", "cold-war"]
+  },
+  {
+    "id": "general_013",
+    "category": "general",
+    "question": "What is the smallest prime number?",
+    "answers": [
+      { "text": "0", "isCorrect": false },
+      { "text": "1", "isCorrect": false },
+      { "text": "2", "isCorrect": true },
+      { "text": "3", "isCorrect": false }
+    ],
+    "correctAnswer": "2",
+    "difficulty": 2,
+    "tags": ["math", "numbers"]
+  },
+  {
+    "id": "general_014",
+    "category": "general",
+    "question": "Who painted the Mona Lisa?",
+    "answers": [
+      { "text": "Michelangelo", "isCorrect": false },
+      { "text": "Raphael", "isCorrect": false },
+      { "text": "Leonardo da Vinci", "isCorrect": true },
+      { "text": "Caravaggio", "isCorrect": false }
+    ],
+    "correctAnswer": "Leonardo da Vinci",
+    "difficulty": 1,
+    "tags": ["art", "renaissance", "starter"]
+  },
+  {
+    "id": "general_015",
+    "category": "general",
+    "question": "What is the powerhouse of the cell?",
+    "answers": [
+      { "text": "Nucleus", "isCorrect": false },
+      { "text": "Ribosome", "isCorrect": false },
+      { "text": "Mitochondria", "isCorrect": true },
+      { "text": "Golgi apparatus", "isCorrect": false }
+    ],
+    "correctAnswer": "Mitochondria",
+    "difficulty": 1,
+    "tags": ["biology", "cell", "starter"]
+  },
+  {
+    "id": "general_016",
+    "category": "general",
+    "question": "What element does 'O' represent on the periodic table?",
+    "answers": [
+      { "text": "Osmium", "isCorrect": false },
+      { "text": "Oganesson", "isCorrect": false },
+      { "text": "Oxygen", "isCorrect": true },
+      { "text": "Orbium", "isCorrect": false }
+    ],
+    "correctAnswer": "Oxygen",
+    "difficulty": 1,
+    "tags": ["chemistry", "elements", "starter"]
+  },
+  {
+    "id": "general_017",
+    "category": "general",
+    "question": "Which planet has the most moons in our solar system?",
+    "answers": [
+      { "text": "Jupiter", "isCorrect": false },
+      { "text": "Uranus", "isCorrect": false },
+      { "text": "Neptune", "isCorrect": false },
+      { "text": "Saturn", "isCorrect": true }
+    ],
+    "correctAnswer": "Saturn",
+    "difficulty": 3,
+    "tags": ["space", "planets", "astronomy"]
+  },
+  {
+    "id": "general_018",
+    "category": "general",
+    "question": "What is the largest bone in the human body?",
+    "answers": [
+      { "text": "Humerus", "isCorrect": false },
+      { "text": "Spine", "isCorrect": false },
+      { "text": "Tibia", "isCorrect": false },
+      { "text": "Femur", "isCorrect": true }
+    ],
+    "correctAnswer": "Femur",
+    "difficulty": 2,
+    "tags": ["biology", "anatomy"]
+  },
+  {
+    "id": "general_019",
+    "category": "general",
+    "question": "Which ocean is the saltiest?",
+    "answers": [
+      { "text": "Pacific Ocean", "isCorrect": false },
+      { "text": "Atlantic Ocean", "isCorrect": true },
+      { "text": "Indian Ocean", "isCorrect": false },
+      { "text": "Arctic Ocean", "isCorrect": false }
+    ],
+    "correctAnswer": "Atlantic Ocean",
+    "difficulty": 3,
+    "tags": ["geography", "ocean"]
+  },
+  {
+    "id": "general_020",
+    "category": "general",
+    "question": "Which gas makes up the majority of Earth's atmosphere?",
+    "answers": [
+      { "text": "Oxygen", "isCorrect": false },
+      { "text": "Carbon Dioxide", "isCorrect": false },
+      { "text": "Hydrogen", "isCorrect": false },
+      { "text": "Nitrogen", "isCorrect": true }
+    ],
+    "correctAnswer": "Nitrogen",
+    "difficulty": 2,
+    "tags": ["science", "atmosphere"]
+  },
+  {
+    "id": "general_021",
+    "category": "general",
+    "question": "What is the approximate circumference of the Earth?",
+    "answers": [
+      { "text": "20,000 km", "isCorrect": false },
+      { "text": "40,075 km", "isCorrect": true },
+      { "text": "55,000 km", "isCorrect": false },
+      { "text": "30,000 km", "isCorrect": false }
+    ],
+    "correctAnswer": "40,075 km",
+    "difficulty": 3,
+    "tags": ["geography", "earth"]
+  },
+  {
+    "id": "general_022",
+    "category": "general",
+    "question": "Who developed the theory of general relativity?",
+    "answers": [
+      { "text": "Isaac Newton", "isCorrect": false },
+      { "text": "Niels Bohr", "isCorrect": false },
+      { "text": "Albert Einstein", "isCorrect": true },
+      { "text": "Max Planck", "isCorrect": false }
+    ],
+    "correctAnswer": "Albert Einstein",
+    "difficulty": 1,
+    "tags": ["physics", "science", "starter"]
+  },
+  {
+    "id": "general_023",
+    "category": "general",
+    "question": "What is the most spoken language in the world by number of native speakers?",
+    "answers": [
+      { "text": "English", "isCorrect": false },
+      { "text": "Spanish", "isCorrect": false },
+      { "text": "Mandarin Chinese", "isCorrect": true },
+      { "text": "Hindi", "isCorrect": false }
+    ],
+    "correctAnswer": "Mandarin Chinese",
+    "difficulty": 2,
+    "tags": ["language", "culture"]
+  },
+  {
+    "id": "general_024",
+    "category": "general",
+    "question": "Which country invented paper?",
+    "answers": [
+      { "text": "Egypt", "isCorrect": false },
+      { "text": "India", "isCorrect": false },
+      { "text": "China", "isCorrect": true },
+      { "text": "Greece", "isCorrect": false }
+    ],
+    "correctAnswer": "China",
+    "difficulty": 2,
+    "tags": ["history", "inventions"]
+  },
+  {
+    "id": "general_025",
+    "category": "general",
+    "question": "What is Pi (π) approximately equal to?",
+    "answers": [
+      { "text": "3.14159", "isCorrect": true },
+      { "text": "3.12159", "isCorrect": false },
+      { "text": "3.41592", "isCorrect": false },
+      { "text": "2.71828", "isCorrect": false }
+    ],
+    "correctAnswer": "3.14159",
+    "difficulty": 1,
+    "tags": ["math", "starter"]
+  },
+  {
+    "id": "general_026",
+    "category": "general",
+    "question": "Which two elements make up water?",
+    "answers": [
+      { "text": "Hydrogen and Carbon", "isCorrect": false },
+      { "text": "Oxygen and Carbon", "isCorrect": false },
+      { "text": "Hydrogen and Oxygen", "isCorrect": true },
+      { "text": "Nitrogen and Oxygen", "isCorrect": false }
+    ],
+    "correctAnswer": "Hydrogen and Oxygen",
+    "difficulty": 1,
+    "tags": ["chemistry", "starter"]
+  },
+  {
+    "id": "general_027",
+    "category": "general",
+    "question": "What is the rarest blood type among humans?",
+    "answers": [
+      { "text": "O negative", "isCorrect": false },
+      { "text": "A negative", "isCorrect": false },
+      { "text": "AB negative", "isCorrect": true },
+      { "text": "B negative", "isCorrect": false }
+    ],
+    "correctAnswer": "AB negative",
+    "difficulty": 3,
+    "tags": ["biology", "medicine"]
+  },
+  {
+    "id": "general_028",
+    "category": "general",
+    "question": "Which country has the longest coastline in the world?",
+    "answers": [
+      { "text": "Russia", "isCorrect": false },
+      { "text": "Australia", "isCorrect": false },
+      { "text": "Norway", "isCorrect": false },
+      { "text": "Canada", "isCorrect": true }
+    ],
+    "correctAnswer": "Canada",
+    "difficulty": 3,
+    "tags": ["geography", "coastline"]
+  },
+  {
+    "id": "general_029",
+    "category": "general",
+    "question": "What is 15% of 200?",
+    "answers": [
+      { "text": "25", "isCorrect": false },
+      { "text": "30", "isCorrect": true },
+      { "text": "35", "isCorrect": false },
+      { "text": "40", "isCorrect": false }
+    ],
+    "correctAnswer": "30",
+    "difficulty": 2,
+    "tags": ["math", "percentage"]
+  },
+  {
+    "id": "general_030",
+    "category": "general",
+    "question": "How many bones does an adult human body have?",
+    "answers": [
+      { "text": "196", "isCorrect": false },
+      { "text": "206", "isCorrect": true },
+      { "text": "216", "isCorrect": false },
+      { "text": "226", "isCorrect": false }
+    ],
+    "correctAnswer": "206",
+    "difficulty": 2,
+    "tags": ["biology", "anatomy"]
+  }
+]

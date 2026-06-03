@@ -1,0 +1,352 @@
+[
+  {
+    "id": "history_001",
+    "category": "history",
+    "question": "Which ancient civilization built the pyramids at Giza?",
+    "answers": [
+      { "text": "Ancient Egyptians", "isCorrect": true },
+      { "text": "Ancient Greeks", "isCorrect": false },
+      { "text": "Romans", "isCorrect": false },
+      { "text": "Mayans", "isCorrect": false }
+    ],
+    "correctAnswer": "Ancient Egyptians",
+    "difficulty": 1,
+    "tags": ["ancient", "egypt", "starter"]
+  },
+  {
+    "id": "history_002",
+    "category": "history",
+    "question": "In which year did World War II end?",
+    "answers": [
+      { "text": "1943", "isCorrect": false },
+      { "text": "1944", "isCorrect": false },
+      { "text": "1945", "isCorrect": true },
+      { "text": "1946", "isCorrect": false }
+    ],
+    "correctAnswer": "1945",
+    "difficulty": 1,
+    "tags": ["ww2", "modern", "starter"]
+  },
+  {
+    "id": "history_003",
+    "category": "history",
+    "question": "Who was the first President of the United States?",
+    "answers": [
+      { "text": "John Adams", "isCorrect": false },
+      { "text": "Thomas Jefferson", "isCorrect": false },
+      { "text": "George Washington", "isCorrect": true },
+      { "text": "Benjamin Franklin", "isCorrect": false }
+    ],
+    "correctAnswer": "George Washington",
+    "difficulty": 1,
+    "tags": ["usa", "politics", "starter"]
+  },
+  {
+    "id": "history_004",
+    "category": "history",
+    "question": "Which empire was ruled by Julius Caesar?",
+    "answers": [
+      { "text": "Greek Empire", "isCorrect": false },
+      { "text": "Roman Empire", "isCorrect": true },
+      { "text": "Ottoman Empire", "isCorrect": false },
+      { "text": "Byzantine Empire", "isCorrect": false }
+    ],
+    "correctAnswer": "Roman Empire",
+    "difficulty": 1,
+    "tags": ["rome", "ancient", "starter"]
+  },
+  {
+    "id": "history_005",
+    "category": "history",
+    "question": "In which year did Christopher Columbus first reach the Americas?",
+    "answers": [
+      { "text": "1488", "isCorrect": false },
+      { "text": "1492", "isCorrect": true },
+      { "text": "1498", "isCorrect": false },
+      { "text": "1504", "isCorrect": false }
+    ],
+    "correctAnswer": "1492",
+    "difficulty": 1,
+    "tags": ["exploration", "americas", "starter"]
+  },
+  {
+    "id": "history_006",
+    "category": "history",
+    "question": "What was the name of the ship that sank on its maiden voyage in 1912?",
+    "answers": [
+      { "text": "Lusitania", "isCorrect": false },
+      { "text": "Titanic", "isCorrect": true },
+      { "text": "Britannic", "isCorrect": false },
+      { "text": "Olympic", "isCorrect": false }
+    ],
+    "correctAnswer": "Titanic",
+    "difficulty": 1,
+    "tags": ["disasters", "modern", "starter"]
+  },
+  {
+    "id": "history_007",
+    "category": "history",
+    "question": "Which country was the first to grant women the right to vote nationally?",
+    "answers": [
+      { "text": "United Kingdom", "isCorrect": false },
+      { "text": "United States", "isCorrect": false },
+      { "text": "New Zealand", "isCorrect": true },
+      { "text": "Australia", "isCorrect": false }
+    ],
+    "correctAnswer": "New Zealand",
+    "difficulty": 3,
+    "tags": ["womens-rights", "democracy"]
+  },
+  {
+    "id": "history_008",
+    "category": "history",
+    "question": "Who was the leader of Nazi Germany during World War II?",
+    "answers": [
+      { "text": "Heinrich Himmler", "isCorrect": false },
+      { "text": "Hermann Göring", "isCorrect": false },
+      { "text": "Joseph Goebbels", "isCorrect": false },
+      { "text": "Adolf Hitler", "isCorrect": true }
+    ],
+    "correctAnswer": "Adolf Hitler",
+    "difficulty": 1,
+    "tags": ["ww2", "modern", "starter"]
+  },
+  {
+    "id": "history_009",
+    "category": "history",
+    "question": "The French Revolution began in which year?",
+    "answers": [
+      { "text": "1776", "isCorrect": false },
+      { "text": "1789", "isCorrect": true },
+      { "text": "1793", "isCorrect": false },
+      { "text": "1799", "isCorrect": false }
+    ],
+    "correctAnswer": "1789",
+    "difficulty": 2,
+    "tags": ["france", "revolution", "europe"]
+  },
+  {
+    "id": "history_010",
+    "category": "history",
+    "question": "Which ancient wonder of the world still stands today?",
+    "answers": [
+      { "text": "Colossus of Rhodes", "isCorrect": false },
+      { "text": "Hanging Gardens of Babylon", "isCorrect": false },
+      { "text": "Great Pyramid of Giza", "isCorrect": true },
+      { "text": "Temple of Artemis", "isCorrect": false }
+    ],
+    "correctAnswer": "Great Pyramid of Giza",
+    "difficulty": 2,
+    "tags": ["ancient", "egypt", "wonders"]
+  },
+  {
+    "id": "history_011",
+    "category": "history",
+    "question": "Who was the first man to walk on the Moon?",
+    "answers": [
+      { "text": "Buzz Aldrin", "isCorrect": false },
+      { "text": "Yuri Gagarin", "isCorrect": false },
+      { "text": "Neil Armstrong", "isCorrect": true },
+      { "text": "Michael Collins", "isCorrect": false }
+    ],
+    "correctAnswer": "Neil Armstrong",
+    "difficulty": 1,
+    "tags": ["space", "usa", "starter"]
+  },
+  {
+    "id": "history_012",
+    "category": "history",
+    "question": "The Great Wall of China was primarily built to protect against which group?",
+    "answers": [
+      { "text": "Mongols", "isCorrect": true },
+      { "text": "Persians", "isCorrect": false },
+      { "text": "Japanese", "isCorrect": false },
+      { "text": "Huns", "isCorrect": false }
+    ],
+    "correctAnswer": "Mongols",
+    "difficulty": 2,
+    "tags": ["china", "ancient", "defense"]
+  },
+  {
+    "id": "history_013",
+    "category": "history",
+    "question": "Which US President signed the Emancipation Proclamation?",
+    "answers": [
+      { "text": "Ulysses S. Grant", "isCorrect": false },
+      { "text": "Abraham Lincoln", "isCorrect": true },
+      { "text": "Andrew Johnson", "isCorrect": false },
+      { "text": "James Buchanan", "isCorrect": false }
+    ],
+    "correctAnswer": "Abraham Lincoln",
+    "difficulty": 2,
+    "tags": ["usa", "slavery", "civil-war"]
+  },
+  {
+    "id": "history_014",
+    "category": "history",
+    "question": "The Battle of Waterloo was fought in which year?",
+    "answers": [
+      { "text": "1812", "isCorrect": false },
+      { "text": "1815", "isCorrect": true },
+      { "text": "1818", "isCorrect": false },
+      { "text": "1821", "isCorrect": false }
+    ],
+    "correctAnswer": "1815",
+    "difficulty": 3,
+    "tags": ["napoleon", "europe", "battles"]
+  },
+  {
+    "id": "history_015",
+    "category": "history",
+    "question": "Which disease killed around one-third of Europe's population in the 14th century?",
+    "answers": [
+      { "text": "Smallpox", "isCorrect": false },
+      { "text": "Cholera", "isCorrect": false },
+      { "text": "Black Death (Bubonic Plague)", "isCorrect": true },
+      { "text": "Typhoid", "isCorrect": false }
+    ],
+    "correctAnswer": "Black Death (Bubonic Plague)",
+    "difficulty": 2,
+    "tags": ["disease", "medieval", "europe"]
+  },
+  {
+    "id": "history_016",
+    "category": "history",
+    "question": "Who was the last Tsar of Russia?",
+    "answers": [
+      { "text": "Alexander III", "isCorrect": false },
+      { "text": "Alexander II", "isCorrect": false },
+      { "text": "Nicholas I", "isCorrect": false },
+      { "text": "Nicholas II", "isCorrect": true }
+    ],
+    "correctAnswer": "Nicholas II",
+    "difficulty": 3,
+    "tags": ["russia", "royalty", "modern"]
+  },
+  {
+    "id": "history_017",
+    "category": "history",
+    "question": "The Cold War was primarily between which two superpowers?",
+    "answers": [
+      { "text": "USA and China", "isCorrect": false },
+      { "text": "USA and USSR", "isCorrect": true },
+      { "text": "UK and USSR", "isCorrect": false },
+      { "text": "USA and Germany", "isCorrect": false }
+    ],
+    "correctAnswer": "USA and USSR",
+    "difficulty": 1,
+    "tags": ["cold-war", "modern", "starter"]
+  },
+  {
+    "id": "history_018",
+    "category": "history",
+    "question": "The Magna Carta was signed in which year?",
+    "answers": [
+      { "text": "1066", "isCorrect": false },
+      { "text": "1215", "isCorrect": true },
+      { "text": "1348", "isCorrect": false },
+      { "text": "1492", "isCorrect": false }
+    ],
+    "correctAnswer": "1215",
+    "difficulty": 3,
+    "tags": ["uk", "law", "medieval"]
+  },
+  {
+    "id": "history_019",
+    "category": "history",
+    "question": "In which city was the Archduke Franz Ferdinand assassinated, triggering World War I?",
+    "answers": [
+      { "text": "Vienna", "isCorrect": false },
+      { "text": "Belgrade", "isCorrect": false },
+      { "text": "Sarajevo", "isCorrect": true },
+      { "text": "Bucharest", "isCorrect": false }
+    ],
+    "correctAnswer": "Sarajevo",
+    "difficulty": 3,
+    "tags": ["ww1", "europe", "assassination"]
+  },
+  {
+    "id": "history_020",
+    "category": "history",
+    "question": "Which civilization built Machu Picchu?",
+    "answers": [
+      { "text": "Maya", "isCorrect": false },
+      { "text": "Aztec", "isCorrect": false },
+      { "text": "Inca", "isCorrect": true },
+      { "text": "Olmec", "isCorrect": false }
+    ],
+    "correctAnswer": "Inca",
+    "difficulty": 2,
+    "tags": ["south-america", "ancient", "architecture"]
+  },
+  {
+    "id": "history_021",
+    "category": "history",
+    "question": "Who led the Cuban Revolution that brought him to power in 1959?",
+    "answers": [
+      { "text": "Che Guevara", "isCorrect": false },
+      { "text": "Fulgencio Batista", "isCorrect": false },
+      { "text": "Fidel Castro", "isCorrect": true },
+      { "text": "Raúl Castro", "isCorrect": false }
+    ],
+    "correctAnswer": "Fidel Castro",
+    "difficulty": 2,
+    "tags": ["cuba", "revolution", "modern"]
+  },
+  {
+    "id": "history_022",
+    "category": "history",
+    "question": "D-Day, the Allied invasion of Normandy, took place on which date?",
+    "answers": [
+      { "text": "June 6, 1944", "isCorrect": true },
+      { "text": "May 8, 1945", "isCorrect": false },
+      { "text": "September 2, 1945", "isCorrect": false },
+      { "text": "July 14, 1944", "isCorrect": false }
+    ],
+    "correctAnswer": "June 6, 1944",
+    "difficulty": 3,
+    "tags": ["ww2", "d-day", "military"]
+  },
+  {
+    "id": "history_023",
+    "category": "history",
+    "question": "Which Roman emperor converted the empire to Christianity?",
+    "answers": [
+      { "text": "Augustus", "isCorrect": false },
+      { "text": "Nero", "isCorrect": false },
+      { "text": "Constantine I", "isCorrect": true },
+      { "text": "Diocletian", "isCorrect": false }
+    ],
+    "correctAnswer": "Constantine I",
+    "difficulty": 3,
+    "tags": ["rome", "christianity", "ancient"]
+  },
+  {
+    "id": "history_024",
+    "category": "history",
+    "question": "The Boston Tea Party took place in which year?",
+    "answers": [
+      { "text": "1770", "isCorrect": false },
+      { "text": "1773", "isCorrect": true },
+      { "text": "1776", "isCorrect": false },
+      { "text": "1781", "isCorrect": false }
+    ],
+    "correctAnswer": "1773",
+    "difficulty": 3,
+    "tags": ["usa", "revolution", "colonial"]
+  },
+  {
+    "id": "history_025",
+    "category": "history",
+    "question": "Which African leader spent 27 years in prison before becoming president?",
+    "answers": [
+      { "text": "Desmond Tutu", "isCorrect": false },
+      { "text": "Kwame Nkrumah", "isCorrect": false },
+      { "text": "Nelson Mandela", "isCorrect": true },
+      { "text": "Robert Mugabe", "isCorrect": false }
+    ],
+    "correctAnswer": "Nelson Mandela",
+    "difficulty": 1,
+    "tags": ["africa", "politics", "starter"]
+  }
+]

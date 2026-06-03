@@ -1,0 +1,352 @@
+[
+  {
+    "id": "sports_001",
+    "category": "sports",
+    "question": "How many players are on a standard soccer (football) team on the field?",
+    "answers": [
+      { "text": "9", "isCorrect": false },
+      { "text": "10", "isCorrect": false },
+      { "text": "11", "isCorrect": true },
+      { "text": "12", "isCorrect": false }
+    ],
+    "correctAnswer": "11",
+    "difficulty": 1,
+    "tags": ["football", "soccer", "starter"]
+  },
+  {
+    "id": "sports_002",
+    "category": "sports",
+    "question": "How many rings are on the Olympic flag?",
+    "answers": [
+      { "text": "4", "isCorrect": false },
+      { "text": "5", "isCorrect": true },
+      { "text": "6", "isCorrect": false },
+      { "text": "7", "isCorrect": false }
+    ],
+    "correctAnswer": "5",
+    "difficulty": 1,
+    "tags": ["olympics", "starter"]
+  },
+  {
+    "id": "sports_003",
+    "category": "sports",
+    "question": "In which sport would you perform a 'slam dunk'?",
+    "answers": [
+      { "text": "Volleyball", "isCorrect": false },
+      { "text": "Basketball", "isCorrect": true },
+      { "text": "Tennis", "isCorrect": false },
+      { "text": "Handball", "isCorrect": false }
+    ],
+    "correctAnswer": "Basketball",
+    "difficulty": 1,
+    "tags": ["basketball", "starter"]
+  },
+  {
+    "id": "sports_004",
+    "category": "sports",
+    "question": "Which country hosted the 2016 Summer Olympics?",
+    "answers": [
+      { "text": "Argentina", "isCorrect": false },
+      { "text": "Brazil", "isCorrect": true },
+      { "text": "Colombia", "isCorrect": false },
+      { "text": "Chile", "isCorrect": false }
+    ],
+    "correctAnswer": "Brazil",
+    "difficulty": 1,
+    "tags": ["olympics", "south-america"]
+  },
+  {
+    "id": "sports_005",
+    "category": "sports",
+    "question": "How many sets does a player need to win in a standard Wimbledon men's singles match?",
+    "answers": [
+      { "text": "2", "isCorrect": false },
+      { "text": "3", "isCorrect": true },
+      { "text": "4", "isCorrect": false },
+      { "text": "5", "isCorrect": false }
+    ],
+    "correctAnswer": "3",
+    "difficulty": 2,
+    "tags": ["tennis", "wimbledon"]
+  },
+  {
+    "id": "sports_006",
+    "category": "sports",
+    "question": "What is the maximum score in a single game of bowling?",
+    "answers": [
+      { "text": "250", "isCorrect": false },
+      { "text": "270", "isCorrect": false },
+      { "text": "290", "isCorrect": false },
+      { "text": "300", "isCorrect": true }
+    ],
+    "correctAnswer": "300",
+    "difficulty": 2,
+    "tags": ["bowling"]
+  },
+  {
+    "id": "sports_007",
+    "category": "sports",
+    "question": "In golf, what term describes a score of one under par on a hole?",
+    "answers": [
+      { "text": "Eagle", "isCorrect": false },
+      { "text": "Bogey", "isCorrect": false },
+      { "text": "Birdie", "isCorrect": true },
+      { "text": "Albatross", "isCorrect": false }
+    ],
+    "correctAnswer": "Birdie",
+    "difficulty": 2,
+    "tags": ["golf"]
+  },
+  {
+    "id": "sports_008",
+    "category": "sports",
+    "question": "How many players are on a standard American football team on the field?",
+    "answers": [
+      { "text": "10", "isCorrect": false },
+      { "text": "11", "isCorrect": true },
+      { "text": "12", "isCorrect": false },
+      { "text": "13", "isCorrect": false }
+    ],
+    "correctAnswer": "11",
+    "difficulty": 1,
+    "tags": ["american-football", "starter"]
+  },
+  {
+    "id": "sports_009",
+    "category": "sports",
+    "question": "Which country has won the most FIFA World Cup titles?",
+    "answers": [
+      { "text": "Germany", "isCorrect": false },
+      { "text": "Argentina", "isCorrect": false },
+      { "text": "Italy", "isCorrect": false },
+      { "text": "Brazil", "isCorrect": true }
+    ],
+    "correctAnswer": "Brazil",
+    "difficulty": 1,
+    "tags": ["football", "world-cup", "starter"]
+  },
+  {
+    "id": "sports_010",
+    "category": "sports",
+    "question": "The sport of cricket is most associated with which country historically?",
+    "answers": [
+      { "text": "Australia", "isCorrect": false },
+      { "text": "India", "isCorrect": false },
+      { "text": "England", "isCorrect": true },
+      { "text": "South Africa", "isCorrect": false }
+    ],
+    "correctAnswer": "England",
+    "difficulty": 2,
+    "tags": ["cricket", "uk"]
+  },
+  {
+    "id": "sports_011",
+    "category": "sports",
+    "question": "How many yards is it from the 3-point line to the basket in the NBA?",
+    "answers": [
+      { "text": "About 5 yards", "isCorrect": false },
+      { "text": "About 7 yards", "isCorrect": true },
+      { "text": "About 9 yards", "isCorrect": false },
+      { "text": "About 10 yards", "isCorrect": false }
+    ],
+    "correctAnswer": "About 7 yards",
+    "difficulty": 3,
+    "tags": ["basketball", "nba"]
+  },
+  {
+    "id": "sports_012",
+    "category": "sports",
+    "question": "What martial art is practiced with a white uniform called a 'gi' and colored belts?",
+    "answers": [
+      { "text": "Taekwondo", "isCorrect": false },
+      { "text": "Judo", "isCorrect": false },
+      { "text": "Karate", "isCorrect": true },
+      { "text": "Krav Maga", "isCorrect": false }
+    ],
+    "correctAnswer": "Karate",
+    "difficulty": 2,
+    "tags": ["martial-arts", "japan"]
+  },
+  {
+    "id": "sports_013",
+    "category": "sports",
+    "question": "What is the distance of a marathon?",
+    "answers": [
+      { "text": "21.1 km", "isCorrect": false },
+      { "text": "36 km", "isCorrect": false },
+      { "text": "42.195 km", "isCorrect": true },
+      { "text": "50 km", "isCorrect": false }
+    ],
+    "correctAnswer": "42.195 km",
+    "difficulty": 2,
+    "tags": ["running", "athletics"]
+  },
+  {
+    "id": "sports_014",
+    "category": "sports",
+    "question": "Michael Phelps is celebrated in which sport?",
+    "answers": [
+      { "text": "Cycling", "isCorrect": false },
+      { "text": "Swimming", "isCorrect": true },
+      { "text": "Gymnastics", "isCorrect": false },
+      { "text": "Diving", "isCorrect": false }
+    ],
+    "correctAnswer": "Swimming",
+    "difficulty": 1,
+    "tags": ["swimming", "olympics", "starter"]
+  },
+  {
+    "id": "sports_015",
+    "category": "sports",
+    "question": "In tennis, what is a 'love' score?",
+    "answers": [
+      { "text": "15 points", "isCorrect": false },
+      { "text": "The winning point", "isCorrect": false },
+      { "text": "Zero points", "isCorrect": true },
+      { "text": "A deuce situation", "isCorrect": false }
+    ],
+    "correctAnswer": "Zero points",
+    "difficulty": 2,
+    "tags": ["tennis"]
+  },
+  {
+    "id": "sports_016",
+    "category": "sports",
+    "question": "Which sport uses a shuttlecock?",
+    "answers": [
+      { "text": "Squash", "isCorrect": false },
+      { "text": "Racquetball", "isCorrect": false },
+      { "text": "Badminton", "isCorrect": true },
+      { "text": "Pickleball", "isCorrect": false }
+    ],
+    "correctAnswer": "Badminton",
+    "difficulty": 1,
+    "tags": ["badminton", "starter"]
+  },
+  {
+    "id": "sports_017",
+    "category": "sports",
+    "question": "What is the national sport of Japan?",
+    "answers": [
+      { "text": "Karate", "isCorrect": false },
+      { "text": "Judo", "isCorrect": false },
+      { "text": "Sumo Wrestling", "isCorrect": true },
+      { "text": "Kendo", "isCorrect": false }
+    ],
+    "correctAnswer": "Sumo Wrestling",
+    "difficulty": 2,
+    "tags": ["sumo", "japan", "martial-arts"]
+  },
+  {
+    "id": "sports_018",
+    "category": "sports",
+    "question": "How many players are in a volleyball team on the court?",
+    "answers": [
+      { "text": "5", "isCorrect": false },
+      { "text": "6", "isCorrect": true },
+      { "text": "7", "isCorrect": false },
+      { "text": "9", "isCorrect": false }
+    ],
+    "correctAnswer": "6",
+    "difficulty": 2,
+    "tags": ["volleyball"]
+  },
+  {
+    "id": "sports_019",
+    "category": "sports",
+    "question": "Which country invented the sport of basketball?",
+    "answers": [
+      { "text": "Canada", "isCorrect": true },
+      { "text": "USA", "isCorrect": false },
+      { "text": "UK", "isCorrect": false },
+      { "text": "Germany", "isCorrect": false }
+    ],
+    "correctAnswer": "Canada",
+    "difficulty": 3,
+    "tags": ["basketball", "history"]
+  },
+  {
+    "id": "sports_020",
+    "category": "sports",
+    "question": "What is the highest possible break in snooker?",
+    "answers": [
+      { "text": "127", "isCorrect": false },
+      { "text": "147", "isCorrect": true },
+      { "text": "155", "isCorrect": false },
+      { "text": "162", "isCorrect": false }
+    ],
+    "correctAnswer": "147",
+    "difficulty": 3,
+    "tags": ["snooker", "billiards"]
+  },
+  {
+    "id": "sports_021",
+    "category": "sports",
+    "question": "In the Tour de France, what color jersey does the overall leader wear?",
+    "answers": [
+      { "text": "Red", "isCorrect": false },
+      { "text": "White", "isCorrect": false },
+      { "text": "Yellow", "isCorrect": true },
+      { "text": "Green", "isCorrect": false }
+    ],
+    "correctAnswer": "Yellow",
+    "difficulty": 2,
+    "tags": ["cycling", "france"]
+  },
+  {
+    "id": "sports_022",
+    "category": "sports",
+    "question": "How long is an Olympic swimming pool?",
+    "answers": [
+      { "text": "25 meters", "isCorrect": false },
+      { "text": "40 meters", "isCorrect": false },
+      { "text": "50 meters", "isCorrect": true },
+      { "text": "60 meters", "isCorrect": false }
+    ],
+    "correctAnswer": "50 meters",
+    "difficulty": 2,
+    "tags": ["swimming", "olympics"]
+  },
+  {
+    "id": "sports_023",
+    "category": "sports",
+    "question": "Usain Bolt holds the world record for which athletic event?",
+    "answers": [
+      { "text": "Long jump", "isCorrect": false },
+      { "text": "110m hurdles", "isCorrect": false },
+      { "text": "100m and 200m sprint", "isCorrect": true },
+      { "text": "400m sprint", "isCorrect": false }
+    ],
+    "correctAnswer": "100m and 200m sprint",
+    "difficulty": 1,
+    "tags": ["athletics", "sprinting", "starter"]
+  },
+  {
+    "id": "sports_024",
+    "category": "sports",
+    "question": "In rugby union, how many players are on each team?",
+    "answers": [
+      { "text": "13", "isCorrect": false },
+      { "text": "14", "isCorrect": false },
+      { "text": "15", "isCorrect": true },
+      { "text": "16", "isCorrect": false }
+    ],
+    "correctAnswer": "15",
+    "difficulty": 2,
+    "tags": ["rugby", "uk"]
+  },
+  {
+    "id": "sports_025",
+    "category": "sports",
+    "question": "What does 'LBW' stand for in cricket?",
+    "answers": [
+      { "text": "Leg Before Wicket", "isCorrect": true },
+      { "text": "Left Batting Width", "isCorrect": false },
+      { "text": "Low Boundary Win", "isCorrect": false },
+      { "text": "Long Ball Wicket", "isCorrect": false }
+    ],
+    "correctAnswer": "Leg Before Wicket",
+    "difficulty": 3,
+    "tags": ["cricket", "terminology"]
+  }
+]

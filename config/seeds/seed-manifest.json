@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "strict": true,
+  "sources": {
+    "bundledRoot": "Synaptix.MigrationService/seeds",
+    "objectStoragePrefix": "seeds"
+  },
+  "relational": [
+    { "name": "tiers",       "required": true,  "mode": "upsert" },
+    { "name": "missions",    "required": true,  "mode": "upsert" },
+    { "name": "super-admin", "required": true,  "mode": "ensure" }
+  ],
+  "objectStorage": [
+    { "name": "store-items",    "key": "seeds/store-items.json",    "required": true,  "mode": "upsert" },
+    { "name": "skill-nodes",    "key": "seeds/skill-nodes.json",    "required": true,  "mode": "upsert" },
+    { "name": "season-rewards", "key": "seeds/season-rewards.json", "required": true,  "mode": "insert-missing" },
+    { "name": "questions",      "key": "seeds/questions.json",      "required": false, "mode": "upsert" },
+    { "name": "asset-catalog",  "key": "seeds/asset-catalog.json",  "required": false, "mode": "upsert" },
+    { "name": "questions/general",       "key": "seeds/questions/general.json",       "required": false, "mode": "upsert" },
+    { "name": "questions/science",       "key": "seeds/questions/science.json",       "required": false, "mode": "upsert" },
+    { "name": "questions/history",       "key": "seeds/questions/history.json",       "required": false, "mode": "upsert" },
+    { "name": "questions/geography",     "key": "seeds/questions/geography.json",     "required": false, "mode": "upsert" },
+    { "name": "questions/technology",    "key": "seeds/questions/technology.json",    "required": false, "mode": "upsert" },
+    { "name": "questions/sports",        "key": "seeds/questions/sports.json",        "required": false, "mode": "upsert" },
+    { "name": "questions/entertainment", "key": "seeds/questions/entertainment.json", "required": false, "mode": "upsert" }
+  ],
+  "redis": [
+    {
+      "name": "namespace-prefixes",
+      "required": false,
+      "prefixes": [
+        "synaptix:cache:",
+        "synaptix:rate-limit:",
+        "synaptix:session:",
+        "synaptix:lock:"
+      ]
+    }
+  ],
+  "mongo": [
+    {
+      "name": "analytics-db",
+      "database": "synaptix_analytics",
+      "collections": ["events", "rollups", "personalization"],
+      "indexes": [
+        {
+          "collection": "events",
+          "keys": { "playerId": 1, "createdAtUtc": -1 }
+        }
+      ]
+    },
+    {
+      "name": "crypto-db",
+      "database": "synaptix_crypto",
+      "collections": ["settlements", "ledger_events"]
+    }
+  ]
+}

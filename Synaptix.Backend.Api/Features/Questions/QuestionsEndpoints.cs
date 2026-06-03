@@ -41,6 +41,7 @@ namespace Synaptix.Backend.Api.Features.Questions
             [FromQuery] Guid? playerId,
             [FromQuery] string? mode,
             IAppDb db,
+            IObjectStorage storage,
             IPlayerMindProfileService mindProfiles,
             CancellationToken ct)
         {
@@ -77,6 +78,7 @@ namespace Synaptix.Backend.Api.Features.Questions
 
             var dtos = await QueryGameplayQuestionsAsync(
                 db,
+                storage,
                 count,
                 string.IsNullOrWhiteSpace(category) ? null : new[] { category.Trim() },
                 difficulty.HasValue ? new[] { difficulty.Value } : null,
@@ -145,10 +147,12 @@ namespace Synaptix.Backend.Api.Features.Questions
         private static async Task<IResult> PreviewQuestionSet(
             [FromBody] PreviewQuestionSetRequest req,
             IAppDb db,
+            IObjectStorage storage,
             CancellationToken ct)
         {
             var dtos = await QueryGameplayQuestionsAsync(
                 db,
+                storage,
                 req.Count,
                 req.Categories,
                 req.Difficulties,
@@ -228,6 +232,7 @@ namespace Synaptix.Backend.Api.Features.Questions
 
         private static async Task<List<GameplayQuestionDto>> QueryGameplayQuestionsAsync(
             IAppDb db,
+            IObjectStorage storage,
             int count,
             IEnumerable<string>? categories,
             IEnumerable<QuestionDifficulty>? difficulties,
@@ -255,7 +260,8 @@ namespace Synaptix.Backend.Api.Features.Questions
                 q.Category,
                 q.Difficulty,
                 q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
-                q.MediaKey
+                MediaKey: q.MediaKey,
+                MediaUrl: q.MediaKey is not null ? storage.GetPublicUrl(q.MediaKey) : null
             )).ToList();
         }
 
