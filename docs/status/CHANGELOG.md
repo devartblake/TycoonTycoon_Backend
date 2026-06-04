@@ -4,6 +4,55 @@ All notable changes to this project.
 
 ---
 
+## [2026-06-04] Read-Only Setup Visibility
+
+- Added sanitized, permission-protected Backend API projections at `/admin/setup/{status|readiness|services|seeds|validation}`.
+- Added `setup:read` to admin and super-admin permission profiles.
+- Added Django BFF routes at `/api/operator/setup/*` and canonical read-only pages under `/settings/setup/*`.
+- Setup diagnostics aggregate live Backend-observable service, schema/migration, seed, and configuration-presence signals without invoking `Synaptix.Setup` or returning secrets and connection values.
+- Added Backend contract/secret-leak tests and Django client, permission, BFF, and page tests.
+- Durable report history, KMS-backed setup-secret protection, and every setup mutation remained deferred at this step.
+
+---
+
+## [2026-06-04] Durable Setup Report History
+
+- Added `setup_reports` as the durable Backend-generated setup diagnostic history store.
+- Added read-only Backend history endpoints at `/admin/setup/history` and `/admin/setup/history/latest`.
+- Added Django BFF/UI history coverage at `/api/operator/setup/history` and `/settings/setup/history`.
+- Updated setup documentation to distinguish Backend-generated durable reports from the container-local `Synaptix.Setup` status file.
+- KMS-backed setup-secret protection, CLI-authored setup-run audit history, and every mutating setup operation remain deferred and CLI-only.
+
+---
+
+## [2026-06-04] Synaptix.Setup Provisioning Hardening and Architecture Synchronization
+
+### Durable MongoDB And Redis Provisioning
+
+- **MongoDB auth-database ownership corrected** — `MongoSetupTask` now creates or updates the app user in `MONGO_AUTH_DB`, validates that the app user can authenticate through that database, and supports an explicit `ConnectionStrings:mongoAdmin` admin connection before legacy `ConnectionStrings:mongo` fallback.
+- **Legacy MongoDB admin-user remediation** — setup detects a same-named app user left in `admin` by the earlier provisioning behavior and logs a warning. Removal is opt-in through `SETUP_MONGO_REMOVE_LEGACY_ADMIN_APP_USER=true` and occurs only after the correct auth-database user validates successfully.
+- **URI-safe MongoDB admin configuration** — raw root values are converted with `MongoUrlBuilder`, avoiding generated-password URI escaping failures.
+- **Redis structured configuration preserved** — `RedisSetupTask` now parses the complete structured connection string, preserving endpoint, database, SSL, and other options, with raw `REDIS_*` values as fallback.
+- **Compose setup wiring hardened** — the one-shot setup service receives MongoDB root/app/auth-database values and Redis credentials using container-internal ports `27017` and `6379`.
+
+### Tests And Documentation
+
+- **`Synaptix.Setup.Tests` added** — nine focused tests cover MongoDB connection precedence, escaping, auth-database resolution, and Redis structured/raw configuration parsing.
+- **Local provisioning verified** — repeated setup runs completed with `7` tasks succeeded and `0` errors; MongoDB app-user authentication, warning-only legacy detection, opt-in cleanup, Redis logical databases, and idempotency were exercised.
+- **Setup UI/CLI architecture documented** — `Synaptix_Setup_UI_CLI_Architecture_Handoff.md` records the viable read-only-first direction: `Synaptix.Setup` remains offline/one-shot, the Backend API exposes only future sanitized read-only status, and `Synaptix.OperatorDashboard.Django` is the canonical UI/BFF target.
+- **Documentation synchronized** — setup plans, KMS reuse guidance, Docker instructions, Django dashboard instructions, and Codex heartbeat records now distinguish implemented behavior from deferred roadmap items.
+
+Local setup evidence does not change staging readiness or Alpha/Beta release-gate status.
+
+---
+
+## [2026-06-02] SignalR Hub Inventory (PR #388)
+
+- Added `docs/signalr-hubs.json` as a machine-readable inventory of the repository's SignalR hubs.
+- Updated affected gRPC and migration-seed tests so the current solution test/build surface remains compatible with the inventory change.
+
+---
+
 ## [2026-06-03] Synaptix.Setup Bug Fixes, Config Key Normalization, and Security Layer (Phase 1)
 
 ### Bug Fixes

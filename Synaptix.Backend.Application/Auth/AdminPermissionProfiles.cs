@@ -49,6 +49,7 @@ public static class AdminPermissionProfiles
         "config:write",
         "storage:read",
         "storage:write",
+        "setup:read",
     ];
 
     private static readonly string[] SuperAdminPermissions =

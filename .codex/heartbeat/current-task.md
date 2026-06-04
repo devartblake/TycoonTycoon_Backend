@@ -2,11 +2,11 @@
 
 ## Task ID
 
-`20260526-merge-and-p0-prep`
+`20260604-synaptix-setup-roadmap-history`
 
 ## Task title
 
-Merge main, fix code gaps, add store_purchases_enabled flag, update all release docs and changelog
+Complete safe remaining Synaptix.Setup roadmap history items
 
 ## Status
 
@@ -14,66 +14,50 @@ Merge main, fix code gaps, add store_purchases_enabled flag, update all release 
 
 ## Release priority
 
-`P0 Alpha blocker (repo-side)`
+`P1 Alpha/Beta operational visibility`
 
 ## Objective
 
-Merge origin/main (14 new commits, PRs #383–#385), resolve two repo-side code gaps found in the release audit (missing Designer.cs for `20260512150000_AddQuestionStatusColumns`, no production config template), add `store_purchases_enabled` feature flag gate on all payment endpoints, update CHANGELOG with all PR work since 2026-05-21, and synchronize all heartbeat/release docs.
+Complete the remaining safe roadmap items from the canonical setup handoff by adding durable Backend-generated setup report history while preserving `Synaptix.Setup` as the privileged CLI-only provisioning engine.
 
-## Affected bounded contexts
+## Actual changes
 
-- Release readiness
-- Store / payments feature gating
-- EF Core migrations
-- Production config / deploy hygiene
-- Synaptix rename (Packet E complete)
-
-## Affected projects/directories
-
-- `Synaptix.Backend.Migrations/Migrations/`
-- `Synaptix.Backend.Api/Features/Store/`
-- `Synaptix.Backend.Api/Features/AppConfig/`
-- `Synaptix.Backend.Api/appsettings.Production.example.json`
-- `docs/status/CHANGELOG.md`
-- `.codex/heartbeat/`
-- `docs/releases/ALPHA_RELEASE_CRITERIA.md`
-- `docs/status/PROJECT_STATUS_2026-05-09.md`
-
-## Actual file changes
-
-| File | Change summary |
+| Area | Change summary |
 |---|---|
-| `Synaptix.Backend.Migrations/.../20260512150000_AddQuestionStatusColumns.Designer.cs` | Created missing Designer stub (empty `BuildTargetModel` consistent with project pattern). |
-| `Synaptix.Backend.Api/appsettings.Production.example.json` | Created production config template with all required keys and `<REPLACE>` placeholders. |
-| `Synaptix.Backend.Api/Features/Store/StoreSystemStatusSupport.cs` | Added `StorePurchasesEnabledFlag` constant; added flag to `GetOrCreateConfigAsync` defaults (off). |
-| `Synaptix.Backend.Api/Features/Store/StoreEndpoints.cs` | `EnsurePaymentsEnabledAsync` now checks `store_purchases_enabled` first, returning `403 FeatureDisabled`. |
-| `Synaptix.Backend.Api/Features/AppConfig/AppConfigEndpoints.cs` | Added `storePurchasesEnabled` flag to `GET /api/v1/app/config` response. |
-| `docs/status/CHANGELOG.md` | Prepended 8 sections covering 2026-05-22 through 2026-05-26. |
-| `.codex/heartbeat/alpha-status.md` | Updated last-updated date; moved Packet E and store_purchases_enabled to verified. |
-| `.codex/heartbeat/current-blockers.md` | Resolved ALPHA-P1-004; added ALPHA-RES-005/006/007. |
-| `.codex/heartbeat/verification-log.md` | Added rows for Packet E rename, Designer.cs fix, store_purchases_enabled, prod config template. |
-| `.codex/heartbeat/current-task.md` | Updated to this task. |
-| `.codex/heartbeat/reports/latest-alpha-review.md` | Updated to 2026-05-26; marked repo-side prep 100% complete. |
-| `docs/releases/ALPHA_RELEASE_CRITERIA.md` | Checked repo-verified items: Packet E complete, JWT updated, store_purchases_enabled, Designer.cs, prod config template. |
-| `docs/status/PROJECT_STATUS_2026-05-09.md` | Marked BE Packet E as 100% complete. |
+| Canonical setup handoff | Documents implemented CLI/provisioning behavior, Django as canonical UI/BFF, read-only Phase 1, proposed `setup:read`, route conventions, and deferred mutations. |
+| Bootstrap/seed plan | Adds implementation status and labels pre-implementation findings as historical. |
+| KMS recommendation | Records implemented Phase 1 abstractions and explicitly defers KMS-backed setup-secret protection. |
+| Docker and Django README | Replaces placeholder credential-copy instructions with `Synaptix.Setup init-local` and documents the setup-before-migration chain. |
+| Changelog | Records commit `688e35b0` setup hardening and the missing PR #388 SignalR inventory summary. |
+| Heartbeat | Records local verification evidence without altering staging blockers or release claims. |
+| Backend API | Adds sanitized `/admin/setup/*` diagnostics and enforces `setup:read`. |
+| Django dashboard | Adds `/api/operator/setup/*` BFF routes and `/settings/setup/*` read-only pages. |
+| Tests | Adds Backend contract/secret-leak tests and Django client/permission/view tests. |
+| Durable history | Adds `setup_reports`, sanitized Backend-generated report persistence, `/admin/setup/history`, `/admin/setup/history/latest`, `/api/operator/setup/history`, and `/settings/setup/history`. |
 
 ## Verification status
 
-- [x] Build checked (origin/main was clean; no new compilation errors introduced)
-- [ ] Tests checked (require dotnet test run — no test changes made)
-- [ ] Docker config checked
-- [x] Migration behavior checked (Designer.cs stub consistent with existing pattern)
-- [x] Security impact checked (store_purchases_enabled defaults false; no new endpoints exposed)
-- [x] Docs/checklists updated
+- [x] Current branch/baseline checked (`main == origin/main == 688e35b0`)
+- [x] Setup CLI commands checked against `Synaptix.Setup/Program.cs`
+- [x] MongoDB/Redis configuration keys checked against code and Compose
+- [x] Backend/Django route and permission conventions checked
+- [x] Local setup verification evidence recorded
+- [x] Staging/release claims left unchanged
+- [x] Documentation references and diff hygiene checked
+- [x] Backend setup API focused tests checked
+- [x] Django setup client/view tests and system check checked
+- [x] Backend setup durable history focused tests checked
+- [x] Django setup history client/view tests checked
+- [x] Full solution build checked
+- [x] Compose configuration checked
+- [x] `git diff --check` checked
 
 ## Blockers
 
-All 8 remaining P0 blockers are staging-dependent (live infrastructure required). No repo-side blockers remain.
+The live stack confirms unauthenticated Django setup routes redirect and the Backend rejects ops-key-only setup access. Authenticated live-page smoke remains outstanding because the existing local super-admin credentials do not authenticate against the current database. This does not change staging blockers or release readiness.
 
-## Next action
-
-Provide staging environment access to run migrations, health checks, API smoke, Flutter integration tests, rollback drill, and collect four-role sign-offs.
+The broad Backend API suite also remains red with 28 failures outside the new AdminSetup tests; the focused AdminSetup suite passes and now covers durable setup history.
 
 ## Completion notes
 
-Repo-side Alpha/Beta preparation is 100% complete as of 2026-05-26. All remaining P0 blockers require live staging/production infrastructure.
+Phase 1 read-only setup visibility is implemented with Django as the canonical UI/BFF, the Backend API as a sanitized status/history layer, and `Synaptix.Setup` retained as the privileged offline/one-shot engine. Mutating/destructive operations and KMS-backed setup-secret protection remain deferred.

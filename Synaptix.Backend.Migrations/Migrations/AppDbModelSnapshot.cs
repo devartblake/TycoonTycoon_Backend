@@ -55,6 +55,54 @@ namespace Synaptix.Backend.Migrations.Migrations
                     b.ToTable("season_reward_rules", (string)null);
                 });
 
+            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.SetupReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset>("GeneratedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at_utc");
+
+                    b.Property<string>("ReportJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("report_json");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("source");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("WarningCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("warning_count");
+
+                    b.HasKey("Id")
+                        .HasName("pk_setup_reports");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_setup_reports_created_at_utc");
+
+                    b.HasIndex("Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_setup_reports_status_created_at_utc");
+
+                    b.ToTable("setup_reports", (string)null);
+                });
+
             modelBuilder.Entity("Synaptix.Backend.Application.Analytics.Models.QuestionAnsweredAnalyticsEvent", b =>
                 {
                     b.Property<string>("Id")

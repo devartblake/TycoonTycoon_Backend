@@ -1,411 +1,317 @@
 # Synaptix.Setup UI + CLI Architecture Handoff
-### Full Platform Bootstrap, Provisioning, Administration & Operations Design
 
-**Project:** TycoonTycoon_Backend / Synaptix Platform  
-**Version:** 1.0  
-**Target:** Alpha/Beta Release + Long-Term Platform Architecture
+**Status:** Canonical setup-management architecture
+**Updated:** 2026-06-04
+**Baseline:** `main` at `688e35b0`
+**Target:** Alpha/Beta-safe operations and long-term platform administration
 
----
+## 1. Decision
 
-# 1. Executive Summary
-
-The Synaptix platform is growing beyond a simple backend API and is evolving into a multi-service ecosystem consisting of:
-
-- Tycoon Backend API
-- Operator Dashboard
-- Migration Service
-- Security/KMS Services
-- Redis
-- MongoDB
-- PostgreSQL
-- RabbitMQ
-- MinIO
-- Elasticsearch
-- Analytics Services
-- Future Personalization Services
-- Future AI Services
-
-The recommended solution is to introduce:
-
-**Synaptix.Setup**
-
-This becomes the authoritative setup, bootstrap, provisioning, validation, and operational orchestration engine.
-
-The Operator Dashboard becomes the visual management layer.
-
-The Backend API becomes the secure orchestration layer.
-
----
-
-# 2. Design Goals
-
-## Objective 1
-Simple local developer onboarding.
-
-```bash
-dotnet run --project Synaptix.Setup -- init-local
-```
-
-## Objective 2
-Automated environment provisioning.
-
-## Objective 3
-Secure secret handling.
-
-## Objective 4
-Administrative visibility.
-
-## Objective 5
-Long-term platform scalability.
-
----
-
-# 3. High-Level Architecture
+The architecture is viable with a strict responsibility boundary:
 
 ```text
-OperatorDashboard
-        ↓
-Backend.Api
-        ↓
 Synaptix.Setup
-        ↓
-Postgres / Mongo / Redis / RabbitMQ / MinIO / Elastic / KMS
+  = offline CLI and one-shot bootstrap/provisioning engine
+
+Synaptix.Backend.Api
+  = authenticated, sanitized setup status/readiness API
+
+Synaptix.OperatorDashboard.Django
+  = canonical setup-management UI and BFF
+
+Synaptix.Security.Kms
+  = secret-protection platform; setup integration remains deferred
 ```
 
----
+The Backend API must not shell out to or directly execute `Synaptix.Setup`. The Django dashboard must not connect directly to infrastructure services or read setup secrets. Initial UI/API delivery is read-only.
 
-# 4. Synaptix.Setup Responsibilities
+## 2. Current Implemented State
 
-- Configuration generation and validation
-- Secret generation and rotation
-- KMS integration
-- PostgreSQL setup
-- MongoDB setup
-- Redis setup
-- RabbitMQ setup
-- MinIO setup
-- Elasticsearch setup
-- Seed management
-- Super administrator creation
-- Setup status reporting
+### Synaptix.Setup CLI
 
----
+The standalone `.NET 10` CLI is implemented and registered in the solution. It currently supports:
 
-# 5. CLI-Only Operations
+```text
+init-local
+validate
+provision-services
+provision-minio
+upload-seeds
+validate-seeds
+create-super-admin
+rotate-super-admin-password
+status
+```
 
-The following operations should remain CLI-only:
+Implemented provisioning tasks:
 
-- Database reset
-- Environment destruction
-- JWT secret rotation
-- KMS master key rotation
-- Disaster recovery
-- Infrastructure recreation
+- PostgreSQL connection and migration-history validation.
+- MongoDB database/collection provisioning.
+- MongoDB app-user create/update in `MONGO_AUTH_DB`.
+- MongoDB app-user authentication validation.
+- Legacy same-named app-user detection in `admin`, with opt-in cleanup through `SETUP_MONGO_REMOVE_LEGACY_ADMIN_APP_USER=true`.
+- Redis password and logical-database read/write validation.
+- RabbitMQ vhost and permission provisioning.
+- MinIO bucket provisioning and bundled seed upload.
+- Optional Elasticsearch validation.
 
----
+The Compose `setup` service runs as a one-shot container before `migration`. MongoDB and Redis use container-internal ports (`27017` and `6379`).
 
-# 6. Operator Dashboard Features
+### Setup Security
 
-## Setup Overview
-Route:
+The following Phase 1 abstractions exist under `Synaptix.Setup.Security`:
+
+- `ISetupSecretProtector`
+- `ProtectedSetupSecret`
+- `SetupSecretManifest`
+- `SetupSecretOptions`
+- `SetupSecretValidator`
+- `PlaintextLocalSetupSecretProtector`
+
+`PlaintextLocal` is the active implementation. `KmsSetupSecretProtector` is not implemented.
+
+### Tests And Verification
+
+`Synaptix.Setup.Tests` covers MongoDB admin connection construction, auth-database resolution, password escaping, and Redis structured/raw configuration parsing.
+
+Phase 1 read-only setup visibility is implemented:
+
+- Backend API endpoints under `/admin/setup/*` aggregate sanitized live diagnostics.
+- Backend API writes sanitized diagnostic snapshots to the durable `setup_reports` table when the report store is available.
+- `setup:read` is assigned to admin and super-admin permission profiles and enforced by the Backend API and Django.
+- Django BFF endpoints under `/api/operator/setup/*` proxy only the Backend API.
+- Django pages under `/settings/setup/*` display read-only setup diagnostics.
+- Backend contract tests and Django client/view permission tests cover the surface.
+
+Local Docker verification completed:
+
+- repeated `provision-services` runs: `7` tasks succeeded, `0` errors;
+- MongoDB app-user authentication through `synaptix_analytics`;
+- legacy `admin` user warning behavior;
+- opt-in legacy-user removal;
+- Redis validation across five logical databases.
+
+This local evidence does not replace staging readiness or release-gate evidence.
+
+### Remaining Not Implemented
+
+The following surfaces do not currently exist:
+
+- setup-write permissions;
+- KMS-backed setup-secret protection;
+- setup mutation through the dashboard or Backend API.
+
+## 3. Runtime And Trust Boundaries
+
+### Current Bootstrap Flow
+
+```text
+Synaptix.Setup init-local
+        |
+        v
+docker/.env + local bootstrap files
+        |
+        v
+Docker infrastructure
+        |
+        v
+one-shot setup container: provision-services
+        |
+        v
+one-shot migration container: migrations + application seeds + readiness
+        |
+        v
+Backend API
+        |
+        v
+Synaptix.OperatorDashboard.Django
+```
+
+### Implemented Read-Only Management Flow
+
+```text
+Operator
+  |
+  v
+Synaptix.OperatorDashboard.Django
+  |
+  v
+Django BFF: /api/operator/setup/*
+  |
+  v
+Backend API: /admin/setup/*
+  |
+  v
+sanitized live diagnostics and readiness sources
+```
+
+The Backend API endpoints aggregate safe live diagnostics. They do not invoke the CLI, expose environment values, return connection strings, or disclose secret-validation details that reveal secret material.
+
+## 4. Bootstrap Status Limitation
+
+`Synaptix.Setup` currently writes:
+
+```text
+.local/bootstrap/bootstrap-status.json
+```
+
+When `provision-services` runs in the one-shot setup container, that file is container-local and is not a durable Backend API data source. Phase 1 setup endpoints therefore aggregate live diagnostics already available to the Backend API, such as health checks, MongoDB status, storage diagnostics, migration/readiness signals, and sanitized configuration presence.
+
+The implemented durable report history is Backend-generated, not CLI-file-backed: each live diagnostic snapshot can be stored as sanitized JSON in PostgreSQL `setup_reports`. Documentation and UI must not claim that the Backend API reads the CLI status file.
+
+## 5. Phase 1: Read-Only Setup Visibility
+
+Phase 1 is intentionally read-only and should not block the Alpha/Beta release.
+
+### Implemented Permission
+
+Add:
+
+```text
+setup:read
+```
+
+This matches the existing lowercase colon-delimited permission convention and is assigned to admin and super-admin profiles.
+
+No `setup:write` permission is introduced in Phase 1.
+
+### Implemented Backend API
+
+Mount beneath the existing admin route group:
+
+```http
+GET /admin/setup/status
+GET /admin/setup/readiness
+GET /admin/setup/services
+GET /admin/setup/seeds
+GET /admin/setup/validation
+GET /admin/setup/history
+GET /admin/setup/history/latest
+```
+
+Responses must be sanitized and read-only:
+
+- `status`: overall setup/runtime summary and report-source metadata;
+- `readiness`: dependency and migration/readiness state;
+- `services`: PostgreSQL, MongoDB, Redis, RabbitMQ, MinIO, Elasticsearch, and KMS availability;
+- `seeds`: required seed presence/readiness, without returning seed contents;
+- `validation`: missing/invalid configuration categories without values or secrets.
+- `history`: latest sanitized durable setup-report summaries from `setup_reports`;
+- `history/latest`: latest sanitized durable setup-report detail.
+
+### Implemented Django BFF And UI
+
+Django remains the canonical Operator Dashboard.
+
+BFF routes:
+
+```text
+/api/operator/setup/status
+/api/operator/setup/readiness
+/api/operator/setup/services
+/api/operator/setup/seeds
+/api/operator/setup/validation
+/api/operator/setup/history
+```
+
+UI routes:
 
 ```text
 /settings/setup
-```
-
-Displays:
-
-- Environment readiness
-- Service health
-- Seed health
-- Migration status
-- KMS status
-
-## Validation Dashboard
-
-```text
-/settings/setup/validation
-```
-
-Displays:
-
-- Missing configuration
-- Invalid secrets
-- Seed failures
-- Migration failures
-
-## Service Health Dashboard
-
-```text
+/settings/setup/readiness
 /settings/setup/services
-```
-
-Displays:
-
-- PostgreSQL
-- MongoDB
-- Redis
-- RabbitMQ
-- MinIO
-- Elasticsearch
-- KMS
-
-## Seed Management
-
-```text
 /settings/setup/seeds
+/settings/setup/validation
+/settings/setup/history
 ```
 
-Features:
+The UI should display timestamps, source, state, warnings, and remediation guidance. It must not display credentials, connection strings, plaintext validation values, or secret-manifest contents.
 
-- Upload
-- Validate
-- Synchronize
-- Version tracking
+## 6. CLI-Only Operations
 
-## Super Administrator Management
+These operations remain CLI-only until a separately approved, audited design exists:
+
+- provisioning or reprovisioning infrastructure services;
+- seed upload, synchronization, or mutation;
+- super-admin creation or password rotation;
+- secret generation or rotation;
+- legacy MongoDB app-user removal;
+- database reset or destructive migration actions;
+- environment destruction;
+- KMS master-key administration;
+- disaster recovery;
+- infrastructure recreation.
+
+The initial Django UI may show remediation commands, but it must not execute them.
+
+## 7. Secret Management Direction
+
+Supported configuration modes are defined:
 
 ```text
-/settings/setup/admin
+PlaintextLocal
+KmsPreferred
+KmsRequired
+ExternalOnly
 ```
 
-Features:
+Current implementation status:
 
-- Create Super Admin
-- Reset Password
-- Permission Review
-- MFA Status
+| Mode | Status |
+|---|---|
+| `PlaintextLocal` | Implemented and active for local Alpha/Beta bootstrap |
+| `KmsPreferred` | Validation behavior exists; KMS-backed protection is not implemented |
+| `KmsRequired` | Validation behavior exists; KMS-backed protection is not implemented |
+| `ExternalOnly` | Defined as policy direction; provider workflow is not implemented |
 
-## Setup Logs
+Future KMS integration must use `Synaptix.Security.Kms.Client`, keep setup ownership outside KMS, and never expose secret operations through the read-only Phase 1 UI.
+
+## 8. Delivery Roadmap
+
+### Completed
+
+- Synaptix.Setup CLI and one-shot Compose setup service.
+- Local secret generation and validation.
+- Service provisioning and bundled seed upload.
+- Durable MongoDB/Redis configuration hardening.
+- Focused setup tests.
+- Phase 1 sanitized setup status/readiness response contracts.
+- Protected Backend API `/admin/setup/*` GET endpoints.
+- Durable Backend-generated setup report/history store.
+- Admin/super-admin `setup:read` permission.
+- Django BFF client, `/api/operator/setup/*` routes, and `/settings/setup/*` pages.
+- Backend secret-leak contract tests and Django permission/view tests.
+
+### Deferred
+
+- CLI-authored setup-run event/audit history.
+- KMS-backed `KmsSetupSecretProtector`.
+- Any API/UI mutation.
+- Secret rotation and destructive operations.
+
+## 9. Acceptance Criteria
+
+The read-only setup UI architecture is implemented. Acceptance status:
+
+- every endpoint has a defined sanitized response contract;
+- the Backend API gathers status without invoking `Synaptix.Setup`;
+- Django accesses setup data only through authenticated Backend API calls;
+- `setup:read` is enforced in both Backend API and Django;
+- no response or log exposes credentials, secret values, or connection strings;
+- API contract tests and Django permission/view tests pass;
+- durable setup history uses sanitized Backend-generated reports, not the CLI container-local status file;
+- local Docker smoke against the running stack remains to be captured;
+- documentation continues to distinguish local evidence from staging readiness.
+
+## 10. Final Recommendation
+
+Proceed with the hybrid design, beginning with read-only visibility:
 
 ```text
-/settings/setup/logs
+Synaptix.Setup = authoritative offline setup engine
+Synaptix.Backend.Api = sanitized read-only setup API
+Synaptix.OperatorDashboard.Django = canonical setup UI/BFF
+Synaptix.Security.Kms = future setup-secret protection dependency
 ```
 
-Features:
-
-- Search
-- Filter
-- Export
-- Audit Review
-
----
-
-# 7. Backend API Layer
-
-Suggested route group:
-
-```text
-/api/admin/setup
-```
-
-Endpoints:
-
-```http
-GET  /api/admin/setup/status
-GET  /api/admin/setup/readiness
-GET  /api/admin/setup/services
-GET  /api/admin/setup/seeds
-GET  /api/admin/setup/admin
-
-POST /api/admin/setup/validate
-POST /api/admin/setup/seeds/sync
-POST /api/admin/setup/admin/create
-POST /api/admin/setup/admin/reset-password
-```
-
----
-
-# 8. Integration with Synaptix.Security.Kms
-
-## KMS Owns
-
-- Encryption
-- Decryption
-- Key wrapping
-- Vault Transit
-- Key rotation
-
-## Setup Owns
-
-- Bootstrap secrets
-- Environment generation
-- Service provisioning
-- Admin provisioning
-
-## Bridge Layer
-
-```text
-Synaptix.Setup.Security
-```
-
-Components:
-
-- ISetupSecretProtector
-- SetupSecretManifest
-- SetupSecretValidator
-- KmsSetupSecretProtector
-
----
-
-# 9. Secret Management Strategy
-
-Supported modes:
-
-- PlaintextLocal
-- KmsPreferred
-- KmsRequired
-- ExternalOnly
-
-Recommended:
-
-| Environment | Mode |
-|------------|------|
-| Local | KmsPreferred |
-| Staging | KmsRequired |
-| Production | ExternalOnly / KmsRequired |
-
----
-
-# 10. Bootstrap Workflow
-
-## Local
-
-```bash
-dotnet run --project Synaptix.Setup -- init-local
-docker compose up -d
-dotnet run --project Synaptix.MigrationService
-```
-
-## Staging
-
-```bash
-dotnet Synaptix.Setup.dll validate
-dotnet Synaptix.Setup.dll provision-services
-dotnet Synaptix.MigrationService.dll
-```
-
-## Production
-
-```bash
-dotnet Synaptix.Setup.dll validate --strict
-dotnet Synaptix.Setup.dll provision-services --strict
-dotnet Synaptix.MigrationService.dll
-```
-
----
-
-# 11. Seed Architecture
-
-Create:
-
-```text
-config/seeds/seed-manifest.json
-```
-
-Defines:
-
-- Required seeds
-- Optional seeds
-- Versioning
-- Validation rules
-
----
-
-# 12. Service Provisioners
-
-Recommended tasks:
-
-- PostgresSetupTask
-- MongoSetupTask
-- RedisSetupTask
-- RabbitMqSetupTask
-- MinioSetupTask
-- ElasticSetupTask
-- SuperAdminSetupTask
-
-Requirements:
-
-- Idempotent
-- Testable
-- Environment-aware
-
----
-
-# 13. Operator Permissions
-
-Standard:
-
-- Setup.View
-- Setup.Validate
-- Setup.SeedManage
-- Setup.AdminManage
-- Setup.LogsView
-
-Restricted:
-
-- Setup.SecretRotate
-- Setup.DatabaseReset
-- Setup.EnvironmentDestroy
-- Setup.KmsAdministration
-
-Require Super Administrator approval.
-
----
-
-# 14. Alpha/Beta Implementation Plan
-
-## Phase 1 (P0)
-
-- Synaptix.Setup CLI
-- Setup status endpoint
-- Readiness endpoint
-- Dashboard overview
-
-## Phase 2 (P1)
-
-- Validation dashboard
-- Service dashboard
-- Seed dashboard
-
-## Phase 3 (P1)
-
-- Admin management
-- Audit logs
-- Bootstrap reports
-
-## Phase 4 (P2)
-
-- Secret rotation
-- KMS dashboards
-- Advanced provisioning
-
----
-
-# 15. Final Recommendation
-
-```text
-Synaptix.Setup
-    = Platform Bootstrap Engine
-
-Synaptix.Backend.Api
-    = Secure Orchestration Layer
-
-Synaptix.OperatorDashboard
-    = Administrative Control Center
-
-Synaptix.Security.Kms
-    = Secret Protection Platform
-```
-
-Benefits:
-
-- Developer onboarding
-- Automated provisioning
-- Safe administration
-- Secret management
-- Operational visibility
-- Alpha/Beta readiness
-- Enterprise scalability
-- Multi-game support
-- Future cloud readiness
+This preserves the current working bootstrap path, respects the Django dashboard decision, and avoids turning a privileged setup executable into a network-reachable control plane.

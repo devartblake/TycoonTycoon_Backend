@@ -113,6 +113,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<ModuleLesson> ModuleLessons => Set<ModuleLesson>();
         public DbSet<ModuleCompletion> ModuleCompletions => Set<ModuleCompletion>();
         public DbSet<StudySession> StudySessions => Set<StudySession>();
+        public DbSet<SetupReport> SetupReports => Set<SetupReport>();
 
         // Reward Reactor
         public DbSet<RewardSession> RewardSessions => Set<RewardSession>();

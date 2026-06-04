@@ -30,7 +30,7 @@ public sealed class AppDbDesignTimeFactory : IDesignTimeDbContextFactory<AppDb>
                  ?? "Host=localhost;Port=5432;Database=tycoon;Username=postgres;Password=postgres";
 
         var options = new DbContextOptionsBuilder<AppDb>()
-            .UseNpgsql(cs)
+            .UseNpgsql(cs, npgsql => npgsql.MigrationsAssembly(typeof(MigrationsAssemblyMarker).Assembly.FullName))
             .UseSnakeCaseNamingConvention()
             .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;

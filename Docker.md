@@ -7,6 +7,8 @@ This document describes how to run **TycoonTycoon_Backend** locally using Docker
 
 The setup is designed to support fast iteration, reliable local state, and clean separation between **infrastructure** and **application lifecycle**.
 
+> **Current ownership:** `Synaptix.Setup` provisions infrastructure and uploads bundled seed files; `Synaptix.MigrationService` applies EF migrations and application-data seeds; `Synaptix.OperatorDashboard.Django` is the canonical operator dashboard. Legacy Tycoon/Blazor names elsewhere in this long-running guide are historical references.
+
 ---
 
 ## 1. Repository Layout (Docker-related)
@@ -30,8 +32,8 @@ TycoonTycoon_Backend/
 │     │  └─ 01-init.sh
 │     └─ mongo/
 │        └─ 01-init.js
-├─ Tycoon.Backend.Api/
-├─ Tycoon.MigrationService/
+├─ Synaptix.Backend.Api/
+├─ Synaptix.MigrationService/
 ├─ Tycoon.OperatorDashboard/
 └─ Synaptix.Sidecar/
 ```
@@ -42,7 +44,7 @@ This keeps Docker concerns isolated and avoids polluting the solution root.
 
 ## 2. Services Provided by Docker
 
-The Docker stack provides **infrastructure only**:
+The Docker stack provides infrastructure and the fully Dockerized application lifecycle.
 
 | Service                       | Port(s)       | Purpose                                         |
 | ----------------------------- | ------------- | ----------------------------------------------- |
@@ -65,29 +67,55 @@ The Docker stack provides **infrastructure only**:
 | Service              | Port | Dockerfile              | Description                      |
 | -------------------- | ---- | ----------------------- | -------------------------------- |
 | `migration`          | —    | `Dockerfile.migrate`    | Runs migrations once then exits  |
+| `setup`              | -    | `Dockerfile.setup`      | Provisions services and uploads bundled seeds, then exits |
 | `backend-api`        | 5000 | `Dockerfile.api`        | Main REST API + SignalR          |
 | `sidecar`            | 8100 | `Dockerfile.sidecar`    | FastAPI ML/analytics/webhooks    |
-| `operator-dashboard` | 8200 | `Dockerfile.dashboard`  | Blazor Server ops control panel  |
+| `operator-dashboard` | 8200 | `Dockerfile.dashboard-django` | Canonical Django operator dashboard |
+| `operator-dashboard-blazor` | 8201 | `Dockerfile.dashboard` | Legacy rollback/comparison dashboard |
 
 > **Important:**
-> Schema creation, migrations, and seeding are **NOT** done by the API.
-> `Tycoon.MigrationService` is the **only owner** of migrations and data bootstrapping.
+> Schema migrations and application-data seeding are **not** done by the API.
+> `Synaptix.Setup` owns infrastructure provisioning and bundled seed upload.
+> `Synaptix.MigrationService` owns EF migrations and application-data seeding.
 
 This is enforced explicitly in `Program.cs`:
 
-> “Do NOT migrate here anymore. Tycoon.MigrationService owns migrations + seeding now.” 
+> “Do NOT migrate here anymore. Synaptix.MigrationService owns migrations + seeding now.”
 
 ---
 
 ## 3. Environment Configuration
 
-### 3.1 Create your `.env`
+### 3.1 Generate your local `.env`
 
 ```bash
-cp docker/.env.example docker/.env
+dotnet run --project Synaptix.Setup -- init-local
+dotnet run --project Synaptix.Setup -- validate --local
 ```
 
-Edit values as needed (passwords, ports, memory limits).
+`docker/.env.example` is a placeholder template, not a runnable credential file. `init-local` generates strong local secrets and writes `docker/.env`. Generated local secrets and bootstrap files are ignored by Git.
+
+### 3.2 Recommended local bootstrap
+
+```powershell
+./scripts/bootstrap-local.ps1
+```
+
+```bash
+./scripts/bootstrap-local.sh
+```
+
+The wrapper performs the intended startup chain:
+
+```text
+init-local -> validate -> infrastructure -> setup -> migration -> backend API -> Django dashboard
+```
+
+For a fully Dockerized run after `docker/.env` exists:
+
+```bash
+docker compose --env-file docker/.env -f docker/compose.yml up -d --build
+```
 
 ---
 
@@ -148,7 +176,7 @@ make -f docker/Makefile health
 ### 5.2 Run migrations
 
 ```bash
-dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj
 ```
 
 This will:
@@ -162,7 +190,7 @@ This will:
 ### 5.3 Run the API on the host
 
 ```bash
-dotnet run --project Tycoon.Backend.Api/Tycoon.Backend.Api.csproj
+dotnet run --project Synaptix.Backend.Api/Synaptix.Backend.Api.csproj
 ```
 
 The API:
@@ -231,7 +259,7 @@ Even in Option B, **migrations are not run automatically**.
 Run once on the host **or** create a one-off container:
 
 ```bash
-dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj
 ```
 
 > Intentional design choice: migrations are explicit and controlled.
@@ -398,7 +426,7 @@ If you later choose to use `Tycoon.AppHost` (Aspire-style orchestration):
 
 2. **Run migrations manually**
    ```bash
-   dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+   dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj
    ```
 
 3. **Check migration logs**
@@ -461,7 +489,7 @@ If you later choose to use `Tycoon.AppHost` (Aspire-style orchestration):
    ```bash
    make -f docker/MakeFile migrate
    # OR manually:
-   dotnet run --project Tycoon.MigrationService/Tycoon.MigrationService.csproj
+   dotnet run --project Synaptix.MigrationService/Synaptix.MigrationService.csproj
    ```
 
 ### Creating New Migrations
@@ -476,7 +504,7 @@ When you change entity models:
 2. **Create migration**
    ```bash
    dotnet ef migrations add YourMigrationName \
-     --startup-project ../Tycoon.Backend.Api
+     --startup-project ../Synaptix.Backend.Api
    ```
 
 3. **Review generated migration**
@@ -486,10 +514,10 @@ When you change entity models:
 4. **Apply migration**
    ```bash
    # Via MigrationService (recommended)
-   dotnet run --project ../Tycoon.MigrationService/Tycoon.MigrationService.csproj
+   dotnet run --project ../Synaptix.MigrationService/Synaptix.MigrationService.csproj
    
    # OR directly via EF tools
-   dotnet ef database update --startup-project ../Tycoon.Backend.Api
+   dotnet ef database update --startup-project ../Synaptix.Backend.Api
    ```
 
 ### Migration Modes
@@ -796,4 +824,4 @@ curl http://localhost:5060/health
 
 ### Full run instructions
 
-See [`docs/SYNAPTIX_SECURITY_RUNNING_GUIDE.md`](docs/SYNAPTIX_SECURITY_RUNNING_GUIDE.md) for a complete step-by-step guide including curl examples for every endpoint.
+See [`docs/security/SYNAPTIX_SECURITY_RUNNING_GUIDE.md`](docs/security/SYNAPTIX_SECURITY_RUNNING_GUIDE.md) for a complete step-by-step guide including curl examples for every endpoint.

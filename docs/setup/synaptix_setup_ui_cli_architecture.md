@@ -1,16 +1,14 @@
 # Synaptix.Setup UI + CLI Architecture Recommendation
 
-This document recommends a hybrid architecture where Synaptix.Setup remains the authoritative setup engine, Synaptix.Backend.Api exposes protected setup endpoints, and Synaptix.OperatorDashboard provides a secure administrative UI.
+This file is retained as a compatibility pointer.
 
-Key recommendations:
-- Keep setup logic in Synaptix.Setup.
-- Expose safe setup operations through backend APIs.
-- Use OperatorDashboard for setup status, validation, seed management, service health, and admin management.
-- Keep destructive operations CLI-only.
-- Integrate with Synaptix.Security.Kms for secret protection.
+The canonical architecture, implementation status, security boundaries, route conventions, and read-only delivery roadmap are documented in:
 
-Final Architecture:
+- [`Synaptix_Setup_UI_CLI_Architecture_Handoff.md`](Synaptix_Setup_UI_CLI_Architecture_Handoff.md)
 
-Synaptix.Setup = Setup Engine
-Synaptix.Backend.Api = Secure Setup API Layer
-Synaptix.OperatorDashboard = Administrative UI Layer
+Current decision:
+
+- `Synaptix.Setup` remains the offline CLI and one-shot provisioning engine.
+- `Synaptix.Backend.Api` may expose sanitized read-only setup endpoints in a future phase.
+- `Synaptix.OperatorDashboard.Django` is the canonical setup UI/BFF target.
+- Initial UI/API delivery is read-only; mutating and destructive operations remain CLI-only.

@@ -5,9 +5,28 @@ Focus: determining whether the existing `Synaptix.Security` / `Synaptix.Security
 
 ---
 
+## Implementation Status (2026-06-04)
+
+The recommended responsibility boundary remains valid, and Phase 1 setup-security abstractions are implemented under `Synaptix.Setup.Security`:
+
+- `ISetupSecretProtector`
+- `ProtectedSetupSecret`
+- `SetupSecretManifest`
+- `SetupSecretOptions`
+- `SetupSecretValidator`
+- `PlaintextLocalSetupSecretProtector`
+
+`InitLocalCommand` writes the protected-secret envelope using `PlaintextLocalSetupSecretProtector`, and `ValidateCommand` applies the configured protection-mode validation policy.
+
+Important limitation: setup secrets are not currently protected by KMS. `KmsSetupSecretProtector`, typed `Synaptix.Security.Kms.Client` integration, production external-secret providers, and general secret-rotation commands remain deferred. `KmsPreferred`, `KmsRequired`, and `ExternalOnly` describe policy direction and validation behavior; they do not mean KMS-backed setup-secret storage is complete.
+
+For the setup UI/API direction, see [`Synaptix_Setup_UI_CLI_Architecture_Handoff.md`](Synaptix_Setup_UI_CLI_Architecture_Handoff.md). The initial proposed UI is read-only and must not expose setup secrets.
+
+---
+
 ## 1. Executive Summary
 
-Yes, the existing `Synaptix.Security.Kms` stack can and should be used by the future `Synaptix.Setup` project.
+Yes, the existing `Synaptix.Security.Kms` stack can and should be used by `Synaptix.Setup` in a future KMS-backed protection phase.
 
 However, `Synaptix.Security.Kms` should **not** become responsible for Docker, PostgreSQL, MongoDB, Redis, RabbitMQ, MinIO, Elasticsearch, seed execution, or super admin provisioning. Those responsibilities belong in `Synaptix.Setup`.
 
@@ -467,7 +486,7 @@ The setup tool should not embed API hosts.
 
 ## 12. Recommended Implementation Phases
 
-### Phase 1 — Alpha/Beta Practical Use
+### Phase 1 — Alpha/Beta Practical Use (implemented)
 
 Priority: P0/P1
 
@@ -506,7 +525,7 @@ staging: KmsRequired
 production: KmsRequired
 ```
 
-### Phase 2 — KMS-backed setup secrets
+### Phase 2 — KMS-backed setup secrets (deferred)
 
 Priority: P1
 

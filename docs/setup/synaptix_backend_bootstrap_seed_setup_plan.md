@@ -6,9 +6,29 @@ Primary goal: replace scattered hardcoded Docker/env/service seed defaults with 
 
 ---
 
+## Implementation Status (2026-06-04)
+
+The core Alpha/Beta bootstrap path is now implemented:
+
+- `Synaptix.Setup` exists as a standalone CLI and one-shot Compose service.
+- `docker/.env.example` uses generated-secret placeholders instead of committed secret defaults.
+- Compose requires security-sensitive values and runs `setup` before `migration`.
+- PostgreSQL, MongoDB, Redis, RabbitMQ, MinIO, and optional Elasticsearch setup tasks exist.
+- MongoDB provisioning creates or updates the app user in `MONGO_AUTH_DB`, validates app-user authentication, warns about a same-named legacy user in `admin`, and removes that legacy user only when `SETUP_MONGO_REMOVE_LEGACY_ADMIN_APP_USER=true`.
+- Redis provisioning parses complete structured connection strings and supports raw `REDIS_*` fallback configuration.
+- The setup container uses internal MongoDB and Redis ports (`27017` and `6379`).
+- `Synaptix.Setup.Tests` covers MongoDB and Redis configuration behavior.
+- `Synaptix.MigrationService` remains the authoritative EF migration and application-data seed runner.
+
+Remaining roadmap items include richer manifest enforcement, KMS-backed setup-secret protection, and CLI-authored setup-run event/audit history. The read-only setup visibility architecture documented in [`Synaptix_Setup_UI_CLI_Architecture_Handoff.md`](Synaptix_Setup_UI_CLI_Architecture_Handoff.md) is implemented for Backend-generated diagnostics and durable history.
+
+Sections describing the repository before `Synaptix.Setup` was implemented are retained as historical rationale and are labeled accordingly.
+
+---
+
 ## 1. Executive Summary
 
-The current backend already has a good foundation for database migrations and seed execution through `Synaptix.MigrationService`. However, the current setup still relies too heavily on hardcoded development credentials in Docker Compose, `.env.example`, and seed code.
+The backend now has an implemented setup/bootstrap layer around `Synaptix.MigrationService`. The original problem was scattered hardcoded development credentials and manually coordinated provisioning. Those immediate gaps have been addressed for the local Alpha/Beta workflow; this document now records the implemented design and remaining roadmap.
 
 The ideal solution is **not** to put more seed logic into Docker. Docker should only start infrastructure. The application should own:
 
@@ -42,11 +62,13 @@ This gives you a single repeatable command for local setup and a controlled pre-
 
 ---
 
-## 2. Current Repository Findings
+## 2. Historical Repository Findings
 
-### 2.1 Docker Compose currently embeds fallback credentials
+The findings in this section describe the pre-implementation baseline that motivated `Synaptix.Setup`. They are not the current configuration.
 
-The current `docker/compose.yml` defines services for PostgreSQL, MongoDB, Redis, Elasticsearch, RabbitMQ, MinIO, Prometheus, Grafana, Kibana, pgAdmin, Mongo Express, and DBGate. Many services include fallback credentials directly in Compose variable defaults.
+### 2.1 Docker Compose embedded fallback credentials
+
+Before the setup work, `docker/compose.yml` embedded fallback credentials directly in Compose variable defaults. Current Compose configuration requires security-sensitive values generated or supplied through the environment.
 
 Examples:
 
@@ -65,9 +87,9 @@ This is convenient for local development, but it creates three problems:
 2. changing credentials requires manually editing `.env`,
 3. staging/production can accidentally inherit weak defaults.
 
-### 2.2 `.env.example` contains development secrets and admin credentials
+### 2.2 `.env.example` contained development secrets and admin credentials
 
-The current `docker/.env.example` contains default values for PostgreSQL, MongoDB, Redis, Elasticsearch, RabbitMQ, MinIO, admin UIs, JWT, KMS, admin ops key, and the super admin account.
+Before the setup work, `docker/.env.example` contained development secret values. It now uses `<generated-by-synaptix-setup>` placeholders for generated secrets.
 
 Examples:
 
@@ -131,9 +153,9 @@ This plan should formalize that into a first-class setup system.
 
 ## 3. Recommended Architecture
 
-## 3.1 Add a dedicated setup project
+## 3.1 Dedicated setup project (implemented)
 
-Create a new project:
+Implemented project:
 
 ```text
 Synaptix.Setup/
@@ -169,7 +191,7 @@ Purpose:
 - optionally provision service users/databases/buckets,
 - invoke the existing migration service or call the same seeding primitives.
 
-This should be a CLI-style tool:
+Implemented CLI commands:
 
 ```bash
 dotnet run --project Synaptix.Setup -- init-local
@@ -491,18 +513,26 @@ For Alpha/Beta:
 
 ### Current state
 
-Docker defines root and app credentials through env variables. Compose also exposes Mongo Express and DBGate using those credentials.
+Docker defines root and app credentials through environment variables. The setup container receives raw root credentials on internal port `27017`; runtime services authenticate the app user through `MONGO_AUTH_DB`.
 
-### Recommended setup
+### Implemented setup and remaining work
 
-Add `MongoSetupTask` to provision:
+`MongoSetupTask` provisions and validates:
 
 - app databases,
-- app user,
+- app user create/update in `MONGO_AUTH_DB`,
+- app-user authentication,
 - analytics database,
 - crypto database,
-- collections,
-- indexes.
+- required setup collections.
+
+It also detects a same-named legacy app user in `admin`. Cleanup is disabled by default and requires:
+
+```env
+SETUP_MONGO_REMOVE_LEGACY_ADMIN_APP_USER=true
+```
+
+Index ownership remains split between the Mongo init script and runtime/admin diagnostics; additional index reconciliation is roadmap work.
 
 Recommended Mongo init file:
 
@@ -531,7 +561,7 @@ db.createUser({
 });
 ```
 
-Then `MongoSetupTask` should validate:
+`MongoSetupTask` validates:
 
 - root connection works,
 - app user can connect,
@@ -544,9 +574,9 @@ Then `MongoSetupTask` should validate:
 
 ### Current state
 
-Redis starts with `--requirepass '${REDIS_PASSWORD:-synaptix_redis_password_123}'`.
+Redis starts with required `REDIS_PASSWORD`. The setup container connects over internal port `6379`.
 
-### Recommended setup
+### Implemented setup and remaining work
 
 Redis does not need “data seeding” the same way PostgreSQL/Mongo does, but it does need:
 
@@ -557,7 +587,7 @@ Redis does not need “data seeding” the same way PostgreSQL/Mongo does, but i
 5. optional distributed lock validation,
 6. optional rate-limit key cleanup.
 
-Add `RedisSetupTask`.
+`RedisSetupTask` is implemented. It parses a complete `ConnectionStrings:redis` value when supplied, otherwise uses `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD`. It validates read/write/delete access across logical databases `0` through `4`.
 
 Recommended bootstrap manifest section:
 
@@ -910,7 +940,7 @@ Rules:
 
 ## 7. Implementation Plan
 
-## Phase 1: Immediate Alpha/Beta Stabilization
+## Phase 1: Immediate Alpha/Beta Stabilization (implemented)
 
 Priority: P0/P1
 
@@ -925,7 +955,7 @@ Priority: P0/P1
 9. Add startup validation for weak/default secrets outside local.
 10. Add readiness checks to ensure super admin, admin ACL, missions, tiers, store items, skill nodes, season rewards, and questions exist.
 
-## Phase 2: Setup CLI
+## Phase 2: Setup CLI (implemented)
 
 Priority: P1
 
@@ -957,7 +987,7 @@ docker/.env
 .local/bootstrap/bootstrap-status.json
 ```
 
-## Phase 3: Service Provisioners
+## Phase 3: Service Provisioners (implemented for Alpha/Beta)
 
 Priority: P1/P2
 
@@ -1018,7 +1048,9 @@ Add release checklist output:
 
 ---
 
-## 8. Recommended File Changes
+## 8. Original Recommended File Changes
+
+This inventory records the original plan. Most listed setup files now exist; consult the implementation-status section and current repository before treating any item as pending.
 
 ### New files
 

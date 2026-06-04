@@ -93,6 +93,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<ModuleLesson> ModuleLessons { get; }
         DbSet<ModuleCompletion> ModuleCompletions { get; }
         DbSet<StudySession> StudySessions { get; }
+        DbSet<SetupReport> SetupReports { get; }
 
         // Reward Reactor
         DbSet<RewardSession> RewardSessions { get; }

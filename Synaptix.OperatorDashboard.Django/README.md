@@ -1,10 +1,10 @@
-# Tycoon Operator Dashboard (Django)
+# Synaptix Operator Dashboard (Django)
 
-This is the Django-based Operator Dashboard replacement target for the legacy `Tycoon.OperatorDashboard` Blazor project.
+This is the canonical Synaptix Operator Dashboard. The legacy `Synaptix.OperatorDashboard` Blazor project remains a rollback/comparison target only.
 
 It acts as a UI frontend/BFF layer for:
 
-- **.NET API** (`Tycoon.Backend.Api`)
+- **.NET API** (`Synaptix.Backend.Api`)
 - **FastAPI sidecar** (`Synaptix.Sidecar`)
 
 ## What this includes
@@ -39,32 +39,28 @@ The main compose service now builds this dashboard with `docker/Dockerfile.dashb
 ### Authenticated local preview
 
 Use Docker Compose for authenticated dashboard review. This keeps Django, the `.NET` API,
-`Tycoon.MigrationService`, PostgreSQL, MinIO, and the sidecar wired the same way as dev/staging:
+`Synaptix.Setup`, `Synaptix.MigrationService`, PostgreSQL, MinIO, and the sidecar wired the same way as dev/staging:
 
 ```bash
-cp docker/.env.example docker/.env   # only if docker/.env does not already exist
-docker compose -f docker/compose.yml up -d --build
+dotnet run --project Synaptix.Setup -- init-local
+dotnet run --project Synaptix.Setup -- validate --local
+docker compose --env-file docker/.env -f docker/compose.yml up -d --build
 ```
 
-The required local values are:
+Do not copy `docker/.env.example` directly as a runnable credentials file. `init-local` generates
+the required local secrets and writes the generated super-admin credentials under `.local/bootstrap/`.
 
-- `ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION`
-- `ADMIN_AUTH_ALLOW_TRUSTED_BFF_PLAIN_JSON=true`
-- `ADMIN_AUTH_TRANSPORT=auto`
-- `SUPER_ADMIN_EMAIL=admin@tycoon.local`
-- `SUPER_ADMIN_PASSWORD=ChangeMe123!`
-
-Startup order is intentional: infrastructure starts first, `migration` applies/seeds data and
-validates dashboard readiness, `backend-api` starts after migration completion, and
+Startup order is intentional: infrastructure starts first, `setup` provisions services and uploads
+bundled seeds, `migration` applies/seeds application data and validates dashboard readiness,
+`backend-api` starts after migration completion, and
 `operator-dashboard` starts after the backend is healthy.
 
 Preview URL and login:
 
 - URL: `http://localhost:8200/login`
-- Email: `admin@tycoon.local`
-- Password: `ChangeMe123!`
+- Email/password: use the generated credentials recorded by `Synaptix.Setup init-local`
 
-See [`../docs/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md`](../docs/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md)
+See [`../docs/operator-dashboard/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md`](../docs/operator-dashboard/OPERATOR_DASHBOARD_AUTHENTICATED_PREVIEW.md)
 for the verification workflow and common failure checks.
 
 ## Authentication
@@ -79,14 +75,9 @@ The dashboard now uses session-based operator login:
 
 ### Development login
 
-When running Docker Compose from `docker/.env.example` values after the migration service seeds the super-admin account:
-
-- URL: `http://localhost:8200/login`
-- Email: `admin@tycoon.local`
-- Password: `ChangeMe123!`
-- Required matching ops key: `ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION`
-
-Smoke compose seeds `smoke-admin@synaptix.local` / `SmokeTest123!` instead. If `docker/.env` has not been created from `docker/.env.example`, compose defaults may leave the super-admin seed blank and no dev admin account will be created.
+Run `Synaptix.Setup init-local` before starting Compose. It generates the local admin credentials and
+writes them to the ignored `.local/bootstrap/` directory. Smoke Compose uses its dedicated smoke-test
+account; do not reuse smoke credentials outside the smoke workflow.
 
 ## Basic verification
 
@@ -99,6 +90,7 @@ python manage.py test dashboard.tests
 
 - `/healthz` - container health endpoint for probes
 - `/api/operator/health` - aggregated upstream service status JSON payload (`.NET`, `FastAPI`, `MinIO`)
+- `/api/operator/setup/{status|readiness|services|seeds|validation|history}` - sanitized read-only setup diagnostics (requires `setup:read`)
 - `/api/operator/audit/security` - security audit history endpoint (requires `events:read`)
 - `/api/operator/moderation/logs` - moderation log list endpoint (requires `events:read`)
 - `/api/operator/moderation/profile/{playerId}` - moderation profile endpoint (requires `events:read`)
@@ -111,6 +103,8 @@ python manage.py test dashboard.tests
 - `/api/operator/users/{userId}/update` - user update endpoint (requires `users:write`)
 - `/api/operator/users/{userId}/ban` - ban action endpoint (requires `users:write`)
 - `/api/operator/users/{userId}/unban` - unban action endpoint (requires `users:write`)
+
+Read-only setup pages are available at `/settings/setup` and its readiness, services, seeds, validation, and history subpages. Provisioning and mutations remain `Synaptix.Setup` CLI-only.
 
 ## Configuration
 

@@ -1,0 +1,92 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Setup {{ section|title }}{% endblock %}
+
+{% block content %}
+<section class="topbar">
+  <div>
+    <p class="page-eyebrow">Settings / Setup / {{ section|title }}</p>
+    <h1 class="page-title">Setup {{ section }}</h1>
+    <p class="page-subtitle">Sanitized live Backend diagnostics. Provisioning, mutations, secrets, and destructive operations remain CLI-only.</p>
+  </div>
+  <div class="topbar-actions">
+    <a class="button secondary" href="{{ request.path }}">Refresh</a>
+    <span class="status-pill {% if payload.status == 'healthy' or payload.status == 'ready' or payload.status == 'valid' %}status-ok{% else %}status-warn{% endif %}">
+      {{ payload.status|default:"unavailable"|upper }}
+    </span>
+  </div>
+</section>
+
+<nav class="tabs mt-lg" aria-label="Setup diagnostics">
+  <a href="{% url 'setup-status-view' %}" class="{% if section == 'status' %}active{% endif %}">Status</a>
+  <a href="{% url 'setup-readiness-view' %}" class="{% if section == 'readiness' %}active{% endif %}">Readiness</a>
+  <a href="{% url 'setup-services-view' %}" class="{% if section == 'services' %}active{% endif %}">Services</a>
+  <a href="{% url 'setup-seeds-view' %}" class="{% if section == 'seeds' %}active{% endif %}">Seeds</a>
+  <a href="{% url 'setup-validation-view' %}" class="{% if section == 'validation' %}active{% endif %}">Validation</a>
+  <a href="{% url 'setup-history-view' %}" class="{% if section == 'history' %}active{% endif %}">History</a>
+</nav>
+
+{% if upstream_error %}
+<section class="card mt-lg"><div class="empty"><strong>Setup diagnostics unavailable</strong><span>{{ upstream_error }}</span></div></section>
+{% elif section == "status" %}
+<section class="split mt-lg">
+  <article class="card">
+    <h2>Runtime summary</h2>
+    <dl class="detail-list">
+      <div><dt>Status</dt><dd>{{ payload.status }}</dd></div>
+      <div><dt>Source</dt><dd>{{ payload.source }}</dd></div>
+      <div><dt>Generated</dt><dd>{{ payload.generatedAt }}</dd></div>
+      <div><dt>Read only</dt><dd>{{ payload.readOnly|yesno:"yes,no" }}</dd></div>
+      <div><dt>Durable report</dt><dd>{{ payload.durableReportAvailable|yesno:"available,not available" }}</dd></div>
+    </dl>
+  </article>
+  <article class="card">
+    <h2>Remediation boundary</h2>
+    <p class="section-copy">{{ payload.remediation }}</p>
+    <p class="helper-text">This dashboard never executes Synaptix.Setup.</p>
+  </article>
+</section>
+{% elif section == "readiness" %}
+<section class="card mt-lg">
+  <h2>Readiness and migrations</h2>
+  <dl class="detail-list">
+    <div><dt>Status</dt><dd>{{ payload.status }}</dd></div>
+    <div><dt>Schema</dt><dd>{{ payload.schemaStatus }}</dd></div>
+    <div><dt>Pending migrations</dt><dd>{{ payload.pendingMigrations|default_if_none:"unknown" }}</dd></div>
+    <div><dt>Required services ready</dt><dd>{{ payload.requiredServicesReady|yesno:"yes,no" }}</dd></div>
+  </dl>
+  {% for warning in payload.warnings %}<div class="surface-note">{{ warning }}</div>{% endfor %}
+</section>
+{% elif section == "services" %}
+<section class="card mt-lg">
+  <h2>Service health</h2>
+  <div class="table-wrap"><table><thead><tr><th>Service</th><th>Status</th><th>Configured</th><th>Required</th><th>Message</th></tr></thead>
+    <tbody>{% for item in payload.services %}<tr><td><strong>{{ item.name }}</strong></td><td>{{ item.status }}</td><td>{{ item.configured|yesno:"yes,no" }}</td><td>{{ item.required|yesno:"yes,no" }}</td><td>{{ item.message }}</td></tr>{% empty %}<tr><td colspan="5">No service diagnostics returned.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% elif section == "seeds" %}
+<section class="card mt-lg">
+  <h2>Required seed categories</h2>
+  <div class="table-wrap"><table><thead><tr><th>Category</th><th>Present</th></tr></thead>
+    <tbody>{% for item in payload.seeds %}<tr><td>{{ item.name }}</td><td>{{ item.present|yesno:"yes,no" }}</td></tr>{% empty %}<tr><td colspan="2">No seed diagnostics returned.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% for warning in payload.warnings %}<div class="surface-note">{{ warning }}</div>{% endfor %}
+</section>
+{% elif section == "validation" %}
+<section class="card mt-lg">
+  <h2>Sanitized configuration validation</h2>
+  <p class="section-copy">Only configuration categories and states are shown. Values and secrets are never returned.</p>
+  <div class="table-wrap"><table><thead><tr><th>Category</th><th>State</th><th>Message</th></tr></thead>
+    <tbody>{% for item in payload.issues %}<tr><td>{{ item.category }}</td><td>{{ item.state }}</td><td>{{ item.message }}</td></tr>{% empty %}<tr><td colspan="3">No configuration issues reported.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% elif section == "history" %}
+<section class="card mt-lg">
+  <h2>Durable setup reports</h2>
+  <p class="section-copy">Sanitized Backend-generated reports. These are not the container-local Synaptix.Setup status file.</p>
+  <div class="table-wrap"><table><thead><tr><th>Created</th><th>Status</th><th>Warnings</th><th>Source</th></tr></thead>
+    <tbody>{% for item in payload.reports %}<tr><td>{{ item.createdAt }}</td><td>{{ item.status }}</td><td>{{ item.warningCount }}</td><td>{{ item.source }}</td></tr>{% empty %}<tr><td colspan="4">No durable setup reports are available yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+{% endblock %}

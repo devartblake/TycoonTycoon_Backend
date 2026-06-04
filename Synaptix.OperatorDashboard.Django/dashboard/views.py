@@ -32,6 +32,7 @@ from .services.admin_storage_client import (
     list_storage_prefixes,
     upload_storage_object_proxy,
 )
+from .services.admin_setup_client import get_setup_diagnostics
 from .services.admin_moderation_client import get_moderation_log, get_moderation_logs, get_moderation_profile, set_moderation_status
 from .services.admin_economy_client import create_economy_transaction, get_economy_balance, get_economy_history, rollback_economy_transaction, simulate_economy, update_economy_balance
 from .services.admin_questions_client import approve_question, bulk_import_questions, create_question, delete_question, get_question, list_questions, reject_question, update_question
@@ -551,6 +552,13 @@ def _format_ago(delta_seconds: float) -> str:
     return f"{int(delta_seconds // 3600)}h ago"
 
 
+def _service_slug(service) -> str:
+    slug = getattr(service, "slug", "")
+    if isinstance(slug, str) and slug:
+        return slug
+    return re.sub(r"[^a-z0-9]+", "-", service.service_name.lower()).strip("-")
+
+
 _PROBE_STATUS_COLOR = {
     "healthy": "#22c55e",
     "degraded": "#f59e0b",
@@ -736,7 +744,7 @@ def operator_health(request):
     for service in services:
         _save_probe_record(service.service_name, service.status, service.latency_ms, service.detail)
     charts = {
-        s.slug: json.loads(_build_probe_history_context(s.service_name, now)["chart_json"])
+        _service_slug(s): json.loads(_build_probe_history_context(s.service_name, now)["chart_json"])
         for s in services
     }
     return JsonResponse(
@@ -2200,6 +2208,111 @@ def admin_permissions_view(request):
             "list_types": ["Allow", "Block"],
         },
     )
+
+
+def _setup_bff(request, section: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    try:
+        return JsonResponse(get_setup_diagnostics(access_token, section))
+    except httpx.HTTPStatusError as ex:
+        return build_upstream_http_error_response(ex, f"Backend setup {section} endpoint failed.")
+    except httpx.RequestError:
+        return build_upstream_unavailable_response(f"Unable to reach backend setup {section} endpoint.")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def operator_setup_status(request):
+    return _setup_bff(request, "status")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def operator_setup_readiness(request):
+    return _setup_bff(request, "readiness")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def operator_setup_services(request):
+    return _setup_bff(request, "services")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def operator_setup_seeds(request):
+    return _setup_bff(request, "seeds")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def operator_setup_validation(request):
+    return _setup_bff(request, "validation")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def operator_setup_history(request):
+    return _setup_bff(request, "history")
+
+
+def _setup_view(request, section: str):
+    access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
+    payload = {}
+    upstream_error = None
+    try:
+        payload = get_setup_diagnostics(access_token, section)
+    except httpx.HTTPStatusError as ex:
+        upstream_error = f"Backend setup diagnostics returned HTTP {ex.response.status_code}."
+    except httpx.RequestError:
+        upstream_error = "Backend setup diagnostics are currently unavailable."
+
+    return render(
+        request,
+        "dashboard/setup_diagnostics.html",
+        {
+            "admin_profile": request.session.get(SESSION_ADMIN_PROFILE_KEY),
+            "section": section,
+            "payload": payload,
+            "upstream_error": upstream_error,
+        },
+    )
+
+
+@operator_login_required
+@require_permission("setup:read")
+def setup_status_view(request):
+    return _setup_view(request, "status")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def setup_readiness_view(request):
+    return _setup_view(request, "readiness")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def setup_services_view(request):
+    return _setup_view(request, "services")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def setup_seeds_view(request):
+    return _setup_view(request, "seeds")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def setup_validation_view(request):
+    return _setup_view(request, "validation")
+
+
+@operator_login_required
+@require_permission("setup:read")
+def setup_history_view(request):
+    return _setup_view(request, "history")
 
 
 def login_view(request):
