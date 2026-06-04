@@ -30,6 +30,7 @@
     <Project Path="Synaptix.Backend.Infrastructure.Tests/Synaptix.Backend.Infrastructure.Tests.csproj" />
     <Project Path="Synaptix.MigrationService.Tests/Synaptix.MigrationService.Tests.csproj" />
     <Project Path="Synaptix.Security.Kms.Tests/Synaptix.Security.Kms.Tests.csproj" />
+    <Project Path="Synaptix.Setup.Tests/Synaptix.Setup.Tests.csproj" />
   </Folder>
   <Project Path="Synaptix.MigrationService/Synaptix.MigrationService.csproj" />
   <Project Path="Synaptix.Setup/Synaptix.Setup.csproj" />

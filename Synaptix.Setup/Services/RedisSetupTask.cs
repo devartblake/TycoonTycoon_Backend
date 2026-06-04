@@ -8,7 +8,6 @@ public sealed class RedisSetupTask : ISetupTask
 {
     public string Name => "Redis";
 
-    // Logical database assignments as defined in the bootstrap manifest.
     private static readonly (int Db, string Name)[] LogicalDatabases =
     [
         (0, "cache"),
@@ -53,29 +52,32 @@ public sealed class RedisSetupTask : ISetupTask
         }
     }
 
-    private static ConfigurationOptions? BuildOptions(IConfiguration cfg)
+    internal static ConfigurationOptions? BuildOptions(IConfiguration cfg)
     {
-        // Try flat env var first, then extract from structured connection string
-        var password = cfg["REDIS_PASSWORD"];
-        if (string.IsNullOrWhiteSpace(password))
+        var connStr = cfg.GetConnectionString("redis") ?? cfg["ConnectionStrings:redis"];
+        ConfigurationOptions options;
+
+        if (!string.IsNullOrWhiteSpace(connStr))
         {
-            var connStr = cfg.GetConnectionString("redis") ?? cfg["ConnectionStrings:redis"];
-            password = connStr?.Split(',')
-                .FirstOrDefault(p => p.TrimStart().StartsWith("password=", StringComparison.OrdinalIgnoreCase))
-                ?.Split('=', 2).LastOrDefault();
+            options = ConfigurationOptions.Parse(connStr);
         }
-        if (string.IsNullOrWhiteSpace(password)) return null;
-
-        var host = cfg["REDIS_HOST"] ?? "localhost";
-        var port = int.TryParse(cfg["REDIS_PORT"], out var p) ? p : 6379;
-
-        return new ConfigurationOptions
+        else
         {
-            EndPoints          = { { host, port } },
-            Password           = password,
-            AbortOnConnectFail = false,
-            ConnectTimeout     = 5000,
-            SyncTimeout        = 5000,
-        };
+            var password = cfg["REDIS_PASSWORD"];
+            if (string.IsNullOrWhiteSpace(password)) return null;
+
+            var host = cfg["REDIS_HOST"] ?? "localhost";
+            var port = int.TryParse(cfg["REDIS_PORT"], out var parsedPort) ? parsedPort : 6379;
+            options = new ConfigurationOptions
+            {
+                EndPoints = { { host, port } },
+                Password = password,
+            };
+        }
+
+        options.AbortOnConnectFail = false;
+        options.ConnectTimeout = 5000;
+        options.SyncTimeout = 5000;
+        return options;
     }
 }

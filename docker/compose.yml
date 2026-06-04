@@ -206,6 +206,8 @@ services:
       PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@synaptix.app}"
       PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       PGADMIN_CONFIG_SERVER_MODE: "False"
+      # Allow .local / reserved-TLD emails so dev addresses like admin@tycoon.local are accepted.
+      PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS: '["local"]'
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
@@ -300,6 +302,21 @@ services:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       DOTNET_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
       ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD}"
+      # MongoDB — root connection for provisioning; app credentials for user creation
+      MONGO_HOST: "mongodb"
+      MONGO_PORT: "27017"
+      MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME:-synaptix_admin}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD}"
+      MONGO_APP_USER: "${MONGO_APP_USER:-synaptix_app_user}"
+      MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD}"
+      MONGO_AUTH_DB: "${MONGO_AUTH_DB:-synaptix_analytics}"
+      MONGO_ANALYTICS_DB: "${MONGO_ANALYTICS_DB:-synaptix_analytics}"
+      MONGO_CRYPTO_DB: "${MONGO_CRYPTO_DB:-synaptix_crypto}"
+      Setup__Mongo__RemoveLegacyAdminAppUser: "${SETUP_MONGO_REMOVE_LEGACY_ADMIN_APP_USER:-false}"
+      # Redis
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
       MinIO__Endpoint: "minio:9000"
       MinIO__AccessKey: "${MINIO_ROOT_USER:-synaptix_minio_user}"
       MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
@@ -489,7 +506,9 @@ services:
       Cors__AllowedOrigins__3: "${CORS_ORIGIN_3:-http://localhost:3000}"
       Cors__AllowedOrigins__4: "${CORS_ORIGIN_4:-http://localhost:8080}"
     volumes:
-      - backend_dp_keys:/app/dp-keys
+      # dp-keys intentionally NOT a named volume — named volumes are root:root on creation,
+      # which prevents the non-root appuser from writing DP keys. The container's writable
+      # layer is already owned by appuser (chown -R in the Dockerfile), so no mount needed.
       - sidecar_inference_data:/var/lib/synaptix-sidecar
     depends_on:
       postgres:
@@ -659,8 +678,7 @@ services:
       ApiBaseUrl: "http://backend-api:5000"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
       DataProtection__KeysPath: "/app/dp-keys"
-    volumes:
-      - blazor_dp_keys:/app/dp-keys
+    # No named volume for dp-keys — same reason as backend-api (root:root permission issue).
     depends_on:
       backend-api:
         condition: service_healthy
@@ -694,11 +712,6 @@ volumes:
   pgadmin_data:
   prometheus_data:
   grafana_data:
-  backend_dp_keys:
-  dashboard_dp_keys:
-  # Back-compat alias for older compose service variants that still reference
-  # `blazor_dp_keys` (for example `operator-dashboard-blazor`).
-  blazor_dp_keys:
   sidecar_inference_data:
   django_db_data:
   crypto_settlement_data:
