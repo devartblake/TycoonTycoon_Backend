@@ -113,6 +113,7 @@ using Synaptix.Backend.Application.Guardians;
 using Synaptix.Backend.Application.Matchmaking;
 using Synaptix.Backend.Application.Notifications;
 using Synaptix.Backend.Application.Realtime;
+using Synaptix.Backend.Application.Leaderboards;
 using Synaptix.Backend.Application.Territory;
 using Synaptix.Backend.Application.Social;
 using Synaptix.Backend.Infrastructure;
@@ -593,6 +594,8 @@ builder.Services.AddSingleton<IMatchmakingNotifier, SignalRMatchmakingNotifier>(
 builder.Services.AddSingleton<IPartyMatchmakingNotifier, SignalRPartyMatchmakingNotifier>();
 builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
+builder.Services.AddSingleton<IPresenceNotifier, SignalRPresenceNotifier>();
+builder.Services.AddSingleton<ILeaderboardNotifier, SignalRLeaderboardNotifier>();
 builder.Services.AddSingleton<IPresenceSessionManager, PresenceSessionManager>();
 builder.Services.AddSingleton<IGameEventNotifier, SignalRGameEventNotifier>();
 builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
@@ -904,6 +907,8 @@ app.Use(async (ctx, next) =>
 app.MapHub<MatchHub>("/ws/match");
 app.MapHub<PresenceHub>("/ws/presence");
 app.MapHub<NotificationHub>("/ws/notify");
+app.MapHub<LeaderboardHub>("/ws/leaderboard");
+app.MapHub<MatchmakingHub>("/ws/matchmaking");
 
 // gRPC — sidecar service (internal; port 5001 via Kestrel dual-port config)
 app.MapGrpcService<SidecarGrpcService>();
