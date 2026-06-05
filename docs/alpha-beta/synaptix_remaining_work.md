@@ -1,6 +1,6 @@
 # Synaptix Migration — Remaining Work
 
-**Date:** 2026-04-01 | **Last updated:** 2026-05-03
+**Date:** 2026-04-01 | **Last updated:** 2026-06-04
 **Purpose:** Consolidated status across backend and frontend, incorporating cross-comparison findings.
 
 ---
@@ -13,7 +13,7 @@
 | **BE-B** | Profile Support (PlayerPreferences entity + API) | ✅ Complete |
 | **BE-C** | Product-Language Alignment (all 3 dashboards + docs + currency terms) | ✅ Complete |
 | **BE-D** | Analytics dimensions (all 5) + Stabilization QA | ✅ Complete |
-| **BE-E** | Deep namespace rename | ⏸️ Deferred |
+| **BE-E** | Deep namespace rename | ✅ Complete — 2026-05-22 (Synaptix.* namespaces, JWT contracts, Docker labels, telemetry) |
 
 ---
 

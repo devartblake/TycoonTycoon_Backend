@@ -1,6 +1,8 @@
 # Remaining Tasks & Work Backlog
 
-_Last updated: 2026-05-23 — Reward Reactor frontend complete ✅; Study Hub frontend complete ✅; Crypto economy frontend complete ✅; test coverage updated to ~19.4% (240 test files / 1,239 lib files)_
+_Last updated: 2026-06-04 — Full bootstrap pipeline automated via `Synaptix.Setup` CLI ✅; Docker secret enforcement (:? required on 12 secrets) ✅; MinIO asset bootstrapping + asset manifest endpoint ✅; question dataset expanded (175 questions, 7 categories) ✅; pgAdmin email validation fix ✅; Data Protection volume permission fix ✅; MongoDB/Redis setup task config normalization ✅; Security layer Phase 1 (ISetupSecretProtector, PlaintextLocal, SetupSecretManifest) ✅; Flutter test coverage updated to ~40% (264 test files / 1,252 lib files) ✅_
+
+_Previous: 2026-05-23 — Reward Reactor frontend complete ✅; Study Hub frontend complete ✅; Crypto economy frontend complete ✅; test coverage updated to ~19.4% (240 test files / 1,239 lib files)_
 
 _Previous: 2026-05-14 — Operator dashboard direction reconciled ✅; Django admin auth recovery ✅; Django player stock support surface ✅; migration/seed bootstrap for Django readiness ✅; CI/readiness automation for May cutover evidence ✅; evidence-capture package prepared ✅; repo verification baseline recorded ✅; Vue/Web migration backlog closed by Django supersession ✅; Personalization Django UI implemented ✅; Sound cue expansion to all 6 surfaces ✅; Study Hub gaps (hub entry points, favorites, custom set creation, session resume) ✅; Secure channel endpoint rollout ✅; Secure channel tests (KMS unit + filter integration) ✅; JWT placeholder key hardening ✅_
 
@@ -15,6 +17,14 @@ _Previous: 2026-05-14 — Operator dashboard direction reconciled ✅; Django ad
 
 | Area | Priority | Status | Blocked? |
 |------|----------|--------|----------|
+| **`Synaptix.Setup` bootstrap CLI** | **High** | **Complete — 9 commands, 6 service provisioners, Security Phase 1 (ISetupSecretProtector), Dockerfile.setup** | **No** |
+| **Docker secret enforcement** | **High** | **Complete — :? required syntax on 12 secrets; setup service before migration in compose.yml** | **No** |
+| **MinIO asset bootstrapping** | **High** | **Complete — UploadBundledImagesAsync, UploadBundledModelsAsync, SeedAssetCatalogAsync** | **No** |
+| **GET /v1/assets/manifest** | **High** | **Complete — presigned URLs for 3D assets/environments; AssetManifestEntry, AssetManifestResponse DTOs** | **No** |
+| **Question dataset expansion** | **Medium** | **Complete — 175 questions across 7 category JSON files in seeds/questions/** | **No** |
+| **GameplayQuestionDto.MediaUrl** | **Medium** | **Complete — resolves MediaKey to public MinIO URL in /questions/set responses** | **No** |
+| **pgAdmin .local email fix** | **Low** | **Complete — PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS added to compose.yml** | **No** |
+| **Data Protection volume fix** | **Medium** | **Complete — removed backend_dp_keys/blazor_dp_keys named volumes; uses container writable layer** | **No** |
 | Frontend/backend alpha handoff | High | Store, profile/social, questions, Study Hub, Reward Reactor, crypto complete; ML remains | No |
 | **3D Avatar purchase path (Browse → Buy → Download)** | **High** | **Complete** | **No** |
 | **Avatar handler unit tests (18 tests)** | **High** | **Complete — `Tycoon.Backend.Application.Tests/Avatars/AvatarHandlerTests.cs`** | **No** |

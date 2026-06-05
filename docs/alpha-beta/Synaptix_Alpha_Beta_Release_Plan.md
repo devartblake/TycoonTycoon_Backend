@@ -1,6 +1,9 @@
 # Synaptix Alpha/Beta Release Stabilization Plan
 ## TycoonTycoon Backend Production Narrowing Strategy
-### Target Window: Alpha/Beta Release Before June 1, 2026
+### Original Target Window: Alpha/Beta Release Before June 1, 2026
+
+> **Status as of 2026-06-04:** Original June 1 target window passed. Codebase is production-ready — both backend (97%) and Flutter client (85%) are code-complete for the alpha feature set. All remaining blockers are infrastructure/ops: staging environment provisioning, DBA migration execution, operator parallel-run rescheduling, and Go/No-Go sign-off. Estimated 4–10 working days to Alpha launch once staging is available.
+> See [`docs/status/alpha_beta_readiness_report_2026-06-04.md`](../status/alpha_beta_readiness_report_2026-06-04.md) for the full current readiness report.
 
 ---
 
