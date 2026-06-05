@@ -190,7 +190,7 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-synaptix_elastic_password_123}
+      - "ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:?ELASTIC_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
     depends_on:
       - elasticsearch
     networks: [synaptix-net]
@@ -206,8 +206,6 @@ services:
       PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@synaptix.app}"
       PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD is required. Run: dotnet run --project Synaptix.Setup -- init-local}"
       PGADMIN_CONFIG_SERVER_MODE: "False"
-      # Allow .local / reserved-TLD emails so dev addresses like admin@tycoon.local are accepted.
-      PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS: '["local"]'
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
@@ -317,6 +315,12 @@ services:
       REDIS_PASSWORD: "${REDIS_PASSWORD}"
       REDIS_HOST: "redis"
       REDIS_PORT: "6379"
+      # Elasticsearch
+      ConnectionStrings__elasticsearch: "http://elasticsearch:9200"
+      Elastic__Url: "http://elasticsearch:9200"
+      Elastic__Username: "elastic"
+      Elastic__Password: "${ELASTIC_PASSWORD}"
+      ELASTIC_PASSWORD: "${ELASTIC_PASSWORD}"
       MinIO__Endpoint: "minio:9000"
       MinIO__AccessKey: "${MINIO_ROOT_USER:-synaptix_minio_user}"
       MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
@@ -340,6 +344,8 @@ services:
       mongodb:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -446,8 +452,8 @@ services:
       Elastic__Url: "http://elasticsearch:9200"
       Elastic__Username: "elastic"
       Elastic__Password: "${ELASTIC_PASSWORD}"
-      Elastic__DailyWriteAlias: "synaptix-daily-rollups"
-      Elastic__PlayerDailyWriteAlias: "synaptix-player-daily-rollups"
+      Elastic__DailyWriteAlias: "synaptix-daily-rollups-write"
+      Elastic__PlayerDailyWriteAlias: "synaptix-player-daily-rollups-write"
       # Dev only: allow self-signed certs. Do NOT set this in production.
       Elastic__SkipCertificateValidation: "${ELASTIC_SKIP_CERT_VALIDATION:-false}"
       

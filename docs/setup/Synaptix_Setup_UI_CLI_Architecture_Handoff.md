@@ -46,7 +46,7 @@ status
 Implemented provisioning tasks:
 
 - PostgreSQL connection and migration-history validation.
-- MongoDB database/collection provisioning.
+- MongoDB database, collection, and index provisioning.
 - MongoDB app-user create/update in `MONGO_AUTH_DB`.
 - MongoDB app-user authentication validation.
 - Legacy same-named app-user detection in `admin`, with opt-in cleanup through `SETUP_MONGO_REMOVE_LEGACY_ADMIN_APP_USER=true`.
@@ -87,6 +87,7 @@ Local Docker verification completed:
 
 - repeated `provision-services` runs: `7` tasks succeeded, `0` errors;
 - MongoDB app-user authentication through `synaptix_analytics`;
+- MongoDB analytics/crypto collections and indexes exist; analytics documents are not seeded by setup;
 - legacy `admin` user warning behavior;
 - opt-in legacy-user removal;
 - Redis validation across five logical databases.

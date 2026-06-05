@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using System.Globalization;
 using System.Text.Json;
-using Synaptix.Backend.Application.Analytics.Abstractions;
+using Synaptix.Backend.Application.Analytics;
 using Synaptix.Backend.Application.Analytics.Models;
 
 namespace Synaptix.Backend.Api.Features.Analytics
@@ -24,7 +24,7 @@ namespace Synaptix.Backend.Api.Features.Analytics
         {
             group.MapPost("/events", async (
                 [FromBody] JsonElement body,
-                IAnalyticsEventWriter writer,
+                QuestionAnsweredAnalyticsPersistence analytics,
                 CancellationToken ct) =>
             {
                 var accepted = 0;
@@ -34,7 +34,7 @@ namespace Synaptix.Backend.Api.Features.Analytics
                 {
                     foreach (var item in body.EnumerateArray())
                     {
-                        if (await TryHandleIncomingEventAsync(item, writer, ct))
+                        if (await TryHandleIncomingEventAsync(item, analytics, ct))
                         {
                             accepted++;
                         }
@@ -46,7 +46,7 @@ namespace Synaptix.Backend.Api.Features.Analytics
                 }
                 else if (body.ValueKind == JsonValueKind.Object)
                 {
-                    if (await TryHandleIncomingEventAsync(body, writer, ct))
+                    if (await TryHandleIncomingEventAsync(body, analytics, ct))
                     {
                         accepted++;
                     }
@@ -70,7 +70,7 @@ namespace Synaptix.Backend.Api.Features.Analytics
 
             group.MapPost("/track", async (
                 [FromBody] JsonElement body,
-                IAnalyticsEventWriter writer,
+                QuestionAnsweredAnalyticsPersistence analytics,
                 CancellationToken ct) =>
             {
                 if (body.ValueKind != JsonValueKind.Object)
@@ -87,7 +87,7 @@ namespace Synaptix.Backend.Api.Features.Analytics
                     string.Equals(eventName, "question_answered", StringComparison.OrdinalIgnoreCase) &&
                     TryMapQuestionAnsweredEvent(payload, timestampUtc, out var evt))
                 {
-                    await writer.UpsertQuestionAnsweredEventAsync(evt, ct);
+                    await analytics.PersistAsync(evt, ct);
 
                     return Results.Accepted(value: new
                     {
@@ -134,19 +134,19 @@ namespace Synaptix.Backend.Api.Features.Analytics
 
         private static async Task<bool> TryHandleIncomingEventAsync(
             JsonElement src,
-            IAnalyticsEventWriter writer,
+            QuestionAnsweredAnalyticsPersistence analytics,
             CancellationToken ct)
         {
             if (TryMapQuestionAnsweredEvent(src, out var directEvent))
             {
-                await writer.UpsertQuestionAnsweredEventAsync(directEvent, ct);
+                await analytics.PersistAsync(directEvent, ct);
                 return true;
             }
 
             if (TryExtractEnvelopePayload(src, out var payload) &&
                 TryMapQuestionAnsweredEvent(payload, out var wrappedEvent))
             {
-                await writer.UpsertQuestionAnsweredEventAsync(wrappedEvent, ct);
+                await analytics.PersistAsync(wrappedEvent, ct);
                 return true;
             }
 

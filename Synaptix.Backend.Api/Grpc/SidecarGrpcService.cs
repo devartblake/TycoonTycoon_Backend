@@ -2,7 +2,7 @@ using Grpc.Core;
 using Mediator;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
-using Synaptix.Backend.Application.Analytics.Abstractions;
+using Synaptix.Backend.Application.Analytics;
 using Synaptix.Backend.Application.Analytics.Models;
 using Synaptix.Backend.Application.Events;
 using Synaptix.Backend.Api.Grpc;
@@ -25,18 +25,18 @@ public sealed class SidecarGrpcService : SidecarService.SidecarServiceBase
     internal const int MaxAnalyticsEventsPerStream = 5000;
 
     private readonly ILogger<SidecarGrpcService> _logger;
-    private readonly IAnalyticsEventWriter _analyticsWriter;
+    private readonly QuestionAnsweredAnalyticsPersistence _analytics;
     private readonly ISidecarInferenceStore _inferenceStore;
     private readonly IMediator _mediator;
 
     public SidecarGrpcService(
         ILogger<SidecarGrpcService> logger,
-        IAnalyticsEventWriter analyticsWriter,
+        QuestionAnsweredAnalyticsPersistence analytics,
         ISidecarInferenceStore inferenceStore,
         IMediator mediator)
     {
         _logger = logger;
-        _analyticsWriter = analyticsWriter;
+        _analytics = analytics;
         _inferenceStore = inferenceStore;
         _mediator = mediator;
     }
@@ -67,7 +67,7 @@ public sealed class SidecarGrpcService : SidecarService.SidecarServiceBase
             };
         }
 
-        await _analyticsWriter.UpsertQuestionAnsweredEventAsync(evt, context.CancellationToken);
+        await _analytics.PersistAsync(evt, context.CancellationToken);
 
         _logger.LogDebug(
             "gRPC analytics event received: type={EventType} entity={EntityId} id={EventId}",
@@ -116,7 +116,7 @@ public sealed class SidecarGrpcService : SidecarService.SidecarServiceBase
                     continue;
                 }
 
-                await _analyticsWriter.UpsertQuestionAnsweredEventAsync(evt, context.CancellationToken);
+                await _analytics.PersistAsync(evt, context.CancellationToken);
                 accepted++;
             }
         }

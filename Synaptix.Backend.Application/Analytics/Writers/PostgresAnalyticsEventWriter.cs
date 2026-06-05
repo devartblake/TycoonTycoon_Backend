@@ -21,7 +21,7 @@ public sealed class PostgresAnalyticsEventWriter : IAnalyticsEventWriter
         _db = db;
     }
 
-    public async Task UpsertQuestionAnsweredEventAsync(
+    public async Task<bool> UpsertQuestionAnsweredEventAsync(
             QuestionAnsweredAnalyticsEvent evt,
             CancellationToken ct = default)
     {
@@ -31,14 +31,15 @@ public sealed class PostgresAnalyticsEventWriter : IAnalyticsEventWriter
         if (existing is null)
         {
             _db.QuestionAnsweredAnalyticsEvents.Add(evt);
+            await _db.SaveChangesAsync(ct);
+            return true;
         }
         else
         {
             existing.UpdateFrom(evt);
+            await _db.SaveChangesAsync(ct);
+            return false;
         }
-
-        // CRITICAL: Added SaveChangesAsync so the operation actually persists
-        await _db.SaveChangesAsync(ct);
     }
 
     public async Task WriteQuestionAnsweredAsync(

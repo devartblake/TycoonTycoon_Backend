@@ -13,11 +13,12 @@ namespace Synaptix.Backend.Infrastructure.Analytics.Mongo
             _events = factory.Database.GetCollection<QuestionAnsweredAnalyticsEvent>("question_answered_events");
         }
 
-        public async Task UpsertQuestionAnsweredEventAsync(QuestionAnsweredAnalyticsEvent e, CancellationToken ct)
+        public async Task<bool> UpsertQuestionAnsweredEventAsync(QuestionAnsweredAnalyticsEvent e, CancellationToken ct)
         {
             // Deterministic id -> idempotent upsert
             var filter = Builders<QuestionAnsweredAnalyticsEvent>.Filter.Eq(x => x.Id, e.Id);
-            await _events.ReplaceOneAsync(filter, e, new ReplaceOptions { IsUpsert = true }, ct);
+            var result = await _events.ReplaceOneAsync(filter, e, new ReplaceOptions { IsUpsert = true }, ct);
+            return result.UpsertedId is not null;
         }
     }
 }

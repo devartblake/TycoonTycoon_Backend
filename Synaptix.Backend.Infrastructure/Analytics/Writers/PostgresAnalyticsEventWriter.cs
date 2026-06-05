@@ -20,7 +20,7 @@ namespace Synaptix.Backend.Infrastructure.Analytics.Writers
         {
             _db = db;
         }
-        public async Task UpsertQuestionAnsweredEventAsync(QuestionAnsweredAnalyticsEvent e, CancellationToken ct)
+        public async Task<bool> UpsertQuestionAnsweredEventAsync(QuestionAnsweredAnalyticsEvent e, CancellationToken ct)
         {
             // Assumption: QuestionAnsweredAnalyticsEvent has a stable key (Id or composite uniqueness).
             // If you have a different key, adjust the lookup accordingly.
@@ -46,21 +46,23 @@ namespace Synaptix.Backend.Infrastructure.Analytics.Writers
                     if (existing == null)
                     {
                         await set.AddAsync(e, ct);
+                        await _db.SaveChangesAsync(ct);
+                        return true;
                     }
                     else
                     {
                         // Copy current values onto tracked entity
                         _db.Entry(existing).CurrentValues.SetValues(e);
+                        await _db.SaveChangesAsync(ct);
+                        return false;
                     }
-
-                    await _db.SaveChangesAsync(ct);
-                    return;
                 }
             }
 
             // If we cannot identify a key, persist as append-only
             await set.AddAsync(e, ct);
             await _db.SaveChangesAsync(ct);
+            return true;
         }
 
         public async Task WriteQuestionAnsweredAsync(QuestionAnsweredAnalyticsEvent evt, CancellationToken ct = default)

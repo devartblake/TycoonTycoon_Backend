@@ -10,13 +10,6 @@ public sealed class ElasticsearchSetupTask : ISetupTask
 {
     public string Name => "Elasticsearch";
 
-    private static readonly string[] RequiredIndices =
-    [
-        "synaptix-analytics-rollups",
-        "synaptix-player-daily-rollups",
-        "synaptix-events",
-    ];
-
     public async Task<SetupResult> RunAsync(IConfiguration cfg, CancellationToken ct = default)
     {
         var enabled = !(bool.TryParse(cfg["Elastic:Enabled"] ?? cfg["ANALYTICS_ENABLED"] ?? "true", out var e) && !e);
@@ -41,9 +34,16 @@ public sealed class ElasticsearchSetupTask : ISetupTask
             var body = await health.Content.ReadAsStringAsync(ct);
             Log.Information("Elasticsearch cluster health: {Body}", body[..Math.Min(200, body.Length)]);
 
-            // Ensure required indices exist
+            // Ensure configured write targets exist. The MigrationService/Backend
+            // bootstrapper creates these idempotently when Elasticsearch is enabled.
+            var requiredIndices = new[]
+            {
+                cfg["Elastic:DailyWriteAlias"] ?? "synaptix-daily-rollups-write",
+                cfg["Elastic:PlayerDailyWriteAlias"] ?? "synaptix-player-daily-rollups-write",
+            };
+
             var warnings = new List<string>();
-            foreach (var index in RequiredIndices)
+            foreach (var index in requiredIndices)
             {
                 var headResp = await client.SendAsync(
                     new HttpRequestMessage(HttpMethod.Head, index), ct);

@@ -37,17 +37,13 @@ public sealed class EfCoreRollupStore : IRollupStore
         category = (category ?? string.Empty).Trim();
 
         var existing = await _db.QuestionAnsweredDailyRollups
-            .FirstOrDefaultAsync(r =>
-                r.Day == day &&
-                r.Mode == mode &&
-                r.Category == category &&
-                r.Difficulty == difficulty,
-                ct);
+            .FirstOrDefaultAsync(r => r.Id == AnalyticsIds.DailyRollupId(day, mode, category, difficulty), ct);
 
         if (existing is null)
         {
             existing = new QuestionAnsweredDailyRollup
             {
+                Id = AnalyticsIds.DailyRollupId(day, mode, category, difficulty),
                 Day = day,
                 Mode = mode,
                 Category = category,
@@ -107,18 +103,13 @@ public sealed class EfCoreRollupStore : IRollupStore
         category = (category ?? string.Empty).Trim();
 
         var existing = await _db.QuestionAnsweredPlayerDailyRollups
-            .FirstOrDefaultAsync(r =>
-                r.Day == day &&
-                r.PlayerId == playerId &&
-                r.Mode == mode &&
-                r.Category == category &&
-                r.Difficulty == difficulty,
-                ct);
+            .FirstOrDefaultAsync(r => r.Id == AnalyticsIds.PlayerDailyRollupId(day, playerId, mode, category, difficulty), ct);
 
         if (existing is null)
         {
             existing = new QuestionAnsweredPlayerDailyRollup
             {
+                Id = AnalyticsIds.PlayerDailyRollupId(day, playerId, mode, category, difficulty),
                 Day = day,
                 PlayerId = playerId,
                 Mode = mode,

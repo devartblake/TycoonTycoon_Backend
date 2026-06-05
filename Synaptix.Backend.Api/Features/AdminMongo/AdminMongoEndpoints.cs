@@ -21,7 +21,6 @@ public static class AdminMongoEndpoints
         ["question_answered_events"] =
         [
             "_id_",
-            "ux_question_answered_events_id",
             "ux_question_answered_events_player_question_answered",
             "ix_question_answered_events_player_answered",
             "ix_question_answered_events_match",
@@ -29,14 +28,12 @@ public static class AdminMongoEndpoints
         ["qa_daily_rollups"] =
         [
             "_id_",
-            "ux_qa_daily_rollups_id",
             "ix_qa_daily_rollups_day_dimensions",
             "ix_qa_daily_rollups_updated",
         ],
         ["qa_player_daily_rollups"] =
         [
             "_id_",
-            "ux_qa_player_daily_rollups_id",
             "ix_qa_player_daily_rollups_player_day",
             "ix_qa_player_daily_rollups_day",
             "ix_qa_player_daily_rollups_updated",
@@ -158,7 +155,7 @@ public static class AdminMongoEndpoints
 
             if (count == 0)
             {
-                collectionWarnings.Add($"{db.DatabaseNamespace.DatabaseName}.{name} is empty.");
+                collectionWarnings.Add($"{db.DatabaseNamespace.DatabaseName}.{name} is empty; this is expected before analytics smoke or gameplay writes valid events.");
             }
 
             foreach (var indexName in missingIndexes)

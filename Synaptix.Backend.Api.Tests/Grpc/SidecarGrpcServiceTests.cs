@@ -4,6 +4,7 @@ using Grpc.Core;
 using Mediator;
 using Microsoft.Extensions.Logging.Abstractions;
 using Synaptix.Backend.Api.Grpc;
+using Synaptix.Backend.Application.Analytics;
 using Synaptix.Backend.Application.Analytics.Abstractions;
 using Synaptix.Backend.Application.Analytics.Models;
 using Synaptix.Backend.Application.Events;
@@ -47,7 +48,30 @@ public sealed class SidecarGrpcServiceTests
         Assert.True(res.Accepted);
         Assert.Equal("evt-1", res.EventId);
         Assert.Single(writer.Events);
+        Assert.Single(writer.Rollups.Daily);
+        Assert.Single(writer.Rollups.PlayerDaily);
     }
+
+    [Fact]
+    public async Task ReportAnalyticsEvent_Should_Accept_When_Rollup_Indexer_Fails()
+    {
+        var svc = CreateService(out var writer, out _, indexers: [new FailingRollupIndexer()]);
+        var ctx = TestServerCallContext.Create();
+
+        var res = await svc.ReportAnalyticsEvent(new AnalyticsEventRequest
+        {
+            EventType = "question_answered",
+            EntityId = "evt-indexer-fails",
+            PayloadJson = ValidQuestionAnsweredPayload()
+        }, ctx);
+
+        Assert.True(res.Accepted);
+        Assert.Equal("evt-indexer-fails", res.EventId);
+        Assert.Single(writer.Events);
+        Assert.Single(writer.Rollups.Daily);
+        Assert.Single(writer.Rollups.PlayerDaily);
+    }
+
 
     [Fact]
     public async Task StreamAnalyticsEvents_Should_Return_Accepted_And_Rejected_Counts()
@@ -68,6 +92,8 @@ public sealed class SidecarGrpcServiceTests
         Assert.Equal(1, summary.EventsAccepted);
         Assert.Equal(2, summary.EventsRejected);
         Assert.Single(writer.Events);
+        Assert.Single(writer.Rollups.Daily);
+        Assert.Single(writer.Rollups.PlayerDaily);
     }
 
     [Fact]
@@ -123,6 +149,8 @@ public sealed class SidecarGrpcServiceTests
         Assert.Equal(1, summary.EventsAccepted);
         Assert.Equal(0, summary.EventsRejected);
         Assert.Single(writer.Events);
+        Assert.Single(writer.Rollups.Daily);
+        Assert.Single(writer.Rollups.PlayerDaily);
     }
 
     [Fact]
@@ -207,13 +235,18 @@ public sealed class SidecarGrpcServiceTests
     private static SidecarGrpcService CreateService(
         out FakeAnalyticsWriter writer,
         out FakeMediator mediator,
-        ISidecarInferenceStore? inferenceStore = null)
+        ISidecarInferenceStore? inferenceStore = null,
+        IReadOnlyList<IRollupIndexer>? indexers = null)
     {
         writer = new FakeAnalyticsWriter();
         mediator = new FakeMediator();
         return new SidecarGrpcService(
             NullLogger<SidecarGrpcService>.Instance,
-            writer,
+            new QuestionAnsweredAnalyticsPersistence(
+                writer,
+                writer.Rollups,
+                indexers ?? [],
+                NullLogger<QuestionAnsweredAnalyticsPersistence>.Instance),
             inferenceStore ?? new InMemorySidecarInferenceStore(),
             mediator);
     }
@@ -238,12 +271,108 @@ public sealed class SidecarGrpcServiceTests
     private sealed class FakeAnalyticsWriter : IAnalyticsEventWriter
     {
         public List<QuestionAnsweredAnalyticsEvent> Events { get; } = [];
+        public FakeRollupStore Rollups { get; } = new();
 
-        public Task UpsertQuestionAnsweredEventAsync(QuestionAnsweredAnalyticsEvent e, CancellationToken ct)
+        public Task<bool> UpsertQuestionAnsweredEventAsync(QuestionAnsweredAnalyticsEvent e, CancellationToken ct)
         {
+            var existing = Events.FindIndex(x => x.Id == e.Id);
+            if (existing >= 0)
+            {
+                Events[existing] = e;
+                return Task.FromResult(false);
+            }
+
             Events.Add(e);
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
+    }
+
+    private sealed class FakeRollupStore : IRollupStore
+    {
+        public List<QuestionAnsweredDailyRollup> Daily { get; } = [];
+        public List<QuestionAnsweredPlayerDailyRollup> PlayerDaily { get; } = [];
+
+        public Task<QuestionAnsweredDailyRollup> UpsertDailyRollupAsync(
+            DateOnly utcDate,
+            string mode,
+            string category,
+            int difficulty,
+            bool isCorrect,
+            int answerTimeMs,
+            DateTime answeredAtUtc,
+            CancellationToken ct)
+        {
+            var rollup = Daily.SingleOrDefault(x =>
+                x.Day == utcDate &&
+                x.Mode == mode &&
+                x.Category == category &&
+                x.Difficulty == difficulty);
+            if (rollup is null)
+            {
+                rollup = new QuestionAnsweredDailyRollup
+                {
+                    Day = utcDate,
+                    Mode = mode,
+                    Category = category,
+                    Difficulty = difficulty,
+                };
+                Daily.Add(rollup);
+            }
+
+            rollup.TotalAnswers++;
+            if (isCorrect) rollup.CorrectAnswers++;
+            else rollup.WrongAnswers++;
+            rollup.SumAnswerTimeMs += answerTimeMs;
+            rollup.UpdatedAtUtc = answeredAtUtc;
+            return Task.FromResult(rollup);
+        }
+
+        public Task<QuestionAnsweredPlayerDailyRollup> UpsertPlayerDailyRollupAsync(
+            DateOnly utcDate,
+            Guid playerId,
+            string mode,
+            string category,
+            int difficulty,
+            bool isCorrect,
+            int answerTimeMs,
+            DateTime answeredAtUtc,
+            CancellationToken ct)
+        {
+            var rollup = PlayerDaily.SingleOrDefault(x =>
+                x.Day == utcDate &&
+                x.PlayerId == playerId &&
+                x.Mode == mode &&
+                x.Category == category &&
+                x.Difficulty == difficulty);
+            if (rollup is null)
+            {
+                rollup = new QuestionAnsweredPlayerDailyRollup
+                {
+                    Day = utcDate,
+                    PlayerId = playerId,
+                    Mode = mode,
+                    Category = category,
+                    Difficulty = difficulty,
+                };
+                PlayerDaily.Add(rollup);
+            }
+
+            rollup.TotalAnswers++;
+            if (isCorrect) rollup.CorrectAnswers++;
+            else rollup.WrongAnswers++;
+            rollup.SumAnswerTimeMs += answerTimeMs;
+            rollup.UpdatedAtUtc = answeredAtUtc;
+            return Task.FromResult(rollup);
+        }
+    }
+
+    private sealed class FailingRollupIndexer : IRollupIndexer
+    {
+        public Task IndexDailyRollupAsync(QuestionAnsweredDailyRollup rollup, CancellationToken ct)
+            => throw new InvalidOperationException("indexing unavailable");
+
+        public Task IndexPlayerDailyRollupAsync(QuestionAnsweredPlayerDailyRollup rollup, CancellationToken ct)
+            => throw new InvalidOperationException("indexing unavailable");
     }
 
     private sealed class FakeMediator : IMediator

@@ -29,8 +29,8 @@ public sealed class MongoSetupTask : ISetupTask
                 new JsonCommand<BsonDocument>("{ping:1}"), cancellationToken: ct);
             Log.Information("MongoDB root connection verified.");
 
-            await EnsureCollectionsAsync(client, appDb, ["events", "rollups", "personalization"], ct);
-            await EnsureCollectionsAsync(client, cryptoDb, ["settlements", "ledger_events"], ct);
+            await EnsureAnalyticsSchemaAsync(client.GetDatabase(appDb), ct);
+            await EnsureCryptoSchemaAsync(client.GetDatabase(cryptoDb), ct);
 
             if (!string.IsNullOrWhiteSpace(appPass))
             {
@@ -75,9 +75,8 @@ public sealed class MongoSetupTask : ISetupTask
     internal static string ResolveAuthDatabase(IConfiguration cfg, string appDb) =>
         cfg["MONGO_AUTH_DB"] ?? appDb;
 
-    private static async Task EnsureCollectionsAsync(IMongoClient client, string dbName, IEnumerable<string> collections, CancellationToken ct)
+    private static async Task EnsureCollectionsAsync(IMongoDatabase db, IEnumerable<string> collections, CancellationToken ct)
     {
-        var db = client.GetDatabase(dbName);
         var existing = (await db.ListCollectionNamesAsync(cancellationToken: ct)).ToList();
 
         foreach (var col in collections)
@@ -85,9 +84,131 @@ public sealed class MongoSetupTask : ISetupTask
             if (!existing.Contains(col))
             {
                 await db.CreateCollectionAsync(col, cancellationToken: ct);
-                Log.Information("MongoDB: created collection {Database}.{Collection}.", dbName, col);
+                Log.Information("MongoDB: created collection {Database}.{Collection}.",
+                    db.DatabaseNamespace.DatabaseName, col);
             }
         }
+    }
+
+    private static async Task EnsureAnalyticsSchemaAsync(IMongoDatabase db, CancellationToken ct)
+    {
+        await EnsureCollectionsAsync(
+            db,
+            [
+                "events",
+                "rollups",
+                "personalization",
+                "analytics_events",
+                "question_answered_events",
+                "qa_daily_rollups",
+                "qa_player_daily_rollups",
+            ],
+            ct);
+
+        await CreateIndexesAsync(db.GetCollection<BsonDocument>("analytics_events"), ct,
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument("event_id", 1),
+                new CreateIndexOptions { Name = "ux_analytics_events_event_id", Unique = true }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument { ["user_id"] = 1, ["received_at"] = -1 },
+                new CreateIndexOptions { Name = "ix_analytics_events_user_received" }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument { ["event_type"] = 1, ["received_at"] = -1 },
+                new CreateIndexOptions { Name = "ix_analytics_events_type_received" }));
+
+        await CreateIndexesAsync(db.GetCollection<BsonDocument>("question_answered_events"), ct,
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument { ["PlayerId"] = 1, ["QuestionId"] = 1, ["AnsweredAtUtc"] = 1 },
+                new CreateIndexOptions { Name = "ux_question_answered_events_player_question_answered", Unique = true }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument { ["PlayerId"] = 1, ["AnsweredAtUtc"] = -1 },
+                new CreateIndexOptions { Name = "ix_question_answered_events_player_answered" }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument("MatchId", 1),
+                new CreateIndexOptions { Name = "ix_question_answered_events_match" }));
+
+        await CreateIndexesAsync(db.GetCollection<BsonDocument>("qa_daily_rollups"), ct,
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument
+                {
+                    ["Day"] = 1,
+                    ["Mode"] = 1,
+                    ["Category"] = 1,
+                    ["Difficulty"] = 1,
+                    ["SynaptixMode"] = 1,
+                    ["Surface"] = 1,
+                    ["AudienceSegment"] = 1,
+                    ["EntryPoint"] = 1,
+                    ["BrandVersion"] = 1,
+                },
+                new CreateIndexOptions { Name = "ix_qa_daily_rollups_day_dimensions" }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument("UpdatedAtUtc", -1),
+                new CreateIndexOptions { Name = "ix_qa_daily_rollups_updated" }));
+
+        await CreateIndexesAsync(db.GetCollection<BsonDocument>("qa_player_daily_rollups"), ct,
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument { ["PlayerId"] = 1, ["Day"] = -1 },
+                new CreateIndexOptions { Name = "ix_qa_player_daily_rollups_player_day" }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument("Day", 1),
+                new CreateIndexOptions { Name = "ix_qa_player_daily_rollups_day" }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument("UpdatedAtUtc", -1),
+                new CreateIndexOptions { Name = "ix_qa_player_daily_rollups_updated" }));
+
+        await DropLegacyIdIndexIfPresentAsync(db.GetCollection<BsonDocument>("question_answered_events"), "ux_question_answered_events_id", ct);
+        await DropLegacyIdIndexIfPresentAsync(db.GetCollection<BsonDocument>("qa_daily_rollups"), "ux_qa_daily_rollups_id", ct);
+        await DropLegacyIdIndexIfPresentAsync(db.GetCollection<BsonDocument>("qa_player_daily_rollups"), "ux_qa_player_daily_rollups_id", ct);
+    }
+
+    private static async Task EnsureCryptoSchemaAsync(IMongoDatabase db, CancellationToken ct)
+    {
+        await EnsureCollectionsAsync(db, ["settlements", "ledger_events", "crypto_settlements"], ct);
+        await CreateIndexesAsync(db.GetCollection<BsonDocument>("crypto_settlements"), ct,
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument("withdrawal_id", 1),
+                new CreateIndexOptions { Name = "ux_crypto_settlements_withdrawal_id", Unique = true }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument { ["status"] = 1, ["created_at"] = -1 },
+                new CreateIndexOptions { Name = "ix_crypto_settlements_status_created" }),
+            new CreateIndexModel<BsonDocument>(
+                new BsonDocument { ["player_id"] = 1, ["created_at"] = -1 },
+                new CreateIndexOptions { Name = "ix_crypto_settlements_player_created" }));
+    }
+
+    private static async Task CreateIndexesAsync(
+        IMongoCollection<BsonDocument> collection,
+        CancellationToken ct,
+        params CreateIndexModel<BsonDocument>[] indexes)
+    {
+        await collection.Indexes.CreateManyAsync(indexes, ct);
+    }
+
+    private static async Task DropLegacyIdIndexIfPresentAsync(
+        IMongoCollection<BsonDocument> collection,
+        string indexName,
+        CancellationToken ct)
+    {
+        var indexes = await (await collection.Indexes.ListAsync(ct)).ToListAsync(ct);
+        var legacy = indexes.FirstOrDefault(x =>
+            x.TryGetValue("name", out var name) &&
+            name.IsString &&
+            name.AsString == indexName &&
+            x.TryGetValue("key", out var key) &&
+            key.IsBsonDocument &&
+            key.AsBsonDocument.ElementCount == 1 &&
+            key.AsBsonDocument.TryGetValue("Id", out var direction) &&
+            direction.IsNumeric &&
+            direction.ToInt32() == 1);
+
+        if (legacy is null)
+            return;
+
+        await collection.Indexes.DropOneAsync(indexName, ct);
+        Log.Information("MongoDB: dropped legacy index {Collection}.{IndexName}; event Id is stored as MongoDB _id.",
+            collection.CollectionNamespace.CollectionName,
+            indexName);
     }
 
     private static async Task EnsureAppUserAsync(IMongoDatabase authDb, string user, string password,

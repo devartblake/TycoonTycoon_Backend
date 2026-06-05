@@ -2,11 +2,11 @@
 
 ## Task ID
 
-`20260604-synaptix-setup-roadmap-history`
+`20260604-elasticsearch-credential-alignment`
 
 ## Task title
 
-Complete safe remaining Synaptix.Setup roadmap history items
+Align Elasticsearch credentials and rollup write targets
 
 ## Status
 
@@ -18,7 +18,7 @@ Complete safe remaining Synaptix.Setup roadmap history items
 
 ## Objective
 
-Complete the remaining safe roadmap items from the canonical setup handoff by adding durable Backend-generated setup report history while preserving `Synaptix.Setup` as the privileged CLI-only provisioning engine.
+Align local Elasticsearch service credentials and rollup write targets so setup, Backend, MigrationService, Kibana, and live analytics indexing use the same required configuration.
 
 ## Actual changes
 
@@ -34,6 +34,8 @@ Complete the remaining safe roadmap items from the canonical setup handoff by ad
 | Django dashboard | Adds `/api/operator/setup/*` BFF routes and `/settings/setup/*` read-only pages. |
 | Tests | Adds Backend contract/secret-leak tests and Django client/permission/view tests. |
 | Durable history | Adds `setup_reports`, sanitized Backend-generated report persistence, `/admin/setup/history`, `/admin/setup/history/latest`, `/api/operator/setup/history`, and `/settings/setup/history`. |
+| Mongo analytics | Adds shared question-answered persistence for HTTP, gRPC, and mission job paths; setup ensures Mongo collections/indexes without seeding documents. |
+| Elasticsearch | Setup receives Elastic credentials and waits for Elasticsearch health; Backend rollup indexing uses the authenticated DI client; local/Docker write aliases target `synaptix-daily-rollups-write` and `synaptix-player-daily-rollups-write`; Kibana no longer falls back to a stale password. |
 
 ## Verification status
 
@@ -51,6 +53,12 @@ Complete the remaining safe roadmap items from the canonical setup handoff by ad
 - [x] Full solution build checked
 - [x] Compose configuration checked
 - [x] `git diff --check` checked
+- [x] Mongo analytics HTTP/gRPC focused tests checked
+- [x] Setup provisioning re-run checked
+- [x] Live Docker Mongo analytics smoke checked
+- [x] Elasticsearch credentials checked and reset to the Compose-resolved `.env` value
+- [x] Setup Elasticsearch validation checked
+- [x] Live Docker Elasticsearch rollup indexing smoke checked
 
 ## Blockers
 
@@ -60,4 +68,6 @@ The broad Backend API suite also remains red with 28 failures outside the new Ad
 
 ## Completion notes
 
-Phase 1 read-only setup visibility is implemented with Django as the canonical UI/BFF, the Backend API as a sanitized status/history layer, and `Synaptix.Setup` retained as the privileged offline/one-shot engine. Mutating/destructive operations and KMS-backed setup-secret protection remain deferred.
+Phase 1 read-only setup visibility is implemented with Django as the canonical UI/BFF, the Backend API as a sanitized status/history layer, and `Synaptix.Setup` retained as the privileged offline/one-shot engine. Mongo setup remains schema-only; valid analytics events now populate raw event and rollup collections. Live Docker smoke confirmed one `question_answered` event writes `question_answered_events`, `qa_daily_rollups`, and `qa_player_daily_rollups`. Mutating/destructive operations and KMS-backed setup-secret protection remain deferred.
+
+Elasticsearch credential alignment is complete for the local Compose stack. The persisted Elasticsearch `elastic` user password was reset to the Compose-resolved `ELASTIC_PASSWORD`, setup validates Elasticsearch with `7` succeeded, `0` errors, and `0` warnings, and a live `/analytics/track` smoke confirmed rollup documents in both Elasticsearch write indices.

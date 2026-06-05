@@ -575,6 +575,17 @@ docker compose -f docker/compose.yml exec mongodb \
   --eval "db.adminCommand('ping')"
 ```
 
+Mongo setup creates databases, users, collections, and indexes only. Empty analytics collections are expected until gameplay or analytics smoke writes valid events. A local write-path smoke can be run with a valid `question_answered` payload:
+
+```bash
+curl -X POST http://localhost:5000/analytics/track \
+  -H "Content-Type: application/json" \
+  -d '{"eventName":"question_answered","timestamp":"2026-06-04T00:00:00Z","properties":{"id":"local-smoke-question-answered","playerId":"11111111-1111-1111-1111-111111111111","matchId":"22222222-2222-2222-2222-222222222222","questionId":"smoke-question","mode":"smoke","category":"general","difficulty":1,"isCorrect":true,"answerTimeMs":750,"pointsAwarded":10}}'
+
+docker compose --env-file docker/.env -f docker/compose.yml exec mongodb \
+  mongosh --quiet --eval "const u=process.env.MONGO_INITDB_ROOT_USERNAME; const p=process.env.MONGO_INITDB_ROOT_PASSWORD; const conn=new Mongo('127.0.0.1:27017'); const admin=conn.getDB('admin'); admin.auth(u,p); const db=conn.getDB('synaptix_analytics'); printjson({events:db.question_answered_events.countDocuments(), daily:db.qa_daily_rollups.countDocuments(), playerDaily:db.qa_player_daily_rollups.countDocuments()});"
+```
+
 **Redis**
 ```bash
 docker compose -f docker/compose.yml exec redis \
@@ -607,6 +618,7 @@ curl http://localhost:5000/healthz
 
 - PostgreSQL: "accepting connections"
 - MongoDB: "ok: 1"
+- MongoDB analytics collections: empty before smoke/gameplay; counts increase after a valid `question_answered` event
 - Redis: "PONG"
 - Elasticsearch: status "yellow" or "green"
 - RabbitMQ: "pong"

@@ -10,6 +10,7 @@ using Synaptix.Backend.Application.Leaderboards;
 using Synaptix.Backend.Application.Realtime;
 using Synaptix.Backend.Application.Seasons;
 using Synaptix.Backend.Application.Territory;
+using Synaptix.Backend.Application.Analytics;
 
 namespace Synaptix.Backend.Application
 {
@@ -29,6 +30,7 @@ namespace Synaptix.Backend.Application
             // Missions
             services.AddScoped<Missions.MissionProgressService>();
             services.AddTransient<Missions.Jobs.QuestionAnsweredMissionJob>();
+            services.AddScoped<QuestionAnsweredAnalyticsPersistence>();
 
             // Tiers
             services.AddScoped<Tiers.TierResolver>();

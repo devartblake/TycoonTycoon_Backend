@@ -1,5 +1,4 @@
 ﻿using Elastic.Clients.Elasticsearch;
-using Elastic.Transport;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
@@ -14,14 +13,12 @@ namespace Synaptix.Backend.Infrastructure.Analytics.Elastic
         private readonly ElasticOptions _opt;
         private readonly ResiliencePipeline _retry;
 
-        public ElasticRollupIndexer(IOptions<ElasticOptions> opt)
+        public ElasticRollupIndexer(
+            ElasticsearchClient client,
+            IOptions<ElasticOptions> opt)
         {
+            _client = client;
             _opt = opt.Value;
-
-            var settings = new ElasticsearchClientSettings(new Uri(_opt.Url))
-                .EnableDebugMode();
-
-            _client = new ElasticsearchClient(settings);
 
             _retry = new ResiliencePipelineBuilder()
                 .AddRetry(new RetryStrategyOptions

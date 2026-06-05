@@ -38,13 +38,11 @@ function ensureAnalyticsIndexes(database) {
   createIndexIfMissing(database.analytics_events, { event_type: 1, received_at: -1 }, { name: 'ix_analytics_events_type_received' });
 
   createCollectionIfMissing(database, 'question_answered_events');
-  createIndexIfMissing(database.question_answered_events, { Id: 1 }, { unique: true, name: 'ux_question_answered_events_id' });
   createIndexIfMissing(database.question_answered_events, { PlayerId: 1, QuestionId: 1, AnsweredAtUtc: 1 }, { unique: true, name: 'ux_question_answered_events_player_question_answered' });
   createIndexIfMissing(database.question_answered_events, { PlayerId: 1, AnsweredAtUtc: -1 }, { name: 'ix_question_answered_events_player_answered' });
   createIndexIfMissing(database.question_answered_events, { MatchId: 1 }, { name: 'ix_question_answered_events_match' });
 
   createCollectionIfMissing(database, 'qa_daily_rollups');
-  createIndexIfMissing(database.qa_daily_rollups, { Id: 1 }, { unique: true, name: 'ux_qa_daily_rollups_id' });
   createIndexIfMissing(
     database.qa_daily_rollups,
     { Day: 1, Mode: 1, Category: 1, Difficulty: 1, SynaptixMode: 1, Surface: 1, AudienceSegment: 1, EntryPoint: 1, BrandVersion: 1 },
@@ -53,7 +51,6 @@ function ensureAnalyticsIndexes(database) {
   createIndexIfMissing(database.qa_daily_rollups, { UpdatedAtUtc: -1 }, { name: 'ix_qa_daily_rollups_updated' });
 
   createCollectionIfMissing(database, 'qa_player_daily_rollups');
-  createIndexIfMissing(database.qa_player_daily_rollups, { Id: 1 }, { unique: true, name: 'ux_qa_player_daily_rollups_id' });
   createIndexIfMissing(database.qa_player_daily_rollups, { PlayerId: 1, Day: -1 }, { name: 'ix_qa_player_daily_rollups_player_day' });
   createIndexIfMissing(database.qa_player_daily_rollups, { Day: 1 }, { name: 'ix_qa_player_daily_rollups_day' });
   createIndexIfMissing(database.qa_player_daily_rollups, { UpdatedAtUtc: -1 }, { name: 'ix_qa_player_daily_rollups_updated' });

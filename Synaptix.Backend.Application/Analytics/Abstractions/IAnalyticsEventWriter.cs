@@ -6,6 +6,6 @@ namespace Synaptix.Backend.Application.Analytics.Abstractions
 {
     public interface IAnalyticsEventWriter
     {
-        Task UpsertQuestionAnsweredEventAsync(QuestionAnsweredAnalyticsEvent e, CancellationToken ct);
+        Task<bool> UpsertQuestionAnsweredEventAsync(QuestionAnsweredAnalyticsEvent e, CancellationToken ct);
     }
 }

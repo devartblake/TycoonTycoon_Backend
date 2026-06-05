@@ -58,6 +58,139 @@ public sealed class AnalyticsCompatibilityEndpointsTests : IClassFixture<TycoonA
             x.MatchId == matchId &&
             x.QuestionId == "q-track-1" &&
             x.AnsweredAtUtc == timestamp);
+        db.QuestionAnsweredDailyRollups.Should().ContainSingle(x =>
+            x.Day == DateOnly.FromDateTime(timestamp) &&
+            x.Mode == "ranked" &&
+            x.Category == "history" &&
+            x.Difficulty == 2 &&
+            x.TotalAnswers == 1);
+        db.QuestionAnsweredPlayerDailyRollups.Should().ContainSingle(x =>
+            x.Day == DateOnly.FromDateTime(timestamp) &&
+            x.PlayerId == playerId &&
+            x.Mode == "ranked" &&
+            x.Category == "history" &&
+            x.Difficulty == 2 &&
+            x.TotalAnswers == 1);
+    }
+
+    [Fact]
+    public async Task Events_Direct_QuestionAnsweredEvent_PersistsAndRollsUp()
+    {
+        var http = _factory.CreateClient();
+        var timestamp = new DateTime(2026, 1, 3, 3, 4, 5, DateTimeKind.Utc);
+        var playerId = Guid.NewGuid();
+        var matchId = Guid.NewGuid();
+
+        var resp = await http.PostAsJsonAsync("/analytics/events", new
+        {
+            id = $"evt-direct-{Guid.NewGuid():N}",
+            playerId,
+            matchId,
+            questionId = "q-events-direct",
+            mode = "casual",
+            category = "science",
+            difficulty = 3,
+            isCorrect = false,
+            answerTimeMs = 1200,
+            answeredAtUtc = timestamp
+        });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IAppDb>();
+        db.QuestionAnsweredAnalyticsEvents.Should().ContainSingle(x => x.PlayerId == playerId && x.QuestionId == "q-events-direct");
+        db.QuestionAnsweredDailyRollups.Should().ContainSingle(x =>
+            x.Day == DateOnly.FromDateTime(timestamp) &&
+            x.Mode == "casual" &&
+            x.Category == "science" &&
+            x.Difficulty == 3 &&
+            x.TotalAnswers == 1 &&
+            x.WrongAnswers == 1);
+    }
+
+    [Fact]
+    public async Task Events_Enveloped_QuestionAnsweredEvent_PersistsAndRollsUp()
+    {
+        var http = _factory.CreateClient();
+        var timestamp = new DateTime(2026, 1, 4, 3, 4, 5, DateTimeKind.Utc);
+        var playerId = Guid.NewGuid();
+        var matchId = Guid.NewGuid();
+
+        var resp = await http.PostAsJsonAsync("/api/v1/analytics/events", new
+        {
+            @event = "question_answered",
+            payload = new
+            {
+                id = $"evt-envelope-{Guid.NewGuid():N}",
+                playerId,
+                matchId,
+                questionId = "q-events-envelope",
+                mode = "ranked",
+                category = "geography",
+                difficulty = 1,
+                isCorrect = true,
+                answerTimeMs = 700,
+                answeredAtUtc = timestamp
+            }
+        });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IAppDb>();
+        db.QuestionAnsweredAnalyticsEvents.Should().ContainSingle(x => x.PlayerId == playerId && x.QuestionId == "q-events-envelope");
+        db.QuestionAnsweredPlayerDailyRollups.Should().ContainSingle(x =>
+            x.Day == DateOnly.FromDateTime(timestamp) &&
+            x.PlayerId == playerId &&
+            x.Mode == "ranked" &&
+            x.Category == "geography" &&
+            x.Difficulty == 1 &&
+            x.TotalAnswers == 1 &&
+            x.CorrectAnswers == 1);
+    }
+
+    [Fact]
+    public async Task Track_DuplicateEventId_DoesNotDoubleCountRollups()
+    {
+        var http = _factory.CreateClient();
+        var timestamp = new DateTime(2026, 1, 5, 3, 4, 5, DateTimeKind.Utc);
+        var playerId = Guid.NewGuid();
+        var matchId = Guid.NewGuid();
+        var eventId = $"evt-duplicate-{Guid.NewGuid():N}";
+
+        var body = new
+        {
+            userId = playerId.ToString(),
+            eventName = "question_answered",
+            timestamp,
+            properties = new
+            {
+                id = eventId,
+                playerId,
+                matchId,
+                questionId = "q-duplicate",
+                mode = "ranked",
+                category = "history",
+                difficulty = 2,
+                isCorrect = true,
+                answerTimeMs = 950,
+                pointsAwarded = 30
+            }
+        };
+
+        (await http.PostAsJsonAsync("/analytics/track", body)).StatusCode.Should().Be(HttpStatusCode.Accepted);
+        (await http.PostAsJsonAsync("/analytics/track", body)).StatusCode.Should().Be(HttpStatusCode.Accepted);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IAppDb>();
+        db.QuestionAnsweredAnalyticsEvents.Should().ContainSingle(x => x.Id == eventId);
+        db.QuestionAnsweredDailyRollups.Should().ContainSingle(x =>
+            x.Day == DateOnly.FromDateTime(timestamp) &&
+            x.Mode == "ranked" &&
+            x.Category == "history" &&
+            x.Difficulty == 2 &&
+            x.TotalAnswers == 1);
     }
 
     [Fact]

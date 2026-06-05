@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using Synaptix.Backend.Application.Analytics;
-using Synaptix.Backend.Application.Analytics.Abstractions;
 using Synaptix.Backend.Application.Analytics.Models;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Domain.Entities;
@@ -14,24 +13,18 @@ namespace Synaptix.Backend.Application.Missions.Jobs
     {
         private readonly IAppDb _db;
         private readonly MissionProgressService _missions;
-        private readonly IAnalyticsEventWriter _eventWriter;
-        private readonly IRollupStore _rollups;
-        private readonly IRollupIndexer? _indexer;
+        private readonly QuestionAnsweredAnalyticsPersistence _analytics;
         private readonly IPlayerMindProfileService? _mindProfiles;
 
         public QuestionAnsweredMissionJob(
             IAppDb db,
             MissionProgressService missions,
-            IAnalyticsEventWriter eventWriter,
-            IRollupStore rollups,
-            IRollupIndexer? indexer = null,
+            QuestionAnsweredAnalyticsPersistence analytics,
             IPlayerMindProfileService? mindProfiles = null)
         {
             _db = db;
             _missions = missions;
-            _eventWriter = eventWriter;
-            _rollups = rollups;
-            _indexer = indexer;
+            _analytics = analytics;
             _mindProfiles = mindProfiles;
         }
 
@@ -77,33 +70,7 @@ namespace Synaptix.Backend.Application.Missions.Jobs
                 answeredAtUtc: answeredAtUtc
             );
 
-            await _eventWriter.UpsertQuestionAnsweredEventAsync(evt, ct);
-
-            // Rollup
-            var date = DateOnly.FromDateTime(answeredAtUtc);
-            var daily = await _rollups.UpsertDailyRollupAsync(
-                date, mode, category, difficulty, isCorrect, answerTimeMs, answeredAtUtc, ct);
-            var playerDaily = await _rollups.UpsertPlayerDailyRollupAsync(
-                date, playerId, mode, category, difficulty, isCorrect, answerTimeMs, answeredAtUtc, ct);
-            // Update aggregate daily rollup
-            var rollup = await _rollups.UpsertDailyRollupAsync(
-                utcDate: date,
-                mode: mode,
-                category: category,
-                difficulty: difficulty,
-                isCorrect: isCorrect,
-                answerTimeMs: answerTimeMs,
-                answeredAtUtc: answeredAtUtc,
-                ct: ct
-            );
-
-            // Index rollup into Elastic (idempotent)
-            if (_indexer is not null)
-            {
-                await _indexer.IndexDailyRollupAsync(rollup, ct);
-                await _indexer.IndexDailyRollupAsync(daily, ct);
-                await _indexer.IndexPlayerDailyRollupAsync(playerDaily, ct);
-            }
+            await _analytics.PersistAsync(evt, ct);
 
             await _db.SaveChangesAsync(ct);
 

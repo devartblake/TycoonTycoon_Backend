@@ -4,6 +4,20 @@ All notable changes to this project.
 
 ---
 
+## [2026-06-04] Mongo Analytics Write Path Completion
+
+- Added shared `question_answered` analytics persistence so HTTP analytics ingestion, gRPC sidecar ingestion, and the mission job write raw events and rollups through one path.
+- Made raw analytics event upserts idempotency-aware so duplicate event IDs do not double-count daily/player rollups.
+- Fixed EF Core rollup creation to assign deterministic rollup IDs.
+- Hardened `MongoSetupTask` to ensure analytics/crypto collections and indexes without seeding sample documents.
+- Dropped legacy MongoDB `Id` unique indexes during setup because event and rollup IDs serialize as Mongo `_id`.
+- Kept Elasticsearch rollup indexing best-effort so an indexing outage does not fail accepted analytics ingestion after Mongo persistence succeeds.
+- Aligned local Elasticsearch credentials and rollup write targets: setup now receives Elastic credentials, Backend indexing uses the authenticated DI client, and local/Docker writes target `synaptix-*-write` indices.
+- Fixed local pgAdmin startup by using a valid default login email (`admin@synaptix.app`) instead of the reserved `.local` domain that current pgAdmin images reject.
+- Clarified Mongo diagnostics/docs: empty collections are expected before analytics smoke or gameplay writes valid events.
+
+---
+
 ## [2026-06-04] Read-Only Setup Visibility
 
 - Added sanitized, permission-protected Backend API projections at `/admin/setup/{status|readiness|services|seeds|validation}`.

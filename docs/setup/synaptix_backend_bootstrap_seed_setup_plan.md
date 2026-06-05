@@ -300,8 +300,8 @@ Example:
     "elasticsearch": {
       "enabled": true,
       "indices": [
-        "synaptix-analytics-rollups",
-        "synaptix-events"
+        "synaptix-daily-rollups-write",
+        "synaptix-player-daily-rollups-write"
       ]
     }
   },
@@ -485,7 +485,7 @@ Example local file:
 Contents:
 
 ```text
-Email: admin@tycoon.local
+Email: admin@synaptix.app
 Password: <generated>
 CreatedAtUtc: <timestamp>
 ```
@@ -502,7 +502,7 @@ dotnet run --project Synaptix.Setup -- validate-super-admin
 
 For Alpha/Beta:
 
-- keep `admin@tycoon.local` acceptable for local,
+- keep pgAdmin on a syntactically valid local login email such as `admin@synaptix.app`,
 - generate a strong local password,
 - remove `ChangeMe123!` as the default in `.env.example`,
 - document how to retrieve the generated password.
@@ -524,7 +524,7 @@ Docker defines root and app credentials through environment variables. The setup
 - app-user authentication,
 - analytics database,
 - crypto database,
-- required setup collections.
+- required analytics/crypto collections and indexes.
 
 It also detects a same-named legacy app user in `admin`. Cleanup is disabled by default and requires:
 
@@ -532,9 +532,9 @@ It also detects a same-named legacy app user in `admin`. Cleanup is disabled by 
 SETUP_MONGO_REMOVE_LEGACY_ADMIN_APP_USER=true
 ```
 
-Index ownership remains split between the Mongo init script and runtime/admin diagnostics; additional index reconciliation is roadmap work.
+Mongo setup is schema-only: it does not seed analytics or crypto documents. Empty Mongo collections are expected immediately after `provision-services`; valid gameplay or analytics smoke events populate `question_answered_events`, `qa_daily_rollups`, and `qa_player_daily_rollups`.
 
-Recommended Mongo init file:
+The Mongo init file remains useful for first-run volume initialization:
 
 ```text
 docker/init/mongo/001-create-app-user.js
