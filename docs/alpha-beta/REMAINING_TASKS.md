@@ -17,6 +17,7 @@ _Previous: 2026-05-14 — Operator dashboard direction reconciled ✅; Django ad
 
 | Area | Priority | Status | Blocked? |
 |------|----------|--------|----------|
+| **gRPC mobile client (Flutter)** | **High** | **Complete — 6 RPCs (StartMatch, SubmitMatch, PlayMatch, WatchLeaderboard, WatchMatchmaking, CancelMatchmaking); channel manager, auth interceptor, service façade, Riverpod providers; Track 3 deferred (SpectateMatch, StreamAnalyticsEvents, GetMatchHistory)** | **No** |
 | **`Synaptix.Setup` bootstrap CLI** | **High** | **Complete — 9 commands, 6 service provisioners, Security Phase 1 (ISetupSecretProtector), Dockerfile.setup** | **No** |
 | **Docker secret enforcement** | **High** | **Complete — :? required syntax on 12 secrets; setup service before migration in compose.yml** | **No** |
 | **MinIO asset bootstrapping** | **High** | **Complete — UploadBundledImagesAsync, UploadBundledModelsAsync, SeedAssetCatalogAsync** | **No** |

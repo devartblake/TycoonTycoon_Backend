@@ -5,6 +5,7 @@ using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Synaptix.Backend.Application.Leaderboards;
 using Synaptix.Backend.Application.Matches;
+using Synaptix.Backend.Application.Matchmaking;
 using Synaptix.Backend.Api.Grpc;
 using Synaptix.Shared.Contracts.Dtos;
 using Synaptix.Backend.Application.Abstractions;
@@ -36,14 +37,21 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
 
     private readonly IMediator _mediator;
     private readonly IAppDb _db;
+    private readonly MatchmakingService _matchmaking;
     private readonly ILogger<MobileMatchGrpcService> _logger;
     private readonly TimeSpan _leaderboardPollInterval;
+    private static readonly TimeSpan MatchmakingPollInterval = TimeSpan.FromSeconds(2);
 
-    public MobileMatchGrpcService(IMediator mediator, IAppDb db, ILogger<MobileMatchGrpcService> logger)
+    public MobileMatchGrpcService(
+        IMediator mediator,
+        IAppDb db,
+        MatchmakingService matchmaking,
+        ILogger<MobileMatchGrpcService> logger)
     {
-        _mediator = mediator;
-        _db = db;
-        _logger   = logger;
+        _mediator    = mediator;
+        _db          = db;
+        _matchmaking = matchmaking;
+        _logger      = logger;
         _leaderboardPollInterval = ResolveLeaderboardPollInterval(
             Environment.GetEnvironmentVariable(LeaderboardPollSecondsEnv));
     }
@@ -282,6 +290,113 @@ public sealed class MobileMatchGrpcService : MobileMatchService.MobileMatchServi
 
         _logger.LogInformation(
             "gRPC WatchLeaderboard: player={PlayerId} stream ended", request.PlayerId);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // WatchMatchmaking — server streaming
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public override async Task WatchMatchmaking(
+        WatchMatchmakingRequest request,
+        IServerStreamWriter<MatchmakingStatusUpdate> responseStream,
+        ServerCallContext context)
+    {
+        RequireAuth(context);
+
+        if (!Guid.TryParse(request.PlayerId, out var playerId))
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "player_id must be a valid UUID"));
+
+        var tier = request.TierId > 0 ? request.TierId : 1;
+        var mode = string.IsNullOrWhiteSpace(request.Mode) ? "ranked" : request.Mode;
+
+        _logger.LogInformation(
+            "gRPC WatchMatchmaking: player={PlayerId} mode={Mode} tier={Tier}",
+            playerId, mode, tier);
+
+        // Enqueue — idempotent; returns existing ticket if already queued.
+        var enqueue = await _matchmaking.EnqueueAsync(playerId, mode, tier, context.CancellationToken);
+
+        if (enqueue.Status == "Forbidden")
+            throw new RpcException(new Status(StatusCode.PermissionDenied, "Player is not allowed to enter matchmaking."));
+
+        var ticketId = enqueue.TicketId?.ToString() ?? string.Empty;
+
+        // If already matched on the first enqueue attempt, return immediately.
+        if (enqueue.Status == "Matched")
+        {
+            await responseStream.WriteAsync(new MatchmakingStatusUpdate
+            {
+                TicketId   = ticketId,
+                Status     = "Matched",
+                OpponentId = enqueue.OpponentId?.ToString() ?? string.Empty,
+            }, context.CancellationToken);
+            return;
+        }
+
+        // Push initial "Queued" acknowledgement.
+        await responseStream.WriteAsync(new MatchmakingStatusUpdate
+        {
+            TicketId = ticketId,
+            Status   = "Queued",
+        }, context.CancellationToken);
+
+        // Poll until matched, cancelled, or client disconnects.
+        while (!context.CancellationToken.IsCancellationRequested)
+        {
+            await Task.Delay(MatchmakingPollInterval, context.CancellationToken);
+
+            var status = await _matchmaking.GetStatusAsync(playerId, context.CancellationToken);
+
+            if (status.Status == "Matched")
+            {
+                await responseStream.WriteAsync(new MatchmakingStatusUpdate
+                {
+                    TicketId   = ticketId,
+                    Status     = "Matched",
+                    OpponentId = status.OpponentId?.ToString() ?? string.Empty,
+                }, context.CancellationToken);
+                break;
+            }
+
+            if (status.Status is "Cancelled" or "None")
+            {
+                await responseStream.WriteAsync(new MatchmakingStatusUpdate
+                {
+                    TicketId = ticketId,
+                    Status   = "Cancelled",
+                }, context.CancellationToken);
+                break;
+            }
+        }
+
+        _logger.LogInformation(
+            "gRPC WatchMatchmaking: player={PlayerId} stream ended", playerId);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CancelMatchmaking — unary
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public override async Task<CancelMatchmakingResponse> CancelMatchmaking(
+        CancelMatchmakingRequest request,
+        ServerCallContext context)
+    {
+        RequireAuth(context);
+
+        if (!Guid.TryParse(request.PlayerId, out var playerId))
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "player_id must be a valid UUID"));
+
+        await _matchmaking.CancelAsync(playerId, context.CancellationToken);
+
+        _logger.LogInformation(
+            "gRPC CancelMatchmaking: player={PlayerId} ticket={TicketId}",
+            playerId, request.TicketId);
+
+        return new CancelMatchmakingResponse
+        {
+            Cancelled = true,
+            TicketId  = request.TicketId,
+        };
     }
 
     // ─────────────────────────────────────────────────────────────────────────

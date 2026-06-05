@@ -14,11 +14,20 @@ package tycoon.mobile;
 // This service runs alongside the existing REST API and SignalR hubs.
 // SignalR continues to serve browser clients; gRPC serves native mobile.
 //
-// Track 2 scope:
-//   StartMatch    — mirrors POST /mobile/matches/start  (unary)
-//   SubmitMatch   — mirrors POST /mobile/matches/submit (unary)
-//   PlayMatch     — bidirectional stream for live match sessions
+// Track 2 scope (original):
+//   StartMatch       — mirrors POST /mobile/matches/start  (unary)
+//   SubmitMatch      — mirrors POST /mobile/matches/submit (unary)
+//   PlayMatch        — bidirectional stream for live match sessions
 //   WatchLeaderboard — server stream for live leaderboard rank updates
+//
+// Track 2 additions (2026-06-04):
+//   WatchMatchmaking  — server stream; subscribe to queue until match found
+//   CancelMatchmaking — unary; cancel an active queue subscription
+//
+// Track 3 (deferred — backend not yet implemented):
+//   SpectateMatch        — server stream; watch a live match read-only
+//   StreamAnalyticsEvents — client stream; batch event ingestion from mobile
+//   GetMatchHistory      — unary; paginated match history
 // ─────────────────────────────────────────────────────────────────────────────
 service MobileMatchService {
   // ── Lifecycle (unary, mirrors existing REST endpoints) ───────────────────
@@ -35,6 +44,13 @@ service MobileMatchService {
   // Client subscribes once; server pushes LeaderboardUpdate whenever the
   // player's visible rank window changes.  Cancel the stream to unsubscribe.
   rpc WatchLeaderboard  (LeaderboardWatchRequest)      returns (stream LeaderboardUpdate);
+
+  // ── Matchmaking (server streaming + unary) ───────────────────────────────
+  // Client calls WatchMatchmaking to enter the queue and receive status events
+  // (Queued → Matched) until a match is found or the stream is cancelled.
+  // CancelMatchmaking cleanly withdraws the player from the queue.
+  rpc WatchMatchmaking  (WatchMatchmakingRequest)      returns (stream MatchmakingStatusUpdate);
+  rpc CancelMatchmaking (CancelMatchmakingRequest)     returns (CancelMatchmakingResponse);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -211,4 +227,35 @@ message LeaderboardEntry {
   string handle     = 3;
   int32  score      = 4;
   string country    = 5;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WatchMatchmaking / CancelMatchmaking
+// ─────────────────────────────────────────────────────────────────────────────
+
+message WatchMatchmakingRequest {
+  string player_id = 1;
+  string mode      = 2;   // "duel" | "ranked" | "practice"
+  int32  tier_id   = 3;   // 0 = auto-resolve from player profile
+}
+
+// Emitted by the server until status = "Matched" or the stream is cancelled.
+message MatchmakingStatusUpdate {
+  string ticket_id       = 1;
+  string status          = 2;   // "Queued" | "Matched" | "Cancelled" | "Error"
+  int32  queue_position  = 3;   // 0 when unknown
+  // Populated when status = "Matched"
+  string match_id        = 4;
+  string opponent_id     = 5;
+  string opponent_handle = 6;
+}
+
+message CancelMatchmakingRequest {
+  string player_id = 1;
+  string ticket_id = 2;   // optional; cancels any active ticket if empty
+}
+
+message CancelMatchmakingResponse {
+  bool   cancelled  = 1;
+  string ticket_id  = 2;
 }

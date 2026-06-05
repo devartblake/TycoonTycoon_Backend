@@ -4,6 +4,28 @@ All notable changes to this project.
 
 ---
 
+## [2026-06-04] gRPC Mobile Client — WatchMatchmaking + CancelMatchmaking + Flutter Infrastructure
+
+### Backend — `protos/mobile.proto`
+- **`WatchMatchmaking` (server stream)** — queue subscription streaming `Queued` → `Matched`/`Cancelled` status updates; replaces `POST /matchmaking/enqueue` + SignalR callback.
+- **`CancelMatchmaking` (unary)** — explicit queue withdrawal over gRPC.
+- New message types: `WatchMatchmakingRequest`, `MatchmakingStatusUpdate`, `CancelMatchmakingRequest`, `CancelMatchmakingResponse`.
+- Track 3 deferred RPCs documented: `SpectateMatch`, `StreamAnalyticsEvents`, `GetMatchHistory`.
+
+### Backend — `MobileMatchGrpcService.cs`
+- Injects `MatchmakingService`; implements `WatchMatchmaking` (2s poll loop) and `CancelMatchmaking` overrides.
+
+### Flutter — `trivia_tycoon`
+- `grpc: ^4.0.0`, `protobuf: ^3.1.0`, `fixnum: ^1.1.0` added; `protoc_plugin: ^21.1.2` dev dep.
+- `protos/mobile.proto`, `scripts/generate_proto.sh`, `scripts/generate_proto.ps1` added.
+- New files: `grpc_channel_manager.dart`, `grpc_auth_interceptor.dart`, `grpc_match_client.dart`, `grpc_match_service.dart`, `grpc_providers.dart`, `lib/core/env.dart` gRPC getters.
+
+### Documentation
+- New: `docs/architecture/grpc_mobile_client_implementation.md`
+- New: `trivia_tycoon/docs/GRPC_INTEGRATION.md`
+
+---
+
 ## [2026-06-04] Mongo Analytics Write Path Completion
 
 - Added shared `question_answered` analytics persistence so HTTP analytics ingestion, gRPC sidecar ingestion, and the mission job write raw events and rollups through one path.
