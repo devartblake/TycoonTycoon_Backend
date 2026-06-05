@@ -1,5 +1,6 @@
 using Mediator;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Synaptix.Backend.Api.Realtime.Clients;
 using Synaptix.Backend.Application.Leaderboards;
 using Synaptix.Shared.Contracts.Realtime.Leaderboard;
@@ -10,17 +11,17 @@ namespace Synaptix.Backend.Api.Realtime
     /// Pushes leaderboard updates to all subscribed hub clients.
     /// Called by <see cref="LeaderboardRecalculationJob"/> after each batch recalc,
     /// and optionally per-player after a score update.
+    ///
+    /// Registered as Singleton (matching all other SignalR notifiers).
+    /// Uses <see cref="IServiceScopeFactory"/> to create a short-lived scope for each
+    /// mediator call — the correct pattern for singletons that need scoped services.
     /// </summary>
     public sealed class SignalRLeaderboardNotifier(
         IHubContext<LeaderboardHub, ILeaderboardClient> hub,
-        IMediator mediator) : ILeaderboardNotifier
+        IServiceScopeFactory scopeFactory) : ILeaderboardNotifier
     {
         private const int SnapshotPageSize = 50;
 
-        /// <summary>
-        /// Push a fresh tier snapshot to all subscribed clients after a full recalculation.
-        /// Iterates tiers 1–6 (the standard Synaptix tier ladder).
-        /// </summary>
         public async Task NotifyRecalculatedAsync(CancellationToken ct)
         {
             for (var tierId = 1; tierId <= 6; tierId++)
@@ -29,14 +30,10 @@ namespace Synaptix.Backend.Api.Realtime
                 await hub.Clients.Group($"leaderboard:tier:{tierId}").LeaderboardSnapshot(snapshot);
             }
 
-            // Push tier-1 snapshot to the "global" group as well.
             var globalSnapshot = await BuildSnapshotAsync(tierId: 1, ct);
             await hub.Clients.Group("leaderboard:global").LeaderboardSnapshot(globalSnapshot);
         }
 
-        /// <summary>
-        /// Push a rank-change event and a fresh snapshot for a single player's tier.
-        /// </summary>
         public async Task NotifyRankChangedAsync(
             Guid playerId,
             int tierId,
@@ -57,6 +54,10 @@ namespace Synaptix.Backend.Api.Realtime
 
         private async Task<LeaderboardSnapshotMessage> BuildSnapshotAsync(int tierId, CancellationToken ct)
         {
+            // Create a scope so the scoped IMediator (and its DbContext) is correctly managed.
+            using var scope = scopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
             var result = await mediator.Send(
                 new GetTierLeaderboard(tierId, Page: 1, PageSize: SnapshotPageSize), ct);
 
