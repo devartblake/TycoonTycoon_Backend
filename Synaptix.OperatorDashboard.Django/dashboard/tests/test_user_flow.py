@@ -644,6 +644,46 @@ class UserInvestigationFlowTests(_BaseUserFlowTests):
     @mock.patch("dashboard.views.get_moderation_profile")
     @mock.patch("dashboard.views.get_admin_user_activity")
     @mock.patch("dashboard.views.get_admin_user")
+    def test_investigation_user_contract_id_normalizes_player_scoped_calls(
+        self,
+        mock_user,
+        mock_activity,
+        mock_moderation,
+        mock_economy,
+        mock_profile,
+        mock_debug,
+        mock_stock,
+    ):
+        self._login(["users:read", "store:read", "moderation:read", "economy:read", "personalization:read"])
+        self._setup_mocks(
+            user=mock_user,
+            activity=mock_activity,
+            moderation=mock_moderation,
+            economy=mock_economy,
+            profile=mock_profile,
+            debug=mock_debug,
+            stock=mock_stock,
+        )
+        user_id = f"usr_{self._PLAYER_UUID.replace('-', '')}"
+
+        response = self.client.get(
+            reverse("operator-user-investigation-view", kwargs={"user_id": user_id})
+        )
+
+        self.assertEqual(200, response.status_code)
+        mock_moderation.assert_called_once_with("tok", self._PLAYER_UUID)
+        mock_economy.assert_called_once_with("tok", self._PLAYER_UUID, {"page": 1, "pageSize": 10})
+        mock_profile.assert_called_once_with("tok", self._PLAYER_UUID)
+        mock_debug.assert_called_once_with("tok", self._PLAYER_UUID)
+        mock_stock.assert_called_once_with("tok", self._PLAYER_UUID)
+
+    @mock.patch("dashboard.views.get_player_stock")
+    @mock.patch("dashboard.views.get_player_debug")
+    @mock.patch("dashboard.views.get_player_profile")
+    @mock.patch("dashboard.views.get_economy_history")
+    @mock.patch("dashboard.views.get_moderation_profile")
+    @mock.patch("dashboard.views.get_admin_user_activity")
+    @mock.patch("dashboard.views.get_admin_user")
     def test_investigation_uuid_player_id_calls_stock_endpoint(
         self,
         mock_user,

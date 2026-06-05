@@ -462,6 +462,53 @@ def _load_optional_investigation_section(request, label: str, permission: str, l
     return None, section
 
 
+def _skip_investigation_section(label: str, permission: str, message: str) -> tuple[None, dict]:
+    return None, {
+        **_detail_section(label, permission),
+        "available": False,
+        "skipped": True,
+        "error": message,
+    }
+
+
+def _normalize_player_uuid(value: str | None) -> str | None:
+    raw = (value or "").strip()
+    if not raw:
+        return None
+
+    if raw.lower().startswith(("ply_", "usr_")):
+        raw = raw[4:]
+
+    try:
+        return str(uuid.UUID(raw))
+    except ValueError:
+        return None
+
+
+def _resolve_investigation_player_id(access_token: str, user_id: str, explicit_player_id: str | None) -> str | None:
+    normalized = _normalize_player_uuid(explicit_player_id)
+    if normalized:
+        return normalized
+
+    normalized = _normalize_player_uuid(user_id)
+    if normalized:
+        return normalized
+
+    raw = (explicit_player_id or user_id or "").strip()
+    if not raw:
+        return None
+
+    if raw.lower().startswith(("ply_", "usr_")):
+        return None
+
+    try:
+        resolved = resolve_player_lookup(access_token, raw)
+    except (httpx.HTTPStatusError, httpx.RequestError):
+        return None
+
+    return _normalize_player_uuid(resolved.get("playerId"))
+
+
 def _is_access_token_expired(request) -> bool:
     exp = request.session.get(SESSION_ACCESS_EXP_KEY)
     if not exp:
@@ -1190,7 +1237,13 @@ def operator_user_activity(request, user_id: str):
 @require_permission("users:read")
 def operator_user_investigation_view(request, user_id: str):
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
-    player_id = (request.GET.get("playerId") or user_id or "").strip()
+    requested_player_id = (request.GET.get("playerId") or "").strip()
+    player_id = _resolve_investigation_player_id(access_token, user_id, requested_player_id)
+    player_lookup_error = (
+        "Player-scoped lookup requires a player UUID. Pass ?playerId=<uuid> if this user ID is not the player UUID."
+        if not player_id
+        else ""
+    )
     user_detail_url = reverse("operator-user-detail-view", kwargs={"user_id": user_id})
     users_url = reverse("operator-users-view")
     return_to = _safe_return_to(request, user_detail_url)
@@ -1200,7 +1253,7 @@ def operator_user_investigation_view(request, user_id: str):
     }
     context = {
         "user_id": user_id,
-        "player_id": player_id,
+        "player_id": player_id or requested_player_id or user_id,
         "user_detail": None,
         "user_detail_json": "{}",
         "activity": None,
@@ -1249,49 +1302,77 @@ def operator_user_investigation_view(request, user_id: str):
             "error": "Unable to reach backend user activity endpoint.",
         }
 
-    moderation_profile, moderation_section = _load_optional_investigation_section(
-        request,
-        "Moderation profile",
-        "moderation:read",
-        lambda: get_moderation_profile(access_token, player_id),
-    )
+    if player_id:
+        moderation_profile, moderation_section = _load_optional_investigation_section(
+            request,
+            "Moderation profile",
+            "moderation:read",
+            lambda: get_moderation_profile(access_token, player_id),
+        )
+    else:
+        moderation_profile, moderation_section = _skip_investigation_section(
+            "Moderation profile",
+            "moderation:read",
+            player_lookup_error,
+        )
     context["moderation_profile"] = moderation_profile
     context["moderation_profile_json"] = _to_pretty_json(moderation_profile)
     context["sections"]["moderation"] = moderation_section
 
-    economy_history, economy_section = _load_optional_investigation_section(
-        request,
-        "Economy history",
-        "economy:read",
-        lambda: get_economy_history(access_token, player_id, {"page": 1, "pageSize": 10}),
-    )
+    if player_id:
+        economy_history, economy_section = _load_optional_investigation_section(
+            request,
+            "Economy history",
+            "economy:read",
+            lambda: get_economy_history(access_token, player_id, {"page": 1, "pageSize": 10}),
+        )
+    else:
+        economy_history, economy_section = _skip_investigation_section(
+            "Economy history",
+            "economy:read",
+            player_lookup_error,
+        )
     context["economy_history"] = economy_history
     if context["economy_history"]:
         context["economy_history"]["items"] = _normalize_economy_history_rows(context["economy_history"].get("items"))
     context["sections"]["economy"] = economy_section
 
-    personalization_profile, personalization_section = _load_optional_investigation_section(
-        request,
-        "Personalization profile",
-        "personalization:read",
-        lambda: get_player_profile(access_token, player_id),
-    )
+    if player_id:
+        personalization_profile, personalization_section = _load_optional_investigation_section(
+            request,
+            "Personalization profile",
+            "personalization:read",
+            lambda: get_player_profile(access_token, player_id),
+        )
+    else:
+        personalization_profile, personalization_section = _skip_investigation_section(
+            "Personalization profile",
+            "personalization:read",
+            player_lookup_error,
+        )
     context["personalization_profile"] = personalization_profile
     context["personalization_profile_json"] = _to_pretty_json(personalization_profile)
     context["sections"]["personalization"] = personalization_section
 
-    personalization_debug, personalization_debug_section = _load_optional_investigation_section(
-        request,
-        "Personalization debug",
-        "personalization:read",
-        lambda: get_player_debug(access_token, player_id),
-    )
+    if player_id:
+        personalization_debug, personalization_debug_section = _load_optional_investigation_section(
+            request,
+            "Personalization debug",
+            "personalization:read",
+            lambda: get_player_debug(access_token, player_id),
+        )
+    else:
+        personalization_debug, personalization_debug_section = _skip_investigation_section(
+            "Personalization debug",
+            "personalization:read",
+            player_lookup_error,
+        )
     if personalization_debug:
         personalization_debug["recentAudit"] = _normalize_personalization_audit_rows(personalization_debug.get("recentAudit"))
     context["personalization_debug"] = personalization_debug
     context["sections"]["personalization_debug"] = personalization_debug_section
 
-    if _is_valid_uuid(player_id):
+    if player_id:
         player_stock, stock_section = _load_optional_investigation_section(
             request,
             "Player stock",
@@ -1304,7 +1385,7 @@ def operator_user_investigation_view(request, user_id: str):
             **_detail_section("Player stock", "store:read"),
             "available": False,
             "skipped": True,
-            "error": "Player stock requires a player UUID. Pass ?playerId=<uuid> if the user ID is not the player UUID.",
+            "error": player_lookup_error,
         }
     context["player_stock"] = player_stock
     context["sections"]["stock"] = stock_section
