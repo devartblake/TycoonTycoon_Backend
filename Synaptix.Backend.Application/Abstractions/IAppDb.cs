@@ -27,6 +27,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<Question> Questions { get; }
         DbSet<QuestionOption> QuestionOptions { get; }
         DbSet<QuestionTag> QuestionTags { get; }
+        DbSet<QuestionTaxonomySuggestion> QuestionTaxonomySuggestions { get; }
         DbSet<QuestionStudyFavorite> QuestionStudyFavorites { get; }
         DbSet<StudySet> StudySets { get; }
         DbSet<StudySetItem> StudySetItems { get; }

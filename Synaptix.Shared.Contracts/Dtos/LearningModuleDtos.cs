@@ -11,7 +11,13 @@ namespace Synaptix.Shared.Contracts.Dtos
         int LessonCount,
         int RewardXp,
         int RewardCoins,
-        bool IsCompleted        // false when no playerId is supplied to the endpoint
+        bool IsCompleted,        // false when no playerId is supplied to the endpoint
+        string? CanonicalCategory = null,
+        string? Subject = null,
+        string? Topic = null,
+        string? GradeBand = null,
+        string? AgeGroup = null,
+        string? Audience = null
     );
 
     // ── Module overview (single) ─────────────────────────────────────────────────
@@ -24,7 +30,13 @@ namespace Synaptix.Shared.Contracts.Dtos
         QuestionDifficulty Difficulty,
         int LessonCount,
         int RewardXp,
-        int RewardCoins
+        int RewardCoins,
+        string? CanonicalCategory = null,
+        string? Subject = null,
+        string? Topic = null,
+        string? GradeBand = null,
+        string? AgeGroup = null,
+        string? Audience = null
     );
 
     // Recommended modules for a player or anonymous learner.
@@ -77,7 +89,8 @@ namespace Synaptix.Shared.Contracts.Dtos
         string Category,
         QuestionDifficulty Difficulty,
         int RewardXp,
-        int RewardCoins
+        int RewardCoins,
+        QuestionTaxonomyInputDto? Taxonomy = null
     );
 
     public sealed record UpdateLearningModuleRequest(
@@ -86,7 +99,8 @@ namespace Synaptix.Shared.Contracts.Dtos
         string Category,
         QuestionDifficulty Difficulty,
         int RewardXp,
-        int RewardCoins
+        int RewardCoins,
+        QuestionTaxonomyInputDto? Taxonomy = null
     );
 
     public sealed record AddModuleLessonRequest(
@@ -107,6 +121,12 @@ namespace Synaptix.Shared.Contracts.Dtos
         int RewardCoins,
         bool IsPublished,
         DateTimeOffset CreatedAtUtc,
-        DateTimeOffset UpdatedAtUtc
+        DateTimeOffset UpdatedAtUtc,
+        string? CanonicalCategory = null,
+        string? Subject = null,
+        string? Topic = null,
+        string? GradeBand = null,
+        string? AgeGroup = null,
+        string? Audience = null
     );
 }

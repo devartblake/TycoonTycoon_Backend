@@ -8,8 +8,11 @@ Routes:
   GET  /ml/model-info           — return version strings for all loaded models
 """
 
+from __future__ import annotations
+
+import re
 import threading
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from fastapi import APIRouter, HTTPException
@@ -18,6 +21,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
+from app.config import settings
 
 router = APIRouter()
 
@@ -75,6 +79,28 @@ _DIFFICULTY_VERSION = "tfidf-lr-v1"
 _CHURN_VERSION = "logreg-v1"
 _MATCH_QUALITY_VERSION = "heuristic-v1"
 
+_CATEGORY_DEFS: dict[str, dict[str, Any]] = {
+    "general": {"display": "General", "subject": "general", "audience": "general", "aliases": ["general", "general_knowledge", "mixed"]},
+    "science": {"display": "Science", "subject": "stem", "audience": "general", "aliases": ["science", "natural_science", "physics", "biology", "chemistry"]},
+    "mathematics": {"display": "Mathematics", "subject": "stem", "audience": "general", "aliases": ["math", "maths", "mathematics", "algebra", "geometry"]},
+    "history": {"display": "History", "subject": "humanities", "audience": "general", "aliases": ["history", "world_history", "historical"]},
+    "geography": {"display": "Geography", "subject": "humanities", "audience": "general", "aliases": ["geography", "world_geography"]},
+    "technology": {"display": "Technology", "subject": "stem", "audience": "general", "aliases": ["technology", "tech", "computer_science", "computing"]},
+    "arts": {"display": "Arts", "subject": "arts", "audience": "general", "aliases": ["arts", "art", "fine_arts", "creative_arts"]},
+    "kids": {"display": "Kids", "subject": "k12", "audience": "kids", "aliases": ["kids", "kids_questions", "kidsgrade2", "kidsGrade2", "class_1", "class_2"]},
+    "sports": {"display": "Sports", "subject": "general", "audience": "general", "aliases": ["sports", "sport"]},
+    "entertainment": {"display": "Entertainment", "subject": "media", "audience": "general", "aliases": ["entertainment", "movies", "film", "music", "pop_culture"]},
+    "law": {"display": "Law", "subject": "civics", "audience": "general", "aliases": ["law", "civics_law"]},
+    "business": {"display": "Business", "subject": "business", "audience": "general", "aliases": ["business", "economics", "finance"]},
+    "health": {"display": "Health", "subject": "health", "audience": "general", "aliases": ["health", "medicine", "health_medicine"]},
+}
+
+_ALIAS_TO_CATEGORY = {
+    re.sub(r"[^a-z0-9]+", "_", alias.lower()).strip("_"): key
+    for key, definition in _CATEGORY_DEFS.items()
+    for alias in [key, definition["display"], *definition["aliases"]]
+}
+
 
 def _get_difficulty_pipeline() -> Pipeline:
     global _difficulty_pipeline
@@ -101,6 +127,134 @@ def _get_churn_model() -> LogisticRegression:
             clf._scaler = scaler  # type: ignore[attr-defined]
             _churn_model = clf
     return _churn_model
+
+
+def _normalize_key(value: str | None) -> str:
+    if not value:
+        return ""
+    return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+
+
+def _first_non_blank(*values: str | None) -> str | None:
+    for value in values:
+        if value and value.strip():
+            return value.strip()
+    return None
+
+
+def _infer_class_grade(dataset: str | None) -> tuple[str | None, str | None, str | None]:
+    key = _normalize_key(dataset)
+    match = re.search(r"class_?(k|[0-9]{1,2})", key)
+    if not match:
+        return None, None, None
+    raw = match.group(1)
+    grade = 0 if raw == "k" else int(raw)
+    if grade <= 2:
+        return "k_2", "early_elementary", "kids"
+    if grade <= 5:
+        return "grades_3_5", "upper_elementary", "kids"
+    if grade <= 8:
+        return "middle_school", "middle_school", "teen"
+    return "high_school", "high_school", "teen"
+
+
+def _infer_category(req: QuestionTaxonomyRequest) -> tuple[str, float, list[str]]:
+    warnings: list[str] = []
+    candidates: list[tuple[str, float]] = []
+    dataset = _first_non_blank(req.sourceDataset, req.currentTaxonomy.sourceDataset if req.currentTaxonomy else None)
+    for value, confidence in [
+        (req.currentTaxonomy.canonicalCategory if req.currentTaxonomy else None, 0.95),
+        (req.category, 0.90),
+        (dataset, 0.82),
+        (" ".join(req.tags or []), 0.78),
+        (req.text, 0.62),
+    ]:
+        key = _normalize_key(value)
+        for alias, category in _ALIAS_TO_CATEGORY.items():
+            if key == alias or f"_{alias}_" in f"_{key}_":
+                candidates.append((category, confidence))
+                break
+
+    if not candidates:
+        text = req.text.lower()
+        keyword_map = [
+            ("science", ["atom", "planet", "gravity", "biology", "chemistry", "physics"]),
+            ("mathematics", ["equation", "sum", "multiply", "fraction", "algebra"]),
+            ("history", ["war", "ancient", "empire", "president", "century"]),
+            ("geography", ["capital", "country", "river", "continent", "map"]),
+            ("arts", ["painting", "music", "artist", "theater", "sculpture"]),
+        ]
+        for category, keywords in keyword_map:
+            if any(word in text for word in keywords):
+                candidates.append((category, 0.58))
+                break
+
+    if not candidates:
+        warnings.append("No strong taxonomy category signal found; defaulted to general.")
+        return "general", 0.35, warnings
+
+    categories = {category for category, _ in candidates}
+    if len(categories) > 1:
+        warnings.append("Multiple taxonomy category signals found; selected highest-confidence candidate.")
+    return max(candidates, key=lambda item: item[1])[0], max(score for _, score in candidates), warnings
+
+
+def _suggest_taxonomy(req: QuestionTaxonomyRequest) -> QuestionTaxonomyResponse:
+    text = req.text.strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="text cannot be empty")
+
+    canonical, category_confidence, warnings = _infer_category(req)
+    definition = _CATEGORY_DEFS.get(canonical, _CATEGORY_DEFS["general"])
+    dataset = _first_non_blank(req.sourceDataset, req.currentTaxonomy.sourceDataset if req.currentTaxonomy else None)
+    grade_band, age_group, audience_from_dataset = _infer_class_grade(dataset)
+    current = req.currentTaxonomy
+    tags = {
+        _normalize_key(tag)
+        for tag in (req.tags or []) + (current.taxonomyTags if current and current.taxonomyTags else [])
+        if _normalize_key(tag)
+    }
+    tags.update([canonical, definition["subject"]])
+    if dataset:
+        tags.add(_normalize_key(dataset.split("/")[-1]))
+
+    subject = _first_non_blank(current.subject if current else None, definition["subject"])
+    topic = _first_non_blank(current.topic if current else None)
+    if not topic:
+        normalized_category = _normalize_key(req.category)
+        if normalized_category and normalized_category not in {canonical, "general"}:
+            topic = normalized_category
+
+    field_confidences = {
+        "canonicalCategory": round(category_confidence, 3),
+        "displayCategory": round(category_confidence, 3),
+        "subject": 0.86 if subject else 0.5,
+        "topic": 0.75 if topic else 0.45,
+        "gradeBand": 0.88 if grade_band else 0.45,
+        "ageGroup": 0.88 if age_group else 0.45,
+        "audience": 0.84 if audience_from_dataset or definition.get("audience") else 0.5,
+    }
+    overall = round(sum(field_confidences.values()) / len(field_confidences), 3)
+    if overall < 0.65:
+        warnings.append("Overall taxonomy confidence is low; review before applying.")
+
+    return QuestionTaxonomyResponse(
+        canonicalCategory=canonical,
+        displayCategory=definition["display"],
+        subject=subject,
+        topic=topic,
+        subtopic=current.subtopic if current else None,
+        gradeBand=_first_non_blank(current.gradeBand if current else None, grade_band),
+        ageGroup=_first_non_blank(current.ageGroup if current else None, age_group),
+        audience=_first_non_blank(current.audience if current else None, audience_from_dataset, definition["audience"]),
+        questionType="multiple_choice",
+        mediaType="text",
+        taxonomyTags=sorted(tags),
+        fieldConfidences=field_confidences,
+        overallConfidence=overall,
+        modelVersion=settings.question_taxonomy_model_version,
+        warnings=warnings,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -145,8 +299,62 @@ class QuestionDifficultyResponse(BaseModel):
     model_version: str
 
 
+class CurrentQuestionTaxonomy(BaseModel):
+    canonicalCategory: str | None = None
+    displayCategory: str | None = None
+    subject: str | None = None
+    topic: str | None = None
+    subtopic: str | None = None
+    gradeBand: str | None = None
+    ageGroup: str | None = None
+    audience: str | None = None
+    sourceDataset: str | None = None
+    taxonomyTags: list[str] | None = None
+
+
+class QuestionTaxonomyRequest(BaseModel):
+    text: str
+    category: str | None = None
+    difficulty: str | int | None = None
+    options: list[str] | None = None
+    tags: list[str] | None = None
+    sourceDataset: str | None = None
+    sourceQuestionId: str | None = None
+    currentTaxonomy: CurrentQuestionTaxonomy | None = None
+
+
+class QuestionTaxonomyResponse(BaseModel):
+    canonicalCategory: str
+    displayCategory: str
+    subject: str | None = None
+    topic: str | None = None
+    subtopic: str | None = None
+    gradeBand: str | None = None
+    ageGroup: str | None = None
+    audience: str | None = None
+    questionType: str
+    mediaType: str
+    taxonomyTags: list[str]
+    fieldConfidences: dict[str, float]
+    overallConfidence: float
+    modelVersion: str
+    warnings: list[str]
+
+
+class QuestionTaxonomyBatchRequest(BaseModel):
+    questions: list[QuestionTaxonomyRequest]
+
+
+class QuestionTaxonomyBatchResponse(BaseModel):
+    suggestions: list[QuestionTaxonomyResponse | None]
+    received: int
+    suggested: int
+    failed: int
+
+
 class ModelInfoResponse(BaseModel):
     question_difficulty: str
+    question_taxonomy: str
     churn_risk: str
     match_quality: str
 
@@ -215,10 +423,41 @@ def estimate_difficulty(req: QuestionDifficultyRequest) -> QuestionDifficultyRes
     )
 
 
+@router.post("/question-taxonomy", response_model=QuestionTaxonomyResponse)
+def suggest_question_taxonomy(req: QuestionTaxonomyRequest) -> QuestionTaxonomyResponse:
+    return _suggest_taxonomy(req)
+
+
+@router.post("/question-taxonomy/batch", response_model=QuestionTaxonomyBatchResponse)
+def suggest_question_taxonomy_batch(req: QuestionTaxonomyBatchRequest) -> QuestionTaxonomyBatchResponse:
+    if len(req.questions) > settings.question_taxonomy_batch_limit:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Batch size exceeds limit of {settings.question_taxonomy_batch_limit}",
+        )
+
+    suggestions: list[QuestionTaxonomyResponse | None] = []
+    failed = 0
+    for item in req.questions:
+        try:
+            suggestions.append(_suggest_taxonomy(item))
+        except HTTPException:
+            failed += 1
+            suggestions.append(None)
+
+    return QuestionTaxonomyBatchResponse(
+        suggestions=suggestions,
+        received=len(req.questions),
+        suggested=sum(1 for s in suggestions if s is not None),
+        failed=failed,
+    )
+
+
 @router.get("/model-info", response_model=ModelInfoResponse)
 def model_info() -> ModelInfoResponse:
     return ModelInfoResponse(
         question_difficulty=_DIFFICULTY_VERSION,
+        question_taxonomy=settings.question_taxonomy_model_version,
         churn_risk=_CHURN_VERSION,
         match_quality=_MATCH_QUALITY_VERSION,
     )

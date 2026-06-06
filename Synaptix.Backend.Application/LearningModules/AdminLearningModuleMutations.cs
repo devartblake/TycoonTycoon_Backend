@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Application.Questions;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -26,6 +27,7 @@ namespace Synaptix.Backend.Application.LearningModules
             var module = new LearningModule(
                 req.Title, req.Description, req.Category,
                 req.Difficulty, req.RewardXp, req.RewardCoins);
+            LearningModuleAdminHelpers.ApplyTaxonomy(module, req.Taxonomy, req.Category);
 
             _db.LearningModules.Add(module);
             await _db.SaveChangesAsync(ct);
@@ -59,6 +61,7 @@ namespace Synaptix.Backend.Application.LearningModules
             var req = request.Request;
             module.Update(req.Title, req.Description, req.Category,
                 req.Difficulty, req.RewardXp, req.RewardCoins);
+            LearningModuleAdminHelpers.ApplyTaxonomy(module, req.Taxonomy, req.Category);
 
             await _db.SaveChangesAsync(ct);
             return LearningModuleAdminHelpers.ToDto(module, module.Lessons.Count);
@@ -226,6 +229,7 @@ namespace Synaptix.Backend.Application.LearningModules
                 .Select(m => new
                 {
                     m.Id, m.Title, m.Category, m.Difficulty,
+                    m.CanonicalCategory, m.Subject, m.Topic, m.GradeBand, m.AgeGroup, m.Audience,
                     LessonCount = m.Lessons.Count,
                     m.RewardXp, m.RewardCoins,
                     m.IsPublished, m.CreatedAtUtc, m.UpdatedAtUtc
@@ -236,7 +240,8 @@ namespace Synaptix.Backend.Application.LearningModules
                 .Select(m => new AdminLearningModuleListItemDto(
                     m.Id, m.Title, m.Category, m.Difficulty,
                     m.LessonCount, m.RewardXp, m.RewardCoins,
-                    m.IsPublished, m.CreatedAtUtc, m.UpdatedAtUtc))
+                    m.IsPublished, m.CreatedAtUtc, m.UpdatedAtUtc,
+                    m.CanonicalCategory, m.Subject, m.Topic, m.GradeBand, m.AgeGroup, m.Audience))
                 .ToList();
         }
     }
@@ -248,6 +253,19 @@ namespace Synaptix.Backend.Application.LearningModules
         internal static AdminLearningModuleListItemDto ToDto(LearningModule m, int lessonCount) =>
             new(m.Id, m.Title, m.Category, m.Difficulty,
                 lessonCount, m.RewardXp, m.RewardCoins,
-                m.IsPublished, m.CreatedAtUtc, m.UpdatedAtUtc);
+                m.IsPublished, m.CreatedAtUtc, m.UpdatedAtUtc,
+                m.CanonicalCategory, m.Subject, m.Topic, m.GradeBand, m.AgeGroup, m.Audience);
+
+        internal static void ApplyTaxonomy(LearningModule module, QuestionTaxonomyInputDto? taxonomy, string category)
+        {
+            var resolved = QuestionTaxonomy.Resolve(category, taxonomy, taxonomy?.SourceDataset, null, null, null, null);
+            module.SetTaxonomy(
+                resolved.CanonicalCategory,
+                resolved.Subject,
+                resolved.Topic,
+                resolved.GradeBand,
+                resolved.AgeGroup,
+                resolved.Audience);
+        }
     }
 }

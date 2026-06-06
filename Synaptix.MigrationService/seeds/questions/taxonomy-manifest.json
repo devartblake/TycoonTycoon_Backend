@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "canonicalCategories": [
+    {
+      "key": "general",
+      "displayName": "General",
+      "subject": "general",
+      "aliases": ["general", "general_knowledge", "mixed"]
+    },
+    {
+      "key": "science",
+      "displayName": "Science",
+      "subject": "stem",
+      "aliases": ["science", "natural_science", "physics", "biology", "chemistry"]
+    },
+    {
+      "key": "mathematics",
+      "displayName": "Mathematics",
+      "subject": "stem",
+      "aliases": ["math", "maths", "mathematics"]
+    },
+    {
+      "key": "history",
+      "displayName": "History",
+      "subject": "humanities",
+      "aliases": ["history", "world_history", "american_history"]
+    },
+    {
+      "key": "geography",
+      "displayName": "Geography",
+      "subject": "humanities",
+      "aliases": ["geography", "world_geography"]
+    },
+    {
+      "key": "technology",
+      "displayName": "Technology",
+      "subject": "stem",
+      "aliases": ["technology", "tech", "computer_science"]
+    },
+    {
+      "key": "sports",
+      "displayName": "Sports",
+      "subject": "general",
+      "aliases": ["sports", "sport"]
+    },
+    {
+      "key": "entertainment",
+      "displayName": "Entertainment",
+      "subject": "media",
+      "aliases": ["entertainment", "media", "movies", "music"]
+    },
+    {
+      "key": "arts",
+      "displayName": "Arts",
+      "subject": "arts",
+      "aliases": ["arts", "art", "fine_arts"]
+    },
+    {
+      "key": "kids",
+      "displayName": "Kids",
+      "subject": "k12",
+      "aliases": ["kids", "kids_grade2", "children", "elementary"]
+    }
+  ],
+  "gradeBands": [
+    { "key": "k_2", "displayName": "K-2", "ages": "5-8" },
+    { "key": "grades_3_5", "displayName": "Grades 3-5", "ages": "8-11" },
+    { "key": "middle_school", "displayName": "Middle School", "ages": "11-14" },
+    { "key": "high_school", "displayName": "High School", "ages": "14-18" },
+    { "key": "adult", "displayName": "Adult", "ages": "18+" }
+  ],
+  "audiences": ["kids", "teen", "family", "adult", "general"]
+}

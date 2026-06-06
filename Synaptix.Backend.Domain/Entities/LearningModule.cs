@@ -9,6 +9,12 @@ namespace Synaptix.Backend.Domain.Entities
         public string Description { get; private set; } = string.Empty;
         public string Category { get; private set; } = "General";
         public QuestionDifficulty Difficulty { get; private set; } = QuestionDifficulty.Easy;
+        public string CanonicalCategory { get; private set; } = "general";
+        public string? Subject { get; private set; }
+        public string? Topic { get; private set; }
+        public string? GradeBand { get; private set; }
+        public string? AgeGroup { get; private set; }
+        public string? Audience { get; private set; }
 
         public int RewardXp { get; private set; }
         public int RewardCoins { get; private set; }
@@ -31,6 +37,7 @@ namespace Synaptix.Backend.Domain.Entities
             int rewardCoins)
         {
             SetCore(title, description, category, difficulty, rewardXp, rewardCoins);
+            SetTaxonomy(null, null, null, null, null);
         }
 
         public void Update(
@@ -42,6 +49,18 @@ namespace Synaptix.Backend.Domain.Entities
             int rewardCoins)
         {
             SetCore(title, description, category, difficulty, rewardXp, rewardCoins);
+            SetTaxonomy(null, null, null, null, null);
+            UpdatedAtUtc = DateTimeOffset.UtcNow;
+        }
+
+        public void SetTaxonomy(string? canonicalCategory, string? subject, string? topic, string? gradeBand, string? ageGroup, string? audience = null)
+        {
+            CanonicalCategory = string.IsNullOrWhiteSpace(canonicalCategory) ? NormalizeKey(Category) : NormalizeKey(canonicalCategory);
+            Subject = NormalizeNullable(subject);
+            Topic = NormalizeNullable(topic);
+            GradeBand = NormalizeNullable(gradeBand);
+            AgeGroup = NormalizeNullable(ageGroup);
+            Audience = NormalizeNullable(audience);
             UpdatedAtUtc = DateTimeOffset.UtcNow;
         }
 
@@ -72,6 +91,17 @@ namespace Synaptix.Backend.Domain.Entities
             RewardXp = Math.Max(0, rewardXp);
             RewardCoins = Math.Max(0, rewardCoins);
         }
+
+        private static string? NormalizeNullable(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        private static string NormalizeKey(string value) =>
+            string.IsNullOrWhiteSpace(value)
+                ? "general"
+                : value.Trim().ToLowerInvariant()
+                    .Replace("&", "and")
+                    .Replace(" ", "_")
+                    .Replace("-", "_");
     }
 
     public sealed class ModuleLesson

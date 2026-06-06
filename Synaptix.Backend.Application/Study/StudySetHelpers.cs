@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Application.Questions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.Study
@@ -7,12 +8,20 @@ namespace Synaptix.Backend.Application.Study
     internal static class StudySetHelpers
     {
         private const string CategoryPrefix = "category:";
+        private const string SubjectPrefix = "subject:";
+        private const string TopicPrefix = "topic:";
+        private const string GradeBandPrefix = "grade-band:";
+        private const string AgeGroupPrefix = "age-group:";
         private const string WeakAreaPrefix = "weak-area:";
         private const string FavoritesId = "favorites";
         private const string CustomPrefix = "custom:";
         private const string DueReviewId = "due-review";
 
         public static string CreateCategoryId(string category) => $"{CategoryPrefix}{Uri.EscapeDataString(category)}";
+        public static string CreateSubjectId(string subject) => $"{SubjectPrefix}{Uri.EscapeDataString(subject)}";
+        public static string CreateTopicId(string topic) => $"{TopicPrefix}{Uri.EscapeDataString(topic)}";
+        public static string CreateGradeBandId(string gradeBand) => $"{GradeBandPrefix}{Uri.EscapeDataString(gradeBand)}";
+        public static string CreateAgeGroupId(string ageGroup) => $"{AgeGroupPrefix}{Uri.EscapeDataString(ageGroup)}";
 
         public static string CreateWeakAreaId(string category) => $"{WeakAreaPrefix}{Uri.EscapeDataString(category)}";
 
@@ -57,6 +66,34 @@ namespace Synaptix.Backend.Application.Study
                 return !string.IsNullOrWhiteSpace(category);
             }
 
+            if (id.StartsWith(SubjectPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = "Subject";
+                category = Uri.UnescapeDataString(id[SubjectPrefix.Length..]);
+                return !string.IsNullOrWhiteSpace(category);
+            }
+
+            if (id.StartsWith(TopicPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = "Topic";
+                category = Uri.UnescapeDataString(id[TopicPrefix.Length..]);
+                return !string.IsNullOrWhiteSpace(category);
+            }
+
+            if (id.StartsWith(GradeBandPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = "GradeBand";
+                category = Uri.UnescapeDataString(id[GradeBandPrefix.Length..]);
+                return !string.IsNullOrWhiteSpace(category);
+            }
+
+            if (id.StartsWith(AgeGroupPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = "AgeGroup";
+                category = Uri.UnescapeDataString(id[AgeGroupPrefix.Length..]);
+                return !string.IsNullOrWhiteSpace(category);
+            }
+
             if (id.StartsWith(WeakAreaPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 kind = StudySetKinds.WeakArea;
@@ -77,7 +114,10 @@ namespace Synaptix.Backend.Application.Study
                 .Where(q => q.Status == "Approved");
 
             if (!string.IsNullOrWhiteSpace(category))
-                query = query.Where(q => q.Category == category.Trim());
+            {
+                var canonical = QuestionTaxonomy.ResolveDefinition(category).Key;
+                query = query.Where(q => q.Category == category.Trim() || q.CanonicalCategory == canonical);
+            }
 
             return query;
         }
@@ -129,7 +169,8 @@ namespace Synaptix.Backend.Application.Study
                         q.Difficulty,
                         q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
                         q.CorrectOptionId,
-                        q.MediaKey))
+                        q.MediaKey,
+                        QuestionTaxonomy.ToDto(q)))
                     .ToListAsync(ct);
             }
             else if (kind == StudySetKinds.Custom)
@@ -157,7 +198,8 @@ namespace Synaptix.Backend.Application.Study
                         q.Difficulty,
                         q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
                         q.CorrectOptionId,
-                        q.MediaKey))
+                        q.MediaKey,
+                        QuestionTaxonomy.ToDto(q)))
                     .ToListAsync(ct);
 
                 questions = orderedIds
@@ -191,12 +233,89 @@ namespace Synaptix.Backend.Application.Study
                         q.Difficulty,
                         q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
                         q.CorrectOptionId,
-                        q.MediaKey))
+                        q.MediaKey,
+                        QuestionTaxonomy.ToDto(q)))
                     .ToListAsync(ct);
 
                 questions = dueQuestionIds
                     .Join(questions, idValue => idValue, q => q.Id, (_, q) => q)
                     .ToList();
+            }
+            else if (kind == "Subject")
+            {
+                questions = await BuildApprovedQuestionsQuery(db)
+                    .Where(q => q.Subject == category)
+                    .OrderBy(q => q.CanonicalCategory)
+                    .ThenBy(q => q.Difficulty)
+                    .ThenBy(q => q.Text)
+                    .Take(take)
+                    .Select(q => new StudySetQuestionDto(
+                        q.Id,
+                        q.Text,
+                        q.Category,
+                        q.Difficulty,
+                        q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
+                        q.CorrectOptionId,
+                        q.MediaKey,
+                        QuestionTaxonomy.ToDto(q)))
+                    .ToListAsync(ct);
+            }
+            else if (kind == "Topic")
+            {
+                questions = await BuildApprovedQuestionsQuery(db)
+                    .Where(q => q.Topic == category)
+                    .OrderBy(q => q.CanonicalCategory)
+                    .ThenBy(q => q.Difficulty)
+                    .ThenBy(q => q.Text)
+                    .Take(take)
+                    .Select(q => new StudySetQuestionDto(
+                        q.Id,
+                        q.Text,
+                        q.Category,
+                        q.Difficulty,
+                        q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
+                        q.CorrectOptionId,
+                        q.MediaKey,
+                        QuestionTaxonomy.ToDto(q)))
+                    .ToListAsync(ct);
+            }
+            else if (kind == "GradeBand")
+            {
+                questions = await BuildApprovedQuestionsQuery(db)
+                    .Where(q => q.GradeBand == category)
+                    .OrderBy(q => q.CanonicalCategory)
+                    .ThenBy(q => q.Difficulty)
+                    .ThenBy(q => q.Text)
+                    .Take(take)
+                    .Select(q => new StudySetQuestionDto(
+                        q.Id,
+                        q.Text,
+                        q.Category,
+                        q.Difficulty,
+                        q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
+                        q.CorrectOptionId,
+                        q.MediaKey,
+                        QuestionTaxonomy.ToDto(q)))
+                    .ToListAsync(ct);
+            }
+            else if (kind == "AgeGroup")
+            {
+                questions = await BuildApprovedQuestionsQuery(db)
+                    .Where(q => q.AgeGroup == category)
+                    .OrderBy(q => q.CanonicalCategory)
+                    .ThenBy(q => q.Difficulty)
+                    .ThenBy(q => q.Text)
+                    .Take(take)
+                    .Select(q => new StudySetQuestionDto(
+                        q.Id,
+                        q.Text,
+                        q.Category,
+                        q.Difficulty,
+                        q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
+                        q.CorrectOptionId,
+                        q.MediaKey,
+                        QuestionTaxonomy.ToDto(q)))
+                    .ToListAsync(ct);
             }
             else
             {
@@ -211,7 +330,8 @@ namespace Synaptix.Backend.Application.Study
                         q.Difficulty,
                         q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
                         q.CorrectOptionId,
-                        q.MediaKey))
+                        q.MediaKey,
+                        QuestionTaxonomy.ToDto(q)))
                     .ToListAsync(ct);
             }
 
@@ -221,6 +341,10 @@ namespace Synaptix.Backend.Application.Study
             var title = kind switch
             {
                 StudySetKinds.WeakArea => $"Weak Area: {category}",
+                "Subject" => $"{category} Study Set",
+                "Topic" => $"{category} Study Set",
+                "GradeBand" => $"{category} Study Set",
+                "AgeGroup" => $"{category} Study Set",
                 StudySetKinds.Favorites => "Favorites Study Set",
                 StudySetKinds.Custom => category,
                 StudySetKinds.DueReview => "Due Review Study Set",
@@ -230,6 +354,10 @@ namespace Synaptix.Backend.Application.Study
             var description = kind switch
             {
                 StudySetKinds.WeakArea => $"Practice {category} questions selected for weak-area rehearsal.",
+                "Subject" => $"Review approved questions in the {category} subject.",
+                "Topic" => $"Review approved questions for {category}.",
+                "GradeBand" => $"Review approved questions for {category}.",
+                "AgeGroup" => $"Review approved questions for {category} learners.",
                 StudySetKinds.Favorites => "Review your saved favorite questions in one dedicated study set.",
                 StudySetKinds.Custom => "Review your saved custom study set.",
                 StudySetKinds.DueReview => "Review cards that are due next based on spaced repetition state.",
@@ -252,7 +380,13 @@ namespace Synaptix.Backend.Application.Study
                 kind,
                 category,
                 questions.Count,
-                questions);
+                questions,
+                questions.FirstOrDefault()?.Taxonomy?.CanonicalCategory,
+                questions.FirstOrDefault()?.Taxonomy?.Subject,
+                questions.FirstOrDefault()?.Taxonomy?.Topic,
+                questions.FirstOrDefault()?.Taxonomy?.GradeBand,
+                questions.FirstOrDefault()?.Taxonomy?.AgeGroup,
+                questions.FirstOrDefault()?.Taxonomy?.Audience);
         }
     }
 }

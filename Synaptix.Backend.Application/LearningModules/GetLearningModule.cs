@@ -30,7 +30,13 @@ namespace Synaptix.Backend.Application.LearningModules
                     m.Difficulty,
                     m.Lessons.Count,
                     m.RewardXp,
-                    m.RewardCoins
+                    m.RewardCoins,
+                    m.CanonicalCategory,
+                    m.Subject,
+                    m.Topic,
+                    m.GradeBand,
+                    m.AgeGroup,
+                    m.Audience
                 ))
                 .FirstOrDefaultAsync(ct);
         }

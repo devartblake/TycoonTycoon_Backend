@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
+using Synaptix.Backend.Application.Questions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.Questions
@@ -19,6 +20,7 @@ namespace Synaptix.Backend.Api.Features.Questions
             var g = app.MapGroup("/questions").WithTags("Questions");
 
             g.MapGet("/set", GetQuestionSet);
+            g.MapPost("/mixed", GetMixedQuestionSet);
             g.MapGet("/categories", GetCategories);
             g.MapGet("/metadata", GetMetadata);
             g.MapPost("/preview-set", PreviewQuestionSet);
@@ -40,6 +42,13 @@ namespace Synaptix.Backend.Api.Features.Questions
             [FromQuery] int count,
             [FromQuery] Guid? playerId,
             [FromQuery] string? mode,
+            [FromQuery] string? gradeBand,
+            [FromQuery] string? ageGroup,
+            [FromQuery] string? audience,
+            [FromQuery] string? subject,
+            [FromQuery] string? topic,
+            [FromQuery] string? dataset,
+            [FromQuery] string[]? tags,
             IAppDb db,
             IObjectStorage storage,
             IPlayerMindProfileService mindProfiles,
@@ -80,10 +89,50 @@ namespace Synaptix.Backend.Api.Features.Questions
                 db,
                 storage,
                 count,
-                string.IsNullOrWhiteSpace(category) ? null : new[] { category.Trim() },
-                difficulty.HasValue ? new[] { difficulty.Value } : null,
+                new QuestionTaxonomyFilters(
+                    Categories: string.IsNullOrWhiteSpace(category) ? null : new[] { category.Trim() },
+                    Difficulties: difficulty.HasValue ? new[] { difficulty.Value } : null,
+                    Subjects: string.IsNullOrWhiteSpace(subject) ? null : new[] { subject.Trim() },
+                    Topics: string.IsNullOrWhiteSpace(topic) ? null : new[] { topic.Trim() },
+                    GradeBands: string.IsNullOrWhiteSpace(gradeBand) ? null : new[] { gradeBand.Trim() },
+                    AgeGroups: string.IsNullOrWhiteSpace(ageGroup) ? null : new[] { ageGroup.Trim() },
+                    Audiences: string.IsNullOrWhiteSpace(audience) ? null : new[] { audience.Trim() },
+                    Datasets: string.IsNullOrWhiteSpace(dataset) ? null : new[] { dataset.Trim() },
+                    Tags: tags),
                 ct);
 
+            return Results.Ok(new QuestionSetDto(dtos, dtos.Count));
+        }
+
+        private static async Task<IResult> GetMixedQuestionSet(
+            [FromBody] MixedQuestionSetRequest? req,
+            IAppDb db,
+            IObjectStorage storage,
+            CancellationToken ct)
+        {
+            req ??= new MixedQuestionSetRequest();
+            var clampedCount = req.Count <= 0 ? 10 : Math.Clamp(req.Count, 1, 50);
+            var filters = new QuestionTaxonomyFilters(
+                req.Categories,
+                req.Difficulties,
+                req.Subjects,
+                req.Topics,
+                req.GradeBands,
+                req.AgeGroups,
+                req.Audiences,
+                req.Datasets,
+                req.Tags);
+
+            var baseQuery = BuildApprovedQuestionsQuery(db, filters);
+            var rows = await baseQuery
+                .OrderBy(q => q.CanonicalCategory)
+                .ThenBy(q => q.Difficulty)
+                .ThenBy(q => q.Id)
+                .Take(Math.Max(clampedCount * 5, clampedCount))
+                .ToListAsync(ct);
+
+            var selected = SelectBalanced(rows, clampedCount, req.BalanceCategories, req.BalanceDifficulties);
+            var dtos = selected.Select(q => ToGameplayDto(q, storage)).ToList();
             return Results.Ok(new QuestionSetDto(dtos, dtos.Count));
         }
 
@@ -133,11 +182,41 @@ namespace Synaptix.Backend.Api.Features.Questions
                 .OrderBy(x => x)
                 .ToList();
 
+            var taxonomyCategories = QuestionTaxonomy.Definitions
+                .Select(def =>
+                {
+                    var count = rawData.Count(x =>
+                        string.Equals(QuestionTaxonomy.ResolveDefinition(x.Category).Key, def.Key, StringComparison.OrdinalIgnoreCase));
+                    return new QuestionTaxonomyFacetDto(def.Key, def.DisplayName, def.Description, count, def.Aliases);
+                })
+                .OrderBy(x => x.DisplayName)
+                .ToList();
+
+            var taxonomyRows = await BuildApprovedQuestionsQuery(db, new QuestionTaxonomyFilters())
+                .Select(q => new
+                {
+                    q.Subject,
+                    q.Topic,
+                    q.GradeBand,
+                    q.AgeGroup,
+                    q.Audience,
+                    q.SourceDataset
+                })
+                .ToListAsync(ct);
+
             return Results.Ok(new QuestionMetadataResponseDto(
                 categories,
                 difficulties,
                 DefaultCount: 10,
-                MaxCount: 50));
+                MaxCount: 50,
+                TaxonomyCategories: taxonomyCategories,
+                Subjects: BuildFacet(taxonomyRows.Select(x => x.Subject)),
+                Topics: BuildFacet(taxonomyRows.Select(x => x.Topic)),
+                GradeBands: BuildFacet(taxonomyRows.Select(x => x.GradeBand)),
+                AgeGroups: BuildFacet(taxonomyRows.Select(x => x.AgeGroup)),
+                Audiences: BuildFacet(taxonomyRows.Select(x => x.Audience)),
+                Datasets: BuildFacet(taxonomyRows.Select(x => x.SourceDataset)),
+                Aliases: QuestionTaxonomy.Aliases));
         }
 
         /// <summary>
@@ -154,8 +233,16 @@ namespace Synaptix.Backend.Api.Features.Questions
                 db,
                 storage,
                 req.Count,
-                req.Categories,
-                req.Difficulties,
+                new QuestionTaxonomyFilters(
+                    req.Categories,
+                    req.Difficulties,
+                    req.Subjects,
+                    req.Topics,
+                    req.GradeBands,
+                    req.AgeGroups,
+                    req.Audiences,
+                    req.Datasets,
+                    req.Tags),
                 ct);
 
             return Results.Ok(new QuestionSetDto(dtos, dtos.Count));
@@ -234,13 +321,12 @@ namespace Synaptix.Backend.Api.Features.Questions
             IAppDb db,
             IObjectStorage storage,
             int count,
-            IEnumerable<string>? categories,
-            IEnumerable<QuestionDifficulty>? difficulties,
+            QuestionTaxonomyFilters filters,
             CancellationToken ct)
         {
             var clampedCount = count <= 0 ? 10 : Math.Clamp(count, 1, 50);
 
-            var baseQuery = BuildApprovedQuestionsQuery(db, categories, difficulties);
+            var baseQuery = BuildApprovedQuestionsQuery(db, filters);
             var totalCount = await baseQuery.CountAsync(ct);
             if (totalCount == 0)
                 return new List<GameplayQuestionDto>();
@@ -254,21 +340,12 @@ namespace Synaptix.Backend.Api.Features.Questions
                 .Take(clampedCount)
                 .ToListAsync(ct);
 
-            return questions.Select(q => new GameplayQuestionDto(
-                q.Id,
-                q.Text,
-                q.Category,
-                q.Difficulty,
-                q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
-                MediaKey: q.MediaKey,
-                MediaUrl: q.MediaKey is not null ? storage.GetPublicUrl(q.MediaKey) : null
-            )).ToList();
+            return questions.Select(q => ToGameplayDto(q, storage)).ToList();
         }
 
         private static IQueryable<Domain.Entities.Question> BuildApprovedQuestionsQuery(
             IAppDb db,
-            IEnumerable<string>? categories,
-            IEnumerable<QuestionDifficulty>? difficulties,
+            QuestionTaxonomyFilters filters,
             bool includeOptions = true)
         {
             var query = db.Questions
@@ -279,20 +356,124 @@ namespace Synaptix.Backend.Api.Features.Questions
             if (includeOptions)
                 query = query.Include(q => q.Options);
 
-            var categoryFilters = categories?
+            var categoryFilters = filters.Categories?
                 .Where(c => !string.IsNullOrWhiteSpace(c))
                 .Select(c => c.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
             if (categoryFilters is { Length: > 0 })
-                query = query.Where(q => categoryFilters.Contains(q.Category));
+            {
+                var canonicalCategoryFilters = categoryFilters
+                    .Select(c => QuestionTaxonomy.ResolveDefinition(c).Key)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                query = query.Where(q => categoryFilters.Contains(q.Category) || canonicalCategoryFilters.Contains(q.CanonicalCategory));
+            }
 
-            var difficultyFilters = difficulties?.Distinct().ToArray();
+            var difficultyFilters = filters.Difficulties?.Distinct().ToArray();
             if (difficultyFilters is { Length: > 0 })
                 query = query.Where(q => difficultyFilters.Contains(q.Difficulty));
 
+            query = ApplyStringFilter(query, filters.Subjects, nameof(Domain.Entities.Question.Subject));
+            query = ApplyStringFilter(query, filters.Topics, nameof(Domain.Entities.Question.Topic));
+            query = ApplyStringFilter(query, filters.GradeBands, nameof(Domain.Entities.Question.GradeBand));
+            query = ApplyStringFilter(query, filters.AgeGroups, nameof(Domain.Entities.Question.AgeGroup));
+            query = ApplyStringFilter(query, filters.Audiences, nameof(Domain.Entities.Question.Audience));
+            query = ApplyStringFilter(query, filters.Datasets, nameof(Domain.Entities.Question.SourceDataset));
+
+            var tagFilters = filters.Tags?
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (tagFilters is { Length: > 0 })
+                query = query.Where(q => db.QuestionTags.Any(t => t.QuestionId == q.Id && tagFilters.Contains(t.Tag)));
+
             return query;
         }
+
+        private static IQueryable<Domain.Entities.Question> BuildApprovedQuestionsQuery(
+            IAppDb db,
+            IEnumerable<string>? categories,
+            IEnumerable<QuestionDifficulty>? difficulties,
+            bool includeOptions = true) =>
+            BuildApprovedQuestionsQuery(db, new QuestionTaxonomyFilters(categories, difficulties), includeOptions);
+
+        private static IQueryable<Domain.Entities.Question> ApplyStringFilter(
+            IQueryable<Domain.Entities.Question> query,
+            IEnumerable<string>? values,
+            string propertyName)
+        {
+            var filters = values?
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Select(v => v.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (filters is not { Length: > 0 }) return query;
+            return query.Where(q => filters.Contains(EF.Property<string>(q, propertyName)));
+        }
+
+        private static GameplayQuestionDto ToGameplayDto(Domain.Entities.Question q, IObjectStorage storage) => new(
+            q.Id,
+            q.Text,
+            q.Category,
+            q.Difficulty,
+            q.Options.Select(o => new QuestionOptionDto(o.OptionId, o.Text)).ToList(),
+            MediaKey: q.MediaKey,
+            MediaUrl: q.MediaKey is not null ? storage.GetPublicUrl(q.MediaKey) : null,
+            Taxonomy: QuestionTaxonomy.ToDto(q));
+
+        private static List<Domain.Entities.Question> SelectBalanced(
+            IReadOnlyList<Domain.Entities.Question> rows,
+            int count,
+            bool balanceCategories,
+            bool balanceDifficulties)
+        {
+            if (rows.Count <= count) return rows.ToList();
+            var groups = rows
+                .GroupBy(q => (
+                    Category: balanceCategories ? q.CanonicalCategory : "all",
+                    Difficulty: balanceDifficulties ? q.Difficulty.ToString() : "all"))
+                .Select(g => new Queue<Domain.Entities.Question>(g.OrderBy(q => q.Id)))
+                .ToList();
+
+            var selected = new List<Domain.Entities.Question>(count);
+            while (selected.Count < count && groups.Count > 0)
+            {
+                foreach (var group in groups.ToList())
+                {
+                    if (group.Count == 0)
+                    {
+                        groups.Remove(group);
+                        continue;
+                    }
+
+                    selected.Add(group.Dequeue());
+                    if (selected.Count == count) break;
+                }
+            }
+
+            return selected;
+        }
+
+        private static List<FacetCountDto> BuildFacet(IEnumerable<string?> values) =>
+            values
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .GroupBy(v => v!, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new FacetCountDto(g.Key, g.Count()))
+                .OrderBy(x => x.Key)
+                .ToList();
+
+        private sealed record QuestionTaxonomyFilters(
+            IEnumerable<string>? Categories = null,
+            IEnumerable<QuestionDifficulty>? Difficulties = null,
+            IEnumerable<string>? Subjects = null,
+            IEnumerable<string>? Topics = null,
+            IEnumerable<string>? GradeBands = null,
+            IEnumerable<string>? AgeGroups = null,
+            IEnumerable<string>? Audiences = null,
+            IEnumerable<string>? Datasets = null,
+            IEnumerable<string>? Tags = null);
     }
 }

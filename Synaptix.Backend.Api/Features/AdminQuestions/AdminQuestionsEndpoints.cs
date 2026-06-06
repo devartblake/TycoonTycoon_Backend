@@ -160,6 +160,38 @@ namespace Synaptix.Backend.Api.Features.AdminQuestions
                 return Results.Ok(dto);
             });
 
+            g.MapPost("/import-taxonomy", async ([FromBody] TaxonomyImportQuestionsRequest req, IMediator mediator, CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new AdminImportTaxonomyQuestions(req), ct);
+                return Results.Ok(dto);
+            });
+
+            g.MapPost("/{id:guid}/taxonomy/suggest", async (Guid id, IMediator mediator, CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new AdminSuggestQuestionTaxonomy(id), ct);
+                return dto is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found or Sidecar taxonomy suggestions are unavailable.")
+                    : Results.Ok(dto);
+            });
+
+            g.MapGet("/{id:guid}/taxonomy/suggestions", async (Guid id, IMediator mediator, CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new AdminListQuestionTaxonomySuggestions(id), ct);
+                return Results.Ok(dto);
+            });
+
+            g.MapPost("/{id:guid}/taxonomy/apply", async (
+                Guid id,
+                [FromBody] ApplyQuestionTaxonomySuggestionRequest req,
+                IMediator mediator,
+                CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new AdminApplyQuestionTaxonomySuggestion(id, req), ct);
+                return dto is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
+                    : Results.Ok(dto);
+            });
+
             g.MapPost("/estimate-difficulty", async (
                 [FromBody] QuestionDifficultyEstimateRequest req,
                 IConfiguration cfg,

@@ -1,0 +1,151 @@
+[
+  {
+    "key": "seeds/questions/general.json",
+    "dataset": "backend/general",
+    "canonicalCategory": "general",
+    "displayCategory": "General",
+    "subject": "general",
+    "audience": "general",
+    "tags": ["backend_seed", "general"]
+  },
+  {
+    "key": "seeds/questions/science.json",
+    "dataset": "backend/science",
+    "canonicalCategory": "science",
+    "displayCategory": "Science",
+    "subject": "stem",
+    "audience": "general",
+    "tags": ["backend_seed", "science", "stem"]
+  },
+  {
+    "key": "seeds/questions/history.json",
+    "dataset": "backend/history",
+    "canonicalCategory": "history",
+    "displayCategory": "History",
+    "subject": "humanities",
+    "audience": "general",
+    "tags": ["backend_seed", "history", "humanities"]
+  },
+  {
+    "key": "seeds/questions/geography.json",
+    "dataset": "backend/geography",
+    "canonicalCategory": "geography",
+    "displayCategory": "Geography",
+    "subject": "humanities",
+    "audience": "general",
+    "tags": ["backend_seed", "geography", "humanities"]
+  },
+  {
+    "key": "seeds/questions/technology.json",
+    "dataset": "backend/technology",
+    "canonicalCategory": "technology",
+    "displayCategory": "Technology",
+    "subject": "stem",
+    "audience": "general",
+    "tags": ["backend_seed", "technology", "stem"]
+  },
+  {
+    "key": "seeds/questions/sports.json",
+    "dataset": "backend/sports",
+    "canonicalCategory": "sports",
+    "displayCategory": "Sports",
+    "subject": "general",
+    "audience": "general",
+    "tags": ["backend_seed", "sports"]
+  },
+  {
+    "key": "seeds/questions/entertainment.json",
+    "dataset": "backend/entertainment",
+    "canonicalCategory": "entertainment",
+    "displayCategory": "Entertainment",
+    "subject": "media",
+    "audience": "general",
+    "tags": ["backend_seed", "entertainment", "media"]
+  },
+  {
+    "key": "assets/questions/classes/class_K_questions.json",
+    "dataset": "flutter/classes/class_k",
+    "canonicalCategory": "kids",
+    "displayCategory": "Kindergarten",
+    "subject": "k12",
+    "gradeBand": "k_2",
+    "ageGroup": "early_elementary",
+    "audience": "kids",
+    "tags": ["flutter_fallback", "class_k", "k12"]
+  },
+  {
+    "key": "assets/questions/classes/class_1_questions.json",
+    "dataset": "flutter/classes/class_1",
+    "canonicalCategory": "kids",
+    "displayCategory": "Class 1",
+    "subject": "k12",
+    "gradeBand": "k_2",
+    "ageGroup": "early_elementary",
+    "audience": "kids",
+    "tags": ["flutter_fallback", "class_1", "k12"]
+  },
+  {
+    "key": "assets/questions/classes/class_2_questions.json",
+    "dataset": "flutter/classes/class_2",
+    "canonicalCategory": "kids",
+    "displayCategory": "Class 2",
+    "subject": "k12",
+    "gradeBand": "k_2",
+    "ageGroup": "early_elementary",
+    "audience": "kids",
+    "tags": ["flutter_fallback", "class_2", "k12"]
+  },
+  {
+    "key": "assets/questions/classes/class_3_questions.json",
+    "dataset": "flutter/classes/class_3",
+    "canonicalCategory": "kids",
+    "displayCategory": "Class 3",
+    "subject": "k12",
+    "gradeBand": "grades_3_5",
+    "ageGroup": "upper_elementary",
+    "audience": "kids",
+    "tags": ["flutter_fallback", "class_3", "k12"]
+  },
+  {
+    "key": "assets/questions/classes/class_6_questions.json",
+    "dataset": "flutter/classes/class_6",
+    "canonicalCategory": "kids",
+    "displayCategory": "Class 6",
+    "subject": "k12",
+    "gradeBand": "middle_school",
+    "ageGroup": "middle_school",
+    "audience": "teen",
+    "tags": ["flutter_fallback", "class_6", "k12"]
+  },
+  {
+    "key": "assets/questions/classes/class_9_questions.json",
+    "dataset": "flutter/classes/class_9",
+    "canonicalCategory": "general",
+    "displayCategory": "Class 9",
+    "subject": "k12",
+    "gradeBand": "high_school",
+    "ageGroup": "high_school",
+    "audience": "teen",
+    "tags": ["flutter_fallback", "class_9", "k12"]
+  },
+  {
+    "key": "assets/questions/science/physics_questions.json",
+    "dataset": "flutter/science/physics",
+    "canonicalCategory": "science",
+    "displayCategory": "Physics",
+    "subject": "stem",
+    "topic": "physics",
+    "audience": "general",
+    "tags": ["flutter_fallback", "science", "physics"]
+  },
+  {
+    "key": "assets/questions/arts/art_questions.json",
+    "dataset": "flutter/arts/art",
+    "canonicalCategory": "arts",
+    "displayCategory": "Arts",
+    "subject": "arts",
+    "topic": "art",
+    "audience": "general",
+    "tags": ["flutter_fallback", "arts"]
+  }
+]

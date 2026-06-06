@@ -43,6 +43,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<Question> Questions => Set<Question>();
         public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
         public DbSet<QuestionTag> QuestionTags => Set<QuestionTag>();
+        public DbSet<QuestionTaxonomySuggestion> QuestionTaxonomySuggestions => Set<QuestionTaxonomySuggestion>();
         public DbSet<QuestionStudyFavorite> QuestionStudyFavorites => Set<QuestionStudyFavorite>();
         public DbSet<StudySet> StudySets => Set<StudySet>();
         public DbSet<StudySetItem> StudySetItems => Set<StudySetItem>();

@@ -27,7 +27,13 @@ namespace Synaptix.Shared.Contracts.Dtos
         string Description,
         string Kind,
         string Category,
-        int QuestionCount
+        int QuestionCount,
+        string? CanonicalCategory = null,
+        string? Subject = null,
+        string? Topic = null,
+        string? GradeBand = null,
+        string? AgeGroup = null,
+        string? Audience = null
     );
 
     public sealed record StudySetQuestionDto(
@@ -37,7 +43,8 @@ namespace Synaptix.Shared.Contracts.Dtos
         QuestionDifficulty Difficulty,
         IReadOnlyList<QuestionOptionDto> Options,
         string CorrectOptionId,
-        string? MediaKey
+        string? MediaKey,
+        QuestionTaxonomyDto? Taxonomy = null
     );
 
     public sealed record StudySetDetailDto(
@@ -47,7 +54,13 @@ namespace Synaptix.Shared.Contracts.Dtos
         string Kind,
         string Category,
         int QuestionCount,
-        IReadOnlyList<StudySetQuestionDto> Questions
+        IReadOnlyList<StudySetQuestionDto> Questions,
+        string? CanonicalCategory = null,
+        string? Subject = null,
+        string? Topic = null,
+        string? GradeBand = null,
+        string? AgeGroup = null,
+        string? Audience = null
     );
 
     public sealed record StudySetsResponseDto(

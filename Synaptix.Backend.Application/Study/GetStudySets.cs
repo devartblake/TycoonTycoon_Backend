@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Application.Questions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.Study
@@ -33,8 +34,46 @@ namespace Synaptix.Backend.Application.Study
                     $"Review approved {x.Category} questions in a dedicated study set.",
                     StudySetKinds.Category,
                     x.Category,
-                    x.QuestionCount))
+                    x.QuestionCount,
+                    QuestionTaxonomy.ResolveDefinition(x.Category).Key,
+                    QuestionTaxonomy.ResolveDefinition(x.Category).Subject,
+                    QuestionTaxonomy.ResolveDefinition(x.Category).Topic,
+                    QuestionTaxonomy.ResolveDefinition(x.Category).GradeBand,
+                    QuestionTaxonomy.ResolveDefinition(x.Category).AgeGroup,
+                    QuestionTaxonomy.ResolveDefinition(x.Category).Audience))
                 .ToList();
+
+            var subjectItems = await StudySetHelpers.BuildApprovedQuestionsQuery(_db)
+                .Where(q => q.Subject != null)
+                .GroupBy(q => q.Subject!)
+                .Select(g => new { Subject = g.Key, QuestionCount = g.Count() })
+                .OrderBy(x => x.Subject)
+                .Take(20)
+                .ToListAsync(ct);
+            items.AddRange(subjectItems.Select(x => new StudySetListItemDto(
+                StudySetHelpers.CreateSubjectId(x.Subject),
+                $"{x.Subject} Study Set",
+                $"Review approved questions in {x.Subject}.",
+                "Subject",
+                x.Subject,
+                x.QuestionCount,
+                Subject: x.Subject)));
+
+            var gradeItems = await StudySetHelpers.BuildApprovedQuestionsQuery(_db)
+                .Where(q => q.GradeBand != null)
+                .GroupBy(q => q.GradeBand!)
+                .Select(g => new { GradeBand = g.Key, QuestionCount = g.Count() })
+                .OrderBy(x => x.GradeBand)
+                .Take(20)
+                .ToListAsync(ct);
+            items.AddRange(gradeItems.Select(x => new StudySetListItemDto(
+                StudySetHelpers.CreateGradeBandId(x.GradeBand),
+                $"{x.GradeBand} Study Set",
+                $"Review approved questions for {x.GradeBand}.",
+                "GradeBand",
+                x.GradeBand,
+                x.QuestionCount,
+                GradeBand: x.GradeBand)));
 
             if (request.PlayerId.HasValue)
             {

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Application.Questions;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Infrastructure.Persistence;
 using Synaptix.MigrationService.Options;
@@ -50,7 +51,7 @@ public sealed class MinioSeeder
             await SeedStoreItemsAsync(db, await storeTask, ct);
             await SeedSkillNodesAsync(db, await skillTask, ct);
             await SeedSeasonRewardsAsync(db, await seasonTask, ct);
-            await SeedQuestionsAsync(db, await questionTask, ct);
+            await SeedTaxonomyQuestionsAsync(db, await questionTask, ct);
         });
 
         // Write the asset manifest last so it reflects the final seeded state.
@@ -61,16 +62,28 @@ public sealed class MinioSeeder
 
     private async Task<List<QuestionSeedModel>> ReadAllQuestionsAsync(CancellationToken ct)
     {
+        var datasetManifest = await ReadJsonAsync<List<QuestionDatasetManifestSeedModel>>(_seedOptions.QuestionDatasetManifestKey, ct)
+            ?? [];
+        var manifestByKey = datasetManifest
+            .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+            .ToDictionary(x => x.Key, StringComparer.OrdinalIgnoreCase);
+
         var keys = _seedOptions.QuestionDatasetKeys.Count > 0
             ? _seedOptions.QuestionDatasetKeys
             : new List<string> { _seedOptions.QuestionsKey };
 
-        var batches = await Task.WhenAll(keys.Select(k => ReadJsonAsync<List<QuestionSeedModel>>(k, ct)));
+        var batches = await Task.WhenAll(keys.Select(async k =>
+        {
+            var rows = await ReadJsonAsync<List<QuestionSeedModel>>(k, ct) ?? [];
+            foreach (var row in rows)
+                ApplyDatasetDefaults(row, k, manifestByKey.TryGetValue(k, out var manifest) ? manifest : null);
+            return rows;
+        }));
 
         return batches
             .Where(b => b is not null)
             .SelectMany(b => b!)
-            .GroupBy(m => (m.Text ?? m.Question ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+            .GroupBy(m => SourceKeyOrNull(m.SourceDataset, m.Id) ?? (m.Text ?? m.Question ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
             .Select(g => g.First())
             .ToList();
     }
@@ -359,13 +372,15 @@ public sealed class MinioSeeder
 
             if (existingMap.TryGetValue(normalizedText, out var existing))
             {
-                existing.Update(normalizedText, m.Category, difficulty, ResolveCorrectOptionId(m), m.MediaKey);
+                existing.Update(normalizedText, m.Category, difficulty, ResolveCorrectOptionId(m), ResolveMediaKey(m));
+                ApplyQuestionTaxonomy(existing, m);
                 ApplyQuestionRelations(existing, m);
                 updated++;
             }
             else
             {
-                var q = new Question(normalizedText, m.Category, difficulty, ResolveCorrectOptionId(m), m.MediaKey);
+                var q = new Question(normalizedText, m.Category, difficulty, ResolveCorrectOptionId(m), ResolveMediaKey(m));
+                ApplyQuestionTaxonomy(q, m);
                 ApplyQuestionRelations(q, m);
                 db.Questions.Add(q);
                 seeded++;
@@ -374,6 +389,93 @@ public sealed class MinioSeeder
 
         await db.SaveChangesAsync(ct);
         _log.Information("MinioSeeder: questions — {Seeded} created, {Updated} updated.", seeded, updated);
+    }
+
+    private async Task SeedTaxonomyQuestionsAsync(AppDb db, List<QuestionSeedModel>? models, CancellationToken ct)
+    {
+        if (models is null) return;
+
+        _log.Information("MinioSeeder: seeding {Count} taxonomy questions...", models.Count);
+
+        var seedTexts = models
+            .Select(m => (m.Text ?? m.Question ?? string.Empty).Trim())
+            .Where(text => !string.IsNullOrWhiteSpace(text))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var seedDatasets = models
+            .Select(m => m.SourceDataset)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var seedSourceIds = models
+            .Select(m => m.Id)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var existingByText = await db.Questions
+            .Where(q => seedTexts.Contains(q.Text))
+            .Include(q => q.Options)
+            .Include(q => q.Tags)
+            .ToDictionaryAsync(q => q.Text, ct);
+        var existingBySource = seedDatasets.Count == 0 || seedSourceIds.Count == 0
+            ? new Dictionary<string, Question>(StringComparer.OrdinalIgnoreCase)
+            : await db.Questions
+                .Where(q => q.SourceDataset != null &&
+                            q.SourceQuestionId != null &&
+                            seedDatasets.Contains(q.SourceDataset) &&
+                            seedSourceIds.Contains(q.SourceQuestionId))
+                .Include(q => q.Options)
+                .Include(q => q.Tags)
+                .ToDictionaryAsync(q => SourceKey(q.SourceDataset!, q.SourceQuestionId!), ct);
+
+        var seeded = 0;
+        var updated = 0;
+        var skipped = 0;
+
+        foreach (var m in models)
+        {
+            if (!TryParseQuestionDifficulty(m.Difficulty, out var difficulty))
+            {
+                _log.Warning("MinioSeeder: unknown difficulty '{Difficulty}' for question - skipping.", m.Difficulty);
+                skipped++;
+                continue;
+            }
+
+            var normalizedText = (m.Text ?? m.Question ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedText))
+            {
+                _log.Warning("MinioSeeder: question missing text/question - skipping.");
+                skipped++;
+                continue;
+            }
+
+            var stableKey = SourceKeyOrNull(m.SourceDataset, m.Id);
+            Question? existing = null;
+            var hasExistingBySource = stableKey is not null && existingBySource.TryGetValue(stableKey, out existing);
+            if ((hasExistingBySource || existingByText.TryGetValue(normalizedText, out existing)) && existing is not null)
+            {
+                existing.Update(normalizedText, m.Category, difficulty, ResolveCorrectOptionId(m), ResolveMediaKey(m));
+                ApplyQuestionTaxonomy(existing, m);
+                ApplyQuestionRelations(existing, m);
+                updated++;
+                continue;
+            }
+
+            var q = new Question(normalizedText, m.Category, difficulty, ResolveCorrectOptionId(m), ResolveMediaKey(m));
+            ApplyQuestionTaxonomy(q, m);
+            ApplyQuestionRelations(q, m);
+            db.Questions.Add(q);
+            if (stableKey is not null)
+                existingBySource[stableKey] = q;
+            existingByText[normalizedText] = q;
+            seeded++;
+        }
+
+        await db.SaveChangesAsync(ct);
+        _log.Information("MinioSeeder: taxonomy questions - {Seeded} created, {Updated} updated, {Skipped} skipped.", seeded, updated, skipped);
     }
 
     private static void ApplyQuestionRelations(Question question, QuestionSeedModel m)
@@ -389,7 +491,73 @@ public sealed class MinioSeeder
             question.SetStatus(m.Status);
     }
 
+    private static void ApplyQuestionTaxonomy(Question question, QuestionSeedModel m)
+    {
+        var input = new QuestionTaxonomyInputDto(
+            m.CanonicalCategory,
+            m.DisplayCategory,
+            m.Subject,
+            m.Topic,
+            m.Subtopic,
+            m.GradeBand,
+            m.AgeGroup,
+            m.Audience,
+            m.SourceDataset,
+            m.Tags);
+        var resolved = QuestionTaxonomy.Resolve(
+            m.Category,
+            input,
+            m.SourceDataset,
+            m.Id,
+            m.Type,
+            m.MediaType,
+            ResolveMediaKey(m),
+            m.Tags);
+        question.SetTaxonomy(
+            resolved.CanonicalCategory,
+            resolved.DisplayCategory,
+            resolved.Subject,
+            resolved.Topic,
+            resolved.Subtopic,
+            resolved.GradeBand,
+            resolved.AgeGroup,
+            resolved.Audience,
+            resolved.SourceDataset,
+            resolved.SourceQuestionId,
+            resolved.QuestionType,
+            resolved.MediaType,
+            QuestionTaxonomy.ToTagsJson(resolved.TaxonomyTags));
+    }
+
+    private static void ApplyDatasetDefaults(
+        QuestionSeedModel row,
+        string key,
+        QuestionDatasetManifestSeedModel? manifest)
+    {
+        row.SourceDataset ??= manifest?.Dataset ?? key;
+        row.CanonicalCategory ??= manifest?.CanonicalCategory;
+        row.DisplayCategory ??= manifest?.DisplayCategory;
+        row.Subject ??= manifest?.Subject;
+        row.Topic ??= manifest?.Topic;
+        row.GradeBand ??= manifest?.GradeBand;
+        row.AgeGroup ??= manifest?.AgeGroup;
+        row.Audience ??= manifest?.Audience;
+        if (row.Tags.Length == 0 && manifest?.Tags is { Length: > 0 })
+            row.Tags = manifest.Tags;
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private static string? SourceKeyOrNull(string? sourceDataset, string? sourceQuestionId) =>
+        string.IsNullOrWhiteSpace(sourceDataset) || string.IsNullOrWhiteSpace(sourceQuestionId)
+            ? null
+            : SourceKey(sourceDataset, sourceQuestionId);
+
+    private static string SourceKey(string sourceDataset, string sourceQuestionId) =>
+        $"{sourceDataset.Trim().ToLowerInvariant()}::{sourceQuestionId.Trim().ToLowerInvariant()}";
+
+    private static string? ResolveMediaKey(QuestionSeedModel model) =>
+        FirstNonBlank(model.MediaKey, model.ImageUrl, model.VideoUrl, model.AudioUrl);
 
     private async Task<T?> ReadJsonAsync<T>(string key, CancellationToken ct)
     {

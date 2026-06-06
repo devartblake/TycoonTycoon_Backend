@@ -11,6 +11,8 @@ namespace Synaptix.MigrationService.Seeding
 
         // When non-empty, replaces QuestionsKey; all files are merged and deduplicated.
         public List<string> QuestionDatasetKeys { get; set; } = [];
+        public string TaxonomyManifestKey { get; set; } = "seeds/questions/taxonomy-manifest.json";
+        public string QuestionDatasetManifestKey { get; set; } = "seeds/questions/question-dataset-manifest.json";
 
         // Asset catalog for non-purchasable 3D assets (environments, effects, etc.)
         public string AssetCatalogKey { get; set; } = "seeds/asset-catalog.json";

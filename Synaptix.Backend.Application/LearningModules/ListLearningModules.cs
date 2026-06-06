@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Application.Questions;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -9,7 +10,12 @@ namespace Synaptix.Backend.Application.LearningModules
     public sealed record ListLearningModules(
         Guid? PlayerId,
         string? Category,
-        QuestionDifficulty? Difficulty
+        QuestionDifficulty? Difficulty,
+        string? Subject = null,
+        string? Topic = null,
+        string? GradeBand = null,
+        string? AgeGroup = null,
+        string? Audience = null
     ) : IRequest<IReadOnlyList<LearningModuleListItemDto>>;
 
     public sealed class ListLearningModulesHandler
@@ -28,10 +34,25 @@ namespace Synaptix.Backend.Application.LearningModules
                 .Where(m => m.IsPublished);
 
             if (!string.IsNullOrWhiteSpace(request.Category))
-                query = query.Where(m => m.Category == request.Category.Trim());
+            {
+                var category = request.Category.Trim();
+                var canonical = QuestionTaxonomy.ResolveDefinition(category).Key;
+                query = query.Where(m => m.Category == category || m.CanonicalCategory == canonical);
+            }
 
             if (request.Difficulty.HasValue)
                 query = query.Where(m => m.Difficulty == request.Difficulty.Value);
+
+            if (!string.IsNullOrWhiteSpace(request.Subject))
+                query = query.Where(m => m.Subject == request.Subject.Trim());
+            if (!string.IsNullOrWhiteSpace(request.Topic))
+                query = query.Where(m => m.Topic == request.Topic.Trim());
+            if (!string.IsNullOrWhiteSpace(request.GradeBand))
+                query = query.Where(m => m.GradeBand == request.GradeBand.Trim());
+            if (!string.IsNullOrWhiteSpace(request.AgeGroup))
+                query = query.Where(m => m.AgeGroup == request.AgeGroup.Trim());
+            if (!string.IsNullOrWhiteSpace(request.Audience))
+                query = query.Where(m => m.Audience == request.Audience.Trim());
 
             // Materialise with lesson counts
             var modules = await query
@@ -43,6 +64,12 @@ namespace Synaptix.Backend.Application.LearningModules
                     m.Title,
                     m.Description,
                     m.Category,
+                    m.CanonicalCategory,
+                    m.Subject,
+                    m.Topic,
+                    m.GradeBand,
+                    m.AgeGroup,
+                    m.Audience,
                     m.Difficulty,
                     LessonCount = m.Lessons.Count,
                     m.RewardXp,
@@ -73,7 +100,13 @@ namespace Synaptix.Backend.Application.LearningModules
                     m.LessonCount,
                     m.RewardXp,
                     m.RewardCoins,
-                    IsCompleted: completedIds?.Contains(m.Id) ?? false
+                    completedIds?.Contains(m.Id) ?? false,
+                    m.CanonicalCategory,
+                    m.Subject,
+                    m.Topic,
+                    m.GradeBand,
+                    m.AgeGroup,
+                    m.Audience
                 ))
                 .ToList();
         }

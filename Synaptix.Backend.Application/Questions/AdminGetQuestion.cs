@@ -39,7 +39,8 @@ namespace Synaptix.Backend.Application.Questions
                 q.MediaKey,
                 MediaUrl: null,
                 q.CreatedAtUtc,
-                q.UpdatedAtUtc
+                q.UpdatedAtUtc,
+                QuestionTaxonomy.ToDto(q)
             );
         }
     }

@@ -23,11 +23,16 @@ namespace Synaptix.Backend.Api.Features.LearningModules
                 [FromQuery] Guid? playerId,
                 [FromQuery] string? category,
                 [FromQuery] QuestionDifficulty? difficulty,
+                [FromQuery] string? subject,
+                [FromQuery] string? topic,
+                [FromQuery] string? gradeBand,
+                [FromQuery] string? ageGroup,
+                [FromQuery] string? audience,
                 IMediator mediator,
                 CancellationToken ct) =>
             {
                 var list = await mediator.Send(
-                    new ListLearningModules(playerId, category, difficulty), ct);
+                    new ListLearningModules(playerId, category, difficulty, subject, topic, gradeBand, ageGroup, audience), ct);
                 return Results.Ok(list);
             });
 

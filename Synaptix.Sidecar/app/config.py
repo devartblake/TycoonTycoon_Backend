@@ -35,6 +35,8 @@ class Settings(BaseSettings):
 
     # Admin ops key — forwarded as X-Admin-Ops-Key when the sidecar calls
     # protected .NET admin endpoints (e.g. GET /admin/config).
+    question_taxonomy_model_version: str = "rules-taxonomy-v1"
+    question_taxonomy_batch_limit: int = 100
     admin_ops_key: str = ""
 
 

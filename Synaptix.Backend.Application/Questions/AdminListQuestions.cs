@@ -46,7 +46,8 @@ namespace Synaptix.Backend.Application.Questions
             if (!string.IsNullOrWhiteSpace(r.Category))
             {
                 var c = r.Category.Trim();
-                filtered = filtered.Where(x => x.Category == c);
+                var canonical = QuestionTaxonomy.ResolveDefinition(c).Key;
+                filtered = filtered.Where(x => x.Category == c || x.CanonicalCategory == canonical);
             }
 
             if (r.Difficulty.HasValue)
@@ -90,6 +91,19 @@ namespace Synaptix.Backend.Application.Questions
                     x.Category,
                     x.Difficulty,
                     x.MediaKey,
+                    x.CanonicalCategory,
+                    x.DisplayCategory,
+                    x.Subject,
+                    x.Topic,
+                    x.Subtopic,
+                    x.GradeBand,
+                    x.AgeGroup,
+                    x.Audience,
+                    x.SourceDataset,
+                    x.SourceQuestionId,
+                    x.QuestionType,
+                    x.MediaType,
+                    x.TaxonomyTagsJson,
                     x.UpdatedAtUtc
                 })
                 .ToListAsync(ct);
@@ -114,6 +128,20 @@ namespace Synaptix.Backend.Application.Questions
                     x.Difficulty,
                     x.MediaKey,
                     tagsByQuestionId.TryGetValue(x.Id, out var tagsForQuestion) ? tagsForQuestion : [],
+                    new QuestionTaxonomyDto(
+                        x.CanonicalCategory,
+                        x.DisplayCategory,
+                        x.Subject,
+                        x.Topic,
+                        x.Subtopic,
+                        x.GradeBand,
+                        x.AgeGroup,
+                        x.Audience,
+                        x.SourceDataset,
+                        x.SourceQuestionId,
+                        x.QuestionType,
+                        x.MediaType,
+                        QuestionTaxonomy.ParseTagsJson(x.TaxonomyTagsJson)),
                     x.MediaKey != null,
                     x.UpdatedAtUtc
                 ))

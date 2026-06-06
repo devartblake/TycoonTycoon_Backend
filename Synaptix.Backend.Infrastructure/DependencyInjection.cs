@@ -13,6 +13,7 @@ using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Analytics.Abstractions;
 using Synaptix.Backend.Application.Analytics.Rollups;
 using Synaptix.Backend.Application.Analytics.Writers;
+using Synaptix.Backend.Application.Questions;
 using Synaptix.Backend.Domain.Abstractions;
 using Synaptix.Backend.Infrastructure.Analytics.Elastic;
 using Synaptix.Backend.Infrastructure.Analytics.Mongo;
@@ -55,6 +56,7 @@ namespace Synaptix.Backend.Infrastructure
                 services.AddSingleton<IClock, SystemClock>();
                 services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
                 services.AddSingleton<IObjectStorage>(_ => new LocalObjectStorage());
+                services.AddQuestionTaxonomySidecarClient(cfg);
                 return services;
             }
 
@@ -235,6 +237,7 @@ namespace Synaptix.Backend.Infrastructure
 
             services.AddSingleton<IClock, SystemClock>();
             services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+            services.AddQuestionTaxonomySidecarClient(cfg);
 
             return services;
         }
@@ -272,6 +275,39 @@ namespace Synaptix.Backend.Infrastructure
             {
                 client.BaseAddress = new Uri(opts.BaseUrl);
                 client.Timeout = TimeSpan.FromSeconds(opts.TimeoutSeconds);
+            });
+
+            return services;
+        }
+
+        public static IServiceCollection AddQuestionTaxonomySidecarClient(
+            this IServiceCollection services,
+            IConfiguration cfg)
+        {
+            var opts = cfg
+                .GetSection(QuestionTaxonomySidecarOptions.SectionName)
+                .Get<QuestionTaxonomySidecarOptions>() ?? new QuestionTaxonomySidecarOptions();
+
+            services.AddOptions<QuestionTaxonomySidecarOptions>()
+                .Configure(o =>
+                {
+                    o.BaseUrl = opts.BaseUrl;
+                    o.QuestionTaxonomyEnabled = opts.QuestionTaxonomyEnabled;
+                    o.QuestionTaxonomyTimeoutMs = opts.QuestionTaxonomyTimeoutMs;
+                    o.QuestionTaxonomyAutoApplyEnabled = opts.QuestionTaxonomyAutoApplyEnabled;
+                    o.QuestionTaxonomyAutoApplyMinConfidence = opts.QuestionTaxonomyAutoApplyMinConfidence;
+                });
+
+            if (!opts.QuestionTaxonomyEnabled)
+            {
+                services.TryAddSingleton<IQuestionTaxonomySidecarClient, NullQuestionTaxonomySidecarClient>();
+                return services;
+            }
+
+            services.AddHttpClient<IQuestionTaxonomySidecarClient, QuestionTaxonomySidecarClient>(client =>
+            {
+                client.BaseAddress = new Uri(opts.BaseUrl);
+                client.Timeout = TimeSpan.FromMilliseconds(Math.Max(250, opts.QuestionTaxonomyTimeoutMs));
             });
 
             return services;

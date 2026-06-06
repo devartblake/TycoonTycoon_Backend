@@ -369,7 +369,7 @@ async def snapshot_season(season_id: str, request: Request):
 async def import_questions(request: Request, file: UploadFile = File(...)):
     """
     Accepts a CSV or JSON file of questions and bulk-imports them via
-    the tycoon-api admin questions endpoint.
+    the backend taxonomy-aware admin questions import endpoint.
     """
     import json
     content = await file.read()
@@ -378,14 +378,27 @@ async def import_questions(request: Request, file: UploadFile = File(...)):
         return {"status": "error", "detail": "Expected a JSON array of questions"}
 
     backend = request.app.state.backend
-    results = []
-    for q in questions:
-        resp = await backend.post("/admin/questions", json=q)
-        results.append({"status": resp.status_code})
+    resp = await backend.post(
+        "/admin/questions/import-taxonomy",
+        json={
+            "questions": questions,
+            "strict": False,
+            "enrichWithSidecar": True,
+            "autoApplyHighConfidenceSuggestions": False,
+        },
+    )
+    try:
+        result = resp.json()
+    except Exception:
+        result = {"detail": resp.text}
 
-    ok = sum(1 for r in results if r["status"] < 300)
-    logger.info("Imported %d/%d questions", ok, len(questions))
-    return {"status": "ok", "imported": ok, "total": len(questions)}
+    logger.info("Taxonomy import forwarded with backend status %d for %d questions", resp.status_code, len(questions))
+    return {
+        "status": "ok" if resp.status_code < 300 else "error",
+        "backend_status": resp.status_code,
+        "result": result,
+        "total": len(questions),
+    }
 
 
 @router.get("/health/backend")

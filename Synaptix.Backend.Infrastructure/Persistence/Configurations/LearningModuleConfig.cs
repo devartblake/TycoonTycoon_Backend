@@ -14,6 +14,12 @@ namespace Synaptix.Backend.Infrastructure.Persistence.Configurations
             b.Property(x => x.Title).HasMaxLength(200).IsRequired();
             b.Property(x => x.Description).HasMaxLength(2000).IsRequired();
             b.Property(x => x.Category).HasMaxLength(64).IsRequired();
+            b.Property(x => x.CanonicalCategory).HasColumnName("canonical_category").HasMaxLength(128).IsRequired();
+            b.Property(x => x.Subject).HasColumnName("subject").HasMaxLength(128);
+            b.Property(x => x.Topic).HasColumnName("topic").HasMaxLength(128);
+            b.Property(x => x.GradeBand).HasColumnName("grade_band").HasMaxLength(64);
+            b.Property(x => x.AgeGroup).HasColumnName("age_group").HasMaxLength(64);
+            b.Property(x => x.Audience).HasColumnName("audience").HasMaxLength(64);
 
             b.Property(x => x.RewardXp).IsRequired();
             b.Property(x => x.RewardCoins).IsRequired();
@@ -23,6 +29,10 @@ namespace Synaptix.Backend.Infrastructure.Persistence.Configurations
             b.Property(x => x.UpdatedAtUtc).IsRequired();
 
             b.HasIndex(x => x.Category);
+            b.HasIndex(x => x.CanonicalCategory);
+            b.HasIndex(x => x.Subject);
+            b.HasIndex(x => x.GradeBand);
+            b.HasIndex(x => x.AgeGroup);
             b.HasIndex(x => x.IsPublished);
             b.HasIndex(x => x.Difficulty);
 
