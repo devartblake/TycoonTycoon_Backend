@@ -1,0 +1,66 @@
+# ============================================================
+# Synaptix Compliance Stack
+# ============================================================
+# Provides the Compliance API microservice (COPPA + CCPA + PCI audit).
+#
+# Standalone (no main stack required):
+#   docker compose -f docker/compose.compliance.yml up
+#   Uses the shared PostgreSQL instance if available; otherwise
+#   requires ConnectionStrings__compliance to point to a running DB.
+#
+# Alongside main stack:
+#   docker compose -f docker/compose.yml up -d
+#   docker compose -f docker/compose.compliance.yml up -d
+#
+# The service auto-migrates its own schema ("compliance") on startup.
+# ============================================================
+
+name: tycoon-compliance
+
+services:
+
+  # ================================
+  # Compliance API
+  # ================================
+  compliance-api:
+    build:
+      context: ..
+      dockerfile: Synaptix.Compliance.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
+    image: synaptix-compliance-api:latest
+    container_name: synaptix_compliance_api
+    restart: unless-stopped
+    ports:
+      - "${COMPLIANCE_API_PORT:-5070}:5070"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+
+      # Service-to-service token — backend API sends this as X-Service-Token
+      ComplianceApi__ServiceToken: "${COMPLIANCE_SERVICE_TOKEN:-compliance-internal-service-token-change-me}"
+
+      # JWT — must match the main backend's JwtSettings:SecretKey
+      JwtSettings__SecretKey: "${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-me-in-production-minimum-32-characters-long}"
+
+      # PostgreSQL — uses dedicated compliance DB (auto-created by EF migrations)
+      ConnectionStrings__compliance: "${COMPLIANCE_DB_URL:-Host=db;Port=5432;Database=synaptix_compliance;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}"
+
+      # Observability
+      Serilog__MinimumLevel__Default: "${LOG_LEVEL:-Information}"
+    networks: [compliance-net, synaptix-net]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5070/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# ================================
+# Networks
+# ================================
+networks:
+  compliance-net:
+    driver: bridge
+  synaptix-net:
+    name: synaptix-net
+    driver: bridge
