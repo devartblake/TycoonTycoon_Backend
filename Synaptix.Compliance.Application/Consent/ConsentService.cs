@@ -30,6 +30,7 @@ internal sealed class ConsentService(IComplianceDb db) : IConsentService
     {
         // One record per consent type — the most recent entry for each type
         var all = await db.ConsentRecords
+            .AsNoTracking()
             .Where(r => r.UserId == userId)
             .OrderByDescending(r => r.RecordedAt)
             .ToListAsync(ct);
