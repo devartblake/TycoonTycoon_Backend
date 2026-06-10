@@ -14,7 +14,7 @@ public static class ParentalConsentEndpoints
             .RequireAuthorization();
 
         group.MapPost("/initiate", HandleInitiate);
-        group.MapPost("/verify", HandleVerify);
+        group.MapPost("/verify", HandleVerify).AllowAnonymous();
         group.MapGet("/me", HandleGetOwn);
         group.MapDelete("/me", HandleRevoke);
     }
