@@ -19,6 +19,12 @@
     <Project Path="Synaptix.Security.Kms.Contracts/Synaptix.Security.Kms.Contracts.csproj" Id="7ab62bf4-6034-42a7-b9eb-6cc526f16dc0" />
     <Project Path="Synaptix.Security.Kms.Infrastructure/Synaptix.Security.Kms.Infrastructure.csproj" Id="68a6f7e6-02aa-4c4b-bc62-b70e3efc3c1a" />
   </Folder>
+  <Folder Name="/Services/Synaptix.Compliance/">
+    <Project Path="Synaptix.Compliance.Api/Synaptix.Compliance.Api.csproj" />
+    <Project Path="Synaptix.Compliance.Application/Synaptix.Compliance.Application.csproj" />
+    <Project Path="Synaptix.Compliance.Contracts/Synaptix.Compliance.Contracts.csproj" />
+    <Project Path="Synaptix.Compliance.Infrastructure/Synaptix.Compliance.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Shared/">
     <Project Path="Synaptix.Shared.Contracts/Synaptix.Shared.Contracts.csproj" />
     <Project Path="Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj" />
@@ -35,5 +41,6 @@
   <Project Path="Synaptix.MigrationService/Synaptix.MigrationService.csproj" />
   <Project Path="Synaptix.Setup/Synaptix.Setup.csproj" />
   <Project Path="Synaptix.Security.Kms.Client/Synaptix.Security.Kms.Client.csproj" />
+  <Project Path="Synaptix.Compliance.Client/Synaptix.Compliance.Client.csproj" />
   <Project Path="Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj" />
 </Solution>

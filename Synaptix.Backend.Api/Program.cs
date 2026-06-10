@@ -99,6 +99,7 @@ using Synaptix.Backend.Api.Payments.Stripe;
 using Synaptix.Backend.Api.Realtime;
 using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Application;
+using Synaptix.Compliance.Client.Extensions;
 using Synaptix.Security.Kms.Client.Extensions;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
@@ -306,6 +307,9 @@ builder.Services.AddInfrastructure(builder.Configuration)
 
 // KMS typed clients for secure-channel payload encryption
 builder.Services.AddKmsClient(builder.Configuration);
+
+// Compliance service client (COPPA, CCPA, PCI audit hooks)
+builder.Services.AddComplianceClient(builder.Configuration);
 
 // Register Authentication Service
 builder.Services.AddScoped<Synaptix.Backend.Application.Auth.IAuthService, Synaptix.Backend.Application.Auth.AuthService>();

@@ -53,6 +53,7 @@
     <ProjectReference Include="..\Synaptix.Shared.Observability\Synaptix.Shared.Observability.csproj" />
     <ProjectReference Include="..\Synaptix.Shared\Synaptix.Shared.csproj" />
     <ProjectReference Include="..\Synaptix.Security.Kms.Client\Synaptix.Security.Kms.Client.csproj" />
+    <ProjectReference Include="..\Synaptix.Compliance.Client\Synaptix.Compliance.Client.csproj" />
   </ItemGroup>
 
 </Project>

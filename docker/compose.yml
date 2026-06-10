@@ -476,6 +476,9 @@ services:
       KmsClient__BaseUrl: "${KMS_API_BASE_URL:-http://kms-api:5050}"
       KmsClient__ServiceToken: "${KMS_SERVICE_TOKEN:-}"
       KmsClient__Required: "${KMS_CLIENT_REQUIRED:-false}"
+      ComplianceClient__BaseUrl: "${COMPLIANCE_API_BASE_URL:-http://compliance-api:5070}"
+      ComplianceClient__ServiceToken: "${COMPLIANCE_SERVICE_TOKEN:-}"
+      ComplianceClient__Required: "${COMPLIANCE_CLIENT_REQUIRED:-false}"
 
       # Admin allowlist — email(s) permitted to access the operator dashboard
       AdminAuth__AllowedEmails__0: "${SUPER_ADMIN_EMAIL:-}"
