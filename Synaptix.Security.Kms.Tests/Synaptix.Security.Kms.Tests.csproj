@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Synaptix.Security.Kms.Api\Synaptix.Security.Kms.Api.csproj" />
     <ProjectReference Include="..\Synaptix.Security.Kms.Infrastructure\Synaptix.Security.Kms.Infrastructure.csproj" />
     <ProjectReference Include="..\Synaptix.Security.Kms.Contracts\Synaptix.Security.Kms.Contracts.csproj" />
+    <ProjectReference Include="..\Synaptix.Compliance.Api\Synaptix.Compliance.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>
