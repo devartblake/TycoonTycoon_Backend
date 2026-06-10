@@ -12,8 +12,10 @@ internal sealed class ComplianceClient(HttpClient http) : IComplianceClient
     {
         var response = await http.GetAsync($"/internal/compliance/users/{userId}/restrictions", ct);
         await EnsureSuccessAsync(response, "get-restrictions", ct);
-        return (await response.Content.ReadFromJsonAsync<UserRestrictionsResponse>(ct))!;
-    }
+        var model = await response.Content.ReadFromJsonAsync<UserRestrictionsResponse>(ct);
+        return model ?? throw new ComplianceClientException(
+            "Compliance get-restrictions returned an empty response body.",
+            (int)response.StatusCode);
 
     public async Task<ConsentStatusResponse> GetConsentStatusAsync(Guid userId, CancellationToken ct)
     {
