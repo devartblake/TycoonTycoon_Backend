@@ -23,7 +23,7 @@ internal sealed class ParentalConsentService(IComplianceDb db) : IParentalConsen
             existing.Status = ParentalConsentStatus.Expired;
         }
 
-        var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        var rawToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
 
         var record = new Entities.ParentalConsent
         {
