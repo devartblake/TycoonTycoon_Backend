@@ -21,8 +21,10 @@ internal sealed class ComplianceClient(HttpClient http) : IComplianceClient
     {
         var response = await http.GetAsync($"/internal/compliance/users/{userId}/consent-status", ct);
         await EnsureSuccessAsync(response, "get-consent-status", ct);
-        return (await response.Content.ReadFromJsonAsync<ConsentStatusResponse>(ct))!;
-    }
+        var model = await response.Content.ReadFromJsonAsync<ConsentStatusResponse>(ct);
+        return model ?? throw new ComplianceClientException(
+            "Compliance get-consent-status returned an empty response body.",
+            (int)response.StatusCode);
 
     public async Task RecordAuditEventAsync(RecordAuditEventRequest request, CancellationToken ct)
     {
