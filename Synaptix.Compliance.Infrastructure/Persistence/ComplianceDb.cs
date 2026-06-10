@@ -16,6 +16,8 @@ public sealed class ComplianceDb(DbContextOptions<ComplianceDb> options)
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        base.OnModelCreating(builder);
+
         builder.HasDefaultSchema("compliance");
         builder.ApplyConfiguration(new AgeVerificationConfiguration());
         builder.ApplyConfiguration(new ParentalConsentConfiguration());
