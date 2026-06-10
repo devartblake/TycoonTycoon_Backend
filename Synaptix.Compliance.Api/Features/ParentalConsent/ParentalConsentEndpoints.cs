@@ -104,7 +104,7 @@ public static class ParentalConsentEndpoints
 
     private static Guid? ParseUserId(ClaimsPrincipal user)
     {
-        var sub = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sub = user.FindFirstValue("sub") ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
         return Guid.TryParse(sub, out var id) ? id : null;
     }
 }
