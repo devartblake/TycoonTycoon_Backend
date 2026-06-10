@@ -8,6 +8,6 @@ public sealed class ComplianceClientOptions
     public string ServiceToken { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 10;
 
-    /// When false, compliance calls that fail do not throw; restrictions default to empty.
+    /// Whether compliance is required for this service (note: not currently enforced by the client; non-success responses throw).
     public bool Required { get; set; } = false;
 }
