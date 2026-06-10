@@ -98,9 +98,11 @@ try
 
     var app = builder.Build();
 
-    // ── Auto-migrate on startup ────────────────────────────────────────────────
-    using (var scope = app.Services.CreateScope())
+    // ── Auto-migrate on startup (optional) ───────────────────────────────────────
+    var autoMigrate = builder.Configuration.GetValue("ComplianceApi:AutoMigrate", builder.Environment.IsDevelopment());
+    if (autoMigrate)
     {
+        using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ComplianceDb>();
         await db.Database.MigrateAsync();
     }
