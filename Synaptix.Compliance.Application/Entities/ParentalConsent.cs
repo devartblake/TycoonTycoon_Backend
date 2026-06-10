@@ -7,7 +7,7 @@ public sealed class ParentalConsent
     public Guid Id { get; init; } = Guid.NewGuid();
     public Guid UserId { get; set; }
 
-    // Stored encrypted at rest; plain value only used transiently for email dispatch
+    // Stored as SHA-256 hashes; plain values are used only transiently for email dispatch / verification.
     public string ParentEmailHash { get; set; } = string.Empty;
     public string TokenHash { get; set; } = string.Empty;
 
