@@ -8,11 +8,13 @@ namespace Synaptix.Backend.Api.Tests.Matches;
 
 public sealed class MatchSubmitTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
     private readonly HttpClient _admin;
 
     public MatchSubmitTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient();
         _admin = factory.CreateClient().WithAdminOpsKey();
     }
@@ -22,6 +24,9 @@ public sealed class MatchSubmitTests : IClassFixture<TycoonApiFactory>
     {
         var p1 = Guid.NewGuid();
         var p2 = Guid.NewGuid();
+
+        // Host must be the authenticated caller (matches/start binds host to sub).
+        _http.AuthenticateAsPlayer(_factory, p1);
 
         // Start match (host = p1)
         var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "duel"));

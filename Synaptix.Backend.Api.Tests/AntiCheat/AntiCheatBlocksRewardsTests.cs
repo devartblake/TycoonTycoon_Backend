@@ -8,10 +8,12 @@ namespace Synaptix.Backend.Api.Tests.AntiCheat;
 
 public sealed class AntiCheatBlocksRewardsTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
 
     public AntiCheatBlocksRewardsTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient();
     }
 
@@ -19,6 +21,7 @@ public sealed class AntiCheatBlocksRewardsTests : IClassFixture<TycoonApiFactory
     public async Task SevereFlag_BlocksRewards()
     {
         var p1 = Guid.NewGuid();
+        _http.AuthenticateAsPlayer(_factory, p1);
 
         var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "duel"));
         start.EnsureSuccessStatusCode();

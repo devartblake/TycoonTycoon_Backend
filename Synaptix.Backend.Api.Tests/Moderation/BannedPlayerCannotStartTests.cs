@@ -71,6 +71,7 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
 
         set.EnsureSuccessStatusCode();
 
+        _public.AuthenticateAsPlayer(_factory, playerId);
         var start = await _public.PostAsJsonAsync("/api/v1/matches/start",
             new StartMatchRequest(playerId, "duel"));
 

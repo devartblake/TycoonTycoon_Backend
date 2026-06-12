@@ -8,11 +8,13 @@ namespace Synaptix.Backend.Api.Tests.Matches;
 
 public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
     private readonly HttpClient _admin;
 
     public MatchEntryPolicyTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient();
         _admin = factory.CreateClient().WithAdminOpsKey();
     }
@@ -49,6 +51,7 @@ public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
     public async Task Start_PracticeMode_Allows_Legacy_Mode()
     {
         var playerId = Guid.NewGuid();
+        _http.AuthenticateAsPlayer(_factory, playerId);
         var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(playerId, "practice"));
         start.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -57,6 +60,7 @@ public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
     public async Task Start_Jackpot_Returns_Conflict_When_No_Ticket_Available()
     {
         var playerId = Guid.NewGuid();
+        _http.AuthenticateAsPlayer(_factory, playerId);
 
         // Consume today's free jackpot ticket through mobile economy flow.
         var claim = await _http.PostAsync($"/api/v1/mobile/economy/daily-jackpot-ticket/claim?playerId={playerId}", null);
@@ -111,6 +115,7 @@ public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
             patchResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var playerId = Guid.NewGuid();
+            _http.AuthenticateAsPlayer(_factory, playerId);
             var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(playerId, "energy_only"));
             start.StatusCode.Should().Be(HttpStatusCode.Conflict);
             await start.HasErrorCodeAsync("MATCH_ENTRY_DENIED");

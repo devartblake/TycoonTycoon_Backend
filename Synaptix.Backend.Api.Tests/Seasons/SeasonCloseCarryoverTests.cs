@@ -8,11 +8,13 @@ namespace Synaptix.Backend.Api.Tests.Seasons;
 
 public sealed class SeasonCloseCarryoverTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _admin;
     private readonly HttpClient _public;
 
     public SeasonCloseCarryoverTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();
         _public = factory.CreateClient();
     }
@@ -30,6 +32,7 @@ public sealed class SeasonCloseCarryoverTests : IClassFixture<TycoonApiFactory>
 
         // Award points directly (admin-adjust) to create profile
         var p1 = Guid.NewGuid();
+        _public.AuthenticateAsPlayer(_factory, p1);
 
         // Apply points with service endpoint via transaction table? We didn't add public endpoint for ApplySeasonPoints (by design).
         // Instead, create a match for points: keep minimal by simulating a match submit.

@@ -36,6 +36,8 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
 
         await SeedPartyMatchAsync(partyId, leaderId, mateId, matchId);
 
+        _http.AuthenticateAsPlayer(_factory, leaderId);
+
         var req = new SubmitMatchRequest(
             EventId: Guid.NewGuid(),
             MatchId: matchId,

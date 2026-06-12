@@ -29,7 +29,7 @@ namespace Synaptix.Backend.Api.Features.Matches
                 IMediator mediator,
                 CancellationToken ct) =>
             {
-                var sub = user.FindFirstValue(ClaimTypes.NameIdentifier);
+                var sub = user.FindFirstValue("sub") ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (!Guid.TryParse(sub, out var callerId) || callerId != req.HostPlayerId)
                     return Results.Forbid();
 
