@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Security.Kms.Client.Abstractions;
 using Synaptix.Security.Kms.Client.Exceptions;
 using Synaptix.Security.Kms.Client.Models.Requests;
 
-namespace Synaptix.Backend.Api.Features.Security
+namespace Synaptix.Backend.Api.Features.SecuritySessions
 {
     /// <summary>
     /// Public secure-channel handshake surface on the main API. The mobile client

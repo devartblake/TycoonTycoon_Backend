@@ -102,7 +102,7 @@ using Synaptix.Backend.Application;
 using Synaptix.Compliance.Client.Extensions;
 using Synaptix.Security.Kms.Client.Extensions;
 using Synaptix.Security.Kms.Client.Abstractions;
-using Synaptix.Backend.Api.Features.Security;
+using Synaptix.Backend.Api.Features.SecuritySessions;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Application.Analytics.Abstractions;

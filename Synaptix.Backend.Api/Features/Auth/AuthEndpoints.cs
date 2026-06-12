@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Application.Auth;
 using Synaptix.Shared.Contracts.Dtos;
@@ -18,7 +21,110 @@ namespace Synaptix.Backend.Api.Features.Auth
             authGroup.MapPost("/login", HandleLogin);
             authGroup.MapPost("/refresh", HandleTokenRefresh).RequireSecureChannel();
             authGroup.MapPost("/logout", HandleLogout).RequireAuthorization();
+
+            // Device-first guest funnel: play immediately, register later.
+            authGroup.MapPost("/device/bootstrap", HandleDeviceBootstrap);
+            authGroup.MapPost("/account/upgrade", HandleAccountUpgrade).RequireAuthorization();
+
+            // Native game-platform and OAuth sign-in. These require provider
+            // credentials and server-side signature/token verification that is not
+            // configured yet; they fail closed (501) rather than 404 so the client
+            // surfaces a clear "not available" state instead of a silent dead-end,
+            // and so no unverified identity is ever accepted (no auth bypass).
+            authGroup.MapPost("/mobile-game-login", HandleGamePlatformNotConfigured);
+            authGroup.MapPost("/link-game-account", HandleGamePlatformNotConfigured).RequireAuthorization();
+            authGroup.MapGet("/oauth/{provider}", HandleOAuthNotConfigured);
         }
+
+        private static async Task<IResult> HandleDeviceBootstrap(
+            [FromBody] DeviceBootstrapRequest request,
+            IAuthService authService,
+            CancellationToken cancellation)
+        {
+            if (string.IsNullOrWhiteSpace(request.DeviceId))
+                return Results.BadRequest(new { error = "DeviceId is required" });
+
+            try
+            {
+                var authData = await authService.BootstrapDeviceAsync(request.DeviceId, request.DisplayName);
+                return Results.Ok(new LoginResponse(
+                    authData.AccessToken,
+                    authData.RefreshToken,
+                    authData.ExpiresIn,
+                    authData.User));
+            }
+            catch (InvalidOperationException error)
+            {
+                return Results.BadRequest(new { error = "bootstrap_failed", message = error.Message });
+            }
+        }
+
+        private static async Task<IResult> HandleAccountUpgrade(
+            [FromBody] AccountUpgradeRequest request,
+            HttpContext httpContext,
+            IAuthService authService,
+            CancellationToken cancellation)
+        {
+            var subject = httpContext.User.FindFirst("sub")?.Value
+                          ?? httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (subject is null || !Guid.TryParse(subject, out var userId))
+                return Results.Unauthorized();
+
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return Results.BadRequest(new { error = "Email is required" });
+            if (string.IsNullOrWhiteSpace(request.Password))
+                return Results.BadRequest(new { error = "Password is required" });
+            if (request.Password.Length < 8)
+                return Results.BadRequest(new { error = "Password must be at least 8 characters" });
+            if (string.IsNullOrWhiteSpace(request.DeviceId))
+                return Results.BadRequest(new { error = "DeviceId is required" });
+
+            try
+            {
+                var handle = request.Username ?? request.Handle;
+                var authData = await authService.UpgradeAccountAsync(
+                    userId, request.Email, request.Password, request.DeviceId, handle, request.Country);
+
+                return Results.Ok(new LoginResponse(
+                    authData.AccessToken,
+                    authData.RefreshToken,
+                    authData.ExpiresIn,
+                    authData.User));
+            }
+            catch (InvalidOperationException error) when (error.Message.Contains("already in use"))
+            {
+                return Results.Conflict(new { error = "email_already_exists", message = error.Message });
+            }
+            catch (InvalidOperationException error) when (error.Message.Contains("not available"))
+            {
+                return Results.Conflict(new { error = "username_taken", message = error.Message });
+            }
+            catch (InvalidOperationException error) when (error.Message.Contains("already registered"))
+            {
+                return Results.Conflict(new { error = "already_registered", message = error.Message });
+            }
+            catch (InvalidOperationException error)
+            {
+                return Results.BadRequest(new { error = "upgrade_failed", message = error.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
+            }
+        }
+
+        private static IResult HandleGamePlatformNotConfigured()
+            => ApiResponses.Error(
+                StatusCodes.Status501NotImplemented,
+                "not_implemented",
+                "Native game-platform sign-in is not configured on this server. " +
+                "It requires Apple Game Center / Google Play Games verification to be enabled.");
+
+        private static IResult HandleOAuthNotConfigured(string provider)
+            => ApiResponses.Error(
+                StatusCodes.Status501NotImplemented,
+                "not_implemented",
+                $"OAuth sign-in for '{provider}' is not configured on this server.");
 
         private static async Task<IResult> HandleRegistration(
             [FromBody] RegisterRequest request, 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;

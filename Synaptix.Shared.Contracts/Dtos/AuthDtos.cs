@@ -98,4 +98,33 @@ namespace Synaptix.Shared.Contracts.Dtos
         string UserId,  // String format for Flutter compatibility
         UserDto User
     );
+
+    // ===== Device-first (guest) auth DTOs =====
+
+    /// <summary>
+    /// Request to bootstrap a device-first guest session (POST /auth/device/bootstrap).
+    /// The client sends device identity plus optional platform hints.
+    /// </summary>
+    public record DeviceBootstrapRequest(
+        string DeviceId,
+        string? DeviceType = null,
+        string? Platform = null,
+        string? PlatformPlayerId = null,
+        string? DisplayName = null
+    );
+
+    /// <summary>
+    /// Request to upgrade the authenticated guest account into a full email
+    /// account (POST /auth/account/upgrade). The user is identified by their
+    /// bearer token; this body carries the new credentials.
+    /// </summary>
+    public record AccountUpgradeRequest(
+        string Email,
+        string Password,
+        string DeviceId,
+        string? Username = null,   // Alias for Handle (Flutter sends this)
+        string? Handle = null,
+        string? Country = null,
+        string? DeviceType = null
+    );
 }
