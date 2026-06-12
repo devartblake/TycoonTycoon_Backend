@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Api.Features.Ml;
 
 public static class MlScoringEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/ml").WithTags("ML").RequireAuthorization()
             .AddEndpointFilter(async (ctx, next) =>

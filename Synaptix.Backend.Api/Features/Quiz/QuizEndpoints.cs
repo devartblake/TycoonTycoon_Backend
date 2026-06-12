@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Api.Features.Quiz;
 
 public static class QuizEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/quiz").WithTags("Quiz").RequireAuthorization();
 

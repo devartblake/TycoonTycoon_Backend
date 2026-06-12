@@ -12,7 +12,7 @@ namespace Synaptix.Backend.Api.Features.Notifications
 {
     public static class PlayerNotificationsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/notifications")
                 .WithTags("Notifications")

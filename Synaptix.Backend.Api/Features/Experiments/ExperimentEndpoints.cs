@@ -8,7 +8,7 @@ namespace Synaptix.Backend.Api.Features.Experiments;
 
 public static class ExperimentEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/experiments")
             .WithTags("Experiments")

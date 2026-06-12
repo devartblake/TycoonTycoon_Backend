@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Api.Features.GameEvents
 {
     public static class GameEventStatsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/game-events").WithTags("GameEventStats");
 
@@ -58,7 +58,7 @@ namespace Synaptix.Backend.Api.Features.GameEvents
             });
         }
 
-        public static void MapTerritory(WebApplication app)
+        public static void MapTerritory(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/territory").WithTags("TerritoryStats");
 

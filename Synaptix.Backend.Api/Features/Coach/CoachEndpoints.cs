@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Api.Features.Coach;
 
 public static class CoachEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/coach")
             .RequireAuthorization()

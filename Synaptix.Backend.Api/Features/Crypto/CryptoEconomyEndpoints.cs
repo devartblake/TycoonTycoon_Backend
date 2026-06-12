@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Api.Features.Crypto;
 
 public static class CryptoEconomyEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/crypto").WithTags("Crypto Economy")
             .AddEndpointFilter(async (ctx, next) =>

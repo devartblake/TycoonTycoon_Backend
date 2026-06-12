@@ -12,13 +12,14 @@ namespace Synaptix.Backend.Api.Features.Leaderboards
 {
     public static class LeaderboardsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/leaderboards").WithTags("Leaderboards");
 
             // Frontend compatibility route(s): some clients call singular /leaderboard.
+            // Under the global /api/v1 group this resolves to /api/v1/leaderboard,
+            // which also covers the former explicit /api/v1/leaderboard alias.
             MapLegacyLeaderboard(app.MapGroup("/leaderboard").WithTags("Leaderboards"));
-            MapLegacyLeaderboard(app.MapGroup("/api/v1/leaderboard").WithTags("Leaderboards"));
 
             // Existing: keep for now (until auth-sub binding is enforced)
             g.MapGet("/me/{playerId:guid}", async (Guid playerId, IMediator mediator, CancellationToken ct) =>

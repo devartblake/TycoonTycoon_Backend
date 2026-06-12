@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Api.Features.Study
 {
     public static class StudySetsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             // Public study contract.
             // /study-sets is the dedicated backend surface for rehearsal-style study flows.

@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Api.Features.Referrals
 {
     public static class ReferralsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/referrals").WithTags("Referrals");
 

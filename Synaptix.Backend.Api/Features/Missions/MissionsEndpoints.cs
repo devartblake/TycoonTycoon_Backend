@@ -14,7 +14,7 @@ namespace Synaptix.Backend.Api.Features.Missions
 {
     public static class MissionsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/missions").WithTags("Missions");
 

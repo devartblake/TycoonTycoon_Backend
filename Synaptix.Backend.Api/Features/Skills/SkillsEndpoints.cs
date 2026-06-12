@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.Skills
 {
     public static class SkillsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/skills").WithTags("Skills")
                 .AddEndpointFilter(async (ctx, next) =>

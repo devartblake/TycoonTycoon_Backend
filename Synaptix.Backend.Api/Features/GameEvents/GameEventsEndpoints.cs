@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.GameEvents
 {
     public static class GameEventsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/game-events").WithTags("GameEvents");
 

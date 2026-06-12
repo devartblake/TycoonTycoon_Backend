@@ -13,7 +13,7 @@ public static class SpinsEndpoints
 {
     private const int DefaultDailySpinLimit = 3;
 
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/spins").WithTags("Spins");
 

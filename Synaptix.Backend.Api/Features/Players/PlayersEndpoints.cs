@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Api.Features.Players
 {
     public static class PlayersEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/players").WithTags("Players");
 

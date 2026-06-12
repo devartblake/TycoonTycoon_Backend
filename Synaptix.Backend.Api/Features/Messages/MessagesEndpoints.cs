@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Api.Features.Messages
 {
     public static class MessagesEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/messages")
                 .WithTags("Messages")

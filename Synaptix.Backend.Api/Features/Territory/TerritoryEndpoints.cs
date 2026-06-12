@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.Territory
 {
     public static class TerritoryEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/territory").WithTags("Territory");
 

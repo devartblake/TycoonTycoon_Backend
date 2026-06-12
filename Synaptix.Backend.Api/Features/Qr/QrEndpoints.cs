@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Api.Features.Qr
 {
     public static class QrEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/qr").WithTags("QR");
 

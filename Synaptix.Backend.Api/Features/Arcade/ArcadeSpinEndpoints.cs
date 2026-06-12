@@ -16,7 +16,7 @@ public static class ArcadeSpinEndpoints
     private static readonly TimeSpan SpinSessionTtl = TimeSpan.FromMinutes(5);
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/arcade/spin").WithTags("Arcade Spin");
 

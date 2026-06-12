@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Api.Features.Personalization;
 
 public static class PersonalizationEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/personalization")
             .RequireAuthorization()

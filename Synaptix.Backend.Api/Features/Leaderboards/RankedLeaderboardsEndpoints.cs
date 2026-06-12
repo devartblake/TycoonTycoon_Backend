@@ -8,7 +8,7 @@ namespace Synaptix.Backend.Api.Features.Leaderboards;
 
 public static class RankedLeaderboardsEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/leaderboards/ranked").WithTags("Leaderboards/Ranked");
 

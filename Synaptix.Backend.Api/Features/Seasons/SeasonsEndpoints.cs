@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.Seasons
 {
     public static class SeasonsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/seasons").WithTags("Seasons");
 

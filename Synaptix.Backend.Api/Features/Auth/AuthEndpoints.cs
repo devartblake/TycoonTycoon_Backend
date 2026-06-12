@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Api.Features.Auth
 {
     public static class AuthEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var authGroup = app.MapGroup("/auth").WithTags("Authentication");
 

@@ -23,7 +23,7 @@ public static class AccountRewardsEndpoints
         new(7, "coins",  500, 5, "Day 7 — 500 Credits + 5 Synapse Shards"),
     ];
 
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/account/rewards")
             .WithTags("Account")

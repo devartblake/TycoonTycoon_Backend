@@ -10,9 +10,9 @@ namespace Synaptix.Backend.Api.Features.AppConfig;
 
 public static class AppConfigEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/v1/app/config", async (
+        app.MapGet("/app/config", async (
             IAppDb db,
             IHostEnvironment env,
             IConfiguration config,

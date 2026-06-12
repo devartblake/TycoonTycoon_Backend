@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Api.Features.Avatars
 {
     public static class AvatarEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var purchaseGroup = app.MapGroup("/store/avatars")
                 .WithTags("Avatars")

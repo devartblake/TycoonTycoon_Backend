@@ -908,57 +908,64 @@ app.MapGrpcService<MobileMatchGrpcService>();
 // - /questions/* = gameplay-safe question retrieval and grading
 // - /modules/* = learning and mastery flows
 // - /quiz/* = solo quiz completion and reward grant (POST /quiz/complete)
-AppConfigEndpoints.Map(app);
-AnalyticsEndpoints.Map(app);
-AuthEndpoints.Map(app);
-UsersEndpoints.Map(app);
-UserFriendsEndpoints.Map(app);
-PlayerPreferencesEndpoints.Map(app);
-PlayersEndpoints.Map(app);
-MatchesEndpoints.Map(app);
-QuizEndpoints.Map(app);
-MatchmakingEndpoints.Map(app);
-MissionsEndpoints.Map(app);
-LeaderboardsEndpoints.Map(app);
-ReferralsEndpoints.Map(app);
-QrEndpoints.Map(app);
-SkillsEndpoints.Map(app);
-PowerupsEndpoints.Map(app);
-SeasonsEndpoints.Map(app);
-FriendsEndpoints.Map(app);
-PlayerNotificationsEndpoints.Map(app);
-MessagesEndpoints.Map(app);
-PartyEndpoints.Map(app);
-RankedLeaderboardsEndpoints.Map(app);
-SeasonRewardsEndpoints.Map(app);
-QuestionsEndpoints.Map(app);
-LearningModulesEndpoints.Map(app);
-StudySetsEndpoints.Map(app);
-StudySessionsEndpoints.Map(app);
-VoteEndpoints.Map(app);
-StoreEndpoints.Map(app);
-ArcadeSpinEndpoints.Map(app);
-ReactorEndpoints.Map(app);
-ActiveEventsEndpoints.Map(app);
-UserRewardsEndpoints.Map(app);
-RewardsEndpoints.Map(app);
-AccountRewardsEndpoints.Map(app);
-SpinsEndpoints.Map(app);
-AvatarEndpoints.Map(app);
-AssetManifestEndpoints.Map(app);
-PersonalizationEndpoints.Map(app);
-CoachEndpoints.Map(app);
-ExperimentEndpoints.Map(app);
-CryptoEconomyEndpoints.Map(app);
-MlScoringEndpoints.Map(app);
-GameEventsEndpoints.Map(app);
-GameEventStatsEndpoints.Map(app);
-GameEventStatsEndpoints.MapTerritory(app);
-GuardiansEndpoints.Map(app);
-TerritoryEndpoints.Map(app);
+//
+// All public client-facing endpoints are versioned under /api/v1 (single
+// source of truth for the mobile contract). Infra surfaces (/health, /healthz,
+// /ws, /swagger, gRPC, /hangfire, /metrics) and the operator /admin surface
+// stay un-prefixed by design.
+var v1 = app.MapGroup("/api/v1");
+
+AppConfigEndpoints.Map(v1);
+AnalyticsEndpoints.Map(v1);
+AuthEndpoints.Map(v1);
+UsersEndpoints.Map(v1);
+UserFriendsEndpoints.Map(v1);
+PlayerPreferencesEndpoints.Map(v1);
+PlayersEndpoints.Map(v1);
+MatchesEndpoints.Map(v1);
+QuizEndpoints.Map(v1);
+MatchmakingEndpoints.Map(v1);
+MissionsEndpoints.Map(v1);
+LeaderboardsEndpoints.Map(v1);
+ReferralsEndpoints.Map(v1);
+QrEndpoints.Map(v1);
+SkillsEndpoints.Map(v1);
+PowerupsEndpoints.Map(v1);
+SeasonsEndpoints.Map(v1);
+FriendsEndpoints.Map(v1);
+PlayerNotificationsEndpoints.Map(v1);
+MessagesEndpoints.Map(v1);
+PartyEndpoints.Map(v1);
+RankedLeaderboardsEndpoints.Map(v1);
+SeasonRewardsEndpoints.Map(v1);
+QuestionsEndpoints.Map(v1);
+LearningModulesEndpoints.Map(v1);
+StudySetsEndpoints.Map(v1);
+StudySessionsEndpoints.Map(v1);
+VoteEndpoints.Map(v1);
+StoreEndpoints.Map(v1);
+ArcadeSpinEndpoints.Map(v1);
+ReactorEndpoints.Map(v1);
+ActiveEventsEndpoints.Map(v1);
+UserRewardsEndpoints.Map(v1);
+RewardsEndpoints.Map(v1);
+AccountRewardsEndpoints.Map(v1);
+SpinsEndpoints.Map(v1);
+AvatarEndpoints.Map(v1);
+AssetManifestEndpoints.Map(v1);
+PersonalizationEndpoints.Map(v1);
+CoachEndpoints.Map(v1);
+ExperimentEndpoints.Map(v1);
+CryptoEconomyEndpoints.Map(v1);
+MlScoringEndpoints.Map(v1);
+GameEventsEndpoints.Map(v1);
+GameEventStatsEndpoints.Map(v1);
+GameEventStatsEndpoints.MapTerritory(v1);
+GuardiansEndpoints.Map(v1);
+TerritoryEndpoints.Map(v1);
 
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
-var mobile = app.MapGroup("/mobile").WithTags("Mobile");
+var mobile = v1.MapGroup("/mobile").WithTags("Mobile");
 MobileMatchesEndpoints.Map(mobile);
 MobilePlayersEndpoints.Map(mobile);
 MobileLeaderboardsEndpoints.Map(mobile);

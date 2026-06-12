@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.LearningModules
 {
     public static class LearningModulesEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             // Public learning contract.
             // /modules is the supported backend surface for guided mastery and lesson progression.

@@ -6,7 +6,7 @@ namespace Synaptix.Backend.Api.Features.Events;
 
 public static class ActiveEventsEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         app.MapGet("/events/active", GetActiveEvents)
             .WithTags("Events")

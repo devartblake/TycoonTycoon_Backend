@@ -12,7 +12,7 @@ public static class AssetManifestEndpoints
     private static readonly TimeSpan UrlExpiry = TimeSpan.FromMinutes(10);
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/v1/assets").WithTags("Assets");
 

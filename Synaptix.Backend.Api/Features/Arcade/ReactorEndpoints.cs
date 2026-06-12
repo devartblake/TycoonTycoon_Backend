@@ -15,7 +15,7 @@ public static class ReactorEndpoints
 {
     private static readonly TimeSpan SpinSessionTtl = TimeSpan.FromMinutes(5);
 
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/arcade/reactor").WithTags("Arcade Reactor").RequireAuthorization();
 

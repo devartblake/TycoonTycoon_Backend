@@ -10,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.Votes
 {
     public static class VoteEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/votes").WithTags("Votes");
 

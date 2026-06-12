@@ -8,7 +8,7 @@ namespace Synaptix.Backend.Api.Features.Powerups
 {
     public static class PowerupsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/powerups").WithTags("Powerups");
 

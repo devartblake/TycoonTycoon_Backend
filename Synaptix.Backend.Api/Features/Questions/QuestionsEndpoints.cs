@@ -12,7 +12,7 @@ namespace Synaptix.Backend.Api.Features.Questions
 {
     public static class QuestionsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             // Public gameplay question contract.
             // /questions is the supported backend surface for play-oriented retrieval and grading.

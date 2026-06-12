@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Api.Features.Study
 {
     public static class StudySessionsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/study-sessions")
                 .WithTags("StudySessions")
