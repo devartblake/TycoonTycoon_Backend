@@ -37,7 +37,7 @@ public sealed class CryptoWithdrawalSettlementTests : IClassFixture<TycoonApiFac
 
         _http.WithAdminOpsKey();
         SetCryptoServiceAuthorization(_http);
-        var approveResp = await _http.PostAsync($"/crypto/withdraw/{pendingId}/approve", content: null);
+        var approveResp = await _http.PostAsync($"/api/v1/crypto/withdraw/{pendingId}/approve", content: null);
         approveResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var payload = await approveResp.Content.ReadFromJsonAsync<CryptoEconomyEndpoints.WithdrawalSettlementResponse>();
@@ -54,7 +54,7 @@ public sealed class CryptoWithdrawalSettlementTests : IClassFixture<TycoonApiFac
     public async Task PendingWithdrawals_WithoutAdminOpsKey_Returns401()
     {
         var _ = await SignupAndAuthorizeAsync(_http, "withdraw-list");
-        var resp = await _http.GetAsync("/crypto/withdraw/pending?page=1&pageSize=10");
+        var resp = await _http.GetAsync("/api/v1/crypto/withdraw/pending?page=1&pageSize=10");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         await resp.HasErrorCodeAsync("UNAUTHORIZED");
     }
@@ -67,7 +67,7 @@ public sealed class CryptoWithdrawalSettlementTests : IClassFixture<TycoonApiFac
 
         _http.WithAdminOpsKey();
         SetCryptoServiceAuthorization(_http);
-        var rejectResp = await _http.PostAsync($"/crypto/withdraw/{pendingId}/reject", content: null);
+        var rejectResp = await _http.PostAsync($"/api/v1/crypto/withdraw/{pendingId}/reject", content: null);
         rejectResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var payload = await rejectResp.Content.ReadFromJsonAsync<CryptoEconomyEndpoints.WithdrawalSettlementResponse>();
@@ -77,7 +77,7 @@ public sealed class CryptoWithdrawalSettlementTests : IClassFixture<TycoonApiFac
 
     private static async Task<Guid> SignupAndAuthorizeAsync(HttpClient http, string userPrefix)
     {
-        var signupResp = await http.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await http.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"{userPrefix}-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: $"{userPrefix}-device",

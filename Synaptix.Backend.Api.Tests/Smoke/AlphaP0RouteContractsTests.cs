@@ -14,10 +14,10 @@ public sealed class AlphaP0RouteContractsTests : IClassFixture<TycoonApiFactory>
     }
 
     [Theory]
-    [InlineData("/store/catalog")]
-    [InlineData("/questions/set?count=3")]
-    [InlineData("/leaderboards/tiers/1?page=1&pageSize=5")]
-    [InlineData("/crypto/history/00000000-0000-0000-0000-000000000001?page=1&pageSize=1")]
+    [InlineData("/api/v1/store/catalog")]
+    [InlineData("/api/v1/questions/set?count=3")]
+    [InlineData("/api/v1/leaderboards/tiers/1?page=1&pageSize=5")]
+    [InlineData("/api/v1/crypto/history/00000000-0000-0000-0000-000000000001?page=1&pageSize=1")]
     public async Task GetRoutes_Should_Be_Mapped(string route)
     {
         var resp = await _http.GetAsync(route);
@@ -25,9 +25,9 @@ public sealed class AlphaP0RouteContractsTests : IClassFixture<TycoonApiFactory>
     }
 
     [Theory]
-    [InlineData("/store/iap/validate", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"platform\":\"apple\",\"receipt\":\"test\"}")]
-    [InlineData("/crypto/link-wallet", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"walletAddress\":\"0xabc\"}")]
-    [InlineData("/crypto/withdraw", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"amount\":1,\"currency\":\"USDT\"}")]
+    [InlineData("/api/v1/store/iap/validate", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"platform\":\"apple\",\"receipt\":\"test\"}")]
+    [InlineData("/api/v1/crypto/link-wallet", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"walletAddress\":\"0xabc\"}")]
+    [InlineData("/api/v1/crypto/withdraw", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"amount\":1,\"currency\":\"USDT\"}")]
     public async Task PostRoutes_Should_Be_Mapped(string route, string json)
     {
         using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
@@ -36,8 +36,8 @@ public sealed class AlphaP0RouteContractsTests : IClassFixture<TycoonApiFactory>
     }
 
     [Theory]
-    [InlineData("/store/iap/validate", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"platform\":\"apple\",\"receipt\":\"test\"}")]
-    [InlineData("/crypto/withdraw", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"amount\":1,\"currency\":\"USDT\"}")]
+    [InlineData("/api/v1/store/iap/validate", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"platform\":\"apple\",\"receipt\":\"test\"}")]
+    [InlineData("/api/v1/crypto/withdraw", "{\"playerId\":\"00000000-0000-0000-0000-000000000001\",\"amount\":1,\"currency\":\"USDT\"}")]
     public async Task SensitivePostRoutes_Should_NotReturn_ServerError_When_Anonymous(string route, string json)
     {
         using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");

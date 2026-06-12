@@ -33,7 +33,7 @@ public sealed class QuestionsGameplayContractTests : IClassFixture<TycoonApiFact
     {
         await SeedApprovedQuestionAsync("Gameplay-safe question?");
 
-        var response = await _http.GetAsync("/questions/set?count=5");
+        var response = await _http.GetAsync("/api/v1/questions/set?count=5");
         response.EnsureSuccessStatusCode();
 
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -47,7 +47,7 @@ public sealed class QuestionsGameplayContractTests : IClassFixture<TycoonApiFact
     {
         var questionId = await SeedApprovedQuestionAsync("Option grading question?");
 
-        var response = await _http.PostAsJsonAsync("/questions/check", new CheckAnswerRequest(questionId, "A"));
+        var response = await _http.PostAsJsonAsync("/api/v1/questions/check", new CheckAnswerRequest(questionId, "A"));
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<CheckAnswerResponse>();
@@ -63,7 +63,7 @@ public sealed class QuestionsGameplayContractTests : IClassFixture<TycoonApiFact
     {
         var questionId = await SeedApprovedQuestionAsync("Batch grading question?");
 
-        var response = await _http.PostAsJsonAsync("/questions/check-batch", new CheckAnswersBatchRequest(new[]
+        var response = await _http.PostAsJsonAsync("/api/v1/questions/check-batch", new CheckAnswersBatchRequest(new[]
         {
             new CheckAnswerRequest(questionId, "A"),
             new CheckAnswerRequest(Guid.NewGuid(), "B")
@@ -85,7 +85,7 @@ public sealed class QuestionsGameplayContractTests : IClassFixture<TycoonApiFact
             .Select(_ => new CheckAnswerRequest(Guid.NewGuid(), "A"))
             .ToArray();
 
-        var response = await _http.PostAsJsonAsync("/questions/check-batch", new CheckAnswersBatchRequest(answers));
+        var response = await _http.PostAsJsonAsync("/api/v1/questions/check-batch", new CheckAnswersBatchRequest(answers));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         await response.HasErrorCodeAsync("VALIDATION_ERROR");
@@ -101,7 +101,7 @@ public sealed class QuestionsGameplayContractTests : IClassFixture<TycoonApiFact
         await SeedQuestionAsync("Adaptive History Q2", "History", QuestionDifficulty.Medium);
         await SeedPlayerProfileAsync(playerId, categoryWeaknessesJson: "{\"History\": 0.9}");
 
-        var response = await _http.GetAsync($"/questions/set?count=5&playerId={playerId}&mode=practice");
+        var response = await _http.GetAsync($"/api/v1/questions/set?count=5&playerId={playerId}&mode=practice");
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<QuestionSetDto>(JsonOptions);
@@ -123,7 +123,7 @@ public sealed class QuestionsGameplayContractTests : IClassFixture<TycoonApiFact
 
         // When mode=ranked the explicit category filter (none) is respected and personalization
         // must not inject a category filter that could skew ranked fairness.
-        var response = await _http.GetAsync($"/questions/set?count=10&playerId={playerId}&mode=ranked");
+        var response = await _http.GetAsync($"/api/v1/questions/set?count=10&playerId={playerId}&mode=ranked");
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<QuestionSetDto>(JsonOptions);
@@ -143,7 +143,7 @@ public sealed class QuestionsGameplayContractTests : IClassFixture<TycoonApiFact
         await SeedPlayerProfileAsync(playerId, categoryWeaknessesJson: "{\"History\": 0.9}");
 
         // An explicit category must always take precedence over the adaptive weak category.
-        var response = await _http.GetAsync($"/questions/set?count=5&category=Science&playerId={playerId}&mode=practice");
+        var response = await _http.GetAsync($"/api/v1/questions/set?count=5&category=Science&playerId={playerId}&mode=practice");
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<QuestionSetDto>(JsonOptions);

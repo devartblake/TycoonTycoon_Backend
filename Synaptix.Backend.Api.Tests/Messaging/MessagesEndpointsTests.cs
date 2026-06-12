@@ -30,7 +30,7 @@ public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         using var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/messages/conversations");
+        var response = await client.GetAsync("/api/v1/messages/conversations");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -46,8 +46,8 @@ public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
 
         var request = new CreateDirectConversationRequestDto(Guid.Parse(recipient.UserId));
 
-        var first = await senderClient.PostAsJsonAsync("/messages/conversations/direct", request);
-        var second = await senderClient.PostAsJsonAsync("/messages/conversations/direct", request);
+        var first = await senderClient.PostAsJsonAsync("/api/v1/messages/conversations/direct", request);
+        var second = await senderClient.PostAsJsonAsync("/api/v1/messages/conversations/direct", request);
 
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -67,7 +67,7 @@ public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
         var user = await AuthenticateAsync(client, "msg-self");
         var playerId = Guid.Parse(user.UserId);
 
-        var response = await client.PostAsJsonAsync("/messages/conversations/direct", new CreateDirectConversationRequestDto(playerId));
+        var response = await client.PostAsJsonAsync("/api/v1/messages/conversations/direct", new CreateDirectConversationRequestDto(playerId));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         await response.HasErrorCodeAsync("SELF_DM_NOT_ALLOWED");
@@ -83,7 +83,7 @@ public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
         var recipient = await AuthenticateAsync(recipientClient, "msg-recipient");
 
         var conversationResponse = await senderClient.PostAsJsonAsync(
-            "/messages/conversations/direct",
+            "/api/v1/messages/conversations/direct",
             new CreateDirectConversationRequestDto(Guid.Parse(recipient.UserId)));
         conversationResponse.EnsureSuccessStatusCode();
 
@@ -91,8 +91,8 @@ public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
         conversation.Should().NotBeNull();
 
         var request = new SendDirectMessageRequestDto("hello there", "client-123");
-        var firstSend = await senderClient.PostAsJsonAsync($"/messages/conversations/{conversation!.Id}/messages", request);
-        var secondSend = await senderClient.PostAsJsonAsync($"/messages/conversations/{conversation.Id}/messages", request);
+        var firstSend = await senderClient.PostAsJsonAsync($"/api/v1/messages/conversations/{conversation!.Id}/messages", request);
+        var secondSend = await senderClient.PostAsJsonAsync($"/api/v1/messages/conversations/{conversation.Id}/messages", request);
 
         firstSend.StatusCode.Should().Be(HttpStatusCode.OK);
         secondSend.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -104,19 +104,19 @@ public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
         secondBody.Should().NotBeNull();
         secondBody!.Id.Should().Be(firstBody!.Id);
 
-        var recipientUnread = await recipientClient.GetFromJsonAsync<UnreadCountResponseDto>("/messages/unread-count");
+        var recipientUnread = await recipientClient.GetFromJsonAsync<UnreadCountResponseDto>("/api/v1/messages/unread-count");
         recipientUnread.Should().NotBeNull();
         recipientUnread!.UnreadCount.Should().Be(1);
 
-        var messages = await recipientClient.GetFromJsonAsync<List<DirectMessageDto>>($"/messages/conversations/{conversation.Id}/messages");
+        var messages = await recipientClient.GetFromJsonAsync<List<DirectMessageDto>>($"/api/v1/messages/conversations/{conversation.Id}/messages");
         messages.Should().NotBeNull();
         messages!.Should().ContainSingle();
         messages![0].Content.Should().Be("hello there");
 
-        var readResponse = await recipientClient.PostAsync($"/messages/conversations/{conversation.Id}/read", null);
+        var readResponse = await recipientClient.PostAsync($"/api/v1/messages/conversations/{conversation.Id}/read", null);
         readResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        recipientUnread = await recipientClient.GetFromJsonAsync<UnreadCountResponseDto>("/messages/unread-count");
+        recipientUnread = await recipientClient.GetFromJsonAsync<UnreadCountResponseDto>("/api/v1/messages/unread-count");
         recipientUnread!.UnreadCount.Should().Be(0);
     }
 
@@ -133,14 +133,14 @@ public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
         await AuthenticateAsync(otherClient, "msg-owner-c");
 
         var conversationResponse = await senderClient.PostAsJsonAsync(
-            "/messages/conversations/direct",
+            "/api/v1/messages/conversations/direct",
             new CreateDirectConversationRequestDto(Guid.Parse(recipient.UserId)));
         conversationResponse.EnsureSuccessStatusCode();
 
         var conversation = await conversationResponse.Content.ReadFromJsonAsync<DirectConversationSummaryDto>();
         conversation.Should().NotBeNull();
 
-        var forbidden = await otherClient.GetAsync($"/messages/conversations/{conversation!.Id}/messages");
+        var forbidden = await otherClient.GetAsync($"/api/v1/messages/conversations/{conversation!.Id}/messages");
 
         forbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await forbidden.HasErrorCodeAsync("FORBIDDEN");

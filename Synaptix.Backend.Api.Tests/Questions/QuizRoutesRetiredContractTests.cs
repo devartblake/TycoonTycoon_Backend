@@ -14,11 +14,11 @@ public sealed class QuizRoutesRetiredContractTests : IClassFixture<TycoonApiFact
     }
 
     [Theory]
-    [InlineData("/quiz/play")]
-    [InlineData("/quiz/daily")]
-    [InlineData("/quiz/mixed")]
-    [InlineData("/quiz/categories")]
-    [InlineData("/quiz/stats")]
+    [InlineData("/api/v1/quiz/play")]
+    [InlineData("/api/v1/quiz/daily")]
+    [InlineData("/api/v1/quiz/mixed")]
+    [InlineData("/api/v1/quiz/categories")]
+    [InlineData("/api/v1/quiz/stats")]
     public async Task LegacyQuizRoutes_AreNotMapped(string path)
     {
         var response = await _http.GetAsync(path);

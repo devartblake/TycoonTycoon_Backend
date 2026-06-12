@@ -18,7 +18,7 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
     private readonly HttpClient _http;
 
     // Adjust if your match submit route differs
-    private const string SubmitRoute = "/matches/submit";
+    private const string SubmitRoute = "/api/v1/matches/submit";
 
     public PartyIntegrityAdminFlagsTests(TycoonApiFactory factory)
     {

@@ -20,7 +20,7 @@ public sealed class MatchSubmitRateLimitTests : IClassFixture<TycoonApiFactory>
     {
         var p1 = Guid.NewGuid();
 
-        var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "duel"));
+        var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "duel"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
@@ -39,7 +39,7 @@ public sealed class MatchSubmitRateLimitTests : IClassFixture<TycoonApiFactory>
                 Participants: new[] { new MatchParticipantResultDto(p1, 10, 1, 4, 300) }
             );
 
-            var resp = await _http.PostAsJsonAsync("/matches/submit", submit);
+            var resp = await _http.PostAsJsonAsync("/api/v1/matches/submit", submit);
 
             if (resp.StatusCode == HttpStatusCode.TooManyRequests)
             {

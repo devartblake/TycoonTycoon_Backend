@@ -24,7 +24,7 @@ public sealed class StoreInventoryEndpointTests : IClassFixture<TycoonApiFactory
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync($"/store/inventory/{Guid.NewGuid()}");
+        var response = await client.GetAsync($"/api/v1/store/inventory/{Guid.NewGuid()}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -35,7 +35,7 @@ public sealed class StoreInventoryEndpointTests : IClassFixture<TycoonApiFactory
         var client = _factory.CreateClient();
         var email = $"inventory-{Guid.NewGuid():N}@example.com";
 
-        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: email,
             Password: "Passw0rd!",
             DeviceId: "ios-sim",
@@ -67,7 +67,7 @@ public sealed class StoreInventoryEndpointTests : IClassFixture<TycoonApiFactory
             await db.SaveChangesAsync();
         }
 
-        var response = await client.GetFromJsonAsync<PlayerInventoryDto>($"/store/inventory/{playerId}");
+        var response = await client.GetFromJsonAsync<PlayerInventoryDto>($"/api/v1/store/inventory/{playerId}");
         response.Should().NotBeNull();
         response!.PlayerId.Should().Be(playerId);
         response.Count.Should().Be(2);

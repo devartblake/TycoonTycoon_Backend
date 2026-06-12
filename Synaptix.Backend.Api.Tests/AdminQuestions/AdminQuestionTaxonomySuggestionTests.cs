@@ -119,8 +119,8 @@ public sealed class AdminQuestionTaxonomySuggestionTests : IClassFixture<AdminQu
         _factory.Sidecar.CallCount = 0;
         await SeedQuestionAsync("Gameplay no sidecar taxonomy question?", "Science", taxonomy: "science");
 
-        (await _http.GetAsync("/questions/set?count=1")).EnsureSuccessStatusCode();
-        (await _http.PostAsJsonAsync("/questions/mixed", new MixedQuestionSetRequest(Count: 1), TestJson.Default)).EnsureSuccessStatusCode();
+        (await _http.GetAsync("/api/v1/questions/set?count=1")).EnsureSuccessStatusCode();
+        (await _http.PostAsJsonAsync("/api/v1/questions/mixed", new MixedQuestionSetRequest(Count: 1), TestJson.Default)).EnsureSuccessStatusCode();
 
         _factory.Sidecar.CallCount.Should().Be(0);
     }

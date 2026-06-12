@@ -33,11 +33,11 @@ public sealed class SeasonCloseCarryoverTests : IClassFixture<TycoonApiFactory>
 
         // Apply points with service endpoint via transaction table? We didn't add public endpoint for ApplySeasonPoints (by design).
         // Instead, create a match for points: keep minimal by simulating a match submit.
-        var start = await _public.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "practice"));
+        var start = await _public.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "practice"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
-        await _public.PostAsJsonAsync("/matches/submit", new SubmitMatchRequest(
+        await _public.PostAsJsonAsync("/api/v1/matches/submit", new SubmitMatchRequest(
             Guid.NewGuid(),
             started!.MatchId,
             "practice",
@@ -60,13 +60,13 @@ public sealed class SeasonCloseCarryoverTests : IClassFixture<TycoonApiFactory>
         close.EnsureSuccessStatusCode();
 
         // Active should be Season 11
-        var active = await _public.GetAsync("/seasons/active");
+        var active = await _public.GetAsync("/api/v1/seasons/active");
         active.EnsureSuccessStatusCode();
         var a = await active.Content.ReadFromJsonAsync<SeasonDto>(TestJson.Default);
         a!.Name.Should().Be("Season 11");
 
         // Player state in new active season should exist (carryover could be 0 if small, but profile should exist)
-        var st = await _public.GetAsync($"/seasons/state/{p1}");
+        var st = await _public.GetAsync($"/api/v1/seasons/state/{p1}");
         st.EnsureSuccessStatusCode();
         var state = await st.Content.ReadFromJsonAsync<PlayerSeasonStateDto>();
         state!.SeasonId.Should().Be(a.SeasonId);

@@ -20,7 +20,7 @@ public sealed class AntiCheatBlocksRewardsTests : IClassFixture<TycoonApiFactory
     {
         var p1 = Guid.NewGuid();
 
-        var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "duel"));
+        var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "duel"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
@@ -40,7 +40,7 @@ public sealed class AntiCheatBlocksRewardsTests : IClassFixture<TycoonApiFactory
             }
         );
 
-        var r = await _http.PostAsJsonAsync("/matches/submit", submit);
+        var r = await _http.PostAsJsonAsync("/api/v1/matches/submit", submit);
         r.EnsureSuccessStatusCode();
 
         var res = await r.Content.ReadFromJsonAsync<SubmitMatchResponse>();

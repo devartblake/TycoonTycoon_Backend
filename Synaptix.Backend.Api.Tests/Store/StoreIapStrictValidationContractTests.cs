@@ -22,7 +22,7 @@ public sealed class StoreIapStrictValidationContractTests : IClassFixture<Strict
     [Fact]
     public async Task ValidateIap_WithStrictConfigConfigured_DoesNotReturnConfigMissing()
     {
-        var signupResp = await _http.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await _http.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"iap-strict-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: "ios-sim",
@@ -34,7 +34,7 @@ public sealed class StoreIapStrictValidationContractTests : IClassFixture<Strict
         var playerId = Guid.Parse(signup!.UserId);
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
 
-        var resp = await _http.PostAsJsonAsync("/store/iap/validate", new StoreEndpoints.IapReceiptValidationRequest(
+        var resp = await _http.PostAsJsonAsync("/api/v1/store/iap/validate", new StoreEndpoints.IapReceiptValidationRequest(
             PlayerId: playerId,
             Platform: "apple",
             Receipt: "dev-receipt-token",
@@ -52,7 +52,7 @@ public sealed class StoreIapStrictValidationContractTests : IClassFixture<Strict
     [Fact]
     public async Task ValidateIap_StrictGoogleWithoutProductAndToken_Returns422()
     {
-        var signupResp = await _http.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await _http.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"iap-strict-google-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: "android-emu",
@@ -64,7 +64,7 @@ public sealed class StoreIapStrictValidationContractTests : IClassFixture<Strict
         var playerId = Guid.Parse(signup!.UserId);
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
 
-        var resp = await _http.PostAsJsonAsync("/store/iap/validate", new StoreEndpoints.IapReceiptValidationRequest(
+        var resp = await _http.PostAsJsonAsync("/api/v1/store/iap/validate", new StoreEndpoints.IapReceiptValidationRequest(
             PlayerId: playerId,
             Platform: "google",
             Receipt: "dev-receipt-token",

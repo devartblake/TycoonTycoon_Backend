@@ -20,7 +20,7 @@ public sealed class MatchQueryTests : IClassFixture<TycoonApiFactory>
     {
         var p1 = Guid.NewGuid();
 
-        var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "practice"));
+        var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "practice"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
@@ -41,10 +41,10 @@ public sealed class MatchQueryTests : IClassFixture<TycoonApiFactory>
             }
         );
 
-        var s = await _http.PostAsJsonAsync("/matches/submit", submit);
+        var s = await _http.PostAsJsonAsync("/api/v1/matches/submit", submit);
         s.EnsureSuccessStatusCode();
 
-        var get = await _http.GetAsync($"/matches/{matchId}");
+        var get = await _http.GetAsync($"/api/v1/matches/{matchId}");
         get.EnsureSuccessStatusCode();
 
         var detail = await get.Content.ReadFromJsonAsync<MatchDetailDto>(TestJson.Default);

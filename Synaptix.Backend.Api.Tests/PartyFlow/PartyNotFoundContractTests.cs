@@ -17,7 +17,7 @@ public sealed class PartyNotFoundContractTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task PartyRoster_WithUnknownPartyId_ReturnsNotFoundEnvelope()
     {
-        var resp = await _http.GetAsync($"/party/{Guid.NewGuid()}");
+        var resp = await _http.GetAsync($"/api/v1/party/{Guid.NewGuid()}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await resp.HasErrorCodeAsync("NOT_FOUND");
@@ -26,7 +26,7 @@ public sealed class PartyNotFoundContractTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task PartyRoster_WithEmptyPartyId_ReturnsValidationEnvelope()
     {
-        var resp = await _http.GetAsync("/party/00000000-0000-0000-0000-000000000000");
+        var resp = await _http.GetAsync("/api/v1/party/00000000-0000-0000-0000-000000000000");
 
         resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         await resp.HasErrorCodeAsync("VALIDATION_ERROR");
@@ -35,7 +35,7 @@ public sealed class PartyNotFoundContractTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task PartyInviteAccept_WithUnknownInviteId_ReturnsNotFoundEnvelope()
     {
-        var resp = await _http.PostAsJsonAsync($"/party/invites/{Guid.NewGuid()}/accept", new { PlayerId = Guid.NewGuid() });
+        var resp = await _http.PostAsJsonAsync($"/api/v1/party/invites/{Guid.NewGuid()}/accept", new { PlayerId = Guid.NewGuid() });
 
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await resp.HasErrorCodeAsync("NOT_FOUND");
@@ -44,7 +44,7 @@ public sealed class PartyNotFoundContractTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task PartyInviteDecline_WithUnknownInviteId_ReturnsNotFoundEnvelope()
     {
-        var resp = await _http.PostAsJsonAsync($"/party/invites/{Guid.NewGuid()}/decline", new { PlayerId = Guid.NewGuid() });
+        var resp = await _http.PostAsJsonAsync($"/api/v1/party/invites/{Guid.NewGuid()}/decline", new { PlayerId = Guid.NewGuid() });
 
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await resp.HasErrorCodeAsync("NOT_FOUND");

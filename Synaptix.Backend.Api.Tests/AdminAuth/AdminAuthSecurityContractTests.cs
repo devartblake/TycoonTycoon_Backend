@@ -105,7 +105,7 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
         var password = "Passw0rd!123";
         var deviceId = $"dev-{Guid.NewGuid():N}";
 
-        var signupResp = await _http.PostAsJsonAsync("/auth/signup",
+        var signupResp = await _http.PostAsJsonAsync("/api/v1/auth/signup",
             new SignupRequest(email, password, deviceId, Username: $"u_{Guid.NewGuid():N}"));
 
         signupResp.StatusCode.Should().Be(HttpStatusCode.OK);

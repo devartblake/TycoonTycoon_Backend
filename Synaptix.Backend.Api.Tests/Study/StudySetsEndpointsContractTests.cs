@@ -35,7 +35,7 @@ public sealed class StudySetsEndpointsContractTests : IClassFixture<TycoonApiFac
         await SeedQuestionAsync("History 1", "History", QuestionDifficulty.Medium, "Approved");
         await SeedQuestionAsync("Hidden Draft", "Science", QuestionDifficulty.Hard, "Draft");
 
-        var response = await _http.GetFromJsonAsync<StudySetsResponseDto>("/study-sets", JsonOptions);
+        var response = await _http.GetFromJsonAsync<StudySetsResponseDto>("/api/v1/study-sets", JsonOptions);
 
         response.Should().NotBeNull();
         response!.Items.Should().Contain(x => x.Kind == StudySetKinds.Category && x.Category == "Science");
@@ -48,11 +48,11 @@ public sealed class StudySetsEndpointsContractTests : IClassFixture<TycoonApiFac
         await SeedQuestionAsync("Science 1", "Science", QuestionDifficulty.Easy, "Approved");
         await SeedQuestionAsync("Science 2", "Science", QuestionDifficulty.Medium, "Approved");
 
-        var list = await _http.GetFromJsonAsync<StudySetsResponseDto>("/study-sets", JsonOptions);
+        var list = await _http.GetFromJsonAsync<StudySetsResponseDto>("/api/v1/study-sets", JsonOptions);
         var scienceSet = list!.Items.Single(x => x.Category == "Science" && x.Kind == StudySetKinds.Category);
 
         var response = await _http.GetFromJsonAsync<StudySetDetailDto>(
-            $"/study-sets/{Uri.EscapeDataString(scienceSet.Id)}?count=10", JsonOptions);
+            $"/api/v1/study-sets/{Uri.EscapeDataString(scienceSet.Id)}?count=10", JsonOptions);
 
         response.Should().NotBeNull();
         response!.Kind.Should().Be(StudySetKinds.Category);
@@ -88,7 +88,7 @@ public sealed class StudySetsEndpointsContractTests : IClassFixture<TycoonApiFac
         }
 
         var response = await _http.GetFromJsonAsync<RecommendedStudySetsResponseDto>(
-            $"/study-sets/recommended?playerId={playerId}&count=5", JsonOptions);
+            $"/api/v1/study-sets/recommended?playerId={playerId}&count=5", JsonOptions);
 
         response.Should().NotBeNull();
         response!.Items.Should().NotBeEmpty();
@@ -99,7 +99,7 @@ public sealed class StudySetsEndpointsContractTests : IClassFixture<TycoonApiFac
     [Fact]
     public async Task GetStudySet_ReturnsNotFound_ForUnknownId()
     {
-        var response = await _http.GetAsync("/study-sets/unknown");
+        var response = await _http.GetAsync("/api/v1/study-sets/unknown");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await response.HasErrorCodeAsync("NOT_FOUND");
@@ -118,7 +118,7 @@ public sealed class StudySetsEndpointsContractTests : IClassFixture<TycoonApiFac
 
         // Player has no rollup data, so only the profile-based weak area should appear.
         var response = await _http.GetFromJsonAsync<RecommendedStudySetsResponseDto>(
-            $"/study-sets/recommended?playerId={playerId}&count=10", JsonOptions);
+            $"/api/v1/study-sets/recommended?playerId={playerId}&count=10", JsonOptions);
 
         response.Should().NotBeNull();
         response!.Items.Should().Contain(
@@ -157,7 +157,7 @@ public sealed class StudySetsEndpointsContractTests : IClassFixture<TycoonApiFac
         await SeedPlayerProfileAsync(playerId, categoryWeaknessesJson: "{\"Math\": 0.75, \"History\": 0.5}");
 
         var response = await _http.GetFromJsonAsync<RecommendedStudySetsResponseDto>(
-            $"/study-sets/recommended?playerId={playerId}&count=10", JsonOptions);
+            $"/api/v1/study-sets/recommended?playerId={playerId}&count=10", JsonOptions);
 
         response.Should().NotBeNull();
         var weakItems = response!.Items.Where(x => x.Kind == StudySetKinds.WeakArea).ToList();

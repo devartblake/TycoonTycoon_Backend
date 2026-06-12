@@ -50,7 +50,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
     [Fact]
     public async Task MissingSessionHeader_Returns400WithSecureSessionRequiredCode()
     {
-        var resp = await _http.PostAsJsonAsync("/auth/refresh", new { refreshToken = "any" });
+        var resp = await _http.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken = "any" });
 
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await resp.Content.ReadAsStringAsync();
@@ -63,7 +63,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
     public async Task MalformedBody_Returns400WithInvalidPayloadCode()
     {
         var sessionId = Guid.NewGuid().ToString();
-        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh")
         {
             Content = new StringContent(@"{""not_an_envelope"":true}", Encoding.UTF8, "application/json")
         };
@@ -85,7 +85,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
             new KmsClientException("session not found", statusCode: 401);
 
         var sessionId = Guid.NewGuid().ToString();
-        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh")
         {
             Content = ValidEnvelope()
         };
@@ -111,7 +111,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
             "application/json");
 
         var sessionId = Guid.NewGuid().ToString();
-        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh")
         {
             Content = ValidEnvelope()
         };
@@ -136,7 +136,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
     public async Task MissingSequenceHeader_Returns400WithSequenceRequiredCode()
     {
         var sessionId = Guid.NewGuid().ToString();
-        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh")
         {
             Content = ValidEnvelope()
         };
@@ -154,7 +154,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
     public async Task InvalidSequenceHeader_Returns400WithSequenceRequiredCode()
     {
         var sessionId = Guid.NewGuid().ToString();
-        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh")
         {
             Content = ValidEnvelope()
         };
@@ -173,7 +173,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
     public async Task MissingReplayNonceHeader_Returns400WithReplayNonceRequiredCode()
     {
         var sessionId = Guid.NewGuid().ToString();
-        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh")
         {
             Content = ValidEnvelope()
         };
@@ -191,7 +191,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
     public async Task ValidEncryptedRequest_PassesReplayMetadataAndAadToKms()
     {
         var sessionId = Guid.NewGuid();
-        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh")
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh")
         {
             Content = ValidEnvelope()
         };
@@ -214,7 +214,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
     public async Task UnprotectedEndpoint_WithSessionHeader_ProcessesNormally()
     {
         // /auth/login is NOT protected by secure channel (pre-auth)
-        var req = new HttpRequestMessage(HttpMethod.Post, "/auth/login")
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/login")
         {
             Content = new StringContent(
                 @"{""email"":""x@x.com"",""password"":""bad"",""deviceId"":""dev1""}",

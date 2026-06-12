@@ -20,7 +20,7 @@ public sealed class UserSearchEndpointTests : IClassFixture<TycoonApiFactory>
     public async Task Search_WithoutAuth_Returns401()
     {
         using var client = _factory.CreateClient();
-        var response = await client.GetAsync("/users/search?handle=ab");
+        var response = await client.GetAsync("/api/v1/users/search?handle=ab");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -29,7 +29,7 @@ public sealed class UserSearchEndpointTests : IClassFixture<TycoonApiFactory>
     {
         using var client = _factory.CreateClient();
 
-        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"search-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: "ios-sim",
@@ -41,7 +41,7 @@ public sealed class UserSearchEndpointTests : IClassFixture<TycoonApiFactory>
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup!.AccessToken);
 
-        var response = await client.GetFromJsonAsync<UserSearchResponseDto>("/users/search?handle=search_user&page=1&pageSize=10");
+        var response = await client.GetFromJsonAsync<UserSearchResponseDto>("/api/v1/users/search?handle=search_user&page=1&pageSize=10");
 
         response.Should().NotBeNull();
         response!.Page.Should().Be(1);

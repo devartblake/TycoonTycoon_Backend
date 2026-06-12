@@ -24,7 +24,7 @@ public sealed class UserProfileSecurityContractTests : IClassFixture<TycoonApiFa
         var client = _factory.CreateClient();
 
         var email = $"users-contract-{Guid.NewGuid():N}@example.com";
-        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: email,
             Password: "Passw0rd!",
             DeviceId: "ios-sim",
@@ -45,7 +45,7 @@ public sealed class UserProfileSecurityContractTests : IClassFixture<TycoonApiFa
             await db.SaveChangesAsync();
         }
 
-        var patch = await client.PatchAsJsonAsync("/users/me", new UpdateProfileRequest("updated_handle", "US"));
+        var patch = await client.PatchAsJsonAsync("/api/v1/users/me", new UpdateProfileRequest("updated_handle", "US"));
 
         patch.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await patch.HasErrorCodeAsync("NOT_FOUND");

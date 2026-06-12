@@ -24,7 +24,7 @@ public sealed class UserCareerSummaryEndpointTests : IClassFixture<TycoonApiFact
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync($"/users/{Guid.NewGuid()}/career-summary");
+        var response = await client.GetAsync($"/api/v1/users/{Guid.NewGuid()}/career-summary");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -35,7 +35,7 @@ public sealed class UserCareerSummaryEndpointTests : IClassFixture<TycoonApiFact
         var client = _factory.CreateClient();
         var email = $"career-summary-{Guid.NewGuid():N}@example.com";
 
-        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: email,
             Password: "Passw0rd!",
             DeviceId: "ios-sim",
@@ -65,7 +65,7 @@ public sealed class UserCareerSummaryEndpointTests : IClassFixture<TycoonApiFact
             await db.SaveChangesAsync();
         }
 
-        var response = await client.GetFromJsonAsync<UserCareerSummaryDto>($"/users/{userId}/career-summary");
+        var response = await client.GetFromJsonAsync<UserCareerSummaryDto>($"/api/v1/users/{userId}/career-summary");
         response.Should().NotBeNull();
         response!.Wins.Should().Be(2);
         response.Losses.Should().Be(2);

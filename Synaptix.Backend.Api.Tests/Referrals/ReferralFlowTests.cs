@@ -39,7 +39,7 @@ namespace Synaptix.Backend.Api.Tests.Referrals
             }
 
             // Create code
-            var create = await _http.PostAsJsonAsync("/referrals", new CreateReferralCodeRequest(ownerId));
+            var create = await _http.PostAsJsonAsync("/api/v1/referrals", new CreateReferralCodeRequest(ownerId));
             create.IsSuccessStatusCode.Should().BeTrue();
 
             var rc = await create.Content.ReadFromJsonAsync<ReferralCodeDto>();
@@ -47,19 +47,19 @@ namespace Synaptix.Backend.Api.Tests.Referrals
             rc!.Code.Should().NotBeNullOrWhiteSpace();
 
             // Get status
-            var get = await _http.GetAsync($"/referrals/{rc.Code}");
+            var get = await _http.GetAsync($"/api/v1/referrals/{rc.Code}");
             get.IsSuccessStatusCode.Should().BeTrue();
 
             // Redeem once
             var eventId = Guid.NewGuid();
-            var redeem1 = await _http.PostAsJsonAsync($"/referrals/{rc.Code}/redeem", new RedeemReferralRequest(eventId, redeemerId));
+            var redeem1 = await _http.PostAsJsonAsync($"/api/v1/referrals/{rc.Code}/redeem", new RedeemReferralRequest(eventId, redeemerId));
             redeem1.IsSuccessStatusCode.Should().BeTrue();
 
             var r1 = await redeem1.Content.ReadFromJsonAsync<RedeemReferralResultDto>();
             r1!.Status.Should().Be("Redeemed");
 
             // Redeem duplicate (same eventId)
-            var redeem2 = await _http.PostAsJsonAsync($"/referrals/{rc.Code}/redeem", new RedeemReferralRequest(eventId, redeemerId));
+            var redeem2 = await _http.PostAsJsonAsync($"/api/v1/referrals/{rc.Code}/redeem", new RedeemReferralRequest(eventId, redeemerId));
             redeem2.IsSuccessStatusCode.Should().BeTrue();
 
             var r2 = await redeem2.Content.ReadFromJsonAsync<RedeemReferralResultDto>();

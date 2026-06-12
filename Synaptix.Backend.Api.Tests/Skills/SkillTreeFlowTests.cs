@@ -28,7 +28,7 @@ public sealed class SkillTreeFlowTests : IClassFixture<TycoonApiFactory>
             NodeKey: "str.combo_master" // requires str.steady_timer
         );
 
-        var r = await _public.PostAsJsonAsync("/skills/unlock", unlock);
+        var r = await _public.PostAsJsonAsync("/api/v1/skills/unlock", unlock);
         r.EnsureSuccessStatusCode();
 
         var res = await r.Content.ReadFromJsonAsync<UnlockSkillResultDto>();
@@ -51,13 +51,13 @@ public sealed class SkillTreeFlowTests : IClassFixture<TycoonApiFactory>
 
         // Unlock prereq
         var prereq = new UnlockSkillRequest(Guid.NewGuid(), playerId, "str.steady_timer");
-        var p = await _public.PostAsJsonAsync("/skills/unlock", prereq);
+        var p = await _public.PostAsJsonAsync("/api/v1/skills/unlock", prereq);
         (await p.Content.ReadFromJsonAsync<UnlockSkillResultDto>())!
             .Status.Should().Be("Unlocked");
 
         // Unlock dependent
         var unlock = new UnlockSkillRequest(Guid.NewGuid(), playerId, "str.combo_master");
-        var r = await _public.PostAsJsonAsync("/skills/unlock", unlock);
+        var r = await _public.PostAsJsonAsync("/api/v1/skills/unlock", unlock);
         var res = await r.Content.ReadFromJsonAsync<UnlockSkillResultDto>();
 
         res!.Status.Should().Be("Unlocked");
@@ -80,8 +80,8 @@ public sealed class SkillTreeFlowTests : IClassFixture<TycoonApiFactory>
         var eventId = Guid.NewGuid();
         var unlock = new UnlockSkillRequest(eventId, playerId, "know.quick_learner");
 
-        var r1 = await _public.PostAsJsonAsync("/skills/unlock", unlock);
-        var r2 = await _public.PostAsJsonAsync("/skills/unlock", unlock);
+        var r1 = await _public.PostAsJsonAsync("/api/v1/skills/unlock", unlock);
+        var r2 = await _public.PostAsJsonAsync("/api/v1/skills/unlock", unlock);
 
         (await r1.Content.ReadFromJsonAsync<UnlockSkillResultDto>())!
             .Status.Should().Be("Unlocked");

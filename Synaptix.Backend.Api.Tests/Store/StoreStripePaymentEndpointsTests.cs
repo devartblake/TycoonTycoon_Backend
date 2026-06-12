@@ -50,7 +50,7 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
         });
 
         var response = await client.PostAsJsonAsync(
-            "/store/payments/checkout/session",
+            "/api/v1/store/payments/checkout/session",
             new CreateStripeCheckoutSessionRequest(playerId, "powerup:skip", 2));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -91,7 +91,7 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
         });
 
         var response = await client.PostAsJsonAsync(
-            "/store/payments/checkout/session",
+            "/api/v1/store/payments/checkout/session",
             new CreateStripeCheckoutSessionRequest(Guid.NewGuid(), "powerup:skip", 1));
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -155,7 +155,7 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
             Encoding.UTF8,
             "application/json");
 
-        var first = await client.PostAsync("/store/payments/webhook", content);
+        var first = await client.PostAsync("/api/v1/store/payments/webhook", content);
         first.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var duplicateContent = new StringContent(
@@ -163,7 +163,7 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
             Encoding.UTF8,
             "application/json");
 
-        var second = await client.PostAsync("/store/payments/webhook", duplicateContent);
+        var second = await client.PostAsync("/api/v1/store/payments/webhook", duplicateContent);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
 
         await using var scope = factory.Services.CreateAsyncScope();
@@ -220,7 +220,7 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
     private static async Task<SignupResponse> SignupAsync(HttpClient client, string prefix)
     {
         var signupResp = await client.PostAsJsonAsync(
-            "/auth/signup",
+            "/api/v1/auth/signup",
             new SignupRequest(
                 Email: $"{prefix}-{Guid.NewGuid():N}@example.com",
                 Password: "Passw0rd!",

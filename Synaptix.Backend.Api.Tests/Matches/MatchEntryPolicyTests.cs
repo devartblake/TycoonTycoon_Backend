@@ -49,7 +49,7 @@ public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
     public async Task Start_PracticeMode_Allows_Legacy_Mode()
     {
         var playerId = Guid.NewGuid();
-        var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(playerId, "practice"));
+        var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(playerId, "practice"));
         start.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -59,11 +59,11 @@ public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
         var playerId = Guid.NewGuid();
 
         // Consume today's free jackpot ticket through mobile economy flow.
-        var claim = await _http.PostAsync($"/mobile/economy/daily-jackpot-ticket/claim?playerId={playerId}", null);
+        var claim = await _http.PostAsync($"/api/v1/mobile/economy/daily-jackpot-ticket/claim?playerId={playerId}", null);
         claim.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Starting jackpot now should fail because ticket limit is exhausted.
-        var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(playerId, "jackpot"));
+        var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(playerId, "jackpot"));
         start.StatusCode.Should().Be(HttpStatusCode.Conflict);
         await start.HasErrorCodeAsync("MATCH_ENTRY_DENIED");
         await start.HasErrorDetailAsync("reasonCode", "NO_TICKET");
@@ -75,10 +75,10 @@ public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
     {
         var playerId = Guid.NewGuid();
 
-        var claim = await _http.PostAsync($"/mobile/economy/daily-jackpot-ticket/claim?playerId={playerId}", null);
+        var claim = await _http.PostAsync($"/api/v1/mobile/economy/daily-jackpot-ticket/claim?playerId={playerId}", null);
         claim.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var start = await _http.PostAsJsonAsync("/mobile/matches/start", new StartMatchRequest(playerId, "jackpot"));
+        var start = await _http.PostAsJsonAsync("/api/v1/mobile/matches/start", new StartMatchRequest(playerId, "jackpot"));
         start.StatusCode.Should().Be(HttpStatusCode.Conflict);
         await start.HasErrorCodeAsync("MATCH_ENTRY_DENIED");
         await start.HasErrorDetailAsync("reasonCode", "NO_TICKET");
@@ -111,7 +111,7 @@ public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
             patchResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var playerId = Guid.NewGuid();
-            var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(playerId, "energy_only"));
+            var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(playerId, "energy_only"));
             start.StatusCode.Should().Be(HttpStatusCode.Conflict);
             await start.HasErrorCodeAsync("MATCH_ENTRY_DENIED");
             await start.HasErrorDetailAsync("reasonCode", "INSUFFICIENT_ENERGY");
@@ -149,7 +149,7 @@ public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
             patchResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var playerId = Guid.NewGuid();
-            var start = await _http.PostAsJsonAsync("/mobile/matches/start", new StartMatchRequest(playerId, "energy_only_mobile"));
+            var start = await _http.PostAsJsonAsync("/api/v1/mobile/matches/start", new StartMatchRequest(playerId, "energy_only_mobile"));
             start.StatusCode.Should().Be(HttpStatusCode.Conflict);
             await start.HasErrorCodeAsync("MATCH_ENTRY_DENIED");
             await start.HasErrorDetailAsync("reasonCode", "INSUFFICIENT_ENERGY");

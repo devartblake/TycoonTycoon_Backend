@@ -26,7 +26,7 @@ public sealed class QuestionsTaxonomyContractTests : IClassFixture<TycoonApiFact
         await SeedQuestionAsync("Taxonomy science alias question?", "Science", QuestionDifficulty.Easy,
             canonicalCategory: "science", subject: "stem", topic: "physics", sourceDataset: "taxonomy-test/science", tags: ["physics"]);
 
-        var response = await _http.GetAsync("/questions/set?category=natural_science&count=5");
+        var response = await _http.GetAsync("/api/v1/questions/set?category=natural_science&count=5");
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<QuestionSetDto>(TestJson.Default);
@@ -41,7 +41,7 @@ public sealed class QuestionsTaxonomyContractTests : IClassFixture<TycoonApiFact
             canonicalCategory: "kids", subject: "k12", topic: "math", gradeBand: "k_2", ageGroup: "early_elementary",
             audience: "kids", sourceDataset: "taxonomy-test/class_2", tags: ["addition"]);
 
-        var response = await _http.GetAsync("/questions/set?gradeBand=k_2&ageGroup=early_elementary&subject=k12&topic=math&dataset=taxonomy-test/class_2&tags=addition&count=5");
+        var response = await _http.GetAsync("/api/v1/questions/set?gradeBand=k_2&ageGroup=early_elementary&subject=k12&topic=math&dataset=taxonomy-test/class_2&tags=addition&count=5");
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<QuestionSetDto>(TestJson.Default);
@@ -56,7 +56,7 @@ public sealed class QuestionsTaxonomyContractTests : IClassFixture<TycoonApiFact
         await SeedQuestionAsync("Taxonomy mixed history?", "History", QuestionDifficulty.Hard,
             canonicalCategory: "history", subject: "humanities", sourceDataset: "taxonomy-test/mixed");
 
-        var response = await _http.PostAsJsonAsync("/questions/mixed", new MixedQuestionSetRequest(
+        var response = await _http.PostAsJsonAsync("/api/v1/questions/mixed", new MixedQuestionSetRequest(
             Count: 4,
             Categories: new[] { "science", "history" },
             Subjects: null,
@@ -86,7 +86,7 @@ public sealed class QuestionsTaxonomyContractTests : IClassFixture<TycoonApiFact
             canonicalCategory: "science", subject: "stem", topic: "biology", gradeBand: "middle_school",
             ageGroup: "teen", audience: "teen", sourceDataset: "taxonomy-test/metadata", tags: ["cells"]);
 
-        var response = await _http.GetAsync("/questions/metadata");
+        var response = await _http.GetAsync("/api/v1/questions/metadata");
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<QuestionMetadataResponseDto>(TestJson.Default);

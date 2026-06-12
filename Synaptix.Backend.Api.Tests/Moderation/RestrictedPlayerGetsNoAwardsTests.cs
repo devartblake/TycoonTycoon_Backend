@@ -26,7 +26,7 @@ public sealed class RestrictedPlayerGetsNoAwardsTests : IClassFixture<TycoonApiF
             new SetModerationStatusRequest(playerId, 3, "test", null, null, null)); // 3=Restricted
         set.EnsureSuccessStatusCode();
 
-        var start = await _public.PostAsJsonAsync("/matches/start",
+        var start = await _public.PostAsJsonAsync("/api/v1/matches/start",
             new StartMatchRequest(playerId, "duel"));
         start.EnsureSuccessStatusCode();
 
@@ -47,7 +47,7 @@ public sealed class RestrictedPlayerGetsNoAwardsTests : IClassFixture<TycoonApiF
                 new MatchParticipantResultDto(playerId, 10, 1, 4, 300)
             });
 
-        var resp = await _public.PostAsJsonAsync("/matches/submit", submit);
+        var resp = await _public.PostAsJsonAsync("/api/v1/matches/submit", submit);
         resp.EnsureSuccessStatusCode();
 
         var res = await resp.Content.ReadFromJsonAsync<SubmitMatchResponse>();

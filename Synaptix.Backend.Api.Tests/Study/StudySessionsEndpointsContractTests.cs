@@ -26,7 +26,7 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
         await SeedQuestionAsync("Science 1", category, QuestionDifficulty.Easy, "Approved");
         var client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/study-sessions", new CreateStudySessionRequest(
+        var response = await client.PostAsJsonAsync("/api/v1/study-sessions", new CreateStudySessionRequest(
             StudySetId: $"category:{category}",
             Count: 10));
 
@@ -41,7 +41,7 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
         await SeedQuestionAsync("Science 2", category, QuestionDifficulty.Medium, "Approved");
         var client = await CreateAuthenticatedClientAsync("study-create");
 
-        var response = await client.PostAsJsonAsync("/study-sessions", new CreateStudySessionRequest(
+        var response = await client.PostAsJsonAsync("/api/v1/study-sessions", new CreateStudySessionRequest(
             StudySetId: $"category:{category}",
             Count: 10));
         response.EnsureSuccessStatusCode();
@@ -68,7 +68,7 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
         var ownerClient = await CreateAuthenticatedClientAsync("study-owner");
         var otherClient = await CreateAuthenticatedClientAsync("study-other");
 
-        var createResponse = await ownerClient.PostAsJsonAsync("/study-sessions", new CreateStudySessionRequest(
+        var createResponse = await ownerClient.PostAsJsonAsync("/api/v1/study-sessions", new CreateStudySessionRequest(
             StudySetId: $"category:{category}",
             Count: 10));
         createResponse.EnsureSuccessStatusCode();
@@ -77,7 +77,7 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
         var firstQuestionId = session.QuestionIds[0];
 
         var progressResponse = await ownerClient.PostAsJsonAsync(
-            $"/study-sessions/{session.Id}/progress",
+            $"/api/v1/study-sessions/{session.Id}/progress",
             new UpdateStudySessionProgressRequest(
                 QuestionId: firstQuestionId,
                 SelectedOptionId: "A",
@@ -93,7 +93,7 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
         progress.AnsweredQuestionIds.Should().Contain(firstQuestionId);
 
         var completeResponse = await ownerClient.PostAsJsonAsync(
-            $"/study-sessions/{session.Id}/progress",
+            $"/api/v1/study-sessions/{session.Id}/progress",
             new UpdateStudySessionProgressRequest(
                 QuestionId: session.QuestionIds[1],
                 SelectedOptionId: "B",
@@ -101,7 +101,7 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
                 IsCompleted: true));
         completeResponse.EnsureSuccessStatusCode();
 
-        var summaryResponse = await ownerClient.GetAsync($"/study-sessions/{session.Id}/summary");
+        var summaryResponse = await ownerClient.GetAsync($"/api/v1/study-sessions/{session.Id}/summary");
         summaryResponse.EnsureSuccessStatusCode();
 
         var summary = await summaryResponse.Content.ReadFromJsonAsync<StudySessionDto>();
@@ -111,7 +111,7 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
         summary.IsCompleted.Should().BeTrue();
         summary.CompletedAtUtc.Should().NotBeNull();
 
-        var forbiddenSummary = await otherClient.GetAsync($"/study-sessions/{session.Id}/summary");
+        var forbiddenSummary = await otherClient.GetAsync($"/api/v1/study-sessions/{session.Id}/summary");
         forbiddenSummary.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -124,20 +124,20 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
         await SeedQuestionAsync("History 1", historyCategory, QuestionDifficulty.Easy, "Approved");
         var client = await CreateAuthenticatedClientAsync("study-validation");
 
-        var createResponse = await client.PostAsJsonAsync("/study-sessions", new CreateStudySessionRequest(
+        var createResponse = await client.PostAsJsonAsync("/api/v1/study-sessions", new CreateStudySessionRequest(
             StudySetId: $"category:{scienceCategory}",
             Count: 10));
         createResponse.EnsureSuccessStatusCode();
         var session = (await createResponse.Content.ReadFromJsonAsync<StudySessionDto>())!;
 
         var historyList = await client.GetFromJsonAsync<StudySetDetailDto>(
-            $"/study-sets/category:{historyCategory}?count=10",
+            $"/api/v1/study-sets/category:{historyCategory}?count=10",
             TestJson.Default);
         historyList.Should().NotBeNull();
         var foreignQuestionId = historyList!.Questions[0].Id;
 
         var response = await client.PostAsJsonAsync(
-            $"/study-sessions/{session.Id}/progress",
+            $"/api/v1/study-sessions/{session.Id}/progress",
             new UpdateStudySessionProgressRequest(
                 QuestionId: foreignQuestionId,
                 SelectedOptionId: "A",
@@ -174,7 +174,7 @@ public sealed class StudySessionsEndpointsContractTests : IClassFixture<TycoonAp
     {
         var client = _factory.CreateClient();
 
-        var signupResponse = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResponse = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"{prefix}-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: "ios-sim",

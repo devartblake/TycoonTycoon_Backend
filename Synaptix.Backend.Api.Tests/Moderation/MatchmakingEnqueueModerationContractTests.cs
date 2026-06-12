@@ -27,7 +27,7 @@ public sealed class MatchmakingEnqueueModerationContractTests : IClassFixture<Ty
             new SetModerationStatusRequest(playerId, 4, "test", null, null, null));
         set.EnsureSuccessStatusCode();
 
-        var enqueue = await _public.PostAsJsonAsync("/matchmaking/enqueue", new { PlayerId = playerId, Mode = "duel", Tier = 1 });
+        var enqueue = await _public.PostAsJsonAsync("/api/v1/matchmaking/enqueue", new { PlayerId = playerId, Mode = "duel", Tier = 1 });
         enqueue.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await enqueue.HasErrorCodeAsync("FORBIDDEN");
     }

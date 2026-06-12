@@ -45,7 +45,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
         var useEventId = Guid.NewGuid();
         var useReq = new UsePowerupRequest(useEventId, playerId, PowerupType.Skip);
 
-        var u1 = await _public.PostAsJsonAsync("/powerups/use", useReq);
+        var u1 = await _public.PostAsJsonAsync("/api/v1/powerups/use", useReq);
         u1.EnsureSuccessStatusCode();
         var used1 = await u1.Content.ReadFromJsonAsync<UsePowerupResultDto>(TestJson.Default);
 
@@ -53,7 +53,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
         used1.Remaining.Should().BeGreaterThanOrEqualTo(1);
 
         // Same use request again => Duplicate (idempotent)
-        var u2 = await _public.PostAsJsonAsync("/powerups/use", useReq);
+        var u2 = await _public.PostAsJsonAsync("/api/v1/powerups/use", useReq);
         u2.EnsureSuccessStatusCode();
         var used2 = await u2.Content.ReadFromJsonAsync<UsePowerupResultDto>(TestJson.Default);
 
@@ -71,7 +71,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
         g.EnsureSuccessStatusCode();
 
         // Use => Used
-        var use1 = await _public.PostAsJsonAsync("/powerups/use",
+        var use1 = await _public.PostAsJsonAsync("/api/v1/powerups/use",
             new UsePowerupRequest(Guid.NewGuid(), playerId, PowerupType.FiftyFifty));
         use1.EnsureSuccessStatusCode();
         var r1 = await use1.Content.ReadFromJsonAsync<UsePowerupResultDto>(TestJson.Default);
@@ -83,7 +83,7 @@ public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
         g2.EnsureSuccessStatusCode();
 
         // Use immediately => Cooldown
-        var use2 = await _public.PostAsJsonAsync("/powerups/use",
+        var use2 = await _public.PostAsJsonAsync("/api/v1/powerups/use",
             new UsePowerupRequest(Guid.NewGuid(), playerId, PowerupType.FiftyFifty));
         use2.EnsureSuccessStatusCode();
         var r2 = await use2.Content.ReadFromJsonAsync<UsePowerupResultDto>(TestJson.Default);

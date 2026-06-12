@@ -34,7 +34,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
         var second = await SeedPublishedModuleAsync("Beta History", "History", QuestionDifficulty.Hard);
         await SeedUnpublishedModuleAsync("Hidden Module", "Science", QuestionDifficulty.Medium);
 
-        var response = await _http.GetFromJsonAsync<List<LearningModuleListItemDto>>("/modules", JsonOptions);
+        var response = await _http.GetFromJsonAsync<List<LearningModuleListItemDto>>("/api/v1/modules", JsonOptions);
         var relevant = response!.Where(x => x.Id == first.Id || x.Id == second.Id).ToList();
 
         relevant.Should().HaveCount(2);
@@ -56,7 +56,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
             await db.SaveChangesAsync();
         }
 
-        var response = await _http.GetFromJsonAsync<List<LearningModuleListItemDto>>($"/modules?playerId={playerId}", JsonOptions);
+        var response = await _http.GetFromJsonAsync<List<LearningModuleListItemDto>>($"/api/v1/modules?playerId={playerId}", JsonOptions);
 
         response.Should().NotBeNull();
         var relevant = response!.Where(x => x.Id == completed.Id || x.Id == incomplete.Id).ToList();
@@ -70,7 +70,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
     {
         var module = await SeedPublishedModuleAsync("Science Basics", "Science", QuestionDifficulty.Easy);
 
-        var response = await _http.GetFromJsonAsync<LearningModuleDetailDto>($"/modules/{module.Id}", JsonOptions);
+        var response = await _http.GetFromJsonAsync<LearningModuleDetailDto>($"/api/v1/modules/{module.Id}", JsonOptions);
 
         response.Should().NotBeNull();
         response!.Id.Should().Be(module.Id);
@@ -94,7 +94,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
         }
 
         var response = await _http.GetFromJsonAsync<RecommendedLearningModulesResponseDto>(
-            $"/modules/recommended?playerId={playerId}&count=10", JsonOptions);
+            $"/api/v1/modules/recommended?playerId={playerId}&count=10", JsonOptions);
 
         response.Should().NotBeNull();
         response!.Items.Should().Contain(x => x.Id == next.Id);
@@ -117,7 +117,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
         }
 
         var response = await _http.GetFromJsonAsync<LearningModuleProgressDto>(
-            $"/modules/progress/{playerId}", JsonOptions);
+            $"/api/v1/modules/progress/{playerId}", JsonOptions);
 
         response.Should().NotBeNull();
         response!.PlayerId.Should().Be(playerId);
@@ -134,7 +134,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
     {
         var module = await SeedUnpublishedModuleAsync("Hidden", "Science", QuestionDifficulty.Easy);
 
-        var response = await _http.GetAsync($"/modules/{module.Id}");
+        var response = await _http.GetAsync($"/api/v1/modules/{module.Id}");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -153,7 +153,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
             await db.SaveChangesAsync();
         }
 
-        var response = await _http.GetFromJsonAsync<List<ModuleLessonDto>>($"/modules/{module.Id}/lessons");
+        var response = await _http.GetFromJsonAsync<List<ModuleLessonDto>>($"/api/v1/modules/{module.Id}/lessons");
 
         response.Should().NotBeNull();
         response!.Should().HaveCount(2);
@@ -169,7 +169,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
         var playerId = Guid.NewGuid();
         var module = await SeedPublishedModuleAsync("Reward Module", "Science", QuestionDifficulty.Easy);
 
-        var first = await _http.PostAsync($"/modules/{module.Id}/complete?playerId={playerId}", content: null);
+        var first = await _http.PostAsync($"/api/v1/modules/{module.Id}/complete?playerId={playerId}", content: null);
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         var firstBody = await first.Content.ReadFromJsonAsync<CompleteModuleResultDto>();
 
@@ -180,7 +180,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
         firstBody.BalanceXp.Should().Be(500);
         firstBody.BalanceCoins.Should().Be(100);
 
-        var second = await _http.PostAsync($"/modules/{module.Id}/complete?playerId={playerId}", content: null);
+        var second = await _http.PostAsync($"/api/v1/modules/{module.Id}/complete?playerId={playerId}", content: null);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         var secondBody = await second.Content.ReadFromJsonAsync<CompleteModuleResultDto>();
 
@@ -193,7 +193,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
     [Fact]
     public async Task CompleteModule_ReturnsNotFound_ForMissingModule()
     {
-        var response = await _http.PostAsync($"/modules/{Guid.NewGuid()}/complete?playerId={Guid.NewGuid()}", content: null);
+        var response = await _http.PostAsync($"/api/v1/modules/{Guid.NewGuid()}/complete?playerId={Guid.NewGuid()}", content: null);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -252,7 +252,7 @@ public sealed class LearningModulesEndpointsContractTests : IClassFixture<Tycoon
         await SeedPlayerProfileAsync(playerId, categoryWeaknessesJson: "{\"GeoAdaptiveTest\": 0.85}");
 
         var response = await _http.GetFromJsonAsync<RecommendedLearningModulesResponseDto>(
-            $"/modules/recommended?playerId={playerId}&count=10", JsonOptions);
+            $"/api/v1/modules/recommended?playerId={playerId}&count=10", JsonOptions);
 
         response.Should().NotBeNull();
         var items = response!.Items;

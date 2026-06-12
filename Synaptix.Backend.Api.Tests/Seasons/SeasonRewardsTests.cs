@@ -80,7 +80,7 @@ public sealed class SeasonRewardsTests : IClassFixture<TycoonApiFactory>
         var eventId = Guid.NewGuid();
 
         var r1 = await client.PostAsJsonAsync(
-            $"/seasons/rewards/claim/{playerId}",
+            $"/api/v1/seasons/rewards/claim/{playerId}",
             new ClaimSeasonRewardRequestDto(eventId, seasonId));
 
         r1.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -88,7 +88,7 @@ public sealed class SeasonRewardsTests : IClassFixture<TycoonApiFactory>
         dto1!.Status.Should().BeOneOf("Applied", "Duplicate");
 
         var r2 = await client.PostAsJsonAsync(
-            $"/seasons/rewards/claim/{playerId}",
+            $"/api/v1/seasons/rewards/claim/{playerId}",
             new ClaimSeasonRewardRequestDto(eventId, seasonId));
 
         var dto2 = await r2.Content.ReadFromJsonAsync<ClaimSeasonRewardResponseDto>();

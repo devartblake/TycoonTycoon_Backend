@@ -20,7 +20,7 @@ public sealed class RankedLeaderboardsTests : IClassFixture<TycoonApiFactory>
     {
         var client = _factory.CreateClient();
 
-        var resp = await client.GetAsync("/leaderboards/ranked?scope=global&page=1&pageSize=10&sort=points");
+        var resp = await client.GetAsync("/api/v1/leaderboards/ranked?scope=global&page=1&pageSize=10&sort=points");
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var dto = await resp.Content.ReadFromJsonAsync<RankedLeaderboardGridResponseDto>();

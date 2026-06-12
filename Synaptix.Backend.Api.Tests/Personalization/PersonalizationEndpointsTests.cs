@@ -20,10 +20,10 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
     // ── Anonymous access returns 401 ──────────────────────────────────────
 
     [Theory]
-    [InlineData("/personalization/profile/00000000-0000-0000-0000-000000000001")]
-    [InlineData("/personalization/home/00000000-0000-0000-0000-000000000001")]
-    [InlineData("/personalization/recommendations/00000000-0000-0000-0000-000000000001")]
-    [InlineData("/personalization/notifications/00000000-0000-0000-0000-000000000001")]
+    [InlineData("/api/v1/personalization/profile/00000000-0000-0000-0000-000000000001")]
+    [InlineData("/api/v1/personalization/home/00000000-0000-0000-0000-000000000001")]
+    [InlineData("/api/v1/personalization/recommendations/00000000-0000-0000-0000-000000000001")]
+    [InlineData("/api/v1/personalization/notifications/00000000-0000-0000-0000-000000000001")]
     public async Task GetEndpoints_AnonymousAccess_Returns401(string route)
     {
         using var anon = _factory.CreateClient();
@@ -32,8 +32,8 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
     }
 
     [Theory]
-    [InlineData("/personalization/profile/00000000-0000-0000-0000-000000000001/event")]
-    [InlineData("/personalization/profile/00000000-0000-0000-0000-000000000001/recalculate")]
+    [InlineData("/api/v1/personalization/profile/00000000-0000-0000-0000-000000000001/event")]
+    [InlineData("/api/v1/personalization/profile/00000000-0000-0000-0000-000000000001/recalculate")]
     public async Task PostProfileEndpoints_AnonymousAccess_Returns401(string route)
     {
         using var anon = _factory.CreateClient();
@@ -42,8 +42,8 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
     }
 
     [Theory]
-    [InlineData("/personalization/recommendations/00000000-0000-0000-0000-000000000001/accept?playerId=00000000-0000-0000-0000-000000000002")]
-    [InlineData("/personalization/recommendations/00000000-0000-0000-0000-000000000001/dismiss?playerId=00000000-0000-0000-0000-000000000002")]
+    [InlineData("/api/v1/personalization/recommendations/00000000-0000-0000-0000-000000000001/accept?playerId=00000000-0000-0000-0000-000000000002")]
+    [InlineData("/api/v1/personalization/recommendations/00000000-0000-0000-0000-000000000001/dismiss?playerId=00000000-0000-0000-0000-000000000002")]
     public async Task RecommendationActionEndpoints_AnonymousAccess_Returns401(string route)
     {
         using var anon = _factory.CreateClient();
@@ -59,7 +59,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var (token, playerId) = await SignupAsync();
         using var http = AuthClient(token);
 
-        var resp = await http.GetAsync($"/personalization/profile/{playerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/profile/{playerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var profile = await resp.Content.ReadFromJsonAsync<PlayerMindProfileDto>();
@@ -82,7 +82,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
             Metadata: null,
             OccurredAt: DateTimeOffset.UtcNow);
 
-        var resp = await http.PostAsJsonAsync($"/personalization/profile/{playerId}/event", evt);
+        var resp = await http.PostAsJsonAsync($"/api/v1/personalization/profile/{playerId}/event", evt);
 
         resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
     }
@@ -93,7 +93,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var (token, playerId) = await SignupAsync();
         using var http = AuthClient(token);
 
-        var resp = await http.PostAsync($"/personalization/profile/{playerId}/recalculate", content: null);
+        var resp = await http.PostAsync($"/api/v1/personalization/profile/{playerId}/recalculate", content: null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var profile = await resp.Content.ReadFromJsonAsync<PlayerMindProfileDto>();
@@ -107,7 +107,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var (token, playerId) = await SignupAsync();
         using var http = AuthClient(token);
 
-        var resp = await http.GetAsync($"/personalization/home/{playerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/home/{playerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var home = await resp.Content.ReadFromJsonAsync<PlayerHomePersonalizationDto>();
@@ -123,7 +123,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var (token, playerId) = await SignupAsync();
         using var http = AuthClient(token);
 
-        var resp = await http.GetAsync($"/personalization/recommendations/{playerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/recommendations/{playerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var recs = await resp.Content.ReadFromJsonAsync<List<PlayerRecommendationDto>>();
@@ -138,7 +138,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
 
         var fakeRecId = Guid.NewGuid();
         var resp = await http.PostAsync(
-            $"/personalization/recommendations/{fakeRecId}/accept?playerId={playerId}",
+            $"/api/v1/personalization/recommendations/{fakeRecId}/accept?playerId={playerId}",
             content: null);
 
         // The service silently no-ops if the record doesn't exist — still 204
@@ -153,7 +153,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
 
         var fakeRecId = Guid.NewGuid();
         var resp = await http.PostAsync(
-            $"/personalization/recommendations/{fakeRecId}/dismiss?playerId={playerId}",
+            $"/api/v1/personalization/recommendations/{fakeRecId}/dismiss?playerId={playerId}",
             content: null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -165,7 +165,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var (token, playerId) = await SignupAsync();
         using var http = AuthClient(token);
 
-        var resp = await http.GetAsync($"/personalization/notifications/{playerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/notifications/{playerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await resp.Content.ReadFromJsonAsync<NotificationPersonalizationDto>();
@@ -182,7 +182,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var (token, playerId) = await SignupAsync();
         using var http = AuthClient(token);
 
-        var resp = await http.GetAsync($"/personalization/notifications/{playerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/notifications/{playerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await resp.Content.ReadFromJsonAsync<NotificationPersonalizationDto>();
@@ -203,7 +203,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         using var http = AuthClient(token);
 
         var otherPlayerId = Guid.NewGuid();
-        var resp = await http.GetAsync($"/personalization/notifications/{otherPlayerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/notifications/{otherPlayerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -217,7 +217,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         using var http = AuthClient(token);
 
         var otherPlayerId = Guid.NewGuid();
-        var resp = await http.GetAsync($"/personalization/profile/{otherPlayerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/profile/{otherPlayerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -237,7 +237,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
             Mode: null,
             Metadata: null,
             OccurredAt: null);
-        var resp = await http.PostAsJsonAsync($"/personalization/profile/{otherPlayerId}/event", evt);
+        var resp = await http.PostAsJsonAsync($"/api/v1/personalization/profile/{otherPlayerId}/event", evt);
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -249,7 +249,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         using var http = AuthClient(token);
 
         var otherPlayerId = Guid.NewGuid();
-        var resp = await http.GetAsync($"/personalization/home/{otherPlayerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/home/{otherPlayerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -263,7 +263,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var fakeRecId = Guid.NewGuid();
         var otherPlayerId = Guid.NewGuid();
         var resp = await http.PostAsync(
-            $"/personalization/recommendations/{fakeRecId}/accept?playerId={otherPlayerId}",
+            $"/api/v1/personalization/recommendations/{fakeRecId}/accept?playerId={otherPlayerId}",
             content: null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -278,7 +278,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var fakeRecId = Guid.NewGuid();
         var otherPlayerId = Guid.NewGuid();
         var resp = await http.PostAsync(
-            $"/personalization/recommendations/{fakeRecId}/dismiss?playerId={otherPlayerId}",
+            $"/api/v1/personalization/recommendations/{fakeRecId}/dismiss?playerId={otherPlayerId}",
             content: null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -291,7 +291,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         using var http = AuthClient(token);
 
         var otherPlayerId = Guid.NewGuid();
-        var resp = await http.GetAsync($"/personalization/recommendations/{otherPlayerId}");
+        var resp = await http.GetAsync($"/api/v1/personalization/recommendations/{otherPlayerId}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -306,7 +306,7 @@ public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFacto
         var password = "Passw0rd!Test";
         var deviceId = $"dev-{Guid.NewGuid():N}";
 
-        var resp = await anon.PostAsJsonAsync("/auth/signup",
+        var resp = await anon.PostAsJsonAsync("/api/v1/auth/signup",
             new SignupRequest(email, password, deviceId, Username: $"ptest_{Guid.NewGuid():N}"));
 
         resp.EnsureSuccessStatusCode();

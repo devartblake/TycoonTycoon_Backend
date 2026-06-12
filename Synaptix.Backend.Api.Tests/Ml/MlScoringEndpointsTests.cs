@@ -22,7 +22,7 @@ public sealed class MlScoringEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         await SignupAndAuthorizeAsync(_http, "ml-churn");
 
-        var resp = await _http.PostAsJsonAsync("/ml/churn-risk", new MlScoringEndpoints.ChurnRiskRequest(
+        var resp = await _http.PostAsJsonAsync("/api/v1/ml/churn-risk", new MlScoringEndpoints.ChurnRiskRequest(
             PlayerId: Guid.NewGuid(),
             CorrectRate: 0.35m,
             DisconnectRate: 0.40m,
@@ -41,7 +41,7 @@ public sealed class MlScoringEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         await SignupAndAuthorizeAsync(_http, "ml-quality");
 
-        var resp = await _http.PostAsJsonAsync("/ml/match-quality", new MlScoringEndpoints.MatchQualityRequest(
+        var resp = await _http.PostAsJsonAsync("/api/v1/ml/match-quality", new MlScoringEndpoints.MatchQualityRequest(
             MatchId: Guid.NewGuid(),
             CorrectRate: 0.70m,
             DisconnectRate: 0.05m,
@@ -56,7 +56,7 @@ public sealed class MlScoringEndpointsTests : IClassFixture<TycoonApiFactory>
 
     private static async Task SignupAndAuthorizeAsync(HttpClient http, string userPrefix)
     {
-        var signupResp = await http.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await http.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"{userPrefix}-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: $"{userPrefix}-device",
