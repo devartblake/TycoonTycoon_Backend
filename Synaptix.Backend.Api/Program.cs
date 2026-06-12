@@ -101,6 +101,8 @@ using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Application;
 using Synaptix.Compliance.Client.Extensions;
 using Synaptix.Security.Kms.Client.Extensions;
+using Synaptix.Security.Kms.Client.Abstractions;
+using Synaptix.Backend.Api.Features.Security;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Application.Analytics.Abstractions;
@@ -307,6 +309,16 @@ builder.Services.AddInfrastructure(builder.Configuration)
 
 // KMS typed clients for secure-channel payload encryption
 builder.Services.AddKmsClient(builder.Configuration);
+
+// Forward the caller's bearer token onto the KMS secure-session client so the
+// main API can proxy the handshake (POST /api/v1/security/sessions/*) on behalf
+// of the authenticated user. KMS binds the session subject to this token.
+// No-op for internal/server-initiated calls (no inbound HttpContext), which
+// keep using the service token only.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<UserBearerForwardingHandler>();
+builder.Services.AddHttpClient(nameof(IKmsSessionClient))
+    .AddHttpMessageHandler<UserBearerForwardingHandler>();
 
 // Compliance service client (COPPA, CCPA, PCI audit hooks)
 builder.Services.AddComplianceClient(builder.Configuration);
@@ -918,6 +930,7 @@ var v1 = app.MapGroup("/api/v1");
 AppConfigEndpoints.Map(v1);
 AnalyticsEndpoints.Map(v1);
 AuthEndpoints.Map(v1);
+SecuritySessionsEndpoints.Map(v1);
 UsersEndpoints.Map(v1);
 UserFriendsEndpoints.Map(v1);
 PlayerPreferencesEndpoints.Map(v1);
