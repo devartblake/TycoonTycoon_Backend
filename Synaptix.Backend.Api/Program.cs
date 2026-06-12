@@ -741,22 +741,6 @@ app.MapGet("/healthz", () => Results.Ok(new
     timestamp = DateTime.UtcNow
 })).AllowAnonymous().WithTags("Health");
 
-app.MapGet("/health/ready", () =>
-{
-    var health = new Dictionary<string, object>
-    {
-        ["status"] = "ready",
-        ["timestamp"] = DateTime.UtcNow,
-        ["checks"] = new Dictionary<string, string>
-        {
-            ["api"] = "healthy",
-            ["hangfire"] = hangfireEnabled ? "enabled" : "disabled",
-            ["redis"] = !string.IsNullOrWhiteSpace(redis) ? "configured" : "not configured"
-        }
-    };
-    return Results.Ok(health);
-}).AllowAnonymous().WithTags("Health");
-
 // ✅ Swagger test endpoint (for debugging)
 app.MapGet("/swagger-debug", () =>
 {
