@@ -41,6 +41,11 @@ public sealed class StoreSystemStatusEndpointsTests : IClassFixture<TycoonApiFac
         using var admin = factory.CreateClient().WithAdminOpsKey();
         using var client = factory.CreateClient();
 
+        // store_purchases_enabled defaults false and isn't settable via the admin
+        // toggle; seed it so the checkout reaches the Stripe-disabled (503) path
+        // rather than the purchases feature gate (403).
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var patchResp = await admin.PatchAsJsonAsync(
             "/admin/store/system/status",
             new UpdateStoreSystemStatusRequest(StoreEnabled: true, PaymentsEnabled: true, StripeEnabled: false, PayPalEnabled: true));

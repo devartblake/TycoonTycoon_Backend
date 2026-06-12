@@ -48,6 +48,7 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
             IsActive = true,
             SortOrder = 1
         });
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
 
         var response = await client.PostAsJsonAsync(
             "/api/v1/store/payments/checkout/session",
@@ -89,6 +90,7 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<TycoonApiFa
             IsActive = true,
             SortOrder = 1
         });
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
 
         var response = await client.PostAsJsonAsync(
             "/api/v1/store/payments/checkout/session",

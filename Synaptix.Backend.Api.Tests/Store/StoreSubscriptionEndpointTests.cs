@@ -74,6 +74,8 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
         var playerId = Guid.Parse(signup.UserId);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
 
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var response = await client.PostAsJsonAsync(
             "/api/v1/store/subscription/checkout/session",
             new CreateStripeSubscriptionCheckoutSessionRequest(playerId, "premium", "monthly"));

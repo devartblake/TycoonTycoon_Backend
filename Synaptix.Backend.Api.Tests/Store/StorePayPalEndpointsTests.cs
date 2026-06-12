@@ -46,6 +46,8 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
             SortOrder = 1
         });
 
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var response = await client.PostAsJsonAsync(
             "/api/v1/store/payments/paypal/order",
             new CreatePayPalOrderRequest(playerId, "powerup:skip", 2));
@@ -88,6 +90,8 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
             "USD",
             5.98m);
 
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var response = await client.PostAsJsonAsync(
             "/api/v1/store/payments/paypal/capture",
             new CapturePayPalOrderRequest(playerId, "ORDER-123"));
@@ -117,6 +121,8 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
         var signup = await SignupAsync(client, "paypal-sub");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
         var playerId = Guid.Parse(signup.UserId);
+
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
 
         var createResponse = await client.PostAsJsonAsync(
             "/api/v1/store/subscription/paypal/create",
