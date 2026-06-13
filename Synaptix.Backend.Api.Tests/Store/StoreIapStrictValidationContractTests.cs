@@ -12,10 +12,12 @@ namespace Synaptix.Backend.Api.Tests.Store;
 
 public sealed class StoreIapStrictValidationContractTests : IClassFixture<StrictIapConfiguredFactory>
 {
+    private readonly StrictIapConfiguredFactory _factory;
     private readonly HttpClient _http;
 
     public StoreIapStrictValidationContractTests(StrictIapConfiguredFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient();
     }
 
@@ -33,6 +35,7 @@ public sealed class StoreIapStrictValidationContractTests : IClassFixture<Strict
         signup.Should().NotBeNull();
         var playerId = Guid.Parse(signup!.UserId);
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
+        await StoreTestSupport.EnableStorePurchasesAsync(_factory);
 
         var resp = await _http.PostAsJsonAsync("/api/v1/store/iap/validate", new StoreEndpoints.IapReceiptValidationRequest(
             PlayerId: playerId,
@@ -63,6 +66,7 @@ public sealed class StoreIapStrictValidationContractTests : IClassFixture<Strict
         signup.Should().NotBeNull();
         var playerId = Guid.Parse(signup!.UserId);
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
+        await StoreTestSupport.EnableStorePurchasesAsync(_factory);
 
         var resp = await _http.PostAsJsonAsync("/api/v1/store/iap/validate", new StoreEndpoints.IapReceiptValidationRequest(
             PlayerId: playerId,
