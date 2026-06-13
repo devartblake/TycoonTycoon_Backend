@@ -213,6 +213,7 @@ namespace Synaptix.Shared.Contracts.Dtos
     public sealed record StoreSystemStatusDto(
         bool StoreEnabled,
         bool PaymentsEnabled,
+        bool StorePurchasesEnabled,
         bool StripeConfigured,
         bool StripeEnabled,
         bool PayPalConfigured,
