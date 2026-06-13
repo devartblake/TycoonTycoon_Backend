@@ -72,7 +72,7 @@ namespace Synaptix.Backend.Infrastructure.Storage
                 var args = new GetObjectArgs()
                     .WithBucket(_options.Bucket)
                     .WithObject(key)
-                    .WithCallbackStream(async stream => await stream.CopyToAsync(ms, ct));
+                    .WithCallbackStream(stream => stream.CopyTo(ms));
                 await _client.GetObjectAsync(args, ct);
                 ms.Position = 0;
                 return ms;
