@@ -716,11 +716,13 @@ public sealed class MinioSeeder
         {
             "scholar" => SkillBranch.Knowledge,
             "knowledge" => SkillBranch.Knowledge,
+            "xp" => SkillBranch.Knowledge,
             "strategist" => SkillBranch.Strategy,
             "strategy" => SkillBranch.Strategy,
             "power-up" => SkillBranch.Powerups,
             "powerup" => SkillBranch.Powerups,
             "powerups" => SkillBranch.Powerups,
+            "wildcard" => SkillBranch.Powerups,
             _ => default
         };
         return branch != default;
