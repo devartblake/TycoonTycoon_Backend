@@ -10,9 +10,8 @@
 services:
   traefik:
     command: !override
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=synaptix-net"
+      - "--providers.file.filename=/etc/traefik/dynamic.prod.yml"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
@@ -26,7 +25,7 @@ services:
       - "80:80"
       - "443:443"
     volumes: !override
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/dynamic.prod.yml:/etc/traefik/dynamic.prod.yml:ro
       - letsencrypt:/letsencrypt
     logging:
       driver: "json-file"

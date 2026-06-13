@@ -1,9 +1,8 @@
-# Optional production file-provider routing.
+# Production file-provider routing.
 #
-# The single-Linode production Compose override currently uses Docker labels as
-# the Traefik source of truth, so this file is not mounted by default. If you
-# switch Traefik back to the file provider, keep these hosts and the "le"
-# certificate resolver aligned with docker/compose.prod.yml.
+# The single-Linode production Compose override mounts this file instead of
+# using the Docker provider. That avoids Docker API-version compatibility
+# issues and keeps the Docker socket out of the Traefik container.
 
 http:
   routers:
