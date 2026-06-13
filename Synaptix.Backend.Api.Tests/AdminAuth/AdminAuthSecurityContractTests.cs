@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Features.AdminAuth;
 using Synaptix.Backend.Api.Tests.TestHost;
+using Synaptix.Backend.Application.Auth;
+using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.AdminAuth;
@@ -89,12 +91,9 @@ public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFact
     [Fact]
     public void AdminDefaultPermissions_IncludePersonalizationScopes()
     {
-        var field = typeof(AdminAuthEndpoints).GetField(
-            "DefaultPermissions",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-
-        field.Should().NotBeNull();
-        var permissions = field!.GetValue(null).Should().BeAssignableTo<string[]>().Subject;
+        // Default admin login resolves to the SuperAdmin profile (see AuthService);
+        // its permission set is the source of truth for default admin scopes.
+        var permissions = AdminPermissionProfiles.ForRole(AdminRole.SuperAdmin).Permissions;
         permissions.Should().Contain("personalization:read");
         permissions.Should().Contain("personalization:write");
     }

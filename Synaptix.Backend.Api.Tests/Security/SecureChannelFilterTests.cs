@@ -203,9 +203,9 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
         _factory.FakeKms.LastDecryptRequest!.SessionId.Should().Be(sessionId);
         _factory.FakeKms.LastDecryptRequest.SequenceNumber.Should().Be(99);
         _factory.FakeKms.LastDecryptRequest.ReplayNonce.Should().Be("nonce-metadata");
-        _factory.FakeKms.LastDecryptRequest.Aad.Should().Contain("syn-sec-v1|request|POST|/auth/refresh");
+        _factory.FakeKms.LastDecryptRequest.Aad.Should().Contain("syn-sec-v1|request|POST|/api/v1/auth/refresh");
         _factory.FakeKms.LastEncryptRequest.Should().NotBeNull();
-        _factory.FakeKms.LastEncryptRequest!.Aad.Should().Contain("syn-sec-v1|response|POST|/auth/refresh");
+        _factory.FakeKms.LastEncryptRequest!.Aad.Should().Contain("syn-sec-v1|response|POST|/api/v1/auth/refresh");
     }
 
     // ─── Test 5: unprotected endpoint ignores the header ─────────────────────
