@@ -186,6 +186,20 @@ public sealed class MobileMatchGrpcServiceTests
         if (threeParamCtor is not null)
             return (MobileMatchGrpcService)threeParamCtor.Invoke([mediator, null!, logger]);
 
+        // Current signature: (IMediator, IAppDb, MatchmakingService, ILogger). The
+        // streaming methods exercised here (PlayMatch, WatchLeaderboard) route
+        // through IMediator and never touch the db/matchmaking dependencies, so
+        // they are passed as null — only the matchmaking RPCs use them.
+        var fourParamCtor = ctors.FirstOrDefault(c =>
+        {
+            var p = c.GetParameters();
+            return p.Length == 4
+                && typeof(IMediator).IsAssignableFrom(p[0].ParameterType)
+                && typeof(ILogger<MobileMatchGrpcService>).IsAssignableFrom(p[3].ParameterType);
+        });
+        if (fourParamCtor is not null)
+            return (MobileMatchGrpcService)fourParamCtor.Invoke([mediator, null!, null!, logger]);
+
         throw new InvalidOperationException("No supported MobileMatchGrpcService constructor signature found.");
     }
 
