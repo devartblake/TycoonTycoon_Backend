@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Synaptix.Backend.Application.Rewards;
 using Synaptix.Backend.Api.Features.Arcade;
@@ -14,11 +16,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Arcade;
 
-public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
+public sealed class RewardReactorTests : IClassFixture<ReactorEventActiveFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly ReactorEventActiveFactory _factory;
 
-    public RewardReactorTests(TycoonApiFactory factory)
+    public RewardReactorTests(ReactorEventActiveFactory factory)
     {
         _factory = factory;
     }
@@ -440,5 +442,31 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         await db.SaveChangesAsync();
 
         return ticket.ChainedSpinId;
+    }
+}
+
+/// <summary>
+/// Factory that keeps the configured reactor event active "now". The appsettings
+/// event window (2026-05-22..25) is fixed in the past, so the spin-with-active-event
+/// assertions would only pass during that window; override the start/end so the
+/// test is deterministic regardless of wall-clock.
+/// </summary>
+public sealed class ReactorEventActiveFactory : TycoonApiFactory
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+
+        builder.ConfigureAppConfiguration((_, cfg) =>
+        {
+            cfg.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["RewardReactor:Events:0:EventId"] = "double_coins_weekend_2026_05",
+                ["RewardReactor:Events:0:DisplayName"] = "Double Coins Weekend",
+                ["RewardReactor:Events:0:StartsAtUtc"] = DateTimeOffset.UtcNow.AddDays(-1).ToString("O"),
+                ["RewardReactor:Events:0:EndsAtUtc"] = DateTimeOffset.UtcNow.AddDays(1).ToString("O"),
+                ["RewardReactor:Events:0:EventMultiplier"] = "2.0",
+            });
+        });
     }
 }
