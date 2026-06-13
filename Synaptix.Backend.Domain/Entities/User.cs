@@ -18,6 +18,13 @@ namespace Synaptix.Backend.Domain.Entities
         public DateTimeOffset? LastLoginAt { get; private set; }
         public bool IsActive { get; private set; }
 
+        /// <summary>
+        /// True for device-first guest accounts created via /auth/device/bootstrap
+        /// that have not yet been upgraded to a full email account. Such accounts
+        /// have a synthetic, non-deliverable email until <see cref="UpgradeToFullAccount"/>.
+        /// </summary>
+        public bool IsAnonymous { get; private set; }
+
         private User() 
         { 
             Email = string.Empty;
@@ -38,6 +45,33 @@ namespace Synaptix.Backend.Domain.Entities
             Flags = new Dictionary<string, object>();
             CreatedAt = DateTimeOffset.UtcNow;
             IsActive = true;
+        }
+
+        /// <summary>
+        /// Creates a device-first guest account. The email is synthetic and
+        /// non-deliverable; the caller supplies a generated handle and a random
+        /// password hash (guests authenticate by device, not credentials).
+        /// </summary>
+        public static User CreateGuest(string handle, string passwordHash, string? country = null)
+        {
+            var guest = new User($"guest_{Guid.NewGuid():N}@guest.local", handle, passwordHash, country)
+            {
+                IsAnonymous = true
+            };
+            return guest;
+        }
+
+        /// <summary>
+        /// Promotes a guest account to a full email account, replacing the
+        /// synthetic email/handle/credentials. Idempotency is the caller's
+        /// responsibility (check <see cref="IsAnonymous"/> first).
+        /// </summary>
+        public void UpgradeToFullAccount(string email, string handle, string passwordHash)
+        {
+            Email = email.ToLowerInvariant();
+            Handle = handle;
+            PasswordHash = passwordHash;
+            IsAnonymous = false;
         }
 
         public void UpdateProfile(string? handle, string? country, string? avatarUrl = null)

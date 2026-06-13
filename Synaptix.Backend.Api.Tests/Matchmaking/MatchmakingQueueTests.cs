@@ -26,7 +26,7 @@ public sealed class MatchmakingQueueTests : IClassFixture<TycoonApiFactory>
         var req = new EnqueueRequest(playerId, "ranked", 1);
 
         // First enqueue
-        var r1 = await _client.PostAsJsonAsync("/matchmaking/enqueue", req);
+        var r1 = await _client.PostAsJsonAsync("/api/v1/matchmaking/enqueue", req);
         r1.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Accepted);
 
         var body1 = await r1.Content.ReadFromJsonAsync<QueueResultDto>();
@@ -35,7 +35,7 @@ public sealed class MatchmakingQueueTests : IClassFixture<TycoonApiFactory>
         body1.TicketId.Should().NotBeNull();
 
         // Second enqueue should return same queued ticket
-        var r2 = await _client.PostAsJsonAsync("/matchmaking/enqueue", req);
+        var r2 = await _client.PostAsJsonAsync("/api/v1/matchmaking/enqueue", req);
         r2.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Accepted);
 
         var body2 = await r2.Content.ReadFromJsonAsync<QueueResultDto>();
@@ -54,13 +54,13 @@ public sealed class MatchmakingQueueTests : IClassFixture<TycoonApiFactory>
         var req2 = new EnqueueRequest(p2, "ranked", 1);
 
         // Player 1 enqueues (likely queued)
-        var r1 = await _client.PostAsJsonAsync("/matchmaking/enqueue", req1);
+        var r1 = await _client.PostAsJsonAsync("/api/v1/matchmaking/enqueue", req1);
         r1.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Accepted);
         var b1 = await r1.Content.ReadFromJsonAsync<QueueResultDto>();
         b1.Should().NotBeNull();
 
         // Player 2 enqueues (should match or queue briefly)
-        var r2 = await _client.PostAsJsonAsync("/matchmaking/enqueue", req2);
+        var r2 = await _client.PostAsJsonAsync("/api/v1/matchmaking/enqueue", req2);
         r2.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Accepted);
         var b2 = await r2.Content.ReadFromJsonAsync<QueueResultDto>();
         b2.Should().NotBeNull();
@@ -68,11 +68,11 @@ public sealed class MatchmakingQueueTests : IClassFixture<TycoonApiFactory>
         // One of them should get Matched immediately; if not, poll status once.
         if (b1!.Status != "Matched" && b2!.Status != "Matched")
         {
-            var s1 = await _client.GetAsync($"/matchmaking/status/{p1}");
+            var s1 = await _client.GetAsync($"/api/v1/matchmaking/status/{p1}");
             s1.StatusCode.Should().Be(HttpStatusCode.OK);
             b1 = await s1.Content.ReadFromJsonAsync<QueueResultDto>();
 
-            var s2 = await _client.GetAsync($"/matchmaking/status/{p2}");
+            var s2 = await _client.GetAsync($"/api/v1/matchmaking/status/{p2}");
             s2.StatusCode.Should().Be(HttpStatusCode.OK);
             b2 = await s2.Content.ReadFromJsonAsync<QueueResultDto>();
         }
@@ -86,15 +86,15 @@ public sealed class MatchmakingQueueTests : IClassFixture<TycoonApiFactory>
         var playerId = Guid.NewGuid();
         var req = new EnqueueRequest(playerId, "ranked", 1);
 
-        var r1 = await _client.PostAsJsonAsync("/matchmaking/enqueue", req);
+        var r1 = await _client.PostAsJsonAsync("/api/v1/matchmaking/enqueue", req);
         r1.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Accepted);
 
         // cancel
-        var cancel = await _client.PostAsJsonAsync("/matchmaking/cancel", new { PlayerId = playerId });
+        var cancel = await _client.PostAsJsonAsync("/api/v1/matchmaking/cancel", new { PlayerId = playerId });
         cancel.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // status should be None or not Queued
-        var status = await _client.GetAsync($"/matchmaking/status/{playerId}");
+        var status = await _client.GetAsync($"/api/v1/matchmaking/status/{playerId}");
         status.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await status.Content.ReadFromJsonAsync<QueueResultDto>();

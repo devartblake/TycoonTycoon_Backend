@@ -1,5 +1,6 @@
 using Mediator;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,7 +12,7 @@ namespace Synaptix.Backend.Api.Features.Study
 {
     public static class StudySessionsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/study-sessions")
                 .WithTags("StudySessions")

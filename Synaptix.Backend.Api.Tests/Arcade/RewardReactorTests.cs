@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Synaptix.Backend.Application.Rewards;
 using Synaptix.Backend.Api.Features.Arcade;
@@ -14,11 +16,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Arcade;
 
-public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
+public sealed class RewardReactorTests : IClassFixture<ReactorEventActiveFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly ReactorEventActiveFactory _factory;
 
-    public RewardReactorTests(TycoonApiFactory factory)
+    public RewardReactorTests(ReactorEventActiveFactory factory)
     {
         _factory = factory;
     }
@@ -26,10 +28,10 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     // ── Route mapping smoke tests ──────────────────────────────────────────
 
     [Theory]
-    [InlineData("/arcade/reactor/spin")]
-    [InlineData("/arcade/reactor/claim")]
-    [InlineData("/arcade/reactor/chain")]
-    [InlineData("/arcade/spin/start")]
+    [InlineData("/api/v1/arcade/reactor/spin")]
+    [InlineData("/api/v1/arcade/reactor/claim")]
+    [InlineData("/api/v1/arcade/reactor/chain")]
+    [InlineData("/api/v1/arcade/spin/start")]
     public async Task PostRoutes_WithoutAuth_Return401(string route)
     {
         using var client = _factory.CreateClient();
@@ -41,7 +43,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     public async Task GetMyRewards_WithoutAuth_Returns401()
     {
         using var client = _factory.CreateClient();
-        var resp = await client.GetAsync("/users/me/rewards");
+        var resp = await client.GetAsync("/api/v1/users/me/rewards");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -49,7 +51,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     public async Task GetReactorConfig_WithoutAuth_Returns401()
     {
         using var client = _factory.CreateClient();
-        var resp = await client.GetAsync("/arcade/reactor/config");
+        var resp = await client.GetAsync("/api/v1/arcade/reactor/config");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -60,7 +62,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         var (client, _) = await CreateAuthenticatedClient();
 
-        var spinResp = await client.PostAsJsonAsync("/arcade/reactor/spin",
+        var spinResp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/spin",
             new ReactorSpinRequest(
                 IdempotencyKey: $"test-spin-{Guid.NewGuid():N}",
                 ReactorId: "daily-xp-reactor",
@@ -87,12 +89,12 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         var (client, _) = await CreateAuthenticatedClient();
         var key = $"idem-{Guid.NewGuid():N}";
 
-        var r1 = await client.PostAsJsonAsync("/arcade/reactor/spin",
+        var r1 = await client.PostAsJsonAsync("/api/v1/arcade/reactor/spin",
             new ReactorSpinRequest(key, "daily-xp-reactor", null));
         r1.StatusCode.Should().Be(HttpStatusCode.OK);
         var s1 = await r1.Content.ReadFromJsonAsync<ReactorSpinResponse>(TestJson.Default);
 
-        var r2 = await client.PostAsJsonAsync("/arcade/reactor/spin",
+        var r2 = await client.PostAsJsonAsync("/api/v1/arcade/reactor/spin",
             new ReactorSpinRequest(key, "daily-xp-reactor", null));
         r2.StatusCode.Should().Be(HttpStatusCode.OK);
         var s2 = await r2.Content.ReadFromJsonAsync<ReactorSpinResponse>(TestJson.Default);
@@ -105,12 +107,12 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         var (client, _) = await CreateAuthenticatedClient();
 
-        var spinResp = await client.PostAsJsonAsync("/arcade/reactor/spin",
+        var spinResp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/spin",
             new ReactorSpinRequest($"spin-{Guid.NewGuid():N}", "daily-xp-reactor", null));
         spinResp.EnsureSuccessStatusCode();
         var spin = await spinResp.Content.ReadFromJsonAsync<ReactorSpinResponse>(TestJson.Default);
 
-        var claimResp = await client.PostAsJsonAsync("/arcade/reactor/claim",
+        var claimResp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/claim",
             new ReactorClaimRequest(
                 SpinId: spin!.SpinId,
                 IdempotencyKey: $"claim-{spin.SpinId}",
@@ -136,7 +138,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         using var client = _factory.CreateClient();
 
-        var resp = await client.GetAsync("/events/active");
+        var resp = await client.GetAsync("/api/v1/events/active");
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await resp.Content.ReadAsStringAsync();
@@ -148,7 +150,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         var (client, _) = await CreateAuthenticatedClient();
 
-        var resp = await client.GetAsync("/arcade/reactor/config");
+        var resp = await client.GetAsync("/api/v1/arcade/reactor/config");
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var config = await resp.Content.ReadFromJsonAsync<ReactorConfigResponse>(TestJson.Default);
@@ -164,11 +166,11 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         var (client, playerId) = await CreateAuthenticatedClient();
         var chainId = await SeedChainTicketAsync(Guid.Parse(playerId), expiresIn: TimeSpan.FromMinutes(3));
 
-        var r1 = await client.PostAsJsonAsync("/arcade/reactor/chain", new ReactorChainRequest(chainId));
+        var r1 = await client.PostAsJsonAsync("/api/v1/arcade/reactor/chain", new ReactorChainRequest(chainId));
         r1.StatusCode.Should().Be(HttpStatusCode.OK);
         var s1 = await r1.Content.ReadFromJsonAsync<ReactorSpinResponse>(TestJson.Default);
 
-        var r2 = await client.PostAsJsonAsync("/arcade/reactor/chain", new ReactorChainRequest(chainId));
+        var r2 = await client.PostAsJsonAsync("/api/v1/arcade/reactor/chain", new ReactorChainRequest(chainId));
         r2.StatusCode.Should().Be(HttpStatusCode.OK);
         var s2 = await r2.Content.ReadFromJsonAsync<ReactorSpinResponse>(TestJson.Default);
 
@@ -187,7 +189,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         var (client, playerId) = await CreateAuthenticatedClient();
         var chainId = await SeedChainTicketAsync(Guid.Parse(playerId), expiresIn: TimeSpan.FromMinutes(-1));
 
-        var resp = await client.PostAsJsonAsync("/arcade/reactor/chain", new ReactorChainRequest(chainId));
+        var resp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/chain", new ReactorChainRequest(chainId));
         resp.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
         var body = await resp.Content.ReadAsStringAsync();
@@ -199,7 +201,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         var (client, _) = await CreateAuthenticatedClient();
 
-        var resp = await client.PostAsJsonAsync("/arcade/reactor/chain",
+        var resp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/chain",
             new ReactorChainRequest($"chain_missing_{Guid.NewGuid():N}"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -215,11 +217,11 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         var spin = await SpinAsync(client);
         var claimKey = $"claim-{spin.SpinId}";
 
-        var c1 = await client.PostAsJsonAsync("/arcade/reactor/claim",
+        var c1 = await client.PostAsJsonAsync("/api/v1/arcade/reactor/claim",
             new ReactorClaimRequest(spin.SpinId, claimKey, spin.ClaimToken));
         c1.EnsureSuccessStatusCode();
 
-        var c2 = await client.PostAsJsonAsync("/arcade/reactor/claim",
+        var c2 = await client.PostAsJsonAsync("/api/v1/arcade/reactor/claim",
             new ReactorClaimRequest(spin.SpinId, claimKey, spin.ClaimToken));
         c2.StatusCode.Should().Be(HttpStatusCode.OK);
         var dup = await c2.Content.ReadFromJsonAsync<ReactorClaimResponse>(TestJson.Default);
@@ -233,12 +235,12 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
 
         // First spin and claim (required to start cooldown via RewardPolicyService)
         var spin1 = await SpinAsync(client);
-        var claim1 = await client.PostAsJsonAsync("/arcade/reactor/claim",
+        var claim1 = await client.PostAsJsonAsync("/api/v1/arcade/reactor/claim",
             new ReactorClaimRequest(spin1.SpinId, $"claim-{spin1.SpinId}", spin1.ClaimToken));
         claim1.EnsureSuccessStatusCode();
 
         // Immediately try a second spin — should hit daily cap (1/day for reactor)
-        var r2 = await client.PostAsJsonAsync("/arcade/reactor/spin",
+        var r2 = await client.PostAsJsonAsync("/api/v1/arcade/reactor/spin",
             new ReactorSpinRequest($"spin2-{Guid.NewGuid():N}", "daily-xp-reactor", null));
 
         r2.StatusCode.Should().Be(HttpStatusCode.Conflict);
@@ -253,7 +255,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         var (client, _) = await CreateAuthenticatedClient();
 
         var spin = await SpinAsync(client);
-        var claimResp = await client.PostAsJsonAsync("/arcade/reactor/claim",
+        var claimResp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/claim",
             new ReactorClaimRequest(spin.SpinId, $"claim-{spin.SpinId}", "invalid-token-value"));
 
         claimResp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -274,7 +276,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
             await db.SaveChangesAsync();
         }
 
-        var claimResp = await client.PostAsJsonAsync("/arcade/reactor/claim",
+        var claimResp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/claim",
             new ReactorClaimRequest(spin.SpinId, $"claim-expired-{spin.SpinId}", spin.ClaimToken));
 
         claimResp.StatusCode.Should().Be(HttpStatusCode.Conflict);
@@ -287,7 +289,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         var (client, _) = await CreateAuthenticatedClient();
 
-        var claimResp = await client.PostAsJsonAsync("/arcade/reactor/claim",
+        var claimResp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/claim",
             new ReactorClaimRequest("rr_nonexistent", "claim-nonexistent", "some-token"));
 
         claimResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -298,7 +300,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         var (client, _) = await CreateAuthenticatedClient();
 
-        var r = await client.GetAsync("/users/me/rewards");
+        var r = await client.GetAsync("/api/v1/users/me/rewards");
         r.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await r.Content.ReadAsStringAsync();
@@ -313,7 +315,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
 
         await SpinAsync(client);
 
-        var r = await client.GetAsync("/users/me/rewards");
+        var r = await client.GetAsync("/api/v1/users/me/rewards");
         r.EnsureSuccessStatusCode();
         var body = await r.Content.ReadAsStringAsync();
         body.Should().Contain("rr_");
@@ -326,7 +328,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         var (client, _) = await CreateAuthenticatedClient();
 
-        var resp = await client.PostAsJsonAsync("/arcade/spin/start",
+        var resp = await client.PostAsJsonAsync("/api/v1/arcade/spin/start",
             new ArcadeSpinStartRequest($"arcade-{Guid.NewGuid():N}"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -342,13 +344,13 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
     {
         var (client, _) = await CreateAuthenticatedClient();
 
-        var start = await client.PostAsJsonAsync("/arcade/spin/start",
+        var start = await client.PostAsJsonAsync("/api/v1/arcade/spin/start",
             new ArcadeSpinStartRequest($"arcade-{Guid.NewGuid():N}"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<ArcadeSpinStartResponse>(TestJson.Default);
         started.Should().NotBeNull();
 
-        var claim = await client.PostAsJsonAsync("/arcade/spin/claim",
+        var claim = await client.PostAsJsonAsync("/api/v1/arcade/spin/claim",
             new SpinClaimRequest(
                 PlayerId: null,
                 SegmentId: null,
@@ -369,7 +371,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         var (client, _) = await CreateAuthenticatedClient();
 
         var spinId = $"legacy-spin-{Guid.NewGuid():N}";
-        var legacyClaim = await client.PostAsJsonAsync("/arcade/spin/claim",
+        var legacyClaim = await client.PostAsJsonAsync("/api/v1/arcade/spin/claim",
             new SpinClaimRequest(
                 PlayerId: null,
                 SegmentId: "gold_chest",
@@ -389,7 +391,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         var client = _factory.CreateClient();
         var uniqueId = Guid.NewGuid().ToString("N")[..12];
 
-        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"reactor-{uniqueId}@example.com",
             Password: "Passw0rd!",
             DeviceId: "test-device",
@@ -407,7 +409,7 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
 
     private async Task<ReactorSpinResponse> SpinAsync(HttpClient client)
     {
-        var spinResp = await client.PostAsJsonAsync("/arcade/reactor/spin",
+        var spinResp = await client.PostAsJsonAsync("/api/v1/arcade/reactor/spin",
             new ReactorSpinRequest($"spin-{Guid.NewGuid():N}", "daily-xp-reactor", null));
         spinResp.EnsureSuccessStatusCode();
         var spin = await spinResp.Content.ReadFromJsonAsync<ReactorSpinResponse>(TestJson.Default);
@@ -440,5 +442,31 @@ public sealed class RewardReactorTests : IClassFixture<TycoonApiFactory>
         await db.SaveChangesAsync();
 
         return ticket.ChainedSpinId;
+    }
+}
+
+/// <summary>
+/// Factory that keeps the configured reactor event active "now". The appsettings
+/// event window (2026-05-22..25) is fixed in the past, so the spin-with-active-event
+/// assertions would only pass during that window; override the start/end so the
+/// test is deterministic regardless of wall-clock.
+/// </summary>
+public sealed class ReactorEventActiveFactory : TycoonApiFactory
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+
+        builder.ConfigureAppConfiguration((_, cfg) =>
+        {
+            cfg.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["RewardReactor:Events:0:EventId"] = "double_coins_weekend_2026_05",
+                ["RewardReactor:Events:0:DisplayName"] = "Double Coins Weekend",
+                ["RewardReactor:Events:0:StartsAtUtc"] = DateTimeOffset.UtcNow.AddDays(-1).ToString("O"),
+                ["RewardReactor:Events:0:EndsAtUtc"] = DateTimeOffset.UtcNow.AddDays(1).ToString("O"),
+                ["RewardReactor:Events:0:EventMultiplier"] = "2.0",
+            });
+        });
     }
 }

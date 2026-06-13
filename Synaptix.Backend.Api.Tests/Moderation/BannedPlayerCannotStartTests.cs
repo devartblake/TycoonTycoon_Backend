@@ -54,7 +54,7 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
             new SetModerationStatusRequest(playerId, 4, "test", null, null, null));
         set.EnsureSuccessStatusCode();
 
-        var start = await _public.PostAsJsonAsync("/mobile/matches/start",
+        var start = await _public.PostAsJsonAsync("/api/v1/mobile/matches/start",
             new StartMatchRequest(playerId, "duel"));
 
         start.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -71,7 +71,8 @@ public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactor
 
         set.EnsureSuccessStatusCode();
 
-        var start = await _public.PostAsJsonAsync("/matches/start",
+        _public.AuthenticateAsPlayer(_factory, playerId);
+        var start = await _public.PostAsJsonAsync("/api/v1/matches/start",
             new StartMatchRequest(playerId, "duel"));
 
         start.StatusCode.Should().Be(HttpStatusCode.Forbidden);

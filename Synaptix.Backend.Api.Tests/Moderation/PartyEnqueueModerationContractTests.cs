@@ -31,7 +31,7 @@ public sealed class PartyEnqueueModerationContractTests : IClassFixture<TycoonAp
             new SetModerationStatusRequest(leader, 4, "test", null, null, null));
         set.EnsureSuccessStatusCode();
 
-        var resp = await _public.PostAsJsonAsync($"/party/{party.PartyId}/enqueue",
+        var resp = await _public.PostAsJsonAsync($"/api/v1/party/{party.PartyId}/enqueue",
             new PartyEnqueueBody(leader, "ranked", 1));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -42,7 +42,7 @@ public sealed class PartyEnqueueModerationContractTests : IClassFixture<TycoonAp
 
     private async Task MakeFriendsAsync(Guid from, Guid to)
     {
-        var send = await _public.PostAsJsonAsync("/friends/request", new { FromPlayerId = from, ToPlayerId = to });
+        var send = await _public.PostAsJsonAsync("/api/v1/friends/request", new { FromPlayerId = from, ToPlayerId = to });
         send.EnsureSuccessStatusCode();
         var req = await send.Content.ReadFromJsonAsync<FriendRequestDto>();
         req.Should().NotBeNull();
@@ -50,26 +50,26 @@ public sealed class PartyEnqueueModerationContractTests : IClassFixture<TycoonAp
         if (req!.RequestId == Guid.Empty || req.Status == "Accepted")
             return;
 
-        var accept = await _public.PostAsJsonAsync($"/friends/request/{req.RequestId}/accept", new { PlayerId = to });
+        var accept = await _public.PostAsJsonAsync($"/api/v1/friends/request/{req.RequestId}/accept", new { PlayerId = to });
         accept.EnsureSuccessStatusCode();
     }
 
     private async Task<PartyRosterDto> CreatePartyWithMemberAsync(Guid leader, Guid mate)
     {
-        var created = await _public.PostAsJsonAsync("/party", new { LeaderPlayerId = leader });
+        var created = await _public.PostAsJsonAsync("/api/v1/party", new { LeaderPlayerId = leader });
         created.EnsureSuccessStatusCode();
         var roster = await created.Content.ReadFromJsonAsync<PartyRosterDto>();
         roster.Should().NotBeNull();
 
-        var inv = await _public.PostAsJsonAsync($"/party/{roster!.PartyId}/invite", new { FromPlayerId = leader, ToPlayerId = mate });
+        var inv = await _public.PostAsJsonAsync($"/api/v1/party/{roster!.PartyId}/invite", new { FromPlayerId = leader, ToPlayerId = mate });
         inv.EnsureSuccessStatusCode();
         var invite = await inv.Content.ReadFromJsonAsync<PartyInviteDto>();
         invite.Should().NotBeNull();
 
-        var acc = await _public.PostAsJsonAsync($"/party/invites/{invite!.InviteId}/accept", new { PlayerId = mate });
+        var acc = await _public.PostAsJsonAsync($"/api/v1/party/invites/{invite!.InviteId}/accept", new { PlayerId = mate });
         acc.EnsureSuccessStatusCode();
 
-        var refreshed = await _public.GetAsync($"/party/{roster.PartyId}");
+        var refreshed = await _public.GetAsync($"/api/v1/party/{roster.PartyId}");
         refreshed.EnsureSuccessStatusCode();
         var roster2 = await refreshed.Content.ReadFromJsonAsync<PartyRosterDto>();
         roster2.Should().NotBeNull();

@@ -29,7 +29,7 @@ public sealed class PartyPresenceRosterUpdatesIntegrationTests : IClassFixture<T
         await MakeFriendsAsync(leader, mate);
 
         // Create party (leader only)
-        var created = await _http.PostAsJsonAsync("/party", new { LeaderPlayerId = leader });
+        var created = await _http.PostAsJsonAsync("/api/v1/party", new { LeaderPlayerId = leader });
         created.EnsureSuccessStatusCode();
         var roster1 = await created.Content.ReadFromJsonAsync<PartyRosterDto>();
         roster1.Should().NotBeNull();
@@ -37,7 +37,7 @@ public sealed class PartyPresenceRosterUpdatesIntegrationTests : IClassFixture<T
         roster1.Members[0].PlayerId.Should().Be(leader);
 
         // Invite mate (still not accepted)
-        var inv = await _http.PostAsJsonAsync($"/party/{roster1.PartyId}/invite", new { FromPlayerId = leader, ToPlayerId = mate });
+        var inv = await _http.PostAsJsonAsync($"/api/v1/party/{roster1.PartyId}/invite", new { FromPlayerId = leader, ToPlayerId = mate });
         inv.EnsureSuccessStatusCode();
         var invite = await inv.Content.ReadFromJsonAsync<PartyInviteDto>();
         invite.Should().NotBeNull();
@@ -48,7 +48,7 @@ public sealed class PartyPresenceRosterUpdatesIntegrationTests : IClassFixture<T
         await using var mateConn = await ConnectMatchHubAsync(mate, payload => rosterUpdated.TrySetResult(payload));
 
         // Act: mate accepts invite (should trigger party.roster.updated to party members via player groups)
-        var acc = await _http.PostAsJsonAsync($"/party/invites/{invite.InviteId}/accept", new { PlayerId = mate });
+        var acc = await _http.PostAsJsonAsync($"/api/v1/party/invites/{invite.InviteId}/accept", new { PlayerId = mate });
         acc.EnsureSuccessStatusCode();
 
         // Assert: roster.updated payload includes mate as online, leader as offline (since leader not connected)
@@ -84,7 +84,7 @@ public sealed class PartyPresenceRosterUpdatesIntegrationTests : IClassFixture<T
 
     private async Task MakeFriendsAsync(Guid from, Guid to)
     {
-        var send = await _http.PostAsJsonAsync("/friends/request", new { FromPlayerId = from, ToPlayerId = to });
+        var send = await _http.PostAsJsonAsync("/api/v1/friends/request", new { FromPlayerId = from, ToPlayerId = to });
         send.EnsureSuccessStatusCode();
         var req = await send.Content.ReadFromJsonAsync<FriendRequestDto>();
         req.Should().NotBeNull();
@@ -92,7 +92,7 @@ public sealed class PartyPresenceRosterUpdatesIntegrationTests : IClassFixture<T
         if (req!.RequestId == Guid.Empty || req.Status == "Accepted")
             return;
 
-        var accept = await _http.PostAsJsonAsync($"/friends/request/{req.RequestId}/accept", new { PlayerId = to });
+        var accept = await _http.PostAsJsonAsync($"/api/v1/friends/request/{req.RequestId}/accept", new { PlayerId = to });
         accept.EnsureSuccessStatusCode();
         var accepted = await accept.Content.ReadFromJsonAsync<FriendRequestDto>();
         accepted!.Status.Should().Be("Accepted");

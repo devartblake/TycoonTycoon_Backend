@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ namespace Synaptix.Backend.Api.Features.Users
 {
     public static class UsersEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var usersGroup = app.MapGroup("/users")
                 .WithTags("Users")

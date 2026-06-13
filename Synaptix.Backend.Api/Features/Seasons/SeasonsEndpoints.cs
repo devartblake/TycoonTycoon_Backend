@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ namespace Synaptix.Backend.Api.Features.Seasons
 {
     public static class SeasonsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/seasons").WithTags("Seasons");
 

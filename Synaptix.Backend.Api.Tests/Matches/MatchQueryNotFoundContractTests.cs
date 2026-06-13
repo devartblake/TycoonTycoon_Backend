@@ -16,7 +16,7 @@ public sealed class MatchQueryNotFoundContractTests : IClassFixture<TycoonApiFac
     [Fact]
     public async Task GetMatch_UnknownMatchId_ReturnsNotFoundEnvelope()
     {
-        var resp = await _http.GetAsync($"/matches/{Guid.NewGuid()}");
+        var resp = await _http.GetAsync($"/api/v1/matches/{Guid.NewGuid()}");
 
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await resp.HasErrorCodeAsync("NOT_FOUND");

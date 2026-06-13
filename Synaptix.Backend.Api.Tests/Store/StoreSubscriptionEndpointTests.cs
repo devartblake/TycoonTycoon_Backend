@@ -28,7 +28,7 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
     public async Task SubscriptionStatus_WithoutAuth_Returns401()
     {
         using var client = _factory.CreateClient();
-        var response = await client.GetAsync($"/store/subscription/status/{Guid.NewGuid()}");
+        var response = await client.GetAsync($"/api/v1/store/subscription/status/{Guid.NewGuid()}");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -37,7 +37,7 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
     {
         using var client = _factory.CreateClient();
 
-        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"sub-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: "ios-sim",
@@ -49,14 +49,14 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
         var playerId = Guid.Parse(signup!.UserId);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
 
-        var activate = await client.PostAsJsonAsync("/store/subscription/activate", new ActivateSubscriptionRequest(
+        var activate = await client.PostAsJsonAsync("/api/v1/store/subscription/activate", new ActivateSubscriptionRequest(
             PlayerId: playerId,
             Tier: "premium",
             BillingPeriod: "monthly",
             ExternalTransactionId: "sub-tx-001"));
         activate.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var status = await client.GetFromJsonAsync<SubscriptionStatusDto>($"/store/subscription/status/{playerId}");
+        var status = await client.GetFromJsonAsync<SubscriptionStatusDto>($"/api/v1/store/subscription/status/{playerId}");
         status.Should().NotBeNull();
         status!.IsActive.Should().BeTrue();
         status.Tier.Should().Be("premium");
@@ -74,8 +74,10 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
         var playerId = Guid.Parse(signup.UserId);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
 
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var response = await client.PostAsJsonAsync(
-            "/store/subscription/checkout/session",
+            "/api/v1/store/subscription/checkout/session",
             new CreateStripeSubscriptionCheckoutSessionRequest(playerId, "premium", "monthly"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -137,17 +139,17 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
             Encoding.UTF8,
             "application/json");
 
-        var webhook = await client.PostAsync("/store/payments/webhook", webhookContent);
+        var webhook = await client.PostAsync("/api/v1/store/payments/webhook", webhookContent);
         webhook.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var status = await client.GetFromJsonAsync<SubscriptionStatusDto>($"/store/subscription/status/{playerId}");
+        var status = await client.GetFromJsonAsync<SubscriptionStatusDto>($"/api/v1/store/subscription/status/{playerId}");
         status.Should().NotBeNull();
         status!.IsActive.Should().BeTrue();
         status.StripeSubscriptionId.Should().Be("sub_123");
         status.StripeCustomerId.Should().Be("cus_123");
 
         var portal = await client.PostAsJsonAsync(
-            "/store/subscription/portal/session",
+            "/api/v1/store/subscription/portal/session",
             new CreateStripeBillingPortalSessionRequest(playerId));
 
         portal.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -194,7 +196,7 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<TycoonApiFact
     private static async Task<SignupResponse> SignupAsync(HttpClient client, string prefix)
     {
         var signupResp = await client.PostAsJsonAsync(
-            "/auth/signup",
+            "/api/v1/auth/signup",
             new SignupRequest(
                 Email: $"{prefix}-{Guid.NewGuid():N}@example.com",
                 Password: "Passw0rd!",

@@ -30,7 +30,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         using var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/store/premium");
+        var response = await client.GetAsync("/api/v1/store/premium");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -40,7 +40,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         using var client = _factory.CreateClient();
 
-        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/store/catalog");
+        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/api/v1/store/catalog");
 
         response.Should().NotBeNull();
         response!.Items.Should().Contain(x => x.Sku == "sub:premium:monthly" && x.ItemType == "premium-subscription");
@@ -53,7 +53,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         using var client = _factory.CreateClient();
 
-        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/store/catalog?itemType=subscription");
+        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/api/v1/store/catalog?itemType=subscription");
 
         response.Should().NotBeNull();
         response!.Items.Should().OnlyContain(x => x.ItemType == "premium-subscription");
@@ -66,7 +66,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         using var client = _factory.CreateClient();
 
-        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/store/catalog?itemType=powerup");
+        var response = await client.GetFromJsonAsync<StoreCatalogDto>("/api/v1/store/catalog?itemType=powerup");
 
         response.Should().NotBeNull();
         response!.Items.Should().NotContain(x => x.ItemType == "premium-subscription");
@@ -78,7 +78,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
         using var client = _factory.CreateClient();
         await AuthenticateAsync(client, "premium-catalog");
 
-        var response = await client.GetFromJsonAsync<PremiumStoreDto>("/store/premium");
+        var response = await client.GetFromJsonAsync<PremiumStoreDto>("/api/v1/store/premium");
 
         response.Should().NotBeNull();
         response!.SaleInfo.Should().BeNull();
@@ -96,7 +96,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
         var signup = await AuthenticateAsync(client, "reward-default");
         var playerId = Guid.Parse(signup.UserId);
 
-        var response = await client.GetFromJsonAsync<RewardCenterDto>($"/store/rewards/{playerId}");
+        var response = await client.GetFromJsonAsync<RewardCenterDto>($"/api/v1/store/rewards/{playerId}");
 
         response.Should().NotBeNull();
         var dailyCheckin = response!.Cards.Single(x => x.RewardId == "daily-checkin");
@@ -121,7 +121,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
         using var playerBClient = _factory.CreateClient();
         await AuthenticateAsync(playerBClient, "reward-player-b");
 
-        var response = await playerBClient.GetAsync($"/store/rewards/{playerAId}");
+        var response = await playerBClient.GetAsync($"/api/v1/store/rewards/{playerAId}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -142,7 +142,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
             await db.SaveChangesAsync();
         }
 
-        var response = await client.GetAsync($"/store/rewards/{playerId}");
+        var response = await client.GetAsync($"/api/v1/store/rewards/{playerId}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -154,7 +154,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
         var signup = await AuthenticateAsync(client, "claim-daily");
         var playerId = Guid.Parse(signup.UserId);
 
-        var firstClaim = await client.PostAsync($"/store/rewards/{playerId}/claim/daily-checkin", null);
+        var firstClaim = await client.PostAsync($"/api/v1/store/rewards/{playerId}/claim/daily-checkin", null);
         firstClaim.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var firstBody = await firstClaim.Content.ReadFromJsonAsync<ClaimStoreRewardResponseDto>();
@@ -164,7 +164,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
         firstBody.NewBalance.Should().Be(25);
         firstBody.CurrentStreak.Should().Be(1);
 
-        var secondClaim = await client.PostAsync($"/store/rewards/{playerId}/claim/daily-checkin", null);
+        var secondClaim = await client.PostAsync($"/api/v1/store/rewards/{playerId}/claim/daily-checkin", null);
         secondClaim.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
         await using var scope = _factory.Services.CreateAsyncScope();
@@ -186,7 +186,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
 
         for (var i = 1; i <= 3; i++)
         {
-            var response = await client.PostAsync($"/store/rewards/{playerId}/claim/watch-ad", null);
+            var response = await client.PostAsync($"/api/v1/store/rewards/{playerId}/claim/watch-ad", null);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var body = await response.Content.ReadFromJsonAsync<ClaimStoreRewardResponseDto>();
@@ -195,10 +195,10 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
             body.RemainingClaims.Should().Be(3 - i);
         }
 
-        var fourthResponse = await client.PostAsync($"/store/rewards/{playerId}/claim/watch-ad", null);
+        var fourthResponse = await client.PostAsync($"/api/v1/store/rewards/{playerId}/claim/watch-ad", null);
         fourthResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var rewards = await client.GetFromJsonAsync<RewardCenterDto>($"/store/rewards/{playerId}");
+        var rewards = await client.GetFromJsonAsync<RewardCenterDto>($"/api/v1/store/rewards/{playerId}");
         var watchAd = rewards!.Cards.Single(x => x.RewardId == "watch-ad");
         watchAd.IsClaimAvailable.Should().BeFalse();
         watchAd.RemainingClaims.Should().Be(0);
@@ -217,7 +217,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
         var signup = await AuthenticateAsync(client, "claim-unknown");
         var playerId = Guid.Parse(signup.UserId);
 
-        var response = await client.PostAsync($"/store/rewards/{playerId}/claim/not-a-reward", null);
+        var response = await client.PostAsync($"/api/v1/store/rewards/{playerId}/claim/not-a-reward", null);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -232,7 +232,7 @@ public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
         using var playerBClient = _factory.CreateClient();
         await AuthenticateAsync(playerBClient, "claim-player-b");
 
-        var response = await playerBClient.PostAsync($"/store/rewards/{playerAId}/claim/daily-checkin", null);
+        var response = await playerBClient.PostAsync($"/api/v1/store/rewards/{playerAId}/claim/daily-checkin", null);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

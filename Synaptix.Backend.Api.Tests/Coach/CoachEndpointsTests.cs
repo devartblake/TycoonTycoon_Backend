@@ -23,7 +23,7 @@ public sealed class CoachEndpointsTests : IClassFixture<TycoonApiFactory>
     public async Task GetDailyBrief_AnonymousAccess_Returns401()
     {
         using var anon = _factory.CreateClient();
-        var resp = await anon.GetAsync("/coach/00000000-0000-0000-0000-000000000001/daily-brief");
+        var resp = await anon.GetAsync("/api/v1/coach/00000000-0000-0000-0000-000000000001/daily-brief");
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -32,7 +32,7 @@ public sealed class CoachEndpointsTests : IClassFixture<TycoonApiFactory>
     {
         using var anon = _factory.CreateClient();
         var resp = await anon.PostAsJsonAsync(
-            "/coach/00000000-0000-0000-0000-000000000001/feedback",
+            "/api/v1/coach/00000000-0000-0000-0000-000000000001/feedback",
             new CoachFeedbackRequest("brief-123", "helpful"));
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -45,7 +45,7 @@ public sealed class CoachEndpointsTests : IClassFixture<TycoonApiFactory>
         var (token, playerId) = await SignupAsync();
         using var http = AuthClient(token);
 
-        var resp = await http.GetAsync($"/coach/{playerId}/daily-brief");
+        var resp = await http.GetAsync($"/api/v1/coach/{playerId}/daily-brief");
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var brief = await resp.Content.ReadFromJsonAsync<CoachBriefDto>();
@@ -66,7 +66,7 @@ public sealed class CoachEndpointsTests : IClassFixture<TycoonApiFactory>
         using var http = AuthClient(token);
 
         var resp = await http.PostAsJsonAsync(
-            $"/coach/{playerId}/feedback",
+            $"/api/v1/coach/{playerId}/feedback",
             new CoachFeedbackRequest(BriefId: "brief-abc", Feedback: "very helpful"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Accepted);
@@ -81,7 +81,7 @@ public sealed class CoachEndpointsTests : IClassFixture<TycoonApiFactory>
         using var http = AuthClient(token);
 
         var otherPlayerId = Guid.NewGuid();
-        var resp = await http.GetAsync($"/coach/{otherPlayerId}/daily-brief");
+        var resp = await http.GetAsync($"/api/v1/coach/{otherPlayerId}/daily-brief");
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -94,7 +94,7 @@ public sealed class CoachEndpointsTests : IClassFixture<TycoonApiFactory>
 
         var otherPlayerId = Guid.NewGuid();
         var resp = await http.PostAsJsonAsync(
-            $"/coach/{otherPlayerId}/feedback",
+            $"/api/v1/coach/{otherPlayerId}/feedback",
             new CoachFeedbackRequest(BriefId: "brief-xyz", Feedback: "not helpful"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -110,7 +110,7 @@ public sealed class CoachEndpointsTests : IClassFixture<TycoonApiFactory>
         var password = "Passw0rd!Test";
         var deviceId = $"dev-{Guid.NewGuid():N}";
 
-        var resp = await anon.PostAsJsonAsync("/auth/signup",
+        var resp = await anon.PostAsJsonAsync("/api/v1/auth/signup",
             new SignupRequest(email, password, deviceId, Username: $"coach_{Guid.NewGuid():N}"));
 
         resp.EnsureSuccessStatusCode();

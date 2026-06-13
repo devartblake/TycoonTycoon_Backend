@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,7 @@ public static class RewardsEndpoints
         new(7, "coins",  500, 5, "Day 7 — 500 Credits + 5 Synapse Shards"),
     ];
 
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/rewards").WithTags("Rewards");
 

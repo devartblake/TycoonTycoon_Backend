@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -16,7 +17,7 @@ public static class ArcadeSpinEndpoints
     private static readonly TimeSpan SpinSessionTtl = TimeSpan.FromMinutes(5);
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/arcade/spin").WithTags("Arcade Spin");
 

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -101,6 +102,8 @@ using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Application;
 using Synaptix.Compliance.Client.Extensions;
 using Synaptix.Security.Kms.Client.Extensions;
+using Synaptix.Security.Kms.Client.Abstractions;
+using Synaptix.Backend.Api.Features.SecuritySessions;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Application.Analytics.Abstractions;
@@ -127,6 +130,8 @@ using Synaptix.Backend.Api.Grpc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Hosting;
 using Synaptix.Backend.Api.Contracts;
+using StackExchange.Redis;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -307,6 +312,16 @@ builder.Services.AddInfrastructure(builder.Configuration)
 
 // KMS typed clients for secure-channel payload encryption
 builder.Services.AddKmsClient(builder.Configuration);
+
+// Forward the caller's bearer token onto the KMS secure-session client so the
+// main API can proxy the handshake (POST /api/v1/security/sessions/*) on behalf
+// of the authenticated user. KMS binds the session subject to this token.
+// No-op for internal/server-initiated calls (no inbound HttpContext), which
+// keep using the service token only.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<UserBearerForwardingHandler>();
+builder.Services.AddHttpClient(nameof(IKmsSessionClient))
+    .AddHttpMessageHandler<UserBearerForwardingHandler>();
 
 // Compliance service client (COPPA, CCPA, PCI audit hooks)
 builder.Services.AddComplianceClient(builder.Configuration);
@@ -499,6 +514,46 @@ builder.Services
     .AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+    options.ForwardLimit = Math.Max(1, builder.Configuration.GetValue("ForwardedHeaders:ForwardLimit", 1));
+
+    var knownProxies = builder.Configuration
+        .GetSection("ForwardedHeaders:KnownProxies")
+        .Get<string[]>() ?? [];
+    var knownNetworks = builder.Configuration
+        .GetSection("ForwardedHeaders:KnownNetworks")
+        .Get<string[]>() ?? [];
+
+    options.KnownProxies.Clear();
+    options.KnownIPNetworks.Clear();
+
+    foreach (var proxy in knownProxies.Select(x => x.Trim()).Where(x => x.Length > 0))
+    {
+        if (IPAddress.TryParse(proxy, out var address))
+            options.KnownProxies.Add(address);
+    }
+
+    foreach (var network in knownNetworks.Select(x => x.Trim()).Where(x => x.Length > 0))
+    {
+        if (TryParseCidr(network, out var parsed))
+            options.KnownIPNetworks.Add(parsed);
+    }
+
+    if (options.KnownProxies.Count == 0 && options.KnownIPNetworks.Count == 0)
+    {
+        options.KnownProxies.Add(IPAddress.Loopback);
+        options.KnownProxies.Add(IPAddress.IPv6Loopback);
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("10.0.0.0/8"));
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("172.16.0.0/12"));
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("192.168.0.0/16"));
+    }
+});
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -526,7 +581,7 @@ builder.Services.AddRateLimiter(options =>
     {
         var key = httpContext.User?.Identity?.IsAuthenticated == true
             ? httpContext.User.Identity.Name ?? "anonymous"
-            : httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            : GetClientIpPartition(httpContext);
 
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: key,
@@ -540,7 +595,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("api", httpContext =>
     {
-        var key = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var key = GetClientIpPartition(httpContext);
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: key,
             factory: _ => new FixedWindowRateLimiterOptions
@@ -553,7 +608,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("admin-auth-login", httpContext =>
     {
-        var key = $"admin-auth-login:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+        var key = $"admin-auth-login:{GetClientIpPartition(httpContext)}";
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: key,
             factory: _ => new FixedWindowRateLimiterOptions
@@ -566,7 +621,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("admin-auth-refresh", httpContext =>
     {
-        var key = $"admin-auth-refresh:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+        var key = $"admin-auth-refresh:{GetClientIpPartition(httpContext)}";
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: key,
             factory: _ => new FixedWindowRateLimiterOptions
@@ -580,7 +635,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("admin-notifications-send", httpContext =>
     {
         var subject = httpContext.User.FindFirstValue("sub")
-            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? GetClientIpPartition(httpContext)
             ?? "unknown";
         var key = $"admin-notifications-send:{subject}";
         return RateLimitPartition.GetFixedWindowLimiter(
@@ -596,16 +651,40 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddSingleton<IMatchmakingNotifier, SignalRMatchmakingNotifier>();
 builder.Services.AddSingleton<IPartyMatchmakingNotifier, SignalRPartyMatchmakingNotifier>();
-builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
 builder.Services.AddSingleton<IPresenceNotifier, SignalRPresenceNotifier>();
 builder.Services.AddSingleton<ILeaderboardNotifier, SignalRLeaderboardNotifier>();
-builder.Services.AddSingleton<IPresenceSessionManager, PresenceSessionManager>();
 builder.Services.AddSingleton<IGameEventNotifier, SignalRGameEventNotifier>();
 builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
 builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
 builder.Services.AddSingleton<IPlayerNotificationNotifier, SignalRPlayerNotificationNotifier>();
 builder.Services.AddSingleton<IDirectMessageNotifier, SignalRDirectMessageNotifier>();
+
+var redisRequiredForRealtime = !useInMemoryDbForTesting
+    && (builder.Environment.IsStaging()
+        || builder.Environment.IsProduction()
+        || builder.Configuration.GetValue("Realtime:RequireRedis", false));
+if (redisRequiredForRealtime && string.IsNullOrWhiteSpace(redis))
+{
+    throw new InvalidOperationException(
+        "Redis is required for realtime presence in Staging/Production. Configure ConnectionStrings:redis or ConnectionStrings:cache.");
+}
+
+if (!useInMemoryDbForTesting && !string.IsNullOrWhiteSpace(redis))
+{
+    builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+        ConnectionMultiplexer.Connect(ConfigurationOptions.Parse(redis)));
+    builder.Services.AddSingleton<RedisConnectionRegistry>();
+    builder.Services.AddSingleton<IConnectionRegistry>(sp => sp.GetRequiredService<RedisConnectionRegistry>());
+    builder.Services.AddSingleton<RedisPresenceSessionManager>();
+    builder.Services.AddSingleton<IPresenceSessionManager>(sp => sp.GetRequiredService<RedisPresenceSessionManager>());
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<RedisPresenceSessionManager>());
+}
+else
+{
+    builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
+    builder.Services.AddSingleton<IPresenceSessionManager, PresenceSessionManager>();
+}
 
 builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 
@@ -632,6 +711,7 @@ var app = builder.Build();
 hangfireEnabled = app.Configuration.GetValue("Hangfire:Enabled", true)
     && !app.Configuration.GetValue("Testing:UseInMemoryDb", false);
 
+app.UseForwardedHeaders();
 // ✅ CORRECT MIDDLEWARE ORDER
 app.UseRouting();
 
@@ -740,22 +820,6 @@ app.MapGet("/healthz", () => Results.Ok(new
     status = "healthy",
     timestamp = DateTime.UtcNow
 })).AllowAnonymous().WithTags("Health");
-
-app.MapGet("/health/ready", () =>
-{
-    var health = new Dictionary<string, object>
-    {
-        ["status"] = "ready",
-        ["timestamp"] = DateTime.UtcNow,
-        ["checks"] = new Dictionary<string, string>
-        {
-            ["api"] = "healthy",
-            ["hangfire"] = hangfireEnabled ? "enabled" : "disabled",
-            ["redis"] = !string.IsNullOrWhiteSpace(redis) ? "configured" : "not configured"
-        }
-    };
-    return Results.Ok(health);
-}).AllowAnonymous().WithTags("Health");
 
 // ✅ Swagger test endpoint (for debugging)
 app.MapGet("/swagger-debug", () =>
@@ -924,57 +988,65 @@ app.MapGrpcService<MobileMatchGrpcService>();
 // - /questions/* = gameplay-safe question retrieval and grading
 // - /modules/* = learning and mastery flows
 // - /quiz/* = solo quiz completion and reward grant (POST /quiz/complete)
-AppConfigEndpoints.Map(app);
-AnalyticsEndpoints.Map(app);
-AuthEndpoints.Map(app);
-UsersEndpoints.Map(app);
-UserFriendsEndpoints.Map(app);
-PlayerPreferencesEndpoints.Map(app);
-PlayersEndpoints.Map(app);
-MatchesEndpoints.Map(app);
-QuizEndpoints.Map(app);
-MatchmakingEndpoints.Map(app);
-MissionsEndpoints.Map(app);
-LeaderboardsEndpoints.Map(app);
-ReferralsEndpoints.Map(app);
-QrEndpoints.Map(app);
-SkillsEndpoints.Map(app);
-PowerupsEndpoints.Map(app);
-SeasonsEndpoints.Map(app);
-FriendsEndpoints.Map(app);
-PlayerNotificationsEndpoints.Map(app);
-MessagesEndpoints.Map(app);
-PartyEndpoints.Map(app);
-RankedLeaderboardsEndpoints.Map(app);
-SeasonRewardsEndpoints.Map(app);
-QuestionsEndpoints.Map(app);
-LearningModulesEndpoints.Map(app);
-StudySetsEndpoints.Map(app);
-StudySessionsEndpoints.Map(app);
-VoteEndpoints.Map(app);
-StoreEndpoints.Map(app);
-ArcadeSpinEndpoints.Map(app);
-ReactorEndpoints.Map(app);
-ActiveEventsEndpoints.Map(app);
-UserRewardsEndpoints.Map(app);
-RewardsEndpoints.Map(app);
-AccountRewardsEndpoints.Map(app);
-SpinsEndpoints.Map(app);
-AvatarEndpoints.Map(app);
-AssetManifestEndpoints.Map(app);
-PersonalizationEndpoints.Map(app);
-CoachEndpoints.Map(app);
-ExperimentEndpoints.Map(app);
-CryptoEconomyEndpoints.Map(app);
-MlScoringEndpoints.Map(app);
-GameEventsEndpoints.Map(app);
-GameEventStatsEndpoints.Map(app);
-GameEventStatsEndpoints.MapTerritory(app);
-GuardiansEndpoints.Map(app);
-TerritoryEndpoints.Map(app);
+//
+// All public client-facing endpoints are versioned under /api/v1 (single
+// source of truth for the mobile contract). Infra surfaces (/health, /healthz,
+// /ws, /swagger, gRPC, /hangfire, /metrics) and the operator /admin surface
+// stay un-prefixed by design.
+var v1 = app.MapGroup("/api/v1");
+
+AppConfigEndpoints.Map(v1);
+AnalyticsEndpoints.Map(v1);
+AuthEndpoints.Map(v1);
+SecuritySessionsEndpoints.Map(v1);
+UsersEndpoints.Map(v1);
+UserFriendsEndpoints.Map(v1);
+PlayerPreferencesEndpoints.Map(v1);
+PlayersEndpoints.Map(v1);
+MatchesEndpoints.Map(v1);
+QuizEndpoints.Map(v1);
+MatchmakingEndpoints.Map(v1);
+MissionsEndpoints.Map(v1);
+LeaderboardsEndpoints.Map(v1);
+ReferralsEndpoints.Map(v1);
+QrEndpoints.Map(v1);
+SkillsEndpoints.Map(v1);
+PowerupsEndpoints.Map(v1);
+SeasonsEndpoints.Map(v1);
+FriendsEndpoints.Map(v1);
+PlayerNotificationsEndpoints.Map(v1);
+MessagesEndpoints.Map(v1);
+PartyEndpoints.Map(v1);
+RankedLeaderboardsEndpoints.Map(v1);
+SeasonRewardsEndpoints.Map(v1);
+QuestionsEndpoints.Map(v1);
+LearningModulesEndpoints.Map(v1);
+StudySetsEndpoints.Map(v1);
+StudySessionsEndpoints.Map(v1);
+VoteEndpoints.Map(v1);
+StoreEndpoints.Map(v1);
+ArcadeSpinEndpoints.Map(v1);
+ReactorEndpoints.Map(v1);
+ActiveEventsEndpoints.Map(v1);
+UserRewardsEndpoints.Map(v1);
+RewardsEndpoints.Map(v1);
+AccountRewardsEndpoints.Map(v1);
+SpinsEndpoints.Map(v1);
+AvatarEndpoints.Map(v1);
+AssetManifestEndpoints.Map(v1);
+PersonalizationEndpoints.Map(v1);
+CoachEndpoints.Map(v1);
+ExperimentEndpoints.Map(v1);
+CryptoEconomyEndpoints.Map(v1);
+MlScoringEndpoints.Map(v1);
+GameEventsEndpoints.Map(v1);
+GameEventStatsEndpoints.Map(v1);
+GameEventStatsEndpoints.MapTerritory(v1);
+GuardiansEndpoints.Map(v1);
+TerritoryEndpoints.Map(v1);
 
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
-var mobile = app.MapGroup("/mobile").WithTags("Mobile");
+var mobile = v1.MapGroup("/mobile").WithTags("Mobile");
 MobileMatchesEndpoints.Map(mobile);
 MobilePlayersEndpoints.Map(mobile);
 MobileLeaderboardsEndpoints.Map(mobile);
@@ -1182,6 +1254,32 @@ async Task HandleWebSocket(
                     break;
             }
         }
+    }
+}
+
+static string GetClientIpPartition(HttpContext context)
+{
+    var address = context.Connection.RemoteIpAddress;
+    if (address is null)
+        return "ip:unknown";
+
+    if (address.IsIPv4MappedToIPv6)
+        address = address.MapToIPv4();
+
+    return $"ip:{address}";
+}
+
+static bool TryParseCidr(string value, out System.Net.IPNetwork network)
+{
+    try
+    {
+        network = System.Net.IPNetwork.Parse(value);
+        return true;
+    }
+    catch (FormatException)
+    {
+        network = System.Net.IPNetwork.Parse("127.0.0.1/32");
+        return false;
     }
 }
 public partial class Program { }

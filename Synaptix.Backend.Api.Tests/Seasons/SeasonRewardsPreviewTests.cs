@@ -54,7 +54,7 @@ public sealed class SeasonRewardsPreviewTests : IClassFixture<TycoonApiFactory>
         var client = _factory.CreateClient();
 
         // Act
-        var res = await client.GetAsync($"/seasons/rewards/preview/{playerId}?seasonId={seasonId}");
+        var res = await client.GetAsync($"/api/v1/seasons/rewards/preview/{playerId}?seasonId={seasonId}");
         res.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var dto = await res.Content.ReadFromJsonAsync<RewardPreviewDto>();

@@ -27,7 +27,7 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
         var secondQuestionId = await SeedQuestionAsync("Custom 2", category);
         var client = await CreateAuthenticatedClientAsync("custom-study-set");
 
-        var createResponse = await client.PostAsJsonAsync("/study-sets", new CreateStudySetRequest(
+        var createResponse = await client.PostAsJsonAsync("/api/v1/study-sets", new CreateStudySetRequest(
             Title: "My Saved Set",
             Description: "A saved custom set",
             QuestionIds: new[] { firstQuestionId, secondQuestionId }));
@@ -39,7 +39,7 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
         created.Title.Should().Be("My Saved Set");
         created.Questions.Should().HaveCount(2);
 
-        var updateResponse = await client.PatchAsJsonAsync($"/study-sets/{created.Id}", new UpdateStudySetRequest(
+        var updateResponse = await client.PatchAsJsonAsync($"/api/v1/study-sets/{created.Id}", new UpdateStudySetRequest(
             Title: "My Updated Set",
             Description: "Updated",
             QuestionIds: new[] { secondQuestionId }));
@@ -50,7 +50,7 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
         updated!.Title.Should().Be("My Updated Set");
         updated.Questions.Should().ContainSingle(x => x.Id == secondQuestionId);
 
-        var list = await client.GetFromJsonAsync<StudySetsResponseDto>("/study-sets", TestJson.Default);
+        var list = await client.GetFromJsonAsync<StudySetsResponseDto>("/api/v1/study-sets", TestJson.Default);
         list.Should().NotBeNull();
         list!.Items.Should().Contain(x => x.Kind == StudySetKinds.Custom && x.Id == created.Id);
     }
@@ -62,7 +62,7 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
         await SeedQuestionAsync("Flash question", category);
         var client = await CreateAuthenticatedClientAsync("flashcard-deep");
 
-        var createResponse = await client.PostAsJsonAsync("/study-sessions", new CreateStudySessionRequest(
+        var createResponse = await client.PostAsJsonAsync("/api/v1/study-sessions", new CreateStudySessionRequest(
             StudySetId: $"category:{category}",
             Mode: StudySessionModes.Flashcard,
             Count: 10));
@@ -73,7 +73,7 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
         var questionId = session!.QuestionIds[0];
 
         var progressResponse = await client.PostAsJsonAsync(
-            $"/study-sessions/{session.Id}/progress",
+            $"/api/v1/study-sessions/{session.Id}/progress",
             new UpdateStudySessionProgressRequest(
                 QuestionId: questionId,
                 SelectedOptionId: null,
@@ -84,7 +84,7 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
                 IsCompleted: false));
         progressResponse.EnsureSuccessStatusCode();
 
-        var summary = await client.GetFromJsonAsync<StudySessionDto>($"/study-sessions/{session.Id}/summary", TestJson.Default);
+        var summary = await client.GetFromJsonAsync<StudySessionDto>($"/api/v1/study-sessions/{session.Id}/summary", TestJson.Default);
         summary.Should().NotBeNull();
         summary!.Interactions.Should().ContainSingle(x =>
             x.QuestionId == questionId
@@ -92,11 +92,11 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
             && x.Confidence == 1
             && x.AnswerRevealed);
 
-        var recommended = await client.GetFromJsonAsync<RecommendedStudySetsResponseDto>("/study-sets/recommended", TestJson.Default);
+        var recommended = await client.GetFromJsonAsync<RecommendedStudySetsResponseDto>("/api/v1/study-sets/recommended", TestJson.Default);
         recommended.Should().NotBeNull();
         recommended!.Items.Should().Contain(x => x.Kind == StudySetKinds.DueReview && x.Id == "due-review");
 
-        var dueReview = await client.GetFromJsonAsync<StudySetDetailDto>("/study-sets/due-review?count=10", TestJson.Default);
+        var dueReview = await client.GetFromJsonAsync<StudySetDetailDto>("/api/v1/study-sets/due-review?count=10", TestJson.Default);
         dueReview.Should().NotBeNull();
         dueReview!.Kind.Should().Be(StudySetKinds.DueReview);
         dueReview.Questions.Should().Contain(x => x.Id == questionId);
@@ -106,7 +106,7 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
     public async Task StudySetMutation_RequiresAuthentication()
     {
         var client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/study-sets", new CreateStudySetRequest(
+        var response = await client.PostAsJsonAsync("/api/v1/study-sets", new CreateStudySetRequest(
             Title: "Denied",
             Description: null,
             QuestionIds: Array.Empty<Guid>()));
@@ -141,7 +141,7 @@ public sealed class StudyDeepeningContractTests : IClassFixture<TycoonApiFactory
     {
         var client = _factory.CreateClient();
 
-        var signupResponse = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResponse = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"{prefix}-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: "ios-sim",

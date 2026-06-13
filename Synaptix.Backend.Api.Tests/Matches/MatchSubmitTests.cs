@@ -8,11 +8,13 @@ namespace Synaptix.Backend.Api.Tests.Matches;
 
 public sealed class MatchSubmitTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
     private readonly HttpClient _admin;
 
     public MatchSubmitTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient();
         _admin = factory.CreateClient().WithAdminOpsKey();
     }
@@ -23,8 +25,11 @@ public sealed class MatchSubmitTests : IClassFixture<TycoonApiFactory>
         var p1 = Guid.NewGuid();
         var p2 = Guid.NewGuid();
 
+        // Host must be the authenticated caller (matches/start binds host to sub).
+        _http.AuthenticateAsPlayer(_factory, p1);
+
         // Start match (host = p1)
-        var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "duel"));
+        var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "duel"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
@@ -47,13 +52,13 @@ public sealed class MatchSubmitTests : IClassFixture<TycoonApiFactory>
             }
         );
 
-        var r1 = await _http.PostAsJsonAsync("/matches/submit", req);
+        var r1 = await _http.PostAsJsonAsync("/api/v1/matches/submit", req);
         r1.EnsureSuccessStatusCode();
         var res1 = await r1.Content.ReadFromJsonAsync<SubmitMatchResponse>();
         res1!.Status.Should().Be("Applied");
         res1.Awards.Should().HaveCount(2);
 
-        var r2 = await _http.PostAsJsonAsync("/matches/submit", req);
+        var r2 = await _http.PostAsJsonAsync("/api/v1/matches/submit", req);
         r2.EnsureSuccessStatusCode();
         var res2 = await r2.Content.ReadFromJsonAsync<SubmitMatchResponse>();
         res2!.Status.Should().Be("Duplicate");

@@ -121,7 +121,7 @@ public sealed class AdminLearningModulesEndpointsContractTests : IClassFixture<T
         added.Should().NotBeNull();
         added!.LessonId.Should().NotBeEmpty();
 
-        var publicLessons = await _factory.CreateClient().GetFromJsonAsync<List<ModuleLessonDto>>($"/modules/{module.Id}/lessons");
+        var publicLessons = await _factory.CreateClient().GetFromJsonAsync<List<ModuleLessonDto>>($"/api/v1/modules/{module.Id}/lessons");
         publicLessons.Should().NotBeNull();
         publicLessons!.Should().ContainSingle();
         publicLessons![0].QuestionId.Should().Be(question.Id);
@@ -131,7 +131,7 @@ public sealed class AdminLearningModulesEndpointsContractTests : IClassFixture<T
         var deleteResponse = await _http.DeleteAsync($"/admin/modules/{module.Id}/lessons/{added.LessonId}");
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var lessonsAfterDelete = await _factory.CreateClient().GetFromJsonAsync<List<ModuleLessonDto>>($"/modules/{module.Id}/lessons");
+        var lessonsAfterDelete = await _factory.CreateClient().GetFromJsonAsync<List<ModuleLessonDto>>($"/api/v1/modules/{module.Id}/lessons");
         lessonsAfterDelete.Should().NotBeNull();
         lessonsAfterDelete!.Should().BeEmpty();
     }

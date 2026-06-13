@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -11,7 +12,7 @@ namespace Synaptix.Backend.Api.Features.Ml;
 
 public static class MlScoringEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/ml").WithTags("ML").RequireAuthorization()
             .AddEndpointFilter(async (ctx, next) =>

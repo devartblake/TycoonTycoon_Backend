@@ -25,20 +25,20 @@ public sealed class PartyEnqueueConflictContractTests : IClassFixture<TycoonApiF
 
         await MakeFriendsAsync(leader, mate);
 
-        var created = await _http.PostAsJsonAsync("/party", new { LeaderPlayerId = leader });
+        var created = await _http.PostAsJsonAsync("/api/v1/party", new { LeaderPlayerId = leader });
         created.EnsureSuccessStatusCode();
         var roster = await created.Content.ReadFromJsonAsync<PartyRosterDto>();
         roster.Should().NotBeNull();
 
-        var inv = await _http.PostAsJsonAsync($"/party/{roster!.PartyId}/invite", new { FromPlayerId = leader, ToPlayerId = mate });
+        var inv = await _http.PostAsJsonAsync($"/api/v1/party/{roster!.PartyId}/invite", new { FromPlayerId = leader, ToPlayerId = mate });
         inv.EnsureSuccessStatusCode();
         var invite = await inv.Content.ReadFromJsonAsync<PartyInviteDto>();
         invite.Should().NotBeNull();
 
-        var acc = await _http.PostAsJsonAsync($"/party/invites/{invite!.InviteId}/accept", new { PlayerId = mate });
+        var acc = await _http.PostAsJsonAsync($"/api/v1/party/invites/{invite!.InviteId}/accept", new { PlayerId = mate });
         acc.EnsureSuccessStatusCode();
 
-        var enqueue = await _http.PostAsJsonAsync($"/party/{roster.PartyId}/enqueue", new { LeaderPlayerId = outsider, Mode = "ranked", Tier = 1 });
+        var enqueue = await _http.PostAsJsonAsync($"/api/v1/party/{roster.PartyId}/enqueue", new { LeaderPlayerId = outsider, Mode = "ranked", Tier = 1 });
 
         enqueue.StatusCode.Should().Be(HttpStatusCode.Conflict);
         await enqueue.HasErrorCodeAsync("CONFLICT");
@@ -46,7 +46,7 @@ public sealed class PartyEnqueueConflictContractTests : IClassFixture<TycoonApiF
 
     private async Task MakeFriendsAsync(Guid from, Guid to)
     {
-        var send = await _http.PostAsJsonAsync("/friends/request", new { FromPlayerId = from, ToPlayerId = to });
+        var send = await _http.PostAsJsonAsync("/api/v1/friends/request", new { FromPlayerId = from, ToPlayerId = to });
         send.EnsureSuccessStatusCode();
         var req = await send.Content.ReadFromJsonAsync<FriendRequestDto>();
         req.Should().NotBeNull();
@@ -54,7 +54,7 @@ public sealed class PartyEnqueueConflictContractTests : IClassFixture<TycoonApiF
         if (req!.RequestId == Guid.Empty || req.Status == "Accepted")
             return;
 
-        var accept = await _http.PostAsJsonAsync($"/friends/request/{req.RequestId}/accept", new { PlayerId = to });
+        var accept = await _http.PostAsJsonAsync($"/api/v1/friends/request/{req.RequestId}/accept", new { PlayerId = to });
         accept.EnsureSuccessStatusCode();
     }
 }

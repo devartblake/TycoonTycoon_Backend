@@ -1,5 +1,6 @@
 using Mediator;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,7 +12,7 @@ namespace Synaptix.Backend.Api.Features.Avatars
 {
     public static class AvatarEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var purchaseGroup = app.MapGroup("/store/avatars")
                 .WithTags("Avatars")
@@ -20,7 +21,7 @@ namespace Synaptix.Backend.Api.Features.Avatars
 
             purchaseGroup.MapPost("/{avatarId}/purchase", PurchaseAvatar);
 
-            var assetsGroup = app.MapGroup("/v1/assets/avatars")
+            var assetsGroup = app.MapGroup("/assets/avatars")
                 .WithTags("AvatarAssets")
                 
                 .RequireAuthorization();

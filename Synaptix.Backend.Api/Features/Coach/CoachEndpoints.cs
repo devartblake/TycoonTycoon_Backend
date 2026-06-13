@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Synaptix.Backend.Application.Personalization;
@@ -9,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.Coach;
 
 public static class CoachEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/coach")
             .RequireAuthorization()

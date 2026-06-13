@@ -48,7 +48,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
         await using var connMate = await ConnectMatchHubAsync(aMate, payload => aMateMatched.TrySetResult(payload));
 
         // Enqueue Party A -> should queue
-        var q1 = await _http.PostAsJsonAsync($"/party/{partyA.PartyId}/enqueue",
+        var q1 = await _http.PostAsJsonAsync($"/api/v1/party/{partyA.PartyId}/enqueue",
             new PartyEnqueueBody(aLeader, mode, 1));
 
         q1.StatusCode.Should().Be(HttpStatusCode.Accepted);
@@ -58,7 +58,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
         qr1.TicketId.Should().NotBeNull();
 
         // Enqueue Party B -> should match and respond OK
-        var q2 = await _http.PostAsJsonAsync($"/party/{partyB.PartyId}/enqueue",
+        var q2 = await _http.PostAsJsonAsync($"/api/v1/party/{partyB.PartyId}/enqueue",
             new PartyEnqueueBody(bLeader, mode, 1));
 
         q2.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -87,7 +87,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
         var party = await CreatePartyWithMemberAsync(leader, mate);
 
         // 1st enqueue => queued
-        var r1 = await _http.PostAsJsonAsync($"/party/{party.PartyId}/enqueue",
+        var r1 = await _http.PostAsJsonAsync($"/api/v1/party/{party.PartyId}/enqueue",
             new PartyEnqueueBody(leader, mode, 1));
 
         r1.StatusCode.Should().Be(HttpStatusCode.Accepted);
@@ -96,7 +96,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
         q1.TicketId.Should().NotBeNull();
 
         // 2nd enqueue => still queued; should return the same queued ticket (or at least a queued ticket)
-        var r2 = await _http.PostAsJsonAsync($"/party/{party.PartyId}/enqueue",
+        var r2 = await _http.PostAsJsonAsync($"/api/v1/party/{party.PartyId}/enqueue",
             new PartyEnqueueBody(leader, mode, 1));
 
         r2.StatusCode.Should().Be(HttpStatusCode.Accepted);
@@ -123,7 +123,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
             new SetModerationStatusRequest(leader, 4, "test", null, null, null));
         set.EnsureSuccessStatusCode();
 
-        var resp = await _http.PostAsJsonAsync($"/party/{party.PartyId}/enqueue",
+        var resp = await _http.PostAsJsonAsync($"/api/v1/party/{party.PartyId}/enqueue",
             new PartyEnqueueBody(leader, mode, 1));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -157,7 +157,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
     private async Task MakeFriendsAsync(Guid from, Guid to)
     {
         // Send request
-        var send = await _http.PostAsJsonAsync("/friends/request", new { FromPlayerId = from, ToPlayerId = to });
+        var send = await _http.PostAsJsonAsync("/api/v1/friends/request", new { FromPlayerId = from, ToPlayerId = to });
         send.EnsureSuccessStatusCode();
         var req = await send.Content.ReadFromJsonAsync<FriendRequestDto>();
         req.Should().NotBeNull();
@@ -167,7 +167,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
             return;
 
         // Accept (recipient must accept)
-        var accept = await _http.PostAsJsonAsync($"/friends/request/{req.RequestId}/accept", new { PlayerId = to });
+        var accept = await _http.PostAsJsonAsync($"/api/v1/friends/request/{req.RequestId}/accept", new { PlayerId = to });
         accept.EnsureSuccessStatusCode();
         var accepted = await accept.Content.ReadFromJsonAsync<FriendRequestDto>();
         accepted!.Status.Should().Be("Accepted");
@@ -176,27 +176,27 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
     private async Task<PartyRosterDto> CreatePartyWithMemberAsync(Guid leader, Guid mate)
     {
         // Create party
-        var created = await _http.PostAsJsonAsync("/party", new { LeaderPlayerId = leader });
+        var created = await _http.PostAsJsonAsync("/api/v1/party", new { LeaderPlayerId = leader });
         created.EnsureSuccessStatusCode();
         var roster = await created.Content.ReadFromJsonAsync<PartyRosterDto>();
         roster.Should().NotBeNull();
         roster!.LeaderPlayerId.Should().Be(leader);
 
         // Invite mate
-        var inv = await _http.PostAsJsonAsync($"/party/{roster.PartyId}/invite", new { FromPlayerId = leader, ToPlayerId = mate });
+        var inv = await _http.PostAsJsonAsync($"/api/v1/party/{roster.PartyId}/invite", new { FromPlayerId = leader, ToPlayerId = mate });
         inv.EnsureSuccessStatusCode();
         var invite = await inv.Content.ReadFromJsonAsync<PartyInviteDto>();
         invite.Should().NotBeNull();
         invite!.Status.Should().Be("Pending");
 
         // Accept invite
-        var acc = await _http.PostAsJsonAsync($"/party/invites/{invite.InviteId}/accept", new { PlayerId = mate });
+        var acc = await _http.PostAsJsonAsync($"/api/v1/party/invites/{invite.InviteId}/accept", new { PlayerId = mate });
         acc.EnsureSuccessStatusCode();
         var accepted = await acc.Content.ReadFromJsonAsync<PartyInviteDto>();
         accepted!.Status.Should().Be("Accepted");
 
         // Confirm roster now has 2 members
-        var refreshed = await _http.GetAsync($"/party/{roster.PartyId}");
+        var refreshed = await _http.GetAsync($"/api/v1/party/{roster.PartyId}");
         refreshed.EnsureSuccessStatusCode();
         var roster2 = await refreshed.Content.ReadFromJsonAsync<PartyRosterDto>();
         roster2!.Members.Should().HaveCount(2);

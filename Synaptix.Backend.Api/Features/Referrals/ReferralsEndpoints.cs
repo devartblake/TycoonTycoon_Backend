@@ -1,5 +1,6 @@
 ﻿using Mediator;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Synaptix.Backend.Application.Referrals;
@@ -9,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.Referrals
 {
     public static class ReferralsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/referrals").WithTags("Referrals");
 

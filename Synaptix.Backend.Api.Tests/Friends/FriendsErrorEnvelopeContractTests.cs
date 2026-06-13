@@ -19,7 +19,7 @@ public sealed class FriendsErrorEnvelopeContractTests : IClassFixture<TycoonApiF
     {
         var playerId = Guid.NewGuid();
 
-        var resp = await _http.PostAsJsonAsync("/friends/request", new { FromPlayerId = playerId, ToPlayerId = playerId });
+        var resp = await _http.PostAsJsonAsync("/api/v1/friends/request", new { FromPlayerId = playerId, ToPlayerId = playerId });
 
         resp.StatusCode.Should().Be(HttpStatusCode.Conflict);
         await resp.HasErrorCodeAsync("CONFLICT");
@@ -28,7 +28,7 @@ public sealed class FriendsErrorEnvelopeContractTests : IClassFixture<TycoonApiF
     [Fact]
     public async Task ListFriends_WithEmptyPlayerId_ReturnsValidationEnvelope()
     {
-        var resp = await _http.GetAsync("/friends?playerId=00000000-0000-0000-0000-000000000000&page=1&pageSize=25");
+        var resp = await _http.GetAsync("/api/v1/friends?playerId=00000000-0000-0000-0000-000000000000&page=1&pageSize=25");
 
         resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         await resp.HasErrorCodeAsync("VALIDATION_ERROR");
@@ -37,7 +37,7 @@ public sealed class FriendsErrorEnvelopeContractTests : IClassFixture<TycoonApiF
     [Fact]
     public async Task AcceptRequest_WithUnknownRequestId_ReturnsNotFoundEnvelope()
     {
-        var resp = await _http.PostAsJsonAsync($"/friends/request/{Guid.NewGuid()}/accept", new { PlayerId = Guid.NewGuid() });
+        var resp = await _http.PostAsJsonAsync($"/api/v1/friends/request/{Guid.NewGuid()}/accept", new { PlayerId = Guid.NewGuid() });
 
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await resp.HasErrorCodeAsync("NOT_FOUND");
@@ -46,7 +46,7 @@ public sealed class FriendsErrorEnvelopeContractTests : IClassFixture<TycoonApiF
     [Fact]
     public async Task DeclineRequest_WithUnknownRequestId_ReturnsNotFoundEnvelope()
     {
-        var resp = await _http.PostAsJsonAsync($"/friends/request/{Guid.NewGuid()}/decline", new { PlayerId = Guid.NewGuid() });
+        var resp = await _http.PostAsJsonAsync($"/api/v1/friends/request/{Guid.NewGuid()}/decline", new { PlayerId = Guid.NewGuid() });
 
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await resp.HasErrorCodeAsync("NOT_FOUND");

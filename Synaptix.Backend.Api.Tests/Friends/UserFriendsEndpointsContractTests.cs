@@ -46,7 +46,7 @@ public sealed class UserFriendsEndpointsContractTests : IClassFixture<TycoonApiF
             await db.SaveChangesAsync();
         }
 
-        var response = await primaryClient.GetFromJsonAsync<FriendsListResponseDto>("/users/me/friends?page=1&pageSize=1");
+        var response = await primaryClient.GetFromJsonAsync<FriendsListResponseDto>("/api/v1/users/me/friends?page=1&pageSize=1");
 
         response.Should().NotBeNull();
         response!.Page.Should().Be(1);
@@ -58,7 +58,7 @@ public sealed class UserFriendsEndpointsContractTests : IClassFixture<TycoonApiF
 
     private static async Task<SignupResponse> SignupAsync(HttpClient client, string prefix)
     {
-        var response = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var response = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"{prefix}-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: "ios-sim",

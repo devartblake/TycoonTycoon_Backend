@@ -32,12 +32,12 @@ public sealed class SkillRespecTests : IClassFixture<TycoonApiFactory>
             ));
 
         // Unlock skill
-        await _public.PostAsJsonAsync("/skills/unlock",
+        await _public.PostAsJsonAsync("/api/v1/skills/unlock",
             new UnlockSkillRequest(Guid.NewGuid(), playerId, "know.quick_learner"));
 
         // Respec
         var respec = new RespecSkillsRequest(Guid.NewGuid(), playerId, 80);
-        var r = await _public.PostAsJsonAsync("/skills/respec", respec);
+        var r = await _public.PostAsJsonAsync("/api/v1/skills/respec", respec);
         r.EnsureSuccessStatusCode();
 
         var res = await r.Content.ReadFromJsonAsync<RespecSkillsResultDto>();

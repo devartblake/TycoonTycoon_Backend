@@ -60,9 +60,19 @@ namespace Synaptix.Backend.Application.LearningModules
                     var profile = await _mindProfiles.GetOrCreateAsync(request.PlayerId.Value, ct);
                     if (profile.CategoryWeaknesses.Count > 0)
                     {
+                        // Match against both the taxonomy-canonical key and the
+                        // directly-normalized key. A module's CanonicalCategory is
+                        // normalized (not taxonomy-resolved), so for categories the
+                        // taxonomy doesn't recognise — which otherwise collapse to
+                        // "general" — the normalized form is what lines up with the
+                        // module column.
                         weakCategories = profile.CategoryWeaknesses
                             .Where(kv => kv.Value > 0)
-                            .Select(kv => QuestionTaxonomy.ResolveDefinition(kv.Key).Key)
+                            .SelectMany(kv => new[]
+                            {
+                                QuestionTaxonomy.ResolveDefinition(kv.Key).Key,
+                                QuestionTaxonomy.NormalizeKey(kv.Key),
+                            })
                             .ToHashSet(StringComparer.OrdinalIgnoreCase);
                     }
                 }

@@ -46,8 +46,10 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
             SortOrder = 1
         });
 
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var response = await client.PostAsJsonAsync(
-            "/store/payments/paypal/order",
+            "/api/v1/store/payments/paypal/order",
             new CreatePayPalOrderRequest(playerId, "powerup:skip", 2));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -88,8 +90,10 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
             "USD",
             5.98m);
 
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var response = await client.PostAsJsonAsync(
-            "/store/payments/paypal/capture",
+            "/api/v1/store/payments/paypal/capture",
             new CapturePayPalOrderRequest(playerId, "ORDER-123"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -118,8 +122,10 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
         var playerId = Guid.Parse(signup.UserId);
 
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var createResponse = await client.PostAsJsonAsync(
-            "/store/subscription/paypal/create",
+            "/api/v1/store/subscription/paypal/create",
             new CreatePayPalSubscriptionRequest(playerId, "premium", "monthly"));
 
         createResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -137,7 +143,7 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
             "player@example.com");
 
         var cancelResponse = await client.PostAsJsonAsync(
-            "/store/subscription/paypal/cancel",
+            "/api/v1/store/subscription/paypal/cancel",
             new CancelPayPalSubscriptionRequest(playerId, "I-SUB-123", "testing"));
 
         cancelResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -207,7 +213,7 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
         var webhookResponse = await client.SendAsync(request);
         webhookResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var status = await client.GetFromJsonAsync<SubscriptionStatusDto>($"/store/subscription/status/{playerId}");
+        var status = await client.GetFromJsonAsync<SubscriptionStatusDto>($"/api/v1/store/subscription/status/{playerId}");
         status.Should().NotBeNull();
         status!.Provider.Should().Be("paypal");
         status.ProviderSubscriptionId.Should().Be("I-SUB-999");
@@ -249,7 +255,7 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
     private static async Task<SignupResponse> SignupAsync(HttpClient client, string prefix)
     {
         var signupResp = await client.PostAsJsonAsync(
-            "/auth/signup",
+            "/api/v1/auth/signup",
             new SignupRequest(
                 Email: $"{prefix}-{Guid.NewGuid():N}@example.com",
                 Password: "Passw0rd!",
@@ -272,7 +278,7 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
 
     private static HttpRequestMessage BuildWebhookRequest(object payload)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/store/payments/paypal/webhook")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/store/payments/paypal/webhook")
         {
             Content = JsonContent.Create(payload)
         };

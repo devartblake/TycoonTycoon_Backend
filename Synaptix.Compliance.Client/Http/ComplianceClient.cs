@@ -16,6 +16,7 @@ internal sealed class ComplianceClient(HttpClient http) : IComplianceClient
         return model ?? throw new ComplianceClientException(
             "Compliance get-restrictions returned an empty response body.",
             (int)response.StatusCode);
+    }
 
     public async Task<ConsentStatusResponse> GetConsentStatusAsync(Guid userId, CancellationToken ct)
     {
@@ -25,6 +26,7 @@ internal sealed class ComplianceClient(HttpClient http) : IComplianceClient
         return model ?? throw new ComplianceClientException(
             "Compliance get-consent-status returned an empty response body.",
             (int)response.StatusCode);
+    }
 
     public async Task RecordAuditEventAsync(RecordAuditEventRequest request, CancellationToken ct)
     {

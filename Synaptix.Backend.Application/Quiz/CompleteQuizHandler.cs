@@ -13,8 +13,8 @@ public sealed class CompleteQuizHandler(EconomyService economy, IAppDb db)
     public async ValueTask<CompleteQuizResponse> Handle(CompleteQuiz request, CancellationToken ct)
     {
         var lines = new List<EconomyLineDto>();
-        if (request.XpEarned > 0)    lines.Add(new EconomyLineDto(CurrencyType.Xp, request.XpEarned));
-        if (request.CoinsEarned > 0) lines.Add(new EconomyLineDto(CurrencyType.Coins, request.CoinsEarned));
+        if (request.AwardedXp > 0)    lines.Add(new EconomyLineDto(CurrencyType.Xp, request.AwardedXp));
+        if (request.AwardedCoins > 0) lines.Add(new EconomyLineDto(CurrencyType.Coins, request.AwardedCoins));
 
         // EconomyService.ApplyAsync is idempotent on EventId — safe to retry
         var result = await economy.ApplyAsync(new CreateEconomyTxnRequest(
@@ -41,7 +41,11 @@ public sealed class CompleteQuizHandler(EconomyService economy, IAppDb db)
             result.Status.ToString(),
             result.BalanceXp,
             result.BalanceCoins,
-            result.BalanceDiamonds
+            result.BalanceDiamonds,
+            request.AwardedXp,
+            request.AwardedCoins,
+            request.CorrectAnswers,
+            request.TotalQuestions
         );
     }
 }
