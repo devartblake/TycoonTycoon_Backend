@@ -1,7 +1,7 @@
 # Production overrides for a single-Linode deployment.
 #
 # Assumptions:
-# - DNS A/AAAA records point api.synaptixplay.com and admin.synaptixplay.com to the Linode.
+# - DNS A/AAAA records point app.synaptixplay.com, api.synaptixplay.com, and admin.synaptixplay.com to the Linode.
 # - Traefik is the only public ingress: host ports 80 and 443.
 # - Service ports are internal-only.
 # - Runtime object storage is Linode Object Storage via the existing MinIO/S3-compatible config keys.
@@ -158,6 +158,27 @@ services:
       - "traefik.http.routers.operator-dashboard.entrypoints=websecure"
       - "traefik.http.routers.operator-dashboard.tls.certresolver=le"
       - "traefik.http.services.operator-dashboard.loadbalancer.server.port=8200"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  flutter-web:
+    image: nginx:1.27-alpine
+    container_name: synaptix_flutter_web
+    restart: unless-stopped
+    ports: !override []
+    volumes:
+      - ./flutter-web/dist:/usr/share/nginx/html:ro
+      - ./flutter-web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [synaptix-net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/healthz | grep -q ok"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     logging:
       driver: "json-file"
       options:

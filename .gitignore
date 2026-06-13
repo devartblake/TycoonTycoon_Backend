@@ -66,6 +66,8 @@ Tycoon/bin/**
 # Caches
 *.cache
 **/node_modules/**
+docker/flutter-web/dist/*
+!docker/flutter-web/dist/.gitkeep
 # Python
 **/__pycache__/**
 **/*.pyc

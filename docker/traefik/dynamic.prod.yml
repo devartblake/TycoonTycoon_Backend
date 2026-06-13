@@ -20,6 +20,13 @@ http:
       tls:
         certResolver: le
 
+    flutter-web:
+      rule: "Host(`app.synaptixplay.com`)"
+      entryPoints: [websecure]
+      service: flutter-web
+      tls:
+        certResolver: le
+
   services:
     backend-api:
       loadBalancer:
@@ -30,3 +37,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://operator-dashboard:8200"
+
+    flutter-web:
+      loadBalancer:
+        servers:
+          - url: "http://flutter-web:80"

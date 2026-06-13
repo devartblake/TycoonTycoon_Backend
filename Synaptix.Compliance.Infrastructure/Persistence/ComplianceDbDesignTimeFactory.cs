@@ -10,7 +10,7 @@ public sealed class ComplianceDbDesignTimeFactory : IDesignTimeDbContextFactory<
     {
         var opts = new DbContextOptionsBuilder<ComplianceDb>()
             .UseNpgsql("Host=localhost;Port=5432;Database=synaptix_compliance;Username=postgres;Password=postgres")
-            .UseSnakeCaseNamingConventions()
+            .UseSnakeCaseNamingConvention()
             .Options;
 
         return new ComplianceDb(opts);
