@@ -21,7 +21,7 @@ namespace Synaptix.Backend.Api.Features.Avatars
 
             purchaseGroup.MapPost("/{avatarId}/purchase", PurchaseAvatar);
 
-            var assetsGroup = app.MapGroup("/v1/assets/avatars")
+            var assetsGroup = app.MapGroup("/assets/avatars")
                 .WithTags("AvatarAssets")
                 
                 .RequireAuthorization();

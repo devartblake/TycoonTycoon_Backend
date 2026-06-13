@@ -61,8 +61,15 @@ public static class AppConfigEndpoints
 
             var minimumClientVersion = config["AppConfig:MinimumClientVersion"] ?? "0.0.1";
             var environment = env.EnvironmentName.ToLowerInvariant();
+            var assetManifestUrl = config["Assets:ManifestUrl"] ?? "/api/v1/assets/manifest";
+            var assets = new
+            {
+                remoteAssetsEnabled = config.GetValue("Assets:RemoteDeliveryEnabled", true),
+                manifestUrl = assetManifestUrl,
+                cacheMaxAgeSeconds = Math.Max(60, config.GetValue("Assets:CacheMaxAgeSeconds", 86_400))
+            };
 
-            return Results.Ok(new { environment, minimumClientVersion, features });
+            return Results.Ok(new { environment, minimumClientVersion, features, assets });
         })
         .WithTags("Config")
         .AllowAnonymous();

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -129,6 +130,8 @@ using Synaptix.Backend.Api.Grpc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Hosting;
 using Synaptix.Backend.Api.Contracts;
+using StackExchange.Redis;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -511,6 +514,46 @@ builder.Services
     .AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+    options.ForwardLimit = Math.Max(1, builder.Configuration.GetValue("ForwardedHeaders:ForwardLimit", 1));
+
+    var knownProxies = builder.Configuration
+        .GetSection("ForwardedHeaders:KnownProxies")
+        .Get<string[]>() ?? [];
+    var knownNetworks = builder.Configuration
+        .GetSection("ForwardedHeaders:KnownNetworks")
+        .Get<string[]>() ?? [];
+
+    options.KnownProxies.Clear();
+    options.KnownIPNetworks.Clear();
+
+    foreach (var proxy in knownProxies.Select(x => x.Trim()).Where(x => x.Length > 0))
+    {
+        if (IPAddress.TryParse(proxy, out var address))
+            options.KnownProxies.Add(address);
+    }
+
+    foreach (var network in knownNetworks.Select(x => x.Trim()).Where(x => x.Length > 0))
+    {
+        if (TryParseCidr(network, out var parsed))
+            options.KnownIPNetworks.Add(parsed);
+    }
+
+    if (options.KnownProxies.Count == 0 && options.KnownIPNetworks.Count == 0)
+    {
+        options.KnownProxies.Add(IPAddress.Loopback);
+        options.KnownProxies.Add(IPAddress.IPv6Loopback);
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("10.0.0.0/8"));
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("172.16.0.0/12"));
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("192.168.0.0/16"));
+    }
+});
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -538,7 +581,7 @@ builder.Services.AddRateLimiter(options =>
     {
         var key = httpContext.User?.Identity?.IsAuthenticated == true
             ? httpContext.User.Identity.Name ?? "anonymous"
-            : httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            : GetClientIpPartition(httpContext);
 
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: key,
@@ -552,7 +595,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("api", httpContext =>
     {
-        var key = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var key = GetClientIpPartition(httpContext);
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: key,
             factory: _ => new FixedWindowRateLimiterOptions
@@ -565,7 +608,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("admin-auth-login", httpContext =>
     {
-        var key = $"admin-auth-login:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+        var key = $"admin-auth-login:{GetClientIpPartition(httpContext)}";
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: key,
             factory: _ => new FixedWindowRateLimiterOptions
@@ -578,7 +621,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("admin-auth-refresh", httpContext =>
     {
-        var key = $"admin-auth-refresh:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+        var key = $"admin-auth-refresh:{GetClientIpPartition(httpContext)}";
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: key,
             factory: _ => new FixedWindowRateLimiterOptions
@@ -592,7 +635,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("admin-notifications-send", httpContext =>
     {
         var subject = httpContext.User.FindFirstValue("sub")
-            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? GetClientIpPartition(httpContext)
             ?? "unknown";
         var key = $"admin-notifications-send:{subject}";
         return RateLimitPartition.GetFixedWindowLimiter(
@@ -608,16 +651,40 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddSingleton<IMatchmakingNotifier, SignalRMatchmakingNotifier>();
 builder.Services.AddSingleton<IPartyMatchmakingNotifier, SignalRPartyMatchmakingNotifier>();
-builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
 builder.Services.AddSingleton<IPresenceNotifier, SignalRPresenceNotifier>();
 builder.Services.AddSingleton<ILeaderboardNotifier, SignalRLeaderboardNotifier>();
-builder.Services.AddSingleton<IPresenceSessionManager, PresenceSessionManager>();
 builder.Services.AddSingleton<IGameEventNotifier, SignalRGameEventNotifier>();
 builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
 builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
 builder.Services.AddSingleton<IPlayerNotificationNotifier, SignalRPlayerNotificationNotifier>();
 builder.Services.AddSingleton<IDirectMessageNotifier, SignalRDirectMessageNotifier>();
+
+var redisRequiredForRealtime = !useInMemoryDbForTesting
+    && (builder.Environment.IsStaging()
+        || builder.Environment.IsProduction()
+        || builder.Configuration.GetValue("Realtime:RequireRedis", false));
+if (redisRequiredForRealtime && string.IsNullOrWhiteSpace(redis))
+{
+    throw new InvalidOperationException(
+        "Redis is required for realtime presence in Staging/Production. Configure ConnectionStrings:redis or ConnectionStrings:cache.");
+}
+
+if (!useInMemoryDbForTesting && !string.IsNullOrWhiteSpace(redis))
+{
+    builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+        ConnectionMultiplexer.Connect(ConfigurationOptions.Parse(redis)));
+    builder.Services.AddSingleton<RedisConnectionRegistry>();
+    builder.Services.AddSingleton<IConnectionRegistry>(sp => sp.GetRequiredService<RedisConnectionRegistry>());
+    builder.Services.AddSingleton<RedisPresenceSessionManager>();
+    builder.Services.AddSingleton<IPresenceSessionManager>(sp => sp.GetRequiredService<RedisPresenceSessionManager>());
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<RedisPresenceSessionManager>());
+}
+else
+{
+    builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
+    builder.Services.AddSingleton<IPresenceSessionManager, PresenceSessionManager>();
+}
 
 builder.Services.AddSchemaGate(builder.Configuration, builder.Environment);
 
@@ -644,6 +711,7 @@ var app = builder.Build();
 hangfireEnabled = app.Configuration.GetValue("Hangfire:Enabled", true)
     && !app.Configuration.GetValue("Testing:UseInMemoryDb", false);
 
+app.UseForwardedHeaders();
 // ✅ CORRECT MIDDLEWARE ORDER
 app.UseRouting();
 
@@ -1186,6 +1254,32 @@ async Task HandleWebSocket(
                     break;
             }
         }
+    }
+}
+
+static string GetClientIpPartition(HttpContext context)
+{
+    var address = context.Connection.RemoteIpAddress;
+    if (address is null)
+        return "ip:unknown";
+
+    if (address.IsIPv4MappedToIPv6)
+        address = address.MapToIPv4();
+
+    return $"ip:{address}";
+}
+
+static bool TryParseCidr(string value, out System.Net.IPNetwork network)
+{
+    try
+    {
+        network = System.Net.IPNetwork.Parse(value);
+        return true;
+    }
+    catch (FormatException)
+    {
+        network = System.Net.IPNetwork.Parse("127.0.0.1/32");
+        return false;
     }
 }
 public partial class Program { }

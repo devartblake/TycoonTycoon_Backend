@@ -1,0 +1,33 @@
+# Optional production file-provider routing.
+#
+# The single-Linode production Compose override currently uses Docker labels as
+# the Traefik source of truth, so this file is not mounted by default. If you
+# switch Traefik back to the file provider, keep these hosts and the "le"
+# certificate resolver aligned with docker/compose.prod.yml.
+
+http:
+  routers:
+    backend-api:
+      rule: "Host(`api.synaptixplay.com`)"
+      entryPoints: [websecure]
+      service: backend-api
+      tls:
+        certResolver: le
+
+    operator-dashboard:
+      rule: "Host(`admin.synaptixplay.com`)"
+      entryPoints: [websecure]
+      service: operator-dashboard
+      tls:
+        certResolver: le
+
+  services:
+    backend-api:
+      loadBalancer:
+        servers:
+          - url: "http://backend-api:5000"
+
+    operator-dashboard:
+      loadBalancer:
+        servers:
+          - url: "http://operator-dashboard:8200"

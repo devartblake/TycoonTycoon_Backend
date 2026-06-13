@@ -15,7 +15,7 @@ public static class AssetManifestEndpoints
 
     public static void Map(IEndpointRouteBuilder app)
     {
-        var g = app.MapGroup("/v1/assets").WithTags("Assets");
+        var g = app.MapGroup("/assets").WithTags("Assets");
 
         // Public — no auth required; presigned URLs give time-limited access.
         g.MapGet("/manifest", GetManifest);
