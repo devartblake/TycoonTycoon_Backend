@@ -11,6 +11,27 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me")
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")]
 
+# Origins (scheme + host) trusted for unsafe (POST) requests. Required since
+# Django 4.0 for the login form to pass CSRF when served over HTTPS behind a
+# reverse proxy (e.g. https://admin.synaptixplay.com).
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+# Behind Traefik (TLS terminates at the proxy), trust the forwarded scheme so
+# Django treats requests as HTTPS for CSRF origin and secure-cookie checks.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
+# Secure cookies are opt-in (enable in HTTPS deployments). Not derived from
+# DEBUG because the container can run with DEBUG=false over plain HTTP locally,
+# where secure-only cookies would silently break login.
+_secure_cookies = os.getenv("DJANGO_SECURE_COOKIES", "false").lower() == "true"
+SESSION_COOKIE_SECURE = _secure_cookies
+CSRF_COOKIE_SECURE = _secure_cookies
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

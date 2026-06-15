@@ -140,7 +140,9 @@ services:
     ports: !override []
     environment:
       DJANGO_DEBUG: "false"
-      DJANGO_ALLOWED_HOSTS: "admin.synaptixplay.com"
+      DJANGO_ALLOWED_HOSTS: "admin.${DOMAIN:?DOMAIN is required in prod}"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "https://admin.${DOMAIN:?DOMAIN is required in prod}"
+      DJANGO_SECURE_COOKIES: "true"
       MINIO_BASE_URL: "https://${LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT:?LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT is required in prod}"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:?ADMIN_OPS_KEY is required in prod}"
       ADMIN_AUTH_TRANSPORT: "${ADMIN_AUTH_TRANSPORT:-secure-channel}"
