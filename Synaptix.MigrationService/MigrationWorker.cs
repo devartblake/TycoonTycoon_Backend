@@ -384,11 +384,27 @@ public sealed class MigrationWorker : BackgroundService
                 missingTables.Add(table);
         }
 
+        if (!missingTables.Contains("questions"))
+            await RepairQuestionTaxonomyColumnsAsync(db, ct);
+
         var missingColumns = new List<string>();
         var requiredColumns = new (string Table, string Column)[]
         {
             ("questions", "status"),
             ("questions", "status_changed_at_utc"),
+            ("questions", "canonical_category"),
+            ("questions", "display_category"),
+            ("questions", "subject"),
+            ("questions", "topic"),
+            ("questions", "subtopic"),
+            ("questions", "grade_band"),
+            ("questions", "age_group"),
+            ("questions", "audience"),
+            ("questions", "source_dataset"),
+            ("questions", "source_question_id"),
+            ("questions", "question_type"),
+            ("questions", "media_type"),
+            ("questions", "taxonomy_tags_json"),
             ("store_items", "sku"),
             ("skill_nodes", "key"),
             ("season_reward_rules", "max_tier_rank"),
@@ -444,6 +460,81 @@ public sealed class MigrationWorker : BackgroundService
         }
 
         _log.Information("Schema repair completed; required tables now exist.");
+    }
+
+    private async Task RepairQuestionTaxonomyColumnsAsync(AppDb db, CancellationToken ct)
+    {
+        if (await ColumnExistsAsync(db, "questions", "age_group", ct))
+            return;
+
+        _log.Warning(
+            "Detected questions table without taxonomy columns. Applying additive repair for AddQuestionTaxonomy drift.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS canonical_category character varying(128) NOT NULL DEFAULT '';
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS display_category character varying(128) NOT NULL DEFAULT '';
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS subject character varying(128);
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS topic character varying(128);
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS subtopic character varying(128);
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS grade_band character varying(64);
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS age_group character varying(64);
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS audience character varying(64);
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS source_dataset character varying(256);
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS source_question_id character varying(128);
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_type character varying(64) NOT NULL DEFAULT 'multiple_choice';
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS media_type character varying(64) NOT NULL DEFAULT 'text';
+            ALTER TABLE questions ADD COLUMN IF NOT EXISTS taxonomy_tags_json jsonb NOT NULL DEFAULT '[]';
+
+            UPDATE questions
+            SET canonical_category = lower(regexp_replace(regexp_replace(category, '[^a-zA-Z0-9]+', '_', 'g'), '^_|_$', '', 'g'))
+            WHERE canonical_category = '';
+
+            UPDATE questions
+            SET display_category = category
+            WHERE display_category = '';
+
+            UPDATE questions
+            SET media_type = CASE WHEN media_key IS NULL OR btrim(media_key) = '' THEN 'text' ELSE 'image' END
+            WHERE media_type = 'text';
+
+            CREATE INDEX IF NOT EXISTS ix_questions_canonical_category ON questions (canonical_category);
+            CREATE INDEX IF NOT EXISTS ix_questions_subject ON questions (subject);
+            CREATE INDEX IF NOT EXISTS ix_questions_grade_band ON questions (grade_band);
+            CREATE INDEX IF NOT EXISTS ix_questions_age_group ON questions (age_group);
+            CREATE INDEX IF NOT EXISTS ix_questions_source_dataset ON questions (source_dataset);
+            CREATE UNIQUE INDEX IF NOT EXISTS ix_questions_source_dataset_source_question_id
+                ON questions (source_dataset, source_question_id)
+                WHERE source_dataset IS NOT NULL AND source_question_id IS NOT NULL;
+            CREATE INDEX IF NOT EXISTS ix_questions_status_canonical_category_difficulty
+                ON questions (status, canonical_category, difficulty);
+            """,
+            ct);
+
+        if (await TableExistsAsync(db, "learning_modules", ct))
+        {
+            await db.Database.ExecuteSqlRawAsync(
+                """
+                ALTER TABLE learning_modules ADD COLUMN IF NOT EXISTS canonical_category character varying(128) NOT NULL DEFAULT '';
+                ALTER TABLE learning_modules ADD COLUMN IF NOT EXISTS subject character varying(128);
+                ALTER TABLE learning_modules ADD COLUMN IF NOT EXISTS topic character varying(128);
+                ALTER TABLE learning_modules ADD COLUMN IF NOT EXISTS grade_band character varying(64);
+                ALTER TABLE learning_modules ADD COLUMN IF NOT EXISTS age_group character varying(64);
+                ALTER TABLE learning_modules ADD COLUMN IF NOT EXISTS audience character varying(64);
+
+                UPDATE learning_modules
+                SET canonical_category = lower(regexp_replace(regexp_replace(category, '[^a-zA-Z0-9]+', '_', 'g'), '^_|_$', '', 'g'))
+                WHERE canonical_category = '';
+
+                CREATE INDEX IF NOT EXISTS ix_learning_modules_canonical_category ON learning_modules (canonical_category);
+                CREATE INDEX IF NOT EXISTS ix_learning_modules_subject ON learning_modules (subject);
+                CREATE INDEX IF NOT EXISTS ix_learning_modules_grade_band ON learning_modules (grade_band);
+                CREATE INDEX IF NOT EXISTS ix_learning_modules_age_group ON learning_modules (age_group);
+                """,
+                ct);
+        }
+
+        _log.Information("Question taxonomy additive schema repair completed.");
     }
 
     private static async Task<bool> TableExistsAsync(AppDb db, string tableName, CancellationToken ct)

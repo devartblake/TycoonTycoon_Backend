@@ -1,18 +1,17 @@
-# Production overrides:
-# - No dev UIs
-# - All traffic enters through Traefik (ports 80 + 443); individual services not exposed to host
-# - Automatic HTTPS via Let's Encrypt (set DOMAIN and ACME_EMAIL in .env)
-# - Tighter defaults for resources and logging
+# Production overrides for a single-Linode deployment.
+#
+# Assumptions:
+# - DNS A/AAAA records point app.synaptixplay.com, api.synaptixplay.com, and admin.synaptixplay.com to the Linode.
+# - Traefik is the only public ingress: host ports 80 and 443.
+# - Service ports are internal-only.
+# - Runtime object storage is Linode Object Storage via the existing MinIO/S3-compatible config keys.
+# - Crypto settlement and the legacy Blazor dashboard are disabled for Alpha.
 
 services:
-  # --------------------------------
-  # Traefik — production HTTPS mode
-  # --------------------------------
   traefik:
-    command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=synaptix-net"
+    command: !override
+      - "--providers.file.filename=/etc/traefik/dynamic.prod.yml"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
@@ -21,23 +20,58 @@ services:
       - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.le.acme.tlschallenge=true"
       - "--log.level=WARN"
-    ports:
+      - "--accesslog=true"
+    ports: !override
       - "80:80"
       - "443:443"
+    volumes: !override
+      - ./traefik/dynamic.prod.yml:/etc/traefik/dynamic.prod.yml:ro
+      - letsencrypt:/letsencrypt
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
-  # backend-api — no direct port exposure in prod; route through Traefik with HTTPS labels
   backend-api:
-    ports: []
+    ports: !override []
     environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      DOTNET_ENVIRONMENT: "Production"
       AdminAuth__AllowTrustedBffPlainJson: "false"
-      KmsClient__BaseUrl: "${KMS_API_BASE_URL:?KMS_API_BASE_URL is required in prod}"
+      KmsClient__BaseUrl: "http://kms-api:5050"
       KmsClient__ServiceToken: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"
       KmsClient__Required: "true"
+      Realtime__RequireRedis: "true"
+      ForwardedHeaders__ForwardLimit: "1"
+      MinIO__Endpoint: "${LINODE_OBJECT_STORAGE_ENDPOINT:?LINODE_OBJECT_STORAGE_ENDPOINT is required in prod}"
+      MinIO__AccessKey: "${LINODE_OBJECT_STORAGE_ACCESS_KEY:?LINODE_OBJECT_STORAGE_ACCESS_KEY is required in prod}"
+      MinIO__SecretKey: "${LINODE_OBJECT_STORAGE_SECRET_KEY:?LINODE_OBJECT_STORAGE_SECRET_KEY is required in prod}"
+      MinIO__Bucket: "${LINODE_OBJECT_STORAGE_BUCKET:-synaptix-assets}"
+      MinIO__UseSSL: "true"
+      MinIO__PublicEndpoint: "${LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT:?LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT is required in prod}"
+      Assets__RemoteDeliveryEnabled: "true"
+      Assets__ManifestUrl: "/api/v1/assets/manifest"
+      Cors__AllowedOrigins__0: "https://synaptixplay.com"
+      Cors__AllowedOrigins__1: "https://www.synaptixplay.com"
+      Cors__AllowedOrigins__2: "https://app.synaptixplay.com"
+      Cors__AllowedOrigins__3: "https://admin.synaptixplay.com"
+      Cors__AllowedOrigins__4: ""
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      kms-api:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend-api.rule=Host(`api.${DOMAIN:?DOMAIN is required in prod}`)"
@@ -50,19 +84,79 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  # operator-dashboard — no direct port exposure in prod; route through Traefik with HTTPS labels
+  setup:
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      DOTNET_ENVIRONMENT: "Production"
+      MinIO__Endpoint: "${LINODE_OBJECT_STORAGE_ENDPOINT:?LINODE_OBJECT_STORAGE_ENDPOINT is required in prod}"
+      MinIO__AccessKey: "${LINODE_OBJECT_STORAGE_ACCESS_KEY:?LINODE_OBJECT_STORAGE_ACCESS_KEY is required in prod}"
+      MinIO__SecretKey: "${LINODE_OBJECT_STORAGE_SECRET_KEY:?LINODE_OBJECT_STORAGE_SECRET_KEY is required in prod}"
+      MinIO__Bucket: "${LINODE_OBJECT_STORAGE_BUCKET:-synaptix-assets}"
+      MinIO__UseSSL: "true"
+      MINIO_ROOT_USER: "${LINODE_OBJECT_STORAGE_ACCESS_KEY:?LINODE_OBJECT_STORAGE_ACCESS_KEY is required in prod}"
+      MINIO_ROOT_PASSWORD: "${LINODE_OBJECT_STORAGE_SECRET_KEY:?LINODE_OBJECT_STORAGE_SECRET_KEY is required in prod}"
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  migration:
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      DOTNET_ENVIRONMENT: "Production"
+      MinIO__Bucket: "${LINODE_OBJECT_STORAGE_BUCKET:-synaptix-assets}"
+      MinIO__Endpoint: "${LINODE_OBJECT_STORAGE_ENDPOINT:?LINODE_OBJECT_STORAGE_ENDPOINT is required in prod}"
+      MinIO__AccessKey: "${LINODE_OBJECT_STORAGE_ACCESS_KEY:?LINODE_OBJECT_STORAGE_ACCESS_KEY is required in prod}"
+      MinIO__SecretKey: "${LINODE_OBJECT_STORAGE_SECRET_KEY:?LINODE_OBJECT_STORAGE_SECRET_KEY is required in prod}"
+      MinIO__UseSSL: "true"
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   operator-dashboard:
-    ports: []
+    ports: !override []
     environment:
       DJANGO_DEBUG: "false"
-      MINIO_BASE_URL: "http://minio:9000"
+      DJANGO_ALLOWED_HOSTS: "admin.${DOMAIN:?DOMAIN is required in prod}"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "https://admin.${DOMAIN:?DOMAIN is required in prod}"
+      DJANGO_SECURE_COOKIES: "true"
+      MINIO_BASE_URL: "https://${LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT:?LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT is required in prod}"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:?ADMIN_OPS_KEY is required in prod}"
       ADMIN_AUTH_TRANSPORT: "${ADMIN_AUTH_TRANSPORT:-secure-channel}"
-      KMS_API_BASE_URL: "${KMS_API_BASE_URL:?KMS_API_BASE_URL is required in prod}"
+      KMS_API_BASE_URL: "http://kms-api:5050"
       KMS_SERVICE_TOKEN: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"
+      API_REQUEST_TIMEOUT_SECONDS: "10"
+    depends_on: !override
+      backend-api:
+        condition: service_healthy
+      sidecar:
+        condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.operator-dashboard.rule=Host(`${DOMAIN:?DOMAIN is required in prod}`)"
+      - "traefik.http.routers.operator-dashboard.rule=Host(`admin.${DOMAIN:?DOMAIN is required in prod}`)"
       - "traefik.http.routers.operator-dashboard.entrypoints=websecure"
       - "traefik.http.routers.operator-dashboard.tls.certresolver=le"
       - "traefik.http.services.operator-dashboard.loadbalancer.server.port=8200"
@@ -72,11 +166,37 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  flutter-web:
+    image: nginx:1.27-alpine
+    container_name: synaptix_flutter_web
+    restart: unless-stopped
+    ports: !override []
+    volumes:
+      - ./flutter-web/dist:/usr/share/nginx/html:ro
+      - ./flutter-web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [synaptix-net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/healthz | grep -q ok"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  sidecar:
+    ports: !override []
+
+  operator-dashboard-blazor:
+    ports: !override []
+    profiles: ["disabled"]
+
   postgres:
-    # In prod, avoid exposing DB to the host unless required
-    ports: []
+    ports: !override []
     environment:
-      # Example: enforce stronger defaults if not provided
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in prod}"
     logging:
       driver: "json-file"
@@ -85,7 +205,7 @@ services:
         max-file: "5"
 
   mongodb:
-    ports: []
+    ports: !override []
     environment:
       MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:?MONGO_INITDB_ROOT_PASSWORD is required in prod}"
       MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required in prod}"
@@ -99,8 +219,7 @@ services:
         max-file: "5"
 
   redis:
-    ports: []
-    # In prod, require explicit password (already enforced in command)
+    ports: !override []
     logging:
       driver: "json-file"
       options:
@@ -108,10 +227,9 @@ services:
         max-file: "5"
 
   elasticsearch:
-    ports: []
+    ports: !override []
     environment:
       ELASTIC_PASSWORD: "${ELASTIC_PASSWORD:?ELASTIC_PASSWORD is required in prod}"
-      # A conservative default; tune based on your host
       ES_JAVA_OPTS: "${ES_JAVA_OPTS:--Xms1g -Xmx1g}"
     ulimits:
       memlock:
@@ -124,7 +242,7 @@ services:
         max-file: "5"
 
   rabbitmq:
-    ports: []
+    ports: !override []
     logging:
       driver: "json-file"
       options:
@@ -132,46 +250,103 @@ services:
         max-file: "5"
 
   minio:
-    ports: []
+    ports: !override []
+    profiles: ["disabled"]
     environment:
-      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required in prod}"
+      MINIO_ROOT_USER: "${LINODE_OBJECT_STORAGE_ACCESS_KEY:-disabled}"
+      MINIO_ROOT_PASSWORD: "${LINODE_OBJECT_STORAGE_SECRET_KEY:-disabled}"
+
+  kibana:
+    ports: !override []
+    profiles: ["disabled"]
+
+  pgadmin:
+    ports: !override []
+    profiles: ["disabled"]
+
+  mongo-express:
+    ports: !override []
+    profiles: ["disabled"]
+
+  prometheus:
+    ports: !override []
+    profiles: ["disabled"]
+
+  grafana:
+    ports: !override []
+    profiles: ["disabled"]
+
+  dbgate:
+    ports: !override []
+    profiles: ["disabled"]
+
+  crypto-service:
+    ports: !override []
+    profiles: ["disabled"]
+    environment:
+      CRYPTO_SERVICE_JWT: "${CRYPTO_SERVICE_JWT:-}"
+      CRYPTO_SERVICE_JWT_FILE: "${CRYPTO_SERVICE_JWT_FILE:-}"
+      REQUIRE_CRYPTO_SERVICE_JWT: "true"
+      KMS_API_BASE_URL: "http://kms-api:5050"
+      KMS_SERVICE_TOKEN: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"
+
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: synaptix_vault
+    restart: unless-stopped
+    ports: !override []
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_ADDR: "http://127.0.0.1:8200"
+      VAULT_LOCAL_CONFIG: >
+        {"storage":{"file":{"path":"/vault/file"}},"listener":[{"tcp":{"address":"0.0.0.0:8200","tls_disable":true}}],"api_addr":"http://vault:8200","disable_mlock":true,"ui":false}
+    command: server
+    volumes:
+      - vault_data:/vault/file
+    networks: [synaptix-net]
+
+  kms-api:
+    build:
+      context: ..
+      dockerfile: Synaptix.Security.Kms.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: "${BUILD_CONFIGURATION:-Release}"
+    image: synaptix-kms-api:latest
+    container_name: synaptix_kms_api
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      DOTNET_ENVIRONMENT: "Production"
+      KmsApi__ServiceToken: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"
+      JwtSettings__SecretKey: "${JWT_SECRET_KEY:?JWT_SECRET_KEY is required in prod}"
+      Vault__Address: "http://vault:8200"
+      Vault__Token: "${VAULT_TOKEN:?VAULT_TOKEN is required in prod}"
+      Vault__TransitMount: "${VAULT_TRANSIT_MOUNT:-transit}"
+      Vault__SessionWrapKey: "${VAULT_SESSION_WRAP_KEY:-synaptix-session-wrap}"
+      Vault__PayloadWrapKey: "${VAULT_PAYLOAD_WRAP_KEY:-synaptix-payload-wrap}"
+      Vault__Required: "true"
+      ConnectionStrings__cache: "redis:6379,password=${REDIS_PASSWORD:?REDIS_PASSWORD is required in prod},defaultDatabase=1"
+      Serilog__MinimumLevel__Default: "${LOG_LEVEL:-Warning}"
+    depends_on:
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_started
+    networks: [synaptix-net]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "5"
 
-  # Explicitly disable dev-only tools in prod
-  kibana:
-    profiles: ["disabled"]
-
-  pgadmin:
-    profiles: ["disabled"]
-
-  mongo-express:
-    profiles: ["disabled"]
-
-  prometheus:
-    profiles: ["disabled"]
-
-  grafana:
-    profiles: ["disabled"]
-
-  # Migrations should be an explicit step in prod (run once per deploy)
-  migration:
-    environment:
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
-    restart: "no"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  crypto-service:
-    environment:
-      CRYPTO_SERVICE_JWT: "${CRYPTO_SERVICE_JWT:-}"
-      CRYPTO_SERVICE_JWT_FILE: "${CRYPTO_SERVICE_JWT_FILE:-}"
-      REQUIRE_CRYPTO_SERVICE_JWT: "true"
-      KMS_API_BASE_URL: "${KMS_API_BASE_URL:?KMS_API_BASE_URL is required in prod}"
-      KMS_SERVICE_TOKEN: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"
+volumes:
+  letsencrypt:
+  vault_data:

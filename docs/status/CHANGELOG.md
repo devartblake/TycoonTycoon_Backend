@@ -4,6 +4,40 @@ All notable changes to this project.
 
 ---
 
+## [2026-06-13] Alpha Audit Remediation — blockers, hardening, and test sweep
+
+Closes the six Before-Alpha blockers and most of the During-Alpha (High) list from the platform audit (PRs **#389**, **#390**). Full `Synaptix.Backend.Api.Tests` suite green: **546 passed, 0 failed, 1 skipped**.
+
+### Before-Alpha blockers
+- **§2.2** Removed the duplicate `/health/ready` registration (kept `MapHealthChecks`).
+- **§2.1** Stripped secret-shaped values from the committed base `appsettings.json` (DB/Redis/Mongo/Elastic connection strings, JWT key, AdminOps key); real values inject per-env. Added a dev `AdminOps:Key` to `appsettings.Development.json`.
+- **§1.1** Implemented `/auth/device/bootstrap` + `/auth/account/upgrade` (device-first guest funnel; new `User.IsAnonymous` + `AddUserIsAnonymous` migration). Registered `/auth/mobile-game-login`, `/auth/link-game-account`, `GET /auth/oauth/{provider}` as **fail-closed (501)** routes pending provider verification.
+- **§1.2** Versioned the whole public API under `app.MapGroup("/api/v1")` (~48 feature groups + `/mobile`); infra and `/admin` stay un-prefixed; removed redundant inner `/api/v1` aliases. Traefik `dynamic.yml` no longer strips `/api` (matches the prod Host-router topology).
+- **§1.3** Added `/api/v1/security/sessions/{start,renew,revoke}` proxying to KMS via `IKmsSessionClient`, with `UserBearerForwardingHandler` so KMS binds the session to the authenticated subject.
+
+### During-Alpha hardening
+- **§1.6** `/quiz/complete` is now server-authoritative: requires auth, verifies the JWT player, grades submitted answers against `question.CorrectOptionId`, and derives XP/coins from validated results + difficulty (no client-supplied rewards). Idempotent via `ProcessedGameplayEvents`.
+- **§2.3** Redis-backed presence (`RedisConnectionRegistry`, `RedisPresenceSessionManager`); startup fails in Staging/Prod when Redis is absent (`Realtime:RequireRedis`).
+- **§2.4** `UseForwardedHeaders` with trusted `KnownProxies`/`KnownNetworks`; IP rate limiters re-keyed off the corrected client IP behind Traefik.
+- **§2.5** `compose.prod.yml`: `backend-api` now `depends_on` the `migration` job (`service_completed_successfully`), making migrations a hard deploy predecessor.
+- **§3.4** `RouteParityContractTests` asserts every client route resolves to a mapped backend endpoint.
+- Migrated all backend integration tests to `/api/v1/*`.
+
+### Fixes discovered during the work
+- **EF snapshot desync repaired** (`AddPlayerLookupAndRewardChainTables`): the model snapshot had drifted behind migrations from a bad merge; regenerated to match the model (follow-up `migrations add` now produces an empty diff) and added the only two genuinely-unmigrated tables (`player_lookup_codes`, `reward_chain_tickets`).
+- `/matches/start` read `ClaimTypes.NameIdentifier` (null when the subject is in `sub`) and forbade every real user — now reads `sub`.
+- `ComplianceClient.cs` two-brace compile break (masked by build caching) repaired.
+- `GET /admin/storage/objects` now accepts canonical trailing-slash prefixes (e.g. `seeds/`).
+- Recommended-modules weak-category matching now handles taxonomy-unrecognized categories.
+- `StoreSystemStatusDto` exposes `storePurchasesEnabled`.
+- Test sweep: **33 pre-existing failures → 0** — `TestAuth` helper for `RequireAuthorization` tests, store/IAP `store_purchases_enabled` seeding, gRPC 4-arg ctor fix, deterministic reactor event, corrected AdminStore contract assertions, SecureChannel AAD path, AdminAuth scopes via `AdminPermissionProfiles`.
+
+### Still open
+- **§1.1** real Game Center / Play Games / OAuth verification (needs provider credentials).
+- **§3.1** off-bundle asset delivery; **§1.4 / §1.5 / §1.7 / §2.6–2.8** Before-Beta hygiene.
+
+---
+
 ## [2026-06-04] gRPC Mobile Client — WatchMatchmaking + CancelMatchmaking + Flutter Infrastructure
 
 ### Backend — `protos/mobile.proto`

@@ -8,10 +8,12 @@ namespace Synaptix.Backend.Api.Tests.Matches;
 
 public sealed class MatchQueryTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
 
     public MatchQueryTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient();
     }
 
@@ -19,8 +21,9 @@ public sealed class MatchQueryTests : IClassFixture<TycoonApiFactory>
     public async Task GetMatch_Returns_Detail()
     {
         var p1 = Guid.NewGuid();
+        _http.AuthenticateAsPlayer(_factory, p1);
 
-        var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "practice"));
+        var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "practice"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
@@ -41,10 +44,10 @@ public sealed class MatchQueryTests : IClassFixture<TycoonApiFactory>
             }
         );
 
-        var s = await _http.PostAsJsonAsync("/matches/submit", submit);
+        var s = await _http.PostAsJsonAsync("/api/v1/matches/submit", submit);
         s.EnsureSuccessStatusCode();
 
-        var get = await _http.GetAsync($"/matches/{matchId}");
+        var get = await _http.GetAsync($"/api/v1/matches/{matchId}");
         get.EnsureSuccessStatusCode();
 
         var detail = await get.Content.ReadFromJsonAsync<MatchDetailDto>(TestJson.Default);

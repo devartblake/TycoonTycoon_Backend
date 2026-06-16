@@ -8,11 +8,13 @@ namespace Synaptix.Backend.Api.Tests.Seasons;
 
 public sealed class SeasonFlowTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _admin;
     private readonly HttpClient _public;
 
     public SeasonFlowTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();
         _public = factory.CreateClient();
     }
@@ -36,8 +38,9 @@ public sealed class SeasonFlowTests : IClassFixture<TycoonApiFactory>
         // Start match
         var p1 = Guid.NewGuid();
         var p2 = Guid.NewGuid();
+        _public.AuthenticateAsPlayer(_factory, p1);
 
-        var start = await _public.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "ranked"));
+        var start = await _public.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "ranked"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
@@ -59,14 +62,14 @@ public sealed class SeasonFlowTests : IClassFixture<TycoonApiFactory>
             }
         );
 
-        var r1 = await _public.PostAsJsonAsync("/matches/submit", submit);
+        var r1 = await _public.PostAsJsonAsync("/api/v1/matches/submit", submit);
         r1.EnsureSuccessStatusCode();
 
-        var r2 = await _public.PostAsJsonAsync("/matches/submit", submit);
+        var r2 = await _public.PostAsJsonAsync("/api/v1/matches/submit", submit);
         r2.EnsureSuccessStatusCode();
 
         // Player season state should exist and be >0
-        var st = await _public.GetAsync($"/seasons/state/{p1}");
+        var st = await _public.GetAsync($"/api/v1/seasons/state/{p1}");
         st.EnsureSuccessStatusCode();
 
         var state = await st.Content.ReadFromJsonAsync<PlayerSeasonStateDto>();

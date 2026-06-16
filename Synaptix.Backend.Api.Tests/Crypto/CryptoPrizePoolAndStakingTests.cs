@@ -34,11 +34,11 @@ public sealed class CryptoPrizePoolAndStakingTests : IClassFixture<TycoonApiFact
         var playerId = await SignupAndAuthorizeAsync(_http, "prize");
         await SeedCryptoUnitsAsync(playerId, 100);
 
-        var fundResp = await _http.PostAsJsonAsync("/crypto/prize-pool/fund",
+        var fundResp = await _http.PostAsJsonAsync("/api/v1/crypto/prize-pool/fund",
             new CryptoEconomyEndpoints.CryptoPrizePoolFundRequest(playerId, 40, "alpha"));
         fundResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var poolResp = await _http.GetAsync("/crypto/prize-pool/alpha");
+        var poolResp = await _http.GetAsync("/api/v1/crypto/prize-pool/alpha");
         poolResp.StatusCode.Should().Be(HttpStatusCode.OK);
         var pool = await poolResp.Content.ReadFromJsonAsync<CryptoEconomyEndpoints.CryptoPrizePoolBalanceResponse>();
         pool.Should().NotBeNull();
@@ -46,18 +46,18 @@ public sealed class CryptoPrizePoolAndStakingTests : IClassFixture<TycoonApiFact
 
         _http.WithAdminOpsKey();
         SetCryptoServiceAuthorization(_http);
-        var payoutResp = await _http.PostAsJsonAsync("/crypto/prize-pool/distribute",
+        var payoutResp = await _http.PostAsJsonAsync("/api/v1/crypto/prize-pool/distribute",
             new CryptoEconomyEndpoints.CryptoPrizePoolDistributeRequest("alpha",
                 new List<CryptoEconomyEndpoints.CryptoPrizePoolWinner> { new(playerId, 25) }));
         payoutResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var balanceResp = await _http.GetAsync($"/crypto/balance/{playerId}");
+        var balanceResp = await _http.GetAsync($"/api/v1/crypto/balance/{playerId}");
         balanceResp.StatusCode.Should().Be(HttpStatusCode.OK);
         var balance = await balanceResp.Content.ReadFromJsonAsync<CryptoEconomyEndpoints.CryptoBalanceResponse>();
         balance.Should().NotBeNull();
         balance!.Units.Should().Be(85);
 
-        var poolAfterResp = await _http.GetAsync("/crypto/prize-pool/alpha");
+        var poolAfterResp = await _http.GetAsync("/api/v1/crypto/prize-pool/alpha");
         var poolAfter = await poolAfterResp.Content.ReadFromJsonAsync<CryptoEconomyEndpoints.CryptoPrizePoolBalanceResponse>();
         poolAfter.Should().NotBeNull();
         poolAfter!.Units.Should().Be(15);
@@ -69,22 +69,22 @@ public sealed class CryptoPrizePoolAndStakingTests : IClassFixture<TycoonApiFact
         var playerId = await SignupAndAuthorizeAsync(_http, "stake");
         await SeedCryptoUnitsAsync(playerId, 50);
 
-        var stakeResp = await _http.PostAsJsonAsync("/crypto/stake",
+        var stakeResp = await _http.PostAsJsonAsync("/api/v1/crypto/stake",
             new CryptoEconomyEndpoints.CryptoStakeRequest(playerId, 30, "season-1"));
         stakeResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var positionResp = await _http.GetAsync($"/crypto/staking/{playerId}");
+        var positionResp = await _http.GetAsync($"/api/v1/crypto/staking/{playerId}");
         positionResp.StatusCode.Should().Be(HttpStatusCode.OK);
         var position = await positionResp.Content.ReadFromJsonAsync<CryptoEconomyEndpoints.CryptoStakingPositionResponse>();
         position.Should().NotBeNull();
         position!.AvailableUnits.Should().Be(20);
         position.StakedUnits.Should().Be(30);
 
-        var unstakeResp = await _http.PostAsJsonAsync("/crypto/unstake",
+        var unstakeResp = await _http.PostAsJsonAsync("/api/v1/crypto/unstake",
             new CryptoEconomyEndpoints.CryptoStakeRequest(playerId, 10, "season-1"));
         unstakeResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var positionAfterResp = await _http.GetAsync($"/crypto/staking/{playerId}");
+        var positionAfterResp = await _http.GetAsync($"/api/v1/crypto/staking/{playerId}");
         var positionAfter = await positionAfterResp.Content.ReadFromJsonAsync<CryptoEconomyEndpoints.CryptoStakingPositionResponse>();
         positionAfter.Should().NotBeNull();
         positionAfter!.AvailableUnits.Should().Be(30);
@@ -93,7 +93,7 @@ public sealed class CryptoPrizePoolAndStakingTests : IClassFixture<TycoonApiFact
 
     private static async Task<Guid> SignupAndAuthorizeAsync(HttpClient http, string userPrefix)
     {
-        var signupResp = await http.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await http.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"{userPrefix}-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: $"{userPrefix}-device",

@@ -21,7 +21,7 @@ public sealed class UserAvatarContractTests : IClassFixture<TycoonApiFactory>
     {
         var client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/users/me/avatar/upload-url", new AvatarUploadUrlRequest(
+        var response = await client.PostAsJsonAsync("/api/v1/users/me/avatar/upload-url", new AvatarUploadUrlRequest(
             "avatar.jpg",
             "image/jpeg",
             128));
@@ -34,7 +34,7 @@ public sealed class UserAvatarContractTests : IClassFixture<TycoonApiFactory>
     {
         var client = await CreateAuthenticatedClientAsync();
 
-        var response = await client.PostAsJsonAsync("/users/me/avatar/upload-url", new AvatarUploadUrlRequest(
+        var response = await client.PostAsJsonAsync("/api/v1/users/me/avatar/upload-url", new AvatarUploadUrlRequest(
             "avatar.jpg",
             "image/jpeg",
             128));
@@ -54,7 +54,7 @@ public sealed class UserAvatarContractTests : IClassFixture<TycoonApiFactory>
         const string password = "Passw0rd!";
         var signupClient = _factory.CreateClient();
 
-        var signupResp = await signupClient.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await signupClient.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: email,
             Password: password,
             DeviceId: "ios-sim-signup",
@@ -69,12 +69,12 @@ public sealed class UserAvatarContractTests : IClassFixture<TycoonApiFactory>
 
         const string avatarUrl = "https://cdn.example.com/avatars/user-123/avatar.jpg";
         var patchResp = await signupClient.PatchAsJsonAsync(
-            "/users/me",
+            "/api/v1/users/me",
             new UpdateProfileRequest("updated_handle", "US", avatarUrl));
         patchResp.EnsureSuccessStatusCode();
 
         var loginClient = _factory.CreateClient();
-        var loginResp = await loginClient.PostAsJsonAsync("/auth/login", new LoginRequest(
+        var loginResp = await loginClient.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest(
             Email: email,
             Password: password,
             DeviceId: "ios-sim-fresh-login"));
@@ -86,7 +86,7 @@ public sealed class UserAvatarContractTests : IClassFixture<TycoonApiFactory>
         loginClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", login!.AccessToken);
 
-        var me = await loginClient.GetFromJsonAsync<UserDto>("/users/me");
+        var me = await loginClient.GetFromJsonAsync<UserDto>("/api/v1/users/me");
 
         me.Should().NotBeNull();
         me!.Handle.Should().Be("updated_handle");
@@ -100,7 +100,7 @@ public sealed class UserAvatarContractTests : IClassFixture<TycoonApiFactory>
         var client = await CreateAuthenticatedClientAsync();
 
         var response = await client.PatchAsJsonAsync(
-            "/users/me",
+            "/api/v1/users/me",
             new UpdateProfileRequest("profile_contract_user", "CA", null));
         response.EnsureSuccessStatusCode();
 
@@ -115,7 +115,7 @@ public sealed class UserAvatarContractTests : IClassFixture<TycoonApiFactory>
     {
         var client = _factory.CreateClient();
 
-        var signupResp = await client.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await client.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: $"avatar-{Guid.NewGuid():N}@example.com",
             Password: "Passw0rd!",
             DeviceId: "ios-sim",

@@ -23,7 +23,7 @@ public sealed class UserProfilePersistenceTests : IClassFixture<TycoonApiFactory
         var originalHandle = $"persist_user_{Guid.NewGuid():N}";
 
         var signupClient = _factory.CreateClient();
-        var signupResp = await signupClient.PostAsJsonAsync("/auth/signup", new SignupRequest(
+        var signupResp = await signupClient.PostAsJsonAsync("/api/v1/auth/signup", new SignupRequest(
             Email: email,
             Password: password,
             DeviceId: "ios-sim-signup",
@@ -37,12 +37,12 @@ public sealed class UserProfilePersistenceTests : IClassFixture<TycoonApiFactory
             new AuthenticationHeaderValue("Bearer", signup!.AccessToken);
 
         var patchResp = await signupClient.PatchAsJsonAsync(
-            "/users/me",
+            "/api/v1/users/me",
             new UpdateProfileRequest("updated_handle", "US"));
         patchResp.EnsureSuccessStatusCode();
 
         var loginClient = _factory.CreateClient();
-        var loginResp = await loginClient.PostAsJsonAsync("/auth/login", new LoginRequest(
+        var loginResp = await loginClient.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest(
             Email: email,
             Password: password,
             DeviceId: "ios-sim-fresh-login"));
@@ -54,7 +54,7 @@ public sealed class UserProfilePersistenceTests : IClassFixture<TycoonApiFactory
         loginClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", login!.AccessToken);
 
-        var me = await loginClient.GetFromJsonAsync<UserDto>("/users/me");
+        var me = await loginClient.GetFromJsonAsync<UserDto>("/api/v1/users/me");
 
         me.Should().NotBeNull();
         me!.Email.Should().Be(email.ToLowerInvariant());

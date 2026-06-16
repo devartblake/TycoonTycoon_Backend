@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,7 @@ namespace Synaptix.Backend.Api.Features.Users
         private static readonly HashSet<string> ValidTones = new(StringComparer.OrdinalIgnoreCase)
             { "playful", "balanced", "competitive" };
 
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/users/me/preferences")
                 .WithTags("Users")

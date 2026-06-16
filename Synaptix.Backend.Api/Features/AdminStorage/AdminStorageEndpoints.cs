@@ -236,7 +236,11 @@ public static class AdminStorageEndpoints
         if (string.IsNullOrWhiteSpace(prefix))
             return "";
 
-        var cleaned = NormalizeKey(prefix);
+        // Prefixes are canonically written with a trailing slash (e.g. "seeds/"),
+        // but NormalizeKey validates *file keys* and rejects a trailing slash
+        // (the empty final segment). Strip trailing slashes before validation and
+        // re-add a single one below, so the canonical prefix form is accepted.
+        var cleaned = NormalizeKey(prefix.TrimEnd('/'));
         if (cleaned is null)
             return null;
 

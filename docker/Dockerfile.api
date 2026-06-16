@@ -20,6 +20,8 @@ COPY ["Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj", "Syn
 COPY ["Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj", "Synaptix.ServiceDefaults/"]
 COPY ["Synaptix.Security.Kms.Client/Synaptix.Security.Kms.Client.csproj", "Synaptix.Security.Kms.Client/"]
 COPY ["Synaptix.Security.Kms.Contracts/Synaptix.Security.Kms.Contracts.csproj", "Synaptix.Security.Kms.Contracts/"]
+COPY ["Synaptix.Compliance.Client/Synaptix.Compliance.Client.csproj", "Synaptix.Compliance.Client/"]
+COPY ["Synaptix.Compliance.Contracts/Synaptix.Compliance.Contracts.csproj", "Synaptix.Compliance.Contracts/"]
 
 # Restore packages - This layer is cached unless .csproj or Directory.Packages.props changes
 RUN dotnet restore "Synaptix.Backend.Api/Synaptix.Backend.Api.csproj"

@@ -350,6 +350,7 @@ public sealed class MinioSeeder
             .Where(q => seedTexts.Contains(q.Text))
             .Include(q => q.Options)
             .Include(q => q.Tags)
+            .AsSplitQuery()
             .ToDictionaryAsync(q => q.Text, ct);
 
         var seeded = 0;
@@ -419,6 +420,7 @@ public sealed class MinioSeeder
             .Where(q => seedTexts.Contains(q.Text))
             .Include(q => q.Options)
             .Include(q => q.Tags)
+            .AsSplitQuery()
             .ToDictionaryAsync(q => q.Text, ct);
         var existingBySource = seedDatasets.Count == 0 || seedSourceIds.Count == 0
             ? new Dictionary<string, Question>(StringComparer.OrdinalIgnoreCase)
@@ -429,6 +431,7 @@ public sealed class MinioSeeder
                             seedSourceIds.Contains(q.SourceQuestionId))
                 .Include(q => q.Options)
                 .Include(q => q.Tags)
+                .AsSplitQuery()
                 .ToDictionaryAsync(q => SourceKey(q.SourceDataset!, q.SourceQuestionId!), ct);
 
         var seeded = 0;
@@ -716,11 +719,13 @@ public sealed class MinioSeeder
         {
             "scholar" => SkillBranch.Knowledge,
             "knowledge" => SkillBranch.Knowledge,
+            "xp" => SkillBranch.Knowledge,
             "strategist" => SkillBranch.Strategy,
             "strategy" => SkillBranch.Strategy,
             "power-up" => SkillBranch.Powerups,
             "powerup" => SkillBranch.Powerups,
             "powerups" => SkillBranch.Powerups,
+            "wildcard" => SkillBranch.Powerups,
             _ => default
         };
         return branch != default;

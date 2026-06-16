@@ -17,7 +17,7 @@ public sealed class AnalyticsStartupEventCompatibilityTests : IClassFixture<Tyco
     [Fact]
     public async Task StartupEvent_RootAnalyticsRoute_ReturnsAccepted()
     {
-        var resp = await _http.PostAsJsonAsync("/analytics/startup_event", new
+        var resp = await _http.PostAsJsonAsync("/api/v1/analytics/startup_event", new
         {
             eventName = "startup",
             appVersion = "1.0.0",

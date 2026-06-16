@@ -1,5 +1,6 @@
 using Mediator;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Synaptix.Backend.Api.Contracts;
@@ -10,7 +11,7 @@ namespace Synaptix.Backend.Api.Features.GameEvents
 {
     public static class GameEventsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/game-events").WithTags("GameEvents");
 

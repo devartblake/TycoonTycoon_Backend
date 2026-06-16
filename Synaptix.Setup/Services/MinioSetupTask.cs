@@ -70,22 +70,11 @@ public sealed class MinioSetupTask : ISetupTask
             .Build();
 
         var uploaded = 0;
-        var skipped  = 0;
 
         foreach (var file in Directory.EnumerateFiles(seedsSourcePath, "*.json", SearchOption.AllDirectories))
         {
             var relativePath = Path.GetRelativePath(seedsSourcePath, file).Replace('\\', '/');
             var key = $"seeds/{relativePath}";
-
-            // Check if already exists
-            try
-            {
-                await client.StatObjectAsync(new StatObjectArgs().WithBucket(bucket).WithObject(key), ct);
-                Log.Debug("MinIO seed '{Key}' already exists — skipping.", key);
-                skipped++;
-                continue;
-            }
-            catch { /* object not found — upload it */ }
 
             await using var stream = File.OpenRead(file);
             await client.PutObjectAsync(new PutObjectArgs()
@@ -99,7 +88,7 @@ public sealed class MinioSetupTask : ISetupTask
             uploaded++;
         }
 
-        return SetupResult.Ok($"Seeds upload complete — {uploaded} uploaded, {skipped} already existed.");
+        return SetupResult.Ok($"Seeds upload complete — {uploaded} uploaded.");
     }
 
     public async Task<SetupResult> ValidateSeedsAsync(IConfiguration cfg, CancellationToken ct = default)

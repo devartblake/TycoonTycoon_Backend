@@ -8,10 +8,12 @@ namespace Synaptix.Backend.Api.Tests.RateLimit;
 
 public sealed class MatchSubmitRateLimitTests : IClassFixture<TycoonApiFactory>
 {
+    private readonly TycoonApiFactory _factory;
     private readonly HttpClient _http;
 
     public MatchSubmitRateLimitTests(TycoonApiFactory factory)
     {
+        _factory = factory;
         _http = factory.CreateClient();
     }
 
@@ -19,8 +21,9 @@ public sealed class MatchSubmitRateLimitTests : IClassFixture<TycoonApiFactory>
     public async Task Submit_IsRateLimited()
     {
         var p1 = Guid.NewGuid();
+        _http.AuthenticateAsPlayer(_factory, p1);
 
-        var start = await _http.PostAsJsonAsync("/matches/start", new StartMatchRequest(p1, "duel"));
+        var start = await _http.PostAsJsonAsync("/api/v1/matches/start", new StartMatchRequest(p1, "duel"));
         start.EnsureSuccessStatusCode();
         var started = await start.Content.ReadFromJsonAsync<StartMatchResponse>();
 
@@ -39,7 +42,7 @@ public sealed class MatchSubmitRateLimitTests : IClassFixture<TycoonApiFactory>
                 Participants: new[] { new MatchParticipantResultDto(p1, 10, 1, 4, 300) }
             );
 
-            var resp = await _http.PostAsJsonAsync("/matches/submit", submit);
+            var resp = await _http.PostAsJsonAsync("/api/v1/matches/submit", submit);
 
             if (resp.StatusCode == HttpStatusCode.TooManyRequests)
             {

@@ -63,7 +63,7 @@ public sealed class AdminStoreEndpointsContractTests : IClassFixture<TycoonApiFa
 
         dup.StatusCode.Should().Be(HttpStatusCode.Conflict);
         var body = await dup.Content.ReadFromJsonAsync<JsonElement>();
-        body.GetProperty("code").GetString().Should().Be("SKU_CONFLICT");
+        body.GetProperty("error").GetProperty("code").GetString().Should().Be("SKU_CONFLICT");
     }
 
     [Theory]
@@ -93,7 +93,7 @@ public sealed class AdminStoreEndpointsContractTests : IClassFixture<TycoonApiFa
         resp.IsSuccessStatusCode.Should().BeTrue();
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         body.GetProperty("items").GetArrayLength().Should().BeGreaterThan(0);
-        body.TryGetProperty("total", out _).Should().BeTrue();
+        body.TryGetProperty("totalItems", out _).Should().BeTrue();
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public sealed class AdminStoreEndpointsContractTests : IClassFixture<TycoonApiFa
 
         second.StatusCode.Should().Be(HttpStatusCode.Conflict);
         var body = await second.Content.ReadFromJsonAsync<JsonElement>();
-        body.GetProperty("code").GetString().Should().Be("ALREADY_INACTIVE");
+        body.GetProperty("error").GetProperty("code").GetString().Should().Be("ALREADY_INACTIVE");
     }
 
     // -------------------------------------------------------------------------

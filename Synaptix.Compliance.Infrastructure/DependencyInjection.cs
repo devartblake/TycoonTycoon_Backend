@@ -20,7 +20,7 @@ public static class DependencyInjection
 
         services.AddDbContext<ComplianceDb>(opts =>
             opts.UseNpgsql(connectionString)
-                .UseSnakeCaseNamingConventions());
+                .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IComplianceDb>(sp => sp.GetRequiredService<ComplianceDb>());
 

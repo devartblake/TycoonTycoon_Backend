@@ -11,13 +11,11 @@ namespace Synaptix.Backend.Api.Features.Analytics
 {
     public static class AnalyticsEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var analytics = app.MapGroup("/analytics").WithTags("Analytics");
-            var analyticsV1 = app.MapGroup("/api/v1/analytics").WithTags("Analytics");
 
             MapIngestionRoutes(analytics);
-            MapIngestionRoutes(analyticsV1);
         }
 
         private static void MapIngestionRoutes(RouteGroupBuilder group)

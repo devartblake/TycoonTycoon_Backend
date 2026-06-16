@@ -1,5 +1,6 @@
 ﻿using Mediator;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ namespace Synaptix.Backend.Api.Features.Matches
 {
     public static class MatchesEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/matches").WithTags("Matches");
 
@@ -28,7 +29,7 @@ namespace Synaptix.Backend.Api.Features.Matches
                 IMediator mediator,
                 CancellationToken ct) =>
             {
-                var sub = user.FindFirstValue(ClaimTypes.NameIdentifier);
+                var sub = user.FindFirstValue("sub") ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (!Guid.TryParse(sub, out var callerId) || callerId != req.HostPlayerId)
                     return Results.Forbid();
 

@@ -64,7 +64,7 @@ public sealed class QuestionsApprovalContractTests : IClassFixture<TycoonApiFact
             await db.SaveChangesAsync();
         }
 
-        var response = await _http.GetFromJsonAsync<QuestionSetDto>("/questions/set?count=20", JsonOptions);
+        var response = await _http.GetFromJsonAsync<QuestionSetDto>("/api/v1/questions/set?count=20", JsonOptions);
         response.Should().NotBeNull();
         response!.Questions.Should().Contain(q => q.Text.Contains("Approved question"));
         response.Questions.Should().NotContain(q => q.Text.Contains("Draft question"));

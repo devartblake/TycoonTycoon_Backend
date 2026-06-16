@@ -85,6 +85,81 @@ namespace Synaptix.Backend.Application.Auth
             return newUser;
         }
 
+        public async Task<AuthResult> BootstrapDeviceAsync(string deviceId, string? displayName = null)
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+                throw new InvalidOperationException("deviceId is required");
+
+            // Generate a collision-resistant handle; guests never log in by handle.
+            var handle = $"guest_{Guid.NewGuid():N}"[..16];
+            var randomSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+            var guest = User.CreateGuest(handle, ComputePasswordHash(randomSecret));
+
+            _database.Users.Add(guest);
+
+            var snapshot = BuildSnapshot(guest);
+            var jwtToken = CreateJwtToken(snapshot, clientType: "user");
+            var refreshToken = CreateRefreshTokenForDevice(guest.Id, deviceId, clientType: "user");
+
+            await _database.SaveChangesAsync();
+
+            return BuildAuthResult(snapshot, jwtToken, refreshToken);
+        }
+
+        public async Task<AuthResult> UpgradeAccountAsync(
+            Guid userId, string email, string password, string deviceId,
+            string? handle = null, string? country = null)
+        {
+            var user = await _database.Users.FindAsync(userId);
+            if (user is null)
+                throw new UnauthorizedAccessException("Account not found");
+
+            if (!user.IsAnonymous)
+                throw new InvalidOperationException("This account is already registered");
+
+            var normalizedEmail = email.ToLowerInvariant();
+            var resolvedHandle = !string.IsNullOrWhiteSpace(handle) ? handle : email.Split('@')[0];
+
+            var emailConflict = await _database.Users
+                .AnyAsync(u => u.Email == normalizedEmail && u.Id != userId);
+            if (emailConflict)
+                throw new InvalidOperationException("This email is already in use");
+
+            var handleConflict = await _database.Users
+                .AnyAsync(u => u.Handle == resolvedHandle && u.Id != userId);
+            if (handleConflict)
+                throw new InvalidOperationException("This handle is not available");
+
+            user.UpgradeToFullAccount(normalizedEmail, resolvedHandle, ComputePasswordHash(password));
+            if (!string.IsNullOrWhiteSpace(country))
+                user.UpdateProfile(handle: null, country: country);
+
+            // Rotate device tokens: revoke the guest device session, issue a fresh one.
+            var activeTokens = await _database.RefreshTokens
+                .Where(rt => rt.UserId == userId && rt.DeviceId == deviceId && !rt.IsRevoked)
+                .ToListAsync();
+            foreach (var token in activeTokens)
+                token.Revoke();
+
+            var snapshot = BuildSnapshot(user);
+            var jwtToken = CreateJwtToken(snapshot, clientType: "user");
+            var refreshToken = CreateRefreshTokenForDevice(user.Id, deviceId, clientType: "user");
+
+            await _database.SaveChangesAsync();
+
+            return BuildAuthResult(snapshot, jwtToken, refreshToken);
+        }
+
+        private static AuthUserSnapshot BuildSnapshot(User user) => new(
+            user.Id,
+            user.Email,
+            user.Handle,
+            user.PasswordHash,
+            user.Country,
+            user.Tier,
+            user.Mmr,
+            user.IsActive);
+
         // ── Private core logic ────────────────────────────────────────────────
 
         private async Task<AuthResult> LoginInternalAsync(

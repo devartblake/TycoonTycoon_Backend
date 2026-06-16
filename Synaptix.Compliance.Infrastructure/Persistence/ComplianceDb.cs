@@ -26,6 +26,4 @@ public sealed class ComplianceDb(DbContextOptions<ComplianceDb> options)
         builder.ApplyConfiguration(new ComplianceAuditEventConfiguration());
     }
 
-    protected override void ConfigureConventions(ModelConfigurationBuilder builder)
-        => builder.UseSnakeCaseNamingConvention();
 }

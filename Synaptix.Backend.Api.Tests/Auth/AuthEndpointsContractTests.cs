@@ -19,7 +19,7 @@ public sealed class AuthEndpointsContractTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task Signup_HappyPath_Returns_Tokens_And_UserId()
     {
-        var resp = await _http.PostAsJsonAsync("/auth/signup", NewSignupPayload());
+        var resp = await _http.PostAsJsonAsync("/api/v1/auth/signup", NewSignupPayload());
 
         resp.IsSuccessStatusCode.Should().BeTrue();
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
@@ -32,9 +32,9 @@ public sealed class AuthEndpointsContractTests : IClassFixture<TycoonApiFactory>
     public async Task Signup_DuplicateEmail_Returns_409_Conflict()
     {
         var email = UniqueEmail();
-        await _http.PostAsJsonAsync("/auth/signup", NewSignupPayload(email));
+        await _http.PostAsJsonAsync("/api/v1/auth/signup", NewSignupPayload(email));
 
-        var dup = await _http.PostAsJsonAsync("/auth/signup", NewSignupPayload(email));
+        var dup = await _http.PostAsJsonAsync("/api/v1/auth/signup", NewSignupPayload(email));
 
         dup.StatusCode.Should().Be(HttpStatusCode.Conflict);
         var body = await dup.Content.ReadFromJsonAsync<JsonElement>();
@@ -48,7 +48,7 @@ public sealed class AuthEndpointsContractTests : IClassFixture<TycoonApiFactory>
     [InlineData("user3@example.com", "short", "dev-3", "password too short")]
     public async Task Signup_InvalidInput_Returns_400(string email, string password, string deviceId, string _)
     {
-        var resp = await _http.PostAsJsonAsync("/auth/signup", new { email, password, deviceId, username = "testuser" });
+        var resp = await _http.PostAsJsonAsync("/api/v1/auth/signup", new { email, password, deviceId, username = "testuser" });
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -57,9 +57,9 @@ public sealed class AuthEndpointsContractTests : IClassFixture<TycoonApiFactory>
     {
         const string password = "Passw0rd!";
         var email = UniqueEmail();
-        await _http.PostAsJsonAsync("/auth/signup", NewSignupPayload(email));
+        await _http.PostAsJsonAsync("/api/v1/auth/signup", NewSignupPayload(email));
 
-        var resp = await _http.PostAsJsonAsync("/auth/login", new
+        var resp = await _http.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email,
             password,
@@ -75,7 +75,7 @@ public sealed class AuthEndpointsContractTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task Login_WrongPassword_Returns_401()
     {
-        var resp = await _http.PostAsJsonAsync("/auth/login", new
+        var resp = await _http.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "nobody@example.com",
             password = "wrongpassword",
@@ -88,11 +88,11 @@ public sealed class AuthEndpointsContractTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task Refresh_ValidToken_Returns_New_Tokens()
     {
-        var signup = await _http.PostAsJsonAsync("/auth/signup", NewSignupPayload());
+        var signup = await _http.PostAsJsonAsync("/api/v1/auth/signup", NewSignupPayload());
         var signupBody = await signup.Content.ReadFromJsonAsync<JsonElement>();
         var refreshToken = signupBody.GetProperty("refreshToken").GetString()!;
 
-        var resp = await _http.PostAsJsonAsync("/auth/refresh", new { refreshToken });
+        var resp = await _http.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken });
 
         resp.IsSuccessStatusCode.Should().BeTrue();
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
@@ -102,14 +102,14 @@ public sealed class AuthEndpointsContractTests : IClassFixture<TycoonApiFactory>
     [Fact]
     public async Task Refresh_InvalidToken_Returns_401()
     {
-        var resp = await _http.PostAsJsonAsync("/auth/refresh", new { refreshToken = "not-a-real-token" });
+        var resp = await _http.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken = "not-a-real-token" });
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task Logout_Without_Bearer_Returns_401()
     {
-        var resp = await _http.PostAsJsonAsync("/auth/logout", new { deviceId = UniqueId() });
+        var resp = await _http.PostAsJsonAsync("/api/v1/auth/logout", new { deviceId = UniqueId() });
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 

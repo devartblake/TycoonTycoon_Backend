@@ -24,7 +24,7 @@ public sealed class StoreSystemStatusEndpointsTests : IClassFixture<TycoonApiFac
         using var factory = CreateFactory(stripeEnabled: true, payPalEnabled: false);
         using var client = factory.CreateClient();
 
-        var status = await client.GetFromJsonAsync<StoreSystemStatusDto>("/store/system/status");
+        var status = await client.GetFromJsonAsync<StoreSystemStatusDto>("/api/v1/store/system/status");
         status.Should().NotBeNull();
         status!.StoreEnabled.Should().BeTrue();
         status.PaymentsEnabled.Should().BeTrue();
@@ -41,13 +41,18 @@ public sealed class StoreSystemStatusEndpointsTests : IClassFixture<TycoonApiFac
         using var admin = factory.CreateClient().WithAdminOpsKey();
         using var client = factory.CreateClient();
 
+        // store_purchases_enabled defaults false and isn't settable via the admin
+        // toggle; seed it so the checkout reaches the Stripe-disabled (503) path
+        // rather than the purchases feature gate (403).
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
         var patchResp = await admin.PatchAsJsonAsync(
             "/admin/store/system/status",
             new UpdateStoreSystemStatusRequest(StoreEnabled: true, PaymentsEnabled: true, StripeEnabled: false, PayPalEnabled: true));
 
         patchResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var status = await client.GetFromJsonAsync<StoreSystemStatusDto>("/store/system/status");
+        var status = await client.GetFromJsonAsync<StoreSystemStatusDto>("/api/v1/store/system/status");
         status.Should().NotBeNull();
         status!.StripeEnabled.Should().BeFalse();
         status.PayPalEnabled.Should().BeTrue();
@@ -56,7 +61,7 @@ public sealed class StoreSystemStatusEndpointsTests : IClassFixture<TycoonApiFac
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
 
         var response = await client.PostAsJsonAsync(
-            "/store/payments/checkout/session",
+            "/api/v1/store/payments/checkout/session",
             new CreateStripeCheckoutSessionRequest(Guid.Parse(signup.UserId), "powerup:skip", 1));
 
         response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
@@ -81,7 +86,7 @@ public sealed class StoreSystemStatusEndpointsTests : IClassFixture<TycoonApiFac
     private static async Task<SignupResponse> SignupAsync(HttpClient client, string prefix)
     {
         var signupResp = await client.PostAsJsonAsync(
-            "/auth/signup",
+            "/api/v1/auth/signup",
             new SignupRequest(
                 Email: $"{prefix}-{Guid.NewGuid():N}@example.com",
                 Password: "Passw0rd!",

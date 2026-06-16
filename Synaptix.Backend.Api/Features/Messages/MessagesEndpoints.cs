@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Synaptix.Backend.Api.Contracts;
@@ -11,7 +12,7 @@ namespace Synaptix.Backend.Api.Features.Messages
 {
     public static class MessagesEndpoints
     {
-        public static void Map(WebApplication app)
+        public static void Map(IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/messages")
                 .WithTags("Messages")

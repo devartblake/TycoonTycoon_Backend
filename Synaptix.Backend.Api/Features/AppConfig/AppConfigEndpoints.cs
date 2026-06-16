@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -10,9 +11,9 @@ namespace Synaptix.Backend.Api.Features.AppConfig;
 
 public static class AppConfigEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/v1/app/config", async (
+        app.MapGet("/app/config", async (
             IAppDb db,
             IHostEnvironment env,
             IConfiguration config,
@@ -60,8 +61,15 @@ public static class AppConfigEndpoints
 
             var minimumClientVersion = config["AppConfig:MinimumClientVersion"] ?? "0.0.1";
             var environment = env.EnvironmentName.ToLowerInvariant();
+            var assetManifestUrl = config["Assets:ManifestUrl"] ?? "/api/v1/assets/manifest";
+            var assets = new
+            {
+                remoteAssetsEnabled = config.GetValue("Assets:RemoteDeliveryEnabled", true),
+                manifestUrl = assetManifestUrl,
+                cacheMaxAgeSeconds = Math.Max(60, config.GetValue("Assets:CacheMaxAgeSeconds", 86_400))
+            };
 
-            return Results.Ok(new { environment, minimumClientVersion, features });
+            return Results.Ok(new { environment, minimumClientVersion, features, assets });
         })
         .WithTags("Config")
         .AllowAnonymous();

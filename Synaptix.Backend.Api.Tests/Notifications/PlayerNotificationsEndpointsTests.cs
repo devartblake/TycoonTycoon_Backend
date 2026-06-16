@@ -30,7 +30,7 @@ public sealed class PlayerNotificationsEndpointsTests : IClassFixture<TycoonApiF
     {
         using var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/notifications/inbox");
+        var response = await client.GetAsync("/api/v1/notifications/inbox");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -47,14 +47,14 @@ public sealed class PlayerNotificationsEndpointsTests : IClassFixture<TycoonApiF
         var senderId = Guid.Parse(sender.UserId);
         var recipientId = Guid.Parse(recipient.UserId);
 
-        var sendResponse = await senderClient.PostAsJsonAsync("/friends/request", new
+        var sendResponse = await senderClient.PostAsJsonAsync("/api/v1/friends/request", new
         {
             FromPlayerId = senderId,
             ToPlayerId = recipientId
         });
         sendResponse.EnsureSuccessStatusCode();
 
-        var senderToRecipientInbox = await recipientClient.GetFromJsonAsync<PlayerNotificationsInboxResponseDto>("/notifications/inbox");
+        var senderToRecipientInbox = await recipientClient.GetFromJsonAsync<PlayerNotificationsInboxResponseDto>("/api/v1/notifications/inbox");
         senderToRecipientInbox.Should().NotBeNull();
         senderToRecipientInbox!.Items.Should().ContainSingle();
         senderToRecipientInbox.Items[0].Type.Should().Be("friend");
@@ -63,13 +63,13 @@ public sealed class PlayerNotificationsEndpointsTests : IClassFixture<TycoonApiF
         var friendRequest = await sendResponse.Content.ReadFromJsonAsync<FriendRequestDto>();
         friendRequest.Should().NotBeNull();
 
-        var acceptResponse = await recipientClient.PostAsJsonAsync($"/friends/request/{friendRequest!.RequestId}/accept", new
+        var acceptResponse = await recipientClient.PostAsJsonAsync($"/api/v1/friends/request/{friendRequest!.RequestId}/accept", new
         {
             PlayerId = recipientId
         });
         acceptResponse.EnsureSuccessStatusCode();
 
-        var recipientToSenderInbox = await senderClient.GetFromJsonAsync<PlayerNotificationsInboxResponseDto>("/notifications/inbox");
+        var recipientToSenderInbox = await senderClient.GetFromJsonAsync<PlayerNotificationsInboxResponseDto>("/api/v1/notifications/inbox");
         recipientToSenderInbox.Should().NotBeNull();
         recipientToSenderInbox!.Items.Should().Contain(x => x.Title == "Friend request accepted");
     }
@@ -102,24 +102,24 @@ public sealed class PlayerNotificationsEndpointsTests : IClassFixture<TycoonApiF
             notificationId = db.PlayerNotifications.Single(x => x.PlayerId == ownerId).Id;
         }
 
-        var unread = await ownerClient.GetFromJsonAsync<UnreadCountResponseDto>("/notifications/unread-count");
+        var unread = await ownerClient.GetFromJsonAsync<UnreadCountResponseDto>("/api/v1/notifications/unread-count");
         unread.Should().NotBeNull();
         unread!.UnreadCount.Should().Be(1);
 
-        var forbiddenRead = await otherClient.PostAsync($"/notifications/{notificationId}/read", null);
+        var forbiddenRead = await otherClient.PostAsync($"/api/v1/notifications/{notificationId}/read", null);
         forbiddenRead.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         await forbiddenRead.HasErrorCodeAsync("FORBIDDEN");
 
-        var readResponse = await ownerClient.PostAsync($"/notifications/{notificationId}/read", null);
+        var readResponse = await ownerClient.PostAsync($"/api/v1/notifications/{notificationId}/read", null);
         readResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        unread = await ownerClient.GetFromJsonAsync<UnreadCountResponseDto>("/notifications/unread-count");
+        unread = await ownerClient.GetFromJsonAsync<UnreadCountResponseDto>("/api/v1/notifications/unread-count");
         unread!.UnreadCount.Should().Be(0);
 
-        var deleteResponse = await ownerClient.DeleteAsync($"/notifications/{notificationId}");
+        var deleteResponse = await ownerClient.DeleteAsync($"/api/v1/notifications/{notificationId}");
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var inbox = await ownerClient.GetFromJsonAsync<PlayerNotificationsInboxResponseDto>("/notifications/inbox");
+        var inbox = await ownerClient.GetFromJsonAsync<PlayerNotificationsInboxResponseDto>("/api/v1/notifications/inbox");
         inbox.Should().NotBeNull();
         inbox!.Items.Should().BeEmpty();
     }

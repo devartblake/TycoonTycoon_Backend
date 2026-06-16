@@ -33,7 +33,7 @@ public sealed class QuestionDiscoveryEndpointsTests : IClassFixture<TycoonApiFac
         await SeedQuestionAsync("Approved history", "History", QuestionDifficulty.Medium, "Approved");
         await SeedQuestionAsync("Draft science", "Science", QuestionDifficulty.Hard, "Draft");
 
-        var response = await _http.GetFromJsonAsync<QuestionCategoriesResponseDto>("/questions/categories", JsonOptions);
+        var response = await _http.GetFromJsonAsync<QuestionCategoriesResponseDto>("/api/v1/questions/categories", JsonOptions);
 
         response.Should().NotBeNull();
         response!.Categories.Should().Contain(x => x.Key == "Science" && x.Count >= 1);
@@ -46,7 +46,7 @@ public sealed class QuestionDiscoveryEndpointsTests : IClassFixture<TycoonApiFac
         await SeedQuestionAsync("Metadata science", "Science", QuestionDifficulty.Easy, "Approved");
         await SeedQuestionAsync("Metadata history", "History", QuestionDifficulty.Hard, "Approved");
 
-        var response = await _http.GetFromJsonAsync<QuestionMetadataResponseDto>("/questions/metadata", JsonOptions);
+        var response = await _http.GetFromJsonAsync<QuestionMetadataResponseDto>("/api/v1/questions/metadata", JsonOptions);
 
         response.Should().NotBeNull();
         response!.Categories.Should().Contain(x => x.Key == "Science");
@@ -63,7 +63,7 @@ public sealed class QuestionDiscoveryEndpointsTests : IClassFixture<TycoonApiFac
         await SeedQuestionAsync("Science preview", "Science", QuestionDifficulty.Easy, "Approved");
         await SeedQuestionAsync("History preview", "History", QuestionDifficulty.Hard, "Approved");
 
-        var response = await _http.PostAsJsonAsync("/questions/preview-set", new PreviewQuestionSetRequest(
+        var response = await _http.PostAsJsonAsync("/api/v1/questions/preview-set", new PreviewQuestionSetRequest(
             Categories: new[] { "Science" },
             Difficulties: new[] { QuestionDifficulty.Easy },
             Count: 10));

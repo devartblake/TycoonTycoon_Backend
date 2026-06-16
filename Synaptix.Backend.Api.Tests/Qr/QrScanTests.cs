@@ -28,10 +28,10 @@ namespace Synaptix.Backend.Api.Tests.Qr
                 OccurredAtUtc: DateTimeOffset.UtcNow,
                 Type: QrScanType.Referral);
 
-            var a = await _http.PostAsJsonAsync("/qr/track-scan", req);
+            var a = await _http.PostAsJsonAsync("/api/v1/qr/track-scan", req);
             a.IsSuccessStatusCode.Should().BeTrue();
 
-            var b = await _http.PostAsJsonAsync("/qr/track-scan", req);
+            var b = await _http.PostAsJsonAsync("/api/v1/qr/track-scan", req);
             b.IsSuccessStatusCode.Should().BeTrue();
 
             var r2 = await b.Content.ReadFromJsonAsync<TrackScanResultDto>();

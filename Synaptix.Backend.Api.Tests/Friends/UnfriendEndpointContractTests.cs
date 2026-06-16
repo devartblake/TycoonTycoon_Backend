@@ -23,7 +23,7 @@ public sealed class UnfriendEndpointContractTests : IClassFixture<TycoonApiFacto
     [Fact]
     public async Task Unfriend_WithEmptyIds_ReturnsValidationEnvelope()
     {
-        var request = new HttpRequestMessage(HttpMethod.Delete, "/friends")
+        var request = new HttpRequestMessage(HttpMethod.Delete, "/api/v1/friends")
         {
             Content = JsonContent.Create(new
             {
@@ -45,7 +45,7 @@ public sealed class UnfriendEndpointContractTests : IClassFixture<TycoonApiFacto
 
         await CreateFriendshipAsync(from, to);
 
-        var removeRequest = new HttpRequestMessage(HttpMethod.Delete, "/friends")
+        var removeRequest = new HttpRequestMessage(HttpMethod.Delete, "/api/v1/friends")
         {
             Content = JsonContent.Create(new { PlayerId = from, FriendPlayerId = to })
         };
@@ -70,7 +70,7 @@ public sealed class UnfriendEndpointContractTests : IClassFixture<TycoonApiFacto
 
         await CreateFriendshipAsync(from, to);
 
-        var removeRequest = new HttpRequestMessage(HttpMethod.Delete, "/friends")
+        var removeRequest = new HttpRequestMessage(HttpMethod.Delete, "/api/v1/friends")
         {
             Content = JsonContent.Create(new { PlayerId = from, FriendId = to })
         };

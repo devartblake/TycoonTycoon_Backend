@@ -645,6 +645,7 @@ services:
     environment:
       DJANGO_DEBUG: "false"
       DJANGO_ALLOWED_HOSTS: "*"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:${DASHBOARD_PORT:-8200},http://127.0.0.1:${DASHBOARD_PORT:-8200}"
       DOTNET_API_BASE_URL: "http://backend-api:5000"
       FASTAPI_BASE_URL: "http://sidecar:8100"
       MINIO_BASE_URL: "http://minio:9000"

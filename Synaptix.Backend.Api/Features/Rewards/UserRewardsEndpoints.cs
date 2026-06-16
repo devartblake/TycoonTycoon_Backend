@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Domain.Entities;
@@ -9,7 +10,7 @@ namespace Synaptix.Backend.Api.Features.Rewards;
 
 public static class UserRewardsEndpoints
 {
-    public static void Map(WebApplication app)
+    public static void Map(IEndpointRouteBuilder app)
     {
         app.MapGet("/users/me/rewards", GetMyRewards)
             .WithTags("Rewards")

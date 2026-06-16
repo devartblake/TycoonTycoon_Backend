@@ -25,7 +25,7 @@ public sealed class AnalyticsCompatibilityEndpointsTests : IClassFixture<TycoonA
         var playerId = Guid.NewGuid();
         var matchId = Guid.NewGuid();
 
-        var resp = await http.PostAsJsonAsync("/analytics/track", new
+        var resp = await http.PostAsJsonAsync("/api/v1/analytics/track", new
         {
             userId = playerId.ToString(),
             eventName = "question_answered",
@@ -81,7 +81,7 @@ public sealed class AnalyticsCompatibilityEndpointsTests : IClassFixture<TycoonA
         var playerId = Guid.NewGuid();
         var matchId = Guid.NewGuid();
 
-        var resp = await http.PostAsJsonAsync("/analytics/events", new
+        var resp = await http.PostAsJsonAsync("/api/v1/analytics/events", new
         {
             id = $"evt-direct-{Guid.NewGuid():N}",
             playerId,
@@ -179,8 +179,8 @@ public sealed class AnalyticsCompatibilityEndpointsTests : IClassFixture<TycoonA
             }
         };
 
-        (await http.PostAsJsonAsync("/analytics/track", body)).StatusCode.Should().Be(HttpStatusCode.Accepted);
-        (await http.PostAsJsonAsync("/analytics/track", body)).StatusCode.Should().Be(HttpStatusCode.Accepted);
+        (await http.PostAsJsonAsync("/api/v1/analytics/track", body)).StatusCode.Should().Be(HttpStatusCode.Accepted);
+        (await http.PostAsJsonAsync("/api/v1/analytics/track", body)).StatusCode.Should().Be(HttpStatusCode.Accepted);
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IAppDb>();
@@ -198,7 +198,7 @@ public sealed class AnalyticsCompatibilityEndpointsTests : IClassFixture<TycoonA
     {
         var http = _factory.CreateClient();
 
-        var resp = await http.PostAsJsonAsync("/analytics/track", new
+        var resp = await http.PostAsJsonAsync("/api/v1/analytics/track", new
         {
             userId = Guid.NewGuid().ToString(),
             eventName = "app_opened",
@@ -222,7 +222,7 @@ public sealed class AnalyticsCompatibilityEndpointsTests : IClassFixture<TycoonA
     {
         var http = _factory.CreateClient();
 
-        var resp = await http.PostAsJsonAsync("/analytics/session_start", new
+        var resp = await http.PostAsJsonAsync("/api/v1/analytics/session_start", new
         {
             userId = Guid.NewGuid().ToString(),
             startedAtUtc = DateTime.UtcNow

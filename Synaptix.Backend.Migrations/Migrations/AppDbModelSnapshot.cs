@@ -55,54 +55,6 @@ namespace Synaptix.Backend.Migrations.Migrations
                     b.ToTable("season_reward_rules", (string)null);
                 });
 
-            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.SetupReport", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTimeOffset>("GeneratedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("generated_at_utc");
-
-                    b.Property<string>("ReportJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("report_json");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("source");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("status");
-
-                    b.Property<int>("WarningCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("warning_count");
-
-                    b.HasKey("Id")
-                        .HasName("pk_setup_reports");
-
-                    b.HasIndex("CreatedAtUtc")
-                        .HasDatabaseName("ix_setup_reports_created_at_utc");
-
-                    b.HasIndex("Status", "CreatedAtUtc")
-                        .HasDatabaseName("ix_setup_reports_status_created_at_utc");
-
-                    b.ToTable("setup_reports", (string)null);
-                });
-
             modelBuilder.Entity("Synaptix.Backend.Application.Analytics.Models.QuestionAnsweredAnalyticsEvent", b =>
                 {
                     b.Property<string>("Id")
@@ -1383,6 +1335,22 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AgeGroup")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("age_group");
+
+                    b.Property<string>("Audience")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("audience");
+
+                    b.Property<string>("CanonicalCategory")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("canonical_category");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -1403,6 +1371,11 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("difficulty");
 
+                    b.Property<string>("GradeBand")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("grade_band");
+
                     b.Property<bool>("IsPublished")
                         .HasColumnType("boolean")
                         .HasColumnName("is_published");
@@ -1415,11 +1388,21 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("reward_xp");
 
+                    b.Property<string>("Subject")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("subject");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("title");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("topic");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -1428,14 +1411,26 @@ namespace Synaptix.Backend.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_learning_modules");
 
+                    b.HasIndex("AgeGroup")
+                        .HasDatabaseName("ix_learning_modules_age_group");
+
+                    b.HasIndex("CanonicalCategory")
+                        .HasDatabaseName("ix_learning_modules_canonical_category");
+
                     b.HasIndex("Category")
                         .HasDatabaseName("ix_learning_modules_category");
 
                     b.HasIndex("Difficulty")
                         .HasDatabaseName("ix_learning_modules_difficulty");
 
+                    b.HasIndex("GradeBand")
+                        .HasDatabaseName("ix_learning_modules_grade_band");
+
                     b.HasIndex("IsPublished")
                         .HasDatabaseName("ix_learning_modules_is_published");
+
+                    b.HasIndex("Subject")
+                        .HasDatabaseName("ix_learning_modules_subject");
 
                     b.ToTable("learning_modules", (string)null);
                 });
@@ -2431,6 +2426,52 @@ namespace Synaptix.Backend.Migrations.Migrations
                     b.ToTable("player_event_stats", (string)null);
                 });
 
+            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.PlayerLookupCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("ShortCode")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)")
+                        .HasColumnName("short_code");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_player_lookup_codes");
+
+                    b.HasIndex("PlayerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_lookup_codes_player_id");
+
+                    b.HasIndex("ShortCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_player_lookup_codes_short_code");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_player_lookup_codes_user_id");
+
+                    b.ToTable("player_lookup_codes", (string)null);
+                });
+
             modelBuilder.Entity("Synaptix.Backend.Domain.Entities.PlayerModerationProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3074,6 +3115,22 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AgeGroup")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("age_group");
+
+                    b.Property<string>("Audience")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("audience");
+
+                    b.Property<string>("CanonicalCategory")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("canonical_category");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -3094,10 +3151,43 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("difficulty");
 
+                    b.Property<string>("DisplayCategory")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("display_category");
+
+                    b.Property<string>("GradeBand")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("grade_band");
+
                     b.Property<string>("MediaKey")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("media_key");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("media_type");
+
+                    b.Property<string>("QuestionType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("question_type");
+
+                    b.Property<string>("SourceDataset")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("source_dataset");
+
+                    b.Property<string>("SourceQuestionId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("source_question_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -3108,11 +3198,31 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("status_changed_at_utc");
 
+                    b.Property<string>("Subject")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("subject");
+
+                    b.Property<string>("Subtopic")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("subtopic");
+
+                    b.Property<string>("TaxonomyTagsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("taxonomy_tags_json");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("text");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("topic");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -3121,14 +3231,37 @@ namespace Synaptix.Backend.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_questions");
 
+                    b.HasIndex("AgeGroup")
+                        .HasDatabaseName("ix_questions_age_group");
+
+                    b.HasIndex("CanonicalCategory")
+                        .HasDatabaseName("ix_questions_canonical_category");
+
                     b.HasIndex("Category")
                         .HasDatabaseName("ix_questions_category");
 
                     b.HasIndex("Difficulty")
                         .HasDatabaseName("ix_questions_difficulty");
 
+                    b.HasIndex("GradeBand")
+                        .HasDatabaseName("ix_questions_grade_band");
+
+                    b.HasIndex("SourceDataset")
+                        .HasDatabaseName("ix_questions_source_dataset");
+
+                    b.HasIndex("Subject")
+                        .HasDatabaseName("ix_questions_subject");
+
                     b.HasIndex("UpdatedAtUtc")
                         .HasDatabaseName("ix_questions_updated_at_utc");
+
+                    b.HasIndex("SourceDataset", "SourceQuestionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_questions_source_dataset_source_question_id")
+                        .HasFilter("source_dataset IS NOT NULL AND source_question_id IS NOT NULL");
+
+                    b.HasIndex("Status", "CanonicalCategory", "Difficulty")
+                        .HasDatabaseName("ix_questions_status_canonical_category_difficulty");
 
                     b.ToTable("questions", (string)null);
                 });
@@ -3229,6 +3362,92 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasDatabaseName("ix_question_tags_question_id_tag");
 
                     b.ToTable("question_tags", (string)null);
+                });
+
+            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.QuestionTaxonomySuggestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AppliedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("applied_at_utc");
+
+                    b.Property<string>("ConfidenceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("confidence_json");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("ModelVersion")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("model_version");
+
+                    b.Property<decimal>("OverallConfidence")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("numeric(5,4)")
+                        .HasColumnName("overall_confidence");
+
+                    b.Property<Guid?>("QuestionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
+
+                    b.Property<string>("ReviewNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("review_note");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("reviewed_by");
+
+                    b.Property<string>("SourceDataset")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("source_dataset");
+
+                    b.Property<string>("SourceQuestionId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("source_question_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("SuggestedTaxonomyJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("suggested_taxonomy_json");
+
+                    b.Property<string>("WarningsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("warnings_json");
+
+                    b.HasKey("Id")
+                        .HasName("pk_question_taxonomy_suggestions");
+
+                    b.HasIndex("QuestionId")
+                        .HasDatabaseName("ix_question_taxonomy_suggestions_question_id");
+
+                    b.HasIndex("SourceDataset", "SourceQuestionId")
+                        .HasDatabaseName("ix_question_taxonomy_suggestions_source");
+
+                    b.HasIndex("Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_question_taxonomy_suggestions_status_created_at_utc");
+
+                    b.ToTable("question_taxonomy_suggestions", (string)null);
                 });
 
             modelBuilder.Entity("Synaptix.Backend.Domain.Entities.ReferralCode", b =>
@@ -3388,6 +3607,161 @@ namespace Synaptix.Backend.Migrations.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.RewardChainTicket", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ActivatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("activated_at_utc");
+
+                    b.Property<string>("AnimationJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("animation_json");
+
+                    b.Property<string>("ChainedSpinId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("chained_spin_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
+
+                    b.Property<string>("GeneratedClaimToken")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("generated_claim_token");
+
+                    b.Property<string>("GeneratedSpinId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("generated_spin_id");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("RewardId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reward_id");
+
+                    b.Property<string>("RewardLinesJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reward_lines_json");
+
+                    b.Property<string>("SourceSpinId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("source_spin_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reward_chain_tickets");
+
+                    b.HasIndex("ChainedSpinId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reward_chain_tickets_chained_spin_id");
+
+                    b.HasIndex("PlayerId", "SourceSpinId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reward_chain_tickets_player_id_source_spin_id");
+
+                    b.HasIndex("PlayerId", "Status", "ExpiresAtUtc")
+                        .HasDatabaseName("ix_reward_chain_tickets_player_id_status_expires_at_utc");
+
+                    b.ToTable("reward_chain_tickets", (string)null);
+                });
+
+            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.RewardClaimLedger", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AppliedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("applied_at_utc");
+
+                    b.Property<Guid>("AuditCorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("audit_correlation_id");
+
+                    b.Property<string>("ClaimStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("claim_status");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("Mechanism")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("mechanism");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("RewardId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reward_id");
+
+                    b.Property<string>("RewardLinesJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reward_lines_json");
+
+                    b.Property<string>("SpinId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("spin_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reward_claim_ledger");
+
+                    b.HasIndex("PlayerId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reward_claim_ledger_player_id_idempotency_key");
+
+                    b.HasIndex("PlayerId", "SpinId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reward_claim_ledger_player_id_spin_id");
+
+                    b.HasIndex("PlayerId", "Mechanism", "AppliedAtUtc")
+                        .HasDatabaseName("ix_reward_claim_ledger_player_id_mechanism_applied_at_utc");
+
+                    b.ToTable("reward_claim_ledger", (string)null);
+                });
+
             modelBuilder.Entity("Synaptix.Backend.Domain.Entities.RewardClaimRule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3433,6 +3807,100 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasDatabaseName("ix_reward_claim_rules_reward_id");
 
                     b.ToTable("reward_claim_rules", (string)null);
+                });
+
+            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.RewardSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AnimationJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("animation_json");
+
+                    b.Property<string>("ClaimTokenHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("claim_token_hash");
+
+                    b.Property<DateTimeOffset?>("ClaimedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_at_utc");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("Mechanism")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("mechanism");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<string>("PolicySnapshotJson")
+                        .HasColumnType("text")
+                        .HasColumnName("policy_snapshot_json");
+
+                    b.Property<string>("ReactorId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reactor_id");
+
+                    b.Property<string>("RewardId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reward_id");
+
+                    b.Property<string>("RewardLinesJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reward_lines_json");
+
+                    b.Property<string>("SpinId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("spin_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reward_sessions");
+
+                    b.HasIndex("SpinId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reward_sessions_spin_id");
+
+                    b.HasIndex("PlayerId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reward_sessions_player_id_idempotency_key");
+
+                    b.HasIndex("PlayerId", "Mechanism", "CreatedAtUtc")
+                        .HasDatabaseName("ix_reward_sessions_player_id_mechanism_created_at_utc");
+
+                    b.ToTable("reward_sessions", (string)null);
                 });
 
             modelBuilder.Entity("Synaptix.Backend.Domain.Entities.Season", b =>
@@ -3658,6 +4126,54 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasDatabaseName("ix_season_reward_claims_season_id_player_id_reward_day");
 
                     b.ToTable("season_reward_claims", (string)null);
+                });
+
+            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.SetupReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset>("GeneratedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at_utc");
+
+                    b.Property<string>("ReportJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("report_json");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("source");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("WarningCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("warning_count");
+
+                    b.HasKey("Id")
+                        .HasName("pk_setup_reports");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_setup_reports_created_at_utc");
+
+                    b.HasIndex("Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_setup_reports_status_created_at_utc");
+
+                    b.ToTable("setup_reports", (string)null);
                 });
 
             modelBuilder.Entity("Synaptix.Backend.Domain.Entities.SkillNode", b =>
@@ -4391,6 +4907,10 @@ namespace Synaptix.Backend.Migrations.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
+
+                    b.Property<bool>("IsAnonymous")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_anonymous");
 
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")

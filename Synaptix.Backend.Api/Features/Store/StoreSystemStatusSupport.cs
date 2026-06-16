@@ -24,6 +24,7 @@ internal static class StoreSystemStatusSupport
 
         var storeEnabled = flags.GetValueOrDefault(StoreEnabledFlag, true);
         var paymentsEnabled = flags.GetValueOrDefault(PaymentsEnabledFlag, true);
+        var storePurchasesEnabled = flags.GetValueOrDefault(StorePurchasesEnabledFlag, false);
         var stripeConfigured = configuration.GetValue("Stripe:Enabled", false);
         var payPalConfigured = configuration.GetValue("PayPal:Enabled", false);
         var stripeToggleEnabled = flags.GetValueOrDefault(StripeEnabledFlag, true);
@@ -35,6 +36,7 @@ internal static class StoreSystemStatusSupport
         return new StoreSystemStatusDto(
             StoreEnabled: storeEnabled,
             PaymentsEnabled: paymentsEnabled,
+            StorePurchasesEnabled: storePurchasesEnabled,
             StripeConfigured: stripeConfigured,
             StripeEnabled: stripeEnabled,
             PayPalConfigured: payPalConfigured,
