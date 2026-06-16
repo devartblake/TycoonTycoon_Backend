@@ -107,6 +107,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<StoreItem> StoreItems => Set<StoreItem>();
         public DbSet<StoreStockPolicy> StoreStockPolicies => Set<StoreStockPolicy>();
         public DbSet<PlayerStoreStockState> PlayerStoreStockStates => Set<PlayerStoreStockState>();
+        public DbSet<ParentalPurchaseControl> ParentalPurchaseControls => Set<ParentalPurchaseControl>();
         public DbSet<FlashSale> FlashSales => Set<FlashSale>();
         public DbSet<RewardClaimRule> RewardClaimRules => Set<RewardClaimRule>();
         public DbSet<SeasonRewardRule> SeasonRewardRules => Set<SeasonRewardRule>();

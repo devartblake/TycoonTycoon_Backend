@@ -47,5 +47,11 @@ namespace Synaptix.Backend.Domain.Entities
 
         public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+
+        // Compliance fields (COPPA / consumer protection)
+        public bool IsRandomized { get; set; }
+        public int AgeMin { get; set; }
+        public bool RequiresParentApproval { get; set; }
+        public bool IsRefundable { get; set; } = true;
     }
 }

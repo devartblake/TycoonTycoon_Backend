@@ -20,5 +20,10 @@ namespace Synaptix.Backend.Domain.Entities
             Content = content.Trim();
             ClientMessageId = string.IsNullOrWhiteSpace(clientMessageId) ? null : clientMessageId.Trim();
         }
+
+        public void Redact()
+        {
+            Content = "[message deleted]";
+        }
     }
 }

@@ -16,10 +16,27 @@ public static class InternalEndpoints
 
         group.MapGet("/users/{userId:guid}/restrictions", HandleGetRestrictions);
         group.MapGet("/users/{userId:guid}/consent-status", HandleGetConsentStatus);
+        group.MapPost("/parental-consent/initiate", HandleInitiateParentalConsent);
         group.MapGet("/privacy-requests/pending", HandleGetPending);
         group.MapPatch("/privacy-requests/{requestId:guid}", HandleUpdatePrivacyRequest);
         group.MapPost("/audit", HandleRecordAudit);
         group.MapGet("/audit/{userId:guid}", HandleGetAudit);
+    }
+
+    // Server-initiated parental consent — called by the main backend (which sends the email).
+    private static async Task<IResult> HandleInitiateParentalConsent(
+        [FromBody] InitiateParentalConsentInternalRequest body,
+        IParentalConsentService svc,
+        CancellationToken ct)
+    {
+        var (record, rawToken) = await svc.InitiateAsync(body.UserId, body.ParentEmail, null, ct);
+        return Results.Ok(new
+        {
+            record.Id,
+            record.Status,
+            record.ExpiresAt,
+            ConsentToken = rawToken
+        });
     }
 
     /// Returns the set of feature restrictions that apply to this user (empty = no restrictions).
@@ -83,8 +100,8 @@ public static class InternalEndpoints
         {
             r.Id,
             r.UserId,
-            r.RequestType,
-            r.Status,
+            RequestType = r.RequestType.ToString(),
+            Status = r.Status.ToString(),
             r.SubmittedAt
         }));
     }
@@ -139,6 +156,7 @@ public static class InternalEndpoints
     }
 }
 
+public sealed record InitiateParentalConsentInternalRequest(Guid UserId, string ParentEmail);
 public sealed record UpdatePrivacyRequestBody(string Status, string? Notes);
 public sealed record RecordAuditRequest(
     Guid? UserId,
