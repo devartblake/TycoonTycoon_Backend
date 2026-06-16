@@ -87,6 +87,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<StoreItem> StoreItems { get; }
         DbSet<StoreStockPolicy> StoreStockPolicies { get; }
         DbSet<PlayerStoreStockState> PlayerStoreStockStates { get; }
+        DbSet<ParentalPurchaseControl> ParentalPurchaseControls { get; }
         DbSet<FlashSale> FlashSales { get; }
         DbSet<RewardClaimRule> RewardClaimRules { get; }
         DbSet<SeasonRewardRule> SeasonRewardRules { get; }

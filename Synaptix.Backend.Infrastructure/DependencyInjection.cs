@@ -17,6 +17,8 @@ using Synaptix.Backend.Application.Questions;
 using Synaptix.Backend.Domain.Abstractions;
 using Synaptix.Backend.Infrastructure.Analytics.Elastic;
 using Synaptix.Backend.Infrastructure.Analytics.Mongo;
+using Synaptix.Backend.Application.Email;
+using Synaptix.Backend.Infrastructure.Email;
 using Synaptix.Backend.Infrastructure.Events;
 using Synaptix.Backend.Infrastructure.Persistence;
 using Synaptix.Backend.Infrastructure.Services;
@@ -238,6 +240,20 @@ namespace Synaptix.Backend.Infrastructure
             services.AddSingleton<IClock, SystemClock>();
             services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
             services.AddQuestionTaxonomySidecarClient(cfg);
+
+            // Email — use SMTP when host is configured; log-only otherwise (dev/test)
+            var smtpHost = cfg["Email:Smtp:Host"];
+            if (!string.IsNullOrWhiteSpace(smtpHost))
+            {
+                services.AddOptions<SmtpOptions>()
+                    .Bind(cfg.GetSection(SmtpOptions.SectionName))
+                    .ValidateOnStart();
+                services.AddScoped<IEmailService, SmtpEmailService>();
+            }
+            else
+            {
+                services.AddScoped<IEmailService, NullEmailService>();
+            }
 
             return services;
         }

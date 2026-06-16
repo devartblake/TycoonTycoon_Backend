@@ -307,11 +307,22 @@ namespace Synaptix.Backend.Api.Features.Store
             PlayerTransactionService txnService,
             IStoreStockService stockService,
             IPlayerMindProfileService mindProfiles,
+            Synaptix.Backend.Application.Store.IStorePurchaseEligibilityService eligibility,
             CancellationToken ct)
         {
             var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);
             if (storeEnabled is not null)
                 return storeEnabled;
+
+            // Compliance eligibility gate (COPPA / parental controls)
+            if (TryGetAuthenticatedPlayerId(httpContext.User, out var buyerPlayerId) && buyerPlayerId != Guid.Empty)
+            {
+                var eligible = await eligibility.CheckAsync(buyerPlayerId, req.Sku, ct);
+                if (!eligible.IsEligible)
+                    return ApiResponses.Error(StatusCodes.Status403Forbidden,
+                        eligible.ErrorCode ?? "PURCHASE_INELIGIBLE",
+                        eligible.ErrorMessage ?? "Purchase not permitted.");
+            }
 
             // Validate currency parameter
             var currency = req.Currency?.ToLowerInvariant();

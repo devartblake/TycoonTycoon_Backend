@@ -93,6 +93,8 @@ using Synaptix.Backend.Api.Features.Skills;
 using Synaptix.Backend.Api.Features.Study;
 using Synaptix.Backend.Api.Features.Assets;
 using Synaptix.Backend.Api.Features.Users;
+using Synaptix.Backend.Api.Features.ParentalConsent;
+using Synaptix.Backend.Api.Features.AdminPrivacy;
 using Synaptix.Backend.Api.Middleware;
 using Synaptix.Backend.Api.Observability;
 using Synaptix.Backend.Api.Payments.PayPal;
@@ -785,6 +787,12 @@ if (hangfireEnabled)
             "0 2 * * *"
         );
 
+        RecurringJob.AddOrUpdate<Synaptix.Backend.Application.Privacy.PrivacyRequestFulfillmentJob>(
+            "privacy-request-fulfillment",
+            job => job.RunAsync(CancellationToken.None),
+            "*/15 * * * *"
+        );
+
         app.Logger.LogInformation("✅ Hangfire recurring jobs configured");
     }
     catch (Exception ex)
@@ -1093,6 +1101,7 @@ AdminSetupEndpoints.Map(admin);
 AdminLearningModulesEndpoints.Map(admin);
 AdminPersonalizationEndpoints.Map(admin);
 AdminExperimentEndpoints.Map(admin);
+AdminPrivacyEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Tycoon Backend API starting...");

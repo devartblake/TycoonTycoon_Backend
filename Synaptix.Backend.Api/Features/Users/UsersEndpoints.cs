@@ -29,6 +29,7 @@ namespace Synaptix.Backend.Api.Features.Users
             usersGroup.MapGet("/me/wallet", GetMyWallet);
             usersGroup.MapGet("/me/transactions", GetMyTransactions);
             usersGroup.MapPost("/me/onboarding-reward", ClaimOnboardingReward);
+            usersGroup.MapGet("/me/purchases", GetMyPurchases);
         }
 
         private static async Task<IResult> GetCurrentUserProfile(
@@ -301,6 +302,47 @@ namespace Synaptix.Backend.Api.Features.Users
                 BalanceSynapseShards: result.BalanceDiamonds));
         }
 
+        private static readonly HashSet<string> PurchaseKinds = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "store-purchase", "iap-receipt-validation", "stripe-checkout-payment", "paypal-order-payment"
+        };
+
+        private static async Task<IResult> GetMyPurchases(
+            HttpContext httpContext,
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
+            IAppDb database,
+            CancellationToken cancellation)
+        {
+            if (!TryGetUserId(httpContext, out var userId))
+                return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+            page = page <= 0 ? 1 : page;
+            pageSize = pageSize <= 0 ? 20 : Math.Clamp(pageSize, 1, 100);
+
+            var query = database.PlayerTransactions
+                .AsNoTracking()
+                .Where(t => PurchaseKinds.Contains(t.Kind)
+                    && t.Actors.Any(a => a.PlayerId == userId))
+                .OrderByDescending(t => t.CreatedAtUtc);
+
+            var total = await query.CountAsync(cancellation);
+
+            var rows = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => new PurchaseHistoryItemDto(
+                    t.Id,
+                    t.Kind,
+                    t.Status.ToString(),
+                    t.Receipt,
+                    t.CreatedAtUtc,
+                    t.CompletedAtUtc))
+                .ToListAsync(cancellation);
+
+            return Results.Ok(new PurchaseHistoryDto(page, pageSize, total, rows));
+        }
+
         private static bool TryGetUserId(HttpContext httpContext, out Guid userId)
         {
             userId = Guid.Empty;
@@ -323,5 +365,19 @@ namespace Synaptix.Backend.Api.Features.Users
             int BalanceCredits,
             int BalanceNeuralXp,
             int BalanceSynapseShards);
+
+        public sealed record PurchaseHistoryItemDto(
+            Guid Id,
+            string Kind,
+            string Status,
+            string? Receipt,
+            DateTimeOffset CreatedAtUtc,
+            DateTimeOffset? CompletedAtUtc);
+
+        public sealed record PurchaseHistoryDto(
+            int Page,
+            int PageSize,
+            int Total,
+            IReadOnlyList<PurchaseHistoryItemDto> Items);
     }
 }

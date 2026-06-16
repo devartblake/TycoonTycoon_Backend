@@ -34,6 +34,31 @@ internal sealed class ComplianceClient(HttpClient http) : IComplianceClient
         await EnsureSuccessAsync(response, "record-audit", ct);
     }
 
+    public async Task<InitiateConsentResponse> InitiateParentalConsentAsync(
+        InitiateParentalConsentRequest request, CancellationToken ct)
+    {
+        var response = await http.PostAsJsonAsync("/internal/compliance/parental-consent/initiate", request, ct);
+        await EnsureSuccessAsync(response, "initiate-parental-consent", ct);
+        return (await response.Content.ReadFromJsonAsync<InitiateConsentResponse>(ct))!;
+    }
+
+    public async Task<IReadOnlyList<PendingPrivacyRequestItem>> GetPendingPrivacyRequestsAsync(
+        int limit, CancellationToken ct)
+    {
+        var response = await http.GetAsync($"/internal/compliance/privacy-requests/pending?limit={limit}", ct);
+        await EnsureSuccessAsync(response, "get-pending-privacy-requests", ct);
+        return (await response.Content.ReadFromJsonAsync<List<PendingPrivacyRequestItem>>(ct))!;
+    }
+
+    public async Task CompletePrivacyRequestAsync(Guid requestId, string status, string? notes, CancellationToken ct)
+    {
+        var response = await http.PatchAsJsonAsync(
+            $"/internal/compliance/privacy-requests/{requestId}",
+            new { Status = status, Notes = notes },
+            ct);
+        await EnsureSuccessAsync(response, "complete-privacy-request", ct);
+    }
+
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode)

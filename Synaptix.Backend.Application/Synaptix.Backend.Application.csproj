@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Synaptix.Backend.Domain\Synaptix.Backend.Domain.csproj" />
     <ProjectReference Include="..\Synaptix.Shared.Contracts\Synaptix.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\Synaptix.Compliance.Client\Synaptix.Compliance.Client.csproj" />
   </ItemGroup>
 
 </Project>

@@ -95,5 +95,15 @@ namespace Synaptix.Backend.Domain.Entities
         {
             SystemRole = string.IsNullOrWhiteSpace(role) ? null : role.Trim().ToLowerInvariant();
         }
+
+        public void Anonymize(string anonEmail, string anonHandle, string deadPasswordHash)
+        {
+            Email = anonEmail;
+            Handle = anonHandle;
+            PasswordHash = deadPasswordHash;
+            Country = null;
+            AvatarUrl = null;
+            IsActive = false;
+        }
     }
 }

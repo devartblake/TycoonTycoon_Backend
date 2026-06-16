@@ -88,5 +88,10 @@ namespace Synaptix.Backend.Domain.Entities
         {
             Raise(new MissionClaimedEvent(Id, missionId, rewardXp));
         }
+
+        public void AnonymizeUsername(string anonUsername)
+        {
+            Username = anonUsername;
+        }
     }
 }
