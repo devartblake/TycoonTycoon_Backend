@@ -4,6 +4,44 @@ All notable changes to this project.
 
 ---
 
+## [2026-06-16] Compliance Microservice — Production-Readiness: Email, Privacy Fulfillment, and Store Gates
+
+### Synaptix.Compliance — Parental Consent Email Dispatch
+
+- **`IEmailService`** abstraction added to `Synaptix.Backend.Application.Email`; backed by `SmtpEmailService` (System.Net.Mail, no external packages) when `Email:Smtp:Host` is configured, and `NullEmailService` (log-only) in development.
+- **`POST /users/me/parental-consent/request`** — authenticated endpoint that initiates COPPA parental consent: calls the compliance service to generate a signed token, then sends a branded HTML email to the parent address with a 72-hour expiry verification link.
+- **`POST /internal/compliance/parental-consent/initiate`** — new service-token-protected endpoint on the compliance microservice; called by the main backend so the service token (not a user JWT) is used for cross-service communication.
+- `IComplianceClient` extended with `InitiateParentalConsentAsync`, `GetPendingPrivacyRequestsAsync`, and `CompletePrivacyRequestAsync`.
+- `appsettings.json` updated with `Email` (SMTP host/port/credentials/from address) and `Compliance:ConsentVerifyUrl` config blocks.
+
+### Synaptix.Compliance — Privacy Request Fulfillment
+
+- **`IUserPrivacyService` + `UserPrivacyService`** — scoped service handling the three CCPA/COPPA fulfillment actions:
+  - `AnonymizeUserAsync` — scrubs all PII (email, handle, password hash, country, avatar) and marks account inactive; hard-deletes refresh tokens and redacts direct message content; preserves all financial records (`PlayerTransaction`, `EconomyTransaction`, `PlayerWallet`) for audit trail.
+  - `ExportUserDataAsync` — serialises user, player, wallet, recent mission claims, and 12-month transaction history into a JSON blob; uploads to MinIO at `compliance-exports/{userId}/{timestamp}.json`; returns the public URL.
+  - `ApplyOptOutAsync` — records a CCPA opt-out audit event via the compliance service.
+- Domain methods added: `User.Anonymize()`, `Player.AnonymizeUsername()`, `DirectMessage.Redact()`.
+- **`PrivacyRequestFulfillmentJob`** — Hangfire recurring job running every 15 minutes; polls `GET /internal/compliance/privacy-requests/pending` (limit 20), dispatches each request to `UserPrivacyService`, marks each request `Completed` or `Failed` via `PATCH /internal/compliance/privacy-requests/{id}`.
+- **`POST /admin/privacy-requests/{requestId}/process`** — admin endpoint for operator-initiated fulfillment without waiting for the Hangfire poll cycle.
+
+### Store Compliance — Document Phase 1 Gaps
+
+- **`StoreItem` compliance fields** — `IsRandomized`, `AgeMin`, `RequiresParentApproval`, `IsRefundable` added to the domain entity and EF configuration.
+- **`ParentalPurchaseControl`** entity — per-child record tracking `PurchasesEnabled`, `MonthlySpendLimitCents`, `AdsEnabled`, `LootBoxesEnabled`; unique index on `ChildUserId`.
+- **`IStorePurchaseEligibilityService` + `StorePurchaseEligibilityService`** — pre-purchase compliance gate wired into `POST /store/purchase`:
+  1. Calls `IComplianceClient.GetUserRestrictionsAsync` to detect COPPA `minor_purchase_restricted` restriction.
+  2. Checks `ParentalPurchaseControl.PurchasesEnabled` when item has `RequiresParentApproval = true`.
+  3. Returns 403 with structured `ErrorCode` on denial; silently allows if the compliance service is unreachable (fail-open, matches Alpha risk posture).
+- **`GET /users/me/purchases`** — paginated purchase history filtered to store-purchase, IAP, Stripe, and PayPal transaction kinds.
+- **EF migration `20260616000000_AddCompliancePhase1`** — adds four compliance columns to `store_items` and creates `parental_purchase_controls` table.
+- `Synaptix.Backend.Application` now references `Synaptix.Compliance.Client` so `UserPrivacyService` and `StorePurchaseEligibilityService` can use `IComplianceClient` without routing through the API layer.
+
+### Compliance Serialisation Fix
+
+- `HandleGetPending` in `InternalEndpoints.cs` explicitly serialises `RequestType` and `Status` as strings (`r.RequestType.ToString()`) so the compliance client's `PendingPrivacyRequestItem` record (which expects `string` fields) deserialises correctly without requiring a global `JsonStringEnumConverter` on the compliance API.
+
+---
+
 ## [2026-06-13] Alpha Audit Remediation — blockers, hardening, and test sweep
 
 Closes the six Before-Alpha blockers and most of the During-Alpha (High) list from the platform audit (PRs **#389**, **#390**). Full `Synaptix.Backend.Api.Tests` suite green: **546 passed, 0 failed, 1 skipped**.
