@@ -1,7 +1,7 @@
 # Alpha Release — Disabled Features
 
 **Release:** alpha-beta-2026  
-**Last updated:** 2026-05-26
+**Last updated:** 2026-06-16
 
 All features listed here are **disabled for the Alpha release** via server-side feature flag gates. Any request to these endpoints returns:
 
@@ -173,6 +173,19 @@ Affected endpoints:
 **Reason disabled:** Payment provider sandbox credentials are not configured for Alpha. Purchase flows are internal-only scope and require regulatory/compliance review before player-facing exposure. Store catalog browsing (`GET /store/*`) remains active.
 
 **Note:** If the flag is enabled without configured payment credentials, the existing `503 PAYMENTS_DISABLED` / `503 STRIPE_NOT_READY` / `503 PAYPAL_NOT_READY` responses from the provider check serve as a secondary guard.
+
+**When enabled, the following compliance gates are active even in Alpha:**
+- `StorePurchaseEligibilityService` checks COPPA `minor_purchase_restricted` restriction via the compliance service before any purchase proceeds.
+- Items with `RequiresParentApproval = true` require an active `ParentalPurchaseControl` record with `PurchasesEnabled = true`.
+- Items with `IsRandomized = true` are blocked for any user with the minor purchase restriction.
+- Returns `403 MINOR_PURCHASE_RESTRICTED` or `403 PARENTAL_APPROVAL_REQUIRED` as appropriate.
+
+**Deferred (Phase 2):**
+- Monthly spend limit enforcement (limit is stored in `ParentalPurchaseControl.MonthlySpendLimitCents` but running monthly spend is not yet checked)
+- Per-purchase parent notification email
+- Daily/weekly spend caps
+- Purchase cooldown periods
+- Chargeback auto-lock of wallet balance
 
 ---
 

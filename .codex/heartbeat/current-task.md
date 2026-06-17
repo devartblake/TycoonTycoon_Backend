@@ -2,11 +2,11 @@
 
 ## Task ID
 
-`20260604-elasticsearch-credential-alignment`
+`20260616-compliance-phase1-complete`
 
 ## Task title
 
-Align Elasticsearch credentials and rollup write targets
+Compliance production-readiness: email dispatch, privacy fulfillment, and store compliance gates
 
 ## Status
 

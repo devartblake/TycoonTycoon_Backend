@@ -1,7 +1,7 @@
 # Alpha Release — Enabled Features
 
 **Release:** alpha-beta-2026  
-**Last updated:** 2026-05-16
+**Last updated:** 2026-06-16
 
 All features listed here are active and accessible on the Alpha backend. Feature flags default to `true` for these systems; they may be toggled off without a deployment via `PATCH /api/v1/admin/config`.
 
@@ -153,12 +153,53 @@ Full admin suite at `/api/v1/admin/` covering:
 
 ---
 
+## Compliance (COPPA / CCPA / PCI)
+
+Dedicated `Synaptix.Compliance` microservice (port 5070) connected to the main backend via typed HTTP client with service-token authentication.
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /compliance/age-verification` | Declare age; creates `AgeVerification` record |
+| `POST /compliance/consent` | Record consent (ToS, Privacy, Marketing, Analytics, DoNotSell) |
+| `GET /compliance/consent/status` | Current consent state for authenticated user |
+| `POST /compliance/parental-consent/initiate` | Request parent consent (user-initiated) |
+| `GET /compliance/parental-consent/status` | Parental consent status |
+| `POST /compliance/parental-consent/verify` | Parent verifies via email token |
+| `POST /compliance/privacy-requests` | Submit CCPA/COPPA request (Know, Delete, OptOut, DataPortability) |
+| `POST /users/me/parental-consent/request` | Main backend: initiate consent + dispatch parent email |
+
+**Compliance service** enforces:
+- Age-based feature restrictions (COPPA under-13 gates)
+- Parental consent workflow with 72-hour expiry tokens and email delivery
+- Privacy request intake (CCPA right-to-know, delete, opt-out, data portability)
+- Compliance audit trail for all COPPA/CCPA/PCI-relevant events
+- Hangfire fulfillment job: polls pending requests every 15 min; anonymises PII (preserving financial records), exports data to MinIO, or records opt-out
+
+---
+
+## Purchase History
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /users/me/purchases` | Paginated purchase history (store, IAP, Stripe, PayPal kinds) |
+
+---
+
+## Admin — Privacy Fulfillment
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /admin/privacy-requests/{id}/process` | Operator-initiated fulfillment of a pending privacy request |
+
+---
+
 ## Infrastructure
 
-- PostgreSQL 16 with 24 applied EF Core migrations
+- PostgreSQL 16 with EF Core migrations (main DB + compliance schema)
 - Redis (cache + SignalR backplane — backplane active, hub connections gated)
-- MinIO (object storage, seed catalog)
+- MinIO (object storage, seed catalog, compliance data exports)
 - RabbitMQ (messaging backbone)
-- Hangfire (background job processing)
+- Hangfire (background job processing, privacy fulfillment every 15 min)
 - OpenTelemetry tracing + Serilog structured logging
 - Rate limiting: API (100 req/min), match-submit (10/10s), admin-auth (5/min)
+- `Synaptix.Compliance` microservice (port 5070, service-token auth, auto-migrate on startup)
