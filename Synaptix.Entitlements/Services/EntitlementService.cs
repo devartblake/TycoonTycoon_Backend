@@ -42,8 +42,9 @@ public sealed class EntitlementService(
 
     public async Task RevokeAsync(Guid playerId, string sku, int quantity, Guid sourceTransactionId, CancellationToken ct = default)
     {
+        var now = DateTimeOffset.UtcNow;
         var entitlement = await db.PlayerEntitlements
-            .Where(e => e.PlayerId == playerId && e.Sku == sku && e.Quantity > 0)
+            .Where(e => e.PlayerId == playerId && e.Sku == sku && e.Quantity > 0 && (e.ExpiresAtUtc == null || e.ExpiresAtUtc > now))
             .OrderBy(e => e.GrantedAtUtc)
             .FirstOrDefaultAsync(ct);
 
