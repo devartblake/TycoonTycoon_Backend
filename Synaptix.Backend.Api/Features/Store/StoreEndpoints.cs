@@ -1150,22 +1150,18 @@ namespace Synaptix.Backend.Api.Features.Store
             db.PlayerTransactions.Add(tx);
             await db.SaveChangesAsync(ct);
 
-            _ = Task.Run(async () =>
+            try
             {
-                try
-                {
-                    await auditService.RecordPurchaseAsync(
-                        playerId,
-                        "stripe_checkout_payment",
-                        tx.Id,
-                        sku,
-                        quantity,
-                        completed.SessionId,
-                        CancellationToken.None);
-                }
-                catch { /* non-critical */ }
-            }, CancellationToken.None);
-
+                await auditService.RecordPurchaseAsync(
+                    playerId,
+                    "stripe_checkout_payment",
+                    tx.Id,
+                    sku,
+                    quantity,
+                    completed.SessionId,
+                    CancellationToken.None);
+            }
+            catch { /* non-critical */ }
             return Results.Ok(new
             {
                 received = true,
