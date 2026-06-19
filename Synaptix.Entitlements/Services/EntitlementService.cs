@@ -11,7 +11,22 @@ public sealed class EntitlementService(
 {
     public async Task GrantAsync(Guid playerId, string sku, string itemType, int quantity, Guid sourceTransactionId, string scope = "permanent", CancellationToken ct = default)
     {
+        var alreadyProcessed = await db.PlayerEntitlements
+            .AsNoTracking()
+            .AnyAsync(e => e.PlayerId == playerId && e.Sku == sku && e.Scope == scope && e.SourceTransactionId == sourceTransactionId, ct);
+
+        if (alreadyProcessed)
+        {
+            logger.LogInformation(
+                "Entitlement grant already processed for {PlayerId}/{Sku} (tx {SourceTransactionId}); skipping",
+                playerId,
+                sku,
+                sourceTransactionId);
+            return;
+        }
+
         var existing = await db.PlayerEntitlements
+            .AsNoTracking()
             .FirstOrDefaultAsync(e => e.PlayerId == playerId && e.Sku == sku && e.Scope == scope, ct);
 
         if (existing is not null && scope == "permanent")
