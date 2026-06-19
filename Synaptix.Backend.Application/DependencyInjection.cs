@@ -46,12 +46,6 @@ namespace Synaptix.Backend.Application
             // Media
             services.AddSingleton<Media.MediaService>();
 
-            // Economy
-            services.AddScoped<Economy.EconomyService>();
-
-            // Player Transactions (aggregate)
-            services.AddScoped<PlayerTransactions.PlayerTransactionService>();
-
             // Powerups
             services.AddScoped<Powerups.PowerupService>();
 

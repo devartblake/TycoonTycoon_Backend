@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Synaptix.Backend.Api.Tests.TestHost;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
 using Xunit;
 
@@ -29,7 +29,7 @@ public sealed class AdminEconomyRollbackTests : IClassFixture<TycoonApiFactory>
         // Arrange: create a normal economy transaction using the service directly
         using (var scope = _factory.Services.CreateScope())
         {
-            var econ = scope.ServiceProvider.GetRequiredService<EconomyService>();
+            var econ = scope.ServiceProvider.GetRequiredService<IEconomyService>();
 
             var created = await econ.ApplyAsync(new CreateEconomyTxnRequest(
                 EventId: originalEventId,

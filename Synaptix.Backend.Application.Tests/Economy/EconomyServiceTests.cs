@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Wallet.Services;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Infrastructure.Persistence;
 using Synaptix.Shared.Contracts.Dtos;

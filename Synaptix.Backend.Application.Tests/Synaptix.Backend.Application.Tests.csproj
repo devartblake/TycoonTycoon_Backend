@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Synaptix.Backend.Application\Synaptix.Backend.Application.csproj" />
+    <ProjectReference Include="..\Synaptix.Wallet\Synaptix.Wallet.csproj" />
     <ProjectReference Include="..\Synaptix.Backend.Domain\Synaptix.Backend.Domain.csproj" />
     <ProjectReference Include="..\Synaptix.Backend.Infrastructure\Synaptix.Backend.Infrastructure.csproj" />
     <ProjectReference Include="..\Synaptix.Shared.Contracts\Synaptix.Shared.Contracts.csproj" />
