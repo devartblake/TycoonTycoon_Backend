@@ -4,10 +4,14 @@ using Synaptix.Backend.Application.Analytics.Models;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Domain.Experiments;
 using Synaptix.Backend.Domain.Personalization;
+using Synaptix.Commerce.Entities;
+using Synaptix.Entitlements.Abstractions;
+using Synaptix.Entitlements.Entities;
+using Synaptix.Wallet.Entities;
 
 namespace Synaptix.Backend.Application.Abstractions
 {
-    public interface IAppDb
+    public interface IAppDb : IEntitlementDb
     {
         DbSet<Player> Players { get; }
         DbSet<PlayerLookupCode> PlayerLookupCodes { get; }

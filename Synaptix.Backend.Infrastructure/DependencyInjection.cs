@@ -24,6 +24,7 @@ using Synaptix.Backend.Infrastructure.Persistence;
 using Synaptix.Backend.Infrastructure.Services;
 using Synaptix.Backend.Infrastructure.SidecarClient;
 using Synaptix.Backend.Infrastructure.Storage;
+using Synaptix.Entitlements.Abstractions;
 
 namespace Synaptix.Backend.Infrastructure
 {
@@ -48,6 +49,7 @@ namespace Synaptix.Backend.Infrastructure
                 var databaseName = cfg["Testing:InMemoryDbName"] ?? "tycoon-tests";
                 services.AddDbContext<AppDb>(opt => opt.UseInMemoryDatabase(databaseName));
                 services.TryAddScoped<IAppDb>(sp => sp.GetRequiredService<AppDb>());
+                services.TryAddScoped<IEntitlementDb>(sp => sp.GetRequiredService<AppDb>());
 
                 // Defaults (in-memory safe)
                 services.RemoveAll<IAnalyticsEventWriter>();
@@ -106,8 +108,9 @@ namespace Synaptix.Backend.Infrastructure
                 }
             });
 
-            // Expose AppDb behind IAppDb
+            // Expose AppDb behind IAppDb and IEntitlementDb
             services.TryAddScoped<IAppDb>(sp => sp.GetRequiredService<AppDb>());
+            services.TryAddScoped<IEntitlementDb>(sp => sp.GetRequiredService<AppDb>());
 
             // ---------------------------
             // Analytics registrations

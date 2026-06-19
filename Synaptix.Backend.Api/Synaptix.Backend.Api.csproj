@@ -54,6 +54,10 @@
     <ProjectReference Include="..\Synaptix.Shared\Synaptix.Shared.csproj" />
     <ProjectReference Include="..\Synaptix.Security.Kms.Client\Synaptix.Security.Kms.Client.csproj" />
     <ProjectReference Include="..\Synaptix.Compliance.Client\Synaptix.Compliance.Client.csproj" />
+    <ProjectReference Include="..\Synaptix.Commerce\Synaptix.Commerce.csproj" />
+    <ProjectReference Include="..\Synaptix.Wallet\Synaptix.Wallet.csproj" />
+    <ProjectReference Include="..\Synaptix.Entitlements\Synaptix.Entitlements.csproj" />
+    <ProjectReference Include="..\Synaptix.Audit\Synaptix.Audit.csproj" />
   </ItemGroup>
 
 </Project>

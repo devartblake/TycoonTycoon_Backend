@@ -9,6 +9,7 @@ using Synaptix.Backend.Domain.Experiments;
 using Synaptix.Backend.Domain.Personalization;
 using Synaptix.Backend.Infrastructure.Events;
 using Synaptix.Backend.Infrastructure.Persistence.Configurations;
+using Synaptix.Entitlements.Entities;
 
 namespace Synaptix.Backend.Infrastructure.Persistence
 {
@@ -133,6 +134,9 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<Experiment> Experiments => Set<Experiment>();
         public DbSet<ExperimentVariant> ExperimentVariants => Set<ExperimentVariant>();
         public DbSet<ExperimentAssignment> ExperimentAssignments => Set<ExperimentAssignment>();
+
+        // Entitlements
+        public DbSet<PlayerEntitlement> PlayerEntitlements => Set<PlayerEntitlement>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

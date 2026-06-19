@@ -1,4 +1,6 @@
 ﻿using Mediator;
+using Synaptix.Commerce;
+using Synaptix.Wallet;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
@@ -311,6 +313,10 @@ if (analyticsEnabled)
 builder.Services.AddMediator(options => options.ServiceLifetime = ServiceLifetime.Scoped);
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
+
+// Commerce and Wallet modules (override Application registrations for store/economy services)
+builder.Services.AddCommerce();
+builder.Services.AddWallet();
 
 // KMS typed clients for secure-channel payload encryption
 builder.Services.AddKmsClient(builder.Configuration);

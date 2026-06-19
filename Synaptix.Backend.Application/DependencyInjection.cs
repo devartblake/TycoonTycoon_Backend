@@ -13,6 +13,8 @@ using Synaptix.Backend.Application.Realtime;
 using Synaptix.Backend.Application.Seasons;
 using Synaptix.Backend.Application.Territory;
 using Synaptix.Backend.Application.Analytics;
+using Synaptix.Entitlements.Services;
+using Synaptix.Audit.Services;
 
 namespace Synaptix.Backend.Application
 {
@@ -134,6 +136,12 @@ namespace Synaptix.Backend.Application
 
             // Store compliance
             services.AddScoped<IStorePurchaseEligibilityService, StorePurchaseEligibilityService>();
+
+            // Entitlements
+            services.AddScoped<IEntitlementService, EntitlementService>();
+
+            // Audit
+            services.AddScoped<IAuditService, PurchaseAuditService>();
 
             return services;
         }
