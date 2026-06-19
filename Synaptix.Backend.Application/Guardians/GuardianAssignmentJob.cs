@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Config;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Application.EventStats;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
@@ -12,7 +12,7 @@ namespace Synaptix.Backend.Application.Guardians
 {
     public sealed class GuardianAssignmentJob(
         IAppDb db,
-        EconomyService econ,
+        IEconomyService econ,
         IOptions<GuardianOptions> opts,
         ILogger<GuardianAssignmentJob> logger,
         PlayerEventStatsService eventStats,

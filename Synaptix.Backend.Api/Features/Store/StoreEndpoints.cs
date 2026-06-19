@@ -20,7 +20,7 @@ using Synaptix.Backend.Api.Payments.Stripe;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Avatars;
 using Synaptix.Backend.Application.Personalization;
-using Synaptix.Backend.Application.PlayerTransactions;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Commerce.Services;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Domain.Personalization;
@@ -182,7 +182,7 @@ namespace Synaptix.Backend.Api.Features.Store
             [FromRoute] string rewardId,
             HttpContext httpContext,
             IAppDb db,
-            PlayerTransactionService txnService,
+            IPlayerTransactionService txnService,
             IOptions<StorePremiumOptions> premiumOptionsAccessor,
             CancellationToken ct)
         {
@@ -307,7 +307,7 @@ namespace Synaptix.Backend.Api.Features.Store
             HttpContext httpContext,
             IAppDb db,
             IConfiguration configuration,
-            PlayerTransactionService txnService,
+            IPlayerTransactionService txnService,
             IStoreStockService stockService,
             IPlayerMindProfileService mindProfiles,
             IStorePurchaseEligibilityService eligibility,
@@ -1784,7 +1784,7 @@ namespace Synaptix.Backend.Api.Features.Store
         private static async Task<IResult> ClaimDailyCheckinAsync(
             Guid playerId,
             IAppDb db,
-            PlayerTransactionService txnService,
+            IPlayerTransactionService txnService,
             StorePremiumRewardPolicyOptions policies,
             DateTimeOffset dayStartUtc,
             DateTimeOffset nextResetUtc,
@@ -1878,7 +1878,7 @@ namespace Synaptix.Backend.Api.Features.Store
         private static async Task<IResult> ClaimWatchAdAsync(
             Guid playerId,
             IAppDb db,
-            PlayerTransactionService txnService,
+            IPlayerTransactionService txnService,
             StorePremiumRewardPolicyOptions policies,
             DateTimeOffset dayStartUtc,
             DateTimeOffset now,

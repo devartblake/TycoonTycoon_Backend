@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Application.Seasons;
 
 public sealed class SeasonRewardsService(
     IAppDb db,
-    EconomyService economy,
+    IEconomyService economy,
     IOptions<RankedSeasonOptions> rankedOptions)
 {
     public async Task<RewardEligibilityDto> GetEligibilityAsync(Guid playerId, Guid? seasonId, CancellationToken ct)

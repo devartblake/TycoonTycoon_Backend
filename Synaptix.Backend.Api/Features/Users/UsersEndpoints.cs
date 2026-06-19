@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Application.Media;
 using Synaptix.Backend.Application.Notifications;
 using Synaptix.Shared.Contracts.Dtos;
@@ -228,7 +228,7 @@ namespace Synaptix.Backend.Api.Features.Users
             HttpContext httpContext,
             [FromQuery] int page,
             [FromQuery] int pageSize,
-            EconomyService economyService,
+            IEconomyService economyService,
             CancellationToken cancellation)
         {
             if (!TryGetUserId(httpContext, out var userId))
@@ -244,7 +244,7 @@ namespace Synaptix.Backend.Api.Features.Users
         private static async Task<IResult> ClaimOnboardingReward(
             HttpContext httpContext,
             IAppDb database,
-            EconomyService economyService,
+            IEconomyService economyService,
             PlayerInboxService inboxService,
             CancellationToken cancellation)
         {

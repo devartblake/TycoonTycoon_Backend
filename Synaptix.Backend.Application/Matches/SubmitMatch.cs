@@ -4,11 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.AntiCheat;
-// Economy types assumed from your Step 5
-using Synaptix.Backend.Application.Economy;
 using Synaptix.Backend.Application.Enforcement;
 using Synaptix.Backend.Application.Moderation;
-using Synaptix.Backend.Application.PlayerTransactions;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Application.Seasons;
 using Synaptix.Backend.Application.Guardians;
 using Synaptix.Backend.Application.Social;
@@ -22,8 +20,8 @@ namespace Synaptix.Backend.Application.Matches
 
     public sealed class SubmitMatchHandler(
         IAppDb db,
-        EconomyService econ,
-        PlayerTransactionService ptxnSvc,
+        IEconomyService econ,
+        IPlayerTransactionService ptxnSvc,
         AntiCheatService antiCheat,
         SeasonService seasons,
         SeasonPointsService seasonsPoints,

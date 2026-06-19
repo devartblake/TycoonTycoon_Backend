@@ -1,10 +1,9 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
 using Synaptix.Backend.Application.Config;
 using Synaptix.Backend.Application.EventStats;
-using Synaptix.Backend.Application.PlayerTransactions;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Application.Seasons;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
@@ -13,7 +12,7 @@ namespace Synaptix.Backend.Application.GameEvents
 {
     public sealed record EnterGameEvent(Guid EventId, Guid GameEventId, Guid PlayerId) : IRequest<EnterGameEventResponse>;
 
-    public sealed class EnterGameEventHandler(IAppDb db, PlayerTransactionService ptxnSvc, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
+    public sealed class EnterGameEventHandler(IAppDb db, IPlayerTransactionService ptxnSvc, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
     {
         private const int ChampionBattleEliminationIncrement = 50;
 

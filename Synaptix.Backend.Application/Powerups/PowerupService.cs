@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
-using Synaptix.Backend.Application.PlayerTransactions;
 using Synaptix.Backend.Domain.Entities;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.Powerups
@@ -10,10 +9,10 @@ namespace Synaptix.Backend.Application.Powerups
     public sealed class PowerupService
     {
         private readonly IAppDb _db;
-        private readonly EconomyService _econ;
-        private readonly PlayerTransactionService _ptxnSvc;
+        private readonly IEconomyService _econ;
+        private readonly IPlayerTransactionService _ptxnSvc;
 
-        public PowerupService(IAppDb db, EconomyService econ, PlayerTransactionService ptxnSvc)
+        public PowerupService(IAppDb db, IEconomyService econ, IPlayerTransactionService ptxnSvc)
         {
             _db = db;
             _econ = econ;

@@ -1,7 +1,7 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
@@ -15,10 +15,10 @@ namespace Synaptix.Backend.Application.LearningModules
         : IRequestHandler<CompleteModule, CompleteModuleResultDto>
     {
         private readonly IAppDb _db;
-        private readonly EconomyService _economy;
+        private readonly IEconomyService _economy;
         private readonly IPlayerMindProfileService? _mindProfiles;
 
-        public CompleteModuleHandler(IAppDb db, EconomyService economy, IPlayerMindProfileService? mindProfiles = null)
+        public CompleteModuleHandler(IAppDb db, IEconomyService economy, IPlayerMindProfileService? mindProfiles = null)
         {
             _db = db;
             _economy = economy;

@@ -1,13 +1,13 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.Quiz;
 
-public sealed class CompleteQuizHandler(EconomyService economy, IAppDb db)
+public sealed class CompleteQuizHandler(IEconomyService economy, IAppDb db)
     : IRequestHandler<CompleteQuiz, CompleteQuizResponse>
 {
     public async ValueTask<CompleteQuizResponse> Handle(CompleteQuiz request, CancellationToken ct)

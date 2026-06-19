@@ -2,7 +2,7 @@ using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Application.EventStats;
 using Synaptix.Backend.Application.Seasons;
 using Synaptix.Backend.Domain.Entities;
@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Application.Guardians
 
     public sealed class ResolveGuardianChallengeHandler(
         IAppDb db,
-        EconomyService econ,
+        IEconomyService econ,
         IGuardianNotifier notifier,
         IOptions<GuardianOptions> opts,
         SeasonService seasonSvc,

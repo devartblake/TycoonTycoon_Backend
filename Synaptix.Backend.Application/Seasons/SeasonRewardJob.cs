@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.Seasons;
@@ -8,9 +8,9 @@ namespace Synaptix.Backend.Application.Seasons;
 public sealed class SeasonRewardJob
 {
     private readonly IAppDb _db;
-    private readonly EconomyService _economy;
+    private readonly IEconomyService _economy;
 
-    public SeasonRewardJob(IAppDb db, EconomyService economy)
+    public SeasonRewardJob(IAppDb db, IEconomyService economy)
     {
         _db = db;
         _economy = economy;

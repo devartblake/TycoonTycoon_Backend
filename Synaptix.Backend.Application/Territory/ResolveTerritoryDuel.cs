@@ -1,7 +1,7 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Application.EventStats;
 using Synaptix.Backend.Application.Seasons;
 using Synaptix.Shared.Contracts.Dtos;
@@ -13,7 +13,7 @@ namespace Synaptix.Backend.Application.Territory
 
     public sealed class ResolveTerritoryDuelHandler(
         IAppDb db,
-        EconomyService econ,
+        IEconomyService econ,
         ITerritoryNotifier notifier,
         SeasonService seasonSvc,
         PlayerEventStatsService eventStats)

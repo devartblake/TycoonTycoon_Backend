@@ -1,9 +1,8 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
-using Synaptix.Backend.Application.PlayerTransactions;
 using Synaptix.Backend.Domain.Entities;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.Skills
@@ -11,12 +10,12 @@ namespace Synaptix.Backend.Application.Skills
     public sealed class SkillTreeService
     {
         private readonly IAppDb _db;
-        private readonly EconomyService _econ;
-        private readonly PlayerTransactionService _ptxnSvc;
+        private readonly IEconomyService _econ;
+        private readonly IPlayerTransactionService _ptxnSvc;
 
         private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
-        public SkillTreeService(IAppDb db, EconomyService econ, PlayerTransactionService ptxnSvc)
+        public SkillTreeService(IAppDb db, IEconomyService econ, IPlayerTransactionService ptxnSvc)
         {
             _db = db;
             _econ = econ;

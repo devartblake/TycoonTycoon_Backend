@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Synaptix.Backend.Api.Contracts;
-using Synaptix.Backend.Application.PlayerTransactions;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.AdminPlayerTransactions
@@ -15,7 +15,7 @@ namespace Synaptix.Backend.Api.Features.AdminPlayerTransactions
             var g = admin.MapGroup("/player-transactions").WithTags("Admin/PlayerTransactions");
 
             // Create / execute a composite player transaction
-            g.MapPost("", async ([FromBody] CreatePlayerTransactionRequest req, PlayerTransactionService svc, CancellationToken ct) =>
+            g.MapPost("", async ([FromBody] CreatePlayerTransactionRequest req, IPlayerTransactionService svc, CancellationToken ct) =>
             {
                 if (req.EventId == Guid.Empty)
                     return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "EventId is required.");
@@ -33,7 +33,7 @@ namespace Synaptix.Backend.Api.Features.AdminPlayerTransactions
                 [FromQuery] Guid? correlatedEventId,
                 [FromQuery] int page,
                 [FromQuery] int pageSize,
-                PlayerTransactionService svc,
+                IPlayerTransactionService svc,
                 CancellationToken ct) =>
             {
                 var res = await svc.GetHistoryAsync(
@@ -45,7 +45,7 @@ namespace Synaptix.Backend.Api.Features.AdminPlayerTransactions
             // Get full detail of a single transaction
             g.MapGet("/{id:guid}", async (
                 [FromRoute] Guid id,
-                PlayerTransactionService svc,
+                IPlayerTransactionService svc,
                 CancellationToken ct) =>
             {
                 var detail = await svc.GetDetailAsync(id, ct);
@@ -57,7 +57,7 @@ namespace Synaptix.Backend.Api.Features.AdminPlayerTransactions
             // Dispute a transaction
             g.MapPost("/dispute", async (
                 [FromBody] DisputePlayerTransactionRequest req,
-                PlayerTransactionService svc,
+                IPlayerTransactionService svc,
                 CancellationToken ct) =>
             {
                 if (req.PlayerTransactionId == Guid.Empty)
@@ -85,7 +85,7 @@ namespace Synaptix.Backend.Api.Features.AdminPlayerTransactions
             // Reverse a transaction (rolls back all child economy transactions)
             g.MapPost("/reverse", async (
                 [FromBody] ReversePlayerTransactionRequest req,
-                PlayerTransactionService svc,
+                IPlayerTransactionService svc,
                 CancellationToken ct) =>
             {
                 if (req.PlayerTransactionId == Guid.Empty)

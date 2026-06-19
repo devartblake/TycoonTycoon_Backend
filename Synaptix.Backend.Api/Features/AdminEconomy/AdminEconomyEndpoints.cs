@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Config;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.AdminEconomy
@@ -16,7 +16,7 @@ namespace Synaptix.Backend.Api.Features.AdminEconomy
         {
             var g = admin.MapGroup("/economy").WithTags("Admin/Economy");
 
-            g.MapPost("/transactions", async ([FromBody] CreateEconomyTxnRequest req, EconomyService econ, CancellationToken ct) =>
+            g.MapPost("/transactions", async ([FromBody] CreateEconomyTxnRequest req, IEconomyService econ, CancellationToken ct) =>
             {
                 var res = await econ.ApplyAsync(req, ct);
                 return Results.Ok(res);
@@ -26,7 +26,7 @@ namespace Synaptix.Backend.Api.Features.AdminEconomy
                 [FromRoute] Guid playerId,
                 [FromQuery] int page,
                 [FromQuery] int pageSize,
-                EconomyService econ,
+                IEconomyService econ,
                 CancellationToken ct) =>
             {
                 var res = await econ.GetHistoryAsync(playerId, page == 0 ? 1 : page, pageSize == 0 ? 50 : pageSize, ct);
@@ -114,7 +114,7 @@ namespace Synaptix.Backend.Api.Features.AdminEconomy
 
             g.MapPost("/rollback", async (
                 [FromBody] AdminRollbackEconomyRequest req,
-                EconomyService econ,
+                IEconomyService econ,
                 CancellationToken ct) =>
             {
                 if (req.EventId == Guid.Empty)

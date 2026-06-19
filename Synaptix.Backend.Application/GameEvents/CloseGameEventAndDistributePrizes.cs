@@ -1,7 +1,7 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Application.EventStats;
 using Synaptix.Backend.Application.Seasons;
 using Synaptix.Backend.Domain.Entities;
@@ -14,7 +14,7 @@ namespace Synaptix.Backend.Application.GameEvents
 
     public sealed class CloseGameEventAndDistributePrizesHandler(
         IAppDb db,
-        EconomyService econ,
+        IEconomyService econ,
         IGameEventNotifier notifier,
         SeasonService seasonSvc,
         PlayerEventStatsService eventStats)

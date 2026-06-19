@@ -1,14 +1,14 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.Economy;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.GameEvents
 {
     public sealed record ReviveInGameEvent(Guid EventId, Guid GameEventId, Guid PlayerId) : IRequest<ReviveResponse>;
 
-    public sealed class ReviveInGameEventHandler(IAppDb db, EconomyService econ) : IRequestHandler<ReviveInGameEvent, ReviveResponse>
+    public sealed class ReviveInGameEventHandler(IAppDb db, IEconomyService econ) : IRequestHandler<ReviveInGameEvent, ReviveResponse>
     {
         public async ValueTask<ReviveResponse> Handle(ReviveInGameEvent r, CancellationToken ct)
         {

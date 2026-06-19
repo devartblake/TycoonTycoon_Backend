@@ -1,7 +1,7 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Application.Abstractions;
-using Synaptix.Backend.Application.PlayerTransactions;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -20,9 +20,9 @@ namespace Synaptix.Backend.Application.Avatars
     public sealed class PurchaseAvatarHandler : IRequestHandler<PurchaseAvatar, PurchaseAvatarResult>
     {
         private readonly IAppDb _db;
-        private readonly PlayerTransactionService _txnService;
+        private readonly IPlayerTransactionService _txnService;
 
-        public PurchaseAvatarHandler(IAppDb db, PlayerTransactionService txnService)
+        public PurchaseAvatarHandler(IAppDb db, IPlayerTransactionService txnService)
         {
             _db = db;
             _txnService = txnService;
