@@ -528,21 +528,18 @@ namespace Synaptix.Backend.Api.Features.Store
 
             if (isValid)
             {
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        await auditService.RecordPurchaseAsync(
-                            req.PlayerId,
-                            "iap_receipt_validation",
-                            tx.Id,
-                            req.ProductId ?? platform,
-                            1,
-                            req.ExternalTransactionId ?? req.Receipt,
-                            CancellationToken.None);
-                    }
-                    catch { /* non-critical */ }
-                }, CancellationToken.None);
+                    await auditService.RecordPurchaseAsync(
+                        req.PlayerId,
+                        "iap_receipt_validation",
+                        tx.Id,
+                        req.ProductId ?? platform,
+                        1,
+                        req.ExternalTransactionId ?? req.Receipt,
+                        CancellationToken.None);
+                }
+                catch { /* non-critical */ }
             }
 
             return Results.Ok(new IapReceiptValidationResponse(
