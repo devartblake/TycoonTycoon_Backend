@@ -21,7 +21,7 @@ using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Avatars;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Application.PlayerTransactions;
-using Synaptix.Backend.Application.Store;
+using Synaptix.Commerce.Services;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Domain.Personalization;
 using Synaptix.Shared.Contracts.Dtos;
@@ -310,7 +310,7 @@ namespace Synaptix.Backend.Api.Features.Store
             PlayerTransactionService txnService,
             IStoreStockService stockService,
             IPlayerMindProfileService mindProfiles,
-            Synaptix.Backend.Application.Store.IStorePurchaseEligibilityService eligibility,
+            IStorePurchaseEligibilityService eligibility,
             CancellationToken ct)
         {
             var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);

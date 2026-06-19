@@ -23,8 +23,6 @@
     <ProjectReference Include="..\Synaptix.Compliance.Client\Synaptix.Compliance.Client.csproj" />
     <ProjectReference Include="..\Synaptix.Entitlements\Synaptix.Entitlements.csproj" />
     <ProjectReference Include="..\Synaptix.Audit\Synaptix.Audit.csproj" />
-    <ProjectReference Include="..\Synaptix.Commerce\Synaptix.Commerce.csproj" />
-    <ProjectReference Include="..\Synaptix.Wallet\Synaptix.Wallet.csproj" />
   </ItemGroup>
 
 </Project>

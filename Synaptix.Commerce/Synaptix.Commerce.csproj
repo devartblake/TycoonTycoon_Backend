@@ -7,6 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Synaptix.Shared.Contracts\Synaptix.Shared.Contracts.csproj" />
     <ProjectReference Include="..\Synaptix.Compliance.Client\Synaptix.Compliance.Client.csproj" />
-    <ProjectReference Include="..\Synaptix.Wallet\Synaptix.Wallet.csproj" />
+    <ProjectReference Include="..\Synaptix.Backend.Application\Synaptix.Backend.Application.csproj" />
   </ItemGroup>
 </Project>

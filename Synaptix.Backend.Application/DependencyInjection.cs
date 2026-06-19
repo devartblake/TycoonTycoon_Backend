@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Synaptix.Backend.Application.Config;
 using Synaptix.Backend.Application.Privacy;
-using Synaptix.Backend.Application.Store;
 using Synaptix.Backend.Application.EventStats;
 using Synaptix.Backend.Application.GameEvents;
 using Synaptix.Backend.Application.Guardians;
@@ -133,9 +132,6 @@ namespace Synaptix.Backend.Application
             // Privacy fulfillment
             services.AddScoped<IUserPrivacyService, UserPrivacyService>();
             services.AddScoped<PrivacyRequestFulfillmentJob>();
-
-            // Store compliance
-            services.AddScoped<IStorePurchaseEligibilityService, StorePurchaseEligibilityService>();
 
             // Entitlements
             services.AddScoped<IEntitlementService, EntitlementService>();

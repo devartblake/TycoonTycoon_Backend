@@ -188,8 +188,6 @@ builder.Services.AddScoped<RewardClaimService>();
 // Register IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminNotificationDispatchJob>();
-builder.Services.AddScoped<Synaptix.Backend.Application.Store.IStoreStockService,
-    Synaptix.Backend.Application.Store.StoreStockService>();
 
 // Observability + Serilog + OTEL
 builder.AddObservability();
