@@ -1,4 +1,4 @@
-.PHONY: migrate migrate-reset migrate-status migrate-local migrate-local-reset build up down logs smoke smoke-live smoke-routes
+.PHONY: migrate migrate-reset migrate-status migrate-local migrate-local-reset bootstrap build up down logs smoke smoke-live smoke-routes
 
 # ── Migration targets ────────────────────────────────────────────────────────
 
@@ -23,6 +23,11 @@ migrate-local-reset:
 	@./scripts/migrate.sh --local --reset
 
 # ── Docker Compose helpers ───────────────────────────────────────────────────
+
+## Validate EF model snapshot, build images, then bring up the stack (runs setup + migration)
+bootstrap:
+	@chmod +x ./scripts/bootstrap-stack.sh
+	@./scripts/bootstrap-stack.sh
 
 ## Build all Docker images
 build:
