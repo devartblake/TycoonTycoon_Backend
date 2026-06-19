@@ -23,7 +23,13 @@ public sealed class PlayerEntitlement
         string scope = "permanent",
         DateTimeOffset? expiresAt = null)
     {
+        if (playerId == Guid.Empty)
+            throw new ArgumentException("playerId cannot be empty.", nameof(playerId));
+        if (sourceTransactionId == Guid.Empty)
+            throw new ArgumentException("sourceTransactionId cannot be empty.", nameof(sourceTransactionId));
         ArgumentException.ThrowIfNullOrWhiteSpace(sku);
+        ArgumentException.ThrowIfNullOrWhiteSpace(itemType);
+        ArgumentException.ThrowIfNullOrWhiteSpace(scope);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(quantity);
         return new PlayerEntitlement
         {
