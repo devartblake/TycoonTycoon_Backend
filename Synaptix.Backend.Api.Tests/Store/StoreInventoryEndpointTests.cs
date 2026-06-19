@@ -62,7 +62,7 @@ public sealed class StoreInventoryEndpointTests : IClassFixture<TycoonApiFactory
         response.Should().NotBeNull();
         response!.PlayerId.Should().Be(playerId);
         response.Count.Should().Be(2);
-        response.Items.Should().Contain(i => i.ItemType == "cosmetic" && i.Quantity == 1);
-        response.Items.Should().Contain(i => i.ItemType == "powerup" && i.Quantity == 3);
+        response.Items.Should().Contain(i => i.ItemType == "cosmetic:neon-border" && i.Quantity == 1);
+        response.Items.Should().Contain(i => i.ItemType == "powerup:skip" && i.Quantity == 3);
     }
 }
