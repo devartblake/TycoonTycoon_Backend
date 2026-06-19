@@ -52,6 +52,14 @@ services:
       MinIO__PublicEndpoint: "${LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT:?LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT is required in prod}"
       Assets__RemoteDeliveryEnabled: "true"
       Assets__ManifestUrl: "/api/v1/assets/manifest"
+      Email__FromAddress: "${EMAIL_FROM_ADDRESS:-no-reply@synaptixplay.com}"
+      Email__FromName: "${EMAIL_FROM_NAME:-Synaptix}"
+      Email__Smtp__Host: "${EMAIL_SMTP_HOST:-}"
+      Email__Smtp__Port: "${EMAIL_SMTP_PORT:-587}"
+      Email__Smtp__Username: "${EMAIL_SMTP_USERNAME:-}"
+      Email__Smtp__Password: "${EMAIL_SMTP_PASSWORD:-}"
+      Email__Smtp__UseSsl: "${EMAIL_SMTP_USE_SSL:-true}"
+      Compliance__ConsentVerifyUrl: "${COMPLIANCE_CONSENT_VERIFY_URL:-https://app.synaptixplay.com/parental-consent}"
       Cors__AllowedOrigins__0: "https://synaptixplay.com"
       Cors__AllowedOrigins__1: "https://www.synaptixplay.com"
       Cors__AllowedOrigins__2: "https://app.synaptixplay.com"
@@ -341,6 +349,27 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+# ---------------------------------------------------------------------------
+# Compliance API — production overrides
+# The compliance-api service is defined in compose.compliance.yml.
+# Run both files together in production:
+#   docker compose -f docker/compose.yml -f docker/compose.compliance.yml -f docker/compose.prod.yml up -d
+# ---------------------------------------------------------------------------
+  compliance-api:
+    ports: !override []
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      DOTNET_ENVIRONMENT: "Production"
+      ComplianceApi__ServiceToken: "${COMPLIANCE_SERVICE_TOKEN:?COMPLIANCE_SERVICE_TOKEN is required in prod}"
+      JwtSettings__SecretKey: "${JWT_SECRET_KEY:?JWT_SECRET_KEY is required in prod}"
+      ConnectionStrings__compliance: "${COMPLIANCE_DB_URL:?COMPLIANCE_DB_URL is required in prod}"
+      Serilog__MinimumLevel__Default: "${LOG_LEVEL:-Warning}"
     logging:
       driver: "json-file"
       options:

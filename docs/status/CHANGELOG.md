@@ -4,6 +4,61 @@ All notable changes to this project.
 
 ---
 
+## [2026-06-19] Monetization Module Split — Phase 3: Wallet Module Population
+
+### `Synaptix.Shared.Contracts` — Economy Interface Extraction
+
+- **`IEconomyService`** added to `Synaptix.Shared.Contracts/Abstractions/` — exposes `ApplyAsync`, `GetHistoryAsync`, and `RollbackByEventIdAsync`. All referenced DTOs already existed in `Shared.Contracts`, so no new project dependencies were introduced.
+- **`IPlayerTransactionService`** added to `Synaptix.Shared.Contracts/Abstractions/` — exposes `ExecuteAsync`, `DisputeAsync`, `ReverseAsync`, `GetHistoryAsync`, and `GetDetailAsync`.
+- Both interfaces live in the zero-dependency contracts project so `Backend.Application` callers and the new `Synaptix.Wallet` module can share the same abstractions without creating a circular reference.
+
+### `Synaptix.Wallet` — Economy and Transaction Implementations
+
+- `EconomyService` and `PlayerTransactionService` moved from `Synaptix.Backend.Application` into **`Synaptix.Wallet/Services/`** (namespace `Synaptix.Wallet.Services`).
+- `Synaptix.Wallet.csproj` now references `Synaptix.Backend.Application` for `IAppDb` and domain entities (one-way dependency: `Wallet → Application`).
+- `AddWallet()` DI extension registers `IEconomyService → EconomyService` and `IPlayerTransactionService → PlayerTransactionService`.
+- Concrete registrations removed from `AddApplication()`; Application no longer owns economy state.
+
+### Application and API — Caller Updates
+
+- **14 Application-layer callers** updated to inject `IEconomyService` / `IPlayerTransactionService` instead of concrete classes: `PowerupService`, `SkillTreeService`, `SubmitMatchHandler`, `SeasonRewardsService`, `SeasonRewardJob`, `CloseGameEventAndDistributePrizesHandler`, `ReviveInGameEventHandler`, `GuardianAssignmentJob`, `ResolveGuardianChallengeHandler`, `CompleteModuleHandler`, `CompleteQuizHandler`, `ResolveTerritoryDuelHandler`, `PurchaseAvatarHandler`, `EnterGameEventHandler`.
+- **4 API-layer endpoint files** updated: `AdminEconomyEndpoints`, `AdminPlayerTransactionEndpoints`, `StoreEndpoints`, `UsersEndpoints`.
+- Test projects updated: `Application.Tests.csproj` gains Wallet project reference; `AvatarHandlerTests` and `EconomyServiceTests` resolve concrete classes from `Synaptix.Wallet.Services`; `AdminEconomyRollbackTests` resolves `IEconomyService` from the DI container.
+
+### Dependency Graph (final clean state)
+
+```
+Shared.Contracts  ← IEconomyService, IPlayerTransactionService
+     ↑
+Backend.Application  (→ Domain, Shared.Contracts, Compliance.Client, Entitlements, Audit)
+     ↑
+Wallet    (→ Backend.Application)   ✅ one-way
+Commerce  (→ Backend.Application)   ✅ one-way
+     ↑
+Backend.Api  (→ Application, Infrastructure, Commerce, Wallet, Entitlements, Audit)
+```
+
+---
+
+## [2026-06-17] Monetization Module Split — Phase 2: Commerce Module and Compile Fix
+
+### `Synaptix.Commerce` — Store Services Extracted
+
+- `IStoreStockService` / `StoreStockService` and `IStorePurchaseEligibilityService` / `StorePurchaseEligibilityService` moved from `Synaptix.Backend.Application/Store/` into **`Synaptix.Commerce/Services/`**.
+- `StorePurchaseEligibilityService` enforces COPPA minor-purchase restrictions via `IComplianceClient` and checks `ParentalPurchaseControl.PurchasesEnabled` for items requiring parental approval.
+- `AddCommerce()` DI extension registers both services; `Program.cs` delegates store registration to `AddCommerce()`.
+- `StoreEndpoints.cs` now imports from `Synaptix.Commerce.Services` instead of the deleted `Backend.Application.Store` namespace.
+
+### Module Split Foundation (Phase 1 — `34ca08c7`)
+
+- Four new sibling projects created: `Synaptix.Commerce`, `Synaptix.Wallet`, `Synaptix.Entitlements`, `Synaptix.Audit`.
+- `Synaptix.Entitlements` — `IEntitlementService` / `EntitlementService` with per-product entitlement grants, revocation, and expiry; EF entity `PlayerEntitlement` and `IEntitlementDb`.
+- `Synaptix.Audit` — `IAuditService` / `PurchaseAuditService` logging purchase events to MongoDB; `IComplianceClient` used for cross-service audit forwarding.
+- `Backend.Application` dependency graph cleaned: no longer references Commerce or Wallet; references Entitlements and Audit only.
+- DI stubs `AddCommerce()` / `AddWallet()` added to prevent build failure while implementations migrate.
+
+---
+
 ## [2026-06-16] Compliance Microservice — Production-Readiness: Email, Privacy Fulfillment, and Store Gates
 
 ### Synaptix.Compliance — Parental Consent Email Dispatch
