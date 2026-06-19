@@ -1,4 +1,6 @@
 ﻿using Mediator;
+using Synaptix.Commerce;
+using Synaptix.Wallet;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
@@ -186,8 +188,6 @@ builder.Services.AddScoped<RewardClaimService>();
 // Register IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminNotificationDispatchJob>();
-builder.Services.AddScoped<Synaptix.Backend.Application.Store.IStoreStockService,
-    Synaptix.Backend.Application.Store.StoreStockService>();
 
 // Observability + Serilog + OTEL
 builder.AddObservability();
@@ -311,6 +311,10 @@ if (analyticsEnabled)
 builder.Services.AddMediator(options => options.ServiceLifetime = ServiceLifetime.Scoped);
 builder.Services.AddInfrastructure(builder.Configuration)
                 .AddApplication();
+
+// Commerce and Wallet modules (override Application registrations for store/economy services)
+builder.Services.AddCommerce();
+builder.Services.AddWallet();
 
 // KMS typed clients for secure-channel payload encryption
 builder.Services.AddKmsClient(builder.Configuration);

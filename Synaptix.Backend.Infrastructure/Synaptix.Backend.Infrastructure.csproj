@@ -34,6 +34,8 @@
     <ProjectReference Include="..\Synaptix.Backend.Application\Synaptix.Backend.Application.csproj" />
     <ProjectReference Include="..\Synaptix.Backend.Domain\Synaptix.Backend.Domain.csproj" />
     <ProjectReference Include="..\Synaptix.Shared.Observability\Synaptix.Shared.Observability.csproj" />
+    <ProjectReference Include="..\Synaptix.Entitlements\Synaptix.Entitlements.csproj" />
+    <ProjectReference Include="..\Synaptix.Audit\Synaptix.Audit.csproj" />
   </ItemGroup>
 
 </Project>

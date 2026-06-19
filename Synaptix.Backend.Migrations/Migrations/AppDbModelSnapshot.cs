@@ -2310,6 +2310,64 @@ namespace Synaptix.Backend.Migrations.Migrations
                     b.ToTable("player_economy_safeguard_states", (string)null);
                 });
 
+            modelBuilder.Entity("Synaptix.Entitlements.Entities.PlayerEntitlement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
+
+                    b.Property<DateTimeOffset>("GrantedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("granted_at_utc");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("item_type");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("permanent")
+                        .HasColumnName("scope");
+
+                    b.Property<string>("Sku")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("sku");
+
+                    b.Property<Guid>("SourceTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_transaction_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_player_entitlements");
+
+                    b.HasIndex("SourceTransactionId")
+                        .HasDatabaseName("ix_player_entitlements_source_transaction_id");
+
+                    b.HasIndex("PlayerId", "Sku", "Scope")
+                        .HasDatabaseName("ix_player_entitlements_player_id_sku_scope");
+
+                    b.ToTable("player_entitlements", (string)null);
+                });
+
             modelBuilder.Entity("Synaptix.Backend.Domain.Entities.PlayerEventStats", b =>
                 {
                     b.Property<Guid>("Id")

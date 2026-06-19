@@ -21,10 +21,12 @@ using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Avatars;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Application.PlayerTransactions;
-using Synaptix.Backend.Application.Store;
+using Synaptix.Commerce.Services;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Domain.Personalization;
 using Synaptix.Shared.Contracts.Dtos;
+using Synaptix.Entitlements.Services;
+using Synaptix.Audit.Services;
 
 namespace Synaptix.Backend.Api.Features.Store
 {
@@ -36,6 +38,7 @@ namespace Synaptix.Backend.Api.Features.Store
 
             g.MapGet("/catalog", GetCatalog);
             g.MapGet("/catalog/{sku}", GetItem);
+            g.MapGet("/items/{sku}/disclosure", GetItemDisclosure).WithName("GetItemDisclosure");
             g.MapGet("/premium", GetPremium).RequireAuthorization();
             g.MapGet("/rewards/{playerId:guid}", GetRewards).RequireAuthorization();
             g.MapPost("/rewards/{playerId:guid}/claim/{rewardId}", ClaimReward).RequireAuthorization();
@@ -307,7 +310,7 @@ namespace Synaptix.Backend.Api.Features.Store
             PlayerTransactionService txnService,
             IStoreStockService stockService,
             IPlayerMindProfileService mindProfiles,
-            Synaptix.Backend.Application.Store.IStorePurchaseEligibilityService eligibility,
+            IStorePurchaseEligibilityService eligibility,
             CancellationToken ct)
         {
             var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);
@@ -434,30 +437,18 @@ namespace Synaptix.Backend.Api.Features.Store
 
         private static async Task<IResult> GetInventory(
             [FromRoute] Guid playerId,
-            IAppDb db,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             if (playerId == Guid.Empty)
                 return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId cannot be empty.");
 
-            var itemChanges = await db.PlayerTransactions
-                .AsNoTracking()
-                .Where(t => t.Status == PlayerTransactionStatus.Applied
-                            && t.Actors.Any(a => a.PlayerId == playerId))
-                .SelectMany(t => t.ItemChanges)
-                .Where(i => i.ItemType.StartsWith("cosmetic:", StringComparison.OrdinalIgnoreCase)
-                            || i.ItemType.StartsWith("powerup:", StringComparison.OrdinalIgnoreCase))
-                .ToListAsync(ct);
-
-            var items = itemChanges
-                .GroupBy(i => i.ItemType)
-                .Select(g => new PlayerInventoryItemDto(
-                    g.Key,
-                    g.Sum(i => i.Operation == ItemOperation.Revoke ? -i.Quantity : i.Quantity)))
-                .Where(x => x.Quantity > 0)
-                .OrderBy(x => x.ItemType)
+            var entitlements = await entitlementService.GetInventoryAsync(playerId, ct);
+            var items = entitlements
+                .GroupBy(e => e.Sku)
+                .Select(g => new PlayerInventoryItemDto(g.Key, g.Sum(e => e.Quantity)))
+                .OrderBy(i => i.ItemType)
                 .ToList();
-
             return Results.Ok(new PlayerInventoryDto(playerId, items, items.Count));
         }
 
@@ -466,6 +457,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IAppDb db,
             IConfiguration cfg,
             IHttpClientFactory httpClientFactory,
+            IAuditService auditService,
             CancellationToken ct)
         {
             var paymentsEnabled = await EnsurePaymentsEnabledAsync(db, cfg, ct);
@@ -533,6 +525,22 @@ namespace Synaptix.Backend.Api.Features.Store
 
             db.PlayerTransactions.Add(tx);
             await db.SaveChangesAsync(ct);
+
+            if (isValid)
+            {
+                try
+                {
+                    await auditService.RecordPurchaseAsync(
+                        req.PlayerId,
+                        "iap_receipt_validation",
+                        tx.Id,
+                        req.ProductId ?? platform,
+                        1,
+                        req.ExternalTransactionId ?? req.Receipt,
+                        CancellationToken.None);
+                }
+                catch { /* non-critical */ }
+            }
 
             return Results.Ok(new IapReceiptValidationResponse(
                 Valid: isValid,
@@ -797,6 +805,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IAppDb db,
             IPayPalPaymentGateway payPalGateway,
             IOptions<PayPalOptions> payPalOptionsAccessor,
+            IAuditService auditService,
             CancellationToken ct)
         {
             string payload;
@@ -892,6 +901,22 @@ namespace Synaptix.Backend.Api.Features.Store
                 db.PlayerTransactions.Add(tx);
                 await db.SaveChangesAsync(ct);
 
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await auditService.RecordPurchaseAsync(
+                            metadata.PlayerId,
+                            "paypal_payment_capture",
+                            tx.Id,
+                            metadata.Sku,
+                            metadata.Quantity,
+                            orderId,
+                            CancellationToken.None);
+                    }
+                    catch { /* non-critical */ }
+                }, CancellationToken.None);
+
                 return Results.Ok(new { received = true, applied = true, eventType, orderId });
             }
 
@@ -952,6 +977,7 @@ namespace Synaptix.Backend.Api.Features.Store
             HttpRequest request,
             IAppDb db,
             IStripePaymentGateway stripeGateway,
+            IAuditService auditService,
             CancellationToken ct)
         {
             string payload;
@@ -1059,6 +1085,22 @@ namespace Synaptix.Backend.Api.Features.Store
                 db.PlayerTransactions.Add(subscriptionCheckoutTx);
                 await db.SaveChangesAsync(ct);
 
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await auditService.RecordPurchaseAsync(
+                            subscriptionCheckoutPlayerId,
+                            "stripe_subscription_activated",
+                            subscriptionCheckoutTx.Id,
+                            $"subscription:{tier}/{billingPeriod}",
+                            1,
+                            completed.SessionId,
+                            CancellationToken.None);
+                    }
+                    catch { /* non-critical */ }
+                }, CancellationToken.None);
+
                 return Results.Ok(new
                 {
                     received = true,
@@ -1108,6 +1150,18 @@ namespace Synaptix.Backend.Api.Features.Store
             db.PlayerTransactions.Add(tx);
             await db.SaveChangesAsync(ct);
 
+            try
+            {
+                await auditService.RecordPurchaseAsync(
+                    playerId,
+                    "stripe_checkout_payment",
+                    tx.Id,
+                    sku,
+                    quantity,
+                    completed.SessionId,
+                    CancellationToken.None);
+            }
+            catch { /* non-critical */ }
             return Results.Ok(new
             {
                 received = true,
@@ -2314,6 +2368,41 @@ namespace Synaptix.Backend.Api.Features.Store
             bool IsClaimAvailable,
             DateTimeOffset? NextAvailableAtUtc,
             int CoinsAwarded);
+
+        private static async Task<IResult> GetItemDisclosure(
+            [FromRoute] string sku,
+            IAppDb db,
+            CancellationToken ct)
+        {
+            var item = await db.StoreItems.AsNoTracking()
+                .Where(i => i.Sku == sku && i.IsActive)
+                .Select(i => new StoreItemDisclosureDto(
+                    i.Sku,
+                    i.Name,
+                    i.Description,
+                    i.PriceCoins,
+                    i.PriceDiamonds,
+                    i.IsRefundable,
+                    i.IsRandomized,
+                    i.AgeMin,
+                    i.RequiresParentApproval))
+                .FirstOrDefaultAsync(ct);
+
+            return item is null
+                ? Results.NotFound(new { error = new { code = "ITEM_NOT_FOUND", message = $"Store item '{sku}' not found or not active." } })
+                : Results.Ok(item);
+        }
+
+        internal sealed record StoreItemDisclosureDto(
+            string Sku,
+            string Name,
+            string Description,
+            int PriceCoins,
+            int PriceDiamonds,
+            bool IsRefundable,
+            bool IsRandomized,
+            int AgeMin,
+            bool RequiresParentApproval);
 
         public sealed record IapReceiptValidationRequest(
             Guid PlayerId,

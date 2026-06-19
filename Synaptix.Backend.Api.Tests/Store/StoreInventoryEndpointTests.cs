@@ -4,8 +4,8 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Synaptix.Backend.Api.Tests.TestHost;
-using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Infrastructure.Persistence;
+using Synaptix.Entitlements.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Store;
@@ -30,7 +30,7 @@ public sealed class StoreInventoryEndpointTests : IClassFixture<TycoonApiFactory
     }
 
     [Fact]
-    public async Task Inventory_WithAppliedTransactions_ReturnsAggregatedItems()
+    public async Task Inventory_WithGrantedEntitlements_ReturnsItems()
     {
         var client = _factory.CreateClient();
         var email = $"inventory-{Guid.NewGuid():N}@example.com";
@@ -51,18 +51,9 @@ public sealed class StoreInventoryEndpointTests : IClassFixture<TycoonApiFactory
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-            var tx = new PlayerTransaction(Guid.NewGuid(), "store-purchase");
-            tx.AddActor(playerId, PlayerTransactionActorRole.Buyer);
-            tx.AddItemChange("cosmetic:neon-border", 2, ItemOperation.Grant);
-            tx.AddItemChange("cosmetic:neon-border", 1, ItemOperation.Revoke);
-            tx.AddItemChange("powerup:skip", 3, ItemOperation.Grant);
-            tx.MarkApplied();
-            db.PlayerTransactions.Add(tx);
-
-            var pending = new PlayerTransaction(Guid.NewGuid(), "store-purchase");
-            pending.AddActor(playerId, PlayerTransactionActorRole.Buyer);
-            pending.AddItemChange("cosmetic:pending-item", 10, ItemOperation.Grant);
-            db.PlayerTransactions.Add(pending);
+            var txId = Guid.NewGuid();
+            db.PlayerEntitlements.Add(PlayerEntitlement.Grant(playerId, "cosmetic:neon-border", "cosmetic", 1, txId));
+            db.PlayerEntitlements.Add(PlayerEntitlement.Grant(playerId, "powerup:skip", "powerup", 3, Guid.NewGuid()));
 
             await db.SaveChangesAsync();
         }
@@ -73,6 +64,5 @@ public sealed class StoreInventoryEndpointTests : IClassFixture<TycoonApiFactory
         response.Count.Should().Be(2);
         response.Items.Should().Contain(i => i.ItemType == "cosmetic:neon-border" && i.Quantity == 1);
         response.Items.Should().Contain(i => i.ItemType == "powerup:skip" && i.Quantity == 3);
-        response.Items.Should().NotContain(i => i.ItemType == "cosmetic:pending-item");
     }
 }

@@ -30,6 +30,12 @@
     <Project Path="Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj" />
     <Project Path="Synaptix.Shared/Synaptix.Shared.csproj" />
   </Folder>
+  <Folder Name="/Modules/">
+    <Project Path="Synaptix.Commerce/Synaptix.Commerce.csproj" />
+    <Project Path="Synaptix.Wallet/Synaptix.Wallet.csproj" />
+    <Project Path="Synaptix.Entitlements/Synaptix.Entitlements.csproj" />
+    <Project Path="Synaptix.Audit/Synaptix.Audit.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj" />
     <Project Path="Synaptix.Backend.Application.Tests/Synaptix.Backend.Application.Tests.csproj" />

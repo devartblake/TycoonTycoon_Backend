@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Synaptix.Backend.Application\Synaptix.Backend.Application.csproj" />
     <ProjectReference Include="..\Synaptix.Shared.Contracts\Synaptix.Shared.Contracts.csproj" />
     <ProjectReference Include="..\Synaptix.Security.Kms.Client\Synaptix.Security.Kms.Client.csproj" />
+    <ProjectReference Include="..\Synaptix.Entitlements\Synaptix.Entitlements.csproj" />
   </ItemGroup>
 
   <ItemGroup>

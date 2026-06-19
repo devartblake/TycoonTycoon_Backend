@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Synaptix.Backend.Application.Config;
 using Synaptix.Backend.Application.Privacy;
-using Synaptix.Backend.Application.Store;
 using Synaptix.Backend.Application.EventStats;
 using Synaptix.Backend.Application.GameEvents;
 using Synaptix.Backend.Application.Guardians;
@@ -13,6 +12,8 @@ using Synaptix.Backend.Application.Realtime;
 using Synaptix.Backend.Application.Seasons;
 using Synaptix.Backend.Application.Territory;
 using Synaptix.Backend.Application.Analytics;
+using Synaptix.Entitlements.Services;
+using Synaptix.Audit.Services;
 
 namespace Synaptix.Backend.Application
 {
@@ -132,8 +133,11 @@ namespace Synaptix.Backend.Application
             services.AddScoped<IUserPrivacyService, UserPrivacyService>();
             services.AddScoped<PrivacyRequestFulfillmentJob>();
 
-            // Store compliance
-            services.AddScoped<IStorePurchaseEligibilityService, StorePurchaseEligibilityService>();
+            // Entitlements
+            services.AddScoped<IEntitlementService, EntitlementService>();
+
+            // Audit
+            services.AddScoped<IAuditService, PurchaseAuditService>();
 
             return services;
         }

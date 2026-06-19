@@ -1,4 +1,4 @@
-namespace Synaptix.Backend.Application.Store;
+namespace Synaptix.Commerce.Services;
 
 public sealed record EligibilityResult(bool IsEligible, string? ErrorCode, string? ErrorMessage)
 {

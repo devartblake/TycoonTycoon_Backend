@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Compliance.Client.Abstractions;
 
-namespace Synaptix.Backend.Application.Store;
+namespace Synaptix.Commerce.Services;
 
 public sealed class StorePurchaseEligibilityService(
     IAppDb db,
