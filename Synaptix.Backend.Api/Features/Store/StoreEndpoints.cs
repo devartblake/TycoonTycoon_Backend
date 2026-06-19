@@ -445,7 +445,9 @@ namespace Synaptix.Backend.Api.Features.Store
 
             var entitlements = await entitlementService.GetInventoryAsync(playerId, ct);
             var items = entitlements
-                .Select(e => new PlayerInventoryItemDto(e.ItemType, e.Quantity))
+                .GroupBy(e => e.Sku)
+                .Select(g => new PlayerInventoryItemDto(g.Key, g.Sum(e => e.Quantity)))
+                .OrderBy(i => i.ItemType)
                 .ToList();
             return Results.Ok(new PlayerInventoryDto(playerId, items, items.Count));
         }
