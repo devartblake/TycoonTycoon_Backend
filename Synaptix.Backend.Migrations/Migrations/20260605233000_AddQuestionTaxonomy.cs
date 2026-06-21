@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     /// <inheritdoc />
+    [Migration("20260605233000_AddQuestionTaxonomy")]
     public partial class AddQuestionTaxonomy : Migration
     {
         /// <inheritdoc />

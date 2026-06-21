@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Synaptix.Backend.Migrations.Migrations
 {
+    [Migration("20260522100000_AddRewardReactor")]
     public partial class AddRewardReactor : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

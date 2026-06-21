@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     /// <inheritdoc />
+    [Migration("20260618000000_AddPlayerEntitlements")]
     public partial class AddPlayerEntitlements : Migration
     {
         /// <inheritdoc />

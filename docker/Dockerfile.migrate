@@ -21,6 +21,8 @@ COPY ["Synaptix.Shared/Synaptix.Shared.csproj", "Synaptix.Shared/"]
 COPY ["Synaptix.Shared.Contracts/Synaptix.Shared.Contracts.csproj", "Synaptix.Shared.Contracts/"]
 COPY ["Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj", "Synaptix.Shared.Observability/"]
 COPY ["Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj", "Synaptix.ServiceDefaults/"]
+COPY ["Synaptix.Entitlements/Synaptix.Entitlements.csproj", "Synaptix.Entitlements/"]
+COPY ["Synaptix.Audit/Synaptix.Audit.csproj", "Synaptix.Audit/"]
 
 # Restore packages - cached layer
 RUN dotnet restore "Synaptix.MigrationService/Synaptix.MigrationService.csproj"

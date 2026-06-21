@@ -116,7 +116,6 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<ExperimentVariant> ExperimentVariants { get; }
         DbSet<ExperimentAssignment> ExperimentAssignments { get; }
 
-        Task<int> SaveChangesAsync(CancellationToken ct = default);
         EntityEntry Entry(object entity);
     }
 }

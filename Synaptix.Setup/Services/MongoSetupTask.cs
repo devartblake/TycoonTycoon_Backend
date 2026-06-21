@@ -233,7 +233,9 @@ public sealed class MongoSetupTask : ISetupTask
             Log.Information("MongoDB: created app user '{User}' in auth database '{AuthDatabase}'.",
                 user, authDb.DatabaseNamespace.DatabaseName);
         }
-        catch (MongoCommandException ex) when (ex.CodeName == "Location51003" || ex.Message.Contains("already exists"))
+        catch (MongoCommandException ex) when (
+            ex.CodeName is "Location51003" or "UserAlreadyExists" ||
+            ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
         {
             var cmd = new BsonDocument
             {

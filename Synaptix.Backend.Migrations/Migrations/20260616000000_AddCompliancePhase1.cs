@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     /// <inheritdoc />
+    [Migration("20260616000000_AddCompliancePhase1")]
     public partial class AddCompliancePhase1 : Migration
     {
         /// <inheritdoc />

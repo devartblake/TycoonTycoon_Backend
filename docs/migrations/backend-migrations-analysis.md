@@ -1,88 +1,204 @@
-# Backend migration analysis for `Tycoon.MigrationService` / `Tycoon.Backend.Migrations`
+# Backend EF Migration Reference — `Synaptix.Backend.Migrations` / `Synaptix.MigrationService`
 
-## Scope and repository reality check
+## Project structure
 
-I inspected this repository for any .NET backend sources related to `Tycoon.MigrationService` and `Tycoon.Backend.Migrations`.
+| Project | Path | Role |
+|---|---|---|
+| `Synaptix.Backend.Migrations` | `Synaptix.Backend.Migrations/` | Migration assembly — contains all `Migration` subclasses and `AppDbModelSnapshot` |
+| `Synaptix.MigrationService` | `Synaptix.MigrationService/` | Startup project — runs migrations and seeds at container startup |
+| `Synaptix.Backend.Infrastructure` | `Synaptix.Backend.Infrastructure/` | Defines `AppDb : DbContext` and entity configurations |
+| `Synaptix.Backend.Domain` | `Synaptix.Backend.Domain/` | Entity classes (source of truth for schema shape) |
 
-### What is present
-- Flutter application code and assets.
-- Dart/Flutter dependency configuration in `pubspec.yaml`.
+The solution file is `TycoonTycoon_Backend.slnx` at the repo root.
 
-### What is missing
-- No `*.sln` files.
-- No `*.csproj` files.
-- No C# source files for `Tycoon.MigrationService` or `Tycoon.Backend.Migrations`.
+---
 
-Because of that, this repository **cannot directly be used to fix backend migration code** for the two services mentioned in the logs. The failure is likely occurring in a different backend repository or in a backend submodule/image source that is not present here.
+## Adding a new EF migration
 
-## Interpreting the provided error log
+Run from the **repo root**. The `--project` flag targets the migration assembly; `--startup-project` targets the service that wires up DI (needed to resolve `AppDb`).
 
-Based on the log sequence, there are two distinct issues:
+```powershell
+dotnet ef migrations add <PascalCaseName> `
+  --project Synaptix.Backend.Migrations `
+  --startup-project Synaptix.MigrationService `
+  --context AppDb
+```
 
-1. **Native dependency warning/error at startup**
-   - `Cannot load library libgssapi_krb5.so.2`
-   - This typically indicates the runtime image is missing Kerberos/GSSAPI system libs required by parts of Npgsql authentication stack.
+Migrations are timestamped automatically: `YYYYMMDDHHmmss_PascalCaseName.cs`.
 
-2. **Schema mismatch during seeding**
-   - EF reports: `Detected 1 migrations in assembly Tycoon.Backend.Migrations.`
-   - EF then reports database is up-to-date (`No migrations were applied.`).
-   - Seeder immediately fails querying `Tiers` with Postgres error `42P01: relation "Tiers" does not exist`.
+`dotnet ef` will generate **two** files per migration:
 
-This means the migration state and actual schema are inconsistent.
+- `Synaptix.Backend.Migrations/Migrations/<timestamp>_<Name>.cs` — the `Up()`/`Down()` implementation
+- `Synaptix.Backend.Migrations/Migrations/<timestamp>_<Name>.Designer.cs` — model snapshot at this point (contains `[Migration("...")]` attribute)
 
-## Most likely root causes for `relation "Tiers" does not exist`
+**Both files must be committed.**
 
-1. `__EFMigrationsHistory` contains a migration id that EF trusts, but the underlying tables were never created (or were dropped later).
-2. The single migration in `Tycoon.Backend.Migrations` does not actually create `Tiers` (bad/partial initial migration).
-3. `Tycoon.MigrationService` is connected to a different database/schema than expected (wrong connection string, `search_path`, or environment config).
-4. Seeding assumes default schema/table naming while migrations created objects under another schema (for example `public` vs custom schema).
+---
 
-## Recommended investigation sequence (backend repo/container)
+## Critical: the `[Migration]` attribute
 
-1. Verify you are targeting the expected DB in the migration service container:
-   - Check effective connection string at runtime.
-   - Confirm host/database/user values.
+EF Core's `IMigrationsAssembly` discovers migrations by scanning for types that:
+1. Inherit from `Migration`
+2. Are annotated with `[Migration("timestamp_Name")]`
 
-2. Inspect migration history and physical tables:
+When `dotnet ef migrations add` generates a migration, the `[Migration]` attribute lands in the `.Designer.cs` file on the `partial class`. If a migration is written by hand **without** a `.Designer.cs` file, the attribute must be placed directly in the main `.cs` file, otherwise EF Core silently skips the migration — it compiles fine but is never applied.
 
-   ```sql
-   SELECT * FROM "__EFMigrationsHistory" ORDER BY "MigrationId";
-   SELECT table_schema, table_name
-   FROM information_schema.tables
-   WHERE table_name ILIKE 'tiers';
-   ```
+### Symptom
 
-3. Generate SQL from the migration assembly and confirm `CREATE TABLE` for tiers exists:
-   - `dotnet ef migrations script --project Tycoon.Backend.Migrations --startup-project Tycoon.MigrationService`
+```
+[INF] Detected 27 migrations in assembly Synaptix.Backend.Migrations.
+[INF] No migrations were applied. The database is already up to date.
+[ERR] column s.age_min does not exist   ← column from an unapplied migration
+```
 
-4. If history is ahead of schema (common in reset/reseed scenarios), reconcile by:
-   - Dropping/recreating DB for non-production environments, or
-   - Carefully resetting `__EFMigrationsHistory` and reapplying migrations.
+The assembly has N migration files but EF only detects a smaller number, and the database schema is missing columns/tables from the "invisible" migrations.
 
-5. Install missing native lib in container image for Npgsql Kerberos dependency:
-   - Debian/Ubuntu family: `libgssapi-krb5-2` (and typically `libkrb5-3`)
-   - Alpine family: matching `krb5-libs` package.
+### Fix for hand-crafted migrations without a Designer file
 
-## Concrete hardening suggestions for migration service
+Add the attribute directly to the migration class:
 
-1. Add a startup guard before seeding:
-   - Ensure critical tables (`Tiers`, `Missions`) exist after `MigrateAsync()`.
-   - If missing, log a high-signal fatal error explaining migration/schema mismatch.
+```csharp
+namespace Synaptix.Backend.Migrations.Migrations
+{
+    [Migration("20260616000000_AddCompliancePhase1")]   // ← required
+    public partial class AddCompliancePhase1 : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder) { ... }
+        protected override void Down(MigrationBuilder migrationBuilder) { ... }
+    }
+}
+```
 
-2. Make migration count sanity checks stricter:
-   - If migration count > 0 but no required tables exist, fail fast with explicit diagnostic guidance.
+The timestamp string must exactly match the file name prefix.
 
-3. Improve operational diagnostics:
-   - Log resolved DB name/schema/search_path at startup.
-   - Log the current migration ids read from `__EFMigrationsHistory`.
+### Migrations fixed in June 2026 (were missing `[Migration]` attribute)
 
-4. CI gate:
-   - Run ephemeral Postgres integration test that performs `MigrateAsync()` + seeding query for `Tiers`.
+| File | Attribute added |
+|---|---|
+| `20260522100000_AddRewardReactor.cs` | `[Migration("20260522100000_AddRewardReactor")]` |
+| `20260604223000_AddSetupReports.cs` | `[Migration("20260604223000_AddSetupReports")]` |
+| `20260605233000_AddQuestionTaxonomy.cs` | `[Migration("20260605233000_AddQuestionTaxonomy")]` |
+| `20260605234500_AddQuestionTaxonomySuggestions.cs` | `[Migration("20260605234500_AddQuestionTaxonomySuggestions")]` |
+| `20260616000000_AddCompliancePhase1.cs` | `[Migration("20260616000000_AddCompliancePhase1")]` |
+| `20260618000000_AddPlayerEntitlements.cs` | `[Migration("20260618000000_AddPlayerEntitlements")]` |
 
-## Conclusion
+---
 
-The immediate blocker in your log is not in this Flutter repository; it is a backend migration/schema-state issue in the missing `.NET` migration projects or container image configuration. To resolve quickly:
+## Other useful CLI commands
 
-1. Fix image dependency for `libgssapi_krb5.so.2`.
-2. Reconcile migration history with actual schema.
-3. Confirm the migration assembly truly creates `Tiers` in the schema queried by the seeder.
+**Preview the SQL that would be applied (dry run):**
+```powershell
+dotnet ef migrations script `
+  --project Synaptix.Backend.Migrations `
+  --startup-project Synaptix.MigrationService `
+  --context AppDb `
+  --idempotent
+```
+
+**Apply migrations directly to a local database (outside Docker):**
+```powershell
+dotnet ef database update `
+  --project Synaptix.Backend.Migrations `
+  --startup-project Synaptix.MigrationService `
+  --context AppDb
+```
+
+**List all migrations and their applied status:**
+```powershell
+dotnet ef migrations list `
+  --project Synaptix.Backend.Migrations `
+  --startup-project Synaptix.MigrationService `
+  --context AppDb
+```
+
+**Remove the last unapplied migration (before committing):**
+```powershell
+dotnet ef migrations remove `
+  --project Synaptix.Backend.Migrations `
+  --startup-project Synaptix.MigrationService `
+  --context AppDb
+```
+
+---
+
+## Docker workflow
+
+Migrations run automatically inside the `migration` container on `docker compose up`. The startup sequence enforces ordering:
+
+```
+mongodb healthy  ─┐
+postgres healthy  ─┤→ setup (exit 0) → migration (exit 0) → backend-api (healthy)
+redis healthy     ─┘
+```
+
+Check migration output:
+```powershell
+docker logs synaptix_migration
+```
+
+A successful run ends with:
+```
+[INF] Detected 33 migrations in assembly Synaptix.Backend.Migrations.
+[INF] No migrations were applied. The database is already up to date.   # OR: Applied N migration(s)
+[INF] Seeding completed successfully
+[INF] Seeding catalog data from MinIO (idempotent)…
+[INF] Application is shutting down...
+```
+
+---
+
+## Diagnosing schema/migration mismatches
+
+**Check applied migrations directly in Postgres:**
+```sql
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+```
+
+**Check if a specific column exists:**
+```sql
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'store_items'
+ORDER BY ordinal_position;
+```
+
+**Check if a table exists:**
+```sql
+SELECT table_schema, table_name
+FROM information_schema.tables
+WHERE table_name ILIKE 'parental_purchase_controls';
+```
+
+Run via:
+```powershell
+docker exec -it synaptix_postgres psql -U <POSTGRES_USER> -d <POSTGRES_DB>
+```
+
+---
+
+## Resetting the development database
+
+If the schema and migration history are out of sync (e.g., after credential rotation or a volume created by an older build), wipe all named volumes and re-run:
+
+```powershell
+docker compose --env-file docker/.env -f docker/compose.yml -f docker/compose.dev.yml down --volumes
+docker compose --env-file docker/.env -f docker/compose.yml -f docker/compose.dev.yml up -d --build
+```
+
+`down --volumes` removes `postgres_data`, `mongodb_data`, `redis_data`, and all other named volumes. Postgres and MongoDB will reinitialize from scratch using the current env file credentials. The setup container provisions users and the migration container applies all migrations in order.
+
+---
+
+## Migration naming convention
+
+```
+<YYYYMMDDHHmmss>_<PascalCaseName>.cs
+```
+
+- Timestamp uses UTC, zero-padded to 14 digits
+- Name describes what the migration adds/changes, not what exists after it
+- Examples: `AddCompliancePhase1`, `AddPlayerEntitlements`, `AddStoreItemAvatarFields`
+
+Avoid names like `UpdateSchema` or `Fix` — they make `migrations list` output unreadable and `git blame` useless.

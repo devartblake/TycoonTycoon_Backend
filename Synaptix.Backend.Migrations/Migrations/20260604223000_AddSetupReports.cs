@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     /// <inheritdoc />
+    [Migration("20260604223000_AddSetupReports")]
     public partial class AddSetupReports : Migration
     {
         /// <inheritdoc />

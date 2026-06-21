@@ -452,7 +452,7 @@ namespace Synaptix.Backend.Application.Matches
             );
         }
 
-        private static async Task<IReadOnlyList<MatchAwardDto>> AwardAsync(SubmitMatchRequest req, Match match, PlayerTransactionService ptxnSvc, CancellationToken ct)
+        private static async Task<IReadOnlyList<MatchAwardDto>> AwardAsync(SubmitMatchRequest req, Match match, IPlayerTransactionService ptxnSvc, CancellationToken ct)
         {
             // Winner is highest score; ties -> draw
             var ordered = req.Participants.OrderByDescending(p => p.Score).ToList();
