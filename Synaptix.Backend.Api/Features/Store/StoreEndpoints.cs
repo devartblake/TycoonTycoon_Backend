@@ -311,6 +311,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IStoreStockService stockService,
             IPlayerMindProfileService mindProfiles,
             IStorePurchaseEligibilityService eligibility,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);
@@ -403,6 +404,7 @@ namespace Synaptix.Backend.Api.Features.Store
             if (result.Status == "Applied")
             {
                 await stockService.ConsumeStockAsync(req.PlayerId, req.Sku, req.Quantity, ct);
+                await entitlementService.GrantAsync(req.PlayerId, storeItem.Sku, storeItem.ItemType, totalGranted, result.PlayerTransactionId, ct: ct);
                 try
                 {
                     await mindProfiles.RecordEventAsync(req.PlayerId, new PlayerBehaviorEventDto(
@@ -749,6 +751,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IAppDb db,
             IConfiguration configuration,
             IPayPalPaymentGateway payPalGateway,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             var payPalEnabled = await EnsurePayPalEnabledAsync(db, configuration, ct);
@@ -792,6 +795,8 @@ namespace Synaptix.Backend.Api.Features.Store
                 db.PlayerTransactions.Add(tx);
                 await db.SaveChangesAsync(ct);
 
+                await entitlementService.GrantAsync(req.PlayerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * metadata.Quantity, tx.Id, ct: ct);
+
                 return Results.Ok(new CapturePayPalOrderResponse(capture.OrderId, capture.Status, capture.CaptureId, tx.Id));
             }
             catch (InvalidOperationException ex)
@@ -806,6 +811,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IPayPalPaymentGateway payPalGateway,
             IOptions<PayPalOptions> payPalOptionsAccessor,
             IAuditService auditService,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             string payload;
@@ -901,6 +907,8 @@ namespace Synaptix.Backend.Api.Features.Store
                 db.PlayerTransactions.Add(tx);
                 await db.SaveChangesAsync(ct);
 
+                await entitlementService.GrantAsync(metadata.PlayerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * metadata.Quantity, tx.Id, ct: ct);
+
                 _ = Task.Run(async () =>
                 {
                     try
@@ -978,6 +986,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IAppDb db,
             IStripePaymentGateway stripeGateway,
             IAuditService auditService,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             string payload;
@@ -1149,6 +1158,8 @@ namespace Synaptix.Backend.Api.Features.Store
 
             db.PlayerTransactions.Add(tx);
             await db.SaveChangesAsync(ct);
+
+            await entitlementService.GrantAsync(playerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * quantity, tx.Id, ct: ct);
 
             try
             {
