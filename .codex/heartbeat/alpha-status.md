@@ -1,6 +1,6 @@
 # Alpha/Beta Status Board
 
-Last updated: `2026-05-26 America/New_York`
+Last updated: `2026-06-22 UTC`
 
 ## Overall release status
 
@@ -37,7 +37,7 @@ Repo-side preparation is mostly verified, but live staging/prod evidence is stil
 | Operator dashboard cutover gates | blocked | operator-dashboard | `efMigrationsApplied`, `strictReadiness`, `parallelRun`, `signOff`, `cutover`, and `blazorRollbackWindow` all remain pending until live evidence exists. |
 | Windows X25519 KMS test path | verified | security-kms | Resolved with explicit `P256-HKDF-SHA256-AES256GCM` compatibility suite and capability-aware key exchange. `Synaptix.Security.Kms.Tests` passes locally on Windows. |
 
-## Repo-side preparation (2026-05-26)
+## Repo-side preparation (2026-06-22)
 
 | Item | Status | Notes |
 |---|---:|---|
@@ -50,6 +50,12 @@ Repo-side preparation is mostly verified, but live staging/prod evidence is stil
 | Production config template | verified | `appsettings.Production.example.json` created with all keys and `<REPLACE>` placeholders |
 | Feature flag gates (14/14 Alpha endpoints) | verified | `403 FeatureDisabled` on all disabled endpoints confirmed in repo |
 | KMS / Secure Channel | verified | X25519/P-256 cross-platform negotiation; AAD/replay/subject hardening; 15 endpoints protected |
+| Apple IAP non-consumable restore (`POST /store/restore`) | verified | `FetchAppleReceiptProductsAsync` with prod→sandbox fallback; idempotent per `OriginalTransactionId`; requires `Iap:AppleSharedSecret` env var |
+| Google Play RTDN webhook (`POST /store/iap/google/rtdn`) | verified | Full subscription lifecycle dispatch (grant/expiry/grace/revoke); OTP grant; Pub/Sub idempotency; always 200; requires `Iap:GoogleRtdnSubscriptionName` env var |
+| `ItemKind` enum + `StoreItem` classification | verified | Migration `20260622000000_AddStoreItemKind`; back-fills Consumable/NonConsumable/Subscription from existing data |
+| `IEntitlementService.UpdateExpiryAsync` | verified | Used by RTDN webhook and grace period handlers to update `expires_at_utc` without re-granting |
+| `EntitlementExpiryJob` — Hangfire sweeper | verified | Runs every 15 min; bulk-expires lapsed entitlements via `ExecuteUpdateAsync`; zero row-by-row overhead |
+| Subscription grace period lock (Stripe + PayPal) | verified | `past_due`/`SUSPENDED` → +3 days; `active`/`ACTIVATED` → true period end; consistent with Google RTDN grace window |
 
 ## Post-Alpha deferred
 
