@@ -797,6 +797,12 @@ if (hangfireEnabled)
             "*/15 * * * *"
         );
 
+        RecurringJob.AddOrUpdate<Synaptix.Backend.Application.Entitlements.EntitlementExpiryJob>(
+            "entitlement-expiry",
+            job => job.RunAsync(CancellationToken.None),
+            "*/15 * * * *"
+        );
+
         app.Logger.LogInformation("✅ Hangfire recurring jobs configured");
     }
     catch (Exception ex)

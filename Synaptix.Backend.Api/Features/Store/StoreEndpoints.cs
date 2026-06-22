@@ -61,6 +61,8 @@ namespace Synaptix.Backend.Api.Features.Store
             g.MapPost("/payments/webhook", HandleStripeWebhook);        // Stripe webhook — not from the app
             g.MapPost("/payments/paypal/webhook", HandlePayPalWebhook); // PayPal webhook — not from the app
             g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization().RequireSecureChannel();
+            g.MapPost("/restore", RestorePurchases).RequireAuthorization().RequireSecureChannel();
+            g.MapPost("/iap/google/rtdn", HandleGoogleRtdn);
             g.MapGet("/recommendations/{playerId:guid}", GetStoreRecommendations).RequireAuthorization();
         }
 
@@ -311,6 +313,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IStoreStockService stockService,
             IPlayerMindProfileService mindProfiles,
             IStorePurchaseEligibilityService eligibility,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             var storeEnabled = await EnsureStoreEnabledAsync(db, configuration, ct);
@@ -403,6 +406,7 @@ namespace Synaptix.Backend.Api.Features.Store
             if (result.Status == "Applied")
             {
                 await stockService.ConsumeStockAsync(req.PlayerId, req.Sku, req.Quantity, ct);
+                await entitlementService.GrantAsync(req.PlayerId, storeItem.Sku, storeItem.ItemType, totalGranted, result.PlayerTransactionId, ct: ct);
                 try
                 {
                     await mindProfiles.RecordEventAsync(req.PlayerId, new PlayerBehaviorEventDto(
@@ -514,7 +518,9 @@ namespace Synaptix.Backend.Api.Features.Store
                 eventId: Guid.NewGuid(),
                 kind: "iap-receipt-validation",
                 correlatedEventId: null,
-                receipt: req.Receipt.Trim()
+                receipt: platform == "google" && !string.IsNullOrWhiteSpace(req.ExternalTransactionId)
+                    ? req.ExternalTransactionId.Trim()
+                    : req.Receipt.Trim()
             );
 
             tx.AddActor(req.PlayerId, PlayerTransactionActorRole.Buyer);
@@ -749,6 +755,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IAppDb db,
             IConfiguration configuration,
             IPayPalPaymentGateway payPalGateway,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             var payPalEnabled = await EnsurePayPalEnabledAsync(db, configuration, ct);
@@ -792,6 +799,8 @@ namespace Synaptix.Backend.Api.Features.Store
                 db.PlayerTransactions.Add(tx);
                 await db.SaveChangesAsync(ct);
 
+                await entitlementService.GrantAsync(req.PlayerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * metadata.Quantity, tx.Id, ct: ct);
+
                 return Results.Ok(new CapturePayPalOrderResponse(capture.OrderId, capture.Status, capture.CaptureId, tx.Id));
             }
             catch (InvalidOperationException ex)
@@ -806,6 +815,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IPayPalPaymentGateway payPalGateway,
             IOptions<PayPalOptions> payPalOptionsAccessor,
             IAuditService auditService,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             string payload;
@@ -901,6 +911,8 @@ namespace Synaptix.Backend.Api.Features.Store
                 db.PlayerTransactions.Add(tx);
                 await db.SaveChangesAsync(ct);
 
+                await entitlementService.GrantAsync(metadata.PlayerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * metadata.Quantity, tx.Id, ct: ct);
+
                 _ = Task.Run(async () =>
                 {
                     try
@@ -967,6 +979,12 @@ namespace Synaptix.Backend.Api.Features.Store
                 db.PlayerTransactions.Add(tx);
                 await db.SaveChangesAsync(ct);
 
+                var paypalSku = $"sub:{metadata.Tier}:{metadata.BillingPeriod}";
+                if (string.Equals(status, "SUSPENDED", StringComparison.OrdinalIgnoreCase))
+                    await entitlementService.UpdateExpiryAsync(metadata.PlayerId, paypalSku, DateTimeOffset.UtcNow.AddDays(3), ct);
+                else if (string.Equals(status, "ACTIVE", StringComparison.OrdinalIgnoreCase))
+                    await entitlementService.UpdateExpiryAsync(metadata.PlayerId, paypalSku, nextBillingTimeUtc, ct);
+
                 return Results.Ok(new { received = true, applied = true, eventType, subscriptionId, status });
             }
 
@@ -978,6 +996,7 @@ namespace Synaptix.Backend.Api.Features.Store
             IAppDb db,
             IStripePaymentGateway stripeGateway,
             IAuditService auditService,
+            IEntitlementService entitlementService,
             CancellationToken ct)
         {
             string payload;
@@ -1037,6 +1056,13 @@ namespace Synaptix.Backend.Api.Features.Store
 
                 db.PlayerTransactions.Add(subscriptionTx);
                 await db.SaveChangesAsync(ct);
+
+                var stripeSku = $"sub:{tier}:{billingPeriod}";
+                var stripeSubStatus = subEvent.Status?.ToLowerInvariant();
+                if (stripeSubStatus is "past_due" or "unpaid")
+                    await entitlementService.UpdateExpiryAsync(subscriptionPlayerId, stripeSku, DateTimeOffset.UtcNow.AddDays(3), ct);
+                else if (stripeSubStatus is "active" or "trialing")
+                    await entitlementService.UpdateExpiryAsync(subscriptionPlayerId, stripeSku, subEvent.CurrentPeriodEndUtc, ct);
 
                 return Results.Ok(new { received = true, applied = true, eventType = webhookEvent.EventType });
             }
@@ -1149,6 +1175,8 @@ namespace Synaptix.Backend.Api.Features.Store
 
             db.PlayerTransactions.Add(tx);
             await db.SaveChangesAsync(ct);
+
+            await entitlementService.GrantAsync(playerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * quantity, tx.Id, ct: ct);
 
             try
             {
@@ -2174,6 +2202,290 @@ namespace Synaptix.Backend.Api.Features.Store
                 "PAYPAL_DISABLED",
                 "PayPal payments are currently unavailable.",
                 status);
+        }
+
+        private sealed record AppleInAppTransaction(string ProductId, string OriginalTransactionId, int Quantity);
+
+        private static async Task<IReadOnlyList<AppleInAppTransaction>?> FetchAppleReceiptProductsAsync(
+            string receipt,
+            string appleSecret,
+            IHttpClientFactory httpClientFactory,
+            CancellationToken ct)
+        {
+            var payload = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                ["receipt-data"] = receipt,
+                ["password"] = appleSecret
+            });
+
+            var client = httpClientFactory.CreateClient();
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync("https://buy.itunes.apple.com/verifyReceipt", content, ct);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var body = await response.Content.ReadAsStringAsync(ct);
+            if (!TryGetAppleStatus(body, out var appleStatus)) return null;
+
+            if (appleStatus == 21007)
+            {
+                using var sandboxContent = new StringContent(payload, Encoding.UTF8, "application/json");
+                using var sandboxResponse = await client.PostAsync("https://sandbox.itunes.apple.com/verifyReceipt", sandboxContent, ct);
+                if (!sandboxResponse.IsSuccessStatusCode) return null;
+                body = await sandboxResponse.Content.ReadAsStringAsync(ct);
+                if (!TryGetAppleStatus(body, out appleStatus)) return null;
+            }
+
+            if (appleStatus != 0 && appleStatus != 21006) return null;
+
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                if (!doc.RootElement.TryGetProperty("receipt", out var receiptElem)) return null;
+                if (!receiptElem.TryGetProperty("in_app", out var inApp)) return null;
+                var result = new List<AppleInAppTransaction>();
+                foreach (var item in inApp.EnumerateArray())
+                {
+                    var productId = item.TryGetProperty("product_id", out var pid) ? pid.GetString() : null;
+                    var origTxId = item.TryGetProperty("original_transaction_id", out var oid) ? oid.GetString() : null;
+                    var quantity = item.TryGetProperty("quantity", out var q) && int.TryParse(q.GetString(), out var qi) ? qi : 1;
+                    if (!string.IsNullOrWhiteSpace(productId) && !string.IsNullOrWhiteSpace(origTxId))
+                        result.Add(new AppleInAppTransaction(productId!, origTxId!, quantity));
+                }
+                return result;
+            }
+            catch { return null; }
+        }
+
+        private static async Task<IResult> RestorePurchases(
+            [FromBody] RestorePurchasesRequest req,
+            IAppDb db,
+            IConfiguration cfg,
+            IHttpClientFactory httpClientFactory,
+            IEntitlementService entitlementService,
+            IAuditService auditService,
+            CancellationToken ct)
+        {
+            if (req.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(req.Platform) || string.IsNullOrWhiteSpace(req.Receipt))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId, platform, and receipt are required.");
+
+            if (!string.Equals(req.Platform, "apple", StringComparison.OrdinalIgnoreCase))
+                return ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_PLATFORM", "Only 'apple' platform is supported for restore.");
+
+            var appleSecret = cfg["Iap:AppleSharedSecret"];
+            if (string.IsNullOrWhiteSpace(appleSecret) || appleSecret.Contains("__"))
+                return ApiResponses.Error(StatusCodes.Status503ServiceUnavailable, "IAP_CONFIG_MISSING", "Apple IAP is not configured.");
+
+            var transactions = await FetchAppleReceiptProductsAsync(req.Receipt.Trim(), appleSecret, httpClientFactory, ct);
+            if (transactions is null)
+                return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "RESTORE_VERIFICATION_FAILED", "Apple receipt verification failed.");
+
+            var restored = new List<string>();
+            var alreadyOwned = new List<string>();
+
+            foreach (var txn in transactions)
+            {
+                var storeItem = await db.StoreItems
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(i => i.Sku == txn.ProductId && i.IsActive && i.ItemKind == ItemKind.NonConsumable, ct);
+
+                if (storeItem is null) continue;
+
+                var alreadyGranted = await db.PlayerEntitlements
+                    .AsNoTracking()
+                    .AnyAsync(e => e.PlayerId == req.PlayerId && e.Sku == txn.ProductId && e.Scope == "permanent", ct);
+
+                if (alreadyGranted)
+                {
+                    alreadyOwned.Add(txn.ProductId);
+                    continue;
+                }
+
+                var sourceId = CreateDeterministicGuid($"apple-restore:{txn.OriginalTransactionId}");
+                await entitlementService.GrantAsync(req.PlayerId, storeItem.Sku, storeItem.ItemType, txn.Quantity, sourceId, ct: ct);
+                restored.Add(storeItem.Sku);
+            }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await auditService.RecordPurchaseAsync(req.PlayerId, "apple_restore", Guid.NewGuid(), "restore", restored.Count, req.Platform, CancellationToken.None);
+                }
+                catch { }
+            });
+
+            return Results.Ok(new RestorePurchasesResponse(restored.Count, restored, alreadyOwned));
+        }
+
+        private static async Task<DateTimeOffset?> VerifyGoogleSubscriptionAsync(
+            string packageName,
+            string subscriptionId,
+            string purchaseToken,
+            string apiAccessToken,
+            IHttpClientFactory httpClientFactory,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(apiAccessToken) || apiAccessToken.Contains("__"))
+                return null;
+
+            var encodedSub = Uri.EscapeDataString(subscriptionId);
+            var encodedToken = Uri.EscapeDataString(purchaseToken);
+            var url = $"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{packageName}/purchases/subscriptions/{encodedSub}/tokens/{encodedToken}";
+
+            var client = httpClientFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiAccessToken);
+            using var resp = await client.SendAsync(request, ct);
+            if (!resp.IsSuccessStatusCode) return null;
+
+            try
+            {
+                var body = await resp.Content.ReadAsStringAsync(ct);
+                using var doc = JsonDocument.Parse(body);
+                if (!doc.RootElement.TryGetProperty("expiryTimeMillis", out var expiryElem)) return null;
+                var millisStr = expiryElem.ValueKind == JsonValueKind.String
+                    ? expiryElem.GetString()
+                    : expiryElem.GetRawText();
+                return long.TryParse(millisStr, out var millis) ? DateTimeOffset.FromUnixTimeMilliseconds(millis) : null;
+            }
+            catch { return null; }
+        }
+
+        private static async Task<IResult> HandleGoogleRtdn(
+            HttpRequest request,
+            IAppDb db,
+            IConfiguration cfg,
+            IHttpClientFactory httpClientFactory,
+            IEntitlementService entitlementService,
+            CancellationToken ct)
+        {
+            string body;
+            using (var reader = new StreamReader(request.Body, Encoding.UTF8))
+            {
+                body = await reader.ReadToEndAsync(ct);
+            }
+
+            var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            PubSubPushRequest? push;
+            try { push = JsonSerializer.Deserialize<PubSubPushRequest>(body, jsonOptions); }
+            catch { return Results.BadRequest(new { error = new { code = "INVALID_PUSH_MESSAGE" } }); }
+
+            if (push is null)
+                return Results.BadRequest(new { error = new { code = "INVALID_PUSH_MESSAGE" } });
+
+            var expectedSubscription = cfg["Iap:GoogleRtdnSubscriptionName"];
+            if (string.IsNullOrWhiteSpace(expectedSubscription) || expectedSubscription.Contains("__") || push.Subscription != expectedSubscription)
+                return Results.BadRequest(new { error = new { code = "INVALID_SUBSCRIPTION" } });
+
+            DeveloperNotification? notification;
+            try
+            {
+                var dataBytes = Convert.FromBase64String(push.Message.Data);
+                var dataJson = Encoding.UTF8.GetString(dataBytes);
+                notification = JsonSerializer.Deserialize<DeveloperNotification>(dataJson, jsonOptions);
+            }
+            catch { return Results.Ok(new { received = true }); }
+
+            if (notification is null)
+                return Results.Ok(new { received = true });
+
+            var idempotencyId = CreateDeterministicGuid($"google-rtdn:{push.Message.MessageId}");
+            var isDuplicate = await db.PlayerTransactions.AsNoTracking().AnyAsync(t => t.EventId == idempotencyId, ct);
+            if (isDuplicate)
+                return Results.Ok(new { received = true, duplicate = true });
+
+            if (notification.SubscriptionNotification is { } subNotif)
+            {
+                var purchaseToken = subNotif.PurchaseToken;
+                var sku = subNotif.SubscriptionId;
+                var notificationType = subNotif.NotificationType;
+
+                var playerId = await db.PlayerTransactions
+                    .AsNoTracking()
+                    .Where(t => t.Kind == "iap-receipt-validation" && t.Receipt == purchaseToken)
+                    .SelectMany(t => t.Actors)
+                    .Select(a => (Guid?)a.PlayerId)
+                    .FirstOrDefaultAsync(ct);
+
+                if (playerId is null)
+                    return Results.Ok(new { received = true });
+
+                var pid = playerId.Value;
+
+                if (notificationType is 4 or 2 or 1 or 7)
+                {
+                    var packageName = cfg["Iap:GooglePackageName"] ?? string.Empty;
+                    var accessToken = cfg["Iap:GoogleApiAccessToken"] ?? string.Empty;
+                    var expiryDate = await VerifyGoogleSubscriptionAsync(packageName, sku, purchaseToken, accessToken, httpClientFactory, ct);
+
+                    var hasEntitlement = await db.PlayerEntitlements
+                        .AsNoTracking()
+                        .AnyAsync(e => e.PlayerId == pid && e.Sku == sku && e.Scope == "subscription", ct);
+
+                    if (!hasEntitlement)
+                    {
+                        var storeItem = await db.StoreItems.AsNoTracking().FirstOrDefaultAsync(i => i.Sku == sku && i.IsActive, ct);
+                        if (storeItem is not null)
+                        {
+                            var sourceId = CreateDeterministicGuid($"google-rtdn-grant:{push.Message.MessageId}");
+                            await entitlementService.GrantAsync(pid, sku, storeItem.ItemType, 1, sourceId, scope: "subscription", ct: ct);
+                        }
+                    }
+
+                    await entitlementService.UpdateExpiryAsync(pid, sku, expiryDate, ct);
+                }
+                else if (notificationType is 13 or 12 or 5)
+                {
+                    await entitlementService.UpdateExpiryAsync(pid, sku, DateTimeOffset.UtcNow, ct);
+                }
+                else if (notificationType == 6)
+                {
+                    await entitlementService.UpdateExpiryAsync(pid, sku, DateTimeOffset.UtcNow.AddDays(3), ct);
+                }
+
+                var rtdnTx = new PlayerTransaction(idempotencyId, $"google-rtdn:{notificationType}", receipt: purchaseToken);
+                rtdnTx.AddActor(pid, PlayerTransactionActorRole.Buyer);
+                rtdnTx.MarkApplied();
+                db.PlayerTransactions.Add(rtdnTx);
+                await db.SaveChangesAsync(ct);
+            }
+            else if (notification.OneTimeProductNotification is { } otpNotif && otpNotif.NotificationType == 20)
+            {
+                var purchaseToken = otpNotif.PurchaseToken;
+                var sku = otpNotif.Sku;
+
+                var playerId = await db.PlayerTransactions
+                    .AsNoTracking()
+                    .Where(t => t.Kind == "iap-receipt-validation" && t.Receipt == purchaseToken)
+                    .SelectMany(t => t.Actors)
+                    .Select(a => (Guid?)a.PlayerId)
+                    .FirstOrDefaultAsync(ct);
+
+                if (playerId is not null)
+                {
+                    var storeItem = await db.StoreItems.AsNoTracking().FirstOrDefaultAsync(i => i.Sku == sku && i.IsActive, ct);
+                    if (storeItem is not null)
+                    {
+                        var sourceId = CreateDeterministicGuid($"google-rtdn-otp:{push.Message.MessageId}");
+                        await entitlementService.GrantAsync(playerId.Value, sku, storeItem.ItemType, 1, sourceId, scope: "permanent", ct: ct);
+                    }
+                }
+
+                var otpTx = new PlayerTransaction(idempotencyId, $"google-rtdn:{otpNotif.NotificationType}", receipt: purchaseToken);
+                if (playerId.HasValue) otpTx.AddActor(playerId.Value, PlayerTransactionActorRole.Buyer);
+                otpTx.MarkApplied();
+                db.PlayerTransactions.Add(otpTx);
+                await db.SaveChangesAsync(ct);
+            }
+            else
+            {
+                var unknownTx = new PlayerTransaction(idempotencyId, "google-rtdn:unknown");
+                unknownTx.MarkApplied();
+                db.PlayerTransactions.Add(unknownTx);
+                await db.SaveChangesAsync(ct);
+            }
+
+            return Results.Ok(new { received = true });
         }
 
         private static Guid CreateDeterministicGuid(string source)

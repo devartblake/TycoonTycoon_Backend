@@ -129,6 +129,7 @@ namespace Synaptix.Backend.Application
 
             // Entitlements
             services.AddScoped<IEntitlementService, EntitlementService>();
+            services.AddScoped<Entitlements.EntitlementExpiryJob>();
 
             // Audit
             services.AddScoped<IAuditService, PurchaseAuditService>();

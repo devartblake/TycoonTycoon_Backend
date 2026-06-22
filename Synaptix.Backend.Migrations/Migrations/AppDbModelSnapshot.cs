@@ -4367,6 +4367,11 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("grant_quantity");
 
+                    b.Property<int>("ItemKind")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("item_kind");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");

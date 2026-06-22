@@ -58,6 +58,23 @@ public sealed class EntitlementService(
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task UpdateExpiryAsync(Guid playerId, string sku, DateTimeOffset? expiresAt, CancellationToken ct = default)
+    {
+        var entitlement = await db.PlayerEntitlements
+            .Where(e => e.PlayerId == playerId && e.Sku == sku && e.Scope == "subscription")
+            .OrderByDescending(e => e.GrantedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
+        if (entitlement is null)
+        {
+            logger.LogWarning("UpdateExpiry: no subscription entitlement for {PlayerId}/{Sku}", playerId, sku);
+            return;
+        }
+
+        entitlement.SetExpiry(expiresAt);
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task<IReadOnlyList<EntitlementDto>> GetInventoryAsync(Guid playerId, CancellationToken ct = default)
     {
         var now = DateTimeOffset.UtcNow;

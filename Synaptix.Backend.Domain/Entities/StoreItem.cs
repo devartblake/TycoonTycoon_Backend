@@ -53,5 +53,6 @@ namespace Synaptix.Backend.Domain.Entities
         public int AgeMin { get; set; }
         public bool RequiresParentApproval { get; set; }
         public bool IsRefundable { get; set; } = true;
+        public ItemKind ItemKind { get; set; } = ItemKind.Consumable;
     }
 }
