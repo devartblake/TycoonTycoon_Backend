@@ -43,6 +43,11 @@ public sealed class PlayerEntitlement
         };
     }
 
+    public void SetExpiry(DateTimeOffset? expiresAt)
+    {
+        ExpiresAtUtc = expiresAt;
+    }
+
     public void Consume(int amount)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);

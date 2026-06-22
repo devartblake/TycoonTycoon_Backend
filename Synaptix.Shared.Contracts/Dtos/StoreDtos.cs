@@ -229,4 +229,34 @@ namespace Synaptix.Shared.Contracts.Dtos
     public sealed record UpdateStoreSystemStatusResponse(
         StoreSystemStatusDto Status,
         DateTimeOffset UpdatedAtUtc);
+
+    public sealed record RestorePurchasesRequest(Guid PlayerId, string Platform, string Receipt);
+
+    public sealed record RestorePurchasesResponse(
+        int RestoredCount,
+        IReadOnlyList<string> RestoredSkus,
+        IReadOnlyList<string> AlreadyOwnedSkus);
+
+    public sealed record PubSubPushRequest(PubSubMessage Message, string Subscription);
+
+    public sealed record PubSubMessage(string Data, string MessageId, string? PublishTime);
+
+    public sealed record DeveloperNotification(
+        string Version,
+        string PackageName,
+        long EventTimeMillis,
+        SubscriptionNotification? SubscriptionNotification,
+        OneTimeProductNotification? OneTimeProductNotification);
+
+    public sealed record SubscriptionNotification(
+        string Version,
+        int NotificationType,
+        string PurchaseToken,
+        string SubscriptionId);
+
+    public sealed record OneTimeProductNotification(
+        string Version,
+        int NotificationType,
+        string PurchaseToken,
+        string Sku);
 }
