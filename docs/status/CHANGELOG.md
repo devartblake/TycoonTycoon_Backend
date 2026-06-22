@@ -4,6 +4,73 @@ All notable changes to this project.
 
 ---
 
+## [2026-06-22] Subscription Lifecycle — Expiry Sweeper and Grace Period Lock (P2)
+
+### `EntitlementExpiryJob` — Hangfire background sweeper
+
+- **`Synaptix.Backend.Application/Entitlements/EntitlementExpiryJob.cs`** (new) — Hangfire job that bulk-expires lapsed subscription entitlements every 15 minutes. Uses `ExecuteUpdateAsync` to emit a single `UPDATE player_entitlements SET quantity = 0 WHERE expires_at_utc < NOW() AND quantity > 0`, bypassing C# private setters cleanly at the SQL layer.
+- Registered via `services.AddScoped<EntitlementExpiryJob>()` in `DependencyInjection.cs`.
+- Recurring Hangfire job `"entitlement-expiry"` added to `Program.cs` on a `*/15 * * * *` cron schedule alongside the existing `PrivacyRequestFulfillmentJob`.
+
+### Grace period lock — Stripe and PayPal subscription webhooks
+
+- **Stripe `customer.subscription.updated`**: After the `PlayerTransaction` is persisted, the handler now calls `UpdateExpiryAsync` on the player's subscription entitlement:
+  - `past_due` / `unpaid` → sets `ExpiresAtUtc = now + 3 days` (grace window while Stripe retries the failed invoice).
+  - `active` / `trialing` → sets `ExpiresAtUtc = subEvent.CurrentPeriodEndUtc` (restores the true billing period end on payment recovery).
+- **PayPal `BILLING.SUBSCRIPTION.SUSPENDED`** → `UpdateExpiryAsync(playerId, sku, now + 3 days)` (non-payment suspension grace window).
+- **PayPal `BILLING.SUBSCRIPTION.ACTIVATED`** → `UpdateExpiryAsync(playerId, sku, nextBillingTimeUtc)` (restores true expiry on activation/recovery).
+- The 3-day grace window matches the value already used by the Google Play RTDN `IN_GRACE_PERIOD` handler, giving a consistent grace period across all three payment providers.
+- SKU for Stripe/PayPal subscriptions is computed as `$"sub:{tier}:{billingPeriod}"` — consistent with what `GrantAsync` records during checkout.
+
+---
+
+## [2026-06-22] IAP Compliance — Apple Non-Consumable Restore and Google Play RTDN (P1a/P1b)
+
+### Prerequisites — `ItemKind` classification
+
+- **`Synaptix.Backend.Domain/Entities/ItemKind.cs`** (new) — `ItemKind` enum: `Consumable = 0`, `NonConsumable = 1`, `Subscription = 2`.
+- **`StoreItem.ItemKind`** property added (default `Consumable`).
+- **EF migration `20260622000000_AddStoreItemKind`** — adds `item_kind` integer column (default 0) with two data back-fills:
+  - `max_per_player = 1` → `item_kind = 1` (NonConsumable)
+  - `sku LIKE 'sub:%'` → `item_kind = 2` (Subscription)
+- `AppDbModelSnapshot` updated to include `item_kind` in the `StoreItem` entity block.
+
+### `IEntitlementService.UpdateExpiryAsync` — subscription expiry mutation
+
+- **`PlayerEntitlement.SetExpiry(DateTimeOffset? expiresAt)`** mutation method added alongside `Consume()`.
+- **`IEntitlementService.UpdateExpiryAsync`** added to the interface; finds the most-recent subscription-scoped entitlement for a player+SKU and calls `SetExpiry`.
+- **`EntitlementService.UpdateExpiryAsync`** implementation follows the `RevokeAsync` pattern (query by `PlayerId + Sku + Scope = "subscription"`, mutate, save).
+
+### `POST /store/restore` — Apple non-consumable restore
+
+- Route: `POST /api/v1/store/restore` (requires authorization + secure channel).
+- New DTOs: `RestorePurchasesRequest(PlayerId, Platform, Receipt)` and `RestorePurchasesResponse(RestoredCount, RestoredSkus, AlreadyOwnedSkus)` in `StoreDtos.cs`.
+- **`FetchAppleReceiptProductsAsync`** private helper: mirrors `VerifyAppleReceiptAsync` (production→sandbox fallback on status 21007), but additionally parses `receipt.in_app` array on status `0` or `21006` and returns `IReadOnlyList<AppleInAppTransaction>`. Returns `null` on any failure.
+- Handler validates Apple receipt, iterates each `AppleInAppTransaction`, skips items not matching an active `ItemKind.NonConsumable` store item, uses `OriginalTransactionId` as a deterministic idempotency source, checks for existing `scope = "permanent"` entitlements (→ `AlreadyOwnedSkus`), and calls `GrantAsync` for new grants. Fire-and-forget audit via `IAuditService`.
+
+### `POST /store/iap/google/rtdn` — Google Play real-time developer notifications
+
+- Route: `POST /api/v1/store/iap/google/rtdn` (no authorization required — Google Pub/Sub pushes from its own servers).
+- **`appsettings.json`**: `Iap:GoogleRtdnSubscriptionName` placeholder added.
+- New Pub/Sub + `DeveloperNotification` DTOs in `StoreDtos.cs`: `PubSubPushRequest`, `PubSubMessage`, `DeveloperNotification`, `SubscriptionNotification`, `OneTimeProductNotification`.
+- **`VerifyGoogleSubscriptionAsync`** private helper: calls `androidpublisher/v3/.../purchases/subscriptions/{subscriptionId}/tokens/{purchaseToken}`, parses `expiryTimeMillis` (milliseconds→`DateTimeOffset`). Returns `null` on failure.
+- **`ValidateIapReceipt` modified**: when `platform == "google"` and `ExternalTransactionId` is non-empty, stores `ExternalTransactionId` (the purchase token) as `PlayerTransaction.Receipt` — enabling RTDN player lookup by purchase token.
+- **`HandleGoogleRtdn` handler** flow:
+  1. Parse Pub/Sub push body (case-insensitive deserialization); 400 on failure.
+  2. Verify `push.Subscription == cfg["Iap:GoogleRtdnSubscriptionName"]`; 400 on mismatch.
+  3. Base64-decode + deserialize `DeveloperNotification`; acknowledge silently (200) on decode failure.
+  4. Idempotency: `CreateDeterministicGuid("google-rtdn:{messageId}")` checked against `PlayerTransactions.EventId`; 200 with `{duplicate:true}` if found.
+  5. `SubscriptionNotification` dispatch: look up player via `PlayerTransactions.Receipt == purchaseToken`; acknowledge (200) if player not found; then dispatch by `NotificationType`:
+     - **4/2/1/7** (PURCHASED/RENEWED/RECOVERED/RESTARTED): verify subscription via Google API → grant if no entitlement exists → `UpdateExpiryAsync` with API-returned `expiryDate`.
+     - **13/12/5** (EXPIRED/REVOKED/ON_HOLD): `UpdateExpiryAsync(now)` — immediate expiry.
+     - **6** (IN_GRACE_PERIOD): `UpdateExpiryAsync(now + 3 days)`.
+     - **3** (CANCELED): no entitlement change.
+     - Others: silent acknowledge.
+  6. `OneTimeProductNotification` type 20 (PURCHASED): player lookup → `GrantAsync(scope: "permanent")`.
+  7. Always returns `200 OK` — critical to prevent Pub/Sub retry storms on any non-2xx.
+
+---
+
 ## [2026-06-19] Monetization Module Split — Phase 3: Wallet Module Population
 
 ### `Synaptix.Shared.Contracts` — Economy Interface Extraction
