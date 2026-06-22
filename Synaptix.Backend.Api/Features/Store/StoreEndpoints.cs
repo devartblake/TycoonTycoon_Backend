@@ -979,6 +979,12 @@ namespace Synaptix.Backend.Api.Features.Store
                 db.PlayerTransactions.Add(tx);
                 await db.SaveChangesAsync(ct);
 
+                var paypalSku = $"sub:{metadata.Tier}:{metadata.BillingPeriod}";
+                if (string.Equals(status, "SUSPENDED", StringComparison.OrdinalIgnoreCase))
+                    await entitlementService.UpdateExpiryAsync(metadata.PlayerId, paypalSku, DateTimeOffset.UtcNow.AddDays(3), ct);
+                else if (string.Equals(status, "ACTIVE", StringComparison.OrdinalIgnoreCase))
+                    await entitlementService.UpdateExpiryAsync(metadata.PlayerId, paypalSku, nextBillingTimeUtc, ct);
+
                 return Results.Ok(new { received = true, applied = true, eventType, subscriptionId, status });
             }
 
@@ -1050,6 +1056,13 @@ namespace Synaptix.Backend.Api.Features.Store
 
                 db.PlayerTransactions.Add(subscriptionTx);
                 await db.SaveChangesAsync(ct);
+
+                var stripeSku = $"sub:{tier}:{billingPeriod}";
+                var stripeSubStatus = subEvent.Status?.ToLowerInvariant();
+                if (stripeSubStatus is "past_due" or "unpaid")
+                    await entitlementService.UpdateExpiryAsync(subscriptionPlayerId, stripeSku, DateTimeOffset.UtcNow.AddDays(3), ct);
+                else if (stripeSubStatus is "active" or "trialing")
+                    await entitlementService.UpdateExpiryAsync(subscriptionPlayerId, stripeSku, subEvent.CurrentPeriodEndUtc, ct);
 
                 return Results.Ok(new { received = true, applied = true, eventType = webhookEvent.EventType });
             }
