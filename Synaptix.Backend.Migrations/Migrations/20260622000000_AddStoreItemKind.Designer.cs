@@ -9,7 +9,6 @@ using Synaptix.Backend.Infrastructure.Persistence;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20260622000000_AddStoreItemKind")]
     partial class AddStoreItemKind
     {
         /// <inheritdoc />

@@ -9,7 +9,6 @@ using Synaptix.Backend.Infrastructure.Persistence;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20260616000000_AddCompliancePhase1")]
     partial class AddCompliancePhase1
     {
         /// <inheritdoc />

@@ -9,7 +9,6 @@ using Synaptix.Backend.Infrastructure.Persistence;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20260618000000_AddPlayerEntitlements")]
     partial class AddPlayerEntitlements
     {
         /// <inheritdoc />
