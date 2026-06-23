@@ -213,14 +213,31 @@ namespace Synaptix.Backend.Infrastructure
             }
 
             // ---------------------------
-            // Object Storage
+            // Object Storage (MinIO or Linode ObjectStorage)
             // ---------------------------
             var minioEndpoint = cfg["MinIO:Endpoint"];
+            var linodeEndpoint = cfg["LINODE_OBJECT_STORAGE_ENDPOINT"];
 
-            if (!string.IsNullOrWhiteSpace(minioEndpoint))
+            if (!string.IsNullOrWhiteSpace(minioEndpoint) || !string.IsNullOrWhiteSpace(linodeEndpoint))
             {
                 var minioOptions = new MinioOptions();
-                cfg.GetSection("MinIO").Bind(minioOptions);
+
+                if (!string.IsNullOrWhiteSpace(minioEndpoint))
+                {
+                    // MinIO configuration
+                    cfg.GetSection("MinIO").Bind(minioOptions);
+                }
+                else
+                {
+                    // Linode ObjectStorage configuration (S3-compatible)
+                    minioOptions.Endpoint = linodeEndpoint!;
+                    minioOptions.AccessKey = cfg["LINODE_OBJECT_STORAGE_ACCESS_KEY"] ?? string.Empty;
+                    minioOptions.SecretKey = cfg["LINODE_OBJECT_STORAGE_SECRET_KEY"] ?? string.Empty;
+                    minioOptions.Bucket = cfg["LINODE_OBJECT_STORAGE_BUCKET"] ?? "tycoon-assets";
+                    minioOptions.PublicEndpoint = cfg["LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT"];
+                    minioOptions.UseSSL = true; // Linode ObjectStorage uses HTTPS
+                }
+
                 services.AddSingleton(minioOptions);
 
                 // MinIO 7: .Build() removed from the fluent chain inside AddMinio
