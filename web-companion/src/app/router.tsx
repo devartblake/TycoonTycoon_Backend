@@ -12,6 +12,8 @@ import { DashboardPage } from '@features/dashboard/pages/DashboardPage';
 import { SettingsPage } from '@features/dashboard/pages/SettingsPage';
 import { NotFoundPage } from '@features/dashboard/pages/NotFoundPage';
 import { QuizLobbyPage } from '@features/quiz/pages/QuizLobbyPage';
+import { QuizSessionScreen } from '@features/quiz/pages/QuizSessionScreen';
+import { QuizResultsScreen } from '@features/quiz/pages/QuizResultsScreen';
 import { SkillTreePage } from '@features/skill-tree/pages/SkillTreePage';
 import { LeaderboardPage } from '@features/leaderboard/pages/LeaderboardPage';
 import { ProfilePage } from '@features/profile/pages/ProfilePage';
@@ -41,7 +43,8 @@ const router = createBrowserRouter([
 
               // Quiz routes
               { path: 'play', element: <QuizLobbyPage /> },
-              { path: 'play/:sessionId', element: <div className="p-8">Quiz Session (Phase 2)</div> },
+              { path: 'quiz/session', element: <QuizSessionScreen /> },
+              { path: 'quiz/results/:sessionId', element: <QuizResultsScreen /> },
 
               // Skill tree routes
               { path: 'skills', element: <SkillTreePage /> },
