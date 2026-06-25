@@ -24,7 +24,6 @@ class ApiClient {
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
       },
     });
 
@@ -44,6 +43,11 @@ class ApiClient {
         config.headers['X-App-Version'] = env.appVersion;
         config.headers['X-Device-Id'] = this.getDeviceId();
 
+        // Debug logging in development
+        if (env.isDev) {
+          console.debug(`📡 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+        }
+
         return config;
       },
       (error: AxiosError) => Promise.reject(error)
@@ -53,6 +57,24 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError<ApiErrorResponse>) => {
+        // Log detailed error information for debugging
+        if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+          console.error('🌐 Network Error:', {
+            message: error.message,
+            baseURL: env.apiV1Url,
+            url: error.config?.url,
+            hint: 'Check if backend is running and CORS is configured correctly',
+          });
+        }
+
+        if (error.response?.status === 0 && error.message.includes('CORS')) {
+          console.error('🔒 CORS Error detected:', {
+            backend: env.apiBaseUrl,
+            frontend: window.location.origin,
+            hint: 'Backend must have Access-Control-Allow-Origin header set to allow this frontend URL',
+          });
+        }
+
         if (error.response?.status === 401) {
           // Unauthorized: attempt token refresh or redirect to login
           const refreshed = await this.refreshToken();
