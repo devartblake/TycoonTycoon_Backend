@@ -4,13 +4,13 @@
  */
 
 import { create } from 'zustand';
+import type { SynaptixMode } from '@theme/themes';
 
-export type Theme = 'light' | 'dark' | 'auto';
-export type SynaptixMode = 'kids' | 'teens' | 'adults';
+export type ThemeVariant = 'light' | 'dark';
 
 export interface UIState {
-  theme: Theme;
   synaptixMode: SynaptixMode;
+  themeVariant: ThemeVariant;
   sidebarOpen: boolean;
   modals: {
     [key: string]: boolean;
@@ -23,8 +23,9 @@ export interface UIState {
   }>;
 
   // Actions
-  setTheme: (theme: Theme) => void;
   setSynaptixMode: (mode: SynaptixMode) => void;
+  setThemeVariant: (variant: ThemeVariant) => void;
+  toggleThemeVariant: () => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   openModal: (modalId: string) => void;
@@ -40,15 +41,20 @@ export interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  theme: 'dark',
   synaptixMode: 'adults',
+  themeVariant: 'dark',
   sidebarOpen: true,
   modals: {},
   notifications: [],
 
-  setTheme: (theme) => set({ theme }),
-
   setSynaptixMode: (synaptixMode) => set({ synaptixMode }),
+
+  setThemeVariant: (themeVariant) => set({ themeVariant }),
+
+  toggleThemeVariant: () =>
+    set((state) => ({
+      themeVariant: state.themeVariant === 'dark' ? 'light' : 'dark',
+    })),
 
   toggleSidebar: () =>
     set((state) => ({ sidebarOpen: !state.sidebarOpen })),

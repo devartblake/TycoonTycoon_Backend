@@ -2,29 +2,85 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Variables - These get overridden by the theme system */
+:root {
+  /* Background colors */
+  --color-bg-primary: #111827;
+  --color-bg-secondary: #1f2937;
+  --color-bg-tertiary: #374151;
+  --color-bg-elevated: #1f2937;
+
+  /* Text colors */
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #d1d5db;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #111827;
+
+  /* Brand colors */
+  --color-brand-primary: #6366f1;
+  --color-brand-secondary: #8b5cf6;
+  --color-brand-accent: #f59e0b;
+
+  /* Status colors */
+  --color-status-success: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
+
+  /* UI colors */
+  --color-ui-border: #374151;
+  --color-ui-divider: #374151;
+  --color-ui-overlay: rgba(0, 0, 0, 0.4);
+}
+
 @layer base {
   body {
-    @apply bg-gray-950 text-gray-100 font-sans;
+    @apply font-sans transition-colors duration-300;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
   }
 
   h1 {
-    @apply text-4xl font-bold text-white;
+    @apply text-4xl font-bold;
+    color: var(--color-text-primary);
   }
 
   h2 {
-    @apply text-2xl font-bold text-white;
+    @apply text-2xl font-bold;
+    color: var(--color-text-primary);
   }
 
   h3 {
-    @apply text-xl font-bold text-gray-50;
+    @apply text-xl font-bold;
+    color: var(--color-text-primary);
   }
 
   p {
-    @apply text-gray-300;
+    color: var(--color-text-secondary);
   }
 
   a {
-    @apply text-primary hover:text-secondary transition-colors;
+    color: var(--color-brand-primary);
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--color-brand-secondary);
+  }
+
+  input, textarea, select {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border-color: var(--color-ui-border);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--color-text-tertiary);
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--color-brand-primary);
   }
 }
 
@@ -34,19 +90,46 @@
   }
 
   .btn-primary {
-    @apply bg-primary text-white hover:bg-secondary;
+    background-color: var(--color-brand-primary);
+    color: white;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-brand-secondary);
   }
 
   .btn-secondary {
-    @apply bg-gray-700 text-white hover:bg-gray-600;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-ui-border);
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--color-bg-elevated);
   }
 
   .card {
-    @apply bg-gray-900 rounded-lg border border-gray-800 p-4;
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-ui-border);
+    @apply rounded-lg border p-4 transition-colors duration-300;
   }
 
   .input-base {
-    @apply px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary;
+    @apply px-3 py-2 rounded-lg transition-colors duration-200;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-ui-border);
+  }
+
+  .input-base::placeholder {
+    color: var(--color-text-tertiary);
+  }
+
+  .input-base:focus {
+    outline: none;
+    border-color: var(--color-brand-primary);
   }
 }
 
@@ -55,4 +138,9 @@
   html {
     scroll-behavior: smooth;
   }
+}
+
+/* Smooth theme transitions */
+* {
+  @apply transition-colors duration-300;
 }
