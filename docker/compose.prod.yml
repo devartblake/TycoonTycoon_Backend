@@ -16,9 +16,6 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.le.acme.email=${ACME_EMAIL:?ACME_EMAIL is required in prod}"
-      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.le.acme.tlschallenge=true"
       - "--log.level=WARN"
       - "--accesslog=true"
     ports: !override
@@ -26,7 +23,7 @@ services:
       - "443:443"
     volumes: !override
       - ./traefik/dynamic.prod.yml:/etc/traefik/dynamic.prod.yml:ro
-      - letsencrypt:/letsencrypt
+      - ./traefik/certs:/certs:ro
     logging:
       driver: "json-file"
       options:
@@ -377,5 +374,4 @@ services:
         max-file: "5"
 
 volumes:
-  letsencrypt:
   vault_data:

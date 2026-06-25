@@ -3,6 +3,11 @@
 # The single-Linode production Compose override mounts this file instead of
 # using the Docker provider. That avoids Docker API-version compatibility
 # issues and keeps the Docker socket out of the Traefik container.
+#
+# TLS is served using the Cloudflare Origin Certificate mounted at /certs/.
+# Cloudflare SSL/TLS mode must be set to "Full (Strict)" in the Cloudflare
+# dashboard — the origin cert is only trusted by Cloudflare's edge, not by
+# browsers directly.
 
 http:
   routers:
@@ -10,22 +15,19 @@ http:
       rule: "Host(`api.synaptixplay.com`)"
       entryPoints: [websecure]
       service: backend-api
-      tls:
-        certResolver: le
+      tls: {}
 
     operator-dashboard:
       rule: "Host(`admin.synaptixplay.com`)"
       entryPoints: [websecure]
       service: operator-dashboard
-      tls:
-        certResolver: le
+      tls: {}
 
     flutter-web:
       rule: "Host(`app.synaptixplay.com`)"
       entryPoints: [websecure]
       service: flutter-web
-      tls:
-        certResolver: le
+      tls: {}
 
   services:
     backend-api:
@@ -42,3 +44,13 @@ http:
       loadBalancer:
         servers:
           - url: "http://flutter-web:80"
+
+tls:
+  certificates:
+    - certFile: /certs/origin.crt
+      keyFile: /certs/origin.key
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/origin.crt
+        keyFile: /certs/origin.key
