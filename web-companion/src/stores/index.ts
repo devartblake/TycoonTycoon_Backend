@@ -12,3 +12,4 @@ export {
   type Question,
   type QuizAnswer,
 } from './quizSessionStore';
+export { useNotificationStore, type NotificationState, type Notification, type NotificationType } from './notificationStore';

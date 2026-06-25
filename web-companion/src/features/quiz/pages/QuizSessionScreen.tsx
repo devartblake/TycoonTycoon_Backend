@@ -9,7 +9,6 @@ import { useQuizSessionStore } from '@stores/quizSessionStore';
 import { QuestionCard } from '@components/game/QuestionCard';
 import { AnswerButton } from '@components/game/AnswerButton';
 import { TimerBar } from '@components/game/TimerBar';
-import { getQuestionsByCategory } from '@lib/mockQuestions';
 import { BarChart3, Zap } from 'lucide-react';
 
 export function QuizSessionScreen() {
@@ -17,17 +16,16 @@ export function QuizSessionScreen() {
   const { sessionId } = useParams();
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
-  const [canContinue, setCanContinue] = useState(false);
 
   const {
     questions,
     currentQuestionIndex,
-    startQuiz,
+    category,
+    difficulty,
     setCurrentQuestion,
     answerQuestion,
     timeRemaining,
     setTimeRemaining,
-    updateTotalTime,
     score,
     xpEarned,
     completeQuiz,
@@ -36,9 +34,7 @@ export function QuizSessionScreen() {
   // Initialize quiz if not already started
   useEffect(() => {
     if (questions.length === 0) {
-      // Load mock questions
-      const mockQuestions = getQuestionsByCategory('science', 5);
-      startQuiz(mockQuestions, 'science', 'easy');
+      navigate('/play'); // Redirect if no quiz session
     }
   }, []);
 
@@ -71,7 +67,7 @@ export function QuizSessionScreen() {
     );
   }
 
-  const currentQuestion = questions[currentIndex];
+  const currentQuestion = questions[currentQuestionIndex];
 
   const handleSelectAnswer = (index: number) => {
     if (!isRevealed) {
@@ -82,7 +78,6 @@ export function QuizSessionScreen() {
   const handleSubmitAnswer = () => {
     if (!isRevealed) {
       setIsRevealed(true);
-      setCanContinue(true);
 
       // Record answer
       const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
@@ -110,7 +105,6 @@ export function QuizSessionScreen() {
       setCurrentQuestion(currentQuestionIndex + 1);
       setSelectedAnswer(null);
       setIsRevealed(false);
-      setCanContinue(false);
     } else {
       // Quiz complete
       const stats = completeQuiz();
@@ -139,10 +133,10 @@ export function QuizSessionScreen() {
               className="text-3xl font-bold mb-2"
               style={{ color: 'var(--color-text-primary)' }}
             >
-              Science Quiz
+              {category && category.charAt(0).toUpperCase() + category.slice(1)} Quiz
             </h1>
             <p style={{ color: 'var(--color-text-secondary)' }}>
-              Difficulty: Easy • Category: Science
+              Difficulty: {difficulty && difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} • Category: {category && category.charAt(0).toUpperCase() + category.slice(1)}
             </p>
           </div>
           <div className="flex gap-6">

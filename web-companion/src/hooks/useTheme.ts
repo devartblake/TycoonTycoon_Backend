@@ -4,13 +4,7 @@
 
 import { useEffect } from 'react';
 import { useUIStore } from '@stores';
-import {
-  getTheme,
-  applyTheme,
-  getSavedTheme,
-  type SynaptixMode,
-  type ThemeVariant,
-} from '@theme/themes';
+import { getTheme, applyTheme, getSavedTheme } from '@theme/themes';
 
 export function useTheme() {
   const synaptixMode = useUIStore((state) => state.synaptixMode);
@@ -30,7 +24,7 @@ export function useTheme() {
     const savedTheme = getSavedTheme();
     setSynaptixMode(savedTheme.mode);
     setThemeVariant(savedTheme.variant);
-  }, []);
+  }, [setSynaptixMode, setThemeVariant]);
 
   return {
     synaptixMode,

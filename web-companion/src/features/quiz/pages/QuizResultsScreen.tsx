@@ -3,20 +3,84 @@
  * Shows final score, XP, accuracy, and breakdown
  */
 
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { QuizSessionStats } from '@stores/quizSessionStore';
-import { Trophy, Zap, Percent, Clock, ArrowRight } from 'lucide-react';
+import { useQuizSessionStore } from '@stores/quizSessionStore';
+import { useProfileStore } from '@stores/profileStore';
+import { Trophy, Zap, Percent, Clock, ArrowRight, AlertCircle } from 'lucide-react';
+import { apiClient } from '@core/api/client';
 
 export function QuizResultsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const stats = location.state as QuizSessionStats | null;
+  const sessionId = useQuizSessionStore((state) => state.sessionId);
+  const addXP = useProfileStore((state) => state.addXP);
+  const addCoins = useProfileStore((state) => state.addCoins);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Submit results to the API
+  useEffect(() => {
+    const submitResults = async () => {
+      if (!stats) return;
+
+      try {
+        setIsSubmitting(true);
+        setSubmitError(null);
+
+        // Convert quiz session stats to API format
+        // Note: selectedAnswerIndex is the array index, we convert it to option ID format
+        const answers = stats.answers.map((answer) => ({
+          questionId: answer.questionId,
+          selectedOptionId: `option_${answer.selectedAnswer}`, // Convert index to option ID
+        }));
+
+        // Submit to API
+        const response = await apiClient.submitMatchResults(
+          sessionId || 'unknown',
+          answers,
+          stats.totalScore
+        );
+
+        // Update player profile with earned rewards
+        if (response) {
+          addXP(stats.totalXp);
+          addCoins(Math.floor(stats.totalScore / 10)); // Convert score to coins
+        }
+      } catch (err) {
+        console.error('Failed to submit quiz results:', err);
+        setSubmitError('Failed to save your results. Your progress will still be recorded.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    submitResults();
+  }, [stats, sessionId, addXP, addCoins]);
 
   if (!stats) {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
         <div style={{ color: 'var(--color-text-secondary)' }}>
           No results found. <button onClick={() => navigate('/play')} className="underline">Back to Quiz Lobby</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSubmitting) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+        <div className="text-center">
+          <div className="inline-block mb-4">
+            <div
+              className="w-8 h-8 border-4 border-transparent rounded-full animate-spin"
+              style={{ borderTopColor: 'var(--color-brand-primary)' }}
+            />
+          </div>
+          <p style={{ color: 'var(--color-text-secondary)' }}>Saving your results...</p>
         </div>
       </div>
     );
@@ -57,6 +121,23 @@ export function QuizResultsScreen() {
             Quiz completed in {Math.floor(stats.timeSpent / 60)}m{stats.timeSpent % 60}s
           </p>
         </div>
+
+        {/* Submission Error Alert */}
+        {submitError && (
+          <div
+            className="mb-8 p-6 rounded-lg flex items-start gap-3"
+            style={{
+              backgroundColor: 'var(--color-status-error)',
+              color: 'white',
+            }}
+          >
+            <AlertCircle size={24} className="flex-shrink-0" />
+            <div>
+              <h3 className="font-bold mb-1">Couldn't save results</h3>
+              <p>{submitError}</p>
+            </div>
+          </div>
+        )}
 
         {/* Main Stats Grid */}
         <div className="grid grid-cols-2 gap-4 mb-8">

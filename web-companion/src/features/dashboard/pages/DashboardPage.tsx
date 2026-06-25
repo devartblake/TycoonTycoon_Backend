@@ -2,16 +2,53 @@
  * Home dashboard page - shows player stats, quick actions, and featured content
  */
 
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from '@stores';
-import { Play, Trophy, Zap, Users, BookOpen } from 'lucide-react';
+import { apiClient } from '@core/api/client';
+import { Play, Trophy, Zap, Users, BookOpen, AlertCircle } from 'lucide-react';
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const profile = useProfileStore((state) => state.profile);
+  const setProfile = useProfileStore((state) => state.setProfile);
+  const setLoading = useProfileStore((state) => state.setLoading);
+  const setError = useProfileStore((state) => state.setError);
+  const clearError = useProfileStore((state) => state.clearError);
+  const isLoading = useProfileStore((state) => state.isLoading);
+  const error = useProfileStore((state) => state.error);
 
-  // TODO: Fetch user profile from API on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        clearError();
+        const userData = await apiClient.getCurrentUser();
+        setProfile(userData);
+      } catch (err: any) {
+        console.error('Failed to fetch user profile:', err);
+
+        // Check if it's a CORS error or authentication error
+        const isCorsError = err?.message?.includes('Network Error') || err?.code === 'CORS';
+        const isAuthError = err?.response?.status === 401 || err?.response?.status === 403;
+
+        if (isCorsError) {
+          setError('API server is not accessible from your location. Please check the server configuration.');
+        } else if (isAuthError) {
+          setError('Please log in to view your profile.');
+        } else {
+          setError('Failed to load your profile. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!profile && !isLoading && user) {
+      fetchProfile();
+    }
+  }, [profile, isLoading, user, setProfile, setLoading, setError, clearError]);
 
   const quickActions = [
     {
@@ -64,6 +101,23 @@ export function DashboardPage() {
             : 'Load your profile to see your progress'}
         </p>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-8 p-4 bg-red-900/30 border border-red-700 rounded-lg flex items-start gap-3">
+          <AlertCircle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-400 mb-1">Error</h3>
+            <p className="text-red-300 text-sm">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded text-sm transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       {profile && (

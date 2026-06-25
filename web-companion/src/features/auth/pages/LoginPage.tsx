@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '@stores';
+import { apiClient } from '@core/api/client';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
 export function LoginPage() {
@@ -25,25 +26,24 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      // TODO: Replace with actual API call to /auth/login
-      // const response = await apiClient.post('/auth/login', { email, password });
-      // const { user, token } = response.data;
-      // localStorage.setItem('auth_token', token);
-      // setUser(user);
+      const response = await apiClient.login(email, password);
+      const { user, token, refreshToken } = response;
 
-      // Mock implementation for now
-      const mockUser = {
-        id: '1',
-        email,
-        displayName: email.split('@')[0],
-        role: 'user' as const,
-        createdAt: new Date().toISOString(),
-      };
-      setUser(mockUser);
-      localStorage.setItem('auth_token', 'mock_token_' + Date.now());
+      // Store tokens
+      localStorage.setItem('auth_token', token);
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+
+      // Update auth store
+      setUser(user);
       navigate('/');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
+      console.error('Login error:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Login failed. Please check your credentials and try again.';
       setError(errorMessage);
       setAuthError(errorMessage);
     } finally {

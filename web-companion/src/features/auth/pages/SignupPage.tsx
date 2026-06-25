@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '@stores';
+import { apiClient } from '@core/api/client';
 import { Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
 
 export function SignupPage() {
@@ -61,25 +62,28 @@ export function SignupPage() {
     setLoading(true);
 
     try {
-      // TODO: Replace with actual API call to /auth/signup
-      // const response = await apiClient.post('/auth/signup', formData);
-      // const { user, token } = response.data;
-      // localStorage.setItem('auth_token', token);
-      // setUser(user);
+      const response = await apiClient.signup(
+        formData.email,
+        formData.password,
+        formData.displayName
+      );
+      const { user, token, refreshToken } = response;
 
-      // Mock implementation
-      const mockUser = {
-        id: Math.random().toString(36).substr(2, 9),
-        email: formData.email,
-        displayName: formData.displayName,
-        role: 'user' as const,
-        createdAt: new Date().toISOString(),
-      };
-      setUser(mockUser);
-      localStorage.setItem('auth_token', 'mock_token_' + Date.now());
+      // Store tokens
+      localStorage.setItem('auth_token', token);
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+
+      // Update auth store
+      setUser(user);
       navigate('/');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Sign up failed. Please try again.';
+      console.error('Signup error:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Sign up failed. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);

@@ -2,7 +2,8 @@
  * Theme provider component - initializes and applies theme system
  */
 
-import { ReactNode, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { useTheme } from '@hooks/useTheme';
 import { getSavedTheme, getTheme, applyTheme } from '@theme/themes';
 

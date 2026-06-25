@@ -4,8 +4,8 @@
  */
 
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useAuthStore, useUIStore } from '@stores';
-import { Menu, LogOut, Settings, Home, Trophy, Zap, BookOpen, Users, Store } from 'lucide-react';
+import { useAuthStore, useUIStore, useProfileStore } from '@stores';
+import { Menu, LogOut, Settings, Home, Trophy, Zap, BookOpen, Users, Store, Coins } from 'lucide-react';
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ export function AppShell() {
   const user = useAuthStore((state) => state.user);
   const sidebarOpen = useUIStore((state) => state.sidebarOpen);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const profile = useProfileStore((state) => state.profile);
 
   const handleLogout = () => {
     // TODO: Call logout API endpoint first
@@ -128,7 +129,25 @@ export function AppShell() {
             Trivia Tycoon
           </h1>
           {user && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
+              {/* Wallet Display */}
+              {profile && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+                    <Coins size={18} style={{ color: 'var(--color-status-warning)' }} />
+                    <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                      {profile.coins}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+                    <span style={{ fontSize: '1.2rem' }}>💎</span>
+                    <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                      {profile.diamonds}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="text-right">
                 <div className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
                   {user.displayName}

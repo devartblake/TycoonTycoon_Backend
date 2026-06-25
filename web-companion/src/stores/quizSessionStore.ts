@@ -60,6 +60,7 @@ export interface QuizSessionState {
     category: string,
     difficulty: 'easy' | 'medium' | 'hard'
   ) => void;
+  setSessionId: (sessionId: string) => void;
   setCurrentQuestion: (index: number) => void;
   answerQuestion: (answer: QuizAnswer) => void;
   setTimeRemaining: (time: number) => void;
@@ -92,6 +93,7 @@ export interface QuizSessionStats {
     total: number;
     accuracy: number;
   };
+  answers: QuizAnswer[];
 }
 
 const generateSessionId = () => `quiz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -144,6 +146,8 @@ export const useQuizSessionStore = create<QuizSessionState>((set, get) => ({
       timeRemaining: questions[0]?.timeLimit || 30,
       totalTimeElapsed: 0,
     }),
+
+  setSessionId: (sessionId) => set({ sessionId }),
 
   setCurrentQuestion: (index) => {
     const state = get();
@@ -242,6 +246,7 @@ export const useQuizSessionStore = create<QuizSessionState>((set, get) => ({
         total: state.totalQuestions,
         accuracy,
       },
+      answers: state.answers,
     };
 
     return stats;

@@ -22,6 +22,14 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'https://api.synaptixplay.com',
+        changeOrigin: true,
+        rewrite: (path) => path,
+        secure: true,
+      },
+    },
   },
   build: {
     outDir: 'dist',
