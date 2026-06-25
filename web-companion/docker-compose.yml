@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  web-companion:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+      - "9229:9229"  # Node debugger
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:5000
+      - VITE_WS_URL=ws://localhost:5000
+      - VITE_SIGNALR_URL=http://localhost:5000/hubs
+      - VITE_STRIPE_KEY=pk_test_dev_key_placeholder
+      - VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - tycoon-network
+    depends_on:
+      - backend
+
+  # Placeholder backend service reference
+  # Replace with actual backend container when available
+  backend:
+    image: synaptix-backend:latest
+    ports:
+      - "5000:5000"
+      - "50051:50051"  # gRPC
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORT=5000
+      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;User Id=postgres;Password=postgres;Database=synaptix_dev
+    networks:
+      - tycoon-network
+    depends_on:
+      - postgres
+    profiles:
+      - with-backend
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=synaptix_dev
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - tycoon-network
+    profiles:
+      - with-backend
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - tycoon-network
+    profiles:
+      - with-backend
+
+volumes:
+  postgres-data:
+
+networks:
+  tycoon-network:
+    driver: bridge
