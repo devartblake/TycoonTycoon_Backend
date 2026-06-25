@@ -4,65 +4,85 @@
  */
 
 import { createBrowserRouter } from 'react-router-dom';
-
-// Placeholder pages (to be implemented)
-const NotFoundPage = () => <div className="p-4">404 - Page Not Found</div>;
-const DashboardPage = () => <div className="p-4">Dashboard (TODO)</div>;
-const LoginPage = () => <div className="p-4">Login (TODO)</div>;
+import ProtectedRoute from '@components/layout/ProtectedRoute';
+import AppShell from '@components/layout/AppShell';
+import { LoginPage } from '@features/auth/pages/LoginPage';
+import { SignupPage } from '@features/auth/pages/SignupPage';
+import { DashboardPage } from '@features/dashboard/pages/DashboardPage';
+import { SettingsPage } from '@features/dashboard/pages/SettingsPage';
+import { NotFoundPage } from '@features/dashboard/pages/NotFoundPage';
+import { QuizLobbyPage } from '@features/quiz/pages/QuizLobbyPage';
+import { SkillTreePage } from '@features/skill-tree/pages/SkillTreePage';
+import { LeaderboardPage } from '@features/leaderboard/pages/LeaderboardPage';
+import { ProfilePage } from '@features/profile/pages/ProfilePage';
+import { FriendsPage } from '@features/social/pages/FriendsPage';
+import { StorePage } from '@features/store/pages/StorePage';
+import { MissionsPage } from '@features/missions/pages/MissionsPage';
+import { StudyPage } from '@features/study/pages/StudyPage';
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <DashboardPage />, // TODO: Replace with AppShell layout
     errorElement: <NotFoundPage />,
     children: [
-      // Home
-      { index: true, element: <DashboardPage /> },
-
-      // Auth routes
+      // Public routes
       { path: 'login', element: <LoginPage /> },
-      { path: 'signup', element: <div>Signup (TODO)</div> },
+      { path: 'signup', element: <SignupPage /> },
 
-      // Quiz routes
-      { path: 'play', element: <div>Quiz Lobby (TODO)</div> },
-      { path: 'play/:sessionId', element: <div>Quiz Session (TODO)</div> },
+      // Protected routes with app shell
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <AppShell />,
+            children: [
+              // Home
+              { index: true, element: <DashboardPage /> },
 
-      // Skill tree routes
-      { path: 'skills', element: <div>Skill Tree Hub (TODO)</div> },
-      { path: 'skills/:branchId', element: <div>Skill Branch Detail (TODO)</div> },
-      { path: 'skills/planner', element: <div>Build Planner (TODO)</div> },
+              // Quiz routes
+              { path: 'play', element: <QuizLobbyPage /> },
+              { path: 'play/:sessionId', element: <div className="p-8">Quiz Session (Phase 2)</div> },
 
-      // Leaderboard routes
-      { path: 'leaderboard', element: <div>Leaderboard (TODO)</div> },
-      { path: 'leaderboard/:tier', element: <div>Tier Leaderboard (TODO)</div> },
+              // Skill tree routes
+              { path: 'skills', element: <SkillTreePage /> },
+              { path: 'skills/:branchId', element: <div className="p-8">Skill Branch Detail (Phase 3)</div> },
+              { path: 'skills/planner', element: <div className="p-8">Build Planner (Phase 3)</div> },
 
-      // Profile routes
-      { path: 'profile', element: <div>My Profile (TODO)</div> },
-      { path: 'profile/:userId', element: <div>Public Profile (TODO)</div> },
-      { path: 'profile/knowledge-graph', element: <div>Knowledge Graph (TODO)</div> },
+              // Leaderboard routes
+              { path: 'leaderboard', element: <LeaderboardPage /> },
+              { path: 'leaderboard/:tier', element: <div className="p-8">Tier Leaderboard (Phase 2)</div> },
 
-      // Store
-      { path: 'store', element: <div>Store (TODO)</div> },
+              // Profile routes
+              { path: 'profile', element: <ProfilePage /> },
+              { path: 'profile/:userId', element: <div className="p-8">Public Profile (Phase 2)</div> },
+              { path: 'profile/knowledge-graph', element: <div className="p-8">Knowledge Graph (Phase 6)</div> },
 
-      // Missions
-      { path: 'missions', element: <div>Missions (TODO)</div> },
+              // Store
+              { path: 'store', element: <StorePage /> },
 
-      // Social routes
-      { path: 'friends', element: <div>Friends List (TODO)</div> },
-      { path: 'messages', element: <div>Messages List (TODO)</div> },
-      { path: 'messages/:threadId', element: <div>Message Thread (TODO)</div> },
-      { path: 'challenges', element: <div>Challenges List (TODO)</div> },
+              // Missions
+              { path: 'missions', element: <MissionsPage /> },
 
-      // Web-exclusive routes
-      { path: 'leagues', element: <div>Leagues Hub (TODO)</div> },
-      { path: 'leagues/:seasonId', element: <div>Season Division (TODO)</div> },
-      { path: 'study', element: <div>Study Mode (TODO)</div> },
+              // Social routes
+              { path: 'friends', element: <FriendsPage /> },
+              { path: 'messages', element: <div className="p-8">Messages List (Phase 5)</div> },
+              { path: 'messages/:threadId', element: <div className="p-8">Message Thread (Phase 5)</div> },
+              { path: 'challenges', element: <div className="p-8">Challenges List (Phase 5)</div> },
 
-      // Settings
-      { path: 'settings', element: <div>Settings (TODO)</div> },
+              // Web-exclusive routes
+              { path: 'leagues', element: <div className="p-8">Leagues Hub (Phase 6)</div> },
+              { path: 'leagues/:seasonId', element: <div className="p-8">Season Division (Phase 6)</div> },
+              { path: 'study', element: <StudyPage /> },
 
-      // Catch-all
-      { path: '*', element: <NotFoundPage /> },
+              // Settings
+              { path: 'settings', element: <SettingsPage /> },
+
+              // Catch-all
+              { path: '*', element: <NotFoundPage /> },
+            ],
+          },
+        ],
+      },
     ],
   },
 ]);
