@@ -5,6 +5,14 @@
  * Pattern: API_BASE_URL is the raw backend URL (e.g. http://localhost:5000)
  * All API calls use apiV1Url which automatically appends /api/v1
  * This matches the Flutter client's approach for consistency across platforms
+ *
+ * PRODUCTION DEPLOYMENT:
+ * - Set VITE_API_BASE_URL to the full backend URL (e.g. https://api.synaptixplay.com)
+ * - Backend MUST have CORS configured with:
+ *   * Access-Control-Allow-Origin: https://your-frontend-url
+ *   * Access-Control-Allow-Credentials: true
+ *   * Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+ *   * Access-Control-Allow-Headers: Content-Type, Authorization, X-App-Version, X-Device-Id
  */
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -32,12 +40,27 @@ export const env = {
 } as const;
 
 // Validate critical environment variables
-if (import.meta.env.PROD && !env.stripePublishableKey.startsWith('pk_')) {
-  console.warn('⚠️ Stripe key may not be properly configured for production');
-}
+if (import.meta.env.PROD) {
+  if (!env.stripePublishableKey.startsWith('pk_')) {
+    console.warn('⚠️ Stripe key may not be properly configured for production');
+  }
 
-if (!env.googleClientId && import.meta.env.PROD) {
-  console.warn('⚠️ Google Client ID is not configured for production');
+  if (!env.googleClientId) {
+    console.warn('⚠️ Google Client ID is not configured for production');
+  }
+
+  // Warn if API base URL looks like a localhost or default value in production
+  if (
+    apiBaseUrl === 'http://localhost:5000' ||
+    apiBaseUrl === 'http://localhost:3000' ||
+    !apiBaseUrl.startsWith('http')
+  ) {
+    console.error(
+      '❌ VITE_API_BASE_URL is not set correctly for production. ' +
+        'Please set VITE_API_BASE_URL environment variable to your backend URL ' +
+        '(e.g., https://api.synaptixplay.com)'
+    );
+  }
 }
 
 export default env;
