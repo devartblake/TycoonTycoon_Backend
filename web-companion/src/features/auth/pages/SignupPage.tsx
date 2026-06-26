@@ -67,13 +67,23 @@ export function SignupPage() {
         formData.password,
         formData.displayName
       );
-      const { user, token, refreshToken } = response;
+      const { user: backendUser, token, refreshToken } = response;
 
       // Store tokens
       localStorage.setItem('auth_token', token);
       if (refreshToken) {
         localStorage.setItem('refresh_token', refreshToken);
       }
+
+      // Transform backend UserDto to frontend User
+      const user = {
+        id: backendUser.id,
+        email: backendUser.email,
+        displayName: backendUser.handle || formData.displayName,
+        avatar: backendUser.avatarUrl || undefined,
+        role: (backendUser.userRoles?.[0] || 'user').toLowerCase() as 'user' | 'admin',
+        createdAt: new Date().toISOString(),
+      };
 
       // Update auth store
       setUser(user);

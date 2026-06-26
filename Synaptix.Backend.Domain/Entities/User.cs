@@ -105,5 +105,10 @@ namespace Synaptix.Backend.Domain.Entities
             AvatarUrl = null;
             IsActive = false;
         }
+
+        public void ChangePassword(string newPasswordHash)
+        {
+            PasswordHash = newPasswordHash;
+        }
     }
 }

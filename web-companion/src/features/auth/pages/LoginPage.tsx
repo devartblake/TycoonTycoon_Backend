@@ -27,13 +27,23 @@ export function LoginPage() {
 
     try {
       const response = await apiClient.login(email, password);
-      const { user, token, refreshToken } = response;
+      const { user: backendUser, token, refreshToken } = response;
 
       // Store tokens
       localStorage.setItem('auth_token', token);
       if (refreshToken) {
         localStorage.setItem('refresh_token', refreshToken);
       }
+
+      // Transform backend UserDto to frontend User
+      const user = {
+        id: backendUser.id,
+        email: backendUser.email,
+        displayName: backendUser.handle || email.split('@')[0],
+        avatar: backendUser.avatarUrl || undefined,
+        role: (backendUser.userRoles?.[0] || 'user').toLowerCase() as 'user' | 'admin',
+        createdAt: new Date().toISOString(),
+      };
 
       // Update auth store
       setUser(user);
@@ -129,6 +139,13 @@ export function LoginPage() {
             >
               {isLoading ? 'Logging in...' : 'Sign In'}
             </button>
+
+            {/* Forgot Password Link */}
+            <p className="text-center text-gray-400 text-sm mt-4">
+              <Link to="/forgot-password" className="text-primary hover:text-secondary transition-colors">
+                Forgot your password?
+              </Link>
+            </p>
           </form>
 
           {/* Divider */}

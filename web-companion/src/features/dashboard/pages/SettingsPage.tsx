@@ -2,12 +2,15 @@
  * Settings page with theme, account, and preference management
  */
 
+import { useState } from 'react';
 import { useAuthStore } from '@stores';
 import { useTheme } from '@hooks/useTheme';
-import { Sun, Moon, Palette, User, Bell, Lock } from 'lucide-react';
+import { Sun, Moon, Palette, User, Bell, Lock, X } from 'lucide-react';
+import ChangePasswordForm from '@features/settings/components/ChangePasswordForm';
 import type { SynaptixMode } from '@theme/themes';
 
 export function SettingsPage() {
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const user = useAuthStore((state) => state.user);
   const { synaptixMode, themeVariant, setSynaptixMode, toggleThemeVariant } =
     useTheme();
@@ -176,26 +179,27 @@ export function SettingsPage() {
       </div>
 
       {/* Privacy Section */}
-      <div className="card">
+      <div className="card mb-6">
         <div className="flex items-center gap-3 mb-4">
           <Lock size={24} style={{ color: 'var(--color-brand-primary)' }} />
           <h2 className="text-xl font-bold">Privacy & Security</h2>
         </div>
         <div className="space-y-3">
           <button
-            className="w-full p-3 rounded-lg text-left transition-all"
+            onClick={() => setShowChangePassword(true)}
+            className="w-full p-3 rounded-lg text-left transition-all hover:opacity-80"
             style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
           >
             Change Password
           </button>
           <button
-            className="w-full p-3 rounded-lg text-left transition-all"
+            className="w-full p-3 rounded-lg text-left transition-all hover:opacity-80"
             style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
           >
             Two-Factor Authentication
           </button>
           <button
-            className="w-full p-3 rounded-lg text-left transition-all"
+            className="w-full p-3 rounded-lg text-left transition-all hover:opacity-80"
             style={{
               backgroundColor: 'var(--color-status-error)',
               color: 'white',
@@ -205,6 +209,22 @@ export function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="relative">
+            <button
+              onClick={() => setShowChangePassword(false)}
+              className="absolute -top-3 -right-3 p-1 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors z-10"
+              title="Close"
+            >
+              <X size={20} className="text-gray-300" />
+            </button>
+            <ChangePasswordForm />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

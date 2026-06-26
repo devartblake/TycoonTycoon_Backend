@@ -103,6 +103,7 @@ using Synaptix.Backend.Api.Payments.PayPal;
 using Synaptix.Backend.Api.Payments.Stripe;
 using Synaptix.Backend.Api.Realtime;
 using Synaptix.Backend.Api.Security;
+using Synaptix.Backend.Api.Services;
 using Synaptix.Backend.Application;
 using Synaptix.Compliance.Client.Extensions;
 using Synaptix.Security.Kms.Client.Extensions;
@@ -334,6 +335,11 @@ builder.Services.AddComplianceClient(builder.Configuration);
 
 // Register Authentication Service
 builder.Services.AddScoped<Synaptix.Backend.Application.Auth.IAuthService, Synaptix.Backend.Application.Auth.AuthService>();
+
+// Register OTP and Email Services
+builder.Services.AddScoped<OtpService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddHttpClient<EmailService>();
 
 // Validate JWT configuration at startup
 var jwtSecret = builder.Configuration["JwtSettings:SecretKey"];

@@ -295,6 +295,39 @@ class ApiClient {
     const response = await this.post('/auth/logout', {});
     return response.data;
   }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    const response = await this.post('/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
+    return response.data;
+  }
+
+  async requestPasswordReset(email: string, method: 'email' | 'sms' = 'email') {
+    const response = await this.post('/auth/forgot-password', {
+      email,
+      method,
+    });
+    return response.data;
+  }
+
+  async verifyOtp(email: string, otp: string) {
+    const response = await this.post('/auth/verify-otp', {
+      email,
+      otp,
+    });
+    return response.data;
+  }
+
+  async resetPassword(email: string, token: string, newPassword: string) {
+    const response = await this.post('/auth/reset-password', {
+      email,
+      token,
+      newPassword,
+    });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

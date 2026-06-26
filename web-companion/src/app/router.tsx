@@ -8,6 +8,7 @@ import ProtectedRoute from '@components/layout/ProtectedRoute';
 import AppShell from '@components/layout/AppShell';
 import { LoginPage } from '@features/auth/pages/LoginPage';
 import { SignupPage } from '@features/auth/pages/SignupPage';
+import { ForgotPasswordPage } from '@features/auth/pages/ForgotPasswordPage';
 import { DashboardPage } from '@features/dashboard/pages/DashboardPage';
 import { SettingsPage } from '@features/dashboard/pages/SettingsPage';
 import { NotFoundPage } from '@features/dashboard/pages/NotFoundPage';
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
       // Public routes
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
+      { path: 'forgot-password', element: <ForgotPasswordPage /> },
 
       // Protected routes with app shell
       {

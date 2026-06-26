@@ -81,6 +81,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<Vote> Votes => Set<Vote>();
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<OtpToken> OtpTokens => Set<OtpToken>();
         public DbSet<AdminNotificationChannel> AdminNotificationChannels => Set<AdminNotificationChannel>();
         public DbSet<AdminNotificationSchedule> AdminNotificationSchedules => Set<AdminNotificationSchedule>();
         public DbSet<AdminNotificationTemplate> AdminNotificationTemplates => Set<AdminNotificationTemplate>();

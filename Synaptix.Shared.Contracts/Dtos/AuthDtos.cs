@@ -127,4 +127,81 @@ namespace Synaptix.Shared.Contracts.Dtos
         string? Country = null,
         string? DeviceType = null
     );
+
+    // ===== Password Change DTOs =====
+
+    /// <summary>
+    /// Request to change the authenticated user's password (POST /auth/change-password).
+    /// </summary>
+    public record ChangePasswordRequest(
+        string CurrentPassword,
+        string NewPassword
+    );
+
+    /// <summary>
+    /// Response from password change endpoint.
+    /// </summary>
+    public record ChangePasswordResponse(
+        string Message,
+        bool SessionCleared,
+        bool RequiresReauth
+    );
+
+    // ===== Password Reset (OTP) DTOs =====
+
+    /// <summary>
+    /// Request to initiate password reset (POST /auth/forgot-password).
+    /// User requests an OTP be sent via email or SMS.
+    /// </summary>
+    public record RequestPasswordResetRequest(
+        string Email,
+        string Method = "email"  // "email" or "sms"
+    );
+
+    /// <summary>
+    /// Response confirming OTP has been sent.
+    /// </summary>
+    public record RequestPasswordResetResponse(
+        string Message,
+        string Method,
+        string Hint,
+        int ExpiresIn
+    );
+
+    /// <summary>
+    /// Request to verify OTP (POST /auth/verify-otp).
+    /// User provides the OTP they received.
+    /// </summary>
+    public record VerifyOtpRequest(
+        string Email,
+        string Otp
+    );
+
+    /// <summary>
+    /// Response with reset token after OTP verification.
+    /// Token is used in the next step to actually reset password.
+    /// </summary>
+    public record VerifyOtpResponse(
+        string Message,
+        string ResetToken,
+        int ExpiresIn
+    );
+
+    /// <summary>
+    /// Request to reset password (POST /auth/reset-password).
+    /// User provides the reset token and new password.
+    /// </summary>
+    public record ResetPasswordRequest(
+        string Email,
+        string Token,
+        string NewPassword
+    );
+
+    /// <summary>
+    /// Response confirming password has been reset.
+    /// </summary>
+    public record ResetPasswordResponse(
+        string Message,
+        string Action  // "redirect_to_login"
+    );
 }

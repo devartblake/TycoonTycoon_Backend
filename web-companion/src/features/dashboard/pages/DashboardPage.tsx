@@ -25,7 +25,30 @@ export function DashboardPage() {
         setLoading(true);
         clearError();
         const userData = await apiClient.getCurrentUser();
-        setProfile(userData);
+        const walletData = await apiClient.getUserWallet();
+
+        // Combine user data and wallet data into PlayerProfile format
+        const profileData = {
+          playerId: userData.id,
+          username: userData.handle,
+          level: 1, // TODO: Get from API
+          xp: 0, // TODO: Get from API
+          xpForNextLevel: 100, // TODO: Get from API
+          coins: walletData.credits || 0,
+          diamonds: walletData.synapseShards || 0,
+          tier: userData.tier ? (userData.tier.toLowerCase() as any) : 'bronze',
+          rank: 1, // TODO: Get from API
+          streak: 0, // TODO: Get from API
+          totalQuizzesSolved: 0, // TODO: Get from API
+          accuracy: 0, // TODO: Get from API
+          unlockedSkills: [],
+          activeSkills: [],
+          achievements: [],
+          createdAt: new Date().toISOString(),
+          lastPlayedAt: new Date().toISOString(),
+        };
+
+        setProfile(profileData);
       } catch (err: any) {
         console.error('Failed to fetch user profile:', err);
 
