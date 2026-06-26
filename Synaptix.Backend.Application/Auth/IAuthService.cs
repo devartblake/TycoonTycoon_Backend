@@ -27,6 +27,24 @@ namespace Synaptix.Backend.Application.Auth
         Task<AuthResult> UpgradeAccountAsync(
             Guid userId, string email, string password, string deviceId,
             string? handle = null, string? country = null);
+
+        /// <summary>
+        /// Initiates a password reset flow by sending a reset link to the admin's email.
+        /// Returns true if email exists, false otherwise (for security, doesn't leak email existence).
+        /// </summary>
+        Task<bool> AdminInitiatePasswordResetAsync(string email, string ipAddress, string userAgent, CancellationToken ct = default);
+
+        /// <summary>
+        /// Validates and resets an admin's password using a valid reset token.
+        /// Throws <see cref="InvalidOperationException"/> if token is invalid or expired.
+        /// </summary>
+        Task AdminResetPasswordAsync(string token, string newPassword, CancellationToken ct = default);
+
+        /// <summary>
+        /// Validates a password reset token without consuming it.
+        /// Returns the associated email if valid, null otherwise.
+        /// </summary>
+        Task<string?> AdminValidateResetTokenAsync(string token, CancellationToken ct = default);
     }
 
     public record AuthResult(

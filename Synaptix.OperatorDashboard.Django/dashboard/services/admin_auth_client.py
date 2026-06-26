@@ -201,3 +201,25 @@ def admin_me(access_token: str) -> dict[str, Any]:
     )
     response.raise_for_status()
     return response.json()
+
+
+def admin_forgot_password(email: str) -> dict[str, Any]:
+    payload = _post_admin_auth("/admin/auth/forgot-password", {"email": email})
+    return payload
+
+
+def admin_reset_password(token: str, new_password: str, confirm_password: str) -> dict[str, Any]:
+    payload = _post_admin_auth(
+        "/admin/auth/reset-password",
+        {
+            "token": token,
+            "newPassword": new_password,
+            "confirmPassword": confirm_password,
+        }
+    )
+    return payload
+
+
+def admin_validate_reset_token(token: str) -> dict[str, Any]:
+    payload = _post_admin_auth("/admin/auth/validate-reset-token", {"token": token})
+    return payload

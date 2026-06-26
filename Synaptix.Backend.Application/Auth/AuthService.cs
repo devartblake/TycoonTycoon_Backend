@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Application.Email;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -17,6 +18,7 @@ namespace Synaptix.Backend.Application.Auth
         private readonly IAppDb _database;
         private readonly JwtSettings _jwt;
         private readonly ILogger<AuthService> _logger;
+        private readonly IEmailService _emailService;
 
         private sealed record AuthUserSnapshot(
             Guid Id,
@@ -28,11 +30,16 @@ namespace Synaptix.Backend.Application.Auth
             int Mmr,
             bool IsActive);
 
-        public AuthService(IAppDb database, IOptions<JwtSettings> jwtOptions, ILogger<AuthService> logger)
+        public AuthService(
+            IAppDb database,
+            IOptions<JwtSettings> jwtOptions,
+            ILogger<AuthService> logger,
+            IEmailService emailService)
         {
             _database = database;
             _jwt = jwtOptions.Value;
             _logger = logger;
+            _emailService = emailService;
         }
 
         // ── Public surface ────────────────────────────────────────────────────
@@ -148,6 +155,148 @@ namespace Synaptix.Backend.Application.Auth
             await _database.SaveChangesAsync();
 
             return BuildAuthResult(snapshot, jwtToken, refreshToken);
+        }
+
+        public async Task<bool> AdminInitiatePasswordResetAsync(
+            string email, string ipAddress, string userAgent, CancellationToken ct = default)
+        {
+            var normalizedEmail = email.ToLowerInvariant();
+
+            // Check if user exists (don't reveal if they don't for security)
+            var user = await _database.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == normalizedEmail, ct);
+
+            if (user is null)
+                return false;
+
+            // Revoke all existing unused reset tokens for this user
+            var existingTokens = await _database.PasswordResetTokens
+                .Where(t => t.UserId == user.Id && !t.Used)
+                .ToListAsync(ct);
+
+            foreach (var token in existingTokens)
+                token.MarkAsUsed();
+
+            // Create new reset token (15 minute expiry)
+            var resetToken = new PasswordResetToken(
+                user.Id,
+                Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
+                DateTimeOffset.UtcNow.AddMinutes(15),
+                ipAddress,
+                userAgent
+            );
+
+            _database.PasswordResetTokens.Add(resetToken);
+            await _database.SaveChangesAsync(ct);
+
+            // Send password reset email
+            var resetUrl = $"https://admin.synaptixplay.com/reset-password?token={Uri.EscapeDataString(resetToken.Token)}";
+            var subject = "Synaptix Admin - Password Reset Request";
+            var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #1a5f7a; color: white; padding: 20px; border-radius: 4px 4px 0 0; }}
+        .content {{ background-color: #f5f5f5; padding: 20px; border-radius: 0 0 4px 4px; }}
+        .button {{ display: inline-block; background-color: #1a5f7a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0; }}
+        .footer {{ font-size: 12px; color: #666; margin-top: 20px; }}
+        .warning {{ background-color: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>Password Reset Request</h1>
+        </div>
+        <div class=""content"">
+            <p>Hello,</p>
+            <p>We received a request to reset the password for your Synaptix Admin account. If you didn't make this request, you can safely ignore this email.</p>
+            <p>To reset your password, click the button below. This link will expire in 15 minutes.</p>
+            <a href=""{resetUrl}"" class=""button"">Reset Password</a>
+            <p>Or copy this link in your browser:</p>
+            <p style=""word-break: break-all; background-color: white; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px;"">{resetUrl}</p>
+            <div class=""warning"">
+                <strong>Security Notice:</strong> Never share this link with anyone. It will automatically expire after 15 minutes for security reasons.
+            </div>
+        </div>
+        <div class=""footer"">
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            try
+            {
+                await _emailService.SendAsync(user.Email, subject, htmlBody, ct);
+                _logger.LogInformation("Password reset email sent to {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset email to {Email}", user.Email);
+                // Don't throw - we've already saved the token
+            }
+
+            return true;
+        }
+
+        public async Task AdminResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(newPassword))
+                throw new InvalidOperationException("Token and password are required");
+
+            // Validate password strength (min 8 chars for admin accounts, could be more strict)
+            if (newPassword.Length < 8)
+                throw new InvalidOperationException("Password must be at least 8 characters long");
+
+            var resetToken = await _database.PasswordResetTokens
+                .Include(t => t.UserId)
+                .FirstOrDefaultAsync(t => t.Token == token && !t.Used, ct);
+
+            if (resetToken is null || !resetToken.IsValid())
+                throw new InvalidOperationException("Invalid or expired password reset token");
+
+            var user = await _database.Users.FindAsync(new object[] { resetToken.UserId }, cancellationToken: ct);
+            if (user is null)
+                throw new InvalidOperationException("User not found");
+
+            // Update password
+            var newPasswordHash = ComputePasswordHash(newPassword);
+            user.ChangePassword(newPasswordHash);
+            resetToken.MarkAsUsed();
+
+            // Revoke all active refresh tokens for this user (force re-login)
+            var activeTokens = await _database.RefreshTokens
+                .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)
+                .ToListAsync(ct);
+
+            foreach (var refreshToken in activeTokens)
+                refreshToken.Revoke();
+
+            await _database.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Password reset completed for {Email}", user.Email);
+        }
+
+        public async Task<string?> AdminValidateResetTokenAsync(string token, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                return null;
+
+            var resetToken = await _database.PasswordResetTokens
+                .Include(t => t.UserId)
+                .FirstOrDefaultAsync(t => t.Token == token && !t.Used, ct);
+
+            if (resetToken is null || !resetToken.IsValid())
+                return null;
+
+            var user = await _database.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == resetToken.UserId, ct);
+
+            return user?.Email;
         }
 
         private static AuthUserSnapshot BuildSnapshot(User user) => new(

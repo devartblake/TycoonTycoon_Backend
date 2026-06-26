@@ -27,3 +27,33 @@ public record AdminProfileResponse(
     IReadOnlyList<string> Roles,
     IReadOnlyList<string> Permissions
 );
+
+public record AdminForgotPasswordRequest(
+    string Email
+);
+
+public record AdminForgotPasswordResponse(
+    bool Success,
+    string Message
+);
+
+public record AdminResetPasswordRequest(
+    string Token,
+    string NewPassword,
+    string ConfirmPassword
+);
+
+public record AdminResetPasswordResponse(
+    bool Success,
+    string Message
+);
+
+public record AdminValidateResetTokenRequest(
+    string Token
+);
+
+public record AdminValidateResetTokenResponse(
+    bool Valid,
+    string? Email = null,
+    string? Message = null
+);

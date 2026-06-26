@@ -2453,6 +2453,170 @@ def logout_view(request):
     return redirect("operator-login")
 
 
+def forgot_password_view(request):
+    if request.method == "GET":
+        if request.session.get(SESSION_ACCESS_TOKEN_KEY):
+            return redirect("dashboard-home")
+        return render(request, "dashboard/forgot_password.html")
+
+    email = request.POST.get("email", "").strip()
+
+    if not email:
+        messages.error(request, "Email is required.")
+        return render(request, "dashboard/forgot_password.html", status=400)
+
+    try:
+        from .services.admin_auth_client import admin_forgot_password
+        result = admin_forgot_password(email)
+        messages.success(
+            request,
+            "If this email is registered, a password reset link has been sent."
+        )
+        return render(
+            request,
+            "dashboard/forgot_password.html",
+            {"success_message": "Check your email for a password reset link."}
+        )
+    except httpx.HTTPStatusError as ex:
+        # Always show the same message for security (don't leak email existence)
+        messages.success(
+            request,
+            "If this email is registered, a password reset link has been sent."
+        )
+        return render(
+            request,
+            "dashboard/forgot_password.html",
+            {"success_message": "Check your email for a password reset link."}
+        )
+    except AdminAuthConfigurationError as ex:
+        messages.error(request, str(ex))
+        return render(request, "dashboard/forgot_password.html", status=500)
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend auth service.")
+        return render(request, "dashboard/forgot_password.html", status=503)
+
+
+def reset_password_view(request):
+    token = request.GET.get("token", "").strip()
+
+    if request.method == "GET":
+        if request.session.get(SESSION_ACCESS_TOKEN_KEY):
+            return redirect("dashboard-home")
+
+        if not token:
+            return render(
+                request,
+                "dashboard/reset_password.html",
+                {"error_message": "No password reset token provided."}
+            )
+
+        try:
+            from .services.admin_auth_client import admin_validate_reset_token
+            result = admin_validate_reset_token(token)
+            if result.get("valid"):
+                return render(
+                    request,
+                    "dashboard/reset_password.html",
+                    {"token": token, "token_valid": True}
+                )
+            else:
+                return render(
+                    request,
+                    "dashboard/reset_password.html",
+                    {
+                        "error_message": result.get("message", "This password reset link is invalid or has expired."),
+                        "token_valid": False
+                    }
+                )
+        except httpx.HTTPStatusError:
+            return render(
+                request,
+                "dashboard/reset_password.html",
+                {
+                    "error_message": "This password reset link is invalid or has expired.",
+                    "token_valid": False
+                }
+            )
+        except (AdminAuthConfigurationError, httpx.RequestError):
+            return render(
+                request,
+                "dashboard/reset_password.html",
+                {
+                    "error_message": "Unable to validate reset token. Please try again later.",
+                    "token_valid": False
+                }
+            )
+
+    # POST request
+    token = request.POST.get("token", "").strip()
+    new_password = request.POST.get("new_password", "")
+    confirm_password = request.POST.get("confirm_password", "")
+
+    if not token or not new_password:
+        messages.error(request, "Token and password are required.")
+        return render(
+            request,
+            "dashboard/reset_password.html",
+            {"token": token, "token_valid": True},
+            status=400
+        )
+
+    if new_password != confirm_password:
+        messages.error(request, "Passwords do not match.")
+        return render(
+            request,
+            "dashboard/reset_password.html",
+            {"token": token, "token_valid": True},
+            status=400
+        )
+
+    if len(new_password) < 8:
+        messages.error(request, "Password must be at least 8 characters long.")
+        return render(
+            request,
+            "dashboard/reset_password.html",
+            {"token": token, "token_valid": True},
+            status=400
+        )
+
+    try:
+        from .services.admin_auth_client import admin_reset_password
+        result = admin_reset_password(token, new_password, confirm_password)
+        return render(
+            request,
+            "dashboard/reset_password.html",
+            {"success_message": "Password reset successfully. You can now log in with your new password."}
+        )
+    except httpx.HTTPStatusError as ex:
+        if ex.response.status_code == 401:
+            error_msg = "This password reset link is invalid or has expired."
+        else:
+            error_msg = f"Password reset failed with error {ex.response.status_code}."
+        messages.error(request, error_msg)
+        return render(
+            request,
+            "dashboard/reset_password.html",
+            {"token": token, "token_valid": True, "error_message": error_msg},
+            status=ex.response.status_code
+        )
+    except AdminAuthConfigurationError as ex:
+        messages.error(request, str(ex))
+        return render(
+            request,
+            "dashboard/reset_password.html",
+            {"token": token, "token_valid": True},
+            status=500
+        )
+    except httpx.RequestError:
+        messages.error(request, "Unable to reach backend auth service.")
+        return render(
+            request,
+            "dashboard/reset_password.html",
+            {"token": token, "token_valid": True},
+            status=503
+        )
+
+
 def healthz(request):
     return JsonResponse({"status": "ok"})
 

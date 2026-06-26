@@ -67,6 +67,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<User> Users { get; }
         DbSet<RefreshToken> RefreshTokens { get; }
         DbSet<OtpToken> OtpTokens { get; }
+        DbSet<PasswordResetToken> PasswordResetTokens { get; }
         DbSet<AdminNotificationChannel> AdminNotificationChannels { get; }
         DbSet<AdminNotificationSchedule> AdminNotificationSchedules { get; }
         DbSet<AdminNotificationTemplate> AdminNotificationTemplates { get; }
