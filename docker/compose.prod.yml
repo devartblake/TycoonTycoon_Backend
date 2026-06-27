@@ -195,10 +195,6 @@ services:
   sidecar:
     ports: !override []
 
-  operator-dashboard-blazor:
-    ports: !override []
-    profiles: ["disabled"]
-
   postgres:
     ports: !override []
     environment:
