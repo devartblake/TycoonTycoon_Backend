@@ -169,22 +169,6 @@ services:
   sidecar:
     ports: !override []
 
-  kms-api:
-    ports: !override []
-    environment:
-      ASPNETCORE_ENVIRONMENT: "Staging"
-      DOTNET_ENVIRONMENT: "Staging"
-      KmsApi__ServiceToken: "${KMS_SERVICE_TOKEN:-staging-kms-token}"
-      JwtSettings__SecretKey: "${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}"
-      Vault__Address: "http://vault:8200"
-      Vault__Token: "${VAULT_TOKEN:-}"
-      Vault__TransitMount: "${VAULT_TRANSIT_MOUNT:-transit}"
-      Vault__SessionWrapKey: "${VAULT_SESSION_WRAP_KEY:-synaptix-session-wrap}"
-      Vault__PayloadWrapKey: "${VAULT_PAYLOAD_WRAP_KEY:-synaptix-payload-wrap}"
-      Vault__Required: "false"
-      ConnectionStrings__cache: "redis:6379,password=${REDIS_PASSWORD:?REDIS_PASSWORD is required},defaultDatabase=1"
-      Serilog__MinimumLevel__Default: "${LOG_LEVEL:-Information}"
-
   # MinIO stays enabled in staging (unlike production which uses Linode Object Storage)
   minio:
     ports: !override []
@@ -262,10 +246,6 @@ services:
     profiles: ["disabled"]
 
   crypto-service:
-    ports: !override []
-    profiles: ["disabled"]
-
-  operator-dashboard-blazor:
     ports: !override []
     profiles: ["disabled"]
 
