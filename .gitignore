@@ -34,6 +34,7 @@ appsettings.*.json.user
 .env
 .env.*
 !.env.example
+!.env.staging.example
 
 # Generated local secrets and bootstrap state
 .local/
