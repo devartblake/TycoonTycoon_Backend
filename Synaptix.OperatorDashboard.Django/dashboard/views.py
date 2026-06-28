@@ -147,6 +147,7 @@ SESSION_REFRESH_TOKEN_KEY = "operator_refresh_token"
 SESSION_ADMIN_PROFILE_KEY = "operator_admin_profile"
 SESSION_ACCESS_EXP_KEY = "operator_access_expires_at"
 SESSION_USERS_SAVED_VIEWS_KEY = "operator_users_saved_views"
+REQUEST_ADMIN_PROFILE_CACHE_KEY = "_cached_admin_profile"
 
 
 def _saved_view_owner(request) -> str:
@@ -516,6 +517,15 @@ def _is_access_token_expired(request) -> bool:
     return float(exp) <= time() + 15
 
 
+def _get_cached_admin_profile(request, access_token: str) -> dict:
+    cached = getattr(request, REQUEST_ADMIN_PROFILE_CACHE_KEY, None)
+    if cached is not None:
+        return cached
+    profile = admin_me(access_token)
+    setattr(request, REQUEST_ADMIN_PROFILE_CACHE_KEY, profile)
+    return profile
+
+
 def _try_refresh_session(request) -> bool:
     refresh_token = request.session.get(SESSION_REFRESH_TOKEN_KEY)
     if not refresh_token:
@@ -526,7 +536,7 @@ def _try_refresh_session(request) -> bool:
         request.session[SESSION_ACCESS_TOKEN_KEY] = refreshed.access_token
         request.session[SESSION_ACCESS_EXP_KEY] = time() + float(refreshed.expires_in)
 
-        profile = admin_me(refreshed.access_token)
+        profile = _get_cached_admin_profile(request, refreshed.access_token)
         request.session[SESSION_ADMIN_PROFILE_KEY] = profile
         return True
     except (httpx.HTTPError, AdminAuthConfigurationError, KmsUnavailableError):
@@ -577,14 +587,20 @@ def require_permission(permission: str):
     return decorator
 
 
-def _save_probe_record(service_name: str, status: str, latency_ms: int, detail: str) -> None:
-    ProbeCheckRecord.objects.create(
-        service_name=service_name,
-        status=status,
-        latency_ms=latency_ms,
-        detail=detail,
-        checked_at=timezone.now(),
-    )
+def _save_probe_records_bulk(records: list[dict]) -> None:
+    if not records:
+        return
+    now = timezone.now()
+    ProbeCheckRecord.objects.bulk_create([
+        ProbeCheckRecord(
+            service_name=r["service_name"],
+            status=r["status"],
+            latency_ms=r["latency_ms"],
+            detail=r.get("detail", ""),
+            checked_at=now,
+        )
+        for r in records
+    ], batch_size=100)
 
 
 def _prune_probe_history(cutoff) -> None:
@@ -707,9 +723,18 @@ def dashboard_home(request):
     now = timezone.now()
 
     _prune_probe_history(now - timedelta(hours=24))
+    probe_records = [
+        {
+            "service_name": service.service_name,
+            "status": service.status,
+            "latency_ms": service.latency_ms,
+            "detail": service.detail,
+        }
+        for service in services
+    ]
+    _save_probe_records_bulk(probe_records)
     for service in services:
         service.css_class = STATUS_CLASSES.get(service.status, "status-unknown")
-        _save_probe_record(service.service_name, service.status, service.latency_ms, service.detail)
         service.history = _build_probe_history_context(service.service_name, now)
 
     healthy_services = sum(1 for service in services if service.status == "healthy")
@@ -788,8 +813,16 @@ def dashboard_home(request):
 def operator_health(request):
     services = list_service_statuses()
     now = timezone.now()
-    for service in services:
-        _save_probe_record(service.service_name, service.status, service.latency_ms, service.detail)
+    probe_records = [
+        {
+            "service_name": service.service_name,
+            "status": service.status,
+            "latency_ms": service.latency_ms,
+            "detail": service.detail,
+        }
+        for service in services
+    ]
+    _save_probe_records_bulk(probe_records)
     charts = {
         _service_slug(s): json.loads(_build_probe_history_context(s.service_name, now)["chart_json"])
         for s in services
@@ -1033,8 +1066,21 @@ def operator_users_view(request):
     if audit_to is not None:
         audit_filters &= Q(created_at__lte=audit_to)
 
+    audit_page = 1
+    audit_page_size = 25
+    audit_total_events = 0
+    audit_has_next = False
+    audit_has_prev = False
+
     try:
-        governance_events = OperatorSavedViewAuditEvent.objects.filter(audit_filters).order_by("-created_at")[:100]
+        audit_page = max(1, int(request.GET.get("savedViewAuditPage", 1) or 1))
+        audit_page_size = max(1, min(int(request.GET.get("savedViewAuditPageSize", 25) or 25), 100))
+        audit_offset = (audit_page - 1) * audit_page_size
+
+        audit_queryset = OperatorSavedViewAuditEvent.objects.filter(audit_filters).order_by("-created_at")
+        audit_total_events = audit_queryset.count()
+        governance_events = audit_queryset[audit_offset:audit_offset + audit_page_size]
+
         for event in governance_events:
             governance_rows.append(
                 {
@@ -1046,6 +1092,10 @@ def operator_users_view(request):
                     "metadata": json.dumps(event.metadata or {}, sort_keys=True),
                 }
             )
+
+        audit_has_next = (audit_offset + audit_page_size) < audit_total_events
+        audit_has_prev = audit_page > 1
+
         if request.GET.get("savedViewAuditFormat") == "csv":
             return _to_csv_response(
                 governance_rows,
@@ -1074,6 +1124,11 @@ def operator_users_view(request):
         "selected_saved_view": selected_saved_view,
         "saved_view_audit_query": governance_query,
         "saved_view_audit_rows": governance_rows,
+        "audit_page": audit_page,
+        "audit_page_size": audit_page_size,
+        "audit_total_events": audit_total_events,
+        "audit_has_next": audit_has_next,
+        "audit_has_prev": audit_has_prev,
         "user_preset_links": [
             {"href": "?preset=banned_recent", "label": "Banned recent"},
             {"href": "?preset=new_unverified", "label": "New unverified"},
