@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx
 from django.conf import settings
+from .http_client_pool import get_http_client
 
 
 @dataclass
@@ -32,7 +33,8 @@ _SLUG_MAP = {
 def _fetch_json(url: str) -> tuple[str, str, dict[str, Any] | None, int]:
     t0 = time.monotonic()
     try:
-        response = httpx.get(url, timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
+        client = get_http_client()
+        response = client.get(url)
         latency_ms = int((time.monotonic() - t0) * 1000)
         response.raise_for_status()
         data = response.json() if response.text else {}
@@ -51,7 +53,8 @@ def _fetch_json(url: str) -> tuple[str, str, dict[str, Any] | None, int]:
 def _fetch_text_health(url: str) -> tuple[str, str, dict[str, Any] | None, int]:
     t0 = time.monotonic()
     try:
-        response = httpx.get(url, timeout=settings.API_REQUEST_TIMEOUT_SECONDS)
+        client = get_http_client()
+        response = client.get(url)
         latency_ms = int((time.monotonic() - t0) * 1000)
         response.raise_for_status()
         body = response.text.strip()

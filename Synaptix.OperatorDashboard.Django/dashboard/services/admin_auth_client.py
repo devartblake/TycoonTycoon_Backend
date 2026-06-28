@@ -6,6 +6,12 @@ from typing import Any
 
 import httpx
 from django.conf import settings
+from .http_client_pool import (
+    get_http_client,
+    get_kms_session,
+    cache_kms_session,
+    clear_kms_session,
+)
 
 
 @dataclass
@@ -62,11 +68,16 @@ def _kms_headers() -> dict[str, str]:
 
 
 def _start_internal_session() -> str:
+    cached = get_kms_session()
+    if cached is not None:
+        return cached["sessionId"]
+
     base_url = getattr(settings, "KMS_API_BASE_URL", "").rstrip("/")
     if not base_url:
         raise AdminAuthConfigurationError("KMS_API_BASE_URL is required for secure-channel admin auth.")
 
-    response = httpx.post(
+    client = get_http_client()
+    response = client.post(
         f"{base_url}/internal/security/sessions/start",
         json={
             "subjectId": "operator-dashboard-django",
@@ -74,11 +85,12 @@ def _start_internal_session() -> str:
             "supportedSuites": ["X25519-HKDF-SHA256-AES256GCM"],
         },
         headers=_kms_headers(),
-        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
     payload = response.json()
-    return payload["sessionId"]
+    session_id = payload["sessionId"]
+    cache_kms_session(session_id)
+    return session_id
 
 
 def _secure_channel_aad(direction: str, method: str, path: str, session_id: str, sequence: int, subject_id: str = "") -> str:
@@ -98,7 +110,8 @@ def _secure_channel_aad(direction: str, method: str, path: str, session_id: str,
 def _kms_encrypt(session_id: str, payload: dict[str, Any], aad: str) -> dict[str, Any]:
     base_url = getattr(settings, "KMS_API_BASE_URL", "").rstrip("/")
     plaintext = json.dumps(payload).encode("utf-8")
-    response = httpx.post(
+    client = get_http_client()
+    response = client.post(
         f"{base_url}/internal/security/encrypt",
         json={
             "sessionId": session_id,
@@ -108,7 +121,6 @@ def _kms_encrypt(session_id: str, payload: dict[str, Any], aad: str) -> dict[str
             "direction": "client-to-server",
         },
         headers=_kms_headers(),
-        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
     return response.json()
@@ -116,7 +128,8 @@ def _kms_encrypt(session_id: str, payload: dict[str, Any], aad: str) -> dict[str
 
 def _kms_decrypt(session_id: str, envelope: dict[str, Any], sequence: int, replay_nonce: str, aad: str) -> dict[str, Any]:
     base_url = getattr(settings, "KMS_API_BASE_URL", "").rstrip("/")
-    response = httpx.post(
+    client = get_http_client()
+    response = client.post(
         f"{base_url}/internal/security/decrypt",
         json={
             "sessionId": session_id,
@@ -128,7 +141,6 @@ def _kms_decrypt(session_id: str, envelope: dict[str, Any], sequence: int, repla
             "enforceReplay": False,
         },
         headers=_kms_headers(),
-        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
     payload = response.json()
@@ -138,12 +150,13 @@ def _kms_decrypt(session_id: str, envelope: dict[str, Any], sequence: int, repla
 
 def _post_admin_auth(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}{path}"
+    client = get_http_client()
+
     if _auth_transport() == "plain":
-        response = httpx.post(
+        response = client.post(
             url,
             json=payload,
             headers=_headers(),
-            timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
         )
         response.raise_for_status()
         return response.json()
@@ -160,11 +173,10 @@ def _post_admin_auth(path: str, payload: dict[str, Any]) -> dict[str, Any]:
         headers["X-Syn-Sec-Session"] = session_id
         headers["X-Syn-Sec-Seq"] = str(sequence)
         headers["X-Syn-Sec-Nonce"] = request_nonce
-        response = httpx.post(
+        response = client.post(
             url,
             json=encrypted,
             headers=headers,
-            timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
         )
         response.raise_for_status()
         return _kms_decrypt(session_id, response.json(), sequence, response_nonce, response_aad)
@@ -194,10 +206,10 @@ def admin_refresh(refresh_token: str) -> AdminRefreshResult:
 
 def admin_me(access_token: str) -> dict[str, Any]:
     url = f"{settings.DOTNET_API_BASE_URL.rstrip('/')}/admin/auth/me"
-    response = httpx.get(
+    client = get_http_client()
+    response = client.get(
         url,
         headers=_headers(access_token),
-        timeout=settings.API_REQUEST_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
     return response.json()
