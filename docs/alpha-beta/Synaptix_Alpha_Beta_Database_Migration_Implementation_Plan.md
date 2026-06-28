@@ -818,7 +818,7 @@ This gives the project a stable, repeatable, and production-friendly migration p
 
 # 18. Implementation Status
 
-**Last updated: 2026-05-18**
+**Last updated: 2026-06-28**
 
 ## Phase Completion
 
@@ -830,7 +830,7 @@ This gives the project a stable, repeatable, and production-friendly migration p
 | Phase 4 | Idempotent SQL Script Generation | ✅ Complete | Added to `schema-validation` job in `dotnet-ci.yml`; outputs `artifacts/migrations/idempotent.sql` via `dotnet ef migrations script --idempotent` with `Tycoon.MigrationService` as startup project; uploaded as `migration-artifacts` artifact |
 | Phase 5 | Migration Manifest (CI artifact) | ✅ Complete | Shell step in same job writes `artifacts/migrations/migration-manifest.json` with release name, timestamp, and script reference; uploaded alongside SQL |
 | Phase 6 | Docker Migrator Image | ✅ Complete | `docker/Dockerfile.migration-service` — production-ready multi-stage build, non-root user, Kerberos PostgreSQL auth |
-| Phase 7 | Docker Compose `db-migrator` Service | ✅ Complete | `compose.yml` has `migration` service (`Dockerfile.migrate`) with `restart: "no"`; `backend-api` depends on it via `condition: service_completed_successfully` |
+| Phase 7 | Docker Compose `db-migrator` Service | ✅ Complete | `compose.yml` has `migration` service (`Dockerfile.migration-service`) with `restart: "no"`; `backend-api` depends on it via `condition: service_completed_successfully` |
 | Phase 8 | GitHub Actions Migration Validation Workflow | ✅ Complete | `schema-validation` job in `dotnet-ci.yml` generates `artifacts/migrations/idempotent.sql` + `migration-manifest.json` using `Tycoon.MigrationService` as startup project and uploads as `migration-artifacts` artifact; `compose-smoke.yml` and `operator-cutover-readiness.yml` provide additional gate coverage |
 | Phase 9 | Release Migration Gate | ✅ Complete | `release-gate.yml` added — chains schema artifact verification → API health smoke → readiness report; `operator-cutover-readiness.yml` provides manual evidence-collection gate for sign-off |
 | Phase 10 | Post-Migration Smoke Tests | ⚠️ Partial | Local `compose-smoke.sh` passes against the full compose stack after migration; `alpha-p0-smoke.yml` and `compose-smoke.yml` exist; not yet validated against a fully migrated staging environment |
@@ -843,7 +843,7 @@ This gives the project a stable, repeatable, and production-friendly migration p
 
 **Advisory lock approach:** `pg_advisory_lock(987654321)` / `pg_advisory_unlock` are implemented in `MigrationWorker.ExecuteAsync` around the `MigrateAsync` call using the raw `DbConnection` pattern consistent with the rest of the file. Added in Session 5.
 
-**24 EF migrations applied:** The migration history runs from `20260325180201_InitialCreate` through `20260515102821_AddMayCutoverSchemaSync`. All core Alpha/Beta tables (users, wallet, questions, matches, leaderboard, rewards, anti-cheat) are present in the current schema.
+**35 EF migrations applied:** The migration history runs from `20260325180201_InitialCreate` through the most recent June 2026 migrations (OTP tokens, password reset tokens). All core Alpha/Beta tables (users, wallet, questions, matches, leaderboard, rewards, anti-cheat) are present in the current schema.
 
 **2026-05-18 verification note:** Local idempotent SQL generation fails when using `Tycoon.Backend.Api` as the EF startup project because the API output does not include `Tycoon.Backend.Migrations.dll`. The release/CI path now uses `Tycoon.MigrationService` as the startup project, which references the migrations assembly and successfully generates `artifacts/migrations/idempotent.sql` with `--configuration Release --no-build`.
 

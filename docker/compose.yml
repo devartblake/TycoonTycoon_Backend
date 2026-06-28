@@ -356,7 +356,7 @@ services:
   migration:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.migrate
+      dockerfile: docker/Dockerfile.migration-service
       args:
         - BUILD_CONFIGURATION="${BUILD_CONFIGURATION:-Release}"
     container_name: synaptix_migration
