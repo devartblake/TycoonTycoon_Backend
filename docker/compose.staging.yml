@@ -1,0 +1,273 @@
+# Staging overrides for compose.yml.
+#
+# Usage:
+#   docker compose -f docker/compose.yml -f docker/compose.staging.yml \
+#     --env-file docker/.env.staging up -d --build
+#
+# Key differences from production:
+#   - Internal MinIO used instead of Linode Object Storage
+#   - Let's Encrypt staging CA (avoids certificate rate-limits)
+#   - ASPNETCORE_ENVIRONMENT=Staging (verbose logging via appsettings.Staging.json)
+#   - KMS Vault integration optional (Vault__Required=false)
+#   - All data-store external ports closed
+
+services:
+  traefik:
+    command: !override
+      - "--providers.file.filename=/etc/traefik/dynamic.prod.yml"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--certificatesresolvers.le.acme.email=${ACME_EMAIL:?ACME_EMAIL is required}"
+      - "--certificatesresolvers.le.acme.storage=/certs/acme.json"
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
+      - "--certificatesresolvers.le.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+    ports: !override
+      - "80:80"
+      - "443:443"
+    volumes: !override
+      - ./traefik/dynamic.prod.yml:/etc/traefik/dynamic.prod.yml:ro
+      - traefik-certs:/certs
+
+  backend-api:
+    ports: !override []
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Staging"
+      DOTNET_ENVIRONMENT: "Staging"
+      AdminAuth__AllowTrustedBffPlainJson: "false"
+      KmsClient__BaseUrl: "http://kms-api:5050"
+      KmsClient__ServiceToken: "${KMS_SERVICE_TOKEN:-staging-kms-token}"
+      KmsClient__Required: "false"
+      Realtime__RequireRedis: "true"
+      ForwardedHeaders__ForwardLimit: "1"
+      MinIO__Endpoint: "minio:9000"
+      MinIO__AccessKey: "${MINIO_ROOT_USER}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
+      MinIO__UseSSL: "false"
+      MinIO__PublicEndpoint: "http://minio:9000"
+      Assets__RemoteDeliveryEnabled: "false"
+      Email__FromAddress: "${EMAIL_FROM_ADDRESS:-no-reply@staging.synaptixplay.com}"
+      Email__FromName: "${EMAIL_FROM_NAME:-Synaptix Staging}"
+      Email__Smtp__Host: "${EMAIL_SMTP_HOST:-}"
+      Email__Smtp__Port: "${EMAIL_SMTP_PORT:-587}"
+      Email__Smtp__Username: "${EMAIL_SMTP_USERNAME:-}"
+      Email__Smtp__Password: "${EMAIL_SMTP_PASSWORD:-}"
+      Email__Smtp__UseSsl: "${EMAIL_SMTP_USE_SSL:-true}"
+      Cors__AllowedOrigins__0: "https://${DOMAIN:-staging.yourdomain.com}"
+      Cors__AllowedOrigins__1: "https://app.${DOMAIN:-staging.yourdomain.com}"
+      Cors__AllowedOrigins__2: "https://admin.${DOMAIN:-staging.yourdomain.com}"
+      Cors__AllowedOrigins__3: "${CORS_ORIGIN_0:-}"
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-api.rule=Host(`api.${DOMAIN:?DOMAIN is required}`)"
+      - "traefik.http.routers.backend-api.entrypoints=websecure"
+      - "traefik.http.routers.backend-api.tls.certresolver=le"
+      - "traefik.http.services.backend-api.loadbalancer.server.port=5000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  setup:
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Staging"
+      DOTNET_ENVIRONMENT: "Staging"
+      MinIO__Endpoint: "minio:9000"
+      MinIO__AccessKey: "${MINIO_ROOT_USER}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
+      MinIO__UseSSL: "false"
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  migration:
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Staging"
+      DOTNET_ENVIRONMENT: "Staging"
+      MinIO__Endpoint: "minio:9000"
+      MinIO__AccessKey: "${MINIO_ROOT_USER}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      MinIO__Bucket: "${MINIO_BUCKET:-synaptix-assets}"
+      MinIO__UseSSL: "false"
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  operator-dashboard:
+    ports: !override []
+    environment:
+      DJANGO_DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: "admin.${DOMAIN:?DOMAIN is required}"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "https://admin.${DOMAIN:?DOMAIN is required}"
+      DJANGO_SECURE_COOKIES: "true"
+      MINIO_BASE_URL: "http://minio:9000"
+      ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:?ADMIN_OPS_KEY is required}"
+      ADMIN_AUTH_TRANSPORT: "${ADMIN_AUTH_TRANSPORT:-secure-channel}"
+      KMS_API_BASE_URL: "http://kms-api:5050"
+      KMS_SERVICE_TOKEN: "${KMS_SERVICE_TOKEN:-staging-kms-token}"
+    depends_on: !override
+      backend-api:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.operator-dashboard.rule=Host(`admin.${DOMAIN:?DOMAIN is required}`)"
+      - "traefik.http.routers.operator-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.operator-dashboard.tls.certresolver=le"
+      - "traefik.http.services.operator-dashboard.loadbalancer.server.port=8200"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  sidecar:
+    ports: !override []
+
+  kms-api:
+    ports: !override []
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Staging"
+      DOTNET_ENVIRONMENT: "Staging"
+      KmsApi__ServiceToken: "${KMS_SERVICE_TOKEN:-staging-kms-token}"
+      JwtSettings__SecretKey: "${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}"
+      Vault__Address: "http://vault:8200"
+      Vault__Token: "${VAULT_TOKEN:-}"
+      Vault__TransitMount: "${VAULT_TRANSIT_MOUNT:-transit}"
+      Vault__SessionWrapKey: "${VAULT_SESSION_WRAP_KEY:-synaptix-session-wrap}"
+      Vault__PayloadWrapKey: "${VAULT_PAYLOAD_WRAP_KEY:-synaptix-payload-wrap}"
+      Vault__Required: "false"
+      ConnectionStrings__cache: "redis:6379,password=${REDIS_PASSWORD:?REDIS_PASSWORD is required},defaultDatabase=1"
+      Serilog__MinimumLevel__Default: "${LOG_LEVEL:-Information}"
+
+  # MinIO stays enabled in staging (unlike production which uses Linode Object Storage)
+  minio:
+    ports: !override []
+
+  postgres:
+    ports: !override []
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  mongodb:
+    ports: !override []
+    environment:
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:?MONGO_INITDB_ROOT_PASSWORD is required}"
+      MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  redis:
+    ports: !override []
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  elasticsearch:
+    ports: !override []
+    environment:
+      ELASTIC_PASSWORD: "${ELASTIC_PASSWORD:?ELASTIC_PASSWORD is required}"
+      ES_JAVA_OPTS: "${ES_JAVA_OPTS:--Xms512m -Xmx512m}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  rabbitmq:
+    ports: !override []
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  kibana:
+    ports: !override []
+    profiles: ["disabled"]
+
+  pgadmin:
+    ports: !override []
+    profiles: ["disabled"]
+
+  mongo-express:
+    ports: !override []
+    profiles: ["disabled"]
+
+  prometheus:
+    ports: !override []
+    profiles: ["disabled"]
+
+  grafana:
+    ports: !override []
+    profiles: ["disabled"]
+
+  dbgate:
+    ports: !override []
+    profiles: ["disabled"]
+
+  crypto-service:
+    ports: !override []
+    profiles: ["disabled"]
+
+  operator-dashboard-blazor:
+    ports: !override []
+    profiles: ["disabled"]
+
+volumes:
+  traefik-certs:
