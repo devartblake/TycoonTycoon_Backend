@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Root CSS variables mirroring the current design system */
+:root {
+  --accent: #0f766e;
+  --accent-light: #14b8a6;
+  --accent-dark: #0d5c53;
+  --bg-primary: #f7f6f3;
+  --bg-secondary: #f0ede8;
+  --bg-tertiary: #e8e4dd;
+  --ink-primary: #1f1f1f;
+  --ink-secondary: #5a5a5a;
+  --ink-tertiary: #8a8a8a;
+  --panel-bg: #fafaf8;
+  --panel-border: #e0dcd5;
+  --sidebar-w: 292px;
+}
+
+/* Ensure smooth transitions */
+@layer base {
+  body {
+    @apply bg-bg-primary text-ink-primary font-sans antialiased;
+  }
+
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-bold tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl font-semibold;
+  }
+
+  p {
+    @apply text-sm text-ink-secondary;
+  }
+}
+
+/* Utility components */
+@layer components {
+  .operator-shell {
+    @apply flex min-h-screen bg-bg-primary;
+  }
+
+  .operator-sidebar {
+    @apply hidden md:flex w-sidebar-w flex-col gap-4 border-r border-panel-border bg-panel-bg p-4;
+  }
+
+  .operator-main {
+    @apply flex-1 overflow-auto;
+  }
+
+  .operator-container {
+    @apply mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8;
+  }
+
+  .operator-card {
+    @apply rounded-lg border border-panel-border bg-panel-bg p-6 shadow-sm;
+  }
+
+  .operator-badge {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium;
+  }
+
+  .operator-badge-success {
+    @apply bg-status-healthy/10 text-status-healthy;
+  }
+
+  .operator-badge-warning {
+    @apply bg-status-degraded/10 text-status-degraded;
+  }
+
+  .operator-badge-error {
+    @apply bg-status-offline/10 text-status-offline;
+  }
+
+  .operator-badge-info {
+    @apply bg-status-unknown/10 text-status-unknown;
+  }
+}
+
+/* Smooth transitions */
+@layer utilities {
+  .transition-smooth {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent;
+  }
+}
