@@ -147,12 +147,10 @@ namespace Synaptix.Backend.Api.Features.Players
                 .AsNoTracking()
                 .FirstOrDefaultAsync(w => w.PlayerId == player.Id, ct);
 
-            // Get user roles
-            var userRoles = await db.UserRoles
-                .AsNoTracking()
-                .Where(ur => ur.UserId == userId)
-                .Select(ur => ur.RoleName)
-                .ToListAsync(ct);
+            // Get user roles from SystemRole field
+            var userRoles = string.IsNullOrEmpty(user?.SystemRole)
+                ? new List<string>()
+                : new List<string> { user.SystemRole };
 
             // Extract preferences from Flags dictionary
             user.Flags.TryGetValue("age_group", out var ageGroupObj);

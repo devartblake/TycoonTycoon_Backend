@@ -8,6 +8,7 @@ using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Infrastructure.Persistence;
 using Synaptix.Shared.Contracts.Dtos;
 using Synaptix.Backend.Application.Abstractions;
+using Synaptix.Backend.Application.Auth;
 
 namespace Synaptix.Backend.Api.Features.Account;
 
@@ -111,11 +112,10 @@ public static class AccountMigrationEndpoints
                             .FirstOrDefaultAsync(w => w.PlayerId == player.Id, ct)
                         : null;
 
-                    var userRoles = await db.UserRoles
-                        .AsNoTracking()
-                        .Where(ur => ur.UserId == guestUserId)
-                        .Select(ur => ur.RoleName)
-                        .ToListAsync(ct);
+                    // Get user roles from SystemRole field
+                    var userRoles = string.IsNullOrEmpty(fullUser?.SystemRole)
+                        ? new List<string>()
+                        : new List<string> { fullUser.SystemRole };
 
                     // Build complete profile response
                     var profile = BuildCurrentUserProfile(fullUser, player, wallet, userRoles);
