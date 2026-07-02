@@ -9,6 +9,7 @@ using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Api.Services;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Auth;
+using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.Auth
@@ -539,22 +540,24 @@ namespace Synaptix.Backend.Api.Features.Auth
 
             var email = request.Email.ToLowerInvariant();
 
-            // Check if user exists
+            // Uniform response to avoid revealing whether the email is registered.
+            var accepted = Results.Ok(new RequestPasswordResetResponse(
+                Message: "If the email is registered, an OTP has been sent",
+                Method: request.Method ?? "email",
+                Hint: $"Sent to {email.Substring(0, 3)}***{email.Substring(email.LastIndexOf('@'))}",
+                ExpiresIn: 600  // 10 minutes
+            ));
+
+            // Check if user exists — but never disclose the result to the caller.
             var user = await database.Users
                 .FirstOrDefaultAsync(u => u.Email == email, cancellation);
 
             if (user is null)
-                return Results.NotFound(new {
-                    error = "USER_NOT_FOUND",
-                    message = "Email not registered"
-                });
+                return accepted;
 
-            // Check rate limiting
+            // Check rate limiting (still return the uniform response, not a 429 that leaks existence)
             if (await otpService.IsRateLimitedAsync(email, cancellation))
-                return ApiResponses.Error(
-                    StatusCodes.Status429TooManyRequests,
-                    "rate_limit_exceeded",
-                    "Too many OTP requests. Try again later");
+                return accepted;
 
             try
             {
@@ -567,28 +570,19 @@ namespace Synaptix.Backend.Api.Features.Auth
                 if (!stored)
                     return Results.StatusCode(StatusCodes.Status500InternalServerError);
 
-                // Send email
+                // Send email. A send failure is logged but not surfaced, so the response
+                // stays uniform and the flow does not hard-fail when email is unconfigured.
                 var sent = await emailService.SendPasswordResetEmailAsync(
                     email,
                     user.Handle ?? email.Split('@')[0],
                     otp);
 
                 if (!sent)
-                    return ApiResponses.Error(
-                        StatusCodes.Status500InternalServerError,
-                        "email_send_failed",
-                        "Failed to send OTP email");
+                    Console.WriteLine($"[ERROR] Failed to send OTP email to {email}");
+                else
+                    Console.WriteLine($"[AUDIT] OTP sent to {email} at {DateTimeOffset.UtcNow:O}");
 
-                // Log
-                Console.WriteLine($"[AUDIT] OTP sent to {email} at {DateTimeOffset.UtcNow:O}");
-
-                // Return success (don't reveal whether email exists for security)
-                return Results.Ok(new RequestPasswordResetResponse(
-                    Message: "OTP sent to your email",
-                    Method: request.Method ?? "email",
-                    Hint: $"Sent to {email.Substring(0, 3)}***{email.Substring(email.LastIndexOf('@'))}",
-                    ExpiresIn: 600  // 10 minutes
-                ));
+                return accepted;
             }
             catch (Exception ex)
             {
@@ -630,17 +624,39 @@ namespace Synaptix.Backend.Api.Features.Auth
                         $"Invalid or expired OTP. {attemptsRemaining} attempts remaining");
                 }
 
-                // Generate reset token (valid for 5 minutes)
-                var resetToken = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
-                // In production, store this token with email binding + expiration in database
-                // For now, we'll embed the email in the token for simple validation
+                // Resolve the user the OTP belongs to so the reset token can be bound to it.
+                var user = await database.Users
+                    .FirstOrDefaultAsync(u => u.Email == email, cancellation);
+
+                if (user is null)
+                    return ApiResponses.Error(
+                        StatusCodes.Status401Unauthorized,
+                        "invalid_otp",
+                        "Invalid or expired OTP.");
+
+                // Revoke any outstanding unused reset tokens for this user.
+                var outstanding = await database.PasswordResetTokens
+                    .Where(t => t.UserId == user.Id && !t.Used)
+                    .ToListAsync(cancellation);
+                foreach (var existing in outstanding)
+                    existing.MarkAsUsed();
+
+                // Generate and persist a single-use reset token (valid for 5 minutes),
+                // bound to the user with an expiry — validated on reset by DB lookup.
+                var resetTokenValue = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+                var resetToken = new PasswordResetToken(
+                    user.Id,
+                    resetTokenValue,
+                    DateTimeOffset.UtcNow.AddMinutes(5));
+                database.PasswordResetTokens.Add(resetToken);
+                await database.SaveChangesAsync(cancellation);
 
                 // Log
                 Console.WriteLine($"[AUDIT] OTP verified for {email} at {DateTimeOffset.UtcNow:O}");
 
                 return Results.Ok(new VerifyOtpResponse(
                     Message: "OTP verified successfully",
-                    ResetToken: $"{email}:{resetToken}",  // Email:Token format for validation
+                    ResetToken: $"{email}:{resetTokenValue}",  // Email:Token format; token portion is validated against the DB
                     ExpiresIn: 300  // 5 minutes
                 ));
             }
@@ -674,12 +690,17 @@ namespace Synaptix.Backend.Api.Features.Auth
 
             var email = request.Email.ToLowerInvariant();
 
-            // Validate reset token (basic validation: email:token format)
-            if (!request.Token.StartsWith(email + ":"))
+            // Reset token is returned in "email:token" format; the token portion is the
+            // opaque value persisted at OTP-verification time.
+            var separatorIndex = request.Token.IndexOf(':');
+            if (separatorIndex <= 0
+                || !request.Token.AsSpan(0, separatorIndex).SequenceEqual(email))
                 return ApiResponses.Error(
                     StatusCodes.Status401Unauthorized,
                     "invalid_token",
                     "Invalid reset token");
+
+            var tokenValue = request.Token[(separatorIndex + 1)..];
 
             try
             {
@@ -687,11 +708,25 @@ namespace Synaptix.Backend.Api.Features.Auth
                 var user = await database.Users
                     .FirstOrDefaultAsync(u => u.Email == email, cancellation);
 
+                // Do not reveal whether the email exists — a bad email yields the same
+                // response as a bad/expired token.
                 if (user is null)
-                    return Results.NotFound(new {
-                        error = "USER_NOT_FOUND",
-                        message = "User not found"
-                    });
+                    return ApiResponses.Error(
+                        StatusCodes.Status401Unauthorized,
+                        "invalid_token",
+                        "Invalid or expired reset token");
+
+                // Validate the reset token: must exist, belong to this user, be unused and unexpired.
+                var resetToken = await database.PasswordResetTokens
+                    .FirstOrDefaultAsync(
+                        t => t.Token == tokenValue && t.UserId == user.Id && !t.Used,
+                        cancellation);
+
+                if (resetToken is null || !resetToken.IsValid())
+                    return ApiResponses.Error(
+                        StatusCodes.Status401Unauthorized,
+                        "invalid_token",
+                        "Invalid or expired reset token");
 
                 // Validate new password
                 var passwordValidationError = ValidateNewPassword(request.NewPassword, email);
@@ -703,8 +738,9 @@ namespace Synaptix.Backend.Api.Features.Auth
                     request.NewPassword,
                     workFactor: 12);
 
-                // Update password
+                // Update password and consume the reset token (single use).
                 user.ChangePassword(newPasswordHash);
+                resetToken.MarkAsUsed();
                 await database.SaveChangesAsync(cancellation);
 
                 // Clear OTP tokens for this email
