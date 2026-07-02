@@ -41,6 +41,8 @@ services:
       MONGO_AUTH_DB: "${MONGO_AUTH_DB:-synaptix_analytics}"
       MONGO_ANALYTICS_DB: "${MONGO_ANALYTICS_DB:-synaptix_analytics}"
       MONGO_CRYPTO_DB: "${MONGO_CRYPTO_DB:-synaptix_crypto}"
+      MONGO_CRYPTO_USER: "${MONGO_CRYPTO_USER:-${MONGO_APP_USER:-synaptix_app_user}}"
+      MONGO_CRYPTO_PASSWORD: "${MONGO_CRYPTO_PASSWORD:-${MONGO_APP_PASSWORD:-synaptix_app_password_123}}"
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
@@ -596,7 +598,8 @@ services:
     environment:
       BACKEND_BASE_URL: "http://backend-api:5000"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
-      MONGO_URL: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD:-synaptix_app_password_123}@mongodb:27017/${MONGO_CRYPTO_DB:-synaptix_crypto}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}"
+      # Use dedicated crypto-service credentials if available, otherwise fall back to general app user
+      MONGO_URL: "${MONGO_CRYPTO_URL:-mongodb://${MONGO_CRYPTO_USER:-${MONGO_APP_USER:-synaptix_app_user}}:${MONGO_CRYPTO_PASSWORD:-${MONGO_APP_PASSWORD:-synaptix_app_password_123}}@mongodb:27017/${MONGO_CRYPTO_DB:-synaptix_crypto}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}}"
       MONGO_DB: "${MONGO_CRYPTO_DB:-synaptix_crypto}"
       CRYPTO_SERVICE_JWT: "${CRYPTO_SERVICE_JWT:-}"
       CRYPTO_SERVICE_JWT_FILE: "${CRYPTO_SERVICE_JWT_FILE:-}"
