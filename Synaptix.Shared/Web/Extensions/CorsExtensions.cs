@@ -25,10 +25,8 @@ public static class Extensions
             {
                 p.WithOrigins(options.AllowedUrls.ToArray());
             }
-            else
-            {
-                p.AllowAnyOrigin();
-            }
+            // Deny by default: with no configured origins, add none rather than
+            // falling back to AllowAnyOrigin() (which would open the API to any site).
 
             p.AllowAnyMethod();
             p.AllowAnyHeader();

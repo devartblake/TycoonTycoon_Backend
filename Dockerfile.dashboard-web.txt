@@ -26,9 +26,10 @@ COPY Tycoon.OperatorDashboard.Web/ .
 # Run icon build now that source files are available (skipped during deps stage)
 RUN pnpm exec tsx src/assets/iconify-icons/bundle-icons-css.ts
 
-# Build args become env vars at build time
+# Build args become env vars at build time.
+# NOTE: do NOT pass secrets as NEXT_PUBLIC_* args — Next.js inlines them into the
+# client-side JS bundle. The admin ops key must be used server-side only (proxy).
 ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_ADMIN_OPS_KEY
 
 RUN pnpm build
 
