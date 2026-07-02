@@ -47,7 +47,7 @@ services:
       - ./init/mongo:/docker-entrypoint-initdb.d
     networks: [synaptix-net]
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--authenticationDatabase=${MONGO_AUTH_DB:-synaptix_analytics}", "-u", "${MONGO_APP_USER:-synaptix_app_user}", "-p", "${MONGO_APP_PASSWORD:-synaptix_app_password_123}", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 10
