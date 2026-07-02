@@ -592,7 +592,7 @@ services:
     container_name: synaptix_crypto_service
     restart: unless-stopped
     ports:
-      - "${CRYPTO_SERVICE_PORT:-8300}:8300"
+      - "${CRYPTO_SERVICE_PORT:-8500}:8300"
     environment:
       BACKEND_BASE_URL: "http://backend-api:5000"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
@@ -670,8 +670,32 @@ services:
       start_period: 20s
 
   # ================================
-  # Operator Dashboard (Blazor Server) — legacy, for comparison
+  # Operator Dashboard (React) — Next-gen frontend
   # ================================
+  operator-dashboard-react:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard-react
+      args:
+        VITE_API_BASE_URL: "${REACT_API_BASE_URL:-http://backend-api:5000}"
+        VITE_APP_ENV: "${REACT_APP_ENV:-production}"
+    container_name: synaptix_operator_dashboard_react
+    restart: unless-stopped
+    ports:
+      - "${REACT_DASHBOARD_PORT:-8300}:8300"
+    environment:
+      VITE_API_BASE_URL: "${REACT_API_BASE_URL:-http://backend-api:5000}"
+      VITE_APP_ENV: "${REACT_APP_ENV:-production}"
+    depends_on:
+      backend-api:
+        condition: service_healthy
+    networks: [synaptix-net]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8300/index.html"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 # ================================
 # Networks

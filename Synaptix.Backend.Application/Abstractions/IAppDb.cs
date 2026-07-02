@@ -22,6 +22,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<MissionClaim> MissionClaims { get; }
         DbSet<ProcessedGameplayEvent> ProcessedGameplayEvents { get; }
         DbSet<LeaderboardEntry> LeaderboardEntries { get; }
+        DbSet<ArcadeScoreEntry> ArcadeScores { get; }
         DbSet<Tier> Tiers { get; }
         DbSet<ReferralCode> ReferralCodes { get; }
         DbSet<ReferralRedemption> ReferralRedemptions { get; }

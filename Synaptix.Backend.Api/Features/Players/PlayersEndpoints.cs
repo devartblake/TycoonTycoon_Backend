@@ -142,7 +142,55 @@ namespace Synaptix.Backend.Api.Features.Players
                 await db.SaveChangesAsync(ct);
             }
 
-            return Results.Ok(new PlayerDto(player.Id, player.Username, player.CountryCode, player.Level, player.Xp));
+            // Get player wallet for economy data
+            var wallet = await db.PlayerWallets
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.PlayerId == player.Id, ct);
+
+            // Get user roles
+            var userRoles = await db.UserRoles
+                .AsNoTracking()
+                .Where(ur => ur.UserId == userId)
+                .Select(ur => ur.RoleName)
+                .ToListAsync(ct);
+
+            // Extract preferences from Flags dictionary
+            user.Flags.TryGetValue("age_group", out var ageGroupObj);
+            user.Flags.TryGetValue("synaptix_mode", out var synaptixModeObj);
+            user.Flags.TryGetValue("pref_home_surface", out var prefSurfaceObj);
+            user.Flags.TryGetValue("reduced_motion", out var reducedMotionObj);
+            user.Flags.TryGetValue("tone_preference", out var toneObj);
+            user.Flags.TryGetValue("is_premium", out var premiumObj);
+
+            var profile = new CurrentUserProfileDto(
+                UserId: user.Id,
+                Username: user.Handle,
+                Email: user.Email,
+                DisplayName: user.Handle,
+                Country: user.Country,
+                AvatarUrl: user.AvatarUrl,
+                UserRole: user.SystemRole,
+                UserRoles: userRoles.Count > 0 ? userRoles.AsReadOnly() : null,
+                PlayerId: player.Id,
+                PlayerLevel: player.Level,
+                PlayerXp: player.Xp,
+                PlayerScore: player.Score,
+                CurrentTierId: player.TierId?.ToString(),
+                Coins: wallet?.Coins ?? 0,
+                Diamonds: wallet?.Diamonds ?? 0,
+                CumulativeXp: wallet?.Xp ?? 0,
+                IsPremium: premiumObj is bool premium && premium,
+                AgeGroup: ageGroupObj?.ToString(),
+                SynaptixMode: synaptixModeObj?.ToString(),
+                PreferredHomeSurface: prefSurfaceObj?.ToString(),
+                ReducedMotion: reducedMotionObj is bool reduced && reduced,
+                TonePreference: toneObj?.ToString(),
+                IsAnonymous: user.IsAnonymous,
+                CreatedAt: user.CreatedAt,
+                LastLoginAt: user.LastLoginAt
+            );
+
+            return Results.Ok(profile);
         }
     }
 }

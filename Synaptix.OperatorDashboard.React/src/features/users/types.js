@@ -1,0 +1,4 @@
+/**
+ * Users feature types
+ */
+export {};

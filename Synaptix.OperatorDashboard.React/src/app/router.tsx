@@ -20,6 +20,12 @@ const DashboardPage = React.lazy(() => import('@/features/dashboard/pages/home')
 const UsersListPage = React.lazy(() => import('@/features/users/pages/list'))
 const NotificationsHubPage = React.lazy(() => import('@/features/notifications/pages/hub'))
 const AntiCheatQueuePage = React.lazy(() => import('@/features/anti-cheat/pages/queue'))
+const SecurityAuditPage = React.lazy(() => import('@/features/audit/pages/security'))
+const PlayerProfilePage = React.lazy(() => import('@/features/moderation/pages/player-profile'))
+const PlayerEconomyPage = React.lazy(() => import('@/features/economy/pages/player-economy'))
+const QuestionsQueuePage = React.lazy(() => import('@/features/content/pages/questions-queue'))
+const LifecyclePage = React.lazy(() => import('@/features/operations/pages/lifecycle'))
+const StoreManagementPage = React.lazy(() => import('@/features/store/pages/store-management'))
 const NotFoundPage = React.lazy(() => import('@/components/shared/not-found'))
 
 export const router = createBrowserRouter([
@@ -69,8 +75,12 @@ export const router = createBrowserRouter([
         path: 'audit',
         children: [
           {
+            index: true,
+            element: <Navigate to="/audit/security" replace />,
+          },
+          {
             path: 'security',
-            element: <div>Security Audit - Coming Soon</div>,
+            element: <SecurityAuditPage />,
           },
           {
             path: 'security/:eventId',
@@ -92,7 +102,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'players/:playerId',
-            element: <div>Moderation Player Profile - Coming Soon</div>,
+            element: <PlayerProfilePage />,
           },
         ],
       },
@@ -111,16 +121,20 @@ export const router = createBrowserRouter([
         path: 'store',
         children: [
           {
+            index: true,
+            element: <StoreManagementPage />,
+          },
+          {
             path: 'catalog',
-            element: <div>Store Catalog - Coming Soon</div>,
+            element: <StoreManagementPage />,
           },
           {
             path: 'flash-sales',
-            element: <div>Flash Sales - Coming Soon</div>,
+            element: <StoreManagementPage />,
           },
           {
             path: 'stock-policies',
-            element: <div>Stock Policies - Coming Soon</div>,
+            element: <StoreManagementPage />,
           },
           {
             path: 'player-stock',
@@ -132,7 +146,57 @@ export const router = createBrowserRouter([
           },
           {
             path: 'reward-limits',
-            element: <div>Reward Limits - Coming Soon</div>,
+            element: <StoreManagementPage />,
+          },
+        ],
+      },
+      // Economy section
+      {
+        path: 'economy',
+        children: [
+          {
+            index: true,
+            element: <PlayerEconomyPage />,
+          },
+          {
+            path: 'player',
+            element: <PlayerEconomyPage />,
+          },
+          {
+            path: 'player-transactions',
+            element: <PlayerEconomyPage />,
+          },
+        ],
+      },
+      // Content section
+      {
+        path: 'content',
+        children: [
+          {
+            index: true,
+            element: <QuestionsQueuePage />,
+          },
+          {
+            path: 'questions',
+            element: <QuestionsQueuePage />,
+          },
+        ],
+      },
+      // Operations section
+      {
+        path: 'operations',
+        children: [
+          {
+            index: true,
+            element: <LifecyclePage />,
+          },
+          {
+            path: 'seasons',
+            element: <LifecyclePage />,
+          },
+          {
+            path: 'game-events',
+            element: <LifecyclePage />,
           },
         ],
       },

@@ -40,3 +40,34 @@ public record RewardStep(
     int PointValue,
     int Quantity,
     string Description);
+
+// Progression/Tier DTOs
+public record TierReward(
+    string? Badge,
+    int CoinsBonus,
+    int GemsBonus);
+
+public record TierDefinition(
+    string Id,
+    string Name,
+    int Level,
+    int MinXp,
+    int MaxXp,
+    string IconName,
+    TierReward Rewards);
+
+public record PlayerTierProgress(
+    string CurrentTierId,
+    string CurrentTierName,
+    int CurrentLevel,
+    double CurrentXp,
+    double XpInCurrentTier,
+    double XpNeededForNextTier,
+    double ProgressPercentage);
+
+public record XpAwardResult(
+    double XpAwarded,
+    double TotalXp,
+    int NewLevel,
+    bool TierUpgraded,
+    string? NewTierId = null);

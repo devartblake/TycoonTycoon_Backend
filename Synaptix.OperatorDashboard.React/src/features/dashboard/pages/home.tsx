@@ -1,51 +1,87 @@
 /**
- * Dashboard home page
+ * Dashboard Home page - System Health Overview
  */
 
-// import React from 'react'
-import { useAuth } from '@/hooks/use-permission'
+import { useMemo } from 'react'
+import { usePermission } from '@/hooks/use-permission'
+import { ServiceCard } from '../components/service-card'
+import { SystemMetrics } from '../components/system-metrics'
+import { AlertsSection } from '../components/alerts-section'
+import { useDashboardStats, useAllServiceHistory } from '../hooks/useDashboard'
 
-export default function DashboardHome() {
-  const { profile } = useAuth()
+export default function DashboardHomePage() {
+  usePermission('operations:read')
+
+  const statsQuery = useDashboardStats()
+  const historyQuery = useAllServiceHistory(24)
+
+  // Create a map of service histories for sparkline data
+  const sparklineMap = useMemo(() => {
+    if (!historyQuery.data) return {}
+    return Object.fromEntries(
+      historyQuery.data.map((h) => [h.serviceId, h.metrics.map((m) => m.value)])
+    )
+  }, [historyQuery.data])
+
+  const stats = statsQuery.data
+  const isLoading = statsQuery.isLoading || historyQuery.isLoading
 
   return (
-    <div className="operator-container">
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-ink-primary">Welcome, {profile?.email}!</h1>
-          <p className="mt-2 text-ink-secondary">Dashboard coming soon...</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="operator-card">
-            <div className="text-sm text-ink-tertiary">Users</div>
-            <div className="text-2xl font-bold text-accent mt-2">—</div>
-          </div>
-          <div className="operator-card">
-            <div className="text-sm text-ink-tertiary">Flagged Sessions</div>
-            <div className="text-2xl font-bold text-accent mt-2">—</div>
-          </div>
-          <div className="operator-card">
-            <div className="text-sm text-ink-tertiary">Moderation Queue</div>
-            <div className="text-2xl font-bold text-accent mt-2">—</div>
-          </div>
-          <div className="operator-card">
-            <div className="text-sm text-ink-tertiary">System Status</div>
-            <div className="text-2xl font-bold text-status-healthy mt-2">Healthy</div>
-          </div>
-        </div>
-
-        <div className="bg-bg-secondary p-6 rounded border border-panel-border">
-          <h2 className="text-lg font-semibold text-ink-primary mb-4">Quick Links</h2>
-          <ul className="space-y-2 text-sm text-ink-secondary">
-            <li>• Users and moderation tools</li>
-            <li>• Security and audit logs</li>
-            <li>• Store and economy management</li>
-            <li>• Content and notifications</li>
-            <li>• Configuration and diagnostics</li>
-          </ul>
-        </div>
+    <div className="operator-container space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-ink-primary">Dashboard</h1>
+        <p className="mt-2 text-ink-secondary">System health and performance overview</p>
       </div>
+
+      {/* System Metrics */}
+      <div>
+        <h2 className="text-lg font-semibold text-ink-primary mb-4">System Metrics</h2>
+        <SystemMetrics metrics={stats?.metrics} isLoading={isLoading} />
+      </div>
+
+      {/* Alerts */}
+      {stats && (
+        <AlertsSection alertCount={stats.alertsActive} services={stats.services} />
+      )}
+
+      {/* Services Grid */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-ink-primary">Service Status</h2>
+          {stats && (
+            <p className="text-sm text-ink-secondary">
+              {stats.services.filter((s) => s.status === 'healthy').length} / {stats.services.length} operational
+            </p>
+          )}
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="operator-card h-48 bg-bg-secondary animate-pulse" />
+            ))}
+          </div>
+        ) : stats ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {stats.services.map((service) => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                sparklineData={sparklineMap[service.id]}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Footer Info */}
+      {stats && (
+        <div className="text-xs text-ink-tertiary text-center pt-4 border-t border-panel-border">
+          <p>Auto-refreshing every 30 seconds • Last updated: {new Date(stats.lastUpdatedAt).toLocaleTimeString()}</p>
+          <p className="mt-1">Total health checks: {stats.checksPerformed.toLocaleString()}</p>
+        </div>
+      )}
     </div>
   )
 }

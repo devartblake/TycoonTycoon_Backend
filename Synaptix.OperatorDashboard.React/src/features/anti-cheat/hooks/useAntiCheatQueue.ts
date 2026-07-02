@@ -2,10 +2,10 @@
  * useAntiCheatQueue hook - manage anti-cheat review queue
  */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from '../api'
-import type { AntiCheatFlag, VerdictPayload, VerdictResponse } from '../types'
+import type { VerdictPayload, VerdictResponse } from '../types'
 
 export function useQueueStats() {
   return useQuery({

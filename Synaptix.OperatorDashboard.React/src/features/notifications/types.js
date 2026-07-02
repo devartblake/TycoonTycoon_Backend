@@ -1,0 +1,4 @@
+/**
+ * Notifications feature types
+ */
+export {};

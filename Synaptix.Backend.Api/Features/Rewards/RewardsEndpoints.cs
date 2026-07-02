@@ -49,6 +49,11 @@ public static class RewardsEndpoints
             .WithName("ClaimWeeklyReward")
             .RequireAuthorization();
 
+        // Alternative endpoint path for Flutter compatibility
+        g.MapPost("/weekly-streak/{userId:guid}/claim", ClaimWeeklyByUserId)
+            .WithName("ClaimWeeklyRewardByUserId")
+            .RequireAuthorization();
+
         g.MapGet("/spin-reward-steps", GetSpinRewardSteps)
             .WithName("GetSpinRewardSteps");
     }
@@ -164,6 +169,73 @@ public static class RewardsEndpoints
     {
         if (!TryGetPlayerId(httpContext, out var playerId))
             return Results.Unauthorized();
+
+        if (request.Day < 1 || request.Day > 7)
+            return Results.BadRequest(new { error = "Day must be between 1 and 7." });
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var streak = await db.WeeklyStreakStates
+            .FirstOrDefaultAsync(s => s.PlayerId == playerId, ct);
+
+        // Start a new cycle if none exists or current cycle expired
+        if (streak is null)
+        {
+            streak = new WeeklyStreakState(playerId, today);
+            db.WeeklyStreakStates.Add(streak);
+        }
+        else if (streak.CycleStartDate.AddDays(7) <= today)
+        {
+            streak.StartNewCycle(today);
+        }
+
+        var claimedDays = streak.GetClaimedDays();
+        if (claimedDays.Contains(request.Day))
+        {
+            return Results.Conflict(new { error = $"Day {request.Day} already claimed in this cycle." });
+        }
+
+        var schedule = WeeklySchedule.First(s => s.Day == request.Day);
+        var wallet = await db.PlayerWallets
+            .FirstOrDefaultAsync(w => w.PlayerId == playerId, ct);
+
+        if (wallet is null)
+        {
+            wallet = new PlayerWallet(playerId);
+            db.PlayerWallets.Add(wallet);
+        }
+
+        wallet.Apply(dxp: 0, dcoins: schedule.CoinsAmount, ddiamonds: schedule.GemsAmount);
+        streak.ClaimDay(request.Day);
+
+        await db.SaveChangesAsync(ct);
+
+        return Results.Ok(new WeeklyClaimResponse(
+            Success: true,
+            Day: request.Day,
+            CoinsGranted: schedule.CoinsAmount,
+            GemsGranted: schedule.GemsAmount,
+            NewBalance: wallet.Coins,
+            Message: $"Day {request.Day} reward claimed.",
+            UpdatedStreak: BuildStreakData(streak)));
+    }
+
+    /// <summary>
+    /// Alternative claim endpoint with userId in path (Flutter compatibility)
+    /// </summary>
+    private static async Task<IResult> ClaimWeeklyByUserId(
+        [FromRoute] Guid userId,
+        [FromBody] WeeklyClaimRequest request,
+        HttpContext httpContext,
+        AppDb db,
+        CancellationToken ct)
+    {
+        if (!TryGetPlayerId(httpContext, out var playerId))
+            return Results.Unauthorized();
+
+        // Players can only claim rewards for themselves
+        if (playerId != userId)
+            return Results.Forbid();
 
         if (request.Day < 1 || request.Day > 7)
             return Results.BadRequest(new { error = "Day must be between 1 and 7." });

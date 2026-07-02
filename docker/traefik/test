@@ -1,0 +1,7 @@
+docker compose --env-file docker/.env.production -f docker/compose.yml -f docker/compose.prod.yml config
+
+docker compose --env-file docker/.env.production -f docker/compose.yml -f docker/compose.prod.yml up -d postgres mongodb redis elasticsearch rabbitmq
+
+docker compose --env-file docker/.env.production -f docker/compose.yml -f docker/compose.prod.yml up setup migration
+
+docker compose --env-file docker/.env.production -f docker/compose.yml -f docker/compose.prod.yml up -d backend-api sidecar operator-dashboard traefik

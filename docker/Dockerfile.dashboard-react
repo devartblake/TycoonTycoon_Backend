@@ -1,0 +1,39 @@
+# Multi-stage build for React Operator Dashboard
+
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY Synaptix.OperatorDashboard.React/package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source
+COPY Synaptix.OperatorDashboard.React/ .
+
+# Build arguments for environment configuration
+ARG VITE_API_BASE_URL=https://api.synaptixplay.com
+ARG VITE_APP_ENV=production
+
+# Build the app
+RUN npm run build
+
+# Stage 2: Serve
+FROM nginx:1.27-alpine
+
+# Copy built assets
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY docker/nginx-react.conf /etc/nginx/conf.d/default.conf
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:8300/index.html || exit 1
+
+EXPOSE 8300
+
+CMD ["nginx", "-g", "daemon off;"]

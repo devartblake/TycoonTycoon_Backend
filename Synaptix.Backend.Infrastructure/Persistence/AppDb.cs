@@ -90,6 +90,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<AdminAppConfig> AdminAppConfigs => Set<AdminAppConfig>();
         public DbSet<GameBalanceConfig> GameBalanceConfigs => Set<GameBalanceConfig>();
         public DbSet<PlayerEconomySafeguardState> PlayerEconomySafeguardStates => Set<PlayerEconomySafeguardState>();
+        public DbSet<ArcadeScoreEntry> ArcadeScores => Set<ArcadeScoreEntry>();
         public DbSet<Tier> Tiers => Set<Tier>();
         public DbSet<QuestionAnsweredAnalyticsEvent> QuestionAnsweredAnalyticsEvents => Set<QuestionAnsweredAnalyticsEvent>();
         public DbSet<QuestionAnsweredDailyRollup> QuestionAnsweredDailyRollups => Set<QuestionAnsweredDailyRollup>();

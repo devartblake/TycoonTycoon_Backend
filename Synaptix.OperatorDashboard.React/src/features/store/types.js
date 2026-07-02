@@ -1,0 +1,4 @@
+/**
+ * Store feature types
+ */
+export {};
