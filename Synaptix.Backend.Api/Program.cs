@@ -885,9 +885,18 @@ app.Map("/ws", async context =>
     var registry = context.RequestServices.GetRequiredService<IConnectionRegistry>();
     var scopeFactory = context.RequestServices.GetRequiredService<IServiceScopeFactory>();
 
-    // Extract playerId from query string (same pattern as MatchHub)
-    var playerIdStr = context.Request.Query["playerId"].ToString();
-    Guid.TryParse(playerIdStr, out var playerId);
+    // Presence is bound to the authenticated principal — never the client-supplied
+    // query playerId — to prevent presence spoofing. The token `sub` is the playerId
+    // (Arcade/Study/Matches endpoints treat the authenticated sub as the playerId).
+    var subject = context.User.FindFirstValue("sub")
+                  ?? context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (!Guid.TryParse(subject, out var playerId) || playerId == Guid.Empty)
+    {
+        context.Response.StatusCode = 401;
+        await context.Response.WriteAsync("Authentication required");
+        return;
+    }
+    var playerIdStr = playerId.ToString();
 
     using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
