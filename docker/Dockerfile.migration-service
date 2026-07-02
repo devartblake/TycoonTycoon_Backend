@@ -10,11 +10,22 @@ RUN apt-get update && apt-get install -y \
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+# Copy Central Package Management files first (required for package versions)
+COPY ["Directory.Build.props", "./"]
+COPY ["Directory.Packages.props", "./"]
+
 # Copy project files
 COPY ["Synaptix.MigrationService/Synaptix.MigrationService.csproj", "Synaptix.MigrationService/"]
 COPY ["Synaptix.Backend.Infrastructure/Synaptix.Backend.Infrastructure.csproj", "Synaptix.Backend.Infrastructure/"]
 COPY ["Synaptix.Backend.Migrations/Synaptix.Backend.Migrations.csproj", "Synaptix.Backend.Migrations/"]
-# ... rest of your copies
+COPY ["Synaptix.Backend.Application/Synaptix.Backend.Application.csproj", "Synaptix.Backend.Application/"]
+COPY ["Synaptix.Backend.Domain/Synaptix.Backend.Domain.csproj", "Synaptix.Backend.Domain/"]
+COPY ["Synaptix.Shared/Synaptix.Shared.csproj", "Synaptix.Shared/"]
+COPY ["Synaptix.Shared.Contracts/Synaptix.Shared.Contracts.csproj", "Synaptix.Shared.Contracts/"]
+COPY ["Synaptix.Shared.Observability/Synaptix.Shared.Observability.csproj", "Synaptix.Shared.Observability/"]
+COPY ["Synaptix.ServiceDefaults/Synaptix.ServiceDefaults.csproj", "Synaptix.ServiceDefaults/"]
+COPY ["Synaptix.Entitlements/Synaptix.Entitlements.csproj", "Synaptix.Entitlements/"]
+COPY ["Synaptix.Audit/Synaptix.Audit.csproj", "Synaptix.Audit/"]
 
 RUN dotnet restore "Synaptix.MigrationService/Synaptix.MigrationService.csproj"
 
