@@ -58,8 +58,12 @@ namespace Synaptix.Backend.Api.Features.Store
             g.MapPost("/payments/checkout/session", CreateStripeCheckoutSession).RequireAuthorization().RequireSecureChannel();
             g.MapPost("/payments/paypal/order", CreatePayPalOrder).RequireAuthorization().RequireSecureChannel();
             g.MapPost("/payments/paypal/capture", CapturePayPalOrder).RequireAuthorization().RequireSecureChannel();
-            g.MapPost("/payments/webhook", HandleStripeWebhook);        // Stripe webhook — not from the app
-            g.MapPost("/payments/paypal/webhook", HandlePayPalWebhook); // PayPal webhook — not from the app
+            // Payment webhooks are called by Stripe/PayPal, not the app, and are
+            // authenticated by provider signature verification inside the handlers.
+            // Explicitly anonymous so the global authenticated-user fallback does not
+            // reject them (which would break payment processing).
+            g.MapPost("/payments/webhook", HandleStripeWebhook).AllowAnonymous();        // Stripe webhook — not from the app
+            g.MapPost("/payments/paypal/webhook", HandlePayPalWebhook).AllowAnonymous(); // PayPal webhook — not from the app
             g.MapPost("/iap/validate", ValidateIapReceipt).RequireAuthorization().RequireSecureChannel();
             g.MapPost("/restore", RestorePurchases).RequireAuthorization().RequireSecureChannel();
             g.MapPost("/iap/google/rtdn", HandleGoogleRtdn);

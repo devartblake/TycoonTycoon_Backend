@@ -13,6 +13,15 @@ namespace Synaptix.Backend.Api.Security
 
         public static void AddAdminPolicies(this AuthorizationOptions options)
         {
+            // Deny-by-default: every endpoint requires an authenticated user unless it
+            // is explicitly marked .AllowAnonymous() (health, root, auth entry points,
+            // analytics ingestion, app config, and the payment webhooks). This closes
+            // the opt-in-authorization footgun where a feature endpoint that forgets
+            // .RequireAuthorization() was silently public.
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+
             options.AddPolicy(AdminOnly, p =>
             {
                 p.RequireAuthenticatedUser();

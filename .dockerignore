@@ -62,6 +62,12 @@
 .env
 .env.*
 !.env.example
+# Root patterns above are path-anchored; also exclude env files in subdirectories
+# (e.g. docker/.env) from the build context, keeping *.example templates.
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.staging.example
 secrets/
 **/secrets/
 
