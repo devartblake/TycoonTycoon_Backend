@@ -838,7 +838,7 @@ app.MapGet("/", () => Results.Ok(new
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = r => r.Tags.Contains("ready")
-});
+}).AllowAnonymous();
 
 app.MapGet("/healthz", () => Results.Ok(new
 {

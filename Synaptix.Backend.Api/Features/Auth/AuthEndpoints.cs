@@ -20,32 +20,34 @@ namespace Synaptix.Backend.Api.Features.Auth
         {
             var authGroup = app.MapGroup("/auth").WithTags("Authentication");
 
-            authGroup.MapPost("/register", HandleRegistration);
-            authGroup.MapPost("/signup", HandleSignup);
-            authGroup.MapPost("/login", HandleLogin);
-            authGroup.MapPost("/refresh", HandleTokenRefresh).RequireSecureChannel();
+            // Public auth entry points (no credentials yet) — explicitly anonymous so
+            // they are exempt from the global authenticated-user fallback policy.
+            authGroup.MapPost("/register", HandleRegistration).AllowAnonymous();
+            authGroup.MapPost("/signup", HandleSignup).AllowAnonymous();
+            authGroup.MapPost("/login", HandleLogin).AllowAnonymous();
+            authGroup.MapPost("/refresh", HandleTokenRefresh).AllowAnonymous().RequireSecureChannel();
             authGroup.MapPost("/logout", HandleLogout).RequireAuthorization();
 
             // Device-first guest funnel: play immediately, register later.
-            authGroup.MapPost("/device/bootstrap", HandleDeviceBootstrap);
+            authGroup.MapPost("/device/bootstrap", HandleDeviceBootstrap).AllowAnonymous();
             authGroup.MapPost("/account/upgrade", HandleAccountUpgrade).RequireAuthorization();
 
             // Password management
             authGroup.MapPost("/change-password", HandleChangePassword).RequireAuthorization();
 
-            // Password reset (OTP-based)
-            authGroup.MapPost("/forgot-password", HandleForgotPassword);
-            authGroup.MapPost("/verify-otp", HandleVerifyOtp);
-            authGroup.MapPost("/reset-password", HandleResetPassword);
+            // Password reset (OTP-based) — anonymous by nature (user has no session).
+            authGroup.MapPost("/forgot-password", HandleForgotPassword).AllowAnonymous();
+            authGroup.MapPost("/verify-otp", HandleVerifyOtp).AllowAnonymous();
+            authGroup.MapPost("/reset-password", HandleResetPassword).AllowAnonymous();
 
             // Native game-platform and OAuth sign-in. These require provider
             // credentials and server-side signature/token verification that is not
             // configured yet; they fail closed (501) rather than 404 so the client
             // surfaces a clear "not available" state instead of a silent dead-end,
             // and so no unverified identity is ever accepted (no auth bypass).
-            authGroup.MapPost("/mobile-game-login", HandleGamePlatformNotConfigured);
+            authGroup.MapPost("/mobile-game-login", HandleGamePlatformNotConfigured).AllowAnonymous();
             authGroup.MapPost("/link-game-account", HandleGamePlatformNotConfigured).RequireAuthorization();
-            authGroup.MapGet("/oauth/{provider}", HandleOAuthNotConfigured);
+            authGroup.MapGet("/oauth/{provider}", HandleOAuthNotConfigured).AllowAnonymous();
         }
 
         private static async Task<IResult> HandleDeviceBootstrap(
