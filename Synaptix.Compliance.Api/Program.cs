@@ -33,13 +33,12 @@ try
     var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"]
                     ?? builder.Configuration["Jwt:Secret"];
 
-    if (!builder.Environment.IsDevelopment()
-        && string.IsNullOrWhiteSpace(jwtSecretKey)
+    if (string.IsNullOrWhiteSpace(jwtSecretKey)
         && string.IsNullOrWhiteSpace(jwtAuthority))
     {
         throw new InvalidOperationException(
-            "Refusing to start: JWT configuration missing in non-Development environment. " +
-            "Set Jwt:Authority (OIDC) or JwtSettings:SecretKey (symmetric).");
+            "Refusing to start: JWT configuration missing. " +
+            "Set Jwt:Authority (OIDC) or JwtSettings:SecretKey (symmetric) in every environment.");
     }
 
     builder.Services
@@ -66,19 +65,10 @@ try
             }
             else
             {
-                // Development-only: accept any token (insecure — dev only)
-                opt.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = false,
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = false,
-                    SignatureValidator = (token, _) =>
-                    {
-                        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-                        return handler.ReadJwtToken(token);
-                    }
-                };
+                // Unreachable: startup guard above refuses to start without a key/authority.
+                // No insecure "accept any token" fallback is permitted in any environment.
+                throw new InvalidOperationException(
+                    "JWT configuration missing: no Authority or signing key.");
             }
         });
 

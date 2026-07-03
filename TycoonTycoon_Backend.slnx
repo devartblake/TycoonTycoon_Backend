@@ -10,9 +10,7 @@
     <Project Path="Synaptix.AppHost/Synaptix.AppHost.csproj" />
     <Project Path="Synaptix.Hosting.Elasticsearch/Synaptix.Hosting.Elasticsearch.csproj" />
     <Project Path="Synaptix.Hosting.Minio/Synaptix.Hosting.Minio.csproj" />
-    <Project Path="Synaptix.OperatorDashboard/Synaptix.OperatorDashboard.csproj" />
   </Folder>
-  <Folder Name="/services/" />
   <Folder Name="/Services/Synaptix.Security.Kms/">
     <Project Path="Synaptix.Security.Kms.Api/Synaptix.Security.Kms.Api.csproj" Id="49570931-8e9b-49a5-b15b-0577ef19c651" />
     <Project Path="Synaptix.Security.Kms.Application/Synaptix.Security.Kms.Application.csproj" Id="bc10b555-9ef7-4dff-8823-75343d34ae3f" />
