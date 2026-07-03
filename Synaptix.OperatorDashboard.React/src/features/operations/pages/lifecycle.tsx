@@ -33,6 +33,7 @@ export default function LifecyclePage() {
     try {
       await actionMutation.mutateAsync({
         resourceId: seasonId,
+        resourceType: 'season',
         action,
         notes: `${action === 'start' ? 'Started' : 'Closed'} via operator dashboard`,
       })
@@ -48,6 +49,7 @@ export default function LifecyclePage() {
     try {
       await actionMutation.mutateAsync({
         resourceId: eventId,
+        resourceType: 'event',
         action,
         notes: `Event ${action} via operator dashboard`,
       })

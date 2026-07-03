@@ -65,6 +65,9 @@ export interface EventFilter {
 
 export interface LifecycleAction {
   resourceId: string
+  // Required to dispatch to the correct backend group (seasons vs game-events),
+  // which use different lifecycle routes.
+  resourceType: 'season' | 'event'
   action: 'start' | 'close' | 'cancel'
   notes?: string
 }
