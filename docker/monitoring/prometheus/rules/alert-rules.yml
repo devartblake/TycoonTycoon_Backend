@@ -1,0 +1,146 @@
+groups:
+  - name: backend-api
+    interval: 30s
+    rules:
+      # API Response Time Alerts
+      - alert: HighAPIResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 2m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "High API Response Time"
+          description: "P95 response time is {{ $value }}s (threshold: 0.5s)"
+
+      - alert: HighAPIResponseTimeWarning
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "Elevated API Response Time"
+          description: "P95 response time is {{ $value }}s (threshold: 0.3s)"
+
+      # Error Rate Alerts
+      - alert: HighErrorRate
+        expr: (sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "High Error Rate"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+
+      - alert: ErrorRateWarning
+        expr: (sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) > 0.001
+        for: 5m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "Elevated Error Rate"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 0.1%)"
+
+      # Memory Usage Alerts
+      - alert: HighMemoryUsage
+        expr: (process_resident_memory_bytes{job="backend-api"} / 536870912) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "High Memory Usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} of 512MB limit"
+
+      - alert: MemoryUsageWarning
+        expr: (process_resident_memory_bytes{job="backend-api"} / 536870912) > 0.75
+        for: 5m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "Elevated Memory Usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} of 512MB limit"
+
+      # Service Availability Alerts
+      - alert: ServiceDown
+        expr: up{job="backend-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "Service is Down"
+          description: "Backend API service has been down for more than 1 minute"
+
+      - alert: HighThreadCount
+        expr: process_num_threads{job="backend-api"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "High Thread Count"
+          description: "Active thread count is {{ $value }} (high for typical load)"
+
+      # Health Check Alerts
+      - alert: HealthCheckFailing
+        expr: count(health_status{job="backend-api-health", status="unhealthy"}) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "Health Check Failing"
+          description: "{{ $value }} health checks are failing"
+
+  - name: system-health
+    interval: 30s
+    rules:
+      # Disk Space Alerts
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Low Disk Space"
+          description: "Disk usage is {{ $value | humanizePercentage }} (threshold: 90%)"
+
+      - alert: DiskSpaceWarning
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 0.75
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Disk Space Getting Low"
+          description: "Disk usage is {{ $value | humanizePercentage }} (threshold: 75%)"
+
+  - name: rabbitmq
+    interval: 30s
+    rules:
+      # RabbitMQ Queue Depth Alerts
+      - alert: RabbitMQQueueDepthHigh
+        expr: rabbitmq_queue_messages_ready > 10000
+        for: 5m
+        labels:
+          severity: warning
+          service: rabbitmq
+        annotations:
+          summary: "RabbitMQ Queue Depth High"
+          description: "Queue {{ $labels.queue }} has {{ $value }} messages ready"
+
+      - alert: RabbitMQConnectionsHigh
+        expr: rabbitmq_connections > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: rabbitmq
+        annotations:
+          summary: "RabbitMQ Connection Count High"
+          description: "RabbitMQ has {{ $value }} active connections"
