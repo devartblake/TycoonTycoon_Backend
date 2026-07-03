@@ -34,6 +34,16 @@ scrape_configs:
           service: 'backend-api'
           environment: 'development'
 
+  # Backend API - Health Checks
+  - job_name: 'backend-api-health'
+    metrics_path: '/health/metrics'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['backend-api:5000']
+        labels:
+          service: 'backend-api'
+          check_type: 'health'
+
   # PostgreSQL Exporter (if you add it)
   # - job_name: 'postgres'
   #   static_configs:
