@@ -65,6 +65,8 @@ function ensureCryptoIndexes(database) {
 
 const authDatabase = db.getSiblingDB(authDb);
 const roles = grantedDbs.map(name => ({ role: 'readWrite', db: name }));
+
+// Create or update general app user
 const existing = authDatabase.getUser(appUser);
 if (existing) {
   authDatabase.updateUser(appUser, { pwd: appPassword, roles });
@@ -72,6 +74,26 @@ if (existing) {
 } else {
   authDatabase.createUser({ user: appUser, pwd: appPassword, roles });
   print(`Created MongoDB app user ${appUser} in ${authDb}`);
+}
+
+// Create or update crypto-service user (if different from app user)
+const cryptoUser = process.env.MONGO_CRYPTO_USER || appUser;
+const cryptoPassword = process.env.MONGO_CRYPTO_PASSWORD || appPassword;
+
+if (cryptoUser !== appUser) {
+  const cryptoRoles = [
+    { role: 'readWrite', db: cryptoDb },
+    { role: 'readWrite', db: analyticsDb }
+  ];
+
+  const existingCryptoUser = authDatabase.getUser(cryptoUser);
+  if (existingCryptoUser) {
+    authDatabase.updateUser(cryptoUser, { pwd: cryptoPassword, roles: cryptoRoles });
+    print(`Updated MongoDB crypto-service user ${cryptoUser} in ${authDb}`);
+  } else {
+    authDatabase.createUser({ user: cryptoUser, pwd: cryptoPassword, roles: cryptoRoles });
+    print(`Created MongoDB crypto-service user ${cryptoUser} in ${authDb}`);
+  }
 }
 
 ensureAnalyticsIndexes(db.getSiblingDB(analyticsDb));
