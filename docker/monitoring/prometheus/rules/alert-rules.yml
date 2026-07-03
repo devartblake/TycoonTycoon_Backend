@@ -144,3 +144,108 @@ groups:
         annotations:
           summary: "RabbitMQ Connection Count High"
           description: "RabbitMQ has {{ $value }} active connections"
+
+  - name: postgresql
+    interval: 30s
+    rules:
+      # PostgreSQL Connection Alerts
+      - alert: PostgreSQLHighConnectionCount
+        expr: pg_stat_activity_count{job="postgres"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL Connection Count High"
+          description: "PostgreSQL has {{ $value }} active connections (threshold: 80)"
+
+      - alert: PostgreSQLCriticalConnectionCount
+        expr: pg_stat_activity_count{job="postgres"} > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL Connection Limit Critical"
+          description: "PostgreSQL has {{ $value }} active connections (critical: near limit)"
+
+      # PostgreSQL Transaction Alerts
+      - alert: PostgreSQLLongRunningTransactions
+        expr: pg_long_running_transaction_count{job="postgres"} > 5
+        for: 10m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL Long Running Transactions"
+          description: "{{ $value }} long-running transactions detected"
+
+  - name: mongodb
+    interval: 30s
+    rules:
+      # MongoDB Connection Alerts
+      - alert: MongoDBHighConnectionCount
+        expr: mongodb_connections{job="mongodb"} > 500
+        for: 5m
+        labels:
+          severity: warning
+          service: mongodb
+        annotations:
+          summary: "MongoDB Connection Count High"
+          description: "MongoDB has {{ $value }} active connections (threshold: 500)"
+
+      - alert: MongoDBReplicationLag
+        expr: mongodb_replication_lag_seconds{job="mongodb"} > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: mongodb
+        annotations:
+          summary: "MongoDB Replication Lag High"
+          description: "Replication lag is {{ $value }}s (threshold: 10s)"
+
+  - name: redis
+    interval: 30s
+    rules:
+      # Redis Memory Alerts
+      - alert: RedisHighMemoryUsage
+        expr: (redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"}) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis Memory Usage High"
+          description: "Redis memory is {{ $value | humanizePercentage }} of max"
+
+      - alert: RedisCriticalMemoryUsage
+        expr: (redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"}) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis Memory Critical"
+          description: "Redis memory is {{ $value | humanizePercentage }} of max"
+
+      # Redis Key Eviction Alert
+      - alert: RedisKeyEvictionDetected
+        expr: rate(redis_evicted_keys_total{job="redis"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis Keys Being Evicted"
+          description: "Redis is evicting keys - memory limit reached"
+
+      # Redis Persistence Alert
+      - alert: RedisSaveInProgress
+        expr: redis_rdb_bgsave_in_progress{job="redis"} > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis Background Save Running Too Long"
+          description: "Background save operation running for > 10 minutes"

@@ -5,16 +5,16 @@ global:
     cluster: 'synaptix-backend'
     environment: 'development'
 
-# Alertmanager configuration (optional)
-# alerting:
-#   alertmanagers:
-#     - static_configs:
-#         - targets:
-#           # - alertmanager:9093
+# AlertManager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
 
-# Load rules once and periodically evaluate them
-# rule_files:
-#   - "rules/*.yml"
+# Load alert rules
+rule_files:
+  - "rules/alert-rules.yml"
 
 # Scrape configurations
 scrape_configs:
@@ -44,26 +44,26 @@ scrape_configs:
           service: 'backend-api'
           check_type: 'health'
 
-  # PostgreSQL Exporter (if you add it)
-  # - job_name: 'postgres'
-  #   static_configs:
-  #     - targets: ['postgres-exporter:9187']
-  #       labels:
-  #         service: 'postgres'
+  # PostgreSQL Exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'postgres'
 
-  # MongoDB Exporter (if you add it)
-  # - job_name: 'mongodb'
-  #   static_configs:
-  #     - targets: ['mongodb-exporter:9216']
-  #       labels:
-  #         service: 'mongodb'
+  # MongoDB Exporter
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+        labels:
+          service: 'mongodb'
 
-  # Redis Exporter (if you add it)
-  # - job_name: 'redis'
-  #   static_configs:
-  #     - targets: ['redis-exporter:9121']
-  #       labels:
-  #         service: 'redis'
+  # Redis Exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis'
 
   # Elasticsearch Exporter (if you add it)
   # - job_name: 'elasticsearch'
