@@ -97,6 +97,108 @@ groups:
           summary: "Health Check Failing"
           description: "{{ $value }} health checks are failing"
 
+  - name: hangfire-jobs
+    interval: 30s
+    rules:
+      # Hangfire Queue Depth Alerts
+      - alert: HighJobQueueDepth
+        expr: hangfire_jobs_enqueued + hangfire_jobs_scheduled > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: hangfire
+        annotations:
+          summary: "High Hangfire Job Queue Depth"
+          description: "Queue depth is {{ $value }} jobs (threshold: 1000)"
+
+      - alert: CriticalJobQueueDepth
+        expr: hangfire_jobs_enqueued + hangfire_jobs_scheduled > 5000
+        for: 2m
+        labels:
+          severity: critical
+          service: hangfire
+        annotations:
+          summary: "Critical Hangfire Job Queue Depth"
+          description: "Queue depth is {{ $value }} jobs (threshold: 5000)"
+
+      # Hangfire Failed Jobs Alerts
+      - alert: HighJobFailureRate
+        expr: (rate(hangfire_jobs_failed[5m]) / (rate(hangfire_jobs_succeeded[5m]) + rate(hangfire_jobs_failed[5m]))) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: hangfire
+        annotations:
+          summary: "High Hangfire Job Failure Rate"
+          description: "Job failure rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: JobFailureRateWarning
+        expr: (rate(hangfire_jobs_failed[5m]) / (rate(hangfire_jobs_succeeded[5m]) + rate(hangfire_jobs_failed[5m]))) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          service: hangfire
+        annotations:
+          summary: "Elevated Hangfire Job Failure Rate"
+          description: "Job failure rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+
+      # Hangfire Processing Time Alerts
+      - alert: LongJobProcessingTime
+        expr: histogram_quantile(0.95, rate(hangfire_job_duration_seconds_bucket[5m])) > 60
+        for: 5m
+        labels:
+          severity: warning
+          service: hangfire
+        annotations:
+          summary: "Long Hangfire Job Processing Time"
+          description: "P95 job duration is {{ $value }}s (threshold: 60s)"
+
+      # Hangfire Server Health
+      - alert: HangfireServerDown
+        expr: hangfire_servers_active == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: hangfire
+        annotations:
+          summary: "No Active Hangfire Servers"
+          description: "No Hangfire servers are currently running"
+
+  - name: endpoint-errors
+    interval: 30s
+    rules:
+      # Endpoint-Specific Error Rate Alerts
+      - alert: EndpointHighErrorRate
+        expr: (sum(rate(http_requests_total{status=~"4..","5.."}[5m])) by (endpoint) / sum(rate(http_requests_total[5m])) by (endpoint)) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "High Error Rate on Endpoint {{ $labels.endpoint }}"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      - alert: EndpointCriticalErrorRate
+        expr: (sum(rate(http_requests_total{status=~"5.."}[5m])) by (endpoint) / sum(rate(http_requests_total[5m])) by (endpoint)) > 0.25
+        for: 1m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "Critical Error Rate on Endpoint {{ $labels.endpoint }}"
+          description: "Server error rate is {{ $value | humanizePercentage }} (threshold: 25%)"
+
+      # 5xx Error Spike Alerts
+      - alert: ServerErrorSpike
+        expr: rate(http_requests_total{status=~"5.."}[1m]) > 1
+        for: 1m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "Server Error Spike Detected"
+          description: "{{ $value }} server errors per second (threshold: 1)"
+
   - name: system-health
     interval: 30s
     rules:
