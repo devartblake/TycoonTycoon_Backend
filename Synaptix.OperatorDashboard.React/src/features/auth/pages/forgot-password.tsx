@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import ErrorBoundary from '@/components/shared/error-boundary'
 import { adminForgotPassword } from '@/features/auth/api'
 
 const forgotPasswordSchema = z.object({
@@ -48,7 +49,8 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="space-y-4">
+      <ErrorBoundary>
+        <div className="space-y-4">
         <h2 className="text-2xl font-bold text-center text-ink-primary">Check your email</h2>
         <p className="text-center text-ink-secondary">
           We've sent a password reset link to <strong>{email}</strong>. Click the link in the email to reset your password.
@@ -61,12 +63,14 @@ export default function ForgotPasswordPage() {
             Back to login
           </Link>
         </div>
-      </div>
+        </div>
+      </ErrorBoundary>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <ErrorBoundary>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <h2 className="text-2xl font-bold text-center text-ink-primary mb-6">Reset your password</h2>
 
       {error && (
@@ -108,6 +112,7 @@ export default function ForgotPasswordPage() {
           Back to login
         </Link>
       </div>
-    </form>
+      </form>
+    </ErrorBoundary>
   )
 }

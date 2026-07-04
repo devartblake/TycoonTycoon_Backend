@@ -7,6 +7,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import ErrorBoundary from '@/components/shared/error-boundary'
 import { useAuthStore } from '@/features/auth/store'
 import { adminLogin } from '@/features/auth/api'
 import { getMockMode, setMockMode } from '@/lib/api-config'
@@ -82,7 +83,8 @@ export default function LoginPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <ErrorBoundary>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <h2 className="text-2xl font-bold text-center text-ink-primary mb-6">Sign in to your account</h2>
 
       {error && (
@@ -160,6 +162,7 @@ export default function LoginPage() {
           Forgot your password?
         </Link>
       </div>
-    </form>
+      </form>
+    </ErrorBoundary>
   )
 }

@@ -7,6 +7,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import ErrorBoundary from '@/components/shared/error-boundary'
 import { adminResetPassword, adminValidateResetToken } from '@/features/auth/api'
 
 const resetPasswordSchema = z
@@ -80,45 +81,52 @@ export default function ResetPasswordPage() {
 
   if (isValidating) {
     return (
-      <div className="space-y-4 text-center">
-        <h2 className="text-2xl font-bold text-ink-primary">Validating reset link...</h2>
-      </div>
+      <ErrorBoundary>
+        <div className="space-y-4 text-center">
+          <h2 className="text-2xl font-bold text-ink-primary">Validating reset link...</h2>
+        </div>
+      </ErrorBoundary>
     )
   }
 
   if (tokenError) {
     return (
-      <div className="space-y-4">
-        <div className="p-4 bg-status-offline/10 border border-status-offline/20 rounded text-status-offline text-sm">
-          {tokenError}
+      <ErrorBoundary>
+        <div className="space-y-4">
+          <div className="p-4 bg-status-offline/10 border border-status-offline/20 rounded text-status-offline text-sm">
+            {tokenError}
+          </div>
+          <div className="text-center">
+            <Link to="/auth/forgot-password" className="text-sm text-accent hover:underline">
+              Request a new reset link
+            </Link>
+          </div>
         </div>
-        <div className="text-center">
-          <Link to="/auth/forgot-password" className="text-sm text-accent hover:underline">
-            Request a new reset link
-          </Link>
-        </div>
-      </div>
+      </ErrorBoundary>
     )
   }
 
   if (isSubmitted) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-center text-ink-primary">Password reset successful</h2>
-        <p className="text-center text-ink-secondary">
-          Your password has been reset. You can now log in with your new password.
-        </p>
-        <div className="text-center pt-4">
-          <Link to="/auth/login" className="text-sm text-accent hover:underline">
-            Go to login
-          </Link>
+      <ErrorBoundary>
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-center text-ink-primary">Password reset successful</h2>
+          <p className="text-center text-ink-secondary">
+            Your password has been reset. You can now log in with your new password.
+          </p>
+          <div className="text-center pt-4">
+            <Link to="/auth/login" className="text-sm text-accent hover:underline">
+              Go to login
+            </Link>
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <ErrorBoundary>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <h2 className="text-2xl font-bold text-center text-ink-primary mb-6">Reset your password</h2>
 
       {error && (
@@ -172,6 +180,7 @@ export default function ResetPasswordPage() {
           Back to login
         </Link>
       </div>
-    </form>
+      </form>
+    </ErrorBoundary>
   )
 }

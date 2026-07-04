@@ -1,0 +1,4 @@
+/**
+ * Storage Browser types
+ */
+export {};

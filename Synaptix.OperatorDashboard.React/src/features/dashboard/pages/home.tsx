@@ -4,6 +4,8 @@
 
 import { useMemo } from 'react'
 import { usePermission } from '@/hooks/use-permission'
+import ErrorBoundary from '@/components/shared/error-boundary'
+import { SkeletonGrid } from '@/components/shared/skeletons'
 import { ServiceCard } from '../components/service-card'
 import { SystemMetrics } from '../components/system-metrics'
 import { AlertsSection } from '../components/alerts-section'
@@ -27,18 +29,19 @@ export default function DashboardHomePage() {
   const isLoading = statsQuery.isLoading || historyQuery.isLoading
 
   return (
-    <div className="operator-container space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-ink-primary">Dashboard</h1>
-        <p className="mt-2 text-ink-secondary">System health and performance overview</p>
-      </div>
+    <ErrorBoundary>
+      <div className="operator-container space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-ink-primary">Dashboard</h1>
+          <p className="mt-2 text-ink-secondary">System health and performance overview</p>
+        </div>
 
-      {/* System Metrics */}
-      <div>
-        <h2 className="text-lg font-semibold text-ink-primary mb-4">System Metrics</h2>
-        <SystemMetrics metrics={stats?.metrics} isLoading={isLoading} />
-      </div>
+        {/* System Metrics */}
+        <div>
+          <h2 className="text-lg font-semibold text-ink-primary mb-4">System Metrics</h2>
+          <SystemMetrics metrics={stats?.metrics} isLoading={isLoading} />
+        </div>
 
       {/* Alerts */}
       {stats && (
@@ -57,11 +60,7 @@ export default function DashboardHomePage() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="operator-card h-48 bg-bg-secondary animate-pulse" />
-            ))}
-          </div>
+          <SkeletonGrid count={6} />
         ) : stats ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stats.services.map((service) => (
@@ -82,6 +81,7 @@ export default function DashboardHomePage() {
           <p className="mt-1">Total health checks: {stats.checksPerformed.toLocaleString()}</p>
         </div>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }

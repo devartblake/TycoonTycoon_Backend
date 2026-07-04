@@ -4,6 +4,9 @@
 
 import { useState } from 'react'
 import { usePermission } from '@/hooks/use-permission'
+import ErrorBoundary from '@/components/shared/error-boundary'
+import EmptyState from '@/components/shared/empty-state'
+import { SkeletonGrid } from '@/components/shared/skeletons'
 import { QuestionCard } from '../components/question-card'
 import { ReviewPanel } from '../components/review-panel'
 import { FilterBar } from '../components/filter-bar'
@@ -55,16 +58,19 @@ export default function QuestionsQueuePage() {
   }
 
   return (
-    <div className="operator-container space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-ink-primary">Questions Queue</h1>
-        <p className="mt-2 text-ink-secondary">Review and moderate game questions</p>
-      </div>
+    <ErrorBoundary>
+      <div className="operator-container space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-ink-primary">Questions Queue</h1>
+          <p className="mt-2 text-ink-secondary">Review and moderate game questions</p>
+        </div>
 
-      {/* Stats */}
-      {statsQuery.data && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Stats */}
+        {statsQuery.isLoading ? (
+          <SkeletonGrid count={4} />
+        ) : statsQuery.data ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="operator-card">
             <p className="text-xs text-ink-tertiary">Pending</p>
             <p className="text-2xl font-bold text-accent mt-1">
@@ -90,7 +96,7 @@ export default function QuestionsQueuePage() {
             </p>
           </div>
         </div>
-      )}
+        ) : null}
 
       {/* Success Message */}
       {successMessage && (
@@ -154,11 +160,13 @@ export default function QuestionsQueuePage() {
 
       {/* Empty State */}
       {!questionsQuery.isLoading && questions.length === 0 && (
-        <div className="text-center py-12 text-ink-secondary">
-          <p className="text-lg">✅ Queue is clear!</p>
-          <p className="text-sm mt-2">All {filters.status || 'matching'} questions have been reviewed.</p>
-        </div>
+        <EmptyState
+          title="Queue is clear"
+          description={`All ${filters.status || 'matching'} questions have been reviewed.`}
+          icon="✅"
+        />
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }

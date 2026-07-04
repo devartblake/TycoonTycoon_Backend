@@ -4,6 +4,9 @@
 
 import { useState } from 'react'
 import { usePermission } from '@/hooks/use-permission'
+import ErrorBoundary from '@/components/shared/error-boundary'
+import EmptyState from '@/components/shared/empty-state'
+import { SkeletonTable } from '@/components/shared/skeletons'
 import { PlayerSearch } from '../components/player-search'
 import { EconomySummary } from '../components/economy-summary'
 import { TransactionsTable } from '../components/transactions-table'
@@ -57,12 +60,13 @@ export default function PlayerEconomyPage() {
   const isLoading = economyQuery.isLoading || transactionsQuery.isLoading
 
   return (
-    <div className="operator-container space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-ink-primary">Player Economy</h1>
-        <p className="mt-2 text-ink-secondary">Manage player balance and view transaction history</p>
-      </div>
+    <ErrorBoundary>
+      <div className="operator-container space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-ink-primary">Player Economy</h1>
+          <p className="mt-2 text-ink-secondary">Manage player balance and view transaction history</p>
+        </div>
 
       {/* Success Message */}
       {successMessage && (
@@ -101,11 +105,21 @@ export default function PlayerEconomyPage() {
         <div className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold text-ink-primary mb-4">Transaction History</h2>
-            <TransactionsTable
-              transactions={transactions}
-              isLoading={transactionsQuery.isLoading}
-              onRefundClick={handleIssueRefund}
-            />
+            {transactionsQuery.isLoading ? (
+              <SkeletonTable rows={8} columns={5} />
+            ) : transactions.length > 0 ? (
+              <TransactionsTable
+                transactions={transactions}
+                isLoading={false}
+                onRefundClick={handleIssueRefund}
+              />
+            ) : (
+              <EmptyState
+                title="No transactions found"
+                description="This player has no transaction history yet"
+                icon="💰"
+              />
+            )}
           </div>
 
           {/* Pagination */}
@@ -147,10 +161,13 @@ export default function PlayerEconomyPage() {
 
       {/* Empty State */}
       {!selectedPlayerId && (
-        <div className="text-center py-12 text-ink-secondary">
-          <p>Select a player to view their economy information</p>
-        </div>
+        <EmptyState
+          title="No player selected"
+          description="Search and select a player to view their economy information"
+          icon="🔍"
+        />
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }

@@ -4,6 +4,7 @@
 
 import { useState } from 'react'
 import { usePermission } from '@/hooks/use-permission'
+import ErrorBoundary from '@/components/shared/error-boundary'
 import { TemplatesTab } from '../components/templates-tab'
 import { ChannelsTab } from '../components/channels-tab'
 import { ScheduleTab } from '../components/schedule-tab'
@@ -24,7 +25,8 @@ export default function NotificationsHub() {
   const [activeTab, setActiveTab] = useState<Tab>('templates')
 
   return (
-    <div className="operator-container space-y-6">
+    <ErrorBoundary>
+      <div className="operator-container space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-ink-primary">Notifications Hub</h1>
@@ -55,6 +57,7 @@ export default function NotificationsHub() {
         {activeTab === 'schedule' && <ScheduleTab />}
         {activeTab === 'dead-letter' && <DeadLetterTab />}
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }

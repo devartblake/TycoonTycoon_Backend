@@ -4,6 +4,9 @@
 
 import { useState } from 'react'
 import { usePermission } from '@/hooks/use-permission'
+import ErrorBoundary from '@/components/shared/error-boundary'
+import EmptyState from '@/components/shared/empty-state'
+import { SkeletonGrid, SkeletonTable } from '@/components/shared/skeletons'
 import { FilterBar } from '../components/filter-bar'
 import { EventsTable } from '../components/events-table'
 import { IPMap } from '../components/ip-map'
@@ -38,36 +41,39 @@ export default function SecurityAuditPage() {
   }
 
   return (
-    <div className="operator-container space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-ink-primary">Security Audit</h1>
-        <p className="mt-2 text-ink-secondary">Monitor administrative actions and access patterns</p>
-      </div>
-
-      {/* Stats */}
-      {statsQuery.data && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="operator-card">
-            <p className="text-xs text-ink-tertiary">Total Events</p>
-            <p className="text-2xl font-bold text-accent mt-1">{statsQuery.data.totalEvents.toLocaleString()}</p>
-          </div>
-          <div className="operator-card">
-            <p className="text-xs text-ink-tertiary">Success Rate</p>
-            <p className="text-2xl font-bold text-status-healthy mt-1">
-              {Math.round(statsQuery.data.successRate * 100)}%
-            </p>
-          </div>
-          <div className="operator-card">
-            <p className="text-xs text-ink-tertiary">Admin Accounts</p>
-            <p className="text-2xl font-bold text-accent mt-1">{statsQuery.data.uniqueAdmins}</p>
-          </div>
-          <div className="operator-card">
-            <p className="text-xs text-ink-tertiary">Unique IPs</p>
-            <p className="text-2xl font-bold text-accent mt-1">{statsQuery.data.uniqueIPs}</p>
-          </div>
+    <ErrorBoundary>
+      <div className="operator-container space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-ink-primary">Security Audit</h1>
+          <p className="mt-2 text-ink-secondary">Monitor administrative actions and access patterns</p>
         </div>
-      )}
+
+        {/* Stats */}
+        {statsQuery.isLoading ? (
+          <SkeletonGrid count={4} />
+        ) : statsQuery.data ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="operator-card">
+              <p className="text-xs text-ink-tertiary">Total Events</p>
+              <p className="text-2xl font-bold text-accent mt-1">{statsQuery.data.totalEvents.toLocaleString()}</p>
+            </div>
+            <div className="operator-card">
+              <p className="text-xs text-ink-tertiary">Success Rate</p>
+              <p className="text-2xl font-bold text-status-healthy mt-1">
+                {Math.round(statsQuery.data.successRate * 100)}%
+              </p>
+            </div>
+            <div className="operator-card">
+              <p className="text-xs text-ink-tertiary">Admin Accounts</p>
+              <p className="text-2xl font-bold text-accent mt-1">{statsQuery.data.uniqueAdmins}</p>
+            </div>
+            <div className="operator-card">
+              <p className="text-xs text-ink-tertiary">Unique IPs</p>
+              <p className="text-2xl font-bold text-accent mt-1">{statsQuery.data.uniqueIPs}</p>
+            </div>
+          </div>
+        ) : null}
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -94,11 +100,21 @@ export default function SecurityAuditPage() {
                 </p>
               )}
             </div>
-            <EventsTable
-              events={eventsQuery.data?.items || []}
-              isLoading={eventsQuery.isLoading}
-              onEventClick={handleEventClick}
-            />
+            {eventsQuery.isLoading ? (
+              <SkeletonTable rows={10} columns={4} />
+            ) : eventsQuery.data && eventsQuery.data.items.length > 0 ? (
+              <EventsTable
+                events={eventsQuery.data.items}
+                isLoading={false}
+                onEventClick={handleEventClick}
+              />
+            ) : (
+              <EmptyState
+                title="No audit events found"
+                description="Try adjusting your filters"
+                icon="📋"
+              />
+            )}
           </div>
 
           {/* Pagination */}
@@ -125,6 +141,7 @@ export default function SecurityAuditPage() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }

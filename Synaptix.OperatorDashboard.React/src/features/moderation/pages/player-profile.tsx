@@ -5,6 +5,8 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { usePermission } from '@/hooks/use-permission'
+import ErrorBoundary from '@/components/shared/error-boundary'
+import { SkeletonGrid } from '@/components/shared/skeletons'
 import { PlayerHeader } from '../components/player-header'
 import { ActionPanel } from '../components/action-panel'
 import { ActionHistory } from '../components/action-history'
@@ -76,62 +78,62 @@ export default function PlayerProfilePage() {
   const isMutating = banMutation.isPending || unbanMutation.isPending || suspendMutation.isPending || unsuspendMutation.isPending || warnMutation.isPending
 
   return (
-    <div className="operator-container space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="text-accent hover:underline text-sm mb-2"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl font-bold text-ink-primary">Player Moderation</h1>
+    <ErrorBoundary>
+      <div className="operator-container space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <button
+              onClick={() => navigate(-1)}
+              className="text-accent hover:underline text-sm mb-2"
+            >
+              ← Back
+            </button>
+            <h1 className="text-2xl font-bold text-ink-primary">Player Moderation</h1>
+          </div>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="p-4 bg-status-healthy/10 border border-status-healthy/20 rounded text-status-healthy text-sm">
+            ✓ {successMessage}
+          </div>
+        )}
+
+        {/* Player Header */}
+        {isLoading ? (
+          <SkeletonGrid count={3} />
+        ) : moderation ? (
+          <PlayerHeader profile={moderation.profile} isLoading={false} />
+        ) : null}
+
+        {/* Main Content Grid */}
+        {moderation ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left: Action Panel */}
+            <div>
+              <ActionPanel
+                profile={moderation.profile}
+                onBan={handleBan}
+                onUnban={handleUnban}
+                onSuspend={handleSuspend}
+                onUnsuspend={handleUnsuspend}
+                onWarn={handleWarn}
+                isLoading={isMutating}
+              />
+            </div>
+
+            {/* Right: History and Activity */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Moderation History */}
+              <ActionHistory actions={moderation.actions} isLoading={isLoading} />
+
+              {/* Activity Timeline */}
+              <ActivityTimeline activities={moderation.activity} isLoading={isLoading} />
+            </div>
+          </div>
+        ) : null}
       </div>
-
-      {/* Success Message */}
-      {successMessage && (
-        <div className="p-4 bg-status-healthy/10 border border-status-healthy/20 rounded text-status-healthy text-sm">
-          ✓ {successMessage}
-        </div>
-      )}
-
-      {/* Player Header */}
-      {moderation && (
-        <PlayerHeader profile={moderation.profile} isLoading={isLoading} />
-      )}
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Action Panel */}
-        <div>
-          {moderation && (
-            <ActionPanel
-              profile={moderation.profile}
-              onBan={handleBan}
-              onUnban={handleUnban}
-              onSuspend={handleSuspend}
-              onUnsuspend={handleUnsuspend}
-              onWarn={handleWarn}
-              isLoading={isMutating}
-            />
-          )}
-        </div>
-
-        {/* Right: History and Activity */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Moderation History */}
-          {moderation && (
-            <ActionHistory actions={moderation.actions} isLoading={isLoading} />
-          )}
-
-          {/* Activity Timeline */}
-          {moderation && (
-            <ActivityTimeline activities={moderation.activity} isLoading={isLoading} />
-          )}
-        </div>
-      </div>
-    </div>
+    </ErrorBoundary>
   )
 }

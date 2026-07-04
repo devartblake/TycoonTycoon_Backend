@@ -4,6 +4,9 @@
 
 import { useState } from 'react'
 import { usePermission } from '@/hooks/use-permission'
+import ErrorBoundary from '@/components/shared/error-boundary'
+import EmptyState from '@/components/shared/empty-state'
+import { SkeletonTable } from '@/components/shared/skeletons'
 import { FilterBar } from '../components/filter-bar'
 import { SavedViewsDropdown } from '../components/saved-views-dropdown'
 import { UsersTable } from '../components/users-table'
@@ -22,33 +25,45 @@ export default function UsersList() {
   }
 
   return (
-    <div className="operator-container space-y-6 pb-24">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-ink-primary">Users Triage</h1>
-        <p className="mt-2 text-ink-secondary">Investigate, filter, and manage player accounts</p>
-      </div>
-
-      {/* Saved views + filter controls */}
-      <div className="flex items-center gap-4">
-        <SavedViewsDropdown currentFilters={filters} onLoadView={handleLoadView} />
-      </div>
-
-      {/* Filter bar */}
-      <FilterBar filters={filters} onFiltersChange={applyFilters} onClearFilters={clearFilters} />
-
-      {/* Error state */}
-      {isError && (
-        <div className="p-4 bg-status-offline/10 border border-status-offline/20 rounded text-status-offline text-sm">
-          Failed to load users. Please try again.
+    <ErrorBoundary>
+      <div className="operator-container space-y-6 pb-24">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-ink-primary">Users Triage</h1>
+          <p className="mt-2 text-ink-secondary">Investigate, filter, and manage player accounts</p>
         </div>
-      )}
 
-      {/* Users table */}
-      <UsersTable users={users} isLoading={isLoading} onSelectionChange={setSelectedIds} />
+        {/* Saved views + filter controls */}
+        <div className="flex items-center gap-4">
+          <SavedViewsDropdown currentFilters={filters} onLoadView={handleLoadView} />
+        </div>
 
-      {/* Bulk actions bar */}
-      <BulkActionsBar selectedIds={selectedIds} onActionComplete={() => setSelectedIds([])} />
-    </div>
+        {/* Filter bar */}
+        <FilterBar filters={filters} onFiltersChange={applyFilters} onClearFilters={clearFilters} />
+
+        {/* Error state */}
+        {isError && (
+          <div className="p-4 bg-status-offline/10 border border-status-offline/20 rounded text-status-offline text-sm">
+            Failed to load users. Please try again.
+          </div>
+        )}
+
+        {/* Users table */}
+        {isLoading ? (
+          <SkeletonTable rows={10} columns={5} />
+        ) : users.length > 0 ? (
+          <UsersTable users={users} isLoading={isLoading} onSelectionChange={setSelectedIds} />
+        ) : (
+          <EmptyState
+            title="No users found"
+            description="Try adjusting your filters to find users"
+            icon="👥"
+          />
+        )}
+
+        {/* Bulk actions bar */}
+        <BulkActionsBar selectedIds={selectedIds} onActionComplete={() => setSelectedIds([])} />
+      </div>
+    </ErrorBoundary>
   )
 }

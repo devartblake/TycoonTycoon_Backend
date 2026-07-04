@@ -15,7 +15,7 @@
     "resolveJsonModule": true,
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
