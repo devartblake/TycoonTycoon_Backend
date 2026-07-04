@@ -17,6 +17,27 @@ http:
       service: backend-api
       tls: {}
 
+    prometheus:
+      rule: "Host(`monitoring.synaptixplay.com`) && PathPrefix(`/prometheus`)"
+      entryPoints: [websecure]
+      service: prometheus
+      middlewares: [prometheus-strip, auth-basic]
+      tls: {}
+
+    grafana:
+      rule: "Host(`monitoring.synaptixplay.com`) && PathPrefix(`/grafana`)"
+      entryPoints: [websecure]
+      service: grafana
+      middlewares: [grafana-strip, auth-basic]
+      tls: {}
+
+    alertmanager:
+      rule: "Host(`monitoring.synaptixplay.com`) && PathPrefix(`/alertmanager`)"
+      entryPoints: [websecure]
+      service: alertmanager
+      middlewares: [alertmanager-strip, auth-basic]
+      tls: {}
+
     operator-dashboard:
       rule: "Host(`admin.synaptixplay.com`)"
       entryPoints: [websecure]
@@ -29,11 +50,47 @@ http:
       service: flutter-web
       tls: {}
 
+  middlewares:
+    prometheus-strip:
+      stripPrefix:
+        prefixes:
+          - /prometheus
+
+    grafana-strip:
+      stripPrefix:
+        prefixes:
+          - /grafana
+
+    alertmanager-strip:
+      stripPrefix:
+        prefixes:
+          - /alertmanager
+
+    auth-basic:
+      basicAuth:
+        users:
+          - "admin:$2y$05$zWwWWWWWWWWWWWWWWWWW.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
   services:
     backend-api:
       loadBalancer:
         servers:
           - url: "http://backend-api:5000"
+
+    prometheus:
+      loadBalancer:
+        servers:
+          - url: "http://prometheus:9090"
+
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:3000"
+
+    alertmanager:
+      loadBalancer:
+        servers:
+          - url: "http://alertmanager:9093"
 
     operator-dashboard:
       loadBalancer:

@@ -10,17 +10,69 @@ http:
       priority: 10
       service: backend-api
 
+    prometheus:
+      rule: "PathPrefix(`/prometheus`)"
+      entryPoints: [web]
+      priority: 9
+      service: prometheus
+      middlewares: [prometheus-strip]
+
+    grafana:
+      rule: "PathPrefix(`/grafana`)"
+      entryPoints: [web]
+      priority: 9
+      service: grafana
+      middlewares: [grafana-strip]
+
+    alertmanager:
+      rule: "PathPrefix(`/alertmanager`)"
+      entryPoints: [web]
+      priority: 9
+      service: alertmanager
+      middlewares: [alertmanager-strip]
+
     operator-dashboard:
       rule: "PathPrefix(`/`)"
       entryPoints: [web]
       priority: 1
       service: operator-dashboard
 
+  middlewares:
+    prometheus-strip:
+      stripPrefix:
+        prefixes:
+          - /prometheus
+
+    grafana-strip:
+      stripPrefix:
+        prefixes:
+          - /grafana
+
+    alertmanager-strip:
+      stripPrefix:
+        prefixes:
+          - /alertmanager
+
   services:
     backend-api:
       loadBalancer:
         servers:
           - url: "http://backend-api:5000"
+
+    prometheus:
+      loadBalancer:
+        servers:
+          - url: "http://prometheus:9090"
+
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:3000"
+
+    alertmanager:
+      loadBalancer:
+        servers:
+          - url: "http://alertmanager:9093"
 
     operator-dashboard:
       loadBalancer:
