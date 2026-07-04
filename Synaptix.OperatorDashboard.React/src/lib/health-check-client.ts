@@ -18,7 +18,7 @@ export interface SystemMetrics {
   uptime: number
   errorRate: number
   responseTime: number
-  avgResponseTime?: number // alias for responseTime
+  avgResponseTime: number
   isHealthy: boolean
 }
 
