@@ -184,7 +184,7 @@ foreach ($file in $monitoringFiles) {
 # PART 4: PROMETHEUS & GRAFANA FILES
 # ============================================================================
 
-Write-TestHeader "PART 4: Prometheus & Grafana Configuration Files"
+Write-TestHeader "PART 4: Prometheus and Grafana Configuration Files"
 
 $configFiles = @(
     "docker\monitoring\prometheus\rules\alert-rules.yml",
@@ -197,15 +197,19 @@ foreach ($file in $configFiles) {
         Write-TestPass "Found: $file"
         # Validate JSON if applicable
         if ($file -match "\.json$") {
+            $isValidJson = $false
             try {
                 $content = Get-Content $file -Raw
                 $json = $content | ConvertFrom-Json -ErrorAction Stop
-                Write-TestInfo "  ✓ Valid JSON structure"
-            } catch {
-                Write-TestWarn "  ⚠ Invalid JSON: $_"
+                $isValidJson = $true
+                Write-TestInfo "  Valid JSON structure"
+            }
+            catch {
+                Write-TestWarn "  Invalid JSON: $_"
             }
         }
-    } else {
+    }
+    else {
         Write-TestFail "Missing: $file"
     }
 }
@@ -253,8 +257,9 @@ $docFiles = @(
 foreach ($file in $docFiles) {
     if (Test-Path $file) {
         $lineCount = @(Get-Content $file).Count
-        Write-TestPass "Found: $file ($lineCount lines)"
-    } else {
+        Write-TestPass "Found: $file - $lineCount lines"
+    }
+    else {
         Write-TestFail "Missing: $file"
     }
 }
@@ -375,8 +380,10 @@ Write-Host "Passed: $testsPassed" -ForegroundColor $Green
 Write-Host "Failed: $testsFailed" -ForegroundColor $Red
 
 if ($testsFailed -eq 0) {
-    Write-Host "`n✅ All tests passed! Monitoring integration is complete." -ForegroundColor $Green
-    Write-Host "`nNext steps:" -ForegroundColor $Cyan
+    Write-Host ""
+    Write-Host "All tests passed! Monitoring integration is complete." -ForegroundColor $Green
+    Write-Host ""
+    Write-Host "Next steps:" -ForegroundColor $Cyan
     Write-Host "  1. Build and run the backend: dotnet run"
     Write-Host "  2. Optionally start monitoring stack: docker compose --profile dev up"
     Write-Host "  3. Access monitoring endpoints:"
@@ -384,7 +391,9 @@ if ($testsFailed -eq 0) {
     Write-Host "     - Error summary: curl http://localhost:5000/monitoring/errors/summary"
     Write-Host "  4. Check Grafana dashboards at http://localhost:3000"
     exit 0
-} else {
-    Write-Host "`n❌ Some tests failed. Please review the errors above." -ForegroundColor $Red
+}
+else {
+    Write-Host ""
+    Write-Host "Some tests failed. Please review the errors above." -ForegroundColor $Red
     exit 1
 }

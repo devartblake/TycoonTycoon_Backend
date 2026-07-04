@@ -143,8 +143,8 @@ internal class EndpointErrorMetrics
 {
     private readonly struct RequestEntry
     {
-        public DateTime Timestamp { get; set; }
-        public bool IsError { get; set; }
+        public DateTime Timestamp { get; init; }
+        public bool IsError { get; init; }
     }
 
     private readonly List<RequestEntry> _requests = new();
@@ -162,7 +162,8 @@ internal class EndpointErrorMetrics
 
     public void CleanOldEntries()
     {
-        var cutoffTime = DateTime.UtcNow.AddSeconds(-WindowSizeSeconds);
+        const int windowSizeSeconds = 60;
+        var cutoffTime = DateTime.UtcNow.AddSeconds(-windowSizeSeconds);
         _requests.RemoveAll(r => r.Timestamp < cutoffTime);
     }
 
