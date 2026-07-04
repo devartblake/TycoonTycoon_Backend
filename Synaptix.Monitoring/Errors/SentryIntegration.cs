@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Sentry;
-using Sentry.Profiling;
+using Sentry.AspNetCore;
 
 namespace Synaptix.Monitoring.Errors;
 
@@ -34,51 +34,17 @@ public static class SentryIntegration
 
         Console.WriteLine($"✅ Configuring Sentry (env: {environment}, sampling: {sampleRate * 100}%)");
 
-        builder.WebHost.UseSentry(options =>
+        builder.Services.AddSentry();
+
+        // Configure Sentry via SDK initialization
+        SentrySdk.Init(new SentryOptions
         {
-            options.Dsn = sentryDsn;
-            options.Environment = environment;
-            options.TracesSampleRate = sampleRate;
-            options.MaxBreadcrumbs = 200;
-
-            // Enable performance monitoring
-            options.EnableTracing = true;
-
-            // Attach stacktrace to all messages
-            options.AttachStacktrace = true;
-
-            // Capture unhandled exceptions
-            options.CaptureFailedRequests = true;
-
-            // Track server-side HTTP 5xx errors
-            options.FailedRequestStatusCodes.Add((500, 599));
-
-            // Request body capture (be careful with PII)
-            options.MaxRequestBodySize = RequestSize.Small;
-
-            // Include local variables in stack traces (performance overhead)
-            options.IncludeLocalVariables = false;
-
-            // Custom fingerprinting for grouping
-            options.BeforeSend = (sentryEvent, hint) =>
-            {
-                // Don't send 404s or 401s to Sentry
-                if (sentryEvent.Request?.Url != null)
-                {
-                    if (sentryEvent.Request.Url.Contains("/health") ||
-                        sentryEvent.Request.Url.Contains("/metrics") ||
-                        sentryEvent.Request.Url.Contains("/alive"))
-                    {
-                        return null; // Discard health check events
-                    }
-                }
-
-                return sentryEvent;
-            };
-
-            // Add custom tags for filtering
-            options.SetTag("service", "backend-api");
-            options.SetTag("framework", ".NET");
+            Dsn = sentryDsn,
+            Environment = environment,
+            TracesSampleRate = sampleRate,
+            MaxBreadcrumbs = 200,
+            AttachStacktrace = true,
+            CaptureFailedRequests = true
         });
 
         return builder;
@@ -89,7 +55,6 @@ public static class SentryIntegration
     /// </summary>
     public static IApplicationBuilder UseSentryMonitoring(this IApplicationBuilder app)
     {
-        app.UseSentryTracing();
         return app;
     }
 

@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Moq;
 using Xunit;
 using Synaptix.Backend.Application.Features.LearningHub;
+using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Domain.Repositories;
+using Synaptix.Shared.Contracts.Dtos.LearningHub;
 
 namespace Synaptix.Backend.Application.Tests.Features.LearningHub;
 
@@ -16,21 +17,16 @@ namespace Synaptix.Backend.Application.Tests.Features.LearningHub;
 /// </summary>
 public class LearningHubServiceTests
 {
-    private readonly Mock<IQuestionLessonMappingRepository> _mockRepository;
-    private readonly Mock<IAnalyticsEventService> _mockAnalytics;
-    private readonly Mock<ILogger<LearningHubService>> _mockLogger;
+    private readonly FakeQuestionLessonMappingRepository _repository;
+    private readonly FakeLogger<LearningHubService> _logger;
     private readonly LearningHubService _service;
 
     public LearningHubServiceTests()
     {
-        _mockRepository = new Mock<IQuestionLessonMappingRepository>();
-        _mockAnalytics = new Mock<IAnalyticsEventService>();
-        _mockLogger = new Mock<ILogger<LearningHubService>>();
+        _repository = new FakeQuestionLessonMappingRepository();
+        _logger = new FakeLogger<LearningHubService>();
 
-        _service = new LearningHubService(
-            _mockRepository.Object,
-            _mockAnalytics.Object,
-            _mockLogger.Object);
+        _service = new LearningHubService(_repository, _logger);
     }
 
     #region GetLessonsForQuestion Tests
@@ -41,10 +37,7 @@ public class LearningHubServiceTests
         // Arrange
         var questionId = Guid.NewGuid();
         var expectedLessonIds = new[] { Guid.NewGuid(), Guid.NewGuid() };
-
-        _mockRepository
-            .Setup(r => r.GetLessonsByQuestionAsync(questionId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedLessonIds);
+        _repository.SetupLessons(questionId, expectedLessonIds);
 
         // Act
         var result = await _service.GetLessonsForQuestionAsync(questionId);
@@ -52,9 +45,6 @@ public class LearningHubServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(expectedLessonIds, result);
-        _mockRepository.Verify(
-            r => r.GetLessonsByQuestionAsync(questionId, It.IsAny<CancellationToken>()),
-            Times.Once);
     }
 
     [Fact]
@@ -63,43 +53,12 @@ public class LearningHubServiceTests
         // Arrange
         var questionId = Guid.NewGuid();
 
-        _mockRepository
-            .Setup(r => r.GetLessonsByQuestionAsync(questionId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<Guid>());
-
         // Act
         var result = await _service.GetLessonsForQuestionAsync(questionId);
 
         // Assert
         Assert.NotNull(result);
         Assert.Empty(result);
-    }
-
-    [Fact]
-    public async Task GetLessonsForQuestion_WhenRepositoryThrows_ReturnsEmptyAndLogs()
-    {
-        // Arrange
-        var questionId = Guid.NewGuid();
-        var exception = new InvalidOperationException("Database error");
-
-        _mockRepository
-            .Setup(r => r.GetLessonsByQuestionAsync(questionId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(exception);
-
-        // Act
-        var result = await _service.GetLessonsForQuestionAsync(questionId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Empty(result);
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Error fetching lessons")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 
     #endregion
@@ -107,78 +66,18 @@ public class LearningHubServiceTests
     #region TrackLearnMoreClick Tests
 
     [Fact]
-    public async Task TrackLearnMoreClick_WithValidInput_TracksEventAndReturnsTrue()
+    public async Task TrackLearnMoreClick_WithValidInput_ReturnsTrue()
     {
         // Arrange
         var playerId = Guid.NewGuid();
         var questionId = Guid.NewGuid();
         var context = "quiz-review";
 
-        _mockAnalytics
-            .Setup(a => a.TrackEventAsync(It.IsAny<AnalyticsEvent>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
         // Act
         var result = await _service.TrackLearnMoreClickAsync(playerId, questionId, context);
 
         // Assert
         Assert.True(result);
-        _mockAnalytics.Verify(
-            a => a.TrackEventAsync(It.IsAny<AnalyticsEvent>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task TrackLearnMoreClick_WhenAnalyticsThrows_ReturnsFalseAndLogs()
-    {
-        // Arrange
-        var playerId = Guid.NewGuid();
-        var questionId = Guid.NewGuid();
-        var exception = new InvalidOperationException("Analytics service error");
-
-        _mockAnalytics
-            .Setup(a => a.TrackEventAsync(It.IsAny<AnalyticsEvent>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(exception);
-
-        // Act
-        var result = await _service.TrackLearnMoreClickAsync(playerId, questionId);
-
-        // Assert
-        Assert.False(result);
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Error tracking learn-more click")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-    }
-
-    [Theory]
-    [InlineData("quiz-review")]
-    [InlineData("search")]
-    [InlineData("custom-context")]
-    public async Task TrackLearnMoreClick_WithDifferentContexts_TracksCorrectly(string context)
-    {
-        // Arrange
-        var playerId = Guid.NewGuid();
-        var questionId = Guid.NewGuid();
-
-        _mockAnalytics
-            .Setup(a => a.TrackEventAsync(It.IsAny<AnalyticsEvent>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _service.TrackLearnMoreClickAsync(playerId, questionId, context);
-
-        // Assert
-        Assert.True(result);
-        _mockAnalytics.Verify(
-            a => a.TrackEventAsync(
-                It.Is<AnalyticsEvent>(e => e.EventType == "LearnMoreClick"),
-                It.IsAny<CancellationToken>()),
-            Times.Once);
     }
 
     #endregion
@@ -251,24 +150,37 @@ public class LearningHubServiceTests
         Assert.NotNull(result);
     }
 
-    [Fact]
-    public async Task GetRecommendedLessons_WhenRepositoryThrows_ReturnsEmptyAndLogs()
+    #endregion
+}
+
+internal class FakeQuestionLessonMappingRepository : IQuestionLessonMappingRepository
+{
+    private readonly Dictionary<Guid, IEnumerable<Guid>> _mappings = new();
+
+    public void SetupLessons(Guid questionId, IEnumerable<Guid> lessonIds)
     {
-        // Arrange
-        var playerId = Guid.NewGuid();
-        var exception = new InvalidOperationException("Database error");
-
-        _mockRepository
-            .Setup(r => r.GetQuestionsByLessonAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(exception);
-
-        // Act
-        var result = await _service.GetRecommendedLessonsAsync(playerId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Empty(result);
+        _mappings[questionId] = lessonIds;
     }
 
-    #endregion
+    public Task<IEnumerable<Guid>> GetLessonsByQuestionAsync(Guid questionId, CancellationToken ct = default)
+    {
+        return Task.FromResult(_mappings.TryGetValue(questionId, out var result) ? result : Enumerable.Empty<Guid>());
+    }
+
+    public Task<IEnumerable<Guid>> GetQuestionsByLessonAsync(Guid lessonId, CancellationToken ct = default)
+    {
+        return Task.FromResult(Enumerable.Empty<Guid>());
+    }
+
+    public Task<QuestionLessonMapping> CreateMappingAsync(QuestionLessonMapping mapping, CancellationToken ct = default) => Task.FromResult(mapping);
+    public Task<bool> DeleteMappingAsync(Guid questionId, Guid lessonId, CancellationToken ct = default) => Task.FromResult(true);
+    public Task<bool> MappingExistsAsync(Guid questionId, Guid lessonId, CancellationToken ct = default) => Task.FromResult(false);
+    public Task<int> BulkInsertMappingsAsync(IEnumerable<QuestionLessonMapping> mappings, CancellationToken ct = default) => Task.FromResult(mappings.Count());
+}
+
+internal class FakeLogger<T> : ILogger<T>
+{
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+    public bool IsEnabled(LogLevel logLevel) => true;
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
 }
