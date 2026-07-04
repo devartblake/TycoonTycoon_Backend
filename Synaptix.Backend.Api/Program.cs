@@ -134,6 +134,7 @@ using Synaptix.Backend.Infrastructure.Persistence.Startup;
 using Synaptix.Shared.Contracts.Dtos;
 using Synaptix.Shared.Observability;
 using Synaptix.Monitoring;
+using Synaptix.Monitoring.Errors;
 using Synaptix.Backend.Api.Grpc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Hosting;
@@ -725,6 +726,11 @@ builder.Services.AddSingleton<IStripePaymentGateway, StripePaymentGateway>();
 
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 
+// ================================
+// Sentry Error Tracking (Phase 3)
+// ================================
+builder.AddSentryMonitoring();
+
 var app = builder.Build();
 
 // Re-read after Build() so that test-host overrides (e.g. WebApplicationFactory
@@ -735,6 +741,9 @@ hangfireEnabled = app.Configuration.GetValue("Hangfire:Enabled", true)
 app.UseForwardedHeaders();
 // ✅ CORRECT MIDDLEWARE ORDER
 app.UseRouting();
+
+// ✅ Sentry Error Tracking (Phase 3)
+app.UseSentryMonitoring();
 
 // ✅ Error Rate Tracking Middleware (must be early in pipeline)
 app.UseErrorTracking();

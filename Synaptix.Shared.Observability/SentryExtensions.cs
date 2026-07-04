@@ -1,3 +1,6 @@
+// NOTE: Sentry integration has been moved to Synaptix.Monitoring.SentryIntegration
+// This file is kept for reference but is not actively used
+#if FALSE
 using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -5,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Sentry;
 using Sentry.AspNetCore;
 using Sentry.Extensibility;
+#endif
 
 namespace Synaptix.Shared.Observability
 {
@@ -106,3 +110,4 @@ namespace Synaptix.Shared.Observability
         }
     }
 }
+#endif

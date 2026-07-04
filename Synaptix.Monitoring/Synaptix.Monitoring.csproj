@@ -9,6 +9,7 @@
   <ItemGroup Label="Monitoring">
     <PackageReference Include="Hangfire.Core" />
     <PackageReference Include="OpenTelemetry.Api" />
+    <PackageReference Include="Sentry.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>
