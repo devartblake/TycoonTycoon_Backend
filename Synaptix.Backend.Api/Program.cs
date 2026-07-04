@@ -98,6 +98,7 @@ using Synaptix.Backend.Api.Features.Assets;
 using Synaptix.Backend.Api.Features.Users;
 using Synaptix.Backend.Api.Features.ParentalConsent;
 using Synaptix.Backend.Api.Features.AdminPrivacy;
+using Synaptix.Backend.Api.Features.Monitoring;
 using Synaptix.Backend.Api.Middleware;
 using Synaptix.Backend.Api.Observability;
 using Synaptix.Backend.Api.Payments.PayPal;
@@ -132,6 +133,7 @@ using Synaptix.Backend.Infrastructure.Persistence.HealthChecks;
 using Synaptix.Backend.Infrastructure.Persistence.Startup;
 using Synaptix.Shared.Contracts.Dtos;
 using Synaptix.Shared.Observability;
+using Synaptix.Monitoring;
 using Synaptix.Backend.Api.Grpc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Hosting;
@@ -452,6 +454,12 @@ if (hangfireEnabled)
     }
 }
 
+// ================================
+// Monitoring Services
+// ================================
+Console.WriteLine("✅ Configuring monitoring services (Hangfire metrics, error tracking)");
+builder.Services.AddMonitoring();
+
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
 if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
@@ -727,6 +735,9 @@ hangfireEnabled = app.Configuration.GetValue("Hangfire:Enabled", true)
 app.UseForwardedHeaders();
 // ✅ CORRECT MIDDLEWARE ORDER
 app.UseRouting();
+
+// ✅ Error Rate Tracking Middleware (must be early in pipeline)
+app.UseErrorTracking();
 
 // ✅ Show detailed errors in development
 if (app.Environment.IsDevelopment())
@@ -1027,6 +1038,12 @@ app.MapGrpcService<MobileMatchGrpcService>();
 // source of truth for the mobile contract). Infra surfaces (/health, /healthz,
 // /ws, /swagger, gRPC, /hangfire, /metrics) and the operator /admin surface
 // stay un-prefixed by design.
+
+// ================================
+// Monitoring Endpoints (Infra Surface)
+// ================================
+app.MapMonitoringEndpoints();
+
 var v1 = app.MapGroup("/api/v1");
 
 AppConfigEndpoints.Map(v1);
