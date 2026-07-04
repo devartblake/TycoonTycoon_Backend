@@ -26,6 +26,7 @@ COPY ["Synaptix.Entitlements/Synaptix.Entitlements.csproj", "Synaptix.Entitlemen
 COPY ["Synaptix.Commerce/Synaptix.Commerce.csproj", "Synaptix.Commerce/"]
 COPY ["Synaptix.Audit/Synaptix.Audit.csproj", "Synaptix.Audit/"]
 COPY ["Synaptix.Wallet/Synaptix.Wallet.csproj", "Synaptix.Wallet/"]
+COPY ["Synaptix.Monitoring/Synaptix.Monitoring.csproj", "Synaptix.Monitoring/"]
 
 # Restore packages - This layer is cached unless .csproj or Directory.Packages.props changes
 RUN dotnet restore "Synaptix.Backend.Api/Synaptix.Backend.Api.csproj"
