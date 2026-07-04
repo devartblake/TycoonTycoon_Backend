@@ -18,6 +18,7 @@ export interface SystemMetrics {
   uptime: number
   errorRate: number
   responseTime: number
+  avgResponseTime?: number // alias for responseTime
   isHealthy: boolean
 }
 
@@ -116,16 +117,18 @@ class HealthCheckClient {
 
       const isHealthy = healthStatus?.status === 'Healthy' && liveness && readiness
 
+      const responseTime = prometheusMetrics?.responseTime || 0
       const metrics: SystemMetrics = {
         // Real metrics from Prometheus (if available)
-        apiGatewayRequests: prometheusMetrics?.requestsPerHour || 0,
+        apiGatewayRequests: prometheusMetrics?.apiGatewayRequests || 0,
         activeConnections: prometheusMetrics?.activeConnections || 0,
         cpuUsage: prometheusMetrics?.cpuUsage || 0,
         memoryUsage: prometheusMetrics?.memoryUsage || 0,
         diskUsage: prometheusMetrics?.diskUsage || 0,
         uptime: prometheusMetrics?.uptime || 0,
         errorRate: prometheusMetrics?.errorRate || 0,
-        responseTime: prometheusMetrics?.responseTimeMs || 0,
+        responseTime,
+        avgResponseTime: responseTime,
         isHealthy,
       }
 
@@ -174,7 +177,7 @@ class HealthCheckClient {
   /**
    * Extract metric value from Prometheus response
    */
-  private extractMetric(data: any, metricName: string, fallback: number): number {
+  private extractMetric(_data: any, _metricName: string, fallback: number): number {
     try {
       // Implementation depends on Prometheus API format
       return fallback
@@ -196,6 +199,7 @@ class HealthCheckClient {
       uptime: 0,
       errorRate: 0,
       responseTime: 0,
+      avgResponseTime: 0,
       isHealthy: false,
     }
   }
@@ -240,8 +244,8 @@ class HealthCheckClient {
 
 // Export singleton instance
 export const healthCheckClient = new HealthCheckClient(
-  process.env.REACT_APP_HEALTH_CHECK_BASE_URL ||
-    process.env.REACT_APP_API_BASE_URL ||
+  import.meta.env.VITE_HEALTH_CHECK_BASE_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
     'http://localhost:5000'
 )
 
