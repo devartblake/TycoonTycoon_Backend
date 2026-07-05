@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import React from 'react';
-import { Sentry } from '@/lib/sentry-mock';
+import { captureException } from '@/lib/sentry';
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
@@ -18,7 +18,7 @@ class ErrorBoundary extends React.Component {
         return { hasError: true, error };
     }
     componentDidCatch(error, errorInfo) {
-        Sentry.captureException(error, { contexts: { react: errorInfo } });
+        captureException(error, { react: errorInfo });
         this.props.onError?.(error, errorInfo);
     }
     render() {

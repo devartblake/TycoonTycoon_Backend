@@ -9,11 +9,6 @@ interface SentryEvent {
   extra?: Record<string, any>
 }
 
-interface SentryPerformance {
-  startSpan: (name: string) => { end: () => void }
-  capturePageLoad: () => void
-}
-
 class SentryClient {
   private isProduction = import.meta.env.PROD
   private dsn = import.meta.env.VITE_SENTRY_DSN || ''
