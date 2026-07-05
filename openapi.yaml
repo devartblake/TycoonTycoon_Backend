@@ -1,0 +1,1727 @@
+openapi: 3.0.0
+info:
+  title: TycoonTycoon Backend API
+  description: |
+    Comprehensive REST API for TycoonTycoon game backend.
+
+    **Transport Layers:**
+    - REST/HTTP: Standard synchronous operations (auth, store, leaderboards, etc.)
+    - WebSocket: Real-time multiplayer gameplay (via MultiplayerService)
+    - gRPC: Internal service communication
+
+    **Authentication:**
+    All endpoints require Bearer token in Authorization header (except public auth endpoints):
+    ```
+    Authorization: Bearer {access_token}
+    ```
+
+    **Error Response Format (STANDARDIZED):**
+    ```json
+    {
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Human-readable error message",
+        "details": {
+          "field": "Additional context"
+        }
+      }
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api-support@tycoon-tycoon.dev
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.tycoonplay.com/api/v1
+    description: Production environment
+  - url: https://api-staging.tycoonplay.com/api/v1
+    description: Staging environment
+  - url: http://localhost:5000/api/v1
+    description: Local development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: "INVALID_REQUEST"
+            message:
+              type: string
+              example: "Required field 'handle' is missing"
+            details:
+              type: object
+              additionalProperties: true
+              example:
+                field: "handle"
+                reason: "Field is required"
+
+    CurrentUserProfile:
+      type: object
+      required:
+        - userId
+        - handle
+        - email
+        - tierRank
+      properties:
+        userId:
+          type: string
+          format: uuid
+        handle:
+          type: string
+          example: "tycoon_master"
+        email:
+          type: string
+          format: email
+        tierRank:
+          type: string
+          enum: [bronze, silver, gold, platinum, diamond]
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["users:read", "store:read", "store:write"]
+        avatarUrl:
+          type: string
+          nullable: true
+        createdAtUtc:
+          type: string
+          format: date-time
+
+    QuizQuestion:
+      type: object
+      required:
+        - questionId
+        - question
+        - options
+        - difficulty
+        - category
+      properties:
+        questionId:
+          type: string
+          format: uuid
+        question:
+          type: string
+        options:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items:
+            type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, expert]
+        category:
+          type: string
+          example: "Science"
+        imageUrl:
+          type: string
+          nullable: true
+        timeLimit:
+          type: integer
+          description: "Time limit in seconds"
+          example: 30
+
+    QuizCheckRequest:
+      type: object
+      required:
+        - questionId
+        - selectedOptionIndex
+      properties:
+        questionId:
+          type: string
+          format: uuid
+        selectedOptionIndex:
+          type: integer
+          minimum: 0
+
+    QuizCheckResponse:
+      type: object
+      required:
+        - questionId
+        - isCorrect
+        - pointsAwarded
+      properties:
+        questionId:
+          type: string
+          format: uuid
+        isCorrect:
+          type: boolean
+        pointsAwarded:
+          type: integer
+          example: 100
+        explanation:
+          type: string
+          nullable: true
+
+    StoreItem:
+      type: object
+      required:
+        - sku
+        - name
+        - price
+        - currency
+      properties:
+        sku:
+          type: string
+          example: "COIN_PACK_500"
+        name:
+          type: string
+          example: "500 Gold Coins"
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: decimal
+          example: 4.99
+        currency:
+          type: string
+          enum: [USD, EUR, GBP, JPY]
+          example: "USD"
+        imageUrl:
+          type: string
+          nullable: true
+        category:
+          type: string
+          example: "currency"
+        itemType:
+          type: string
+          example: "coin_pack"
+        legal_disclosure:
+          type: string
+          nullable: true
+          description: "Mandatory legal/compliance disclosure text"
+
+    WheelSegment:
+      type: object
+      required:
+        - id
+        - label
+        - rewardType
+        - rewardAmount
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+          example: "100 Coins"
+        rewardType:
+          type: string
+          enum: [coins, premium_currency, item, boost]
+        rewardAmount:
+          type: integer
+          example: 100
+        rarity:
+          type: string
+          enum: [common, uncommon, rare, epic, legendary]
+        imageUrl:
+          type: string
+          nullable: true
+
+    Match:
+      type: object
+      required:
+        - matchId
+        - playerId
+        - gameMode
+        - status
+      properties:
+        matchId:
+          type: string
+          format: uuid
+        playerId:
+          type: string
+          format: uuid
+        opponentId:
+          type: string
+          format: uuid
+          nullable: true
+        opponentName:
+          type: string
+          nullable: true
+        gameMode:
+          type: string
+          example: "quiz"
+        status:
+          type: string
+          enum: [started, ongoing, completed, abandoned, waiting_opponent]
+        result:
+          type: string
+          enum: [won, lost, tied, ongoing]
+        playerScore:
+          type: integer
+          example: 0
+        opponentScore:
+          type: integer
+          nullable: true
+        createdAtUtc:
+          type: string
+          format: date-time
+        completedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        rewardCoins:
+          type: integer
+          nullable: true
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ============================================================================
+  # AUTHENTICATION
+  # ============================================================================
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login with credentials
+      operationId: authLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  profile:
+                    $ref: '#/components/schemas/CurrentUserProfile'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/signup:
+    post:
+      tags: [Authentication]
+      summary: Create new account
+      operationId: authSignup
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, handle]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                handle:
+                  type: string
+                  minLength: 3
+                  maxLength: 30
+                  description: "Player display name (alphanumeric + underscore only)"
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  profile:
+                    $ref: '#/components/schemas/CurrentUserProfile'
+        '400':
+          description: Invalid input or account already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      operationId: authRefresh
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken, deviceId]
+              properties:
+                refreshToken:
+                  type: string
+                deviceId:
+                  type: string
+      responses:
+        '200':
+          description: New tokens issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout and invalidate tokens
+      operationId: authLogout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId]
+              properties:
+                deviceId:
+                  type: string
+      responses:
+        '200':
+          description: Logout successful
+
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset (PENDING FLUTTER IMPLEMENTATION)
+      operationId: authForgotPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: OTP sent to email
+
+  /auth/verify-otp:
+    post:
+      tags: [Authentication]
+      summary: Verify OTP for password reset (PENDING FLUTTER IMPLEMENTATION)
+      operationId: authVerifyOtp
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+      responses:
+        '200':
+          description: OTP verified, reset token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resetToken:
+                    type: string
+
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Reset password with token (PENDING FLUTTER IMPLEMENTATION)
+      operationId: authResetPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resetToken, newPassword]
+              properties:
+                resetToken:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successful
+
+  /auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Change password (PENDING FLUTTER IMPLEMENTATION)
+      operationId: authChangePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password changed successfully
+
+  /auth/device/bootstrap:
+    post:
+      tags: [Authentication]
+      summary: Bootstrap guest to registered account (PENDING FLUTTER IMPLEMENTATION)
+      operationId: authDeviceBootstrap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId]
+              properties:
+                deviceId:
+                  type: string
+      responses:
+        '200':
+          description: Device upgraded to registered account
+
+  /auth/account/upgrade:
+    post:
+      tags: [Authentication]
+      summary: Upgrade guest to registered account (PENDING FLUTTER IMPLEMENTATION)
+      operationId: authAccountUpgrade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, handle]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                handle:
+                  type: string
+      responses:
+        '200':
+          description: Account upgraded
+
+  # ============================================================================
+  # USERS / PROFILES
+  # ============================================================================
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserProfile'
+
+    patch:
+      tags: [Users]
+      summary: Update current user profile
+      operationId: updateUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                handle:
+                  type: string
+                  minLength: 3
+                  maxLength: 30
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserProfile'
+
+  /users/search:
+    get:
+      tags: [Users]
+      summary: Search players by handle (PENDING FLUTTER IMPLEMENTATION)
+      operationId: searchUsers
+      parameters:
+        - name: handle
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+
+  /users/{userId}/career-summary:
+    get:
+      tags: [Users]
+      summary: Get player career stats (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getUserCareerSummary
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Career summary
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /users/me/wallet:
+    get:
+      tags: [Users]
+      summary: Get wallet balance (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getWallet
+      responses:
+        '200':
+          description: Wallet information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  coins:
+                    type: integer
+                  premiumCurrency:
+                    type: integer
+
+  /users/me/transactions:
+    get:
+      tags: [Users]
+      summary: Get transaction history (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getTransactions
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Transaction history
+
+  /users/me/purchases:
+    get:
+      tags: [Users]
+      summary: Get purchase history (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getPurchaseHistory
+      responses:
+        '200':
+          description: Purchase history
+
+  /users/me/onboarding-reward:
+    post:
+      tags: [Users]
+      summary: Claim onboarding reward (PENDING FLUTTER IMPLEMENTATION)
+      operationId: claimOnboardingReward
+      responses:
+        '200':
+          description: Reward claimed
+
+  /users/me/avatar/upload-url:
+    post:
+      tags: [Users]
+      summary: Get pre-signed URL for avatar upload
+      operationId: getAvatarUploadUrl
+      responses:
+        '200':
+          description: Pre-signed upload URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUrl:
+                    type: string
+                  expiresIn:
+                    type: integer
+                    description: "Seconds until URL expires"
+
+  # ============================================================================
+  # QUESTIONS / QUIZ
+  # ============================================================================
+  /questions/set:
+    get:
+      tags: [Questions]
+      summary: Get quiz questions (DEPRECATED - use QuestionHubService)
+      operationId: getQuizQuestions
+      deprecated: true
+      parameters:
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Quiz questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuizQuestion'
+
+  /questions/categories:
+    get:
+      tags: [Questions]
+      summary: Get available question categories (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getQuestionCategories
+      responses:
+        '200':
+          description: Available categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    description:
+                      type: string
+
+  /questions/metadata:
+    get:
+      tags: [Questions]
+      summary: Get questions metadata (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getQuestionsMetadata
+      responses:
+        '200':
+          description: Metadata including difficulty distribution
+
+  /questions/check:
+    post:
+      tags: [Questions]
+      summary: Check quiz answers (server-side grading)
+      operationId: checkQuizAnswers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/QuizCheckRequest'
+      responses:
+        '200':
+          description: Grading results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuizCheckResponse'
+
+  /questions/check-batch:
+    post:
+      tags: [Questions]
+      summary: Check batch of answers efficiently
+      operationId: checkQuizAnswersBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/QuizCheckRequest'
+      responses:
+        '200':
+          description: Batch grading results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuizCheckResponse'
+
+  /questions/preview-set:
+    post:
+      tags: [Questions]
+      summary: Preview a question set before commitment (PENDING FLUTTER IMPLEMENTATION)
+      operationId: previewQuestionSet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                count:
+                  type: integer
+                category:
+                  type: string
+                difficulty:
+                  type: string
+      responses:
+        '200':
+          description: Question preview
+
+  # ============================================================================
+  # STORE / COMMERCE
+  # ============================================================================
+  /store/catalog:
+    get:
+      tags: [Store]
+      summary: Get store catalog
+      operationId: getStoreCatalog
+      parameters:
+        - name: itemType
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Catalog items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StoreItem'
+
+  /store/catalog/{sku}:
+    get:
+      tags: [Store]
+      summary: Get item details
+      operationId: getStoreItem
+      parameters:
+        - name: sku
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreItem'
+
+  /store/items/{sku}/disclosure:
+    get:
+      tags: [Store]
+      summary: Get legal disclosure for item (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getItemDisclosure
+      parameters:
+        - name: sku
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Legal disclosure
+
+  /store/daily:
+    get:
+      tags: [Store]
+      summary: Get daily rotating store
+      operationId: getDailyStore
+      responses:
+        '200':
+          description: Daily store items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StoreItem'
+
+  /store/hub:
+    get:
+      tags: [Store]
+      summary: Get store hub data
+      operationId: getStoreHub
+      responses:
+        '200':
+          description: Store hub information
+
+  /store/special-offers:
+    get:
+      tags: [Store]
+      summary: Get special offers
+      operationId: getSpecialOffers
+      responses:
+        '200':
+          description: Active promotions
+
+  /store/purchase:
+    post:
+      tags: [Store]
+      summary: Execute purchase (deprecated - use payment endpoints)
+      operationId: purchaseItem
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sku:
+                  type: string
+      responses:
+        '200':
+          description: Purchase completed
+
+  /store/inventory/{playerId}:
+    get:
+      tags: [Store]
+      summary: Get player inventory (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getPlayerInventory
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Player inventory
+
+  /store/recommendations/{playerId}:
+    get:
+      tags: [Store]
+      summary: Get personalized recommendations (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getStoreRecommendations
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recommended items
+
+  /store/premium:
+    get:
+      tags: [Store]
+      summary: Get premium content (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getPremiumStore
+      responses:
+        '200':
+          description: Premium items
+
+  /store/payments/checkout/session:
+    post:
+      tags: [Store]
+      summary: Create Stripe checkout session
+      operationId: createCheckoutSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sku:
+                  type: string
+                returnUrl:
+                  type: string
+      responses:
+        '200':
+          description: Checkout session created
+
+  /store/payments/paypal/order:
+    post:
+      tags: [Store]
+      summary: Create PayPal order
+      operationId: createPayPalOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sku:
+                  type: string
+      responses:
+        '200':
+          description: PayPal order created
+
+  /store/iap/validate:
+    post:
+      tags: [Store]
+      summary: Validate in-app purchase receipt
+      operationId: validateIapReceipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                receipt:
+                  type: string
+                platform:
+                  type: string
+                  enum: [ios, android]
+      responses:
+        '200':
+          description: Receipt validated
+
+  # ============================================================================
+  # ARCADE / SPIN WHEEL
+  # ============================================================================
+  /arcade/spin/segments:
+    get:
+      tags: [Arcade]
+      summary: Get spin wheel segments
+      operationId: getSpinSegments
+      parameters:
+        - name: playerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Wheel segments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WheelSegment'
+
+  /arcade/spin/start:
+    post:
+      tags: [Arcade]
+      summary: Request server-generated spin outcome
+      operationId: startSpin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                playerId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Spin initiated with backend outcome
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  spinId:
+                    type: string
+                    format: uuid
+                  claimToken:
+                    type: string
+                  expiresAtUtc:
+                    type: string
+                    format: date-time
+
+  /arcade/spin/claim:
+    post:
+      tags: [Arcade]
+      summary: Claim spin reward (NEW CONTRACT with spinId + claimToken)
+      operationId: claimSpinReward
+      description: |
+        **CRITICAL**: This endpoint supports two contracts:
+
+        **NEW (Recommended)**: Uses backend-issued claimToken
+        ```json
+        {
+          "spinId": "uuid",
+          "claimToken": "token from startSpin",
+          "idempotencyKey": "unique-key-for-retry-safety"
+        }
+        ```
+
+        **OLD (Deprecated)**: Direct client-side validation
+        ```json
+        {
+          "playerId": "uuid",
+          "segmentId": "uuid",
+          "spinId": "uuid"
+        }
+        ```
+
+        Migrate to new contract! Old contract will be removed in v2.0.0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  description: "New contract (recommended)"
+                  required: [spinId, claimToken, idempotencyKey]
+                  properties:
+                    spinId:
+                      type: string
+                      format: uuid
+                    claimToken:
+                      type: string
+                    idempotencyKey:
+                      type: string
+                - type: object
+                  description: "Old contract (deprecated)"
+                  required: [playerId, segmentId, spinId]
+                  properties:
+                    playerId:
+                      type: string
+                      format: uuid
+                    segmentId:
+                      type: string
+                      format: uuid
+                    spinId:
+                      type: string
+                      format: uuid
+      responses:
+        '200':
+          description: Reward claimed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  coinsGranted:
+                    type: integer
+                  newBalance:
+                    type: integer
+
+  # ============================================================================
+  # MATCHES / MULTIPLAYER
+  # ============================================================================
+  /matches/start:
+    post:
+      tags: [Matches]
+      summary: Start a new match
+      operationId: startMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                opponentId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                gameMode:
+                  type: string
+      responses:
+        '201':
+          description: Match created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+
+  /matches/submit:
+    post:
+      tags: [Matches]
+      summary: Submit match result
+      operationId: submitMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [playerScore, answeredQuestionIds]
+              properties:
+                playerScore:
+                  type: integer
+                opponentScore:
+                  type: integer
+                  nullable: true
+                answeredQuestionIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                completedAtUtc:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        '200':
+          description: Match result recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+
+  /matches/{matchId}:
+    get:
+      tags: [Matches]
+      summary: Get match details
+      operationId: getMatchDetails
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Match information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+
+  /matches:
+    get:
+      tags: [Matches]
+      summary: List player's matches
+      operationId: listMatches
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ongoing, completed, abandoned]
+        - name: gameMode
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Match history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Match'
+                  totalCount:
+                    type: integer
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+
+  /matches/{matchId}/abandon:
+    post:
+      tags: [Matches]
+      summary: Abandon ongoing match
+      operationId: abandonMatch
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Match abandoned
+
+  # ============================================================================
+  # LEADERBOARDS
+  # ============================================================================
+  /leaderboard:
+    get:
+      tags: [Leaderboards]
+      summary: Get global leaderboard (legacy endpoint)
+      operationId: getLeaderboard
+      deprecated: true
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Leaderboard entries
+
+  /leaderboards/me/{playerId}:
+    get:
+      tags: [Leaderboards]
+      summary: Get player rank and tier
+      operationId: getUserRank
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Player rank information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rank:
+                    type: integer
+                  tier:
+                    type: string
+                  rating:
+                    type: number
+
+  /leaderboards/tiers/{tierId}:
+    get:
+      tags: [Leaderboards]
+      summary: Get tier-based leaderboard (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getTierLeaderboard
+      parameters:
+        - name: tierId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Tier leaderboard entries
+
+  /leaderboards/recalc:
+    post:
+      tags: [Leaderboards]
+      summary: Recalculate leaderboards (admin only)
+      operationId: recalculateLeaderboards
+      responses:
+        '200':
+          description: Recalculation started
+
+  # ============================================================================
+  # ACHIEVEMENTS
+  # ============================================================================
+  /achievements:
+    get:
+      tags: [Achievements]
+      summary: Get achievement catalog
+      operationId: getAchievementCatalog
+      responses:
+        '200':
+          description: Achievement definitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /achievements/player/{playerId}:
+    get:
+      tags: [Achievements]
+      summary: Get player achievements (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getPlayerAchievements
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Player achievement progress
+
+  /achievements/unlock:
+    post:
+      tags: [Achievements]
+      summary: Unlock achievement (server-side)
+      operationId: unlockAchievement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                achievementId:
+                  type: string
+      responses:
+        '200':
+          description: Achievement unlocked
+
+  # ============================================================================
+  # NOTIFICATIONS
+  # ============================================================================
+  /notifications/inbox:
+    get:
+      tags: [Notifications]
+      summary: Get notification inbox (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getNotificationInbox
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Notifications
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Get unread notification count (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getUnreadCount
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unreadCount:
+                    type: integer
+
+  /notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      summary: Mark notification as read (PENDING FLUTTER IMPLEMENTATION)
+      operationId: markNotificationRead
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Marked as read
+
+  /notifications/{notificationId}:
+    delete:
+      tags: [Notifications]
+      summary: Delete notification (PENDING FLUTTER IMPLEMENTATION)
+      operationId: deleteNotification
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification deleted
+
+  # ============================================================================
+  # FRIENDS & SOCIAL
+  # ============================================================================
+  /friends/request:
+    post:
+      tags: [Social]
+      summary: Send friend request (PENDING FLUTTER IMPLEMENTATION)
+      operationId: sendFriendRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetPlayerId]
+              properties:
+                targetPlayerId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Friend request sent
+
+  /friends:
+    get:
+      tags: [Social]
+      summary: Get friends list (PENDING FLUTTER IMPLEMENTATION)
+      operationId: listFriends
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Friends list
+
+  /friends/request/{requestId}/accept:
+    post:
+      tags: [Social]
+      summary: Accept friend request (PENDING FLUTTER IMPLEMENTATION)
+      operationId: acceptFriendRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Friend request accepted
+
+  /friends/request/{requestId}/decline:
+    post:
+      tags: [Social]
+      summary: Decline friend request (PENDING FLUTTER IMPLEMENTATION)
+      operationId: declineFriendRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Friend request declined
+
+  # ============================================================================
+  # PARTIES / TEAMS
+  # ============================================================================
+  /party:
+    post:
+      tags: [Social]
+      summary: Create or join party (PENDING FLUTTER IMPLEMENTATION)
+      operationId: createParty
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                gameMode:
+                  type: string
+      responses:
+        '201':
+          description: Party created
+
+  /party/{partyId}:
+    get:
+      tags: [Social]
+      summary: Get party details (PENDING FLUTTER IMPLEMENTATION)
+      operationId: getPartyDetails
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Party information
+
+  /party/{partyId}/invite:
+    post:
+      tags: [Social]
+      summary: Invite player to party (PENDING FLUTTER IMPLEMENTATION)
+      operationId: inviteToParty
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetPlayerId]
+              properties:
+                targetPlayerId:
+                  type: string
+      responses:
+        '201':
+          description: Invite sent
+
+  /party/invites/{inviteId}/accept:
+    post:
+      tags: [Social]
+      summary: Accept party invite (PENDING FLUTTER IMPLEMENTATION)
+      operationId: acceptPartyInvite
+      parameters:
+        - name: inviteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Party invite accepted
+
+  /party/invites/{inviteId}/decline:
+    post:
+      tags: [Social]
+      summary: Decline party invite (PENDING FLUTTER IMPLEMENTATION)
+      operationId: declinePartyInvite
+      parameters:
+        - name: inviteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Party invite declined
