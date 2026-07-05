@@ -69,6 +69,31 @@ namespace Synaptix.Backend.Api.Features.Matches
                 return Results.Ok(res);
             }).RequireRateLimiting("matches-submit").RequireAuthorization();
 
+            // Player match history (most recent first), from submitted results.
+            g.MapGet("", async (
+                [FromQuery] Guid playerId,
+                [FromQuery] int page,
+                [FromQuery] int pageSize,
+                IAppDb db,
+                CancellationToken ct) =>
+            {
+                var p = page < 1 ? 1 : page;
+                var ps = pageSize < 1 ? 20 : Math.Min(pageSize, 100);
+
+                var query =
+                    from mpr in db.MatchParticipantResults.AsNoTracking()
+                    join mr in db.MatchResults.AsNoTracking() on mpr.MatchResultId equals mr.Id
+                    where mpr.PlayerId == playerId
+                    orderby mr.EndedAtUtc descending
+                    select new MatchListItemDto(
+                        mr.MatchId, mr.Mode, mr.Category, mr.QuestionCount, mr.EndedAtUtc, mr.Status);
+
+                var total = await query.CountAsync(ct);
+                var items = await query.Skip((p - 1) * ps).Take(ps).ToListAsync(ct);
+
+                return Results.Ok(new MatchListResponseDto(p, ps, total, items));
+            }).RequireAuthorization();
+
             g.MapGet("/{matchId:guid}", async ([FromRoute] Guid matchId, IAppDb db, CancellationToken ct) =>
             {
                 // Query: match + result + participants (grid-friendly and stable for UI)

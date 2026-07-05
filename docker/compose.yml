@@ -51,8 +51,11 @@ services:
     healthcheck:
       test: ["CMD", "mongosh", "--authenticationDatabase=${MONGO_AUTH_DB:-synaptix_analytics}", "-u", "${MONGO_APP_USER:-synaptix_app_user}", "-p", "${MONGO_APP_PASSWORD:-synaptix_app_password_123}", "--eval", "db.adminCommand('ping')"]
       interval: 10s
-      timeout: 5s
+      # mongosh cold start alone takes ~4-5s on this host; 5s timeouts flake at
+      # boot and leave migration/setup/backend-api stuck in "Created".
+      timeout: 20s
       retries: 10
+      start_period: 40s
 
   # ================================
   # Caching & Search
@@ -754,7 +757,8 @@ services:
         condition: service_healthy
     networks: [synaptix-net]
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8300/index.html"]
+      # 127.0.0.1, not localhost: busybox wget prefers ::1 but nginx binds IPv4 only.
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8300/index.html"]
       interval: 30s
       timeout: 10s
       retries: 3

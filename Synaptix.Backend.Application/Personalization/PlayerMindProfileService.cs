@@ -47,6 +47,24 @@ public sealed class PlayerMindProfileService : IPlayerMindProfileService
         return MapToDto(profile);
     }
 
+    public async Task<PlayerMindProfileDto> SetPersonalizationEnabledAsync(Guid playerId, bool enabled, CancellationToken ct = default)
+    {
+        var profile = await _db.PlayerMindProfiles
+            .FirstOrDefaultAsync(p => p.PlayerId == playerId, ct);
+
+        if (profile is null)
+        {
+            profile = new PlayerMindProfile { Id = Guid.NewGuid(), PlayerId = playerId };
+            _db.PlayerMindProfiles.Add(profile);
+        }
+
+        profile.PersonalizationEnabled = enabled;
+        profile.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return MapToDto(profile);
+    }
+
     public async Task RecordEventAsync(Guid playerId, PlayerBehaviorEventDto dto, CancellationToken ct = default)
     {
         var evt = new PlayerBehaviorEvent

@@ -52,6 +52,9 @@ namespace Synaptix.Backend.Application
             // Skill Tree
             services.AddScoped<Skills.SkillTreeService>();
 
+            // Achievements
+            services.AddScoped<Achievements.AchievementService>();
+
             // Submit Match
             //services.AddScoped<Matches.SubmitMatch>();
 

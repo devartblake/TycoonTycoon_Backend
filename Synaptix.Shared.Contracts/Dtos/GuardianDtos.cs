@@ -31,4 +31,12 @@ namespace Synaptix.Shared.Contracts.Dtos
         string Status,
         Guid MatchId
     );
+
+    public sealed record MyGuardianStatusDto(
+        Guid PlayerId,
+        bool IsGuardian,
+        int? Tier,
+        int DefenceCount, // successful defences (DefencesWon)
+        Guid? CurrentMatchId // pending challenge match against this guardian, if any
+    );
 }

@@ -340,6 +340,9 @@ public sealed class ClaimMissionHandlerTests
 
         public Task<Synaptix.Shared.Contracts.Dtos.PlayerMindProfileDto> RecalculateAsync(Guid playerId, CancellationToken ct = default)
             => throw new NotImplementedException();
+
+        public Task<Synaptix.Shared.Contracts.Dtos.PlayerMindProfileDto> SetPersonalizationEnabledAsync(Guid playerId, bool enabled, CancellationToken ct = default)
+            => throw new NotImplementedException();
     }
 
     private sealed class ThrowingMindProfileService : Synaptix.Backend.Application.Personalization.IPlayerMindProfileService
@@ -351,6 +354,9 @@ public sealed class ClaimMissionHandlerTests
             => throw new InvalidOperationException("test failure");
 
         public Task<Synaptix.Shared.Contracts.Dtos.PlayerMindProfileDto> RecalculateAsync(Guid playerId, CancellationToken ct = default)
+            => throw new InvalidOperationException("test failure");
+
+        public Task<Synaptix.Shared.Contracts.Dtos.PlayerMindProfileDto> SetPersonalizationEnabledAsync(Guid playerId, bool enabled, CancellationToken ct = default)
             => throw new InvalidOperationException("test failure");
     }
 

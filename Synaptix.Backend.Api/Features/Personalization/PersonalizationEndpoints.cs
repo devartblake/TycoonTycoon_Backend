@@ -48,6 +48,18 @@ public static class PersonalizationEndpoints
             return Results.Accepted();
         });
 
+        group.MapPost("/profile/{playerId:guid}/toggle", async (
+            Guid playerId,
+            [FromBody] TogglePersonalizationRequest request,
+            HttpContext httpContext,
+            IPlayerMindProfileService profiles,
+            CancellationToken ct) =>
+        {
+            if (!IsOwner(httpContext, playerId)) return Results.Forbid();
+            var profile = await profiles.SetPersonalizationEnabledAsync(playerId, request.Enabled, ct);
+            return Results.Ok(profile);
+        });
+
         group.MapPost("/profile/{playerId:guid}/recalculate", async (
             Guid playerId,
             HttpContext httpContext,

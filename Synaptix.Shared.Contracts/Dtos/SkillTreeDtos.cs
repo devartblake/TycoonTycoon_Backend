@@ -67,4 +67,17 @@ namespace Synaptix.Shared.Contracts.Dtos
         int RefundedDiamonds,
         IReadOnlyList<string> UnlockedKeys
     );
+
+    public sealed record UseSkillRequest(
+        Guid EventId,
+        Guid PlayerId,
+        string NodeKey
+    );
+
+    public sealed record UseSkillResultDto(
+        Guid EventId,
+        Guid PlayerId,
+        string NodeKey,
+        string Status // "Used" | "Duplicate" | "NotUnlocked" | "NotFound"
+    );
 }

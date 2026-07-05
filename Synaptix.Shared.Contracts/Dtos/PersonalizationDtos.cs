@@ -23,6 +23,10 @@ public sealed record PlayerMindProfileDto(
     DateTimeOffset? LastCalculatedAt
 );
 
+public sealed record TogglePersonalizationRequest(
+    bool Enabled
+);
+
 public sealed record PlayerBehaviorEventDto(
     string EventType,
     string EventSource,

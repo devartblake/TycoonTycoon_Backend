@@ -147,6 +147,31 @@ namespace Synaptix.Backend.Application.Skills
             return new RespecSkillsResultDto(req.EventId, req.PlayerId, "Respecced", refundCoins, refundDiamonds, stateAfter.UnlockedKeys);
         }
 
+        public async Task<UseSkillResultDto> UseAsync(UseSkillRequest req, CancellationToken ct)
+        {
+            var nodeExists = await _db.SkillNodes.AsNoTracking().AnyAsync(x => x.Key == req.NodeKey, ct);
+            if (!nodeExists)
+                return new UseSkillResultDto(req.EventId, req.PlayerId, req.NodeKey, "NotFound");
+
+            var unlocked = await _db.PlayerSkillUnlocks.AsNoTracking()
+                .AnyAsync(x => x.PlayerId == req.PlayerId && x.NodeKey == req.NodeKey, ct);
+            if (!unlocked)
+                return new UseSkillResultDto(req.EventId, req.PlayerId, req.NodeKey, "NotUnlocked");
+
+            // Audit-only transaction (no currency changes): records the activation
+            // and dedupes retries via EventId, same as unlock/respec.
+            var ptxnResult = await _ptxnSvc.ExecuteAsync(new CreatePlayerTransactionRequest(
+                EventId: req.EventId,
+                Kind: "skill-use",
+                Actors: new[] { new PlayerTransactionActorDto(req.PlayerId, "recipient") },
+                CurrencyChanges: null,
+                Note: req.NodeKey
+            ), ct);
+
+            var status = ptxnResult.Status == "Duplicate" ? "Duplicate" : "Used";
+            return new UseSkillResultDto(req.EventId, req.PlayerId, req.NodeKey, status);
+        }
+
         // Admin seeding (idempotent by key)
         public async Task<int> UpsertNodesAsync(IEnumerable<SkillNodeDto> nodes, CancellationToken ct)
         {

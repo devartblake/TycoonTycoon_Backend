@@ -9,6 +9,7 @@ using Synaptix.Backend.Infrastructure.Persistence;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
+    [Migration("20260701000000_AddArcadeScoreEntries")]
     partial class AddArcadeScoreEntries
     {
         /// <inheritdoc />

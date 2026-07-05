@@ -45,6 +45,12 @@ namespace Synaptix.Backend.Api.Features.Skills
                 var res = await svc.RespecAsync(req, ct);
                 return Results.Ok(res);
             });
+
+            g.MapPost("/use", async ([FromBody] UseSkillRequest req, SkillTreeService svc, CancellationToken ct) =>
+            {
+                var res = await svc.UseAsync(req, ct);
+                return Results.Ok(res);
+            });
         }
     }
 }

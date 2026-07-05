@@ -45,11 +45,16 @@ services:
       # PostgreSQL — uses dedicated compliance DB (auto-created by EF migrations)
       ConnectionStrings__compliance: "${COMPLIANCE_DB_URL:-Host=db;Port=5432;Database=synaptix_compliance;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}}"
 
+      # Apply pending EF migrations on startup (the database itself must exist).
+      # Without this, Production runs never migrate and /health returns 503.
+      ComplianceApi__AutoMigrate: "true"
+
       # Observability
       Serilog__MinimumLevel__Default: "${LOG_LEVEL:-Information}"
     networks: [compliance-net, synaptix-net]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5070/health"]
+      # The aspnet base image ships no curl/wget — probe /health with bash builtins.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5070 && printf 'GET /health HTTP/1.0\\r\\n\\r\\n' >&3 && read -r line <&3 && [[ $$line == *' 200 '* ]]"]
       interval: 30s
       timeout: 10s
       retries: 3

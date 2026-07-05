@@ -208,6 +208,10 @@ public sealed class GetRecommendedLearningModulesHandlerTests
         public Task<PlayerMindProfileDto> RecalculateAsync(
             Guid playerId, CancellationToken ct = default) =>
             Task.FromResult(profile);
+
+        public Task<PlayerMindProfileDto> SetPersonalizationEnabledAsync(
+            Guid playerId, bool enabled, CancellationToken ct = default) =>
+            Task.FromResult(profile);
     }
 
     private sealed class ThrowingProfileService : IPlayerMindProfileService
@@ -222,6 +226,10 @@ public sealed class GetRecommendedLearningModulesHandlerTests
 
         public Task<PlayerMindProfileDto> RecalculateAsync(
             Guid playerId, CancellationToken ct = default) =>
+            throw new InvalidOperationException("Profile service unavailable");
+
+        public Task<PlayerMindProfileDto> SetPersonalizationEnabledAsync(
+            Guid playerId, bool enabled, CancellationToken ct = default) =>
             throw new InvalidOperationException("Profile service unavailable");
     }
 }

@@ -58,6 +58,8 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<PlayerPowerup> PlayerPowerups => Set<PlayerPowerup>();
         public DbSet<SkillNode> SkillNodes => Set<SkillNode>();
         public DbSet<PlayerSkillUnlock> PlayerSkillUnlocks => Set<PlayerSkillUnlock>();
+        public DbSet<Achievement> Achievements => Set<Achievement>();
+        public DbSet<PlayerAchievement> PlayerAchievements => Set<PlayerAchievement>();
         public DbSet<Season> Seasons => Set<Season>();
         public DbSet<PlayerSeasonProfile> PlayerSeasonProfiles => Set<PlayerSeasonProfile>();
         public DbSet<SeasonPointTransaction> SeasonPointTransactions => Set<SeasonPointTransaction>();

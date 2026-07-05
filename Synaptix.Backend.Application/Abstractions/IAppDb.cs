@@ -44,6 +44,8 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<PlayerPowerup> PlayerPowerups { get; }
         DbSet<SkillNode> SkillNodes { get; }
         DbSet<PlayerSkillUnlock> PlayerSkillUnlocks { get; }
+        DbSet<Achievement> Achievements { get; }
+        DbSet<PlayerAchievement> PlayerAchievements { get; }
         DbSet<Season> Seasons { get; }
         DbSet<SeasonRewardClaim> SeasonRewardClaims { get; }
         DbSet<PlayerSeasonProfile> PlayerSeasonProfiles { get; }

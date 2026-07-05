@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Api.Contracts;
+using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Guardians;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -24,6 +26,40 @@ namespace Synaptix.Backend.Api.Features.Guardians
                 var res = await mediator.Send(new GetGuardiansForTier(seasonId, tierNumber), ct);
                 return Results.Ok(res);
             });
+
+            // Is this player currently a tier guardian? (optionally scoped to a season)
+            g.MapGet("/my/{playerId:guid}", async (
+                [FromRoute] Guid playerId,
+                [FromQuery] Guid? seasonId,
+                IAppDb db,
+                CancellationToken ct) =>
+            {
+                var now = DateTimeOffset.UtcNow;
+                var q = db.TierGuardians.AsNoTracking()
+                    .Where(x => x.PlayerId == playerId && x.ExpiresAtUtc > now);
+                if (seasonId is Guid sid)
+                    q = q.Where(x => x.SeasonId == sid);
+
+                var guardian = await q
+                    .OrderByDescending(x => x.AssignedAtUtc)
+                    .FirstOrDefaultAsync(ct);
+
+                if (guardian is null)
+                    return Results.Ok(new MyGuardianStatusDto(playerId, false, null, 0, null));
+
+                // GuardianChallenge.GuardianId stores the guardian *player's* id.
+                var currentMatchId = await db.GuardianChallenges.AsNoTracking()
+                    .Where(x => x.SeasonId == guardian.SeasonId
+                             && x.TierNumber == guardian.TierNumber
+                             && x.GuardianId == playerId
+                             && x.Status == ChallengeStatus.Pending)
+                    .OrderByDescending(x => x.CreatedAtUtc)
+                    .Select(x => (Guid?)x.MatchId)
+                    .FirstOrDefaultAsync(ct);
+
+                return Results.Ok(new MyGuardianStatusDto(
+                    playerId, true, guardian.TierNumber, guardian.DefencesWon, currentMatchId));
+            }).RequireAuthorization();
 
             g.MapPost("/challenge", async (
                 [FromBody] ChallengeGuardianRequest req,
