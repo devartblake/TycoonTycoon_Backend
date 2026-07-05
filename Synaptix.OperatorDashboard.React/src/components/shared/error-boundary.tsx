@@ -1,5 +1,5 @@
 import React, { ReactNode, ErrorInfo } from 'react'
-import { Sentry } from '@/lib/sentry-mock'
+import { captureException } from '@/lib/sentry'
 
 interface Props {
   children: ReactNode
@@ -23,7 +23,7 @@ class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    Sentry.captureException(error, { contexts: { react: errorInfo } })
+    captureException(error, { react: errorInfo })
     this.props.onError?.(error, errorInfo)
   }
 

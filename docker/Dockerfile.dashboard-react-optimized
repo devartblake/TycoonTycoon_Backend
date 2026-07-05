@@ -1,0 +1,45 @@
+# Stage 1: Build dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY Synaptix.OperatorDashboard.React/package*.json ./
+RUN npm ci
+
+# Stage 2: Build application
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY Synaptix.OperatorDashboard.React/ .
+COPY --from=deps /app/node_modules ./node_modules
+
+# Build arguments
+ARG VITE_API_BASE_URL=http://backend-api:5000
+ARG VITE_SENTRY_DSN=
+ARG VITE_ENV=production
+
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+ENV VITE_ENV=$VITE_ENV
+
+# Build with optimizations
+RUN npm run build
+
+# Stage 3: Production server
+FROM nginx:1.27-alpine
+WORKDIR /app
+
+# Copy nginx config
+COPY docker/nginx-react-optimized.conf /etc/nginx/conf.d/default.conf
+
+# Copy built application
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:8300/ || exit 1
+
+# Security headers
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+
+EXPOSE 8300
+
+# Run nginx
+CMD ["nginx"]
