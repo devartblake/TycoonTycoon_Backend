@@ -119,6 +119,7 @@ using Synaptix.Backend.Application.Analytics.Abstractions;
 using Synaptix.Backend.Application.Analytics.Writers;
 using Synaptix.Backend.Application.Auth;
 using Synaptix.Backend.Application.Config;
+using Synaptix.Backend.Application.Email;
 using Synaptix.Backend.Application.GameEvents;
 using Synaptix.Backend.Application.Missions;
 using Synaptix.Backend.Application.Rewards;
@@ -344,7 +345,7 @@ builder.Services.AddScoped<Synaptix.Backend.Application.Auth.IAuthService, Synap
 
 // Register OTP and Email Services
 builder.Services.AddScoped<OtpService>();
-builder.Services.AddScoped<EmailService>();
+builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.AddHttpClient<EmailService>();
 
 // Validate JWT configuration at startup

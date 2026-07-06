@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Synaptix.Backend.Application.Email;
 
 namespace Synaptix.Backend.Api.Services
 {
@@ -8,7 +9,7 @@ namespace Synaptix.Backend.Api.Services
     /// Service for sending emails using SendGrid
     /// Used for password reset, verification, and notifications
     /// </summary>
-    public class EmailService
+    public class EmailService : IEmailService
     {
         private readonly IConfiguration _config;
         private readonly HttpClient _httpClient;
@@ -17,6 +18,53 @@ namespace Synaptix.Backend.Api.Services
         {
             _config = config;
             _httpClient = httpClient;
+        }
+
+        public async Task SendAsync(string to, string subject, string htmlBody, CancellationToken ct = default)
+        {
+            var apiKey = _config["SendGrid:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                Console.WriteLine("[WARNING] SendGrid API key not configured");
+                return;
+            }
+
+            var fromEmail = _config["SendGrid:FromEmail"] ?? "noreply@synaptixplay.com";
+            var fromName = _config["SendGrid:FromName"] ?? "Trivia Tycoon";
+            var payload = new
+            {
+                personalizations = new[]
+                {
+                    new
+                    {
+                        to = new[] { new { email = to } },
+                        subject,
+                    },
+                },
+                from = new { email = fromEmail, name = fromName },
+                content = new[]
+                {
+                    new { type = "text/html", value = htmlBody },
+                },
+                reply_to = new { email = fromEmail },
+            };
+
+            var json = JsonSerializer.Serialize(payload);
+            using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.sendgrid.com/v3/mail/send")
+            {
+                Content = content,
+            };
+            request.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+
+            using var response = await _httpClient.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(ct);
+                throw new InvalidOperationException(
+                    $"Failed to send email: {response.StatusCode} - {body}");
+            }
         }
 
         /// <summary>

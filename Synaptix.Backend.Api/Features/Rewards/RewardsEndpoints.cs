@@ -32,6 +32,7 @@ public static class RewardsEndpoints
         var g = app.MapGroup("/rewards").WithTags("Rewards");
 
         g.MapGet("/daily-config", GetDailyConfig)
+            .AllowAnonymous()
             .WithName("GetDailyRewardConfig");
 
         g.MapPost("/daily/claim", ClaimDaily)
@@ -39,6 +40,7 @@ public static class RewardsEndpoints
             .RequireAuthorization();
 
         g.MapGet("/weekly-schedule", GetWeeklySchedule)
+            .AllowAnonymous()
             .WithName("GetWeeklyRewardSchedule");
 
         g.MapGet("/weekly-streak/{userId:guid}", GetWeeklyStreak)
@@ -55,6 +57,7 @@ public static class RewardsEndpoints
             .RequireAuthorization();
 
         g.MapGet("/spin-reward-steps", GetSpinRewardSteps)
+            .AllowAnonymous()
             .WithName("GetSpinRewardSteps");
     }
 
