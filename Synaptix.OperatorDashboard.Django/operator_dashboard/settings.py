@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,6 +32,21 @@ USE_X_FORWARDED_HOST = True
 _secure_cookies = os.getenv("DJANGO_SECURE_COOKIES", "false").lower() == "true"
 SESSION_COOKIE_SECURE = _secure_cookies
 CSRF_COOKIE_SECURE = _secure_cookies
+
+# The permissive defaults above (dev SECRET_KEY, wildcard ALLOWED_HOSTS) are
+# intentional for local development where DEBUG is on. When DEBUG is off — i.e.
+# any real deployment — refuse to start on those insecure defaults rather than
+# silently shipping them. Correct deployments already inject these via env, so
+# this only trips on genuine misconfiguration.
+if not DEBUG:
+    if SECRET_KEY == "dev-only-change-me":
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY must be set to a unique secret value when DEBUG is disabled."
+        )
+    if "*" in ALLOWED_HOSTS:
+        raise ImproperlyConfigured(
+            "DJANGO_ALLOWED_HOSTS must list explicit hostnames (not '*') when DEBUG is disabled."
+        )
 
 INSTALLED_APPS = [
     "django.contrib.admin",

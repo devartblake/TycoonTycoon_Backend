@@ -78,7 +78,7 @@ jobs:
       - name: Test
         run: |
           mkdir -p TestResults
-          dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults/build-test-results.trx"
+          dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --verbosity normal --results-directory TestResults --logger "trx;LogFileName=build-test-results.trx"
 
       - name: Upload build test results
         if: always()
