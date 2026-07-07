@@ -40,6 +40,7 @@ using Synaptix.Backend.Api.Features.AdminNotifications;
 using Synaptix.Backend.Api.Features.AppConfig;
 using Synaptix.Backend.Api.Features.Quiz;
 using Synaptix.Backend.Api.Features.AdminConfig;
+using Synaptix.Backend.Api.Features.AdminDashboard;
 using Synaptix.Backend.Api.Features.AdminEmailAcl;
 using Synaptix.Backend.Api.Features.AdminPowerups;
 using Synaptix.Backend.Api.Features.AdminQuestions;
@@ -1129,6 +1130,7 @@ var admin = app.MapGroup("/admin")
     .RequireAdminRoleClaims();
 
 AdminGameEventsEndpoints.Map(admin);
+AdminDashboardEndpoints.Map(admin);
 AdminQuestionsEndpoints.Map(admin);
 AdminUsersEndpoints.Map(admin);
 AdminPlayerLookupEndpoints.Map(admin);
