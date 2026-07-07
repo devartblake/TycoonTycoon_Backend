@@ -12,7 +12,7 @@ class ApiClientsTests(SimpleTestCase):
         FASTAPI_BASE_URL="http://fastapi",
         MINIO_BASE_URL="http://minio",
     )
-    @mock.patch("dashboard.services.api_clients.httpx.get")
+    @mock.patch("httpx.Client.get")
     def test_list_service_statuses_all_healthy(self, mock_get):
         dotnet_response = mock.Mock()
         dotnet_response.text = "{}"
@@ -47,7 +47,7 @@ class ApiClientsTests(SimpleTestCase):
         FASTAPI_BASE_URL="http://fastapi",
         MINIO_BASE_URL="http://minio",
     )
-    @mock.patch("dashboard.services.api_clients.httpx.get")
+    @mock.patch("httpx.Client.get")
     def test_list_service_statuses_when_one_service_offline(self, mock_get):
         dotnet_response = mock.Mock()
         dotnet_response.text = "{}"

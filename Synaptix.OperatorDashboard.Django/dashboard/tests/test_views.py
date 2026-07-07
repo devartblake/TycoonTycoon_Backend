@@ -754,10 +754,14 @@ class DashboardViewsTests(TestCase):
         session["operator_access_expires_at"] = 32503680000
         session["operator_admin_profile"] = {"permissions": ["users:read"], "email": "ops@example.com"}
         session.save()
-        mock_get_admin_user.return_value = {"id": "u1", "email": "player@example.com"}
+        # A resolvable player UUID so the view reaches the per-section permission
+        # gating (a non-UUID id short-circuits every player-scoped section with the
+        # "requires a player UUID" note before permissions are ever checked).
+        player_uuid = "11111111-1111-1111-1111-111111111111"
+        mock_get_admin_user.return_value = {"id": player_uuid, "email": "player@example.com"}
         mock_get_admin_user_activity.return_value = {"items": []}
 
-        response = self.client.get(reverse("operator-user-investigation-view", kwargs={"user_id": "u1"}))
+        response = self.client.get(reverse("operator-user-investigation-view", kwargs={"user_id": player_uuid}))
 
         self.assertEqual(200, response.status_code)
         self.assertContains(response, "Missing permission: moderation:read")

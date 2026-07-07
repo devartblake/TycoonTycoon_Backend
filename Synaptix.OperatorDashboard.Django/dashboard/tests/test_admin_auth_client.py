@@ -7,7 +7,7 @@ from dashboard.services.admin_auth_client import admin_login, admin_me, admin_re
 
 class AdminAuthClientTests(SimpleTestCase):
     @override_settings(DOTNET_API_BASE_URL="http://backend-api:5000", ADMIN_OPS_KEY="abc123", ADMIN_AUTH_TRANSPORT="plain")
-    @mock.patch("dashboard.services.admin_auth_client.httpx.post")
+    @mock.patch("httpx.Client.post")
     def test_admin_login_uses_admin_ops_header(self, mock_post):
         response = mock.Mock()
         response.raise_for_status.return_value = None
@@ -26,7 +26,7 @@ class AdminAuthClientTests(SimpleTestCase):
         self.assertEqual("abc123", kwargs["headers"]["X-Admin-Ops-Key"])
 
     @override_settings(DOTNET_API_BASE_URL="http://backend-api:5000", ADMIN_OPS_KEY="abc123", ADMIN_AUTH_TRANSPORT="plain")
-    @mock.patch("dashboard.services.admin_auth_client.httpx.post")
+    @mock.patch("httpx.Client.post")
     def test_admin_refresh_returns_access_token(self, mock_post):
         response = mock.Mock()
         response.raise_for_status.return_value = None
@@ -43,7 +43,7 @@ class AdminAuthClientTests(SimpleTestCase):
         self.assertEqual(1800, result.expires_in)
 
     @override_settings(DOTNET_API_BASE_URL="http://backend-api:5000", ADMIN_OPS_KEY="abc123")
-    @mock.patch("dashboard.services.admin_auth_client.httpx.get")
+    @mock.patch("httpx.Client.get")
     def test_admin_me_uses_bearer_token(self, mock_get):
         response = mock.Mock()
         response.raise_for_status.return_value = None
@@ -63,7 +63,7 @@ class AdminAuthClientTests(SimpleTestCase):
         ADMIN_OPS_KEY="custom-key",
         ADMIN_AUTH_TRANSPORT="plain",
     )
-    @mock.patch("dashboard.services.admin_auth_client.httpx.post")
+    @mock.patch("httpx.Client.post")
     def test_admin_login_uses_custom_admin_ops_header_name(self, mock_post):
         response = mock.Mock()
         response.raise_for_status.return_value = None
@@ -87,7 +87,7 @@ class AdminAuthClientTests(SimpleTestCase):
         KMS_API_BASE_URL="",
         KMS_SERVICE_TOKEN="",
     )
-    @mock.patch("dashboard.services.admin_auth_client.httpx.post")
+    @mock.patch("httpx.Client.post")
     def test_admin_login_auto_without_kms_uses_plain_transport(self, mock_post):
         response = mock.Mock()
         response.raise_for_status.return_value = None
@@ -111,7 +111,7 @@ class AdminAuthClientTests(SimpleTestCase):
         KMS_API_BASE_URL="http://kms-api:5050",
         KMS_SERVICE_TOKEN="svc-token",
     )
-    @mock.patch("dashboard.services.admin_auth_client.httpx.post")
+    @mock.patch("httpx.Client.post")
     def test_admin_login_secure_channel_encrypts_and_decrypts(self, mock_post):
         start_response = mock.Mock()
         start_response.raise_for_status.return_value = None
