@@ -1,4 +1,0 @@
-/**
- * Economy feature types
- */
-export {};
