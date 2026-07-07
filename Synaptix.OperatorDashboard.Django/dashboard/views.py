@@ -2522,7 +2522,7 @@ def forgot_password_view(request):
 
     try:
         from .services.admin_auth_client import admin_forgot_password
-        result = admin_forgot_password(email)
+        admin_forgot_password(email)
         messages.success(
             request,
             "If this email is registered, a password reset link has been sent."
@@ -2532,7 +2532,7 @@ def forgot_password_view(request):
             "dashboard/forgot_password.html",
             {"success_message": "Check your email for a password reset link."}
         )
-    except httpx.HTTPStatusError as ex:
+    except httpx.HTTPStatusError:
         # Always show the same message for security (don't leak email existence)
         messages.success(
             request,

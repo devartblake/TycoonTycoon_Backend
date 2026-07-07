@@ -10,7 +10,6 @@ from .http_client_pool import (
     get_http_client,
     get_kms_session,
     cache_kms_session,
-    clear_kms_session,
 )
 
 

@@ -31,7 +31,7 @@ namespace Synaptix.Backend.Api.Features.Matches
             {
                 var sub = user.FindFirstValue("sub") ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (!Guid.TryParse(sub, out var callerId) || callerId != req.HostPlayerId)
-                    return Results.Forbid();
+                    return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "Caller is not the host player.");
 
                 var decision = await enforcement.EvaluateAsync(req.HostPlayerId, ct);
                 if (!decision.CanStartMatch)
