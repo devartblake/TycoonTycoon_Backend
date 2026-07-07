@@ -27,7 +27,9 @@ export default defineConfig({
 
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
+    // Vite dev server runs on port 3000 (see vite.config.ts). Playwright waits
+    // on this URL for readiness before starting the tests.
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
