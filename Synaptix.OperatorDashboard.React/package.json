@@ -57,6 +57,7 @@
     "@vitest/coverage-v8": "^4.1.9",
     "autoprefixer": "^10.4.0",
     "axe-core": "^4.12.1",
+    "axe-playwright": "^2.2.2",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
