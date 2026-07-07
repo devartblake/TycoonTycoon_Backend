@@ -1,5 +1,6 @@
 ﻿using Hangfire;
 using Hangfire.InMemory;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -80,6 +81,14 @@ namespace Synaptix.Backend.Api.Tests.TestHost
                        .UseInMemoryStorage());
                 services.AddHangfireServer();
                 services.AddHostedService<TestBaselineDataSeeder>();
+
+                // #405 adds a global authenticated-user FallbackPolicy (deny-by-default)
+                // for production. Disable ONLY the fallback in the test host so the
+                // integration tests exercise each endpoint's explicit auth posture
+                // (endpoints with .RequireAuthorization() still return 401 without a
+                // token; endpoints protected only by the fallback are reachable as they
+                // were pre-#405). The fallback remains active in production.
+                services.PostConfigure<AuthorizationOptions>(o => o.FallbackPolicy = null);
             });
         }
     }
