@@ -1,4 +1,0 @@
-/**
- * Moderation feature types
- */
-export {};

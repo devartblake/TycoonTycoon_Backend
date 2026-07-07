@@ -1,4 +1,0 @@
-/**
- * Content feature types
- */
-export {};

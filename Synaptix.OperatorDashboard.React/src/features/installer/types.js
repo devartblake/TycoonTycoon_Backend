@@ -1,4 +1,0 @@
-/**
- * Backend Installer types
- */
-export {};

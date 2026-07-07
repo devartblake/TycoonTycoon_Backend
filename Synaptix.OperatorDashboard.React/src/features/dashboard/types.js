@@ -1,4 +1,0 @@
-/**
- * Dashboard feature types
- */
-export {};

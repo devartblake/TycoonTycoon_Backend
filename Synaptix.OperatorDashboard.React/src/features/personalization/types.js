@@ -1,4 +1,0 @@
-/**
- * Personalization feature types
- */
-export {};

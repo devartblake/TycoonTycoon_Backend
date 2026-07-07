@@ -1,7 +1,0 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-export function QueueStats({ stats, isLoading }) {
-    if (isLoading) {
-        return (_jsx("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4", children: [...Array(3)].map((_, i) => (_jsx("div", { className: "operator-card h-24 bg-bg-secondary animate-pulse" }, i))) }));
-    }
-    return (_jsxs("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4", children: [_jsxs("div", { className: "operator-card", children: [_jsx("div", { className: "text-sm text-ink-tertiary", children: "Pending Review" }), _jsx("div", { className: "text-3xl font-bold text-accent mt-2", children: stats.pendingCount }), _jsx("p", { className: "text-xs text-ink-secondary mt-2", children: "Flags awaiting verdict" })] }), _jsxs("div", { className: "operator-card", children: [_jsx("div", { className: "text-sm text-ink-tertiary", children: "Reviewed This Week" }), _jsx("div", { className: "text-3xl font-bold text-status-healthy mt-2", children: stats.reviewedThisWeek }), _jsx("p", { className: "text-xs text-ink-secondary mt-2", children: "Verdicts submitted" })] }), _jsxs("div", { className: "operator-card", children: [_jsx("div", { className: "text-sm text-ink-tertiary", children: "Completion Rate" }), _jsxs("div", { className: "text-3xl font-bold text-accent mt-2", children: [Math.round(stats.completionRate * 100), "%"] }), _jsx("p", { className: "text-xs text-ink-secondary mt-2", children: "Of queue cleared weekly" })] })] }));
-}

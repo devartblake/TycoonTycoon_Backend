@@ -1,4 +1,0 @@
-/**
- * Operations feature types
- */
-export {};

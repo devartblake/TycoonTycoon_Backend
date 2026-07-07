@@ -1,4 +1,0 @@
-/**
- * Notifications feature types
- */
-export {};

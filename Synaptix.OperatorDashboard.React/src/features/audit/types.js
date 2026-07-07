@@ -1,4 +1,0 @@
-/**
- * Audit feature types
- */
-export {};

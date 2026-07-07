@@ -1,4 +1,0 @@
-/**
- * Configuration feature types
- */
-export {};

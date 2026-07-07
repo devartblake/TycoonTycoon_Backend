@@ -1,6 +1,5 @@
 """HTTP client pooling for connection reuse and KMS session caching."""
 
-import json
 import time
 from typing import Any
 

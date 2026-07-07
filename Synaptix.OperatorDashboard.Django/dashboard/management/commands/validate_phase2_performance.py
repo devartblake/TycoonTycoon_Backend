@@ -9,12 +9,10 @@ Usage:
 
 import time
 import subprocess
-from io import StringIO
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
-import httpx
 
 
 class Command(BaseCommand):

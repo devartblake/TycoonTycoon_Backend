@@ -27,6 +27,15 @@ export default function PlayerProfilePage() {
   const navigate = useNavigate()
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
+  // Hooks must run unconditionally and in the same order on every render, so they
+  // are called before the early return below (Rules of Hooks).
+  const moderationQuery = usePlayerModeration(playerId ?? '')
+  const banMutation = useBanPlayer()
+  const unbanMutation = useUnbanPlayer()
+  const suspendMutation = useSuspendPlayer()
+  const unsuspendMutation = useUnsuspendPlayer()
+  const warnMutation = useWarnPlayer()
+
   if (!playerId) {
     return (
       <div className="operator-container text-center py-12">
@@ -34,13 +43,6 @@ export default function PlayerProfilePage() {
       </div>
     )
   }
-
-  const moderationQuery = usePlayerModeration(playerId)
-  const banMutation = useBanPlayer()
-  const unbanMutation = useUnbanPlayer()
-  const suspendMutation = useSuspendPlayer()
-  const unsuspendMutation = useUnsuspendPlayer()
-  const warnMutation = useWarnPlayer()
 
   const moderation = moderationQuery.data
 
