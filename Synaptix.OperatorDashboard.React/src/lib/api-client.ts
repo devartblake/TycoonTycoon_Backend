@@ -6,7 +6,11 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/features/auth/store'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+// Empty = same-origin. Admin calls must go through the dev Vite proxy or the
+// Docker nginx proxy, which inject the required X-Admin-Ops-Key header —
+// pointing this directly at the API will 401 every request (key never ships
+// in browser JS).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 /**
  * Create an Axios instance with default config
@@ -38,6 +42,16 @@ function createApiInstance(): AxiosInstance {
     async (error: AxiosError) => {
       const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
 
+      // A failed login is not an expired session: surface the backend message
+      // on the login page instead of running the refresh/redirect flow.
+      if (error.response?.status === 401 && originalRequest.url?.includes('/admin/auth/login')) {
+        const errorData = error.response.data as Record<string, unknown> | undefined
+        const message = typeof errorData?.message === 'string'
+          ? errorData.message
+          : 'Login failed. Please check your credentials.'
+        return Promise.reject(new Error(message))
+      }
+
       // Handle 401 Unauthorized
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true
@@ -46,7 +60,7 @@ function createApiInstance(): AxiosInstance {
           const { refreshToken } = useAuthStore.getState()
           if (!refreshToken) {
             useAuthStore.getState().logout()
-            window.location.href = '/login'
+            window.location.href = '/auth/login'
             return Promise.reject(error)
           }
 
@@ -65,7 +79,7 @@ function createApiInstance(): AxiosInstance {
           return instance(originalRequest)
         } catch (refreshError) {
           useAuthStore.getState().logout()
-          window.location.href = '/login'
+          window.location.href = '/auth/login'
           return Promise.reject(refreshError)
         }
       }
