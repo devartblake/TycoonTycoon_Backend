@@ -10,8 +10,8 @@
  * Mapping notes (see #421):
  *   - Transaction.id is the backend EventId, so refunds roll back by that id.
  *   - Balance adjustments post a single-line Coins transaction.
- *   - getPlayerEconomy (summary) and getEconomyStats (aggregate) have NO backend
- *     source and throw a clear error until those endpoints are built.
+ *   - getPlayerEconomy (summary) and getEconomyStats (aggregate) are now served by
+ *     dedicated backend routes; Coins is the headline currentBalance/totalCurrency.
  */
 
 import { apiGet, apiPost } from '@/lib/api-client'
@@ -55,7 +55,7 @@ interface BackendPlayerLookup {
   playerId?: string
   userId?: string
   email?: string
-  handle?: string
+  username?: string
 }
 
 function offsetToPage(offset: number, limit: number): number {
@@ -85,12 +85,9 @@ function toTransaction(item: BackendTxnListItem): Transaction {
   }
 }
 
-export async function getPlayerEconomy(_playerId: string): Promise<PlayerEconomy> {
-  if (getMockMode()) return mockApi.mockGetPlayerEconomy(_playerId)
-  // No backend per-player economy summary (balances/totals). Needs a backend
-  // endpoint (see #421) before this view can be populated from real data.
-  void _playerId
-  throw new Error('Per-player economy summary is not yet available from the backend (#421).')
+export async function getPlayerEconomy(playerId: string): Promise<PlayerEconomy> {
+  if (getMockMode()) return mockApi.mockGetPlayerEconomy(playerId)
+  return apiGet<PlayerEconomy>(`/admin/economy/players/${playerId}`)
 }
 
 export async function getPlayerTransactions(playerId: string, filters?: TransactionFilter, offset: number = 0, limit: number = 50): Promise<TransactionListResponse> {
@@ -127,8 +124,7 @@ export async function issueRefund(playerId: string, transactionId: string, reaso
 
 export async function getEconomyStats(): Promise<EconomyStats> {
   if (getMockMode()) return mockApi.mockGetEconomyStats()
-  // No backend aggregate-currency stats endpoint. Needs backend work (see #421).
-  throw new Error('Aggregate economy stats are not yet available from the backend (#421).')
+  return apiGet<EconomyStats>('/admin/economy/stats')
 }
 
 export async function searchPlayers(query: string, limit: number = 20): Promise<Array<{ playerId: string; email: string; handle: string; currentBalance: number }>> {
@@ -136,9 +132,12 @@ export async function searchPlayers(query: string, limit: number = 20): Promise<
   // Backend exposes a single-match resolver, not a search. Wrap the match (if any).
   try {
     const res = await apiGet<BackendPlayerLookup>(`/admin/player-lookup/resolve?query=${encodeURIComponent(query)}`)
-    const playerId = res.playerId ?? res.userId ?? ''
+    // The resolver returns a prefixed contract id (ply_/usr_); strip it to the raw
+    // GUID the /players/{id} and /history/{playerId} routes expect.
+    const raw = res.playerId ?? res.userId ?? ''
+    const playerId = raw.replace(/^(ply_|usr_)/, '')
     if (!playerId) return []
-    return [{ playerId, email: res.email ?? '', handle: res.handle ?? '', currentBalance: 0 }]
+    return [{ playerId, email: res.email ?? '', handle: res.username ?? '', currentBalance: 0 }]
   } catch {
     // 404 = no match.
     return []
