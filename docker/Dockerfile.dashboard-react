@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY Synaptix.OperatorDashboard.React/package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (use npm install to rebuild native modules for Linux)
+RUN npm install --legacy-peer-deps
 
 # Copy source
 COPY Synaptix.OperatorDashboard.React/ .

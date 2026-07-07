@@ -17,7 +17,6 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "types": ["vite/client", "node"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
