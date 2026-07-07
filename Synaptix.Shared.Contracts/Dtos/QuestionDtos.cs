@@ -106,6 +106,22 @@
 
     public sealed record BulkDeleteResultDto(int Requested, int Deleted);
 
+    // Admin review dashboard: aggregate counts and bulk approve/reject
+    public sealed record AdminQuestionStatsDto(
+        int TotalPending,
+        int TotalApproved,
+        int TotalRejected,
+        double ApprovalRate,
+        double AvgReviewTime // minutes
+    );
+
+    public sealed record BulkReviewQuestionsRequest(
+        IReadOnlyList<Guid> Ids,
+        string Verdict // "approve" | "reject"
+    );
+
+    public sealed record BulkReviewResultDto(bool Success, int Reviewed);
+
     // Import/Export
     public sealed record ImportQuestionsRequest(IReadOnlyList<CreateQuestionRequest> Questions);
     public sealed record ImportQuestionsResultDto(int Received, int Created, int Failed);

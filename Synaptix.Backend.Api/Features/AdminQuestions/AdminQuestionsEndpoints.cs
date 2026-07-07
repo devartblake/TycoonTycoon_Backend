@@ -61,6 +61,28 @@ namespace Synaptix.Backend.Api.Features.AdminQuestions
                 return Results.Ok(dto);
             });
 
+            g.MapGet("/stats", async (IMediator mediator, CancellationToken ct) =>
+            {
+                var dto = await mediator.Send(new AdminQuestionStats(), ct);
+                return Results.Ok(dto);
+            });
+
+            g.MapGet("/categories", async (IMediator mediator, CancellationToken ct) =>
+            {
+                var categories = await mediator.Send(new AdminListQuestionCategories(), ct);
+                return Results.Ok(categories);
+            });
+
+            g.MapPost("/bulk-review", async ([FromBody] BulkReviewQuestionsRequest req, IMediator mediator, CancellationToken ct) =>
+            {
+                var verdict = req.Verdict?.Trim().ToLowerInvariant();
+                if (verdict is not ("approve" or "reject"))
+                    return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Verdict must be 'approve' or 'reject'.");
+
+                var dto = await mediator.Send(new AdminBulkReviewQuestions(req.Ids ?? Array.Empty<Guid>(), verdict), ct);
+                return Results.Ok(dto);
+            });
+
             g.MapGet("/{id:guid}", async (Guid id, IMediator mediator, CancellationToken ct) =>
             {
                 var dto = await mediator.Send(new AdminGetQuestion(id), ct);

@@ -2,16 +2,14 @@
  * Content API client
  *
  * Reconciled to the real backend route surface under /admin/questions
- * (Synaptix.Backend.Api/Features/AdminQuestions). The backend has no /content
- * group and no bulk-review/stats/categories routes, so those are derived from
- * the list + per-item approve/reject. Functions keep their existing return types.
+ * (Synaptix.Backend.Api/Features/AdminQuestions). Stats, categories and
+ * bulk-review are now served by dedicated backend routes (#420). Functions keep
+ * their existing return types.
  *
- * Known fidelity gaps (backend does not expose these; see #420):
+ * Remaining fidelity gap:
  *   - The list DTO omits status/options/explanation, so list items carry
  *     best-effort values (status inferred from the requested filter). Detail
  *     (GET /{id}) is fully populated.
- *   - Stats are derived from three filtered counts; avgReviewTime is not exposed
- *     and defaults to 0. Categories are derived from the first page of results.
  */
 
 import { apiGet, apiPost } from '@/lib/api-client'
@@ -149,39 +147,16 @@ export async function reviewQuestion(review: QuestionReview): Promise<{ success:
 
 export async function bulkReviewQuestions(questionIds: string[], verdict: 'approve' | 'reject', _reason?: string): Promise<{ success: boolean; reviewed: number }> {
   if (getMockMode()) return mockApi.mockBulkReviewQuestions(questionIds, verdict, _reason)
-  // Backend has no bulk approve/reject; apply per question.
   void _reason
-  const results = await Promise.allSettled(
-    questionIds.map((id) => apiPost(`/admin/questions/${id}/${verdict}`, {}))
-  )
-  return { success: true, reviewed: results.filter((r) => r.status === 'fulfilled').length }
+  return apiPost<{ success: boolean; reviewed: number }>('/admin/questions/bulk-review', { ids: questionIds, verdict })
 }
 
 export async function getQuestionsStats(): Promise<QuestionsStats> {
   if (getMockMode()) return mockApi.mockGetQuestionsStats()
-  // Backend has no /stats; derive counts from filtered totals.
-  const countFor = async (status: string): Promise<number> => {
-    const res = await apiGet<BackendQuestionListResponse>(`/admin/questions?status=${status}&page=1&pageSize=1`)
-    return res.total
-  }
-  const [totalPending, totalApproved, totalRejected] = await Promise.all([
-    countFor('pending'),
-    countFor('approved'),
-    countFor('rejected'),
-  ])
-  const reviewed = totalApproved + totalRejected
-  return {
-    totalPending,
-    totalApproved,
-    totalRejected,
-    approvalRate: reviewed === 0 ? 0 : totalApproved / reviewed,
-    avgReviewTime: 0,
-  }
+  return apiGet<QuestionsStats>('/admin/questions/stats')
 }
 
 export async function getCategories(): Promise<string[]> {
   if (getMockMode()) return mockApi.mockGetCategories()
-  // Backend has no categories endpoint; derive distinct categories from the list.
-  const res = await apiGet<BackendQuestionListResponse>('/admin/questions?page=1&pageSize=100')
-  return Array.from(new Set(res.items.map((i) => i.category).filter(Boolean))).sort()
+  return apiGet<string[]>('/admin/questions/categories')
 }
