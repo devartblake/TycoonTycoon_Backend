@@ -56,6 +56,28 @@
         string Reason
     );
 
+    // Operator economy dashboard: per-player summary (Coins is the headline balance).
+    public sealed record AdminPlayerEconomyDto(
+        Guid PlayerId,
+        string Email,
+        string Handle,
+        int CurrentBalance,
+        int TotalEarned,
+        int TotalSpent,
+        int TotalRefunded,
+        DateTimeOffset? LastTransactionAt,
+        DateTimeOffset AccountCreatedAt
+    );
+
+    // Operator economy dashboard: aggregate Coins circulation across all wallets.
+    public sealed record AdminEconomyStatsDto(
+        int TotalPlayers,
+        long TotalCurrency,
+        double AverageBalance,
+        int LargestBalance,
+        int SmallestBalance
+    );
+
     public sealed record ModeBalanceRuleDto(
         string Mode,
         int EnergyCost,

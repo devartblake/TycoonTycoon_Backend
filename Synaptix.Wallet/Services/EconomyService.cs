@@ -145,6 +145,71 @@ namespace Synaptix.Wallet.Services
             return result;
         }
 
+        public async Task<AdminPlayerEconomyDto?> GetPlayerSummaryAsync(Guid playerId, CancellationToken ct)
+        {
+            var wallet = await _db.PlayerWallets.AsNoTracking().FirstOrDefaultAsync(x => x.PlayerId == playerId, ct);
+            var player = await _db.Players.AsNoTracking().FirstOrDefaultAsync(x => x.Id == playerId, ct);
+            if (wallet is null && player is null)
+                return null;
+
+            // Identity: prefer the linked user (email + handle); fall back to the player username.
+            var lookup = await _db.PlayerLookupCodes.AsNoTracking().FirstOrDefaultAsync(x => x.PlayerId == playerId, ct);
+            var userId = lookup?.UserId ?? playerId;
+            var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId, ct);
+            var email = user?.Email ?? string.Empty;
+            var handle = user?.Handle ?? player?.Username ?? string.Empty;
+
+            // Coins ledger aggregates (loaded with lines, aggregated in memory like GetHistoryAsync).
+            var txns = await _db.EconomyTransactions.AsNoTracking()
+                .Where(t => t.PlayerId == playerId)
+                .Include(t => t.Lines)
+                .ToListAsync(ct);
+
+            int totalEarned = 0, totalSpent = 0, totalRefunded = 0;
+            DateTimeOffset? lastTxAt = null;
+            DateTimeOffset? earliestTxAt = null;
+            foreach (var t in txns)
+            {
+                var coins = (t.Lines ?? Enumerable.Empty<EconomyTransactionLine>())
+                    .Where(l => l.Currency == CurrencyType.Coins)
+                    .Sum(l => l.Delta);
+
+                if (coins > 0) totalEarned += coins;
+                else if (coins < 0) totalSpent += -coins;
+                if (t.ReversalOfTransactionId != null && coins > 0) totalRefunded += coins;
+
+                if (lastTxAt is null || t.CreatedAtUtc > lastTxAt) lastTxAt = t.CreatedAtUtc;
+                if (earliestTxAt is null || t.CreatedAtUtc < earliestTxAt) earliestTxAt = t.CreatedAtUtc;
+            }
+
+            var accountCreatedAt = player?.CreatedAt ?? earliestTxAt ?? DateTimeOffset.UnixEpoch;
+
+            return new AdminPlayerEconomyDto(
+                playerId,
+                email,
+                handle,
+                wallet?.Coins ?? 0,
+                totalEarned,
+                totalSpent,
+                totalRefunded,
+                lastTxAt,
+                accountCreatedAt);
+        }
+
+        public async Task<AdminEconomyStatsDto> GetEconomyStatsAsync(CancellationToken ct)
+        {
+            var wallets = _db.PlayerWallets.AsNoTracking();
+            var count = await wallets.CountAsync(ct);
+            if (count == 0)
+                return new AdminEconomyStatsDto(0, 0, 0d, 0, 0);
+
+            var total = await wallets.SumAsync(w => (long)w.Coins, ct);
+            var largest = await wallets.MaxAsync(w => w.Coins, ct);
+            var smallest = await wallets.MinAsync(w => w.Coins, ct);
+
+            return new AdminEconomyStatsDto(count, total, (double)total / count, largest, smallest);
+        }
+
         private async Task<PlayerWallet> EnsureWalletAsync(Guid playerId, CancellationToken ct)
         {
             var w = await _db.PlayerWallets.AsNoTracking().FirstOrDefaultAsync(x => x.PlayerId == playerId, ct);

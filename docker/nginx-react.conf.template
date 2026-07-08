@@ -1,0 +1,64 @@
+# Rendered by the nginx image's envsubst entrypoint at container start.
+# Required env: API_UPSTREAM (e.g. http://backend-api:5000, no trailing slash),
+# ADMIN_OPS_KEY (matches the backend's AdminOps:Key).
+server {
+    listen 8300;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html index.htm;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css text/javascript application/json application/javascript application/x-javascript;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    # Admin API proxy — injects the ops key server-side so it never ships in
+    # browser JS. The SPA calls same-origin /admin/* paths.
+    location /admin {
+        proxy_pass ${API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Admin-Ops-Key "${ADMIN_OPS_KEY}";
+    }
+
+    # Cache busting for index.html
+    location = /index.html {
+        add_header Cache-Control "public, max-age=0, must-revalidate";
+    }
+
+    # Static assets with long cache
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # SPA fallback - all routes serve index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "public, max-age=0, must-revalidate";
+    }
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+    }
+}

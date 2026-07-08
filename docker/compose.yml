@@ -743,15 +743,17 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.dashboard-react
       args:
-        VITE_API_BASE_URL: "${REACT_API_BASE_URL:-http://backend-api:5000}"
+        # Empty = same-origin: the browser calls this container's /admin proxy,
+        # which forwards to the API with the ops key injected server-side.
+        VITE_API_BASE_URL: "${REACT_API_BASE_URL:-}"
         VITE_APP_ENV: "${REACT_APP_ENV:-production}"
     container_name: synaptix_operator_dashboard_react
     restart: unless-stopped
     ports:
       - "${REACT_DASHBOARD_PORT:-8300}:8300"
     environment:
-      VITE_API_BASE_URL: "${REACT_API_BASE_URL:-http://backend-api:5000}"
-      VITE_APP_ENV: "${REACT_APP_ENV:-production}"
+      API_UPSTREAM: "${REACT_API_UPSTREAM:-http://backend-api:5000}"
+      ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
     depends_on:
       backend-api:
         condition: service_healthy

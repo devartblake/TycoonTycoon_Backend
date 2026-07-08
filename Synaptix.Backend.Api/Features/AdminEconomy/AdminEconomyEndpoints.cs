@@ -33,6 +33,20 @@ namespace Synaptix.Backend.Api.Features.AdminEconomy
                 return Results.Ok(res);
             });
 
+            g.MapGet("/players/{id:guid}", async ([FromRoute] Guid id, IEconomyService econ, CancellationToken ct) =>
+            {
+                var dto = await econ.GetPlayerSummaryAsync(id, ct);
+                return dto is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Player not found.")
+                    : Results.Ok(dto);
+            });
+
+            g.MapGet("/stats", async (IEconomyService econ, CancellationToken ct) =>
+            {
+                var dto = await econ.GetEconomyStatsAsync(ct);
+                return Results.Ok(dto);
+            });
+
             g.MapGet("/balance", async (IGameBalancePolicyService policy, CancellationToken ct) =>
             {
                 var cfg = await policy.GetConfigAsync(ct);
