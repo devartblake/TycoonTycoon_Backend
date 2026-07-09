@@ -352,13 +352,31 @@
         bool IsCorrect
     );
 
-    /// <summary>Batch answer check for a full match round.</summary>
-    public sealed record CheckAnswersBatchRequest(IReadOnlyList<CheckAnswerRequest> Answers);
+    /// <summary>
+    /// Batch answer check for a full match round.
+    /// When the caller is authenticated and supplies a <paramref name="QuizSessionId"/>,
+    /// the server also awards tier XP for the correct answers (server-authoritative;
+    /// the session id doubles as the idempotency key so retries never double-award).
+    /// </summary>
+    public sealed record CheckAnswersBatchRequest(
+        IReadOnlyList<CheckAnswerRequest> Answers,
+        string? QuizSessionId = null,
+        string? Mode = null
+    );
+
+    /// <summary>Server-authoritative XP awarded for a graded quiz session.</summary>
+    public sealed record QuizXpAwardDto(
+        double XpAwarded,
+        double TotalXp,
+        bool TierUpgraded,
+        string? NewTierId
+    );
 
     /// <summary>Batch answer check response.</summary>
     public sealed record CheckAnswersBatchResponse(
         IReadOnlyList<CheckAnswerResponse> Results,
         int Total,
-        int Correct
+        int Correct,
+        QuizXpAwardDto? XpAward = null
     );
 }

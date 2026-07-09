@@ -52,7 +52,10 @@ public static class AppConfigEndpoints
                 tournamentsEnabled         = Flag("tournaments_enabled",           false),
                 cryptoEnabled              = Flag("crypto_enabled",                false),
                 tomPersonalizationEnabled  = Flag("tom_personalization_enabled",   false),
-                socialEnabled              = Flag("social_enabled",                false),
+                // Social (friends/parties) ships enabled; moderation disables it
+                // per release or per player via the AdminAppConfig override.
+                // Keep in sync with FeatureFlagService (missing flag => enabled).
+                socialEnabled              = Flag("social_enabled",                true),
                 notificationsEnabled       = Flag("notifications_enabled",         false),
                 experimentsEnabled         = Flag("experiments_enabled",           false),
                 aiSidecarEnabled           = Flag("ai_sidecar_enabled",            false),

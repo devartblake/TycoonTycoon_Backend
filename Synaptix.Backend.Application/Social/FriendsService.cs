@@ -27,7 +27,7 @@ namespace Synaptix.Backend.Application.Social
                     RequestId: Guid.Empty,
                     FromPlayerId: fromPlayerId,
                     ToPlayerId: toPlayerId,
-                    Status: "Accepted",
+                    Status: FriendRequest.Statuses.Accepted,
                     CreatedAtUtc: DateTimeOffset.UtcNow,
                     RespondedAtUtc: DateTimeOffset.UtcNow
                 );
@@ -39,7 +39,7 @@ namespace Synaptix.Backend.Application.Social
                 .FirstOrDefaultAsync(x =>
                     ((x.FromPlayerId == fromPlayerId && x.ToPlayerId == toPlayerId) ||
                      (x.FromPlayerId == toPlayerId && x.ToPlayerId == fromPlayerId)) &&
-                    x.Status == "Pending", ct);
+                    x.Status == FriendRequest.Statuses.Pending, ct);
 
             if (existing is not null)
             {
@@ -106,7 +106,7 @@ namespace Synaptix.Backend.Application.Social
             }
 
             // Idempotency: if already accepted, ensure edges exist.
-            if (req.Status == "Accepted")
+            if (req.Status == FriendRequest.Statuses.Accepted)
             {
                 await EnsureEdgesAsync(req.FromPlayerId, req.ToPlayerId, ct);
                 if (tx is not null)
@@ -114,7 +114,7 @@ namespace Synaptix.Backend.Application.Social
                 return ToDto(req);
             }
 
-            if (req.Status != "Pending")
+            if (req.Status != FriendRequest.Statuses.Pending)
             {
                 if (tx is not null)
                     await tx.RollbackAsync(ct);
@@ -167,10 +167,10 @@ namespace Synaptix.Backend.Application.Social
             if (req.ToPlayerId != actingPlayerId)
                 throw new InvalidOperationException("Only the recipient can decline this friend request.");
 
-            if (req.Status == "Declined")
+            if (req.Status == FriendRequest.Statuses.Declined)
                 return ToDto(req);
 
-            if (req.Status != "Pending")
+            if (req.Status != FriendRequest.Statuses.Pending)
                 throw new InvalidOperationException($"Cannot decline a request in status '{req.Status}'.");
 
             reqDecline(req);
@@ -179,6 +179,33 @@ namespace Synaptix.Backend.Application.Social
             return ToDto(req);
 
             static void reqDecline(FriendRequest r) => r.Decline();
+        }
+
+        public async Task<FriendRequestDto?> CancelRequestAsync(Guid requestId, Guid actingPlayerId, CancellationToken ct)
+        {
+            if (requestId == Guid.Empty || actingPlayerId == Guid.Empty)
+                throw new ArgumentException("Ids cannot be empty.");
+
+            var req = await db.FriendRequests
+                .FirstOrDefaultAsync(x => x.Id == requestId, ct);
+
+            if (req is null)
+                return null;
+
+            // Only the sender can cancel their own outgoing request
+            if (req.FromPlayerId != actingPlayerId)
+                throw new InvalidOperationException("Only the sender can cancel this friend request.");
+
+            if (req.Status == FriendRequest.Statuses.Cancelled)
+                return ToDto(req);
+
+            if (req.Status != FriendRequest.Statuses.Pending)
+                throw new InvalidOperationException($"Cannot cancel a request in status '{req.Status}'.");
+
+            req.Cancel();
+            await db.SaveChangesAsync(ct);
+
+            return ToDto(req);
         }
 
         public async Task<FriendRequestsListResponseDto> ListRequestsAsync(
@@ -205,7 +232,7 @@ namespace Synaptix.Backend.Application.Social
             };
 
             // Default: show pending first, then newest
-            q = q.OrderBy(x => x.Status == "Pending" ? 0 : 1)
+            q = q.OrderBy(x => x.Status == FriendRequest.Statuses.Pending ? 0 : 1)
                  .ThenByDescending(x => x.CreatedAtUtc);
 
             var total = await q.CountAsync(ct);
@@ -291,12 +318,12 @@ namespace Synaptix.Backend.Application.Social
             box = (box ?? "all").Trim().ToLowerInvariant();
             q = box switch
             {
-                "incoming" => q.Where(x => x.ToPlayerId == playerId && x.Status == "Pending"),
+                "incoming" => q.Where(x => x.ToPlayerId == playerId && x.Status == FriendRequest.Statuses.Pending),
                 "outgoing" => q.Where(x => x.FromPlayerId == playerId),
                 _ => q.Where(x => x.ToPlayerId == playerId || x.FromPlayerId == playerId)
             };
 
-            q = q.OrderBy(x => x.Status == "Pending" ? 0 : 1)
+            q = q.OrderBy(x => x.Status == FriendRequest.Statuses.Pending ? 0 : 1)
                  .ThenByDescending(x => x.CreatedAtUtc);
 
             var total = await q.CountAsync(ct);
