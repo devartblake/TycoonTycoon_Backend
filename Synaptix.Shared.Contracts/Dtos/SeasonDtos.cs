@@ -71,6 +71,36 @@
         IReadOnlyList<SeasonLeaderboardItemDto> Items
     );
 
+    // Public (player-facing) season leaderboard with profile info.
+    // Live seasons serve from PlayerSeasonProfiles; closed seasons serve from
+    // the immutable SeasonRankSnapshotRows captured at close (IsFinal = true).
+    public sealed record PublicSeasonLeaderboardEntryDto(
+        int Rank,
+        Guid PlayerId,
+        string Handle,
+        string DisplayName,
+        string? AvatarUrl,
+        int RankPoints,
+        int Wins,
+        int Losses,
+        int Draws,
+        int Tier,
+        int TierRank
+    );
+
+    public sealed record PublicSeasonLeaderboardResponseDto(
+        Guid SeasonId,
+        int SeasonNumber,
+        string SeasonName,
+        bool IsFinal,
+        int Page,
+        int PageSize,
+        int Total,
+        int TotalPages,
+        IReadOnlyList<PublicSeasonLeaderboardEntryDto> Items,
+        PublicSeasonLeaderboardEntryDto? Me
+    );
+
     // Idempotent season-points apply
     public sealed record ApplySeasonPointsRequest(
         Guid EventId,
