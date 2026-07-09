@@ -10,10 +10,7 @@ namespace Synaptix.Backend.Api.Features.Progression;
 /// </summary>
 public static class TierProgression
 {
-    /// <summary>
-    /// Tier definitions based on XP thresholds.
-    /// </summary>
-    public static readonly TierDefinition[] TierDefinitions =
+    private static readonly TierDefinition[] _tierDefinitions =
     [
         new("bronze-rookie", "Bronze Rookie", 1, 0, 500,
             "bronze_rookie",
@@ -45,17 +42,23 @@ public static class TierProgression
     ];
 
     /// <summary>
+    /// Tier definitions based on XP thresholds. Exposed as a read-only list
+    /// to prevent callers from mutating the underlying array.
+    /// </summary>
+    public static IReadOnlyList<TierDefinition> TierDefinitions { get; } = Array.AsReadOnly(_tierDefinitions);
+
+    /// <summary>
     /// Find the tier that contains this XP value.
     /// </summary>
     public static TierDefinition GetTierForXp(double xp)
     {
-        foreach (var tier in TierDefinitions)
+        foreach (var tier in _tierDefinitions)
         {
             if (xp >= tier.MinXp && xp < tier.MaxXp)
                 return tier;
         }
         // Return highest tier if XP exceeds all ranges
-        return TierDefinitions[^1];
+        return _tierDefinitions[^1];
     }
 
     /// <summary>
@@ -63,9 +66,9 @@ public static class TierProgression
     /// </summary>
     public static TierDefinition? GetNextTier(TierDefinition current)
     {
-        var currentIndex = System.Array.FindIndex(TierDefinitions, t => t.Id == current.Id);
-        return currentIndex >= 0 && currentIndex < TierDefinitions.Length - 1
-            ? TierDefinitions[currentIndex + 1]
+        var currentIndex = Array.FindIndex(_tierDefinitions, t => t.Id == current.Id);
+        return currentIndex >= 0 && currentIndex < _tierDefinitions.Length - 1
+            ? _tierDefinitions[currentIndex + 1]
             : null;
     }
 
@@ -76,5 +79,12 @@ public static class TierProgression
     /// award matches what gameplay shows.
     /// </summary>
     public static double XpForCorrectAnswer(QuestionDifficulty difficulty)
-        => (int)difficulty * 10.0;
+        => difficulty switch
+        {
+            QuestionDifficulty.Easy   => 10.0,
+            QuestionDifficulty.Medium => 20.0,
+            QuestionDifficulty.Hard   => 30.0,
+            QuestionDifficulty.Expert => 40.0,
+            _ => throw new ArgumentOutOfRangeException(nameof(difficulty), difficulty, null)
+        };
 }

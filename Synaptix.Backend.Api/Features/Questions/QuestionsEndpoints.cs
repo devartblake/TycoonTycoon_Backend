@@ -335,6 +335,8 @@ namespace Synaptix.Backend.Api.Features.Questions
         /// Awards only when the caller is authenticated and supplied a quiz
         /// session id, which doubles as the idempotency key: retries of the
         /// same session return the original award instead of double-crediting.
+        /// Storing a <see cref="Lazy{T}"/> in the cache makes the check-and-set
+        /// atomic — concurrent requests with the same key await the same Task.
         /// The client never chooses the amount — it is derived from the graded
         /// answers above (difficulty × 10 per correct answer).
         /// </summary>
@@ -357,20 +359,28 @@ namespace Synaptix.Backend.Api.Features.Questions
             if (claim is null || !Guid.TryParse(claim.Value, out var playerId) || playerId == Guid.Empty)
                 return null;
 
-            // Idempotency: one award per (player, quiz session). In-memory is
-            // sufficient for the accidental-retry window; a multi-instance
-            // deployment should replace this with a distributed cache or a
-            // persisted award ledger.
+            // Idempotency: one award per (player, quiz session). Storing a
+            // Lazy<Task<T>> ensures the DB work executes at most once even under
+            // concurrent retries — both threads await the same Task once the Lazy
+            // is in the cache. In-memory is sufficient for the accidental-retry
+            // window; a multi-instance deployment should replace this with a
+            // distributed cache or a persisted award ledger.
             var dedupeKey = $"quiz-xp:{playerId:N}:{req.QuizSessionId}";
-            if (cache.TryGetValue<QuizXpAwardDto>(dedupeKey, out var previousAward))
-                return previousAward;
-
-            if (earnedXp <= 0)
+            var lazy = cache.GetOrCreate(dedupeKey, entry =>
             {
-                var zeroAward = new QuizXpAwardDto(0, 0, false, null);
-                cache.Set(dedupeKey, zeroAward, TimeSpan.FromHours(24));
-                return zeroAward;
-            }
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
+                return new Lazy<Task<QuizXpAwardDto?>>(
+                    () => ExecuteXpAwardAsync(playerId, earnedXp, db, ct),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+            })!;
+            return await lazy.Value;
+        }
+
+        private static async Task<QuizXpAwardDto?> ExecuteXpAwardAsync(
+            Guid playerId, double earnedXp, IAppDb db, CancellationToken ct)
+        {
+            if (earnedXp <= 0)
+                return null;
 
             var player = await db.Players.FirstOrDefaultAsync(p => p.Id == playerId, ct);
             if (player is null)
@@ -395,14 +405,11 @@ namespace Synaptix.Backend.Api.Features.Questions
 
             await db.SaveChangesAsync(ct);
 
-            var award = new QuizXpAwardDto(
+            return new QuizXpAwardDto(
                 XpAwarded: earnedXp,
                 TotalXp: player.Xp,
                 TierUpgraded: tierUpgraded,
-                NewTierId: tierUpgraded ? newTier.Id : null);
-
-            cache.Set(dedupeKey, award, TimeSpan.FromHours(24));
-            return award;
+                NewTierId: tierUpgraded ? player.TierId?.ToString() : null);
         }
 
         private static async Task<List<GameplayQuestionDto>> QueryGameplayQuestionsAsync(
