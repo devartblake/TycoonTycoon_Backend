@@ -181,6 +181,33 @@ namespace Synaptix.Backend.Application.Social
             static void reqDecline(FriendRequest r) => r.Decline();
         }
 
+        public async Task<FriendRequestDto?> CancelRequestAsync(Guid requestId, Guid actingPlayerId, CancellationToken ct)
+        {
+            if (requestId == Guid.Empty || actingPlayerId == Guid.Empty)
+                throw new ArgumentException("Ids cannot be empty.");
+
+            var req = await db.FriendRequests
+                .FirstOrDefaultAsync(x => x.Id == requestId, ct);
+
+            if (req is null)
+                return null;
+
+            // Only the sender can cancel their own outgoing request
+            if (req.FromPlayerId != actingPlayerId)
+                throw new InvalidOperationException("Only the sender can cancel this friend request.");
+
+            if (req.Status == "Cancelled")
+                return ToDto(req);
+
+            if (req.Status != "Pending")
+                throw new InvalidOperationException($"Cannot cancel a request in status '{req.Status}'.");
+
+            req.Cancel();
+            await db.SaveChangesAsync(ct);
+
+            return ToDto(req);
+        }
+
         public async Task<FriendRequestsListResponseDto> ListRequestsAsync(
             Guid playerId,
             string box, // "incoming" | "outgoing" | "all"

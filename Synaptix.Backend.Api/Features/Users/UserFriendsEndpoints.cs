@@ -140,6 +140,29 @@ namespace Synaptix.Backend.Api.Features.Users
                 catch (InvalidOperationException ex) { return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message); }
             });
 
+            // DELETE /users/me/friends/requests/{requestId}
+            // Cancel an outgoing (sent) friend request; only the sender may
+            // cancel, and the actor comes from the JWT.
+            g.MapDelete("/requests/{requestId:guid}", async (
+                Guid requestId,
+                HttpContext httpContext,
+                FriendsService friends,
+                CancellationToken ct) =>
+            {
+                if (!TryGetUserId(httpContext, out var playerId))
+                    return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+                try
+                {
+                    var dto = await friends.CancelRequestAsync(requestId, playerId, ct);
+                    return dto is null
+                        ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Friend request not found.")
+                        : Results.Ok(dto);
+                }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
+                catch (InvalidOperationException ex) { return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message); }
+            });
+
             // DELETE /users/me/friends/{friendPlayerId}
             // Authenticated equivalent of the internal DELETE /friends surface:
             // the acting player comes from the JWT, so it cannot be spoofed.
