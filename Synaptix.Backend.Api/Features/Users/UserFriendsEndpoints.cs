@@ -140,6 +140,26 @@ namespace Synaptix.Backend.Api.Features.Users
                 catch (InvalidOperationException ex) { return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", ex.Message); }
             });
 
+            // DELETE /users/me/friends/{friendPlayerId}
+            // Authenticated equivalent of the internal DELETE /friends surface:
+            // the acting player comes from the JWT, so it cannot be spoofed.
+            g.MapDelete("/{friendPlayerId:guid}", async (
+                Guid friendPlayerId,
+                HttpContext httpContext,
+                FriendsService friends,
+                CancellationToken ct) =>
+            {
+                if (!TryGetUserId(httpContext, out var playerId))
+                    return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+                try
+                {
+                    await friends.RemoveFriendAsync(playerId, friendPlayerId, ct);
+                    return Results.NoContent();
+                }
+                catch (ArgumentException ex) { return ApiResponses.Error(StatusCodes.Status422UnprocessableEntity, "VALIDATION_ERROR", ex.Message); }
+            });
+
             // GET /users/me/friends/suggestions
             g.MapGet("/suggestions", async (
                 HttpContext httpContext,

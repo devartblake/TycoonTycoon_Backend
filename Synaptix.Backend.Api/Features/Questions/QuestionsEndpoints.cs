@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using System.Security.Claims;
+using Synaptix.Backend.Api.Features.Progression;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
@@ -278,7 +281,9 @@ namespace Synaptix.Backend.Api.Features.Questions
         /// </summary>
         private static async Task<IResult> CheckAnswersBatch(
             [FromBody] CheckAnswersBatchRequest req,
+            HttpContext httpContext,
             IAppDb db,
+            IMemoryCache cache,
             CancellationToken ct)
         {
             if (req.Answers.Count == 0)
@@ -296,6 +301,7 @@ namespace Synaptix.Backend.Api.Features.Questions
 
             var results = new List<CheckAnswerResponse>(req.Answers.Count);
             var correct = 0;
+            var earnedXp = 0.0;
 
             foreach (var answer in req.Answers)
             {
@@ -306,7 +312,11 @@ namespace Synaptix.Backend.Api.Features.Questions
                 }
 
                 var isCorrect = string.Equals(question.CorrectOptionId, answer.SelectedOptionId, StringComparison.OrdinalIgnoreCase);
-                if (isCorrect) correct++;
+                if (isCorrect)
+                {
+                    correct++;
+                    earnedXp += TierProgression.XpForCorrectAnswer(question.Difficulty);
+                }
 
                 results.Add(new CheckAnswerResponse(
                     answer.QuestionId,
@@ -315,7 +325,84 @@ namespace Synaptix.Backend.Api.Features.Questions
                     isCorrect));
             }
 
-            return Results.Ok(new CheckAnswersBatchResponse(results, results.Count, correct));
+            var xpAward = await TryAwardQuizXpAsync(req, httpContext, db, cache, earnedXp, ct);
+
+            return Results.Ok(new CheckAnswersBatchResponse(results, results.Count, correct, xpAward));
+        }
+
+        /// <summary>
+        /// Server-authoritative XP awarding for a graded quiz session.
+        /// Awards only when the caller is authenticated and supplied a quiz
+        /// session id, which doubles as the idempotency key: retries of the
+        /// same session return the original award instead of double-crediting.
+        /// The client never chooses the amount — it is derived from the graded
+        /// answers above (difficulty × 10 per correct answer).
+        /// </summary>
+        private static async Task<QuizXpAwardDto?> TryAwardQuizXpAsync(
+            CheckAnswersBatchRequest req,
+            HttpContext httpContext,
+            IAppDb db,
+            IMemoryCache cache,
+            double earnedXp,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(req.QuizSessionId))
+                return null;
+
+            if (string.Equals(req.Mode, "preview", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var claim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)
+                        ?? httpContext.User.FindFirst("sub");
+            if (claim is null || !Guid.TryParse(claim.Value, out var playerId) || playerId == Guid.Empty)
+                return null;
+
+            // Idempotency: one award per (player, quiz session). In-memory is
+            // sufficient for the accidental-retry window; a multi-instance
+            // deployment should replace this with a distributed cache or a
+            // persisted award ledger.
+            var dedupeKey = $"quiz-xp:{playerId:N}:{req.QuizSessionId}";
+            if (cache.TryGetValue<QuizXpAwardDto>(dedupeKey, out var previousAward))
+                return previousAward;
+
+            if (earnedXp <= 0)
+            {
+                var zeroAward = new QuizXpAwardDto(0, 0, false, null);
+                cache.Set(dedupeKey, zeroAward, TimeSpan.FromHours(24));
+                return zeroAward;
+            }
+
+            var player = await db.Players.FirstOrDefaultAsync(p => p.Id == playerId, ct);
+            if (player is null)
+                return null;
+
+            var previousTier = TierProgression.GetTierForXp(player.Xp);
+
+            player.AddXp(earnedXp);
+
+            var newTier = TierProgression.GetTierForXp(player.Xp);
+            var tierUpgraded = previousTier.Id != newTier.Id;
+
+            if (tierUpgraded)
+            {
+                var tierEntity = await db.Tiers
+                    .FirstOrDefaultAsync(t => t.Name == newTier.Name, ct);
+                if (tierEntity is not null)
+                {
+                    player.SetTier(tierEntity.Id);
+                }
+            }
+
+            await db.SaveChangesAsync(ct);
+
+            var award = new QuizXpAwardDto(
+                XpAwarded: earnedXp,
+                TotalXp: player.Xp,
+                TierUpgraded: tierUpgraded,
+                NewTierId: tierUpgraded ? newTier.Id : null);
+
+            cache.Set(dedupeKey, award, TimeSpan.FromHours(24));
+            return award;
         }
 
         private static async Task<List<GameplayQuestionDto>> QueryGameplayQuestionsAsync(
