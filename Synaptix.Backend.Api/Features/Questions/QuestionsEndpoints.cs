@@ -366,11 +366,16 @@ namespace Synaptix.Backend.Api.Features.Questions
             // window; a multi-instance deployment should replace this with a
             // distributed cache or a persisted award ledger.
             var dedupeKey = $"quiz-xp:{playerId:N}:{req.QuizSessionId}";
+            // GetOrCreate returns null only when the factory returns null;
+            // our factory always returns a non-null Lazy, so the ! is safe.
             var lazy = cache.GetOrCreate(dedupeKey, entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
+                // Use CancellationToken.None: the award write must complete even if
+                // the triggering request is cancelled so the cached result is
+                // available for retries and the player is not double-credited.
                 return new Lazy<Task<QuizXpAwardDto?>>(
-                    () => ExecuteXpAwardAsync(playerId, earnedXp, db, ct),
+                    () => ExecuteXpAwardAsync(playerId, earnedXp, db, CancellationToken.None),
                     LazyThreadSafetyMode.ExecutionAndPublication);
             })!;
             return await lazy.Value;

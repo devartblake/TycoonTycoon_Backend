@@ -85,6 +85,6 @@ public static class TierProgression
             QuestionDifficulty.Medium => 20.0,
             QuestionDifficulty.Hard   => 30.0,
             QuestionDifficulty.Expert => 40.0,
-            _ => throw new ArgumentOutOfRangeException(nameof(difficulty), difficulty, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(difficulty), difficulty, $"Unsupported difficulty: {difficulty}")
         };
 }
