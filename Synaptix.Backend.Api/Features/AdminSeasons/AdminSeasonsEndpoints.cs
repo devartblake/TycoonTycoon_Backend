@@ -53,6 +53,37 @@ namespace Synaptix.Backend.Api.Features.AdminSeasons
                 return Results.Ok(new { status = "ok" });
             });
 
+            // Moderation-only per-player reset: zero the profile's rank points
+            // via a negative ledger transaction so the audit trail stays
+            // truthful. Full-season resets remain POST /close with
+            // carryoverPercent 0.
+            g.MapPost("/{seasonId:guid}/players/{playerId:guid}/reset", async (
+                [FromRoute] Guid seasonId,
+                [FromRoute] Guid playerId,
+                [FromBody] ResetPlayerSeasonPointsRequest? req,
+                IAppDb db,
+                SeasonPointsService points,
+                CancellationToken ct) =>
+            {
+                var profile = await db.PlayerSeasonProfiles.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.SeasonId == seasonId && x.PlayerId == playerId, ct);
+                if (profile is null)
+                    return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Player has no profile in this season.");
+
+                if (profile.RankPoints <= 0)
+                    return Results.Ok(new { status = "NoOp", rankPoints = profile.RankPoints });
+
+                var res = await points.ApplyAsync(new ApplySeasonPointsRequest(
+                    Guid.NewGuid(),
+                    seasonId,
+                    playerId,
+                    "moderation-reset",
+                    -profile.RankPoints,
+                    string.IsNullOrWhiteSpace(req?.Reason) ? "moderation reset" : req!.Reason!.Trim()), ct);
+
+                return Results.Ok(new { status = res.Status, rankPoints = res.NewRankPoints });
+            });
+
             g.MapGet("/{seasonId:guid}/leaderboard", async (
                 [FromRoute] Guid seasonId,
                 [FromQuery] int page,

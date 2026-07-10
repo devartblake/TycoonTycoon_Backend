@@ -10,6 +10,7 @@ using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Application.Questions;
+using Synaptix.Backend.Application.Seasons;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.Questions
@@ -284,6 +285,7 @@ namespace Synaptix.Backend.Api.Features.Questions
             HttpContext httpContext,
             IAppDb db,
             IMemoryCache cache,
+            SoloSeasonPointsService soloPoints,
             CancellationToken ct)
         {
             if (req.Answers.Count == 0)
@@ -325,7 +327,7 @@ namespace Synaptix.Backend.Api.Features.Questions
                     isCorrect));
             }
 
-            var xpAward = await TryAwardQuizXpAsync(req, httpContext, db, cache, earnedXp, ct);
+            var xpAward = await TryAwardQuizXpAsync(req, httpContext, db, cache, soloPoints, earnedXp, correct, ct);
 
             return Results.Ok(new CheckAnswersBatchResponse(results, results.Count, correct, xpAward));
         }
@@ -345,7 +347,9 @@ namespace Synaptix.Backend.Api.Features.Questions
             HttpContext httpContext,
             IAppDb db,
             IMemoryCache cache,
+            SoloSeasonPointsService soloPoints,
             double earnedXp,
+            int correctAnswers,
             CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(req.QuizSessionId))
@@ -375,14 +379,17 @@ namespace Synaptix.Backend.Api.Features.Questions
                 // the triggering request is cancelled so the cached result is
                 // available for retries and the player is not double-credited.
                 return new Lazy<Task<QuizXpAwardDto?>>(
-                    () => ExecuteXpAwardAsync(playerId, earnedXp, db, CancellationToken.None),
+                    () => ExecuteXpAwardAsync(
+                        playerId, earnedXp, correctAnswers, req.QuizSessionId!,
+                        db, soloPoints, CancellationToken.None),
                     LazyThreadSafetyMode.ExecutionAndPublication);
             })!;
             return await lazy.Value;
         }
 
         private static async Task<QuizXpAwardDto?> ExecuteXpAwardAsync(
-            Guid playerId, double earnedXp, IAppDb db, CancellationToken ct)
+            Guid playerId, double earnedXp, int correctAnswers, string quizSessionId,
+            IAppDb db, SoloSeasonPointsService soloPoints, CancellationToken ct)
         {
             if (earnedXp <= 0)
                 return null;
@@ -410,11 +417,22 @@ namespace Synaptix.Backend.Api.Features.Questions
 
             await db.SaveChangesAsync(ct);
 
+            // Season rank points ride the same graded session. The ledger's
+            // EventId (derived from player + session) makes this idempotent at
+            // the DB level even when the in-memory cache misses on retry.
+            var seasonPoints = await soloPoints.AwardAsync(
+                SoloSeasonPointsService.DeriveEventId(playerId, quizSessionId),
+                playerId,
+                correctAnswers,
+                $"quiz-session:{quizSessionId}",
+                ct);
+
             return new QuizXpAwardDto(
                 XpAwarded: earnedXp,
                 TotalXp: player.Xp,
                 TierUpgraded: tierUpgraded,
-                NewTierId: tierUpgraded ? player.TierId?.ToString() : null);
+                NewTierId: tierUpgraded ? player.TierId?.ToString() : null,
+                SeasonPointsAwarded: seasonPoints);
         }
 
         private static async Task<List<GameplayQuestionDto>> QueryGameplayQuestionsAsync(

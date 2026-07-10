@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Quiz;
+using Synaptix.Backend.Application.Seasons;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.Quiz;
@@ -23,6 +24,7 @@ public static class QuizEndpoints
             HttpContext httpContext,
             IAppDb db,
             IMediator mediator,
+            SoloSeasonPointsService soloPoints,
             CancellationToken ct) =>
         {
             if (req.PlayerId == Guid.Empty || req.EventId == Guid.Empty)
@@ -77,6 +79,15 @@ public static class QuizEndpoints
 
             var res = await mediator.Send(
                 new CompleteQuiz(req.PlayerId, req.EventId, correct, answers.Length, awardedXp, awardedCoins), ct);
+
+            // Season rank points for solo play (daily-capped; ledger EventId
+            // derived from player + quiz event keeps retries idempotent).
+            await soloPoints.AwardAsync(
+                SoloSeasonPointsService.DeriveEventId(req.PlayerId, req.EventId.ToString("N")),
+                req.PlayerId,
+                correct,
+                $"quiz-complete:{req.EventId}",
+                ct);
 
             return Results.Ok(res);
         }).RequireRateLimiting("matches-submit");

@@ -101,6 +101,9 @@
         PublicSeasonLeaderboardEntryDto? Me
     );
 
+    /// <summary>Optional body for the admin moderation reset route.</summary>
+    public sealed record ResetPlayerSeasonPointsRequest(string? Reason = null);
+
     // Idempotent season-points apply
     public sealed record ApplySeasonPointsRequest(
         Guid EventId,

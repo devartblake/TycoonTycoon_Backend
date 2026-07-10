@@ -110,6 +110,8 @@ namespace Synaptix.Backend.Application
 
             // Seasonal Ranks
             services.Configure<RankedSeasonOptions>(cfg => { /* defaults ok */ });
+            services.Configure<SeasonSoloPointsOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<SoloSeasonPointsService>();
             services.AddScoped<RankedLeaderboardService>();
             services.AddScoped<SeasonRewardsService>();
 
