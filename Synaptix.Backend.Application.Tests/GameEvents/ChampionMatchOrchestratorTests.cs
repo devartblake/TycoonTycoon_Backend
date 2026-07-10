@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Synaptix.Backend.Application.GameEvents;
 using Synaptix.Backend.Domain.Entities;
 using Synaptix.Backend.Infrastructure.Persistence;
+using Synaptix.Shared.Contracts.Abstractions;
 using Synaptix.Shared.Contracts.Dtos;
 using Synaptix.Shared.Contracts.Realtime.GameEvents;
 
@@ -57,6 +58,22 @@ public sealed class ChampionMatchOrchestratorTests
         public required RecordingScheduler Scheduler;
         public required RecordingCloser Closer;
         public required RecordingNotifier Notifier;
+        public required FakeEconomy Economy;
+    }
+
+    private sealed class FakeEconomy : IEconomyService
+    {
+        public List<CreateEconomyTxnRequest> Applied { get; } = [];
+        public Task<EconomyTxnResultDto> ApplyAsync(CreateEconomyTxnRequest req, CancellationToken ct)
+        {
+            Applied.Add(req);
+            return Task.FromResult(new EconomyTxnResultDto(
+                req.EventId, req.PlayerId, EconomyTxnStatus.Applied, req.Lines.ToList(), 0, 0, 0, DateTimeOffset.UtcNow));
+        }
+        public Task<EconomyHistoryDto> GetHistoryAsync(Guid p, int a, int b, CancellationToken ct) => throw new NotSupportedException();
+        public Task<EconomyTxnResultDto> RollbackByEventIdAsync(Guid e, string r, CancellationToken ct) => throw new NotSupportedException();
+        public Task<AdminPlayerEconomyDto?> GetPlayerSummaryAsync(Guid p, CancellationToken ct) => throw new NotSupportedException();
+        public Task<AdminEconomyStatsDto> GetEconomyStatsAsync(CancellationToken ct) => throw new NotSupportedException();
     }
 
     private static Harness NewHarness(AppDb db, int maxRounds = 15)
@@ -64,9 +81,20 @@ public sealed class ChampionMatchOrchestratorTests
         var scheduler = new RecordingScheduler();
         var closer = new RecordingCloser();
         var notifier = new RecordingNotifier();
-        var orch = new ChampionMatchOrchestrator(db, notifier, scheduler, closer,
+        var economy = new FakeEconomy();
+        var predictions = new ChampionPredictionService(
+            db, economy, Options.Create(new ChampionPredictionOptions()));
+        var orch = new ChampionMatchOrchestrator(db, notifier, scheduler, closer, predictions,
             Options.Create(new ChampionRoundOptions { AnswerWindowSeconds = 30, MaxRounds = maxRounds }));
-        return new Harness { Db = db, Orchestrator = orch, Scheduler = scheduler, Closer = closer, Notifier = notifier };
+        return new Harness
+        {
+            Db = db,
+            Orchestrator = orch,
+            Scheduler = scheduler,
+            Closer = closer,
+            Notifier = notifier,
+            Economy = economy,
+        };
     }
 
     private static async Task<Guid> AddApprovedQuestionAsync(AppDb db, string correctOptionId = "A")

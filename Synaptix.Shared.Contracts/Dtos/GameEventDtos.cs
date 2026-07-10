@@ -72,4 +72,26 @@ namespace Synaptix.Shared.Contracts.Dtos
         int TotalParticipants,
         int JackpotDistributed
     );
+
+    // ── No-loss predictions (Champion vs Tier) ────────────────────────────
+
+    public sealed record SubmitPredictionRequest(bool ChampionDefends);
+
+    /// <summary>
+    /// A spectator's prediction state for a champion_vs_tier event: whether
+    /// predictions are still open, the caller's pick, the live tally, the
+    /// reward pool, and — once the match is over — their result.
+    /// </summary>
+    public sealed record ChampionPredictionStateDto(
+        Guid GameEventId,
+        bool Open,
+        bool? MyPrediction,
+        int DefendCount,
+        int DethroneCount,
+        int RewardCoinPool,
+        bool Resolved,
+        bool? WasCorrect,
+        int RewardCoins,
+        int RewardXp
+    );
 }

@@ -102,6 +102,8 @@ namespace Synaptix.Backend.Application
 
             // Champion vs Tier live rounds
             services.Configure<GameEvents.ChampionRoundOptions>(cfg => { /* defaults ok */ });
+            services.Configure<GameEvents.ChampionPredictionOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<GameEvents.ChampionPredictionService>();
             services.AddScoped<GameEvents.ChampionMatchOrchestrator>();
             services.AddScoped<GameEvents.ChampionRoundResolveJob>();
             services.AddScoped<GameEvents.ChampionDuelResolveJob>();

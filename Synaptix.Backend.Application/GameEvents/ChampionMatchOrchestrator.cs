@@ -19,6 +19,7 @@ public sealed class ChampionMatchOrchestrator(
     IGameEventNotifier notifier,
     IChampionRoundScheduler scheduler,
     IChampionMatchCloser closer,
+    ChampionPredictionService predictions,
     IOptions<ChampionRoundOptions> options)
 {
     private const int EliminationJackpotIncrement = 50;
@@ -269,6 +270,10 @@ public sealed class ChampionMatchOrchestrator(
         var jackpotAwarded = ev.EffectiveJackpot;
 
         await closer.CloseAsync(ev.Id, ct);
+
+        // Settle no-loss predictions now the outcome is known (championAlive =
+        // the champion defended). Idempotent, so a re-entry is harmless.
+        await predictions.ResolveAsync(ev.Id, championAlive, ct);
 
         await notifier.NotifyMatchEndedAsync(new ChampionMatchEndedMessage(
             ev.Id, winner, championAlive, jackpotAwarded, roundsPlayed), ct);

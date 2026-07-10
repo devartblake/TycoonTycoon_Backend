@@ -69,6 +69,42 @@ namespace Synaptix.Backend.Api.Features.GameEvents
                 return Results.Ok(res);
             });
 
+            // No-loss prediction: "will the champion defend?" Open to everyone
+            // while the event is Open; correct predictors share a fixed pool.
+            g.MapPost("/{gameEventId:guid}/predict", async (
+                [FromRoute] Guid gameEventId,
+                [FromBody] SubmitPredictionRequest req,
+                HttpContext httpContext,
+                ChampionPredictionService predictions,
+                CancellationToken ct) =>
+            {
+                if (!TryGetPlayer(httpContext, out var playerId))
+                    return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+                var status = await predictions.PredictAsync(gameEventId, playerId, req.ChampionDefends, ct);
+                return status switch
+                {
+                    "Accepted" => Results.Ok(new { status }),
+                    "Closed" => ApiResponses.Error(StatusCodes.Status409Conflict, "PREDICTIONS_CLOSED", "Predictions are closed for this match."),
+                    "Disabled" => ApiResponses.Error(StatusCodes.Status403Forbidden, "DISABLED", "Predictions are not available."),
+                    _ => ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Not a champion event."),
+                };
+            }).RequireAuthorization();
+
+            // The caller's prediction state + live tally + result.
+            g.MapGet("/{gameEventId:guid}/prediction", async (
+                [FromRoute] Guid gameEventId,
+                HttpContext httpContext,
+                ChampionPredictionService predictions,
+                CancellationToken ct) =>
+            {
+                TryGetPlayer(httpContext, out var playerId); // anonymous allowed → empty guid, no personal pick
+                var state = await predictions.GetStateAsync(gameEventId, playerId, ct);
+                return state is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Not a champion event.")
+                    : Results.Ok(state);
+            });
+
             // Replay-on-join: the current open round/duel so a client entering
             // mid-match renders live state without waiting for the next push.
             g.MapGet("/{gameEventId:guid}/live", async (
