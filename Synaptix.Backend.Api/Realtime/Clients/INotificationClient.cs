@@ -20,6 +20,12 @@ namespace Synaptix.Backend.Api.Realtime.Clients
 
         Task GameEventClosed(GameEventClosedMessage message);
 
+        Task ChampionRoundStarted(ChampionRoundStartedMessage message);
+
+        Task ChampionRoundResolved(ChampionRoundResolvedMessage message);
+
+        Task ChampionMatchEnded(ChampionMatchEndedMessage message);
+
         Task GuardianChanged(GuardianChangedMessage message);
 
         Task TerritoryCapture(TerritoryCaptureMesage message);

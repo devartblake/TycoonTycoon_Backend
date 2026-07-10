@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.GameEvents;
 using Synaptix.Shared.Contracts.Dtos;
@@ -67,6 +68,33 @@ namespace Synaptix.Backend.Api.Features.GameEvents
                 var res = await mediator.Send(new ListUpcomingGameEvents(tierId), ct);
                 return Results.Ok(res);
             });
+
+            // Submit an answer to the current live round of a Champion vs Tier
+            // match. The player id comes from the JWT (never the body).
+            g.MapPost("/{gameEventId:guid}/rounds/answer", async (
+                [FromRoute] Guid gameEventId,
+                [FromBody] SubmitRoundAnswerRequest req,
+                HttpContext httpContext,
+                ChampionMatchOrchestrator orchestrator,
+                CancellationToken ct) =>
+            {
+                var claim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)
+                            ?? httpContext.User.FindFirst("sub");
+                if (claim is null || !Guid.TryParse(claim.Value, out var playerId) || playerId == Guid.Empty)
+                    return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+                var status = await orchestrator.SubmitAnswerAsync(gameEventId, playerId, req.OptionId, ct);
+                return status switch
+                {
+                    "Accepted" => Results.Ok(new { status }),
+                    "NoOpenRound" or "RoundClosed" => ApiResponses.Error(StatusCodes.Status409Conflict, "ROUND_CLOSED", "No open round to answer."),
+                    "NotParticipant" => ApiResponses.Error(StatusCodes.Status403Forbidden, "NOT_PARTICIPANT", "You are not in this event."),
+                    "Eliminated" => ApiResponses.Error(StatusCodes.Status409Conflict, "ELIMINATED", "You have been eliminated."),
+                    _ => ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_ANSWER", "Invalid answer."),
+                };
+            }).RequireAuthorization();
         }
+
+        public sealed record SubmitRoundAnswerRequest(string OptionId);
     }
 }
