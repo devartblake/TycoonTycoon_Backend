@@ -7,7 +7,7 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.GameEvents
 {
-    public sealed class GameEventSchedulerJob(IAppDb db, ILogger<GameEventSchedulerJob> logger, FeatureFlagService flags)
+    public sealed class GameEventSchedulerJob(IAppDb db, ILogger<GameEventSchedulerJob> logger, FeatureFlagService flags, TierChampionSeeder championSeeder)
     {
         public async Task RunAsync(CancellationToken ct)
         {
@@ -27,7 +27,11 @@ namespace Synaptix.Backend.Application.GameEvents
                 .ToListAsync(ct);
 
             foreach (var e in toOpen)
+            {
                 e.Open(now);
+                // Seed the tier champion for champion_vs_tier events at Open.
+                await championSeeder.SeedAsync(e, ct);
+            }
 
             // Start open events at their scheduled time
             var toStart = await db.GameEvents

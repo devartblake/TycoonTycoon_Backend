@@ -12,7 +12,7 @@ namespace Synaptix.Backend.Application.GameEvents
     {
         private static readonly HashSet<string> ValidKinds = new(StringComparer.OrdinalIgnoreCase)
         {
-            "millionaire", "global_crown", "champion_battle"
+            "millionaire", "global_crown", GameEvent.ChampionBattleKind, GameEvent.ChampionVsTierKind
         };
 
         public async ValueTask<GameEventSummaryDto> Handle(AdminCreateGameEvent r, CancellationToken ct)

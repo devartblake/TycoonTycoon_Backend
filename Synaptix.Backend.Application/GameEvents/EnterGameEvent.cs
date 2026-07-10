@@ -14,8 +14,6 @@ namespace Synaptix.Backend.Application.GameEvents
 
     public sealed class EnterGameEventHandler(IAppDb db, IPlayerTransactionService ptxnSvc, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
     {
-        private const int ChampionBattleEliminationIncrement = 50;
-
         public async ValueTask<EnterGameEventResponse> Handle(EnterGameEvent r, CancellationToken ct)
         {
             if (!await flags.IsEnabledAsync(FeatureFlagService.GameEventsEnabled, ct))
@@ -62,7 +60,7 @@ namespace Synaptix.Backend.Application.GameEvents
             if (ptxnResult.Status == "Failed")
                 return new EnterGameEventResponse(r.EventId, "Failed");
 
-            if (ev.Kind == "champion_battle")
+            if (ev.FeedsJackpot)
                 ev.AddToJackpot(ev.EntryFeeCoins);
 
             var participant = new GameEventParticipant(r.GameEventId, r.PlayerId, r.EventId);

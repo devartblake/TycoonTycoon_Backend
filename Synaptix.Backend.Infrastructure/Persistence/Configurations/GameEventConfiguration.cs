@@ -19,6 +19,8 @@ namespace Synaptix.Backend.Infrastructure.Persistence.Configurations
             b.Property(x => x.ReviveCostGems).IsRequired();
             b.Property(x => x.JackpotPool).IsRequired();
             b.Property(x => x.MaxParticipants).IsRequired();
+            b.Property(x => x.ChampionPlayerId);
+            b.Property(x => x.JackpotMultiplier).HasPrecision(5, 2).HasDefaultValue(1.0m).IsRequired();
             b.Property(x => x.CreatedAtUtc).IsRequired();
             b.HasIndex(x => x.Status);
             b.HasIndex(x => x.ScheduledAtUtc);
