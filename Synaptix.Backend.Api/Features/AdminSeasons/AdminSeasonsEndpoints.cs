@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Seasons;
+using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.AdminSeasons
@@ -82,6 +84,70 @@ namespace Synaptix.Backend.Api.Features.AdminSeasons
                     string.IsNullOrWhiteSpace(req?.Reason) ? "moderation reset" : req!.Reason!.Trim()), ct);
 
                 return Results.Ok(new { status = res.Status, rankPoints = res.NewRankPoints });
+            });
+
+            // Manual tiebreaker scheduling (ops/support/special events).
+            g.MapPost("/{seasonId:guid}/tiebreakers", async (
+                [FromRoute] Guid seasonId,
+                [FromBody] CreateSeasonTiebreakerRequest req,
+                IAppDb db,
+                IOptions<SeasonTiebreakerOptions> options,
+                CancellationToken ct) =>
+            {
+                var players = req.PlayerIds?.Distinct().ToList() ?? [];
+                if (players.Count < 2)
+                    return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "At least two distinct playerIds are required.");
+
+                var seasonExists = await db.Seasons.AsNoTracking().AnyAsync(x => x.Id == seasonId, ct);
+                if (!seasonExists)
+                    return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Season not found.");
+
+                var opts = options.Value;
+                var scheduledAt = req.ScheduledAtUtc ?? DateTimeOffset.UtcNow + opts.ScheduleDelay;
+                var tiebreaker = new SeasonTiebreaker(
+                    seasonId,
+                    string.IsNullOrWhiteSpace(req.Scope) ? SeasonTiebreaker.Scopes.Custom : req.Scope!,
+                    tier: 0,
+                    boundaryRank: 0,
+                    rankPoints: 0,
+                    players,
+                    scheduledAt,
+                    scheduledAt + opts.ExpiryGrace);
+
+                db.SeasonTiebreakers.Add(tiebreaker);
+                await db.SaveChangesAsync(ct);
+                return Results.Ok(new { tiebreakerId = tiebreaker.Id, tiebreaker.Status, tiebreaker.ScheduledAtUtc, tiebreaker.ExpiresAtUtc });
+            });
+
+            // Cancel a pending tiebreaker; standings finalize deterministically.
+            g.MapPost("/tiebreakers/{tiebreakerId:guid}/cancel", async (
+                [FromRoute] Guid tiebreakerId,
+                [FromBody] CancelSeasonTiebreakerRequest? req,
+                SeasonTiebreakerService tiebreakers,
+                CancellationToken ct) =>
+            {
+                var cancelled = await tiebreakers.CancelAsync(tiebreakerId, req?.Note, ct);
+                return cancelled is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "No pending tiebreaker with that id.")
+                    : Results.Ok(new { cancelled.Id, cancelled.Status, cancelled.WinnerPlayerId });
+            });
+
+            // Manual resolution lever for support cases.
+            g.MapPost("/tiebreakers/{tiebreakerId:guid}/resolve", async (
+                [FromRoute] Guid tiebreakerId,
+                [FromBody] ResolveSeasonTiebreakerRequest req,
+                SeasonTiebreakerService tiebreakers,
+                CancellationToken ct) =>
+            {
+                if (req.WinnerPlayerId == Guid.Empty)
+                    return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "winnerPlayerId is required.");
+
+                var resolved = await tiebreakers.ResolveAsync(
+                    tiebreakerId, req.WinnerPlayerId, matchId: null,
+                    note: string.IsNullOrWhiteSpace(req.Note) ? "resolved by operator" : req.Note!.Trim(), ct);
+                return resolved is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "No pending tiebreaker with that id, or the winner is not a participant.")
+                    : Results.Ok(new { resolved.Id, resolved.Status, resolved.WinnerPlayerId });
             });
 
             g.MapGet("/{seasonId:guid}/leaderboard", async (

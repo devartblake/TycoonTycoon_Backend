@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Seasons;
+using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.Seasons
@@ -69,6 +70,36 @@ namespace Synaptix.Backend.Api.Features.Seasons
                 return await BuildLeaderboardAsync(active.SeasonId, page, pageSize, httpContext, db, ct);
             });
 
+            // GET /seasons/tiebreakers/mine — the caller's pending tiebreakers.
+            g.MapGet("/tiebreakers/mine", async (
+                HttpContext httpContext,
+                SeasonTiebreakerService tiebreakers,
+                CancellationToken ct) =>
+            {
+                var claim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)
+                            ?? httpContext.User.FindFirst("sub");
+                if (claim is null || !Guid.TryParse(claim.Value, out var playerId) || playerId == Guid.Empty)
+                    return Results.Unauthorized();
+
+                var items = await tiebreakers.GetPendingForPlayerAsync(playerId, ct);
+                return Results.Ok(new SeasonTiebreakerListResponseDto(
+                    items.Count, items.Select(ToTiebreakerDto).ToList()));
+            }).RequireAuthorization();
+
+            // GET /seasons/{seasonId}/tiebreakers — read-only tiebreaker status.
+            g.MapGet("/{seasonId:guid}/tiebreakers", async (
+                [FromRoute] Guid seasonId,
+                IAppDb db,
+                CancellationToken ct) =>
+            {
+                var items = await db.SeasonTiebreakers.AsNoTracking()
+                    .Where(x => x.SeasonId == seasonId)
+                    .OrderByDescending(x => x.CreatedAtUtc)
+                    .ToListAsync(ct);
+                return Results.Ok(new SeasonTiebreakerListResponseDto(
+                    items.Count, items.Select(ToTiebreakerDto).ToList()));
+            });
+
             // GET /seasons/{seasonId}/leaderboard — standings for any season.
             // Closed seasons serve the immutable rank snapshot; live seasons
             // serve the current profiles.
@@ -83,6 +114,11 @@ namespace Synaptix.Backend.Api.Features.Seasons
                 return await BuildLeaderboardAsync(seasonId, page, pageSize, httpContext, db, ct);
             });
         }
+
+        private static SeasonTiebreakerDto ToTiebreakerDto(SeasonTiebreaker x) => new(
+            x.Id, x.SeasonId, x.Scope, x.Tier, x.BoundaryRank, x.RankPoints,
+            x.PlayerIds, x.ScheduledAtUtc, x.ExpiresAtUtc, x.Status,
+            x.MatchId, x.WinnerPlayerId, x.CreatedAtUtc, x.ResolvedAtUtc);
 
         private static async Task<IResult> BuildLeaderboardAsync(
             Guid seasonId,

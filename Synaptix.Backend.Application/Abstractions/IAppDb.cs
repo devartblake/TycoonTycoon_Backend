@@ -66,6 +66,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<PartyMatchLink> PartyMatchLinks { get; }
         DbSet<PartyMatchMember> PartyMatchMembers { get; }
         DbSet<SeasonRankSnapshotRow> SeasonRankSnapshots { get; }
+        DbSet<SeasonTiebreaker> SeasonTiebreakers { get; }
         DbSet<Vote> Votes { get; }
         DbSet<User> Users { get; }
         DbSet<RefreshToken> RefreshTokens { get; }

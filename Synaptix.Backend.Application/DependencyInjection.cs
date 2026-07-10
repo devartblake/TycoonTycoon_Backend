@@ -119,6 +119,11 @@ namespace Synaptix.Backend.Application
             services.AddScoped<SeasonRewardJob>();
             services.AddScoped<SeasonCloseOrchestrator>();
 
+            // Season tiebreakers
+            services.Configure<SeasonTiebreakerOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<SeasonTiebreakerService>();
+            services.AddScoped<SeasonTiebreakerExpiryJob>();
+
             // Personalization
             services.AddScoped<Personalization.IPlayerMindProfileService, Personalization.PlayerMindProfileService>();
             services.AddScoped<Personalization.IPersonalizationService, Personalization.PersonalizationService>();
