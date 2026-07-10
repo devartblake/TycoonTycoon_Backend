@@ -69,6 +69,19 @@ namespace Synaptix.Backend.Api.Features.GameEvents
                 return Results.Ok(res);
             });
 
+            // Replay-on-join: the current open round/duel so a client entering
+            // mid-match renders live state without waiting for the next push.
+            g.MapGet("/{gameEventId:guid}/live", async (
+                [FromRoute] Guid gameEventId,
+                ChampionMatchOrchestrator orchestrator,
+                CancellationToken ct) =>
+            {
+                var snapshot = await orchestrator.GetLiveSnapshotAsync(gameEventId, ct);
+                return snapshot is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Not a champion event.")
+                    : Results.Ok(snapshot);
+            });
+
             // Submit an answer to the current live round of a Champion vs Tier
             // match. The player id comes from the JWT (never the body).
             g.MapPost("/{gameEventId:guid}/rounds/answer", async (

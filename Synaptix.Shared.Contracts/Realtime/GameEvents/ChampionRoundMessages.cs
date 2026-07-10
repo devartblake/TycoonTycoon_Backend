@@ -58,4 +58,18 @@ namespace Synaptix.Shared.Contracts.Realtime.GameEvents
         int SurvivorsRemaining,
         int JackpotPool
     );
+
+    /// <summary>
+    /// Point-in-time snapshot for a client joining mid-match (replay-on-join):
+    /// the currently open round and/or duel, so the UI can render the live
+    /// state immediately instead of waiting for the next broadcast.
+    /// </summary>
+    public sealed record ChampionLiveSnapshotDto(
+        Guid GameEventId,
+        int AliveCount,
+        int JackpotPool,
+        bool IsLive,
+        ChampionRoundStartedMessage? CurrentRound,
+        ChampionDuelStartedMessage? CurrentDuel
+    );
 }

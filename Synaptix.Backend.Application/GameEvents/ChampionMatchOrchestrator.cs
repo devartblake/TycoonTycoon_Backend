@@ -37,6 +37,67 @@ public sealed class ChampionMatchOrchestrator(
         await StartRoundAsync(ev, 1, ct);
     }
 
+    /// <summary>
+    /// Point-in-time snapshot for a client joining mid-match: the currently
+    /// open round and/or duel so the UI renders live state immediately rather
+    /// than waiting for the next SignalR broadcast (replay-on-join).
+    /// </summary>
+    public async Task<ChampionLiveSnapshotDto?> GetLiveSnapshotAsync(Guid gameEventId, CancellationToken ct)
+    {
+        var ev = await db.GameEvents.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == gameEventId, ct);
+        if (ev is null || ev.Kind != GameEvent.ChampionVsTierKind)
+            return null;
+
+        var aliveCount = await db.GameEventParticipants
+            .CountAsync(x => x.GameEventId == gameEventId && x.EliminatedAt == null, ct);
+
+        var round = await db.ChampionRounds.AsNoTracking()
+            .Where(x => x.GameEventId == gameEventId && x.Status == ChampionRound.Statuses.Open)
+            .OrderByDescending(x => x.RoundNumber)
+            .FirstOrDefaultAsync(ct);
+
+        ChampionRoundStartedMessage? currentRound = null;
+        if (round is not null && DateTimeOffset.UtcNow <= round.DeadlineUtc)
+        {
+            var options = await LoadOptionsAsync(round.QuestionId, ct);
+            var (prompt, opts) = options;
+            currentRound = new ChampionRoundStartedMessage(
+                gameEventId, round.RoundNumber, round.QuestionId, prompt, opts,
+                round.DeadlineUtc, aliveCount, ev.JackpotPool);
+        }
+
+        var duel = await db.ChampionDuels.AsNoTracking()
+            .Where(x => x.GameEventId == gameEventId && x.Status == ChampionDuel.Statuses.Open)
+            .OrderByDescending(x => x.StartedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
+        ChampionDuelStartedMessage? currentDuel = null;
+        if (duel is not null && DateTimeOffset.UtcNow <= duel.DeadlineUtc)
+        {
+            var (prompt, opts) = await LoadOptionsAsync(duel.QuestionId, ct);
+            currentDuel = new ChampionDuelStartedMessage(
+                gameEventId, duel.Id, duel.ChampionPlayerId, duel.ChallengerPlayerId,
+                duel.QuestionId, prompt, opts, duel.DeadlineUtc);
+        }
+
+        return new ChampionLiveSnapshotDto(
+            gameEventId, aliveCount, ev.JackpotPool,
+            ev.Status == GameEventStatus.Live, currentRound, currentDuel);
+    }
+
+    private async Task<(string Prompt, List<ChampionRoundOptionDto> Options)> LoadOptionsAsync(Guid questionId, CancellationToken ct)
+    {
+        var question = await db.Questions.AsNoTracking()
+            .Include(q => q.Options)
+            .FirstOrDefaultAsync(q => q.Id == questionId, ct);
+        if (question is null)
+            return ("", new List<ChampionRoundOptionDto>());
+        return (question.Text, question.Options
+            .Select(o => new ChampionRoundOptionDto(o.OptionId, o.Text))
+            .ToList());
+    }
+
     /// <summary>Record a player's answer to the current open round.</summary>
     public async Task<string> SubmitAnswerAsync(Guid gameEventId, Guid playerId, string optionId, CancellationToken ct)
     {

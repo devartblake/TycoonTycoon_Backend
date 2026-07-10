@@ -262,6 +262,45 @@ public sealed class ChampionMatchOrchestratorTests
         (await h.Orchestrator.ResolveOverdueRoundsAsync(CancellationToken.None)).Should().Be(0);
     }
 
+    // ── Replay-on-join snapshot ───────────────────────────────────────────
+
+    [Fact]
+    public async Task Snapshot_ReturnsCurrentOpenRound_WithoutAnswerKey()
+    {
+        await using var db = NewDb();
+        await AddApprovedQuestionAsync(db);
+        var champ = Guid.NewGuid();
+        var ev = await LiveEventAsync(db, champ, [Guid.NewGuid(), Guid.NewGuid()]);
+        var h = NewHarness(db);
+        await h.Orchestrator.StartMatchAsync(ev.Id, CancellationToken.None);
+
+        var snapshot = await h.Orchestrator.GetLiveSnapshotAsync(ev.Id, CancellationToken.None);
+
+        snapshot.Should().NotBeNull();
+        snapshot!.IsLive.Should().BeTrue();
+        snapshot.CurrentRound.Should().NotBeNull();
+        snapshot.CurrentRound!.RoundNumber.Should().Be(1);
+        snapshot.CurrentRound.Options.Should().HaveCount(2);
+        snapshot.CurrentDuel.Should().BeNull();
+        snapshot.AliveCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Snapshot_HasNoOpenRound_AfterResolve()
+    {
+        await using var db = NewDb();
+        await AddApprovedQuestionAsync(db);
+        var champ = Guid.NewGuid();
+        var ev = await LiveEventAsync(db, champ, [champ]); // trivial
+        var h = NewHarness(db);
+        await h.Orchestrator.StartMatchAsync(ev.Id, CancellationToken.None);
+        await h.Orchestrator.SubmitAnswerAsync(ev.Id, champ, "A", CancellationToken.None);
+        await h.Orchestrator.ResolveRoundAsync(ev.Id, 1, CancellationToken.None);
+
+        var snapshot = await h.Orchestrator.GetLiveSnapshotAsync(ev.Id, CancellationToken.None);
+        snapshot!.CurrentRound.Should().BeNull();
+    }
+
     // ── Champion duels ────────────────────────────────────────────────────
 
     [Fact]
