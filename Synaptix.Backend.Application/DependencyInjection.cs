@@ -98,6 +98,7 @@ namespace Synaptix.Backend.Application
             // Game Events
             services.AddScoped<GameEventSchedulerJob>();
             services.AddScoped<CloseGameEventWorker>();
+            services.AddScoped<GameEvents.TierChampionSeeder>();
             services.TryAddSingleton<IGameEventNotifier, NullGameEventNotifier>();
 
             // Guardians

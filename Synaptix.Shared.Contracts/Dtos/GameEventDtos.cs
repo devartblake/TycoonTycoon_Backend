@@ -35,7 +35,13 @@ namespace Synaptix.Shared.Contracts.Dtos
         DateTimeOffset ScheduledAtUtc,
         int ParticipantCount,
         int AliveCount,
-        int JackpotPool
+        int JackpotPool,
+        int TierId = 0,
+        int MaxParticipants = 0,
+        int EntryFeeCoins = 0,
+        Guid? ChampionPlayerId = null,
+        decimal JackpotMultiplier = 1.0m,
+        int EffectiveJackpot = 0
     );
 
     public sealed record EnterGameEventRequest(

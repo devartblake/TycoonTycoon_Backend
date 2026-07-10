@@ -41,10 +41,26 @@ namespace Synaptix.Backend.Application.GameEvents
                 .OrderByDescending(x => x.EliminatedAt)
                 .ToList();
 
+            // Champion vs Tier is asymmetric: if the seeded champion survived,
+            // they defended the crown and take rank 1. If they were dethroned
+            // (eliminated), the last surviving challenger wins — the default
+            // survivors-first ordering already yields that.
+            if (ev.Kind == GameEvent.ChampionVsTierKind && ev.ChampionPlayerId is Guid championId)
+            {
+                var champion = survivors.FirstOrDefault(x => x.PlayerId == championId);
+                if (champion is not null)
+                {
+                    survivors.Remove(champion);
+                    survivors.Insert(0, champion);
+                }
+            }
+
             var ranked = survivors.Concat(eliminated).ToList();
             for (int i = 0; i < ranked.Count; i++)
                 ranked[i].FinalRank = i + 1;
 
+            // Sponsor multiplier is applied to the jackpot at payout time.
+            var effectiveJackpot = ev.EffectiveJackpot;
             int jackpotDistributed = 0;
 
             // Distribute prizes to top 20
@@ -53,11 +69,11 @@ namespace Synaptix.Backend.Application.GameEvents
                 int xp = p.FinalRank == 1 ? WinnerBonusXp : Top20BonusXp;
                 int coins = p.FinalRank == 1 ? WinnerBonusCoins : Top20BonusCoins;
 
-                // Rank 1 in champion_battle gets jackpot
-                if (p.FinalRank == 1 && ev.Kind == "champion_battle")
+                // Rank 1 in a jackpot event takes the (multiplied) jackpot.
+                if (p.FinalRank == 1 && ev.FeedsJackpot)
                 {
-                    coins += ev.JackpotPool;
-                    jackpotDistributed = ev.JackpotPool;
+                    coins += effectiveJackpot;
+                    jackpotDistributed = effectiveJackpot;
                 }
 
                 var prizeEventId = DeterministicGuid(ev.Id, p.PlayerId);
@@ -91,8 +107,8 @@ namespace Synaptix.Backend.Application.GameEvents
                 {
                     int xp = p.FinalRank == 1 ? WinnerBonusXp : Top20BonusXp;
                     int coins = p.FinalRank == 1 ? WinnerBonusCoins : Top20BonusCoins;
-                    if (p.FinalRank == 1 && ev.Kind == "champion_battle")
-                        coins += ev.JackpotPool;
+                    if (p.FinalRank == 1 && ev.FeedsJackpot)
+                        coins += effectiveJackpot;
 
                     var stats = await eventStats.GetOrCreateAsync(activeSeason.SeasonId, p.PlayerId, ct);
                     stats.EventsTop20++;

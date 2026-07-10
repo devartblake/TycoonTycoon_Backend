@@ -11,7 +11,7 @@ namespace Synaptix.Backend.Application.GameEvents
     public sealed class EliminateParticipantHandler(IAppDb db, IGameEventNotifier notifier)
         : IRequestHandler<EliminateParticipant>
     {
-        private const int ChampionBattleEliminationIncrement = 50;
+        private const int EliminationJackpotIncrement = 50;
 
         public async ValueTask<Unit> Handle(EliminateParticipant r, CancellationToken ct)
         {
@@ -24,8 +24,8 @@ namespace Synaptix.Backend.Application.GameEvents
             participant.EliminatedAt = r.At;
 
             var ev = await db.GameEvents.FirstOrDefaultAsync(x => x.Id == r.GameEventId, ct);
-            if (ev?.Kind == "champion_battle")
-                ev.AddToJackpot(ChampionBattleEliminationIncrement);
+            if (ev?.FeedsJackpot == true)
+                ev.AddToJackpot(EliminationJackpotIncrement);
 
             await db.SaveChangesAsync(ct);
 
