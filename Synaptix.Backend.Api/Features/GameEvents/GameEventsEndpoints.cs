@@ -82,6 +82,20 @@ namespace Synaptix.Backend.Api.Features.GameEvents
                     : Results.Ok(snapshot);
             });
 
+            // Live roster: participants with handles + champion/eliminated
+            // flags, so the champion can pick a duel target and spectators see
+            // the mob shrink.
+            g.MapGet("/{gameEventId:guid}/participants", async (
+                [FromRoute] Guid gameEventId,
+                ChampionMatchOrchestrator orchestrator,
+                CancellationToken ct) =>
+            {
+                var roster = await orchestrator.GetRosterAsync(gameEventId, ct);
+                return roster is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Not a champion event.")
+                    : Results.Ok(roster);
+            });
+
             // Submit an answer to the current live round of a Champion vs Tier
             // match. The player id comes from the JWT (never the body).
             g.MapPost("/{gameEventId:guid}/rounds/answer", async (

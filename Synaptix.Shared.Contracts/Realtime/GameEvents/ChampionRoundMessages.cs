@@ -70,6 +70,25 @@ namespace Synaptix.Shared.Contracts.Realtime.GameEvents
         int JackpotPool,
         bool IsLive,
         ChampionRoundStartedMessage? CurrentRound,
-        ChampionDuelStartedMessage? CurrentDuel
+        ChampionDuelStartedMessage? CurrentDuel,
+        Guid? ChampionPlayerId = null,
+        int DuelsUsed = 0,
+        int MaxDuels = 0
+    );
+
+    /// <summary>One player in the live match roster.</summary>
+    public sealed record ChampionParticipantDto(
+        Guid PlayerId,
+        string Handle,
+        string DisplayName,
+        string? AvatarUrl,
+        bool IsChampion,
+        bool Eliminated
+    );
+
+    public sealed record ChampionRosterDto(
+        Guid GameEventId,
+        int AliveCount,
+        IReadOnlyList<ChampionParticipantDto> Participants
     );
 }

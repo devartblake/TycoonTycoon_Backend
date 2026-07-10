@@ -81,9 +81,53 @@ public sealed class ChampionMatchOrchestrator(
                 duel.QuestionId, prompt, opts, duel.DeadlineUtc);
         }
 
+        var duelsUsed = await db.ChampionDuels.CountAsync(x => x.GameEventId == gameEventId, ct);
+
         return new ChampionLiveSnapshotDto(
             gameEventId, aliveCount, ev.JackpotPool,
-            ev.Status == GameEventStatus.Live, currentRound, currentDuel);
+            ev.Status == GameEventStatus.Live, currentRound, currentDuel,
+            ev.ChampionPlayerId, duelsUsed, options.Value.MaxDuelsPerMatch);
+    }
+
+    /// <summary>The live roster: every participant with handle + champion/eliminated flags.</summary>
+    public async Task<ChampionRosterDto?> GetRosterAsync(Guid gameEventId, CancellationToken ct)
+    {
+        var ev = await db.GameEvents.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == gameEventId, ct);
+        if (ev is null || ev.Kind != GameEvent.ChampionVsTierKind)
+            return null;
+
+        var participants = await db.GameEventParticipants.AsNoTracking()
+            .Where(x => x.GameEventId == gameEventId)
+            .Select(x => new { x.PlayerId, x.EliminatedAt })
+            .ToListAsync(ct);
+
+        var playerIds = participants.Select(p => p.PlayerId).ToList();
+        var users = await db.Users.AsNoTracking()
+            .Where(u => playerIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.Handle, u.AvatarUrl })
+            .ToDictionaryAsync(u => u.Id, ct);
+
+        var items = participants
+            .Select(p =>
+            {
+                users.TryGetValue(p.PlayerId, out var u);
+                return new ChampionParticipantDto(
+                    p.PlayerId,
+                    u?.Handle ?? "unknown",
+                    u?.Handle ?? "Unknown",
+                    u?.AvatarUrl,
+                    p.PlayerId == ev.ChampionPlayerId,
+                    p.EliminatedAt.HasValue);
+            })
+            // Champion first, then alive, then eliminated.
+            .OrderByDescending(x => x.IsChampion)
+            .ThenBy(x => x.Eliminated)
+            .ThenBy(x => x.Handle)
+            .ToList();
+
+        var aliveCount = items.Count(x => !x.Eliminated);
+        return new ChampionRosterDto(gameEventId, aliveCount, items);
     }
 
     private async Task<(string Prompt, List<ChampionRoundOptionDto> Options)> LoadOptionsAsync(Guid questionId, CancellationToken ct)

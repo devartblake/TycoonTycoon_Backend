@@ -301,6 +301,30 @@ public sealed class ChampionMatchOrchestratorTests
         snapshot!.CurrentRound.Should().BeNull();
     }
 
+    [Fact]
+    public async Task Roster_FlagsChampionAndEliminated_ChampionFirst()
+    {
+        await using var db = NewDb();
+        var champ = Guid.NewGuid();
+        var alive = Guid.NewGuid();
+        var dead = Guid.NewGuid();
+        var ev = await LiveEventAsync(db, champ, [alive, dead]);
+        var deadP = await db.GameEventParticipants.SingleAsync(x => x.PlayerId == dead);
+        deadP.EliminatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync();
+        var h = NewHarness(db);
+
+        var roster = await h.Orchestrator.GetRosterAsync(ev.Id, CancellationToken.None);
+
+        roster.Should().NotBeNull();
+        roster!.AliveCount.Should().Be(2);
+        roster.Participants.Should().HaveCount(3);
+        roster.Participants.First().PlayerId.Should().Be(champ);
+        roster.Participants.First().IsChampion.Should().BeTrue();
+        roster.Participants.Single(x => x.PlayerId == dead).Eliminated.Should().BeTrue();
+        roster.Participants.Single(x => x.PlayerId == alive).Eliminated.Should().BeFalse();
+    }
+
     // ── Champion duels ────────────────────────────────────────────────────
 
     [Fact]
