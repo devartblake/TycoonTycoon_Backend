@@ -110,12 +110,19 @@ namespace Synaptix.Backend.Application
 
             // Seasonal Ranks
             services.Configure<RankedSeasonOptions>(cfg => { /* defaults ok */ });
+            services.Configure<SeasonSoloPointsOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<SoloSeasonPointsService>();
             services.AddScoped<RankedLeaderboardService>();
             services.AddScoped<SeasonRewardsService>();
 
             //services.Configure<SeasonRewardOptions>(configuration.GetSection("SeasonRewards"));
             services.AddScoped<SeasonRewardJob>();
             services.AddScoped<SeasonCloseOrchestrator>();
+
+            // Season tiebreakers
+            services.Configure<SeasonTiebreakerOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<SeasonTiebreakerService>();
+            services.AddScoped<SeasonTiebreakerExpiryJob>();
 
             // Personalization
             services.AddScoped<Personalization.IPlayerMindProfileService, Personalization.PlayerMindProfileService>();

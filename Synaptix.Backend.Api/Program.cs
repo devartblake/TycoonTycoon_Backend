@@ -834,6 +834,12 @@ if (hangfireEnabled)
             "*/15 * * * *"
         );
 
+        RecurringJob.AddOrUpdate<Synaptix.Backend.Application.Seasons.SeasonTiebreakerExpiryJob>(
+            "season-tiebreaker-expiry",
+            job => job.RunAsync(CancellationToken.None),
+            "0 * * * *" // hourly; expiry windows are measured in hours
+        );
+
         app.Logger.LogInformation("✅ Hangfire recurring jobs configured");
     }
     catch (Exception ex)

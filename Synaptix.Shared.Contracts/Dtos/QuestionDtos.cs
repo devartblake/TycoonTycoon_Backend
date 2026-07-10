@@ -369,7 +369,8 @@
         double XpAwarded,
         double TotalXp,
         bool TierUpgraded,
-        string? NewTierId
+        string? NewTierId,
+        int SeasonPointsAwarded = 0
     );
 
     /// <summary>Batch answer check response.</summary>
