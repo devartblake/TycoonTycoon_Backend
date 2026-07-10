@@ -93,8 +93,64 @@ namespace Synaptix.Backend.Api.Features.GameEvents
                     _ => ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_ANSWER", "Invalid answer."),
                 };
             }).RequireAuthorization();
+            // Champion calls out a challenger for a head-to-head duel. Only the
+            // seeded champion (from the JWT) may initiate.
+            g.MapPost("/{gameEventId:guid}/duel", async (
+                [FromRoute] Guid gameEventId,
+                [FromBody] StartDuelRequest req,
+                HttpContext httpContext,
+                ChampionMatchOrchestrator orchestrator,
+                CancellationToken ct) =>
+            {
+                if (!TryGetPlayer(httpContext, out var championId))
+                    return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+                var status = await orchestrator.StartDuelAsync(gameEventId, championId, req.ChallengerPlayerId, ct);
+                return status switch
+                {
+                    "Started" => Results.Ok(new { status }),
+                    "NotChampion" => ApiResponses.Error(StatusCodes.Status403Forbidden, "NOT_CHAMPION", "Only the champion can start a duel."),
+                    "NotFound" => ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Event not found."),
+                    "InvalidStatus" => ApiResponses.Error(StatusCodes.Status409Conflict, "INVALID_STATUS", "The match is not live."),
+                    "ChampionEliminated" => ApiResponses.Error(StatusCodes.Status409Conflict, "ELIMINATED", "You are no longer the champion."),
+                    "DuelInProgress" => ApiResponses.Error(StatusCodes.Status409Conflict, "DUEL_IN_PROGRESS", "A duel is already underway."),
+                    "DuelLimitReached" => ApiResponses.Error(StatusCodes.Status409Conflict, "DUEL_LIMIT", "No duels remaining this match."),
+                    "InvalidChallenger" => ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_CHALLENGER", "Pick an active challenger."),
+                    _ => ApiResponses.Error(StatusCodes.Status409Conflict, "UNAVAILABLE", "Duel unavailable right now."),
+                };
+            }).RequireAuthorization();
+
+            // Either duelist submits their answer to the current duel.
+            g.MapPost("/{gameEventId:guid}/duel/answer", async (
+                [FromRoute] Guid gameEventId,
+                [FromBody] SubmitRoundAnswerRequest req,
+                HttpContext httpContext,
+                ChampionMatchOrchestrator orchestrator,
+                CancellationToken ct) =>
+            {
+                if (!TryGetPlayer(httpContext, out var playerId))
+                    return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+                var status = await orchestrator.SubmitDuelAnswerAsync(gameEventId, playerId, req.OptionId, ct);
+                return status switch
+                {
+                    "Accepted" => Results.Ok(new { status }),
+                    "NoOpenDuel" or "DuelClosed" => ApiResponses.Error(StatusCodes.Status409Conflict, "DUEL_CLOSED", "No open duel to answer."),
+                    "NotDuelist" => ApiResponses.Error(StatusCodes.Status403Forbidden, "NOT_DUELIST", "You are not in this duel."),
+                    _ => ApiResponses.Error(StatusCodes.Status400BadRequest, "INVALID_ANSWER", "Invalid answer."),
+                };
+            }).RequireAuthorization();
+        }
+
+        private static bool TryGetPlayer(HttpContext httpContext, out Guid playerId)
+        {
+            playerId = Guid.Empty;
+            var claim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)
+                        ?? httpContext.User.FindFirst("sub");
+            return claim is not null && Guid.TryParse(claim.Value, out playerId) && playerId != Guid.Empty;
         }
 
         public sealed record SubmitRoundAnswerRequest(string OptionId);
+        public sealed record StartDuelRequest(Guid ChallengerPlayerId);
     }
 }

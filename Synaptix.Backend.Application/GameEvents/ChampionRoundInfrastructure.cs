@@ -10,6 +10,7 @@ namespace Synaptix.Backend.Application.GameEvents;
 public interface IChampionRoundScheduler
 {
     void ScheduleResolve(Guid gameEventId, int roundNumber, DateTimeOffset dueUtc);
+    void ScheduleDuelResolve(Guid duelId, DateTimeOffset dueUtc);
 }
 
 /// <summary>Closes a finished match (prize/jackpot distribution). Abstracted for testing.</summary>
@@ -23,10 +24,20 @@ public sealed class HangfireChampionRoundScheduler : IChampionRoundScheduler
 {
     public void ScheduleResolve(Guid gameEventId, int roundNumber, DateTimeOffset dueUtc)
     {
-        var delay = dueUtc - DateTimeOffset.UtcNow;
-        if (delay < TimeSpan.Zero) delay = TimeSpan.Zero;
         BackgroundJob.Schedule<ChampionRoundResolveJob>(
-            j => j.RunAsync(gameEventId, roundNumber, CancellationToken.None), delay);
+            j => j.RunAsync(gameEventId, roundNumber, CancellationToken.None), Delay(dueUtc));
+    }
+
+    public void ScheduleDuelResolve(Guid duelId, DateTimeOffset dueUtc)
+    {
+        BackgroundJob.Schedule<ChampionDuelResolveJob>(
+            j => j.RunAsync(duelId, CancellationToken.None), Delay(dueUtc));
+    }
+
+    private static TimeSpan Delay(DateTimeOffset dueUtc)
+    {
+        var delay = dueUtc - DateTimeOffset.UtcNow;
+        return delay < TimeSpan.Zero ? TimeSpan.Zero : delay;
     }
 }
 
@@ -35,6 +46,13 @@ public sealed class ChampionRoundResolveJob(ChampionMatchOrchestrator orchestrat
 {
     public Task RunAsync(Guid gameEventId, int roundNumber, CancellationToken ct)
         => orchestrator.ResolveRoundAsync(gameEventId, roundNumber, ct);
+}
+
+/// <summary>Hangfire job wrapper that resolves a duel at its deadline.</summary>
+public sealed class ChampionDuelResolveJob(ChampionMatchOrchestrator orchestrator)
+{
+    public Task RunAsync(Guid duelId, CancellationToken ct)
+        => orchestrator.ResolveDuelAsync(duelId, ct);
 }
 
 /// <summary>Closes the match via the existing prize-distribution handler.</summary>

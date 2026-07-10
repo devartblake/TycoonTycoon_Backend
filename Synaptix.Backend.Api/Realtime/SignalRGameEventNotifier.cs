@@ -22,5 +22,11 @@ namespace Synaptix.Backend.Api.Realtime
 
         public Task NotifyMatchEndedAsync(ChampionMatchEndedMessage message, CancellationToken ct)
             => hub.Clients.Group($"game-event:{message.GameEventId}").ChampionMatchEnded(message);
+
+        public Task NotifyDuelStartedAsync(ChampionDuelStartedMessage message, CancellationToken ct)
+            => hub.Clients.Group($"game-event:{message.GameEventId}").ChampionDuelStarted(message);
+
+        public Task NotifyDuelResolvedAsync(ChampionDuelResolvedMessage message, CancellationToken ct)
+            => hub.Clients.Group($"game-event:{message.GameEventId}").ChampionDuelResolved(message);
     }
 }

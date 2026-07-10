@@ -40,4 +40,26 @@ namespace Synaptix.Backend.Infrastructure.Persistence.Configurations
             b.HasIndex(x => new { x.RoundId, x.PlayerId }).IsUnique();
         }
     }
+
+    public sealed class ChampionDuelConfiguration : IEntityTypeConfiguration<ChampionDuel>
+    {
+        public void Configure(EntityTypeBuilder<ChampionDuel> b)
+        {
+            b.ToTable("champion_duels");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.GameEventId).IsRequired();
+            b.Property(x => x.ChampionPlayerId).IsRequired();
+            b.Property(x => x.ChallengerPlayerId).IsRequired();
+            b.Property(x => x.QuestionId).IsRequired();
+            b.Property(x => x.CorrectOptionId).HasMaxLength(64).IsRequired();
+            b.Property(x => x.StartedAtUtc).IsRequired();
+            b.Property(x => x.DeadlineUtc).IsRequired();
+            b.Property(x => x.Status).HasMaxLength(16).IsRequired();
+            b.Property(x => x.ChampionOptionId).HasMaxLength(64);
+            b.Property(x => x.ChallengerOptionId).HasMaxLength(64);
+
+            b.HasIndex(x => new { x.GameEventId, x.Status });
+        }
+    }
 }

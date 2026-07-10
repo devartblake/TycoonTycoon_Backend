@@ -104,6 +104,7 @@ namespace Synaptix.Backend.Application
             services.Configure<GameEvents.ChampionRoundOptions>(cfg => { /* defaults ok */ });
             services.AddScoped<GameEvents.ChampionMatchOrchestrator>();
             services.AddScoped<GameEvents.ChampionRoundResolveJob>();
+            services.AddScoped<GameEvents.ChampionDuelResolveJob>();
             services.AddScoped<GameEvents.IChampionMatchCloser, GameEvents.MediatorChampionMatchCloser>();
             services.AddSingleton<GameEvents.IChampionRoundScheduler, GameEvents.HangfireChampionRoundScheduler>();
             services.TryAddSingleton<IGameEventNotifier, NullGameEventNotifier>();

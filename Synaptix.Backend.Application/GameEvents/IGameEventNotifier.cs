@@ -9,6 +9,8 @@ namespace Synaptix.Backend.Application.GameEvents
         Task NotifyRoundStartedAsync(ChampionRoundStartedMessage message, CancellationToken ct);
         Task NotifyRoundResolvedAsync(ChampionRoundResolvedMessage message, CancellationToken ct);
         Task NotifyMatchEndedAsync(ChampionMatchEndedMessage message, CancellationToken ct);
+        Task NotifyDuelStartedAsync(ChampionDuelStartedMessage message, CancellationToken ct);
+        Task NotifyDuelResolvedAsync(ChampionDuelResolvedMessage message, CancellationToken ct);
     }
 
     public sealed class NullGameEventNotifier : IGameEventNotifier
@@ -18,5 +20,7 @@ namespace Synaptix.Backend.Application.GameEvents
         public Task NotifyRoundStartedAsync(ChampionRoundStartedMessage message, CancellationToken ct) => Task.CompletedTask;
         public Task NotifyRoundResolvedAsync(ChampionRoundResolvedMessage message, CancellationToken ct) => Task.CompletedTask;
         public Task NotifyMatchEndedAsync(ChampionMatchEndedMessage message, CancellationToken ct) => Task.CompletedTask;
+        public Task NotifyDuelStartedAsync(ChampionDuelStartedMessage message, CancellationToken ct) => Task.CompletedTask;
+        public Task NotifyDuelResolvedAsync(ChampionDuelResolvedMessage message, CancellationToken ct) => Task.CompletedTask;
     }
 }

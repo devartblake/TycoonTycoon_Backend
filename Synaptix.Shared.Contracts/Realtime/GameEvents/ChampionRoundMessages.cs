@@ -34,4 +34,28 @@ namespace Synaptix.Shared.Contracts.Realtime.GameEvents
         int JackpotAwarded,
         int RoundsPlayed
     );
+
+    /// <summary>The champion called out a challenger for a head-to-head duel.</summary>
+    public sealed record ChampionDuelStartedMessage(
+        Guid GameEventId,
+        Guid DuelId,
+        Guid ChampionPlayerId,
+        Guid ChallengerPlayerId,
+        Guid QuestionId,
+        string Prompt,
+        IReadOnlyList<ChampionRoundOptionDto> Options,
+        DateTimeOffset DeadlineUtc
+    );
+
+    /// <summary>A duel resolved: winner stays, loser is out.</summary>
+    public sealed record ChampionDuelResolvedMessage(
+        Guid GameEventId,
+        Guid DuelId,
+        Guid WinnerPlayerId,
+        Guid LoserPlayerId,
+        string CorrectOptionId,
+        bool ChampionAlive,
+        int SurvivorsRemaining,
+        int JackpotPool
+    );
 }

@@ -83,6 +83,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<SeasonTiebreaker> SeasonTiebreakers => Set<SeasonTiebreaker>();
         public DbSet<ChampionRound> ChampionRounds => Set<ChampionRound>();
         public DbSet<ChampionRoundAnswer> ChampionRoundAnswers => Set<ChampionRoundAnswer>();
+        public DbSet<ChampionDuel> ChampionDuels => Set<ChampionDuel>();
         public DbSet<Vote> Votes => Set<Vote>();
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
