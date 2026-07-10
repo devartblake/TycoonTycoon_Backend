@@ -94,4 +94,33 @@ namespace Synaptix.Shared.Contracts.Dtos
         int RewardCoins,
         int RewardXp
     );
+
+    // ── Premium spectator (Champion vs Tier) ──────────────────────────────
+
+    /// <summary>One fallen player in the premium "elimination cam" feed.</summary>
+    public sealed record ChampionEliminationDto(
+        Guid PlayerId,
+        string Handle,
+        DateTimeOffset EliminatedAtUtc,
+        bool WasChampion,
+        int? FinalRank
+    );
+
+    /// <summary>
+    /// Spectator view of a live match. Everyone gets the basic live counts
+    /// (rounds arrive over SignalR); premium pass holders also get the
+    /// elimination cam feed. IsPremium tells the client whether to render the
+    /// enhanced view or the upsell.
+    /// </summary>
+    public sealed record ChampionSpectatorViewDto(
+        Guid GameEventId,
+        bool IsLive,
+        bool IsPremium,
+        int AliveCount,
+        int JackpotPool,
+        IReadOnlyList<ChampionEliminationDto> EliminationFeed
+    );
+
+    /// <summary>Admin grant of the premium spectator pass (comp/support).</summary>
+    public sealed record GrantSpectatorPassRequest(Guid PlayerId, int? Days);
 }

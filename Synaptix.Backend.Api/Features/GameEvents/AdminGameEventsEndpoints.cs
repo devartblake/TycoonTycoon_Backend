@@ -18,6 +18,19 @@ namespace Synaptix.Backend.Api.Features.GameEvents
         {
             var g = admin.MapGroup("/game-events").WithTags("Admin/GameEvents");
 
+            // Comp a premium spectator pass (support/marketing). Days omitted =
+            // permanent; otherwise a seasonal pass expiring in N days.
+            g.MapPost("/spectator-pass", async (
+                [FromBody] GrantSpectatorPassRequest req,
+                ChampionSpectatorService spectator,
+                CancellationToken ct) =>
+            {
+                if (req.PlayerId == Guid.Empty)
+                    return AdminApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "playerId is required.");
+                await spectator.GrantPassAsync(req.PlayerId, req.Days, ct);
+                return Results.Ok(new { status = "Granted", req.PlayerId, req.Days });
+            });
+
             g.MapGet("/", async (
                 [FromQuery] int page,
                 [FromQuery] int pageSize,

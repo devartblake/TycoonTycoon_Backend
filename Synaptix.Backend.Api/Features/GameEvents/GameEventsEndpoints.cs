@@ -106,6 +106,21 @@ namespace Synaptix.Backend.Api.Features.GameEvents
                     : Results.Ok(state);
             });
 
+            // Spectator view: basic live counts for everyone; the premium pass
+            // additionally returns the elimination-cam feed (Phase 4).
+            g.MapGet("/{gameEventId:guid}/spectate", async (
+                [FromRoute] Guid gameEventId,
+                HttpContext httpContext,
+                ChampionSpectatorService spectator,
+                CancellationToken ct) =>
+            {
+                TryGetPlayer(httpContext, out var playerId); // anonymous → basic view
+                var view = await spectator.GetViewAsync(gameEventId, playerId, ct);
+                return view is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Not a champion event.")
+                    : Results.Ok(view);
+            });
+
             // Replay-on-join: the current open round/duel so a client entering
             // mid-match renders live state without waiting for the next push.
             g.MapGet("/{gameEventId:guid}/live", async (
