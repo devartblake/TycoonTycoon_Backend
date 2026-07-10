@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Synaptix.Backend.Api.Contracts;
+using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Application.GameEvents;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -14,7 +15,7 @@ namespace Synaptix.Backend.Api.Features.GameEvents
     {
         public static void Map(IEndpointRouteBuilder app)
         {
-            var g = app.MapGroup("/game-events").WithTags("GameEvents");
+            var g = app.MapGroup("/game-events").WithTags("GameEvents").RequireNotBanned();
 
             g.MapPost("/enter", async (
                 [FromBody] EnterGameEventRequest req,

@@ -16,9 +16,9 @@ namespace Synaptix.Backend.Application.GameEvents
     {
         public async ValueTask<EnterGameEventResponse> Handle(EnterGameEvent r, CancellationToken ct)
         {
-            if (!await flags.IsEnabledAsync(FeatureFlagService.GameEventsEnabled, ct))
-                return new EnterGameEventResponse(r.EventId, "FeatureDisabled");
-
+            // Access is governed per-player at the /game-events route group
+            // (banned/suspended players are refused); game events are otherwise
+            // available to everyone, not gated behind an operator release flag.
             var ev = await db.GameEvents.FirstOrDefaultAsync(x => x.Id == r.GameEventId, ct);
             if (ev is null)
                 return new EnterGameEventResponse(r.EventId, "NotFound");

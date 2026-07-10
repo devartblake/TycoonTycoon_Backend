@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Synaptix.Backend.Api.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -23,13 +24,7 @@ namespace Synaptix.Backend.Api.Features.Party
         {
             var g = app.MapGroup("/party")
                 .WithTags("Party")
-                .AddEndpointFilter(async (ctx, next) =>
-                {
-                    var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
-                    if (!await flags.IsEnabledAsync("social_enabled", ctx.HttpContext.RequestAborted))
-                        return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
-                    return await next(ctx);
-                });
+                .RequireNotBanned();
 
             // POST /party
             g.MapPost("", async (
