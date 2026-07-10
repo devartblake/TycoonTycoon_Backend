@@ -681,6 +681,8 @@ builder.Services.AddSingleton<IPresenceReader, SignalRPresenceReader>();
 builder.Services.AddSingleton<IPresenceNotifier, SignalRPresenceNotifier>();
 builder.Services.AddSingleton<ILeaderboardNotifier, SignalRLeaderboardNotifier>();
 builder.Services.AddSingleton<IGameEventNotifier, SignalRGameEventNotifier>();
+// Redundancy driver for live champion matches (Hangfire is the primary).
+builder.Services.AddHostedService<Synaptix.Backend.Api.Realtime.ChampionRoundWatchdog>();
 builder.Services.AddSingleton<IGuardianNotifier, SignalRGuardianNotifier>();
 builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
 builder.Services.AddSingleton<IPlayerNotificationNotifier, SignalRPlayerNotificationNotifier>();

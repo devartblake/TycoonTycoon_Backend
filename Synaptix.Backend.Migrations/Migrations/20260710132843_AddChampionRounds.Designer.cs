@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Synaptix.Backend.Infrastructure.Persistence;
@@ -12,9 +13,11 @@ using Synaptix.Backend.Infrastructure.Persistence;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20260710132843_AddChampionRounds")]
+    partial class AddChampionRounds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -786,88 +789,6 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasName("pk_arcade_scores");
 
                     b.ToTable("arcade_scores", (string)null);
-                });
-
-            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.ChampionDuel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset?>("ChallengerAnsweredAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("challenger_answered_at_utc");
-
-                    b.Property<string>("ChallengerOptionId")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("challenger_option_id");
-
-                    b.Property<Guid>("ChallengerPlayerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("challenger_player_id");
-
-                    b.Property<DateTimeOffset?>("ChampionAnsweredAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("champion_answered_at_utc");
-
-                    b.Property<string>("ChampionOptionId")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("champion_option_id");
-
-                    b.Property<Guid>("ChampionPlayerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("champion_player_id");
-
-                    b.Property<string>("CorrectOptionId")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("correct_option_id");
-
-                    b.Property<DateTimeOffset>("DeadlineUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deadline_utc");
-
-                    b.Property<Guid>("GameEventId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("game_event_id");
-
-                    b.Property<Guid?>("LoserPlayerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("loser_player_id");
-
-                    b.Property<Guid>("QuestionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("question_id");
-
-                    b.Property<DateTimeOffset?>("ResolvedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("resolved_at_utc");
-
-                    b.Property<DateTimeOffset>("StartedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("started_at_utc");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid?>("WinnerPlayerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("winner_player_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_champion_duels");
-
-                    b.HasIndex("GameEventId", "Status")
-                        .HasDatabaseName("ix_champion_duels_game_event_id_status");
-
-                    b.ToTable("champion_duels", (string)null);
                 });
 
             modelBuilder.Entity("Synaptix.Backend.Domain.Entities.ChampionRound", b =>

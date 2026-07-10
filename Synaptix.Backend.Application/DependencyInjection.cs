@@ -99,6 +99,14 @@ namespace Synaptix.Backend.Application
             services.AddScoped<GameEventSchedulerJob>();
             services.AddScoped<CloseGameEventWorker>();
             services.AddScoped<GameEvents.TierChampionSeeder>();
+
+            // Champion vs Tier live rounds
+            services.Configure<GameEvents.ChampionRoundOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<GameEvents.ChampionMatchOrchestrator>();
+            services.AddScoped<GameEvents.ChampionRoundResolveJob>();
+            services.AddScoped<GameEvents.ChampionDuelResolveJob>();
+            services.AddScoped<GameEvents.IChampionMatchCloser, GameEvents.MediatorChampionMatchCloser>();
+            services.AddSingleton<GameEvents.IChampionRoundScheduler, GameEvents.HangfireChampionRoundScheduler>();
             services.TryAddSingleton<IGameEventNotifier, NullGameEventNotifier>();
 
             // Guardians
