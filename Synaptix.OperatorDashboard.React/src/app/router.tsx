@@ -18,6 +18,8 @@ const ResetPasswordPage = React.lazy(() => import('@/features/auth/pages/reset-p
 // App pages (protected by auth)
 const DashboardPage = React.lazy(() => import('@/features/dashboard/pages/home'))
 const UsersListPage = React.lazy(() => import('@/features/users/pages/list'))
+const UserDetailPage = React.lazy(() => import('@/features/users/pages/detail'))
+const UserInvestigationPage = React.lazy(() => import('@/features/users/pages/investigation'))
 const NotificationsHubPage = React.lazy(() => import('@/features/notifications/pages/hub'))
 const AntiCheatQueuePage = React.lazy(() => import('@/features/anti-cheat/pages/queue'))
 const SecurityAuditPage = React.lazy(() => import('@/features/audit/pages/security'))
@@ -60,11 +62,11 @@ export const router = createBrowserRouter([
           },
           {
             path: ':userId',
-            element: <div>User Detail - Coming Soon</div>,
+            element: <UserDetailPage />,
           },
           {
             path: ':userId/investigation',
-            element: <div>User Investigation - Coming Soon</div>,
+            element: <UserInvestigationPage />,
           },
         ],
       },

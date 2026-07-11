@@ -2,7 +2,7 @@
  * Mock API client for UI testing without backend
  */
 
-import type { User, UsersListResponse, SavedView } from '@/features/users/types'
+import type { UsersListResponse, SavedView, UserDetail, UserActivityResponse } from '@/features/users/types'
 import type { NotificationTemplate, NotificationChannel, ScheduledNotification, DeadLetterMessage } from '@/features/notifications/types'
 import type { AntiCheatFlag, QueueStats } from '@/features/anti-cheat/types'
 import {
@@ -31,10 +31,33 @@ export async function mockGetUsers(_filters?: any): Promise<UsersListResponse> {
   return generateMockUsersList()
 }
 
-export async function mockGetUserDetail(_userId: string): Promise<User> {
+export async function mockGetUserDetail(_userId: string): Promise<UserDetail> {
   await delay()
   const users = generateMockUsers(1)
-  return { ...users[0], id: _userId }
+  const base = { ...users[0], id: _userId }
+  return {
+    ...base,
+    username: base.handle ?? base.email.split('@')[0],
+    role: 'player',
+    ageGroup: 'adult',
+    totalGamesPlayed: 128,
+    totalPoints: 5420,
+    winRate: 0.54,
+    isVerified: true,
+    isBanned: base.status === 'banned',
+  }
+}
+
+export async function mockGetUserActivity(_userId: string, page: number = 1, pageSize: number = 20): Promise<UserActivityResponse> {
+  await delay()
+  const types = ['login', 'match-completed', 'purchase', 'profile-updated']
+  const items = Array.from({ length: pageSize }, (_, i) => ({
+    id: `act-${page}-${i}`,
+    type: types[i % types.length],
+    description: `Mock ${types[i % types.length]} event`,
+    createdAt: new Date(Date.now() - i * 3600_000).toISOString(),
+  }))
+  return { items, page, pageSize, totalItems: 60, totalPages: Math.ceil(60 / pageSize) }
 }
 
 export async function mockBanUser(_userId: string, _reason?: string): Promise<{ success: boolean }> {
