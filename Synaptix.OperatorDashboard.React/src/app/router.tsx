@@ -26,6 +26,14 @@ const PlayerEconomyPage = React.lazy(() => import('@/features/economy/pages/play
 const QuestionsQueuePage = React.lazy(() => import('@/features/content/pages/questions-queue'))
 const LifecyclePage = React.lazy(() => import('@/features/operations/pages/lifecycle'))
 const StoreManagementPage = React.lazy(() => import('@/features/store/pages/store-management'))
+const EventQueueStreamingPage = React.lazy(() => import('@/features/event-queue/pages/streaming'))
+const PersonalizationArchetypesPage = React.lazy(() => import('@/features/personalization/pages/archetypes'))
+const ConfigSettingsPage = React.lazy(() => import('@/features/config/pages/settings'))
+const InstallerSetupPage = React.lazy(() => import('@/features/installer/pages/setup'))
+const DiagnosticsMonitoringPage = React.lazy(() => import('@/features/diagnostics/pages/monitoring'))
+const StorageBrowserPage = React.lazy(() => import('@/features/storage/pages/browser'))
+const MatchHistoryReplayPage = React.lazy(() => import('@/features/match-history/pages/replay'))
+const SkillsManagementPage = React.lazy(() => import('@/features/skills/pages/management'))
 const NotFoundPage = React.lazy(() => import('@/components/shared/not-found'))
 
 export const router = createBrowserRouter([
@@ -198,7 +206,67 @@ export const router = createBrowserRouter([
             path: 'game-events',
             element: <LifecyclePage />,
           },
+          {
+            path: 'event-queue',
+            element: <EventQueueStreamingPage />,
+          },
         ],
+      },
+      // Personalization section
+      {
+        path: 'personalization',
+        children: [
+          {
+            index: true,
+            element: <PersonalizationArchetypesPage />,
+          },
+          {
+            path: 'rules',
+            element: <PersonalizationArchetypesPage />,
+          },
+        ],
+      },
+      // Configuration section
+      {
+        path: 'config',
+        children: [
+          {
+            index: true,
+            element: <ConfigSettingsPage />,
+          },
+          {
+            path: 'feature-flags',
+            element: <ConfigSettingsPage />,
+          },
+          {
+            path: 'admin-permissions',
+            element: <ConfigSettingsPage />,
+          },
+        ],
+      },
+      // Setup & diagnostics
+      {
+        path: 'settings/setup',
+        element: <InstallerSetupPage />,
+      },
+      {
+        path: 'diagnostics',
+        element: <DiagnosticsMonitoringPage />,
+      },
+      // Storage section
+      {
+        path: 'storage',
+        element: <StorageBrowserPage />,
+      },
+      // Match history section
+      {
+        path: 'matches',
+        element: <MatchHistoryReplayPage />,
+      },
+      // Skills section
+      {
+        path: 'skills',
+        element: <SkillsManagementPage />,
       },
       // Add more sections as needed...
     ],
