@@ -27,7 +27,8 @@ public sealed class AdminEconomyPlayerSummaryTests : IClassFixture<TycoonApiFact
 
         var resp = await _admin.PostAsJsonAsync("/admin/economy/transactions", req);
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await resp.Content.ReadFromJsonAsync<EconomyTxnResultDto>();
+        // TestJson.Default: the API serializes enums (Status) as strings.
+        var result = await resp.Content.ReadFromJsonAsync<EconomyTxnResultDto>(TestJson.Default);
         result!.Status.Should().Be(EconomyTxnStatus.Applied);
     }
 
@@ -38,7 +39,7 @@ public sealed class AdminEconomyPlayerSummaryTests : IClassFixture<TycoonApiFact
         await PostCoinsAsync(playerId, 100, "test-earn");
         await PostCoinsAsync(playerId, -30, "test-spend");
 
-        var dto = await _admin.GetFromJsonAsync<AdminPlayerEconomyDto>($"/admin/economy/players/{playerId}");
+        var dto = await _admin.GetFromJsonAsync<AdminPlayerEconomyDto>($"/admin/economy/players/{playerId}", TestJson.Default);
 
         dto.Should().NotBeNull();
         dto!.PlayerId.Should().Be(playerId);
@@ -58,13 +59,13 @@ public sealed class AdminEconomyPlayerSummaryTests : IClassFixture<TycoonApiFact
     [Fact]
     public async Task Stats_ReflectNewWalletDelta()
     {
-        var before = await _admin.GetFromJsonAsync<AdminEconomyStatsDto>("/admin/economy/stats");
+        var before = await _admin.GetFromJsonAsync<AdminEconomyStatsDto>("/admin/economy/stats", TestJson.Default);
         before.Should().NotBeNull();
 
         var playerId = Guid.NewGuid();
         await PostCoinsAsync(playerId, 500, "test-stats");
 
-        var after = await _admin.GetFromJsonAsync<AdminEconomyStatsDto>("/admin/economy/stats");
+        var after = await _admin.GetFromJsonAsync<AdminEconomyStatsDto>("/admin/economy/stats", TestJson.Default);
         after.Should().NotBeNull();
 
         after!.TotalPlayers.Should().Be(before!.TotalPlayers + 1);
