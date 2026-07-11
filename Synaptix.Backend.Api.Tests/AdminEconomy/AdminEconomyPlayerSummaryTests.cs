@@ -27,7 +27,7 @@ public sealed class AdminEconomyPlayerSummaryTests : IClassFixture<TycoonApiFact
 
         var resp = await _admin.PostAsJsonAsync("/admin/economy/transactions", req);
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await resp.Content.ReadFromJsonAsync<EconomyTxnResultDto>();
+        var result = await resp.Content.ReadFromJsonAsync<EconomyTxnResultDto>(TestJson.Default);
         result!.Status.Should().Be(EconomyTxnStatus.Applied);
     }
 
