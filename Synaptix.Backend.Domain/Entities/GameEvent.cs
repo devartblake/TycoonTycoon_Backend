@@ -28,6 +28,9 @@ namespace Synaptix.Backend.Domain.Entities
         /// <summary>Sponsor-backed multiplier applied to the jackpot at close (default 1.0 = no change).</summary>
         public decimal JackpotMultiplier { get; private set; } = 1.0m;
 
+        /// <summary>Name of the sponsor funding the jackpot multiplier, if any. Null = house-funded / no sponsor.</summary>
+        public string? SponsorName { get; private set; }
+
         public DateTimeOffset CreatedAtUtc { get; private set; }
 
         /// <summary>Kinds whose jackpot accrues from entry fees and eliminations.</summary>
@@ -93,8 +96,23 @@ namespace Synaptix.Backend.Domain.Entities
             JackpotMultiplier = Math.Clamp(multiplier, 1.0m, 10.0m);
         }
 
+        /// <summary>
+        /// Attribute the jackpot boost to a sponsor: sets the multiplier (clamped
+        /// 1.0–10.0) and the sponsor's name. A blank/whitespace name clears the
+        /// attribution (house-funded). No-op once the event has closed.
+        /// </summary>
+        public void ApplySponsor(string? sponsorName, decimal multiplier)
+        {
+            if (Status == GameEventStatus.Closed) return;
+            SetJackpotMultiplier(multiplier);
+            SponsorName = string.IsNullOrWhiteSpace(sponsorName) ? null : sponsorName.Trim();
+        }
+
         /// <summary>The jackpot after the sponsor multiplier is applied.</summary>
         public int EffectiveJackpot =>
             (int)Math.Round(JackpotPool * JackpotMultiplier, MidpointRounding.AwayFromZero);
+
+        /// <summary>The coins the sponsor's multiplier added on top of the base jackpot.</summary>
+        public int SponsorBoostAmount => EffectiveJackpot - JackpotPool;
     }
 }

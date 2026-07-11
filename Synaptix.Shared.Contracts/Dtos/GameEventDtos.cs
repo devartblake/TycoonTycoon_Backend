@@ -41,7 +41,8 @@ namespace Synaptix.Shared.Contracts.Dtos
         int EntryFeeCoins = 0,
         Guid? ChampionPlayerId = null,
         decimal JackpotMultiplier = 1.0m,
-        int EffectiveJackpot = 0
+        int EffectiveJackpot = 0,
+        string? SponsorName = null
     );
 
     public sealed record EnterGameEventRequest(
@@ -123,4 +124,42 @@ namespace Synaptix.Shared.Contracts.Dtos
 
     /// <summary>Admin grant of the premium spectator pass (comp/support).</summary>
     public sealed record GrantSpectatorPassRequest(Guid PlayerId, int? Days);
+
+    // ── Sponsor-backed jackpot multiplier ─────────────────────────────────
+
+    /// <summary>
+    /// Attribute a jackpot boost to a sponsor. A blank/null SponsorName clears
+    /// the attribution (house-funded); Multiplier is clamped to 1.0–10.0.
+    /// </summary>
+    public sealed record SetEventSponsorRequest(string? SponsorName, decimal Multiplier);
+
+    /// <summary>Preview of an event's sponsor state after a set.</summary>
+    public sealed record EventSponsorDto(
+        Guid GameEventId,
+        string? SponsorName,
+        decimal Multiplier,
+        int JackpotPool,
+        int EffectiveJackpot,
+        int BoostAmount
+    );
+
+    /// <summary>One closed event's sponsor-funded boost, for reconciliation reports.</summary>
+    public sealed record SponsorAttributionDto(
+        Guid GameEventId,
+        string SponsorName,
+        int BaseJackpot,
+        decimal Multiplier,
+        int EffectiveJackpot,
+        int BoostAmount,
+        Guid? BeneficiaryPlayerId,
+        Guid? SeasonId,
+        DateTimeOffset RecordedAtUtc
+    );
+
+    /// <summary>Per-sponsor totals across a set of attributions.</summary>
+    public sealed record SponsorAttributionSummaryDto(
+        string SponsorName,
+        int EventsSponsored,
+        int TotalBoostFunded
+    );
 }
