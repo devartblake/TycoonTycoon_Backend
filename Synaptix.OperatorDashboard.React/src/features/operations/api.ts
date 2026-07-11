@@ -13,7 +13,6 @@
  *     GameEvent.name / description / participantCount / endDate / createdBy are
  *     best-effort placeholders.
  *   - Aggregated OperationsStats is derived from the season/event lists.
- *   - Event "cancel" has no backend route and throws a clear error.
  */
 
 import { apiGet, apiPost } from '@/lib/api-client'
@@ -230,8 +229,8 @@ export async function performLifecycleAction(action: LifecycleAction): Promise<{
         await apiPost(`/admin/game-events/${action.resourceId}/close`, {})
         break
       case 'cancel':
-        // No backend cancel route for game events (see #419).
-        throw new Error('Game event cancellation is not supported by the backend.')
+        await apiPost(`/admin/game-events/${action.resourceId}/cancel`, {})
+        break
     }
   }
 

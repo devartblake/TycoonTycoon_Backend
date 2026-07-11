@@ -200,6 +200,39 @@ public sealed class AdminGameEventsEndpointsTests : IClassFixture<TycoonApiFacto
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
+    // ── Cancel ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Cancel_SetsStatusCancelled()
+    {
+        var id = await CreateEventAsync();
+
+        var resp = await _http.PostAsync($"/admin/game-events/{id}/cancel", null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await resp.Content.ReadFromJsonAsync<Dictionary<string, string>>(TestJson.Default);
+        body!["status"].Should().Be("Cancelled");
+    }
+
+    [Fact]
+    public async Task Cancel_Twice_ReturnsConflict()
+    {
+        var id = await CreateEventAsync();
+        (await _http.PostAsync($"/admin/game-events/{id}/cancel", null)).EnsureSuccessStatusCode();
+
+        var resp = await _http.PostAsync($"/admin/game-events/{id}/cancel", null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        await resp.HasErrorCodeAsync("CONFLICT");
+    }
+
+    [Fact]
+    public async Task Cancel_UnknownEvent_Returns404()
+    {
+        var resp = await _http.PostAsync($"/admin/game-events/{Guid.NewGuid()}/cancel", null);
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     private static CreateGameEventRequest BuildCreateRequest() => new(
         Kind: "millionaire",
         TierId: 1,
