@@ -89,3 +89,45 @@ export interface RewardLimitsListResponse {
   offset: number
   limit: number
 }
+
+// GET /admin/store/player-stock/{playerId} (AdminPlayerStockStateDto)
+export interface PlayerStockItem {
+  sku: string
+  quantityUsed: number
+  maxQuantity: number
+  remaining: number
+  effectiveMaxQuantity: number | null
+  lastResetAtUtc: string | null
+  nextResetAtUtc: string | null
+  updatedAtUtc: string
+}
+
+export interface PlayerStockResponse {
+  playerId: string
+  items: PlayerStockItem[]
+}
+
+// GET /admin/store/analytics/purchases
+export interface PurchaseAnalytics {
+  from: string | null
+  to: string | null
+  totalPurchases: number
+  totalCoinsSpent: number
+  topSkus: Array<{ sku: string; purchaseCount: number }>
+}
+
+// GET /admin/store/analytics/stock-resets (paged)
+export interface StockResetItem {
+  playerId: string
+  sku: string
+  lastResetAt: string | null
+  nextResetAt: string | null
+  quantityUsed: number
+}
+
+export interface StockResetsResponse {
+  items: StockResetItem[]
+  total: number
+  offset: number
+  limit: number
+}

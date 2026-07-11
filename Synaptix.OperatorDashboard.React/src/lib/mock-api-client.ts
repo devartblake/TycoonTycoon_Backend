@@ -1189,3 +1189,51 @@ export async function mockGetModerationLogDetail(logId: string): Promise<any> {
   await delay()
   return { ...generateMockModerationLog(3), id: logId }
 }
+
+// ============ Store Player Stock & Analytics Mock API ============
+
+export async function mockGetPlayerStock(playerId: string): Promise<any> {
+  await delay()
+  const skus = ['energy-pack-small', 'energy-pack-large', 'powerup-bundle', 'season-ticket']
+  return {
+    playerId,
+    items: skus.map((sku, i) => ({
+      sku,
+      quantityUsed: i * 2,
+      maxQuantity: 10,
+      remaining: 10 - i * 2,
+      effectiveMaxQuantity: i === 1 ? 20 : null,
+      lastResetAtUtc: i % 2 === 0 ? new Date(Date.now() - 86400_000).toISOString() : null,
+      nextResetAtUtc: new Date(Date.now() + 86400_000).toISOString(),
+      updatedAtUtc: new Date().toISOString(),
+    })),
+  }
+}
+
+export async function mockGetPurchaseAnalytics(): Promise<any> {
+  await delay()
+  return {
+    from: null,
+    to: null,
+    totalPurchases: 1284,
+    totalCoinsSpent: 96400,
+    topSkus: [
+      { sku: 'energy-pack-small', purchaseCount: 412 },
+      { sku: 'powerup-bundle', purchaseCount: 305 },
+      { sku: 'energy-pack-large', purchaseCount: 198 },
+      { sku: 'season-ticket', purchaseCount: 77 },
+    ],
+  }
+}
+
+export async function mockGetStockResetAnalytics(offset: number = 0, limit: number = 25): Promise<any> {
+  await delay()
+  const items = Array.from({ length: limit }, (_, i) => ({
+    playerId: `player-${offset + i + 1}`,
+    sku: ['energy-pack-small', 'powerup-bundle'][i % 2],
+    lastResetAt: new Date(Date.now() - (i + 1) * 3600_000).toISOString(),
+    nextResetAt: new Date(Date.now() + 86400_000).toISOString(),
+    quantityUsed: i % 5,
+  }))
+  return { items, total: 120, offset, limit }
+}

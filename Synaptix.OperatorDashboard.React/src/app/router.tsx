@@ -30,6 +30,8 @@ const PlayerEconomyPage = React.lazy(() => import('@/features/economy/pages/play
 const QuestionsQueuePage = React.lazy(() => import('@/features/content/pages/questions-queue'))
 const LifecyclePage = React.lazy(() => import('@/features/operations/pages/lifecycle'))
 const StoreManagementPage = React.lazy(() => import('@/features/store/pages/store-management'))
+const PlayerStockPage = React.lazy(() => import('@/features/store/pages/player-stock'))
+const StoreAnalyticsPage = React.lazy(() => import('@/features/store/pages/store-analytics'))
 const EventQueueStreamingPage = React.lazy(() => import('@/features/event-queue/pages/streaming'))
 const PersonalizationArchetypesPage = React.lazy(() => import('@/features/personalization/pages/archetypes'))
 const ConfigSettingsPage = React.lazy(() => import('@/features/config/pages/settings'))
@@ -150,11 +152,11 @@ export const router = createBrowserRouter([
           },
           {
             path: 'player-stock',
-            element: <div>Player Stock - Coming Soon</div>,
+            element: <PlayerStockPage />,
           },
           {
             path: 'analytics',
-            element: <div>Store Analytics - Coming Soon</div>,
+            element: <StoreAnalyticsPage />,
           },
           {
             path: 'reward-limits',
