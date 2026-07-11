@@ -23,6 +23,7 @@ const UserInvestigationPage = React.lazy(() => import('@/features/users/pages/in
 const NotificationsHubPage = React.lazy(() => import('@/features/notifications/pages/hub'))
 const AntiCheatQueuePage = React.lazy(() => import('@/features/anti-cheat/pages/queue'))
 const SecurityAuditPage = React.lazy(() => import('@/features/audit/pages/security'))
+const AuditEventDetailPage = React.lazy(() => import('@/features/audit/pages/event-detail'))
 const PlayerProfilePage = React.lazy(() => import('@/features/moderation/pages/player-profile'))
 const ModerationLogsPage = React.lazy(() => import('@/features/moderation/pages/logs'))
 const ModerationLogDetailPage = React.lazy(() => import('@/features/moderation/pages/log-detail'))
@@ -98,7 +99,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'security/:eventId',
-            element: <div>Audit Event Detail - Coming Soon</div>,
+            element: <AuditEventDetailPage />,
           },
         ],
       },
