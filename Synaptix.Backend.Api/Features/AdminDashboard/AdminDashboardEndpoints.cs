@@ -19,19 +19,18 @@ namespace Synaptix.Backend.Api.Features.AdminDashboard
         {
             var g = admin.MapGroup("/dashboard").WithTags("Admin/Dashboard");
 
-            g.MapGet("/services/history", (HealthHistoryStore store, [FromQuery] int hours) =>
+            g.MapGet("/services/history", (HealthHistoryStore store, [FromQuery] int? hours) =>
             {
-                var window = TimeSpan.FromHours(Math.Clamp(hours <= 0 ? 24 : hours, 1, 24));
+                var window = HistoryWindow(hours);
                 var histories = store.ServiceIds
                     .Select(id => ToServiceHistory(id, store.Get(id, window)))
                     .ToList();
                 return Results.Ok(histories);
             });
 
-            g.MapGet("/services/{id}/history", (string id, HealthHistoryStore store, [FromQuery] int hours) =>
+            g.MapGet("/services/{id}/history", (string id, HealthHistoryStore store, [FromQuery] int? hours) =>
             {
-                var window = TimeSpan.FromHours(Math.Clamp(hours <= 0 ? 24 : hours, 1, 24));
-                return Results.Ok(ToServiceHistory(id, store.Get(id, window)));
+                return Results.Ok(ToServiceHistory(id, store.Get(id, HistoryWindow(hours))));
             });
 
             g.MapGet("/stats", async (HealthCheckService health, CancellationToken ct) =>
@@ -79,6 +78,10 @@ namespace Synaptix.Backend.Api.Features.AdminDashboard
             HealthStatus.Degraded => "degraded",
             _ => "offline"
         };
+
+        // Optional query param: omitted/invalid falls back to the full 24h window.
+        private static TimeSpan HistoryWindow(int? hours) =>
+            TimeSpan.FromHours(Math.Clamp(hours is null or <= 0 ? 24 : hours.Value, 1, 24));
 
         // Matches the dashboard's ServiceHistory shape: value is the check's
         // response time in ms (0 when the check reported unhealthy).
