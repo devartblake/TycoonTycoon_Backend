@@ -14,6 +14,17 @@ public static class AdminPlayerLookupEndpoints
     {
         var g = admin.MapGroup("/player-lookup").WithTags("Admin/Player Lookup");
         g.MapGet("/resolve", Resolve);
+        g.MapGet("/search", Search);
+    }
+
+    private static async Task<IResult> Search(
+        [FromQuery] string query,
+        [FromQuery] int limit,
+        IMediator mediator,
+        CancellationToken ct)
+    {
+        var result = await mediator.Send(new AdminSearchPlayers(query, limit), ct);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> Resolve(
