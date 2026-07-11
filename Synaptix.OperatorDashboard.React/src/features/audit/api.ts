@@ -100,7 +100,10 @@ export async function getAuditStats(): Promise<SecurityAuditStats> {
 
 export async function getIPLocations(_filters?: AuditFilter): Promise<IPLocationData[]> {
   if (getMockMode()) return mockApi.mockGetIPLocations(_filters)
-  // No backend geo-IP source (see #424); return an empty set so the map renders empty.
+  // Deferred (#424, decision 2026-07-11): the backend's security-audit events are
+  // AdminNotificationHistory rows that store NO client IPs, so a geo map needs
+  // (1) IP capture on admin requests and (2) a GeoIP database (e.g. MaxMind) —
+  // a standalone backend feature. Empty set keeps the map rendering empty.
   void _filters
   return []
 }

@@ -686,6 +686,10 @@ builder.Services.AddSingleton<ITerritoryNotifier, SignalRTerritoryNotifier>();
 builder.Services.AddSingleton<IPlayerNotificationNotifier, SignalRPlayerNotificationNotifier>();
 builder.Services.AddSingleton<IDirectMessageNotifier, SignalRDirectMessageNotifier>();
 
+// Operator dashboard health history (in-memory sampler; see AdminDashboardEndpoints)
+builder.Services.AddSingleton<Synaptix.Backend.Api.Features.AdminDashboard.HealthHistoryStore>();
+builder.Services.AddHostedService<Synaptix.Backend.Api.Features.AdminDashboard.HealthHistorySampler>();
+
 var redisRequiredForRealtime = !useInMemoryDbForTesting
     && (builder.Environment.IsStaging()
         || builder.Environment.IsProduction()
