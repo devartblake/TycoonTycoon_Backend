@@ -24,6 +24,8 @@ const NotificationsHubPage = React.lazy(() => import('@/features/notifications/p
 const AntiCheatQueuePage = React.lazy(() => import('@/features/anti-cheat/pages/queue'))
 const SecurityAuditPage = React.lazy(() => import('@/features/audit/pages/security'))
 const PlayerProfilePage = React.lazy(() => import('@/features/moderation/pages/player-profile'))
+const ModerationLogsPage = React.lazy(() => import('@/features/moderation/pages/logs'))
+const ModerationLogDetailPage = React.lazy(() => import('@/features/moderation/pages/log-detail'))
 const PlayerEconomyPage = React.lazy(() => import('@/features/economy/pages/player-economy'))
 const QuestionsQueuePage = React.lazy(() => import('@/features/content/pages/questions-queue'))
 const LifecyclePage = React.lazy(() => import('@/features/operations/pages/lifecycle'))
@@ -104,11 +106,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: 'logs',
-            element: <div>Moderation Logs - Coming Soon</div>,
+            element: <ModerationLogsPage />,
           },
           {
             path: 'logs/:logId',
-            element: <div>Moderation Log Detail - Coming Soon</div>,
+            element: <ModerationLogDetailPage />,
           },
           {
             path: 'players/:playerId',

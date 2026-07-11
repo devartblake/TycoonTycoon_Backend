@@ -1158,3 +1158,34 @@ export async function mockGetStoreStats(): Promise<any> {
   }
 }
 
+
+// ============ Moderation Logs Mock API ============
+
+const MOCK_MODERATION_STATUSES = ['normal', 'suspected', 'restricted', 'banned'] as const
+
+function generateMockModerationLog(i: number) {
+  return {
+    id: `modlog-${i}`,
+    playerId: `player-${(i % 5) + 1}`,
+    newStatus: MOCK_MODERATION_STATUSES[i % 4],
+    reason: ['Chat abuse', 'Suspicious win-rate', 'Chargeback', 'Appeal approved'][i % 4],
+    notes: i % 3 === 0 ? 'Escalated from anti-cheat queue' : null,
+    setByAdmin: ['ops@synaptix.dev', 'admin@synaptix.dev'][i % 2],
+    createdAt: new Date(Date.now() - i * 7200_000).toISOString(),
+    expiresAt: i % 4 === 2 ? new Date(Date.now() + 86400_000).toISOString() : null,
+    relatedFlagId: i % 2 === 0 ? `flag-${i}` : null,
+  }
+}
+
+export async function mockGetModerationLogs(filters?: { playerId?: string; status?: string }, offset: number = 0, limit: number = 50): Promise<any> {
+  await delay()
+  let items = Array.from({ length: 40 }, (_, i) => generateMockModerationLog(i))
+  if (filters?.playerId) items = items.filter((l) => l.playerId === filters.playerId)
+  if (filters?.status) items = items.filter((l) => l.newStatus === filters.status)
+  return { items: items.slice(offset, offset + limit), total: items.length, offset, limit }
+}
+
+export async function mockGetModerationLogDetail(logId: string): Promise<any> {
+  await delay()
+  return { ...generateMockModerationLog(3), id: logId }
+}

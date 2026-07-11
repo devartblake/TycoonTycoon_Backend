@@ -49,3 +49,31 @@ export interface PlayerModeration {
     lastAction?: ModerationAction
   }
 }
+
+// GET /admin/moderation/logs (ModerationLogItemDto). newStatus follows the
+// backend ModerationStatus enum: 1=Normal 2=Suspected 3=Restricted 4=Banned.
+export type ModerationLogStatus = 'normal' | 'suspected' | 'restricted' | 'banned'
+
+export interface ModerationLog {
+  id: string
+  playerId: string
+  newStatus: ModerationLogStatus
+  reason: string
+  notes?: string | null
+  setByAdmin: string
+  createdAt: string
+  expiresAt?: string | null
+  relatedFlagId?: string | null
+}
+
+export interface ModerationLogListResponse {
+  items: ModerationLog[]
+  total: number
+  offset: number
+  limit: number
+}
+
+export interface ModerationLogFilter {
+  playerId?: string
+  status?: ModerationLogStatus
+}
