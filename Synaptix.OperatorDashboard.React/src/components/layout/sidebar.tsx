@@ -37,6 +37,7 @@ const NAV_ITEMS = [
       { label: 'Player Stock', href: '/store/player-stock' },
       { label: 'Reward Limits', href: '/store/reward-limits' },
       { label: 'Analytics', href: '/store/analytics' },
+      { label: 'Storage Browser', href: '/storage' },
     ],
   },
   {
@@ -44,16 +45,18 @@ const NAV_ITEMS = [
     permission: 'content:read' as const,
     children: [
       { label: 'Questions', href: '/content/questions' },
+      { label: 'Skills', href: '/skills' },
     ],
   },
   {
     label: 'Operations',
     permission: 'operations:read' as const,
     children: [
-      { label: 'Events', href: '/events/game-events' },
+      { label: 'Events', href: '/operations/game-events' },
       { label: 'Seasons', href: '/operations/seasons' },
       { label: 'Notifications', href: '/notifications', permission: 'notifications:read' as const },
       { label: 'Event Queue', href: '/operations/event-queue' },
+      { label: 'Match History', href: '/matches' },
     ],
   },
   {
@@ -62,8 +65,6 @@ const NAV_ITEMS = [
     children: [
       { label: 'Player Economy', href: '/economy/player' },
       { label: 'Transactions', href: '/economy/player-transactions' },
-      { label: 'Powerups', href: '/economy/powerups' },
-      { label: 'Season Points', href: '/operations/season-points' },
     ],
   },
   {
@@ -80,7 +81,8 @@ const NAV_ITEMS = [
     children: [
       { label: 'Feature Flags', href: '/config/feature-flags' },
       { label: 'Admin ACL', href: '/config/admin-permissions' },
-      { label: 'Diagnostics', href: '/settings/setup' },
+      { label: 'Diagnostics', href: '/diagnostics' },
+      { label: 'Setup', href: '/settings/setup' },
     ],
   },
 ]

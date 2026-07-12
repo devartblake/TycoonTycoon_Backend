@@ -19,6 +19,33 @@ public sealed class AdminDashboardEndpointsTests : IClassFixture<TycoonApiFactor
     private sealed record ServiceHealthDto(string Id, string Name, string DisplayName, string Status, double ResponseTime);
     private sealed record DashboardStatsDto(IReadOnlyList<ServiceHealthDto> Services, int ChecksPerformed, int AlertsActive);
 
+    private sealed record HealthMetricDto(DateTimeOffset Timestamp, double Value);
+    private sealed record ServiceHistoryDto(string ServiceId, IReadOnlyList<HealthMetricDto> Metrics);
+
+    [Fact]
+    public async Task ServicesHistory_ReturnsArrayOfSeries()
+    {
+        // The sampler runs in the background; history may legitimately be empty
+        // right after startup — assert the contract shape, not sample counts.
+        var resp = await _admin.GetAsync("/admin/dashboard/services/history?hours=24");
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var histories = await resp.Content.ReadFromJsonAsync<List<ServiceHistoryDto>>();
+        histories.Should().NotBeNull();
+        histories!.Should().OnlyContain(h => !string.IsNullOrWhiteSpace(h.ServiceId) && h.Metrics != null);
+    }
+
+    [Fact]
+    public async Task SingleServiceHistory_UnknownService_ReturnsEmptySeries()
+    {
+        var resp = await _admin.GetAsync("/admin/dashboard/services/no-such-check/history");
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var history = await resp.Content.ReadFromJsonAsync<ServiceHistoryDto>();
+        history!.ServiceId.Should().Be("no-such-check");
+        history.Metrics.Should().BeEmpty();
+    }
+
     [Fact]
     public async Task Stats_ReturnsHealthReportShapedResponse()
     {

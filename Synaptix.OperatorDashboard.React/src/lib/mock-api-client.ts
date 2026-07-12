@@ -2,7 +2,7 @@
  * Mock API client for UI testing without backend
  */
 
-import type { User, UsersListResponse, SavedView } from '@/features/users/types'
+import type { UsersListResponse, SavedView, UserDetail, UserActivityResponse } from '@/features/users/types'
 import type { NotificationTemplate, NotificationChannel, ScheduledNotification, DeadLetterMessage } from '@/features/notifications/types'
 import type { AntiCheatFlag, QueueStats } from '@/features/anti-cheat/types'
 import {
@@ -31,10 +31,33 @@ export async function mockGetUsers(_filters?: any): Promise<UsersListResponse> {
   return generateMockUsersList()
 }
 
-export async function mockGetUserDetail(_userId: string): Promise<User> {
+export async function mockGetUserDetail(_userId: string): Promise<UserDetail> {
   await delay()
   const users = generateMockUsers(1)
-  return { ...users[0], id: _userId }
+  const base = { ...users[0], id: _userId }
+  return {
+    ...base,
+    username: base.handle ?? base.email.split('@')[0],
+    role: 'player',
+    ageGroup: 'adult',
+    totalGamesPlayed: 128,
+    totalPoints: 5420,
+    winRate: 0.54,
+    isVerified: true,
+    isBanned: base.status === 'banned',
+  }
+}
+
+export async function mockGetUserActivity(_userId: string, page: number = 1, pageSize: number = 20): Promise<UserActivityResponse> {
+  await delay()
+  const types = ['login', 'match-completed', 'purchase', 'profile-updated']
+  const items = Array.from({ length: pageSize }, (_, i) => ({
+    id: `act-${page}-${i}`,
+    type: types[i % types.length],
+    description: `Mock ${types[i % types.length]} event`,
+    createdAt: new Date(Date.now() - i * 3600_000).toISOString(),
+  }))
+  return { items, page, pageSize, totalItems: 60, totalPages: Math.ceil(60 / pageSize) }
 }
 
 export async function mockBanUser(_userId: string, _reason?: string): Promise<{ success: boolean }> {
@@ -1135,3 +1158,82 @@ export async function mockGetStoreStats(): Promise<any> {
   }
 }
 
+
+// ============ Moderation Logs Mock API ============
+
+const MOCK_MODERATION_STATUSES = ['normal', 'suspected', 'restricted', 'banned'] as const
+
+function generateMockModerationLog(i: number) {
+  return {
+    id: `modlog-${i}`,
+    playerId: `player-${(i % 5) + 1}`,
+    newStatus: MOCK_MODERATION_STATUSES[i % 4],
+    reason: ['Chat abuse', 'Suspicious win-rate', 'Chargeback', 'Appeal approved'][i % 4],
+    notes: i % 3 === 0 ? 'Escalated from anti-cheat queue' : null,
+    setByAdmin: ['ops@synaptix.dev', 'admin@synaptix.dev'][i % 2],
+    createdAt: new Date(Date.now() - i * 7200_000).toISOString(),
+    expiresAt: i % 4 === 2 ? new Date(Date.now() + 86400_000).toISOString() : null,
+    relatedFlagId: i % 2 === 0 ? `flag-${i}` : null,
+  }
+}
+
+export async function mockGetModerationLogs(filters?: { playerId?: string; status?: string }, offset: number = 0, limit: number = 50): Promise<any> {
+  await delay()
+  let items = Array.from({ length: 40 }, (_, i) => generateMockModerationLog(i))
+  if (filters?.playerId) items = items.filter((l) => l.playerId === filters.playerId)
+  if (filters?.status) items = items.filter((l) => l.newStatus === filters.status)
+  return { items: items.slice(offset, offset + limit), total: items.length, offset, limit }
+}
+
+export async function mockGetModerationLogDetail(logId: string): Promise<any> {
+  await delay()
+  return { ...generateMockModerationLog(3), id: logId }
+}
+
+// ============ Store Player Stock & Analytics Mock API ============
+
+export async function mockGetPlayerStock(playerId: string): Promise<any> {
+  await delay()
+  const skus = ['energy-pack-small', 'energy-pack-large', 'powerup-bundle', 'season-ticket']
+  return {
+    playerId,
+    items: skus.map((sku, i) => ({
+      sku,
+      quantityUsed: i * 2,
+      maxQuantity: 10,
+      remaining: 10 - i * 2,
+      effectiveMaxQuantity: i === 1 ? 20 : null,
+      lastResetAtUtc: i % 2 === 0 ? new Date(Date.now() - 86400_000).toISOString() : null,
+      nextResetAtUtc: new Date(Date.now() + 86400_000).toISOString(),
+      updatedAtUtc: new Date().toISOString(),
+    })),
+  }
+}
+
+export async function mockGetPurchaseAnalytics(): Promise<any> {
+  await delay()
+  return {
+    from: null,
+    to: null,
+    totalPurchases: 1284,
+    totalCoinsSpent: 96400,
+    topSkus: [
+      { sku: 'energy-pack-small', purchaseCount: 412 },
+      { sku: 'powerup-bundle', purchaseCount: 305 },
+      { sku: 'energy-pack-large', purchaseCount: 198 },
+      { sku: 'season-ticket', purchaseCount: 77 },
+    ],
+  }
+}
+
+export async function mockGetStockResetAnalytics(offset: number = 0, limit: number = 25): Promise<any> {
+  await delay()
+  const items = Array.from({ length: limit }, (_, i) => ({
+    playerId: `player-${offset + i + 1}`,
+    sku: ['energy-pack-small', 'powerup-bundle'][i % 2],
+    lastResetAt: new Date(Date.now() - (i + 1) * 3600_000).toISOString(),
+    nextResetAt: new Date(Date.now() + 86400_000).toISOString(),
+    quantityUsed: i % 5,
+  }))
+  return { items, total: 120, offset, limit }
+}

@@ -18,14 +18,29 @@ const ResetPasswordPage = React.lazy(() => import('@/features/auth/pages/reset-p
 // App pages (protected by auth)
 const DashboardPage = React.lazy(() => import('@/features/dashboard/pages/home'))
 const UsersListPage = React.lazy(() => import('@/features/users/pages/list'))
+const UserDetailPage = React.lazy(() => import('@/features/users/pages/detail'))
+const UserInvestigationPage = React.lazy(() => import('@/features/users/pages/investigation'))
 const NotificationsHubPage = React.lazy(() => import('@/features/notifications/pages/hub'))
 const AntiCheatQueuePage = React.lazy(() => import('@/features/anti-cheat/pages/queue'))
 const SecurityAuditPage = React.lazy(() => import('@/features/audit/pages/security'))
+const AuditEventDetailPage = React.lazy(() => import('@/features/audit/pages/event-detail'))
 const PlayerProfilePage = React.lazy(() => import('@/features/moderation/pages/player-profile'))
+const ModerationLogsPage = React.lazy(() => import('@/features/moderation/pages/logs'))
+const ModerationLogDetailPage = React.lazy(() => import('@/features/moderation/pages/log-detail'))
 const PlayerEconomyPage = React.lazy(() => import('@/features/economy/pages/player-economy'))
 const QuestionsQueuePage = React.lazy(() => import('@/features/content/pages/questions-queue'))
 const LifecyclePage = React.lazy(() => import('@/features/operations/pages/lifecycle'))
 const StoreManagementPage = React.lazy(() => import('@/features/store/pages/store-management'))
+const PlayerStockPage = React.lazy(() => import('@/features/store/pages/player-stock'))
+const StoreAnalyticsPage = React.lazy(() => import('@/features/store/pages/store-analytics'))
+const EventQueueStreamingPage = React.lazy(() => import('@/features/event-queue/pages/streaming'))
+const PersonalizationArchetypesPage = React.lazy(() => import('@/features/personalization/pages/archetypes'))
+const ConfigSettingsPage = React.lazy(() => import('@/features/config/pages/settings'))
+const InstallerSetupPage = React.lazy(() => import('@/features/installer/pages/setup'))
+const DiagnosticsMonitoringPage = React.lazy(() => import('@/features/diagnostics/pages/monitoring'))
+const StorageBrowserPage = React.lazy(() => import('@/features/storage/pages/browser'))
+const MatchHistoryReplayPage = React.lazy(() => import('@/features/match-history/pages/replay'))
+const SkillsManagementPage = React.lazy(() => import('@/features/skills/pages/management'))
 const NotFoundPage = React.lazy(() => import('@/components/shared/not-found'))
 
 export const router = createBrowserRouter([
@@ -52,11 +67,11 @@ export const router = createBrowserRouter([
           },
           {
             path: ':userId',
-            element: <div>User Detail - Coming Soon</div>,
+            element: <UserDetailPage />,
           },
           {
             path: ':userId/investigation',
-            element: <div>User Investigation - Coming Soon</div>,
+            element: <UserInvestigationPage />,
           },
         ],
       },
@@ -84,7 +99,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'security/:eventId',
-            element: <div>Audit Event Detail - Coming Soon</div>,
+            element: <AuditEventDetailPage />,
           },
         ],
       },
@@ -94,11 +109,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: 'logs',
-            element: <div>Moderation Logs - Coming Soon</div>,
+            element: <ModerationLogsPage />,
           },
           {
             path: 'logs/:logId',
-            element: <div>Moderation Log Detail - Coming Soon</div>,
+            element: <ModerationLogDetailPage />,
           },
           {
             path: 'players/:playerId',
@@ -138,11 +153,11 @@ export const router = createBrowserRouter([
           },
           {
             path: 'player-stock',
-            element: <div>Player Stock - Coming Soon</div>,
+            element: <PlayerStockPage />,
           },
           {
             path: 'analytics',
-            element: <div>Store Analytics - Coming Soon</div>,
+            element: <StoreAnalyticsPage />,
           },
           {
             path: 'reward-limits',
@@ -198,7 +213,67 @@ export const router = createBrowserRouter([
             path: 'game-events',
             element: <LifecyclePage />,
           },
+          {
+            path: 'event-queue',
+            element: <EventQueueStreamingPage />,
+          },
         ],
+      },
+      // Personalization section
+      {
+        path: 'personalization',
+        children: [
+          {
+            index: true,
+            element: <PersonalizationArchetypesPage />,
+          },
+          {
+            path: 'rules',
+            element: <PersonalizationArchetypesPage />,
+          },
+        ],
+      },
+      // Configuration section
+      {
+        path: 'config',
+        children: [
+          {
+            index: true,
+            element: <ConfigSettingsPage />,
+          },
+          {
+            path: 'feature-flags',
+            element: <ConfigSettingsPage />,
+          },
+          {
+            path: 'admin-permissions',
+            element: <ConfigSettingsPage />,
+          },
+        ],
+      },
+      // Setup & diagnostics
+      {
+        path: 'settings/setup',
+        element: <InstallerSetupPage />,
+      },
+      {
+        path: 'diagnostics',
+        element: <DiagnosticsMonitoringPage />,
+      },
+      // Storage section
+      {
+        path: 'storage',
+        element: <StorageBrowserPage />,
+      },
+      // Match history section
+      {
+        path: 'matches',
+        element: <MatchHistoryReplayPage />,
+      },
+      // Skills section
+      {
+        path: 'skills',
+        element: <SkillsManagementPage />,
       },
       // Add more sections as needed...
     ],

@@ -77,6 +77,11 @@ namespace Synaptix.Backend.Domain.Entities
             Raise(new GameEventClosedEvent(Id, Kind, totalParticipants, JackpotPool));
         }
 
+        public void Cancel()
+        {
+            Status = GameEventStatus.Cancelled;
+        }
+
         public void AddToJackpot(int amount)
         {
             if (amount > 0)

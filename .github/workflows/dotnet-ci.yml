@@ -80,6 +80,29 @@ jobs:
           mkdir -p TestResults
           dotnet test Synaptix.Backend.Api.Tests/Synaptix.Backend.Api.Tests.csproj --configuration Release --no-build --verbosity normal --results-directory TestResults --logger "trx;LogFileName=build-test-results.trx"
 
+      - name: Summarize failed tests
+        if: always()
+        run: |
+          # Re-list every failure at the END of the log: per-test console output
+          # scrolls out of reach on long runs, and the check run has no annotations.
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          ns = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+          failed = []
+          for trx in glob.glob("TestResults/**/*.trx", recursive=True):
+              root = ET.parse(trx).getroot()
+              for r in root.iter(f"{{{ns['t']}}}UnitTestResult"):
+                  if r.get("outcome") == "Failed":
+                      msg = r.find(f"{{{ns['t']}}}Output/{{{ns['t']}}}ErrorInfo/{{{ns['t']}}}Message")
+                      failed.append((r.get("testName"), (msg.text or "")[:300] if msg is not None else ""))
+          print(f"::group::FAILED TESTS ({len(failed)})")
+          for name, msg in failed:
+              print(f"FAILED: {name}")
+              if msg:
+                  print(f"    {msg}")
+          print("::endgroup::")
+          PY
+
       - name: Upload build test results
         if: always()
         uses: actions/upload-artifact@v4

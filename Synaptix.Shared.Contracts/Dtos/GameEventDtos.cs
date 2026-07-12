@@ -5,7 +5,8 @@ namespace Synaptix.Shared.Contracts.Dtos
         Scheduled = 1,
         Open = 2,
         Live = 3,
-        Closed = 4
+        Closed = 4,
+        Cancelled = 5
     }
 
     public sealed record CreateGameEventRequest(

@@ -5,7 +5,7 @@
 import { apiGet, apiPost } from '@/lib/api-client'
 import { getMockMode } from '@/lib/api-config'
 import * as mockApi from '@/lib/mock-api-client'
-import type { User, UsersListResponse, UserFilters, SavedView } from './types'
+import type { UsersListResponse, UserFilters, SavedView, UserDetail, UserActivityResponse } from './types'
 
 export async function getUsers(filters: UserFilters): Promise<UsersListResponse> {
   if (getMockMode()) return mockApi.mockGetUsers(filters)
@@ -20,9 +20,55 @@ export async function getUsers(filters: UserFilters): Promise<UsersListResponse>
   return apiGet(`/admin/users?${params.toString()}`)
 }
 
-export async function getUserDetail(userId: string): Promise<User> {
+// Backend AdminUserDetailDto — richer than the list's User shape.
+interface BackendUserDetailDto {
+  id: string
+  username: string
+  email: string
+  status: string
+  role: string
+  ageGroup: string
+  createdAt: string
+  lastActive: string | null
+  totalGamesPlayed: number
+  totalPoints: number
+  winRate: number
+  isVerified: boolean
+  isBanned: boolean
+}
+
+function toUserDetail(dto: BackendUserDetailDto): UserDetail {
+  const status = dto.status?.toLowerCase()
+  return {
+    id: dto.id,
+    email: dto.email,
+    handle: dto.username,
+    status: status === 'active' || status === 'suspended' || status === 'banned' || status === 'inactive'
+      ? status
+      : dto.isBanned ? 'banned' : 'active',
+    createdAt: dto.createdAt,
+    lastActiveAt: dto.lastActive,
+    flaggedCount: 0, // not exposed by the detail DTO
+    username: dto.username,
+    role: dto.role,
+    ageGroup: dto.ageGroup,
+    totalGamesPlayed: dto.totalGamesPlayed,
+    totalPoints: dto.totalPoints,
+    winRate: dto.winRate,
+    isVerified: dto.isVerified,
+    isBanned: dto.isBanned,
+  }
+}
+
+export async function getUserDetail(userId: string): Promise<UserDetail> {
   if (getMockMode()) return mockApi.mockGetUserDetail(userId)
-  return apiGet(`/admin/users/${userId}`)
+  const dto = await apiGet<BackendUserDetailDto>(`/admin/users/${userId}`)
+  return toUserDetail(dto)
+}
+
+export async function getUserActivity(userId: string, page: number = 1, pageSize: number = 20): Promise<UserActivityResponse> {
+  if (getMockMode()) return mockApi.mockGetUserActivity(userId, page, pageSize)
+  return apiGet(`/admin/users/${userId}/activity?page=${page}&pageSize=${pageSize}`)
 }
 
 export async function banUser(userId: string, reason?: string): Promise<{ success: boolean }> {

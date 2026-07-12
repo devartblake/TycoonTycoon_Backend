@@ -167,6 +167,24 @@ namespace Synaptix.Backend.Api.Features.GameEvents
                 var res = await mediator.Send(new CloseGameEventAndDistributePrizes(gameEventId), ct);
                 return Results.Ok(res);
             });
+
+            g.MapPost("/{gameEventId:guid}/cancel", async (
+                [FromRoute] Guid gameEventId,
+                IAppDb db,
+                CancellationToken ct) =>
+            {
+                var ev = await db.GameEvents.FirstOrDefaultAsync(x => x.Id == gameEventId, ct);
+                if (ev is null)
+                    return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Game event not found.");
+
+                // Closed events have already distributed prizes; they cannot be cancelled.
+                if (ev.Status is GameEventStatus.Closed or GameEventStatus.Cancelled)
+                    return ApiResponses.Error(StatusCodes.Status409Conflict, "CONFLICT", $"Game event is already {ev.Status}.");
+
+                ev.Cancel();
+                await db.SaveChangesAsync(ct);
+                return Results.Ok(new { status = ev.Status.ToString() });
+            });
         }
     }
 }

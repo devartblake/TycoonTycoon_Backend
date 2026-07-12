@@ -14,6 +14,19 @@ public static class AdminPlayerLookupEndpoints
     {
         var g = admin.MapGroup("/player-lookup").WithTags("Admin/Player Lookup");
         g.MapGet("/resolve", Resolve);
+        g.MapGet("/search", Search);
+    }
+
+    private static async Task<IResult> Search(
+        [FromQuery] string? query,
+        [FromQuery] int? limit,
+        IMediator mediator,
+        CancellationToken ct)
+    {
+        // Optional params: a missing non-nullable query/limit would fail binding
+        // and surface as 500. The handler defaults/clamps (empty query => empty result).
+        var result = await mediator.Send(new AdminSearchPlayers(query ?? string.Empty, limit ?? 0), ct);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> Resolve(

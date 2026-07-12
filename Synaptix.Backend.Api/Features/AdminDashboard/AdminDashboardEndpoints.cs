@@ -1,23 +1,37 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Synaptix.Backend.Api.Features.AdminDashboard
 {
     // Operator overview (#418). Aggregates the registered ASP.NET health checks
-    // into the dashboard's service list.
+    // into the dashboard's service list, and serves recent per-service history
+    // from the in-memory HealthHistoryStore sampler (resets on restart).
     //
-    // Deferred by design: rich system metrics and per-service time-series history
-    // live in Prometheus/Grafana and are NOT queryable from this API. So `metrics`
-    // is a zeroed placeholder, and the dashboard's service-history views stay empty
-    // (handled client-side) until a metrics integration is added. Building those
-    // time-series routes requires a Prometheus query path and is out of scope here.
+    // Still deferred by design: rich system metrics (CPU/memory/error-rate) live
+    // in Prometheus/Grafana and are NOT queryable from this API, so `metrics`
+    // remains a zeroed placeholder.
     public static class AdminDashboardEndpoints
     {
         public static void Map(RouteGroupBuilder admin)
         {
             var g = admin.MapGroup("/dashboard").WithTags("Admin/Dashboard");
+
+            g.MapGet("/services/history", (HealthHistoryStore store, [FromQuery] int? hours) =>
+            {
+                var window = HistoryWindow(hours);
+                var histories = store.ServiceIds
+                    .Select(id => ToServiceHistory(id, store.Get(id, window)))
+                    .ToList();
+                return Results.Ok(histories);
+            });
+
+            g.MapGet("/services/{id}/history", (string id, HealthHistoryStore store, [FromQuery] int? hours) =>
+            {
+                return Results.Ok(ToServiceHistory(id, store.Get(id, HistoryWindow(hours))));
+            });
 
             g.MapGet("/stats", async (HealthCheckService health, CancellationToken ct) =>
             {
@@ -63,6 +77,22 @@ namespace Synaptix.Backend.Api.Features.AdminDashboard
             HealthStatus.Healthy => "healthy",
             HealthStatus.Degraded => "degraded",
             _ => "offline"
+        };
+
+        // Optional query param: omitted/invalid falls back to the full 24h window.
+        private static TimeSpan HistoryWindow(int? hours) =>
+            TimeSpan.FromHours(Math.Clamp(hours is null or <= 0 ? 24 : hours.Value, 1, 24));
+
+        // Matches the dashboard's ServiceHistory shape: value is the check's
+        // response time in ms (0 when the check reported unhealthy).
+        private static object ToServiceHistory(string serviceId, IReadOnlyList<HealthSample> samples) => new
+        {
+            serviceId,
+            metrics = samples.Select(s => new
+            {
+                timestamp = s.Timestamp,
+                value = s.Status == HealthStatus.Unhealthy ? 0d : s.ResponseTimeMs
+            }).ToList()
         };
     }
 }

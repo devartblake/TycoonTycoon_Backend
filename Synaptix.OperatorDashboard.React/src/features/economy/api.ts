@@ -51,13 +51,6 @@ interface BackendTxnResult {
   balanceDiamonds: number
 }
 
-interface BackendPlayerLookup {
-  playerId?: string
-  userId?: string
-  email?: string
-  username?: string
-}
-
 function offsetToPage(offset: number, limit: number): number {
   return Math.floor(offset / Math.max(1, limit)) + 1
 }
@@ -127,19 +120,22 @@ export async function getEconomyStats(): Promise<EconomyStats> {
   return apiGet<EconomyStats>('/admin/economy/stats')
 }
 
+interface BackendPlayerSearchItem {
+  playerId: string
+  email?: string | null
+  username?: string | null
+  coinsBalance: number
+}
+
 export async function searchPlayers(query: string, limit: number = 20): Promise<Array<{ playerId: string; email: string; handle: string; currentBalance: number }>> {
   if (getMockMode()) return mockApi.mockSearchPlayers(query, limit)
-  // Backend exposes a single-match resolver, not a search. Wrap the match (if any).
-  try {
-    const res = await apiGet<BackendPlayerLookup>(`/admin/player-lookup/resolve?query=${encodeURIComponent(query)}`)
-    // The resolver returns a prefixed contract id (ply_/usr_); strip it to the raw
-    // GUID the /players/{id} and /history/{playerId} routes expect.
-    const raw = res.playerId ?? res.userId ?? ''
-    const playerId = raw.replace(/^(ply_|usr_)/, '')
-    if (!playerId) return []
-    return [{ playerId, email: res.email ?? '', handle: res.username ?? '', currentBalance: 0 }]
-  } catch {
-    // 404 = no match.
-    return []
-  }
+  const res = await apiGet<{ items: BackendPlayerSearchItem[]; total: number }>(
+    `/admin/player-lookup/search?query=${encodeURIComponent(query)}&limit=${limit}`
+  )
+  return res.items.map((i) => ({
+    playerId: i.playerId,
+    email: i.email ?? '',
+    handle: i.username ?? '',
+    currentBalance: i.coinsBalance,
+  }))
 }

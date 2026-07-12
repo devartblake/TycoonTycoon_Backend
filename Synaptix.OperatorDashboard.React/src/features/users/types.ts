@@ -40,3 +40,32 @@ export interface BulkActionPayload {
   action: 'ban' | 'unban' | 'suspend' | 'unsuspend'
   reason?: string
 }
+
+// Rich detail shape from GET /admin/users/{id} (AdminUserDetailDto)
+export interface UserDetail extends User {
+  username: string
+  role: string
+  ageGroup: string
+  totalGamesPlayed: number
+  totalPoints: number
+  winRate: number
+  isVerified: boolean
+  isBanned: boolean
+}
+
+// GET /admin/users/{id}/activity (AdminUserActivityResponse)
+export interface UserActivityItem {
+  id: string
+  type: string
+  description: string
+  createdAt: string
+  metadata?: Record<string, unknown>
+}
+
+export interface UserActivityResponse {
+  items: UserActivityItem[]
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+}

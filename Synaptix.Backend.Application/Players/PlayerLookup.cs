@@ -9,6 +9,60 @@ namespace Synaptix.Backend.Application.Players;
 
 public sealed record AdminResolvePlayerLookup(string Query) : IRequest<AdminPlayerLookupResponse?>;
 
+public sealed record AdminSearchPlayers(string Query, int Limit) : IRequest<AdminPlayerSearchResponse>;
+
+public sealed class AdminSearchPlayersHandler(IAppDb db)
+    : IRequestHandler<AdminSearchPlayers, AdminPlayerSearchResponse>
+{
+    public async ValueTask<AdminPlayerSearchResponse> Handle(AdminSearchPlayers request, CancellationToken ct)
+    {
+        var query = (request.Query ?? string.Empty).Trim().ToLowerInvariant();
+        var limit = Math.Clamp(request.Limit <= 0 ? 20 : request.Limit, 1, 50);
+
+        if (string.IsNullOrWhiteSpace(query))
+            return new AdminPlayerSearchResponse(Array.Empty<AdminPlayerSearchItemDto>(), 0);
+
+        // Users match on email or handle; players (which may have no linked user)
+        // match on username. Ids are shared between the two tables where linked.
+        var userMatches = await db.Users.AsNoTracking()
+            .Where(u => u.Email.ToLower().Contains(query) || u.Handle.ToLower().Contains(query))
+            .OrderBy(u => u.Email)
+            .Take(limit)
+            .Select(u => new { u.Id, u.Email, Username = u.Handle })
+            .ToListAsync(ct);
+
+        var playerMatches = await db.Players.AsNoTracking()
+            .Where(p => p.Username.ToLower().Contains(query))
+            .OrderBy(p => p.Username)
+            .Take(limit)
+            .Select(p => new { p.Id, Email = (string?)null, p.Username })
+            .ToListAsync(ct);
+
+        var merged = userMatches
+            .Select(m => new { m.Id, Email = (string?)m.Email, m.Username })
+            .Concat(playerMatches)
+            .GroupBy(m => m.Id)
+            .Select(g => g.First())
+            .Take(limit)
+            .ToList();
+
+        var ids = merged.Select(m => m.Id).ToArray();
+        var wallets = await db.PlayerWallets.AsNoTracking()
+            .Where(w => ids.Contains(w.PlayerId))
+            .ToDictionaryAsync(w => w.PlayerId, w => w.Coins, ct);
+
+        var items = merged
+            .Select(m => new AdminPlayerSearchItemDto(
+                m.Id,
+                m.Email,
+                m.Username,
+                wallets.TryGetValue(m.Id, out var coins) ? coins : 0))
+            .ToList();
+
+        return new AdminPlayerSearchResponse(items, items.Count);
+    }
+}
+
 public sealed class AdminResolvePlayerLookupHandler(IAppDb db)
     : IRequestHandler<AdminResolvePlayerLookup, AdminPlayerLookupResponse?>
 {

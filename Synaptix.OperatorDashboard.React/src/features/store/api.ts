@@ -31,6 +31,10 @@ import type {
   FlashSale,
   StockPolicy,
   RewardLimit,
+  PlayerStockResponse,
+  PurchaseAnalytics,
+  StockResetsResponse,
+  StockResetItem,
 } from './types'
 
 // ── Backend DTO shapes (camelCase) ───────────────────────────────────────────
@@ -295,4 +299,45 @@ export async function getStoreStats(): Promise<StoreStats> {
     totalRevenue: 0,
     lowStockCount: 0,
   }
+}
+
+// ── Player stock (GET /admin/store/player-stock/{playerId}) ─────────────────
+
+export async function getPlayerStock(playerId: string): Promise<PlayerStockResponse> {
+  if (getMockMode()) return mockApi.mockGetPlayerStock(playerId)
+  return apiGet(`/admin/store/player-stock/${playerId}`)
+}
+
+export async function overridePlayerStock(
+  playerId: string,
+  sku: string,
+  effectiveMaxQuantity: number | null,
+  reason?: string
+): Promise<{ success: boolean }> {
+  if (getMockMode()) return { success: true }
+  await apiPost(`/admin/store/player-stock/${playerId}/override`, { sku, effectiveMaxQuantity, reason })
+  return { success: true }
+}
+
+// ── Analytics (GET /admin/store/analytics/*) ────────────────────────────────
+
+export async function getPurchaseAnalytics(from?: string, to?: string, sku?: string): Promise<PurchaseAnalytics> {
+  if (getMockMode()) return mockApi.mockGetPurchaseAnalytics()
+  const params = new URLSearchParams()
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  if (sku) params.set('sku', sku)
+  const qs = params.toString()
+  return apiGet(`/admin/store/analytics/purchases${qs ? `?${qs}` : ''}`)
+}
+
+export async function getStockResetAnalytics(sku?: string, offset: number = 0, limit: number = 25): Promise<StockResetsResponse> {
+  if (getMockMode()) return mockApi.mockGetStockResetAnalytics(offset, limit)
+  const params = new URLSearchParams({
+    page: String(Math.floor(offset / Math.max(1, limit)) + 1),
+    pageSize: String(limit),
+  })
+  if (sku) params.set('sku', sku)
+  const res = await apiGet<BackendPage<StockResetItem>>(`/admin/store/analytics/stock-resets?${params}`)
+  return { items: res.items, total: res.totalItems, offset, limit }
 }
