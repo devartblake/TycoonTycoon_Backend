@@ -39,6 +39,12 @@ services:
       ASPNETCORE_ENVIRONMENT: "Staging"
       DOTNET_ENVIRONMENT: "Staging"
       AdminAuth__AllowTrustedBffPlainJson: "false"
+      # Ops key gating /admin/* must match the operator dashboard's key; fail
+      # closed rather than inheriting the base compose CHANGE_ME default.
+      AdminOps__Key: "${ADMIN_OPS_KEY:?ADMIN_OPS_KEY is required}"
+      # Prometheus is dev-profile only; leave metric queries disabled unless a
+      # real Prometheus HTTP API URL is supplied for staging.
+      Dashboard__PrometheusUrl: "${DASHBOARD_PROMETHEUS_URL:-}"
       KmsClient__BaseUrl: "http://kms-api:5050"
       KmsClient__ServiceToken: "${KMS_SERVICE_TOKEN:-staging-kms-token}"
       KmsClient__Required: "false"

@@ -36,6 +36,13 @@ services:
       ASPNETCORE_ENVIRONMENT: "Production"
       DOTNET_ENVIRONMENT: "Production"
       AdminAuth__AllowTrustedBffPlainJson: "false"
+      # Ops key gating /admin/* must match the operator dashboard's key; fail
+      # closed rather than inheriting the base compose CHANGE_ME default.
+      AdminOps__Key: "${ADMIN_OPS_KEY:?ADMIN_OPS_KEY is required in prod}"
+      # Prometheus is a dev-profile service and is not deployed in prod, so
+      # disable dashboard metric queries (tiles degrade to 0) unless a real
+      # Prometheus HTTP API URL is supplied.
+      Dashboard__PrometheusUrl: "${DASHBOARD_PROMETHEUS_URL:-}"
       KmsClient__BaseUrl: "http://kms-api:5050"
       KmsClient__ServiceToken: "${KMS_SERVICE_TOKEN:?KMS_SERVICE_TOKEN is required in prod}"
       KmsClient__Required: "true"
