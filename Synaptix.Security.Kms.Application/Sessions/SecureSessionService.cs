@@ -59,9 +59,19 @@ public sealed class SecureSessionService(
 
         await store.SaveAsync(session, ct);
 
-        // Server signature: HMAC-SHA256 over sessionId | serverPublicKey | expiresAt
+        // Server signature: HMAC-SHA256 over the negotiation transcript —
+        //   sessionId | serverPublicKey | expiresAt | selectedSuite | advertisedSuites
+        // Binding the negotiated suite and the client's advertised suite list lets the
+        // client detect a downgrade attack: a MITM stripping strong suites from the
+        // advertised list (or forcing a weaker selected suite) yields a signature the
+        // client cannot reproduce from what it actually sent/received.
+        // NOTE: this binds the transcript into the *signature* only; key derivation is
+        // unchanged (wire-compatible). A future hardening step can also mix the transcript
+        // into the HKDF salt so tampering makes the AEAD keys diverge, once every client
+        // can move to the new derivation in lockstep.
+        var advertisedSuites = string.Join('|', command.SupportedSuites);
         var sigInput = Encoding.UTF8.GetBytes(
-            $"{sessionId:N}:{Base64UrlEncode(serverPublicKeySpki)}:{expiresAt:O}");
+            $"{sessionId:N}:{Base64UrlEncode(serverPublicKeySpki)}:{expiresAt:O}:{suite}:{advertisedSuites}");
         var signature = HMACSHA256.HashData(s2cKey, sigInput);
 
         return new StartSessionResult(

@@ -19,11 +19,7 @@ namespace Synaptix.Backend.Api.Features.AdminQuestions
             // Contract-compliant route surface: /admin/questions
             var g = admin.MapGroup("/questions").WithTags("Admin/Questions");
 
-            // Backward-compatible legacy route surface: /admin/admin/questions
-            var legacy = admin.MapGroup("/admin/questions").WithTags("Admin/Questions (Legacy)");
-
             MapRoutes(g);
-            MapRoutes(legacy);
         }
 
         private static void MapRoutes(RouteGroupBuilder g)

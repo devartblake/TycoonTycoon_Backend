@@ -81,6 +81,79 @@ public sealed class SecureSessionServiceTests
     }
 
     [Fact]
+    public async Task StartAsync_Signature_BindsSuiteAndAdvertisedList()
+    {
+        var store = new InMemorySessionStore();
+        var svc = new SecureSessionService(store);
+        var clientNonceBytes = RandomNumberGenerator.GetBytes(24);
+        var clientNonce = Base64UrlEncode(clientNonceBytes);
+        var suite = SupportedSuite;
+        var advertised = new[] { SecureSuites.ClassicalV1, SecureSuites.P256V1 };
+        var (clientPub, clientEcdh) = GenerateClientKeyPair(suite);
+        using var disposable = clientEcdh;
+
+        var result = await svc.StartAsync("user-sig", new StartSessionCommand(
+            "device-sig", clientNonce, clientPub, advertised), default);
+
+        // Client re-derives s2cKey, then reconstructs the signed transcript from what it
+        // advertised and what it received — proving the suite + advertised list are bound.
+        var serverPubBytes = Base64UrlDecode(result.ServerPublicKey);
+        var sharedSecret = KeyExchange.DeriveSharedSecret(clientEcdh, serverPubBytes);
+        var serverNonceBytes = Base64UrlDecode(result.ServerNonce);
+        var salt = SHA256.HashData(
+        [
+            ..clientNonceBytes,
+            ..serverNonceBytes,
+            ..result.SessionId.ToByteArray()
+        ]);
+        var s2cKey = HKDF.DeriveKey(
+            HashAlgorithmName.SHA256, sharedSecret, 32, salt, "synaptix:s2c:v1"u8.ToArray());
+
+        var expectedSigInput = System.Text.Encoding.UTF8.GetBytes(
+            $"{result.SessionId:N}:{result.ServerPublicKey}:{result.ExpiresAtUtc:O}:{result.SelectedSuite}:{string.Join('|', advertised)}");
+        var expectedSig = Base64UrlEncode(HMACSHA256.HashData(s2cKey, expectedSigInput));
+
+        result.ServerSignature.Should().Be(expectedSig);
+    }
+
+    [Fact]
+    public async Task StartAsync_Signature_DetectsDowngradeTampering()
+    {
+        var store = new InMemorySessionStore();
+        var svc = new SecureSessionService(store);
+        var clientNonceBytes = RandomNumberGenerator.GetBytes(24);
+        var clientNonce = Base64UrlEncode(clientNonceBytes);
+        var suite = SupportedSuite;
+        var (clientPub, clientEcdh) = GenerateClientKeyPair(suite);
+        using var disposable = clientEcdh;
+
+        // Client actually advertised both suites...
+        var result = await svc.StartAsync("user-dg", new StartSessionCommand(
+            "device-dg", clientNonce, clientPub,
+            [SecureSuites.ClassicalV1, SecureSuites.P256V1]), default);
+
+        var serverPubBytes = Base64UrlDecode(result.ServerPublicKey);
+        var sharedSecret = KeyExchange.DeriveSharedSecret(clientEcdh, serverPubBytes);
+        var serverNonceBytes = Base64UrlDecode(result.ServerNonce);
+        var salt = SHA256.HashData(
+        [
+            ..clientNonceBytes,
+            ..serverNonceBytes,
+            ..result.SessionId.ToByteArray()
+        ]);
+        var s2cKey = HKDF.DeriveKey(
+            HashAlgorithmName.SHA256, sharedSecret, 32, salt, "synaptix:s2c:v1"u8.ToArray());
+
+        // ...but a MITM stripped P256V1 from the list the client thinks it sent.
+        var tamperedSigInput = System.Text.Encoding.UTF8.GetBytes(
+            $"{result.SessionId:N}:{result.ServerPublicKey}:{result.ExpiresAtUtc:O}:{result.SelectedSuite}:{SecureSuites.ClassicalV1}");
+        var tamperedSig = Base64UrlEncode(HMACSHA256.HashData(s2cKey, tamperedSigInput));
+
+        // The signature over the tampered transcript cannot match the server's signature.
+        result.ServerSignature.Should().NotBe(tamperedSig);
+    }
+
+    [Fact]
     public async Task StartAsync_UnsupportedSuiteOnly_FallsBackToSupportedSuite()
     {
         var store = new InMemorySessionStore();
