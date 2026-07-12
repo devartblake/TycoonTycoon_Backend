@@ -509,7 +509,9 @@ services:
       ConnectionStrings__db: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-synaptix_db};Username=${POSTGRES_USER:-synaptix_user};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD},defaultDatabase=0"
       ConnectionStrings__mongo: "mongodb://${MONGO_APP_USER:-synaptix_app_user}:${MONGO_APP_PASSWORD}@mongodb:27017/${MONGO_ANALYTICS_DB:-synaptix_analytics}?authSource=${MONGO_AUTH_DB:-synaptix_analytics}"
-      ConnectionStrings__elasticsearch: "http://elastic:${ELASTIC_PASSWORD}@elasticsearch:9200"
+      # Password intentionally NOT embedded in the URL (log-leak vector, #412): the ES
+      # client reads credentials from Elastic__Username/Elastic__Password below.
+      ConnectionStrings__elasticsearch: "http://elasticsearch:9200"
       RabbitMQ__Host: "rabbitmq"
       RabbitMQ__Port: "5672"
 
