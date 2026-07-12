@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- HybridKeyExchangeTests touch ML-KEM; suppress the experimental-API diagnostic. -->
+    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
