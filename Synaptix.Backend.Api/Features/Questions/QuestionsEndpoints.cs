@@ -3,10 +3,14 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using System.Security.Claims;
+using Synaptix.Backend.Api.Features.Progression;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Personalization;
 using Synaptix.Backend.Application.Questions;
+using Synaptix.Backend.Application.Seasons;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Features.Questions
@@ -278,7 +282,10 @@ namespace Synaptix.Backend.Api.Features.Questions
         /// </summary>
         private static async Task<IResult> CheckAnswersBatch(
             [FromBody] CheckAnswersBatchRequest req,
+            HttpContext httpContext,
             IAppDb db,
+            IMemoryCache cache,
+            SoloSeasonPointsService soloPoints,
             CancellationToken ct)
         {
             if (req.Answers.Count == 0)
@@ -296,6 +303,7 @@ namespace Synaptix.Backend.Api.Features.Questions
 
             var results = new List<CheckAnswerResponse>(req.Answers.Count);
             var correct = 0;
+            var earnedXp = 0.0;
 
             foreach (var answer in req.Answers)
             {
@@ -306,7 +314,11 @@ namespace Synaptix.Backend.Api.Features.Questions
                 }
 
                 var isCorrect = string.Equals(question.CorrectOptionId, answer.SelectedOptionId, StringComparison.OrdinalIgnoreCase);
-                if (isCorrect) correct++;
+                if (isCorrect)
+                {
+                    correct++;
+                    earnedXp += TierProgression.XpForCorrectAnswer(question.Difficulty);
+                }
 
                 results.Add(new CheckAnswerResponse(
                     answer.QuestionId,
@@ -315,7 +327,112 @@ namespace Synaptix.Backend.Api.Features.Questions
                     isCorrect));
             }
 
-            return Results.Ok(new CheckAnswersBatchResponse(results, results.Count, correct));
+            var xpAward = await TryAwardQuizXpAsync(req, httpContext, db, cache, soloPoints, earnedXp, correct, ct);
+
+            return Results.Ok(new CheckAnswersBatchResponse(results, results.Count, correct, xpAward));
+        }
+
+        /// <summary>
+        /// Server-authoritative XP awarding for a graded quiz session.
+        /// Awards only when the caller is authenticated and supplied a quiz
+        /// session id, which doubles as the idempotency key: retries of the
+        /// same session return the original award instead of double-crediting.
+        /// Storing a <see cref="Lazy{T}"/> in the cache makes the check-and-set
+        /// atomic — concurrent requests with the same key await the same Task.
+        /// The client never chooses the amount — it is derived from the graded
+        /// answers above (difficulty × 10 per correct answer).
+        /// </summary>
+        private static async Task<QuizXpAwardDto?> TryAwardQuizXpAsync(
+            CheckAnswersBatchRequest req,
+            HttpContext httpContext,
+            IAppDb db,
+            IMemoryCache cache,
+            SoloSeasonPointsService soloPoints,
+            double earnedXp,
+            int correctAnswers,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(req.QuizSessionId))
+                return null;
+
+            if (string.Equals(req.Mode, "preview", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var claim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)
+                        ?? httpContext.User.FindFirst("sub");
+            if (claim is null || !Guid.TryParse(claim.Value, out var playerId) || playerId == Guid.Empty)
+                return null;
+
+            // Idempotency: one award per (player, quiz session). Storing a
+            // Lazy<Task<T>> ensures the DB work executes at most once even under
+            // concurrent retries — both threads await the same Task once the Lazy
+            // is in the cache. In-memory is sufficient for the accidental-retry
+            // window; a multi-instance deployment should replace this with a
+            // distributed cache or a persisted award ledger.
+            var dedupeKey = $"quiz-xp:{playerId:N}:{req.QuizSessionId}";
+            // GetOrCreate returns null only when the factory returns null;
+            // our factory always returns a non-null Lazy, so the ! is safe.
+            var lazy = cache.GetOrCreate(dedupeKey, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
+                // Use CancellationToken.None: the award write must complete even if
+                // the triggering request is cancelled so the cached result is
+                // available for retries and the player is not double-credited.
+                return new Lazy<Task<QuizXpAwardDto?>>(
+                    () => ExecuteXpAwardAsync(
+                        playerId, earnedXp, correctAnswers, req.QuizSessionId!,
+                        db, soloPoints, CancellationToken.None),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+            })!;
+            return await lazy.Value;
+        }
+
+        private static async Task<QuizXpAwardDto?> ExecuteXpAwardAsync(
+            Guid playerId, double earnedXp, int correctAnswers, string quizSessionId,
+            IAppDb db, SoloSeasonPointsService soloPoints, CancellationToken ct)
+        {
+            if (earnedXp <= 0)
+                return null;
+
+            var player = await db.Players.FirstOrDefaultAsync(p => p.Id == playerId, ct);
+            if (player is null)
+                return null;
+
+            var previousTier = TierProgression.GetTierForXp(player.Xp);
+
+            player.AddXp(earnedXp);
+
+            var newTier = TierProgression.GetTierForXp(player.Xp);
+            var tierUpgraded = previousTier.Id != newTier.Id;
+
+            if (tierUpgraded)
+            {
+                var tierEntity = await db.Tiers
+                    .FirstOrDefaultAsync(t => t.Name == newTier.Name, ct);
+                if (tierEntity is not null)
+                {
+                    player.SetTier(tierEntity.Id);
+                }
+            }
+
+            await db.SaveChangesAsync(ct);
+
+            // Season rank points ride the same graded session. The ledger's
+            // EventId (derived from player + session) makes this idempotent at
+            // the DB level even when the in-memory cache misses on retry.
+            var seasonPoints = await soloPoints.AwardAsync(
+                SoloSeasonPointsService.DeriveEventId(playerId, quizSessionId),
+                playerId,
+                correctAnswers,
+                $"quiz-session:{quizSessionId}",
+                ct);
+
+            return new QuizXpAwardDto(
+                XpAwarded: earnedXp,
+                TotalXp: player.Xp,
+                TierUpgraded: tierUpgraded,
+                NewTierId: tierUpgraded ? player.TierId?.ToString() : null,
+                SeasonPointsAwarded: seasonPoints);
         }
 
         private static async Task<List<GameplayQuestionDto>> QueryGameplayQuestionsAsync(

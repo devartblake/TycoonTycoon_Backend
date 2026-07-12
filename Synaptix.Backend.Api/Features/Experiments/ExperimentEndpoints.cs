@@ -1,3 +1,4 @@
+using Synaptix.Backend.Api.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
@@ -14,13 +15,7 @@ public static class ExperimentEndpoints
         var g = app.MapGroup("/experiments")
             .WithTags("Experiments")
             .RequireAuthorization()
-            .AddEndpointFilter(async (ctx, next) =>
-            {
-                var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
-                if (!await flags.IsEnabledAsync("experiments_enabled", ctx.HttpContext.RequestAborted))
-                    return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
-                return await next(ctx);
-            });
+                .RequireNotBanned();
 
         // Bootstrap all active experiment assignments for a player at session start
         g.MapGet("/player/{playerId:guid}", GetAllAssignments);

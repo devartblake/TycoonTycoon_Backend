@@ -29,6 +29,7 @@ namespace Synaptix.Backend.Application.Matches
         EnforcementService enforcement,
         PartyIntegrityService partyIntegrity,
         PartyLifecycleService partLifecycle,
+        SeasonTiebreakerService seasonTiebreakers,
         IOptions<RankedSeasonOptions> rankedOptions,
         IMediator mediator,
         ILogger<SubmitMatchHandler> logger)
@@ -285,6 +286,22 @@ namespace Synaptix.Backend.Application.Matches
                 }
             }
 
+            // Season tiebreaker matches settle deferred end-of-season standings.
+            // Mode "tiebreaker" is deliberately not "ranked", so the match
+            // itself accrues no season points.
+            if (req.Mode.Equals("tiebreaker", StringComparison.OrdinalIgnoreCase)
+                && req.Status == MatchStatus.Completed)
+            {
+                try
+                {
+                    await ResolveSeasonTiebreakerAsync(req, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Season tiebreaker resolution failed for match {MatchId}", req.MatchId);
+                }
+            }
+
             var finalStatus = antiCheatBlocksRewards ? "Rejected" : "Applied";
             return new SubmitMatchResponse(req.EventId, req.MatchId, finalStatus, awards);
         }
@@ -338,6 +355,44 @@ namespace Synaptix.Backend.Application.Matches
             }
 
             return recomputed;
+        }
+
+        private async Task ResolveSeasonTiebreakerAsync(SubmitMatchRequest req, CancellationToken ct)
+        {
+            var participantIds = req.Participants.Select(p => p.PlayerId).Distinct().ToList();
+            if (participantIds.Count < 2)
+                return;
+
+            // Highest score wins. A drawn tiebreaker stays pending — the
+            // players can rematch, or the expiry sweep resolves it.
+            var ordered = req.Participants.OrderByDescending(p => p.Score).ToList();
+            if (ordered[1].Score == ordered[0].Score)
+            {
+                _logger.LogInformation(
+                    "Tiebreaker match {MatchId} ended in a draw; tiebreaker stays pending.", req.MatchId);
+                return;
+            }
+            var winnerId = ordered[0].PlayerId;
+
+            var candidates = await db.SeasonTiebreakers
+                .AsNoTracking()
+                .Where(x => (x.Status == SeasonTiebreaker.Statuses.Scheduled
+                             || x.Status == SeasonTiebreaker.Statuses.InProgress)
+                            && x.PlayerIds.Contains(winnerId))
+                .OrderByDescending(x => x.CreatedAtUtc)
+                .ToListAsync(ct);
+
+            var tiebreaker = candidates.FirstOrDefault(
+                x => x.PlayerIds.ToHashSet().SetEquals(participantIds));
+            if (tiebreaker is null)
+            {
+                _logger.LogInformation(
+                    "No pending season tiebreaker matches the participants of match {MatchId}.", req.MatchId);
+                return;
+            }
+
+            await seasonTiebreakers.ResolveAsync(
+                tiebreaker.Id, winnerId, req.MatchId, $"match:{req.MatchId}", ct);
         }
 
         private async Task ApplySeasonPointsAndRanksAsync(SubmitMatchRequest req, Match match, CancellationToken ct)

@@ -46,16 +46,19 @@ public static class AppConfigEndpoints
                 storeEnabled               = Flag("store_enabled",                 true),
                 storePurchasesEnabled      = Flag("store_purchases_enabled",       false),
                 missionsEnabled            = Flag("missions_enabled",              true),
-                skillTreeEnabled           = Flag("skill_tree_enabled",            false),
-                realtimeMultiplayerEnabled = Flag("realtime_multiplayer_enabled",  false),
-                matchmakingEnabled         = Flag("matchmaking_enabled",           false),
-                tournamentsEnabled         = Flag("tournaments_enabled",           false),
+                skillTreeEnabled           = Flag("skill_tree_enabled",            true),
+                realtimeMultiplayerEnabled = Flag("realtime_multiplayer_enabled",  true),
+                matchmakingEnabled         = Flag("matchmaking_enabled",           true),
+                tournamentsEnabled         = Flag("tournaments_enabled",           true),
                 cryptoEnabled              = Flag("crypto_enabled",                false),
-                tomPersonalizationEnabled  = Flag("tom_personalization_enabled",   false),
-                socialEnabled              = Flag("social_enabled",                false),
-                notificationsEnabled       = Flag("notifications_enabled",         false),
-                experimentsEnabled         = Flag("experiments_enabled",           false),
-                aiSidecarEnabled           = Flag("ai_sidecar_enabled",            false),
+                tomPersonalizationEnabled  = Flag("tom_personalization_enabled",   true),
+                // Social (friends/parties) ships enabled; moderation disables it
+                // per release or per player via the AdminAppConfig override.
+                // Keep in sync with FeatureFlagService (missing flag => enabled).
+                socialEnabled              = Flag("social_enabled",                true),
+                notificationsEnabled       = Flag("notifications_enabled",         true),
+                experimentsEnabled         = Flag("experiments_enabled",           true),
+                aiSidecarEnabled           = Flag("ai_sidecar_enabled",            true),
                 devTesterEnabled           = Flag("dev_tester_enabled",             false),
             };
 

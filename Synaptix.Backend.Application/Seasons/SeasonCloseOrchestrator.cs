@@ -11,7 +11,8 @@ namespace Synaptix.Backend.Application.Seasons;
 /// </summary>
 public sealed class SeasonCloseOrchestrator(
     IAppDb db,
-    SeasonRewardJob rewards)
+    SeasonRewardJob rewards,
+    SeasonTiebreakerService tiebreakers)
 {
     public async Task<string> CloseAsync(Guid seasonId, CancellationToken ct)
     {
@@ -39,6 +40,11 @@ public sealed class SeasonCloseOrchestrator(
             await db.SaveChangesAsync(ct);
         }
 
+        // Detect championship / reward-boundary ties. Tied players get a
+        // scheduled tiebreaker and their snapshot rows (and thus rewards)
+        // are deferred until it resolves or expires.
+        var deferred = await tiebreakers.DetectAndScheduleAsync(seasonId, ct);
+
         // Freeze from current PlayerSeasonProfiles
         var profiles = await db.PlayerSeasonProfiles
             .AsNoTracking()
@@ -47,6 +53,8 @@ public sealed class SeasonCloseOrchestrator(
 
         foreach (var p in profiles)
         {
+            if (deferred.Contains(p.PlayerId))
+                continue;
             db.SeasonRankSnapshots.Add(new SeasonRankSnapshotRow(p, capturedAt));
         }
 

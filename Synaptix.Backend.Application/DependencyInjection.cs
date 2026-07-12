@@ -98,6 +98,18 @@ namespace Synaptix.Backend.Application
             // Game Events
             services.AddScoped<GameEventSchedulerJob>();
             services.AddScoped<CloseGameEventWorker>();
+            services.AddScoped<GameEvents.TierChampionSeeder>();
+
+            // Champion vs Tier live rounds
+            services.Configure<GameEvents.ChampionRoundOptions>(cfg => { /* defaults ok */ });
+            services.Configure<GameEvents.ChampionPredictionOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<GameEvents.ChampionPredictionService>();
+            services.AddScoped<GameEvents.ChampionSpectatorService>();
+            services.AddScoped<GameEvents.ChampionMatchOrchestrator>();
+            services.AddScoped<GameEvents.ChampionRoundResolveJob>();
+            services.AddScoped<GameEvents.ChampionDuelResolveJob>();
+            services.AddScoped<GameEvents.IChampionMatchCloser, GameEvents.MediatorChampionMatchCloser>();
+            services.AddSingleton<GameEvents.IChampionRoundScheduler, GameEvents.HangfireChampionRoundScheduler>();
             services.TryAddSingleton<IGameEventNotifier, NullGameEventNotifier>();
 
             // Guardians
@@ -110,12 +122,19 @@ namespace Synaptix.Backend.Application
 
             // Seasonal Ranks
             services.Configure<RankedSeasonOptions>(cfg => { /* defaults ok */ });
+            services.Configure<SeasonSoloPointsOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<SoloSeasonPointsService>();
             services.AddScoped<RankedLeaderboardService>();
             services.AddScoped<SeasonRewardsService>();
 
             //services.Configure<SeasonRewardOptions>(configuration.GetSection("SeasonRewards"));
             services.AddScoped<SeasonRewardJob>();
             services.AddScoped<SeasonCloseOrchestrator>();
+
+            // Season tiebreakers
+            services.Configure<SeasonTiebreakerOptions>(cfg => { /* defaults ok */ });
+            services.AddScoped<SeasonTiebreakerService>();
+            services.AddScoped<SeasonTiebreakerExpiryJob>();
 
             // Personalization
             services.AddScoped<Personalization.IPlayerMindProfileService, Personalization.PlayerMindProfileService>();

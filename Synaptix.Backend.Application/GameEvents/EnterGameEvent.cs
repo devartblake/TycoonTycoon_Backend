@@ -14,13 +14,11 @@ namespace Synaptix.Backend.Application.GameEvents
 
     public sealed class EnterGameEventHandler(IAppDb db, IPlayerTransactionService ptxnSvc, SeasonService seasonSvc, PlayerEventStatsService eventStats, FeatureFlagService flags) : IRequestHandler<EnterGameEvent, EnterGameEventResponse>
     {
-        private const int ChampionBattleEliminationIncrement = 50;
-
         public async ValueTask<EnterGameEventResponse> Handle(EnterGameEvent r, CancellationToken ct)
         {
-            if (!await flags.IsEnabledAsync(FeatureFlagService.GameEventsEnabled, ct))
-                return new EnterGameEventResponse(r.EventId, "FeatureDisabled");
-
+            // Access is governed per-player at the /game-events route group
+            // (banned/suspended players are refused); game events are otherwise
+            // available to everyone, not gated behind an operator release flag.
             var ev = await db.GameEvents.FirstOrDefaultAsync(x => x.Id == r.GameEventId, ct);
             if (ev is null)
                 return new EnterGameEventResponse(r.EventId, "NotFound");
@@ -62,7 +60,7 @@ namespace Synaptix.Backend.Application.GameEvents
             if (ptxnResult.Status == "Failed")
                 return new EnterGameEventResponse(r.EventId, "Failed");
 
-            if (ev.Kind == "champion_battle")
+            if (ev.FeedsJackpot)
                 ev.AddToJackpot(ev.EntryFeeCoins);
 
             var participant = new GameEventParticipant(r.GameEventId, r.PlayerId, r.EventId);

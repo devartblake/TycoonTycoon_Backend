@@ -19,7 +19,10 @@ namespace Synaptix.Backend.Application.GameEvents
             var total = await db.GameEventParticipants.CountAsync(x => x.GameEventId == r.GameEventId, ct);
             var alive = await db.GameEventParticipants.CountAsync(x => x.GameEventId == r.GameEventId && x.EliminatedAt == null, ct);
 
-            return new GameEventStatusDto(ev.Id, ev.Kind, ev.Status, ev.ScheduledAtUtc, total, alive, ev.JackpotPool);
+            return new GameEventStatusDto(
+                ev.Id, ev.Kind, ev.Status, ev.ScheduledAtUtc, total, alive, ev.JackpotPool,
+                ev.TierId, ev.MaxParticipants, ev.EntryFeeCoins,
+                ev.ChampionPlayerId, ev.JackpotMultiplier, ev.EffectiveJackpot, ev.SponsorName);
         }
     }
 }

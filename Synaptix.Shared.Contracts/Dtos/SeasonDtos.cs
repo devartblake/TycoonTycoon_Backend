@@ -71,6 +71,79 @@
         IReadOnlyList<SeasonLeaderboardItemDto> Items
     );
 
+    // Public (player-facing) season leaderboard with profile info.
+    // Live seasons serve from PlayerSeasonProfiles; closed seasons serve from
+    // the immutable SeasonRankSnapshotRows captured at close (IsFinal = true).
+    public sealed record PublicSeasonLeaderboardEntryDto(
+        int Rank,
+        Guid PlayerId,
+        string Handle,
+        string DisplayName,
+        string? AvatarUrl,
+        int RankPoints,
+        int Wins,
+        int Losses,
+        int Draws,
+        int Tier,
+        int TierRank
+    );
+
+    public sealed record PublicSeasonLeaderboardResponseDto(
+        Guid SeasonId,
+        int SeasonNumber,
+        string SeasonName,
+        bool IsFinal,
+        int Page,
+        int PageSize,
+        int Total,
+        int TotalPages,
+        IReadOnlyList<PublicSeasonLeaderboardEntryDto> Items,
+        PublicSeasonLeaderboardEntryDto? Me
+    );
+
+    /// <summary>Optional body for the admin moderation reset route.</summary>
+    public sealed record ResetPlayerSeasonPointsRequest(string? Reason = null);
+
+    // ── Season tiebreakers ────────────────────────────────────────────────
+
+    public sealed record SeasonTiebreakerDto(
+        Guid Id,
+        Guid SeasonId,
+        string Scope,          // "top1" | "tier-promotion" | "custom"
+        int Tier,
+        int BoundaryRank,
+        int RankPoints,
+        IReadOnlyList<Guid> PlayerIds,
+        DateTimeOffset ScheduledAtUtc,
+        DateTimeOffset ExpiresAtUtc,
+        string Status,         // Scheduled | InProgress | Completed | Cancelled | Expired
+        Guid? MatchId,
+        Guid? WinnerPlayerId,
+        DateTimeOffset CreatedAtUtc,
+        DateTimeOffset? ResolvedAtUtc
+    );
+
+    public sealed record SeasonTiebreakerListResponseDto(
+        int Total,
+        IReadOnlyList<SeasonTiebreakerDto> Items
+    );
+
+    /// <summary>Admin manual scheduling of a tiebreaker.</summary>
+    public sealed record CreateSeasonTiebreakerRequest(
+        IReadOnlyList<Guid> PlayerIds,
+        string? Scope = null,
+        DateTimeOffset? ScheduledAtUtc = null
+    );
+
+    /// <summary>Admin manual resolution (support/ops lever).</summary>
+    public sealed record ResolveSeasonTiebreakerRequest(
+        Guid WinnerPlayerId,
+        string? Note = null
+    );
+
+    /// <summary>Optional body for admin tiebreaker cancellation.</summary>
+    public sealed record CancelSeasonTiebreakerRequest(string? Note = null);
+
     // Idempotent season-points apply
     public sealed record ApplySeasonPointsRequest(
         Guid EventId,

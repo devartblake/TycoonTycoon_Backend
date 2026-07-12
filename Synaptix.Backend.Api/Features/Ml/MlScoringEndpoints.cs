@@ -1,3 +1,4 @@
+using Synaptix.Backend.Api.Security;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Builder;
@@ -15,13 +16,7 @@ public static class MlScoringEndpoints
     public static void Map(IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/ml").WithTags("ML").RequireAuthorization()
-            .AddEndpointFilter(async (ctx, next) =>
-            {
-                var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
-                if (!await flags.IsEnabledAsync("ai_sidecar_enabled", ctx.HttpContext.RequestAborted))
-                    return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
-                return await next(ctx);
-            });
+                .RequireNotBanned();
         g.MapPost("/churn-risk", EstimateChurnRisk);
         g.MapPost("/match-quality", EstimateMatchQuality);
     }

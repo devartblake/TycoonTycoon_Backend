@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Config;
+using Synaptix.Backend.Domain.Entities;
 using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Application.GameEvents
 {
-    public sealed class GameEventSchedulerJob(IAppDb db, ILogger<GameEventSchedulerJob> logger, FeatureFlagService flags)
+    public sealed class GameEventSchedulerJob(IAppDb db, ILogger<GameEventSchedulerJob> logger, FeatureFlagService flags, TierChampionSeeder championSeeder, ChampionMatchOrchestrator championOrchestrator)
     {
         public async Task RunAsync(CancellationToken ct)
         {
@@ -27,7 +28,11 @@ namespace Synaptix.Backend.Application.GameEvents
                 .ToListAsync(ct);
 
             foreach (var e in toOpen)
+            {
                 e.Open(now);
+                // Seed the tier champion for champion_vs_tier events at Open.
+                await championSeeder.SeedAsync(e, ct);
+            }
 
             // Start open events at their scheduled time
             var toStart = await db.GameEvents
@@ -39,6 +44,11 @@ namespace Synaptix.Backend.Application.GameEvents
 
             if (toOpen.Count > 0 || toStart.Count > 0)
                 await db.SaveChangesAsync(ct);
+
+            // Kick off the live round loop for champion_vs_tier events that just
+            // went Live (StartMatchAsync is idempotent and re-reads Live status).
+            foreach (var e in toStart.Where(x => x.Kind == GameEvent.ChampionVsTierKind))
+                await championOrchestrator.StartMatchAsync(e.Id, ct);
 
             // Auto-close live events past a 2-hour duration window
             var toClose = await db.GameEvents

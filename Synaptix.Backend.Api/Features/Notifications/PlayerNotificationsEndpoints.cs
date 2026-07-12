@@ -1,3 +1,4 @@
+using Synaptix.Backend.Api.Security;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -18,13 +19,7 @@ namespace Synaptix.Backend.Api.Features.Notifications
             var group = app.MapGroup("/notifications")
                 .WithTags("Notifications")
                 .RequireAuthorization()
-                .AddEndpointFilter(async (ctx, next) =>
-                {
-                    var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
-                    if (!await flags.IsEnabledAsync("notifications_enabled", ctx.HttpContext.RequestAborted))
-                        return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
-                    return await next(ctx);
-                });
+                .RequireNotBanned();
 
             group.MapGet("/inbox", GetInbox);
             group.MapGet("/unread-count", GetUnreadCount);
