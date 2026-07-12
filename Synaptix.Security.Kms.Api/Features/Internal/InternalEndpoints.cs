@@ -57,15 +57,26 @@ public static class InternalEndpoints
         // this replaces a no-op ternary that returned ClassicalV1 in both branches.)
         var suite = SecureSuites.ClassicalV1;
 
-        var sharedPayloadKey = RandomNumberGenerator.GetBytes(32);
+        // Derive independent directional keys from one root secret. Reusing a single
+        // AES-256-GCM key for both directions is a key-reuse hazard (a nonce collision
+        // across directions would break confidentiality/integrity). Distinct HKDF info
+        // labels guarantee the c2s and s2c keys are cryptographically independent.
+        var root = RandomNumberGenerator.GetBytes(32);
+        var salt = sessionId.ToByteArray();
+        var c2sKey = HKDF.DeriveKey(
+            HashAlgorithmName.SHA256, root, 32, salt, "synaptix:internal:c2s:v1"u8.ToArray());
+        var s2cKey = HKDF.DeriveKey(
+            HashAlgorithmName.SHA256, root, 32, salt, "synaptix:internal:s2c:v1"u8.ToArray());
+        CryptographicOperations.ZeroMemory(root);
+
         var session = new SecureSession(
             sessionId,
             subjectId,
             deviceId,
             "syn-sec-v1",
             suite,
-            sharedPayloadKey,
-            sharedPayloadKey,
+            c2sKey,
+            s2cKey,
             now,
             expiresAt,
             0L);

@@ -37,4 +37,36 @@ public sealed class InternalSessionEndpointTests
         session!.SubjectId.Should().Be("operator-dashboard-django");
         session.DeviceId.Should().Be("django-admin-auth");
     }
+
+    [Fact]
+    public async Task HandleStartSession_DerivesIndependentDirectionalKeys()
+    {
+        var store = new InMemorySessionStore();
+
+        var result = await InternalEndpoints.HandleStartSession(
+            new InternalStartSessionRequest("svc", "dev", null),
+            store,
+            default);
+
+        var http = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().AddLogging().BuildServiceProvider(),
+            Response = { Body = new MemoryStream() }
+        };
+        await result.ExecuteAsync(http);
+        http.Response.Body.Position = 0;
+
+        var body = await JsonDocument.ParseAsync(http.Response.Body);
+        var sessionId = body.RootElement.GetProperty("sessionId").GetGuid();
+
+        var session = await store.GetAsync(sessionId, default);
+        session.Should().NotBeNull();
+        // The client->server and server->client keys must be cryptographically
+        // independent so a nonce collision in one direction cannot compromise the other.
+        session!.ClientToServerKey.Should().HaveCount(32);
+        session.ServerToClientKey.Should().HaveCount(32);
+        session.ClientToServerKey.Should().NotBeEquivalentTo(
+            session.ServerToClientKey,
+            "reusing one AES-256-GCM key for both directions is a key-reuse hazard");
+    }
 }
