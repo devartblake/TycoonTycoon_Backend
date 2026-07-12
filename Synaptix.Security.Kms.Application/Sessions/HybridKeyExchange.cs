@@ -85,7 +85,7 @@ public sealed class HybridKeyExchange
 
         using var peerKem = MLKem.ImportEncapsulationKey(
             MLKemAlgorithm.MLKem768, initiatorEncapsulationKey);
-        var kemCiphertext = peerKem.Encapsulate(out var kemSecret);
+        peerKem.Encapsulate(out var kemCiphertext, out var kemSecret);
 
         var responderPublic = Concat(responderEcdh.ExportSubjectPublicKeyInfo(), kemCiphertext);
         var shared = CombineSecrets(ecdhSecret, kemSecret);
