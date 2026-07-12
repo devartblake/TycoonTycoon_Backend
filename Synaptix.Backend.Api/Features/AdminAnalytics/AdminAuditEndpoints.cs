@@ -15,6 +15,17 @@ public static class AdminAuditEndpoints
     {
         var g = admin.MapGroup("/audit").WithTags("Admin/Audit");
 
+        // Resolve the distinct client IPs the dashboard collected from audit
+        // events to map coordinates (see IGeoIpResolver).
+        g.MapPost("/geo-lookup", async (
+            [FromBody] GeoLookupRequest req,
+            IGeoIpResolver resolver,
+            CancellationToken ct) =>
+        {
+            var results = await resolver.ResolveAsync(req?.Ips ?? Array.Empty<string>(), ct);
+            return Results.Ok(results);
+        });
+
         g.MapGet("/security", async (
             [FromQuery] DateTimeOffset? from,
             [FromQuery] DateTimeOffset? to,

@@ -538,6 +538,8 @@ services:
       AdminOps__Header: "X-Admin-Ops-Key"
       AdminOps__Key: "${ADMIN_OPS_KEY:-CHANGE_ME}"
       AdminAuth__AllowTrustedBffPlainJson: "${ADMIN_AUTH_ALLOW_TRUSTED_BFF_PLAIN_JSON:-true}"
+      # Operator dashboard system-metrics tiles query Prometheus (dev profile).
+      Dashboard__PrometheusUrl: "${DASHBOARD_PROMETHEUS_URL:-http://prometheus:9090}"
       KmsClient__BaseUrl: "${KMS_API_BASE_URL:-http://kms-api:5050}"
       KmsClient__ServiceToken: "${KMS_SERVICE_TOKEN:-}"
       KmsClient__Required: "${KMS_CLIENT_REQUIRED:-false}"

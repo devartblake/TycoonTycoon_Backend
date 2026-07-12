@@ -19,6 +19,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using OpenTelemetry.Metrics;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Security.Claims;
@@ -201,6 +202,16 @@ builder.Services.AddScoped<AdminNotificationDispatchJob>();
 // Observability + Serilog + OTEL
 builder.AddObservability();
 builder.AddObservability("Synaptix.Backend.Api");
+
+// Expose the OTel meter provider on /metrics for Prometheus scraping and
+// register the operator dashboard's Prometheus query client (fills the
+// system-metrics tiles; no-ops to 0 when Dashboard:PrometheusUrl is unset).
+builder.Services.ConfigureOpenTelemetryMeterProvider(m => m.AddPrometheusExporter());
+builder.Services.AddHttpClient<IPrometheusQueryClient, PrometheusQueryClient>();
+
+// Audit IP-map geo resolver (ip-api.com now; IGeoIpResolver lets a MaxMind
+// implementation drop in later without touching the endpoint or the client).
+builder.Services.AddHttpClient<IGeoIpResolver, IpApiGeoIpResolver>();
 
 // JSON configuration
 builder.Services.Configure<JsonOptions>(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -870,6 +881,10 @@ app.MapGet("/", () => Results.Ok(new
         swagger = app.Environment.IsDevelopment()
     }
 })).AllowAnonymous().WithTags("Health");
+
+// Prometheus scrape endpoint for the OTel meter provider (prometheus.yml
+// backend-api job). Anonymous — no admin ops key, matching /healthz.
+app.MapPrometheusScrapingEndpoint().AllowAnonymous();
 
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {

@@ -6,15 +6,15 @@
  * AdminAuditEndpoints). The backend has no /events, /stats, or /ip-locations
  * routes. Functions keep their existing return types and adapt shapes.
  *
- * Known fidelity gaps (backend does not expose these; see #424):
+ * Notes:
  *   - Security-audit rows carry id/title/status/createdAt/metadata only, so
- *     AuditEvent.eventType/adminId/resourceId/ipAddress/geo are best-effort
- *     placeholders derived from metadata where present.
- *   - Stats are derived from the list; IP-location data has no backend source
- *     and returns an empty set.
+ *     AuditEvent.eventType/adminId/resourceId are best-effort placeholders;
+ *     ipAddress/userAgent are read from metadata (auth events capture them).
+ *   - Stats are derived from the list. IP-location data is resolved by
+ *     POSTing the events' distinct client IPs to /admin/audit/geo-lookup (#424).
  */
 
-import { apiGet } from '@/lib/api-client'
+import { apiGet, apiPost } from '@/lib/api-client'
 import { getMockMode } from '@/lib/api-config'
 import * as mockApi from '@/lib/mock-api-client'
 import type { AuditEvent, AuditEventListResponse, AuditFilter, IPLocationData, SecurityAuditStats } from './types'
@@ -98,14 +98,44 @@ export async function getAuditStats(): Promise<SecurityAuditStats> {
   }
 }
 
-export async function getIPLocations(_filters?: AuditFilter): Promise<IPLocationData[]> {
-  if (getMockMode()) return mockApi.mockGetIPLocations(_filters)
-  // Deferred (#424, decision 2026-07-11): the backend's security-audit events are
-  // AdminNotificationHistory rows that store NO client IPs, so a geo map needs
-  // (1) IP capture on admin requests and (2) a GeoIP database (e.g. MaxMind) —
-  // a standalone backend feature. Empty set keeps the map rendering empty.
-  void _filters
-  return []
+interface BackendGeoLocationDto {
+  ip: string
+  country?: string | null
+  countryCode?: string | null
+  city?: string | null
+  lat?: number | null
+  lon?: number | null
+  isp?: string | null
+  proxy?: boolean
+}
+
+export async function getIPLocations(filters?: AuditFilter): Promise<IPLocationData[]> {
+  if (getMockMode()) return mockApi.mockGetIPLocations(filters)
+  // Collect the distinct client IPs from a page of audit events (auth events
+  // capture them in metadata) and resolve them server-side (#424).
+  const events = await getAuditEvents(filters, 0, 200)
+  const counts = new Map<string, number>()
+  for (const e of events.items) {
+    const ip = e.ipAddress?.trim()
+    if (ip) counts.set(ip, (counts.get(ip) ?? 0) + 1)
+  }
+  const ips = Array.from(counts.keys())
+  if (ips.length === 0) return []
+  try {
+    const geos = await apiPost<BackendGeoLocationDto[]>('/admin/audit/geo-lookup', { ips })
+    return geos
+      .filter((g) => g.lat != null && g.lon != null)
+      .map((g) => ({
+        ip: g.ip,
+        country: g.country ?? '',
+        city: g.city ?? '',
+        latitude: g.lat as number,
+        longitude: g.lon as number,
+        eventCount: counts.get(g.ip) ?? 0,
+      }))
+  } catch {
+    return []
+  }
 }
 
 export async function getEventDetail(eventId: string): Promise<AuditEvent> {
