@@ -806,9 +806,13 @@ if (app.Environment.IsDevelopment())
 // Hangfire Dashboard
 if (hangfireEnabled)
 {
+    // Admin-gated in all environments (#414). Previously open in Development and
+    // any-authenticated elsewhere. Local dev can opt back into anonymous access
+    // with Hangfire:AllowAnonymousDashboard=true (off by default, never implicit).
+    var hangfireDashboardAllowAnonymous = app.Configuration.GetValue("Hangfire:AllowAnonymousDashboard", false);
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
-        Authorization = app.Environment.IsDevelopment()
+        Authorization = hangfireDashboardAllowAnonymous
             ? System.Array.Empty<Hangfire.Dashboard.IDashboardAuthorizationFilter>()
             : new[] { new HangfireAuthorizationFilter() }
     });
@@ -1385,8 +1389,18 @@ public partial class Program { }
 public class HangfireAuthorizationFilter : Hangfire.Dashboard.IDashboardAuthorizationFilter
 {
     public bool Authorize(Hangfire.Dashboard.DashboardContext context)
+        => IsAuthorized(context.GetHttpContext().User);
+
+    // Admin-gated, not merely authenticated: the principal must carry the
+    // role=admin claim the admin JWT issues (see AuthService.CreateJwtToken).
+    // Extracted as a static so it can be unit-tested without a DashboardContext.
+    public static bool IsAuthorized(System.Security.Claims.ClaimsPrincipal? user)
     {
-        var httpContext = context.GetHttpContext();
-        return httpContext.User?.Identity?.IsAuthenticated ?? false;
+        if (user?.Identity?.IsAuthenticated != true)
+            return false;
+
+        return user.FindAll(System.Security.Claims.ClaimTypes.Role)
+            .Concat(user.FindAll("role"))
+            .Any(c => string.Equals(c.Value, "admin", StringComparison.OrdinalIgnoreCase));
     }
 }
