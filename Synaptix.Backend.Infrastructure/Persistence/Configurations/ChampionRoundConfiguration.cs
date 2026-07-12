@@ -62,4 +62,23 @@ namespace Synaptix.Backend.Infrastructure.Persistence.Configurations
             b.HasIndex(x => new { x.GameEventId, x.Status });
         }
     }
+
+    public sealed class ChampionPredictionConfiguration : IEntityTypeConfiguration<ChampionPrediction>
+    {
+        public void Configure(EntityTypeBuilder<ChampionPrediction> b)
+        {
+            b.ToTable("champion_predictions");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.GameEventId).IsRequired();
+            b.Property(x => x.PlayerId).IsRequired();
+            b.Property(x => x.PredictedChampionDefends).IsRequired();
+            b.Property(x => x.CreatedAtUtc).IsRequired();
+            b.Property(x => x.UpdatedAtUtc).IsRequired();
+            b.Property(x => x.Resolved).IsRequired();
+
+            b.HasIndex(x => new { x.GameEventId, x.PlayerId }).IsUnique();
+            b.HasIndex(x => new { x.GameEventId, x.Resolved });
+        }
+    }
 }

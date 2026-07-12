@@ -1216,26 +1216,40 @@ namespace Synaptix.Backend.Api.Features.Store
             });
 
             var client = httpClientFactory.CreateClient();
-            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-            using var response = await client.PostAsync("https://buy.itunes.apple.com/verifyReceipt", content, ct);
-
-            // Handle sandbox receipt sent to production endpoint.
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var body = await response.Content.ReadAsStringAsync(ct);
-                if (TryGetAppleStatus(body, out var status) && status == 21007)
+                using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+                using var response = await client.PostAsync("https://buy.itunes.apple.com/verifyReceipt", content, ct);
+
+                // Handle sandbox receipt sent to production endpoint.
+                if (response.IsSuccessStatusCode)
                 {
-                    using var sandboxContent = new StringContent(payload, Encoding.UTF8, "application/json");
-                    using var sandboxResponse = await client.PostAsync("https://sandbox.itunes.apple.com/verifyReceipt", sandboxContent, ct);
-                    if (!sandboxResponse.IsSuccessStatusCode) return false;
-                    var sandboxBody = await sandboxResponse.Content.ReadAsStringAsync(ct);
-                    return TryGetAppleStatus(sandboxBody, out var sandboxStatus) && sandboxStatus == 0;
+                    var body = await response.Content.ReadAsStringAsync(ct);
+                    if (TryGetAppleStatus(body, out var status) && status == 21007)
+                    {
+                        using var sandboxContent = new StringContent(payload, Encoding.UTF8, "application/json");
+                        using var sandboxResponse = await client.PostAsync("https://sandbox.itunes.apple.com/verifyReceipt", sandboxContent, ct);
+                        if (!sandboxResponse.IsSuccessStatusCode) return false;
+                        var sandboxBody = await sandboxResponse.Content.ReadAsStringAsync(ct);
+                        return TryGetAppleStatus(sandboxBody, out var sandboxStatus) && sandboxStatus == 0;
+                    }
+
+                    return TryGetAppleStatus(body, out var productionStatus) && productionStatus == 0;
                 }
 
-                return TryGetAppleStatus(body, out var productionStatus) && productionStatus == 0;
+                return false;
             }
-
-            return false;
+            catch (HttpRequestException)
+            {
+                // A network failure reaching Apple must fail closed (unverified),
+                // never surface as a 500 from the validation endpoint.
+                return false;
+            }
+            catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+            {
+                // HttpClient timeout (not a caller cancellation) — also fail closed.
+                return false;
+            }
         }
 
         private static bool TryGetAppleStatus(string body, out int status)

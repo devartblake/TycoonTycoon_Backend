@@ -22,7 +22,7 @@ namespace Synaptix.Backend.Application.GameEvents
             return new GameEventStatusDto(
                 ev.Id, ev.Kind, ev.Status, ev.ScheduledAtUtc, total, alive, ev.JackpotPool,
                 ev.TierId, ev.MaxParticipants, ev.EntryFeeCoins,
-                ev.ChampionPlayerId, ev.JackpotMultiplier, ev.EffectiveJackpot);
+                ev.ChampionPlayerId, ev.JackpotMultiplier, ev.EffectiveJackpot, ev.SponsorName);
         }
     }
 }

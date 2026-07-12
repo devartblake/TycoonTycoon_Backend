@@ -70,6 +70,8 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<ChampionRound> ChampionRounds { get; }
         DbSet<ChampionRoundAnswer> ChampionRoundAnswers { get; }
         DbSet<ChampionDuel> ChampionDuels { get; }
+        DbSet<ChampionPrediction> ChampionPredictions { get; }
+        DbSet<GameEventSponsorAttribution> GameEventSponsorAttributions { get; }
         DbSet<Vote> Votes { get; }
         DbSet<User> Users { get; }
         DbSet<RefreshToken> RefreshTokens { get; }

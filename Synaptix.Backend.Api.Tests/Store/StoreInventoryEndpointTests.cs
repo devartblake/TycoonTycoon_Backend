@@ -54,7 +54,14 @@ public sealed class StoreInventoryEndpointTests : IClassFixture<TycoonApiFactory
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-            var wallet = await db.PlayerWallets.FirstAsync(w => w.PlayerId == playerId);
+            // Wallets are provisioned lazily on first economy interaction, so a
+            // freshly signed-up player may not have one yet.
+            var wallet = await db.PlayerWallets.FirstOrDefaultAsync(w => w.PlayerId == playerId);
+            if (wallet is null)
+            {
+                wallet = new PlayerWallet(playerId);
+                db.PlayerWallets.Add(wallet);
+            }
             wallet.Apply(0, 1000, 0);
 
             db.StoreItems.Add(new StoreItem

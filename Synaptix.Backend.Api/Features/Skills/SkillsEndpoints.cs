@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Synaptix.Backend.Api.Security;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,13 +15,7 @@ namespace Synaptix.Backend.Api.Features.Skills
         public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/skills").WithTags("Skills")
-                .AddEndpointFilter(async (ctx, next) =>
-                {
-                    var flags = ctx.HttpContext.RequestServices.GetRequiredService<FeatureFlagService>();
-                    if (!await flags.IsEnabledAsync("skill_tree_enabled", ctx.HttpContext.RequestAborted))
-                        return Results.Json(new { error = new { code = "FeatureDisabled", message = "This feature is not available in the current release.", details = new { } } }, statusCode: StatusCodes.Status403Forbidden);
-                    return await next(ctx);
-                });
+                .RequireNotBanned();
 
             g.MapGet("/tree", async (SkillTreeService svc, CancellationToken ct) =>
             {

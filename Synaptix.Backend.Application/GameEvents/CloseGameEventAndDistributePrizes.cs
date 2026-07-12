@@ -119,6 +119,20 @@ namespace Synaptix.Backend.Application.GameEvents
                 }
             }
 
+            // Record the sponsor's funded boost for reconciliation (once per event).
+            if (ev.SponsorName is not null && ev.FeedsJackpot && jackpotDistributed > 0)
+            {
+                var alreadyAttributed = await db.GameEventSponsorAttributions
+                    .AnyAsync(x => x.GameEventId == ev.Id, ct);
+                if (!alreadyAttributed)
+                {
+                    var beneficiary = ranked.FirstOrDefault(p => p.FinalRank == 1)?.PlayerId;
+                    db.GameEventSponsorAttributions.Add(new GameEventSponsorAttribution(
+                        ev.Id, ev.SponsorName, ev.JackpotPool, ev.JackpotMultiplier,
+                        ev.EffectiveJackpot, beneficiary, activeSeason?.SeasonId));
+                }
+            }
+
             ev.Close(DateTimeOffset.UtcNow, participants.Count);
             await db.SaveChangesAsync(ct);
 

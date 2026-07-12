@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Synaptix.Backend.Infrastructure.Persistence;
@@ -12,9 +13,11 @@ using Synaptix.Backend.Infrastructure.Persistence;
 namespace Synaptix.Backend.Migrations.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20260710222455_AddChampionPredictions")]
+    partial class AddChampionPredictions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1471,11 +1474,6 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_at_utc");
 
-                    b.Property<string>("SponsorName")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("sponsor_name");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -1595,65 +1593,6 @@ namespace Synaptix.Backend.Migrations.Migrations
                         .HasDatabaseName("ix_game_event_prize_claims_game_event_id_player_id");
 
                     b.ToTable("game_event_prize_claims", (string)null);
-                });
-
-            modelBuilder.Entity("Synaptix.Backend.Domain.Entities.GameEventSponsorAttribution", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<int>("BaseJackpot")
-                        .HasColumnType("integer")
-                        .HasColumnName("base_jackpot");
-
-                    b.Property<Guid?>("BeneficiaryPlayerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("beneficiary_player_id");
-
-                    b.Property<int>("BoostAmount")
-                        .HasColumnType("integer")
-                        .HasColumnName("boost_amount");
-
-                    b.Property<int>("EffectiveJackpot")
-                        .HasColumnType("integer")
-                        .HasColumnName("effective_jackpot");
-
-                    b.Property<Guid>("GameEventId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("game_event_id");
-
-                    b.Property<decimal>("Multiplier")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)")
-                        .HasColumnName("multiplier");
-
-                    b.Property<DateTimeOffset>("RecordedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("recorded_at_utc");
-
-                    b.Property<Guid?>("SeasonId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("season_id");
-
-                    b.Property<string>("SponsorName")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("sponsor_name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_game_event_sponsor_attributions");
-
-                    b.HasIndex("GameEventId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_game_event_sponsor_attributions_game_event_id");
-
-                    b.HasIndex("SponsorName", "SeasonId")
-                        .HasDatabaseName("ix_game_event_sponsor_attributions_sponsor_name_season_id");
-
-                    b.ToTable("game_event_sponsor_attributions", (string)null);
                 });
 
             modelBuilder.Entity("Synaptix.Backend.Domain.Entities.GuardianChallenge", b =>

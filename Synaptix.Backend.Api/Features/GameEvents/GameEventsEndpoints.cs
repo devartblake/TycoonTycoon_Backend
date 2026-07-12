@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Synaptix.Backend.Api.Contracts;
+using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Application.GameEvents;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -14,7 +15,7 @@ namespace Synaptix.Backend.Api.Features.GameEvents
     {
         public static void Map(IEndpointRouteBuilder app)
         {
-            var g = app.MapGroup("/game-events").WithTags("GameEvents");
+            var g = app.MapGroup("/game-events").WithTags("GameEvents").RequireNotBanned();
 
             g.MapPost("/enter", async (
                 [FromBody] EnterGameEventRequest req,
@@ -67,6 +68,57 @@ namespace Synaptix.Backend.Api.Features.GameEvents
             {
                 var res = await mediator.Send(new ListUpcomingGameEvents(tierId), ct);
                 return Results.Ok(res);
+            });
+
+            // No-loss prediction: "will the champion defend?" Open to everyone
+            // while the event is Open; correct predictors share a fixed pool.
+            g.MapPost("/{gameEventId:guid}/predict", async (
+                [FromRoute] Guid gameEventId,
+                [FromBody] SubmitPredictionRequest req,
+                HttpContext httpContext,
+                ChampionPredictionService predictions,
+                CancellationToken ct) =>
+            {
+                if (!TryGetPlayer(httpContext, out var playerId))
+                    return ApiResponses.Error(StatusCodes.Status401Unauthorized, "UNAUTHORIZED", "Authentication required.");
+
+                var status = await predictions.PredictAsync(gameEventId, playerId, req.ChampionDefends, ct);
+                return status switch
+                {
+                    "Accepted" => Results.Ok(new { status }),
+                    "Closed" => ApiResponses.Error(StatusCodes.Status409Conflict, "PREDICTIONS_CLOSED", "Predictions are closed for this match."),
+                    "Disabled" => ApiResponses.Error(StatusCodes.Status403Forbidden, "DISABLED", "Predictions are not available."),
+                    _ => ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Not a champion event."),
+                };
+            }).RequireAuthorization();
+
+            // The caller's prediction state + live tally + result.
+            g.MapGet("/{gameEventId:guid}/prediction", async (
+                [FromRoute] Guid gameEventId,
+                HttpContext httpContext,
+                ChampionPredictionService predictions,
+                CancellationToken ct) =>
+            {
+                TryGetPlayer(httpContext, out var playerId); // anonymous allowed → empty guid, no personal pick
+                var state = await predictions.GetStateAsync(gameEventId, playerId, ct);
+                return state is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Not a champion event.")
+                    : Results.Ok(state);
+            });
+
+            // Spectator view: basic live counts for everyone; the premium pass
+            // additionally returns the elimination-cam feed (Phase 4).
+            g.MapGet("/{gameEventId:guid}/spectate", async (
+                [FromRoute] Guid gameEventId,
+                HttpContext httpContext,
+                ChampionSpectatorService spectator,
+                CancellationToken ct) =>
+            {
+                TryGetPlayer(httpContext, out var playerId); // anonymous → basic view
+                var view = await spectator.GetViewAsync(gameEventId, playerId, ct);
+                return view is null
+                    ? ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Not a champion event.")
+                    : Results.Ok(view);
             });
 
             // Replay-on-join: the current open round/duel so a client entering

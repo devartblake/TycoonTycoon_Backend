@@ -79,6 +79,39 @@ public sealed class ChampionVsTierTests
     }
 
     [Fact]
+    public void ApplySponsor_SetsNameAndClampedMultiplier_AndClearsOnBlank()
+    {
+        var ev = NewChampionVsTier();
+        ev.AddToJackpot(1000);
+
+        ev.ApplySponsor("  AcmeCorp  ", 3.0m);
+        ev.SponsorName.Should().Be("AcmeCorp"); // trimmed
+        ev.JackpotMultiplier.Should().Be(3.0m);
+        ev.EffectiveJackpot.Should().Be(3000);
+        ev.SponsorBoostAmount.Should().Be(2000);
+
+        ev.ApplySponsor("Acme", 99m); // multiplier clamped to 10x
+        ev.JackpotMultiplier.Should().Be(10m);
+
+        ev.ApplySponsor("   ", 2.0m); // blank clears attribution
+        ev.SponsorName.Should().BeNull();
+        ev.JackpotMultiplier.Should().Be(2.0m);
+    }
+
+    [Fact]
+    public void ApplySponsor_IsNoOp_AfterClose()
+    {
+        var ev = NewChampionVsTier();
+        ev.AddToJackpot(1000);
+        ev.Close(DateTimeOffset.UtcNow, 0);
+
+        ev.ApplySponsor("LateCorp", 5.0m);
+
+        ev.SponsorName.Should().BeNull();
+        ev.JackpotMultiplier.Should().Be(1.0m);
+    }
+
+    [Fact]
     public void SeedChampion_IsIdempotent_AndFeedsJackpotIsKindScoped()
     {
         var ev = NewChampionVsTier();
@@ -183,5 +216,65 @@ public sealed class ChampionVsTierTests
 
         var winnerPrize = econ.Applied.Single(x => x.PlayerId == survivor.PlayerId);
         winnerPrize.Lines.Single(l => l.Currency == CurrencyType.Coins).Delta.Should().Be(250 + 300);
+    }
+
+    // ─── Sponsor attribution at close ─────────────────────────────────────
+
+    [Fact]
+    public async Task Close_WithSponsor_RecordsAttribution_Idempotently()
+    {
+        await using var db = NewDb();
+        var seasonId = await ActiveSeasonAsync(db);
+        var econ = new FakeEconomy();
+
+        var ev = NewChampionVsTier();
+        var champion = Guid.NewGuid();
+        ev.SeedChampion(champion);
+        ev.AddToJackpot(500);
+        ev.ApplySponsor("AcmeCorp", 2.0m);
+        ev.Open(DateTimeOffset.UtcNow);
+        ev.Start(DateTimeOffset.UtcNow);
+        db.GameEvents.Add(ev);
+        db.GameEventParticipants.Add(new GameEventParticipant(ev.Id, champion, Guid.NewGuid()));
+        db.GameEventParticipants.Add(new GameEventParticipant(ev.Id, Guid.NewGuid(), Guid.NewGuid())
+        { EliminatedAt = DateTimeOffset.UtcNow.AddMinutes(-1) });
+        await db.SaveChangesAsync();
+
+        await CloseHandler(db, econ).Handle(new CloseGameEventAndDistributePrizes(ev.Id), CancellationToken.None);
+
+        var attr = await db.GameEventSponsorAttributions.SingleAsync(x => x.GameEventId == ev.Id);
+        attr.SponsorName.Should().Be("AcmeCorp");
+        attr.BaseJackpot.Should().Be(500);
+        attr.Multiplier.Should().Be(2.0m);
+        attr.EffectiveJackpot.Should().Be(1000);
+        attr.BoostAmount.Should().Be(500); // sponsor funded the extra 500
+        attr.BeneficiaryPlayerId.Should().Be(champion);
+        attr.SeasonId.Should().Be(seasonId);
+
+        // Re-closing a closed event must not double-record.
+        await CloseHandler(db, econ).Handle(new CloseGameEventAndDistributePrizes(ev.Id), CancellationToken.None);
+        (await db.GameEventSponsorAttributions.CountAsync(x => x.GameEventId == ev.Id)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Close_WithoutSponsor_RecordsNoAttribution()
+    {
+        await using var db = NewDb();
+        await ActiveSeasonAsync(db);
+        var econ = new FakeEconomy();
+
+        var ev = NewChampionVsTier();
+        var champion = Guid.NewGuid();
+        ev.SeedChampion(champion);
+        ev.AddToJackpot(500);
+        ev.Open(DateTimeOffset.UtcNow);
+        ev.Start(DateTimeOffset.UtcNow);
+        db.GameEvents.Add(ev);
+        db.GameEventParticipants.Add(new GameEventParticipant(ev.Id, champion, Guid.NewGuid()));
+        await db.SaveChangesAsync();
+
+        await CloseHandler(db, econ).Handle(new CloseGameEventAndDistributePrizes(ev.Id), CancellationToken.None);
+
+        (await db.GameEventSponsorAttributions.AnyAsync()).Should().BeFalse();
     }
 }
