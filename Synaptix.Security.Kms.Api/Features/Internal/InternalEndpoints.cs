@@ -51,9 +51,11 @@ public static class InternalEndpoints
         var sessionId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
         var expiresAt = now.AddMinutes(30);
-        var suite = body.SupportedSuites?.Contains(SecureSuites.ClassicalV1) == true
-            ? SecureSuites.ClassicalV1
-            : SecureSuites.ClassicalV1;
+        // The downstream crypto path currently implements only ClassicalV1, so
+        // the server always issues that suite. (Negotiating P256V1 / HybridPqV1
+        // from body.SupportedSuites is future work gated on downstream support —
+        // this replaces a no-op ternary that returned ClassicalV1 in both branches.)
+        var suite = SecureSuites.ClassicalV1;
 
         var sharedPayloadKey = RandomNumberGenerator.GetBytes(32);
         var session = new SecureSession(
