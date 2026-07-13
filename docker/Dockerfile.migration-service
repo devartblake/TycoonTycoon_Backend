@@ -7,6 +7,10 @@ RUN apt-get update && apt-get install -y \
     krb5-user \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security (same pattern as docker/Dockerfile.api)
+RUN groupadd --system --gid 1001 appuser && \
+    useradd --system --uid 1001 --gid appuser --shell /bin/false --no-create-home appuser
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -40,4 +44,9 @@ RUN dotnet publish "Synaptix.MigrationService.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user (EF migrations only need a DB connection, no local writes)
+USER appuser
+
 ENTRYPOINT ["dotnet", "Synaptix.MigrationService.dll"]

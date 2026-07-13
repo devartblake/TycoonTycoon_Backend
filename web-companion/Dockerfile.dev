@@ -16,6 +16,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Run the dev server as the unprivileged node user shipped with the base image
+RUN chown -R node:node /app
+USER node
+
 # Expose dev server port
 EXPOSE 5173
 

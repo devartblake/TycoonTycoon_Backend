@@ -78,7 +78,7 @@ services:
 
   # Database Exporters for Prometheus
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
+    image: prometheuscommunity/postgres-exporter:v0.16.0
     container_name: synaptix_postgres_exporter
     restart: unless-stopped
     profiles: ["dev"]
@@ -91,7 +91,7 @@ services:
     networks: [synaptix-net]
 
   mongodb-exporter:
-    image: percona/mongodb_exporter:latest
+    image: percona/mongodb_exporter:0.40.0
     container_name: synaptix_mongodb_exporter
     restart: unless-stopped
     profiles: ["dev"]
@@ -104,7 +104,7 @@ services:
     networks: [synaptix-net]
 
   redis-exporter:
-    image: oliver006/redis_exporter:latest
+    image: oliver006/redis_exporter:v1.62.0-alpine
     container_name: synaptix_redis_exporter
     restart: unless-stopped
     profiles: ["dev"]
@@ -142,7 +142,7 @@ services:
   # Message Queue
   # ================================
   rabbitmq:
-    image: rabbitmq:management-alpine
+    image: rabbitmq:4.0-management-alpine
     container_name: synaptix_rabbitmq
     restart: unless-stopped
     ports:
@@ -165,7 +165,7 @@ services:
   # Object Storage
   # ================================
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
     container_name: synaptix_minio
     restart: unless-stopped
     ports:
@@ -188,7 +188,7 @@ services:
   # Monitoring (Dev Profile)
   # ================================
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.53.1
     container_name: synaptix_prometheus
     restart: unless-stopped
     profiles: ["dev"]
@@ -208,7 +208,7 @@ services:
       - alertmanager
 
   alertmanager:
-    image: prom/alertmanager:latest
+    image: prom/alertmanager:v0.27.0
     container_name: synaptix_alertmanager
     restart: unless-stopped
     profiles: ["dev"]
@@ -225,7 +225,7 @@ services:
     networks: [synaptix-net]
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     container_name: synaptix_grafana
     restart: unless-stopped
     profiles: ["dev"]
@@ -261,7 +261,7 @@ services:
     networks: [synaptix-net]
 
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:8.14
     container_name: synaptix_pgadmin
     restart: unless-stopped
     profiles: ["dev"]
@@ -278,7 +278,7 @@ services:
     networks: [synaptix-net]
 
   mongo-express:
-    image: mongo-express:latest
+    image: mongo-express:1.0.2
     container_name: synaptix_mongo_express
     restart: unless-stopped
     profiles: ["dev"]
@@ -295,7 +295,7 @@ services:
     networks: [synaptix-net]
 
   dbgate:
-      image: dbgate/dbgate:latest
+      image: dbgate/dbgate:5.3.4
       container_name: synaptix_dbgate
       restart: unless-stopped
       profiles: ["dev"]
@@ -341,7 +341,9 @@ services:
       - "--log.level=INFO"
     ports:
       - "${TRAEFIK_HTTP_PORT:-80}:80"
-      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
+      # Insecure API dashboard is dev-only (prod/staging overlays !override the
+      # command and drop this port); bind to loopback so it is never LAN-reachable.
+      - "127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
     volumes:
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
       - letsencrypt:/letsencrypt

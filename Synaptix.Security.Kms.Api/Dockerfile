@@ -39,4 +39,9 @@ RUN dotnet publish "Synaptix.Security.Kms.Api.csproj" \
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# In-image healthcheck (compose defines its own; this covers standalone `docker run`)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:5050/health || exit 1
+
 ENTRYPOINT ["dotnet", "Synaptix.Security.Kms.Api.dll"]

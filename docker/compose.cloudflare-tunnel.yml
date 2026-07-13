@@ -10,7 +10,7 @@ services:
   # Cloudflare Tunnel publishes your local Traefik entrypoint to Cloudflare edge
   # without opening inbound 80/443 on your router/firewall.
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2025.2.0
     container_name: synaptix_cloudflared
     restart: unless-stopped
     command: tunnel --no-autoupdate run

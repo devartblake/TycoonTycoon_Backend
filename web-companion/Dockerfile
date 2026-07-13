@@ -17,8 +17,10 @@ COPY . .
 # Build for production
 RUN npm run build
 
-# Stage 2: Runtime (nginx)
-FROM nginx:alpine
+# Stage 2: Runtime (nginx, non-root)
+# nginx-unprivileged runs as user nginx (uid 101) with pid/cache paths it can
+# write; our conf listens on 3000 (>1024) so no port change is needed.
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 
 # Copy built assets to nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
