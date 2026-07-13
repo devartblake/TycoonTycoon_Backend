@@ -391,7 +391,7 @@ var redis = builder.Configuration.GetConnectionString("redis")
 
 // gRPC — sidecar service (port 5001, HTTP/2)
 builder.Services.AddGrpc(o => o.EnableDetailedErrors = builder.Environment.IsDevelopment());
-builder.Services.AddSingleton<ISidecarInferenceStore>(_ =>
+builder.Services.AddSingleton<ISidecarInferenceStore>(sp =>
 {
     var path = builder.Configuration["SidecarInference:StorePath"]
         ?? Environment.GetEnvironmentVariable("SIDECAR_INFERENCE_STORE_PATH")
@@ -403,7 +403,20 @@ builder.Services.AddSingleton<ISidecarInferenceStore>(_ =>
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"⚠️ Falling back to InMemorySidecarInferenceStore because file-backed store init failed for '{path}': {ex.Message}");
+        // The in-memory fallback silently loses inference data on restart. In
+        // environments where durability matters (prod/staging), set
+        // SidecarInference:RequireDurableStore=true so a broken store path fails
+        // startup loudly instead of degrading.
+        if (builder.Configuration.GetValue<bool>("SidecarInference:RequireDurableStore"))
+            throw;
+
+        sp.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("SidecarInferenceStore")
+            .LogError(ex,
+                "File-backed sidecar inference store init failed for '{Path}'; " +
+                "falling back to the NON-DURABLE in-memory store (data lost on restart). " +
+                "Set SidecarInference:RequireDurableStore=true to fail startup instead.",
+                path);
         return new InMemorySidecarInferenceStore();
     }
 });
