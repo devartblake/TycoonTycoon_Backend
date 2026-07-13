@@ -1,0 +1,162 @@
+name: rollback-drill
+
+# Evidence-capture tooling for ALPHA-P0-006 ("rollback procedure has not been
+# tested on non-production"). The drill itself is a human-driven redeploy; this
+# workflow verifies both SHAs are deployable and records timed health evidence
+# on either side of the redeploy:
+#
+#   1. Run with phase=pre-rollback while the release SHA is live.
+#   2. Operator redeploys the rollback SHA (docs/releases/ALPHA_ROLLBACK_PLAN.md).
+#   3. Run with phase=post-rollback — it polls until the API is ready and
+#      records time-to-ready.
+#
+# Attach both drill-report artifacts to the ALPHA-P0-006 evidence trail.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (non-production only)'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+      api_url:
+        description: 'Backend API base URL (e.g. https://api-staging.synaptix.app)'
+        required: true
+      release_sha:
+        description: 'Currently-deployed release SHA'
+        required: true
+      rollback_sha:
+        description: 'SHA being rolled back to'
+        required: true
+      phase:
+        description: 'Drill phase'
+        required: true
+        default: 'pre-rollback'
+        type: choice
+        options:
+          - pre-rollback
+          - post-rollback
+
+jobs:
+  artifact-check:
+    name: Verify both SHAs are deployable (migration artifacts exist)
+    runs-on: ubuntu-latest
+    if: inputs.phase == 'pre-rollback'
+    steps:
+      - name: Check migration-artifacts for release and rollback SHAs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          check_sha() {
+            local LABEL="$1" SHA="$2"
+            echo "Checking ${LABEL} SHA: ${SHA}"
+            RUN_ID=$(gh run list \
+              --repo "${{ github.repository }}" \
+              --workflow dotnet-ci.yml \
+              --commit "${SHA}" \
+              --status success \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId // empty')
+            if [[ -z "${RUN_ID}" ]]; then
+              echo "::error::No successful dotnet-ci run for ${LABEL} SHA ${SHA} — it is not proven deployable."
+              return 1
+            fi
+            ARTIFACT=$(gh api \
+              "repos/${{ github.repository }}/actions/runs/${RUN_ID}/artifacts" \
+              --jq '.artifacts[] | select(.name == "migration-artifacts") | .name')
+            if [[ -z "${ARTIFACT}" ]]; then
+              echo "::error::migration-artifacts missing on run ${RUN_ID} for ${LABEL} SHA ${SHA}."
+              return 1
+            fi
+            echo "✅ ${LABEL} SHA ${SHA}: dotnet-ci run ${RUN_ID} has migration-artifacts"
+          }
+
+          FAILED=0
+          check_sha "release"  "${{ inputs.release_sha }}"  || FAILED=1
+          check_sha "rollback" "${{ inputs.rollback_sha }}" || FAILED=1
+          exit "${FAILED}"
+
+  health-capture:
+    name: Capture health evidence (${{ inputs.phase }})
+    runs-on: ubuntu-latest
+    needs: artifact-check
+    # post-rollback runs skip artifact-check; run health-capture regardless as
+    # long as artifact-check didn't actively fail.
+    if: always() && (needs.artifact-check.result == 'success' || needs.artifact-check.result == 'skipped')
+    env:
+      API_URL: ${{ inputs.api_url }}
+    steps:
+      - name: Wait for readiness and time it (post-rollback only)
+        if: inputs.phase == 'post-rollback'
+        run: |
+          START=$(date +%s)
+          DEADLINE=$((START + 600))   # 10 minute budget
+          echo "Polling ${API_URL}/health/ready every 5s (10m budget)..."
+          while true; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${API_URL}/health/ready" || echo "000")
+            NOW=$(date +%s)
+            if [[ "${STATUS}" == "200" ]]; then
+              ELAPSED=$((NOW - START))
+              echo "TIME_TO_READY_SECONDS=${ELAPSED}" >> "$GITHUB_ENV"
+              echo "✅ /health/ready → 200 after ${ELAPSED}s"
+              break
+            fi
+            if (( NOW >= DEADLINE )); then
+              echo "::error::API did not become ready within 10 minutes after rollback."
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Capture /healthz and /health/ready
+        run: |
+          mkdir -p drill
+          date -u +%Y-%m-%dT%H:%M:%SZ > drill/captured-at.txt
+
+          HZ_STATUS=$(curl -s -o drill/healthz.json -w "%{http_code}" --max-time 10 "${API_URL}/healthz" || echo "000")
+          HR_STATUS=$(curl -s -o drill/health-ready.json -w "%{http_code}" --max-time 10 "${API_URL}/health/ready" || echo "000")
+          echo "healthz=${HZ_STATUS} health/ready=${HR_STATUS}"
+          echo "${HZ_STATUS}" > drill/healthz.status
+          echo "${HR_STATUS}" > drill/health-ready.status
+
+          if [[ "${HZ_STATUS}" != "200" || "${HR_STATUS}" != "200" ]]; then
+            echo "::error::Health capture shows a non-200 (healthz=${HZ_STATUS}, ready=${HR_STATUS})."
+            exit 1
+          fi
+
+      - name: Build drill report
+        if: always()
+        run: |
+          cat > drill/rollback-drill-report.md <<EOF
+          ## Rollback Drill — ${{ inputs.environment }} — phase: ${{ inputs.phase }}
+
+          **Captured:** $(cat drill/captured-at.txt 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)
+          **API URL:** ${{ inputs.api_url }}
+          **Release SHA:** ${{ inputs.release_sha }}
+          **Rollback SHA:** ${{ inputs.rollback_sha }}
+          ${TIME_TO_READY_SECONDS:+**Time to ready after rollback:** ${TIME_TO_READY_SECONDS}s}
+
+          | Probe | Status |
+          |-------|--------|
+          | GET /healthz | $(cat drill/healthz.status 2>/dev/null || echo n/a) |
+          | GET /health/ready | $(cat drill/health-ready.status 2>/dev/null || echo n/a) |
+
+          $(if [[ "${{ inputs.phase }}" == "pre-rollback" ]]; then
+            echo "Next: redeploy the rollback SHA per docs/releases/ALPHA_ROLLBACK_PLAN.md, then dispatch this workflow again with phase=post-rollback."
+          else
+            echo "Drill complete. Attach the pre- and post-rollback report artifacts to the ALPHA-P0-006 evidence trail in .codex/heartbeat/current-blockers.md."
+          fi)
+          EOF
+          cat drill/rollback-drill-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload drill artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-drill-${{ inputs.phase }}-${{ inputs.environment }}-${{ github.run_number }}
+          path: drill/
+          retention-days: 90

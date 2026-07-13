@@ -73,15 +73,6 @@ namespace Synaptix.Backend.Application.Leaderboards
                 var onPage = items.Any(i => i.PlayerId == r.PlayerId);
                 if (!onPage)
                 {
-                    // Count how many have a better score
-                    var betterCount = await db.ArcadeScores
-                        .AsNoTracking()
-                        .Where(e => e.GameId == r.GameId &&
-                                    e.Difficulty == r.Difficulty &&
-                                    (e.Score > 0 || // placeholder comparison
-                                     (e.Score == 0 && e.DurationMs < 0))) // will be replaced by proper comparison
-                        .CountAsync(ct);
-
                     var playerEntry = await db.ArcadeScores
                         .AsNoTracking()
                         .FirstOrDefaultAsync(
@@ -92,8 +83,9 @@ namespace Synaptix.Backend.Application.Leaderboards
 
                     if (playerEntry is not null)
                     {
-                        // Recount with proper comparison
-                        betterCount = await db.ArcadeScores
+                        // Rank = 1 + count of entries that beat the player's entry
+                        // (higher score wins; equal score ties break on lower duration).
+                        var betterCount = await db.ArcadeScores
                             .AsNoTracking()
                             .Where(e => e.GameId == r.GameId &&
                                         e.Difficulty == r.Difficulty &&
