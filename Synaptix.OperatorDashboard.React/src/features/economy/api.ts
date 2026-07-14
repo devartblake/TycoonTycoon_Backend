@@ -1,20 +1,20 @@
 /**
- * Economy API client
+ * Economy API — Django admin_economy_client + AdminEconomyEndpoints.
  *
- * Reconciled to the real backend route surface under /admin/economy
- * (Synaptix.Backend.Api/Features/AdminEconomy) plus /admin/player-lookup. The
- * backend models a currency *ledger* (EventId-keyed multi-line transactions) and
- * game-balance policy — it does not expose a per-player economy summary or
- * aggregate currency stats. Functions keep their existing return types.
+ *   POST  /admin/economy/transactions
+ *   GET   /admin/economy/history/{playerId}
+ *   GET   /admin/economy/players/{id}          (player summary)
+ *   GET   /admin/economy/stats
+ *   GET   /admin/economy/balance               (game-balance policy)
+ *   PATCH /admin/economy/balance
+ *   POST  /admin/economy/simulate
+ *   POST  /admin/economy/rollback              body: { eventId, reason }
+ *   GET   /admin/player-lookup/search
  *
- * Mapping notes (see #421):
- *   - Transaction.id is the backend EventId, so refunds roll back by that id.
- *   - Balance adjustments post a single-line Coins transaction.
- *   - getPlayerEconomy (summary) and getEconomyStats (aggregate) are now served by
- *     dedicated backend routes; Coins is the headline currentBalance/totalCurrency.
+ * Transaction.id is backend EventId (rollback key).
  */
 
-import { apiGet, apiPost } from '@/lib/api-client'
+import { apiGet, apiPost, apiPatch } from '@/lib/api-client'
 import { getMockMode } from '@/lib/api-config'
 import * as mockApi from '@/lib/mock-api-client'
 import type { PlayerEconomy, Transaction, TransactionListResponse, TransactionFilter, BalanceAdjustment, EconomyStats } from './types'
@@ -109,15 +109,37 @@ export async function adjustBalance(adjustment: BalanceAdjustment): Promise<{ su
 
 export async function issueRefund(playerId: string, transactionId: string, reason: string, _note?: string): Promise<{ success: boolean; refundAmount: number }> {
   if (getMockMode()) return mockApi.mockIssueRefund(playerId, transactionId, reason, _note)
-  // Transaction.id is the backend EventId, so a refund rolls that event back.
+  // Backend AdminRollbackEconomyRequest: EventId + Reason (not Django's transactionId field name)
+  void playerId
   void _note
-  await apiPost('/admin/economy/rollback', { eventId: transactionId, reason })
+  await apiPost('/admin/economy/rollback', {
+    eventId: transactionId,
+    reason: reason?.trim() || 'Operator refund',
+  })
   return { success: true, refundAmount: 0 }
 }
 
 export async function getEconomyStats(): Promise<EconomyStats> {
   if (getMockMode()) return mockApi.mockGetEconomyStats()
   return apiGet<EconomyStats>('/admin/economy/stats')
+}
+
+/** Django get_economy_balance — game balance policy config */
+export async function getGameBalanceConfig(): Promise<unknown> {
+  if (getMockMode()) return {}
+  return apiGet('/admin/economy/balance')
+}
+
+/** Django update_economy_balance */
+export async function updateGameBalanceConfig(payload: Record<string, unknown>): Promise<unknown> {
+  if (getMockMode()) return payload
+  return apiPatch('/admin/economy/balance', payload)
+}
+
+/** Django simulate_economy */
+export async function simulateEconomy(payload: Record<string, unknown>): Promise<unknown> {
+  if (getMockMode()) return { simulated: true }
+  return apiPost('/admin/economy/simulate', payload)
 }
 
 interface BackendPlayerSearchItem {

@@ -1,55 +1,65 @@
 import { afterEach, beforeAll, afterAll, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
-import '@testing-library/jest-dom'
 
-// Cleanup after each test
-afterEach(() => {
-  cleanup()
-})
+const hasDom = typeof window !== 'undefined'
 
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-})
+if (hasDom) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { cleanup } = require('@testing-library/react')
+  require('@testing-library/jest-dom')
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+  afterEach(() => {
+    cleanup()
+  })
+
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+
+  global.IntersectionObserver = class IntersectionObserver {
+    constructor() {}
+    disconnect() {}
+    observe() {}
+    takeRecords() {
+      return []
+    }
+    unobserve() {}
+  } as any
 }
-global.localStorage = localStorageMock as any
 
-// Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  takeRecords() {
-    return []
-  }
-  unobserve() {}
-} as any
+if (typeof globalThis.localStorage === 'undefined') {
+  const store = new Map<string, string>()
+  globalThis.localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      store.set(k, String(v))
+    },
+    removeItem: (k: string) => {
+      store.delete(k)
+    },
+    clear: () => {
+      store.clear()
+    },
+    key: (i: number) => Array.from(store.keys())[i] ?? null,
+    get length() {
+      return store.size
+    },
+  } as Storage
+}
 
-// Suppress console errors during tests (optional)
 const originalError = console.error
 beforeAll(() => {
   console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render')
-    ) {
+    if (typeof args[0] === 'string' && args[0].includes('Warning: ReactDOM.render')) {
       return
     }
     originalError.call(console, ...args)

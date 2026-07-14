@@ -14,9 +14,21 @@ on:
       api_url:
         description: 'Backend API base URL'
         required: true
-      dashboard_url:
-        description: 'Django Operator Dashboard base URL'
+      dashboard_ui:
+        description: 'Primary operator UI (R4 default: react)'
         required: true
+        default: 'react'
+        type: choice
+        options:
+          - react
+          - django
+      dashboard_url:
+        description: 'Primary dashboard base URL (React SPA or Django)'
+        required: true
+      fallback_dashboard_url:
+        description: 'Optional Django fallback URL when primary is React'
+        required: false
+        default: ''
       operator_email:
         description: 'Seeded operator email or staging validation account'
         required: true
@@ -32,8 +44,14 @@ on:
         default: 'pending'
         type: choice
         options: [pending, pass, fail, blocked]
+      react_primary_url:
+        description: 'React primary URL live in staging'
+        required: true
+        default: 'pending'
+        type: choice
+        options: [pending, pass, fail, blocked]
       parallel_run:
-        description: 'Staging parallel-run evidence status'
+        description: 'React parallel-run matrix evidence status'
         required: true
         default: 'pending'
         type: choice
@@ -45,13 +63,13 @@ on:
         type: choice
         options: [pending, pass, fail, blocked]
       cutover:
-        description: 'Route cutover evidence status'
+        description: 'Route cutover evidence status (admin host → React)'
         required: true
         default: 'pending'
         type: choice
         options: [pending, pass, fail, blocked]
-      blazor_rollback_window:
-        description: 'Blazor rollback window evidence status'
+      django_rollback_window:
+        description: 'Django/Blazor rollback window status'
         required: true
         default: 'pending'
         type: choice
@@ -76,20 +94,28 @@ jobs:
 
       - name: Collect readiness evidence
         run: |
+          EXTRA_ARGS=()
+          if [[ -n "${{ inputs.fallback_dashboard_url }}" ]]; then
+            EXTRA_ARGS+=(--fallback-dashboard-url "${{ inputs.fallback_dashboard_url }}")
+          fi
           python scripts/operator-cutover-readiness.py \
             --environment "${{ inputs.environment }}" \
+            --dashboard-ui "${{ inputs.dashboard_ui }}" \
             --api-url "${{ inputs.api_url }}" \
             --dashboard-url "${{ inputs.dashboard_url }}" \
-            --operator-email "${{ inputs.operator_email }}"
+            --operator-email "${{ inputs.operator_email }}" \
+            "${EXTRA_ARGS[@]}"
         env:
           OPERATOR_PASSWORD_ENV: OPERATOR_PASSWORD
           OPERATOR_PASSWORD: ${{ secrets.OPERATOR_CUTOVER_PASSWORD }}
+          ADMIN_OPS_KEY: ${{ secrets.ADMIN_OPS_KEY }}
           GATE_EF_MIGRATIONS_APPLIED: ${{ inputs.ef_migrations_applied }}
           GATE_STRICT_READINESS: ${{ inputs.strict_readiness }}
+          GATE_REACT_PRIMARY_URL: ${{ inputs.react_primary_url }}
           GATE_PARALLEL_RUN: ${{ inputs.parallel_run }}
           GATE_SIGN_OFF: ${{ inputs.sign_off }}
           GATE_CUTOVER: ${{ inputs.cutover }}
-          GATE_BLAZOR_ROLLBACK_WINDOW: ${{ inputs.blazor_rollback_window }}
+          GATE_DJANGO_ROLLBACK_WINDOW: ${{ inputs.django_rollback_window }}
 
       - name: Publish readiness summary
         if: always()
@@ -102,5 +128,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: operator-cutover-readiness-${{ inputs.environment }}
+          name: operator-cutover-readiness
           path: artifacts/operator-cutover/

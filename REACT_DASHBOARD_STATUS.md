@@ -1,8 +1,13 @@
 # React Operator Dashboard - Implementation Status
 
-**Last Updated:** 2026-07-04  
+**Last Updated:** 2026-07-13  
 **Total Features:** 11 modules implemented  
-**Pages:** 20+ pages with working implementations
+**Pages:** 20+ pages with working implementations  
+
+> **Direction (2026-07-13):** React is the **canonical** Operator Dashboard; Django is being replaced.  
+> See [`docs/operator-dashboard/OPERATOR_DASHBOARD_DIRECTION_2026-07-13.md`](docs/operator-dashboard/OPERATOR_DASHBOARD_DIRECTION_2026-07-13.md).  
+> **Blocker risk:** many `src/**/api*.ts` paths do not match backend `/admin/*` —  
+> [`docs/operator-dashboard/REACT_ADMIN_ROUTE_GAP_INVENTORY.md`](docs/operator-dashboard/REACT_ADMIN_ROUTE_GAP_INVENTORY.md).
 
 ---
 

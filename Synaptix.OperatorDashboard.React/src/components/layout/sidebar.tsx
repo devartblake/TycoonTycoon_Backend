@@ -5,90 +5,117 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { PermissionGate } from '@/components/shared/permission-gate'
+import { isDiagnosticsEnabled, isInstallerEnabled } from '@/lib/operator-feature-flags'
 
-const NAV_ITEMS = [
-  {
-    label: 'Dashboard',
-    href: '/dashboard',
-  },
-  {
-    label: 'Users & Moderation',
-    permission: 'users:read' as const,
-    children: [
-      { label: 'Users', href: '/users' },
-      { label: 'Moderation', href: '/moderation/logs' },
-      { label: 'Anti-Cheat', href: '/anti-cheat', permission: 'anti-cheat:read' as const },
-    ],
-  },
-  {
-    label: 'Audit & Security',
-    permission: 'audit:read' as const,
-    children: [
-      { label: 'Security Audit', href: '/audit/security' },
-    ],
-  },
-  {
-    label: 'Store Management',
-    permission: 'storage:read' as const,
-    children: [
-      { label: 'Catalog', href: '/store/catalog' },
-      { label: 'Flash Sales', href: '/store/flash-sales' },
-      { label: 'Stock Policies', href: '/store/stock-policies' },
-      { label: 'Player Stock', href: '/store/player-stock' },
-      { label: 'Reward Limits', href: '/store/reward-limits' },
-      { label: 'Analytics', href: '/store/analytics' },
-      { label: 'Storage Browser', href: '/storage' },
-    ],
-  },
-  {
-    label: 'Content',
-    permission: 'content:read' as const,
-    children: [
-      { label: 'Questions', href: '/content/questions' },
-      { label: 'Skills', href: '/skills' },
-    ],
-  },
-  {
-    label: 'Operations',
-    permission: 'operations:read' as const,
-    children: [
-      { label: 'Events', href: '/operations/game-events' },
-      { label: 'Seasons', href: '/operations/seasons' },
-      { label: 'Notifications', href: '/notifications', permission: 'notifications:read' as const },
-      { label: 'Event Queue', href: '/operations/event-queue' },
-      { label: 'Match History', href: '/matches' },
-    ],
-  },
-  {
-    label: 'Economy & Rewards',
-    permission: 'economy:read' as const,
-    children: [
-      { label: 'Player Economy', href: '/economy/player' },
-      { label: 'Transactions', href: '/economy/player-transactions' },
-    ],
-  },
-  {
-    label: 'Personalization',
-    permission: 'personalization:read' as const,
-    children: [
-      { label: 'Overview', href: '/personalization' },
-      { label: 'Rules', href: '/personalization/rules' },
-    ],
-  },
-  {
-    label: 'Configuration',
-    permission: 'config:read' as const,
-    children: [
-      { label: 'Feature Flags', href: '/config/feature-flags' },
-      { label: 'Admin ACL', href: '/config/admin-permissions' },
-      { label: 'Diagnostics', href: '/diagnostics' },
-      { label: 'Setup', href: '/settings/setup' },
-    ],
-  },
-]
+type NavChild = {
+  label: string
+  href: string
+  permission?: string
+  /** When set, child is shown only if this flag is true */
+  featureFlag?: 'installer' | 'diagnostics'
+}
+
+type NavItem = {
+  label: string
+  href?: string
+  permission?: string
+  children?: NavChild[]
+}
+
+function buildNavItems(): NavItem[] {
+  const showInstaller = isInstallerEnabled()
+  const showDiagnostics = isDiagnosticsEnabled()
+
+  const configChildren: NavChild[] = [
+    { label: 'Feature Flags', href: '/config/feature-flags' },
+    { label: 'Admin ACL', href: '/config/admin-permissions' },
+  ]
+  if (showDiagnostics) {
+    configChildren.push({ label: 'Diagnostics', href: '/diagnostics', featureFlag: 'diagnostics' })
+  }
+  if (showInstaller) {
+    configChildren.push({ label: 'Setup', href: '/settings/setup', featureFlag: 'installer' })
+  }
+
+  return [
+    {
+      label: 'Dashboard',
+      href: '/dashboard',
+    },
+    {
+      label: 'Users & Moderation',
+      permission: 'users:read',
+      children: [
+        { label: 'Users', href: '/users' },
+        { label: 'Moderation', href: '/moderation/logs' },
+        { label: 'Anti-Cheat', href: '/anti-cheat', permission: 'anti-cheat:read' },
+      ],
+    },
+    {
+      label: 'Audit & Security',
+      permission: 'audit:read',
+      children: [{ label: 'Security Audit', href: '/audit/security' }],
+    },
+    {
+      label: 'Store Management',
+      permission: 'storage:read',
+      children: [
+        { label: 'Catalog', href: '/store/catalog' },
+        { label: 'Flash Sales', href: '/store/flash-sales' },
+        { label: 'Stock Policies', href: '/store/stock-policies' },
+        { label: 'Player Stock', href: '/store/player-stock' },
+        { label: 'Reward Limits', href: '/store/reward-limits' },
+        { label: 'Analytics', href: '/store/analytics' },
+        { label: 'Storage Browser', href: '/storage' },
+      ],
+    },
+    {
+      label: 'Content',
+      permission: 'content:read',
+      children: [
+        { label: 'Questions', href: '/content/questions' },
+        { label: 'Skills', href: '/skills' },
+      ],
+    },
+    {
+      label: 'Operations',
+      permission: 'operations:read',
+      children: [
+        { label: 'Events', href: '/operations/game-events' },
+        { label: 'Seasons', href: '/operations/seasons' },
+        { label: 'Notifications', href: '/notifications', permission: 'notifications:read' },
+        { label: 'Event Queue', href: '/operations/event-queue' },
+        { label: 'Match History', href: '/matches' },
+      ],
+    },
+    {
+      label: 'Economy & Rewards',
+      permission: 'economy:read',
+      children: [
+        { label: 'Player Economy', href: '/economy/player' },
+        { label: 'Transactions', href: '/economy/player-transactions' },
+      ],
+    },
+    {
+      label: 'Personalization',
+      permission: 'personalization:read',
+      children: [
+        { label: 'Overview', href: '/personalization' },
+        { label: 'Rules', href: '/personalization/rules' },
+      ],
+    },
+    {
+      label: 'Configuration',
+      permission: 'config:read',
+      children: configChildren,
+    },
+  ]
+}
 
 export function Sidebar() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  // Rebuild when flags change (localStorage toggles require refresh in practice)
+  const navItems = buildNavItems()
 
   const toggleExpanded = (label: string) => {
     const newExpanded = new Set(expandedItems)
@@ -108,7 +135,7 @@ export function Sidebar() {
       </div>
 
       <nav className="space-y-1 flex-1">
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <PermissionGate key={item.label} permission={item.permission as any} fallback={null}>
             {item.children ? (
               <div key={item.label}>

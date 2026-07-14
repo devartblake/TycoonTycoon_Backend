@@ -1,8 +1,12 @@
 # 🚀 Production Readiness Summary
 
+> **Scope notice (E2 / 2026-07-13):** This document is **feature-scoped** (Quiz Review + Arcade Leaderboard only).  
+> It is **not** a whole-platform or Alpha/Beta go-live certificate.  
+> Platform status: [`status/BCE_EXECUTION_PLAN.md`](status/BCE_EXECUTION_PLAN.md), [`alpha-beta/REMAINING_TASKS.md`](alpha-beta/REMAINING_TASKS.md), [`README.md`](README.md).
+
 **Project:** Arcade Leaderboard + Quiz Review System  
 **Launch Date:** July 1, 2026  
-**Status:** ✅ READY FOR PRODUCTION DEPLOYMENT
+**Status:** ✅ READY FOR PRODUCTION DEPLOYMENT **(these two features only)**
 
 ---
 

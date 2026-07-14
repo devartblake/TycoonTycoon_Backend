@@ -252,6 +252,89 @@ public sealed class SecureSessionServiceTests
         session.Should().BeNull();
     }
 
+    [Fact]
+    public async Task StartAsync_HybridPq_SelectsHybrid_AndDerivesMatchingKeys()
+    {
+        if (!HybridKeyExchange.IsAvailable)
+            return;
+
+        var hybrid = new HybridKeyExchange();
+        var keyExchange = new SecureSessionKeyExchange(enableHybridPq: true);
+        var store = new InMemorySessionStore();
+        var svc = new SecureSessionService(store, keyExchange);
+
+        var clientNonceBytes = RandomNumberGenerator.GetBytes(24);
+        var clientNonce = Base64UrlEncode(clientNonceBytes);
+        var (initiatorState, initiatorPublic) = hybrid.CreateInitiator();
+        using var state = initiatorState;
+
+        var advertised = new[]
+        {
+            SecureSuites.HybridPqV1,
+            SecureSuites.ClassicalV1,
+            SecureSuites.P256V1
+        };
+
+        var result = await svc.StartAsync("user-hybrid", new StartSessionCommand(
+            "device-hybrid",
+            clientNonce,
+            Base64UrlEncode(initiatorPublic),
+            advertised), default);
+
+        result.SelectedSuite.Should().Be(SecureSuites.HybridPqV1);
+
+        // Client completes the hybrid handshake (initiator step 2) with the server bundle.
+        var serverBundle = Base64UrlDecode(result.ServerPublicKey);
+        var sharedSecret = hybrid.CompleteInitiator(initiatorState, serverBundle);
+
+        var serverNonceBytes = Base64UrlDecode(result.ServerNonce);
+        var salt = SHA256.HashData(
+        [
+            ..clientNonceBytes,
+            ..serverNonceBytes,
+            ..result.SessionId.ToByteArray()
+        ]);
+
+        var expectedC2S = HKDF.DeriveKey(
+            HashAlgorithmName.SHA256, sharedSecret, 32, salt,
+            "synaptix:c2s:v1"u8.ToArray());
+        var expectedS2C = HKDF.DeriveKey(
+            HashAlgorithmName.SHA256, sharedSecret, 32, salt,
+            "synaptix:s2c:v1"u8.ToArray());
+
+        var session = store[result.SessionId];
+        session.Should().NotBeNull();
+        session!.Suite.Should().Be(SecureSuites.HybridPqV1);
+        session.ClientToServerKey.Should().BeEquivalentTo(expectedC2S);
+        session.ServerToClientKey.Should().BeEquivalentTo(expectedS2C);
+
+        // Transcript signature still verifies with the hybrid-derived s2c key.
+        var expectedSigInput = System.Text.Encoding.UTF8.GetBytes(
+            $"{result.SessionId:N}:{result.ServerPublicKey}:{result.ExpiresAtUtc:O}:{result.SelectedSuite}:{string.Join('|', advertised)}");
+        var expectedSig = Base64UrlEncode(HMACSHA256.HashData(expectedS2C, expectedSigInput));
+        result.ServerSignature.Should().Be(expectedSig);
+    }
+
+    [Fact]
+    public async Task StartAsync_HybridPq_FlagOff_FallsBackToClassicalEvenIfAdvertised()
+    {
+        var keyExchange = new SecureSessionKeyExchange(enableHybridPq: false);
+        var store = new InMemorySessionStore();
+        var svc = new SecureSessionService(store, keyExchange);
+        var suite = keyExchange.SelectSuite([SecureSuites.ClassicalV1, SecureSuites.P256V1]);
+        var (clientPub, clientKey) = GenerateClientKeyPair(suite);
+        using var disposable = clientKey;
+
+        var result = await svc.StartAsync("user-no-hybrid", new StartSessionCommand(
+            "device-no-hybrid",
+            GenerateNonce(),
+            clientPub,
+            [SecureSuites.HybridPqV1, suite]), default);
+
+        result.SelectedSuite.Should().NotBe(SecureSuites.HybridPqV1);
+        result.SelectedSuite.Should().Be(suite);
+    }
+
     private static byte[] Base64UrlDecode(string input)
     {
         var padded = input.Replace('-', '+').Replace('_', '/');

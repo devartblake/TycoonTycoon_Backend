@@ -37,7 +37,7 @@
 4. Dev dashboard login:
 
    - URL: `http://localhost:8200/login`
-   - Email: `admin@tycoon.local`
+   - Email: `admin@synaptix.local`
    - Password: `ChangeMe123!`
    - Matching ops key: `ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION`
 

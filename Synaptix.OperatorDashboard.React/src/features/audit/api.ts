@@ -1,10 +1,13 @@
 /**
  * Audit API client
  *
- * Reconciled to the real backend route surface: /admin/audit/security and
- * /admin/audit/security/{id} (Synaptix.Backend.Api/Features/AdminAnalytics/
- * AdminAuditEndpoints). The backend has no /events, /stats, or /ip-locations
- * routes. Functions keep their existing return types and adapt shapes.
+ * Aligned to backend AdminAuditEndpoints + Django admin_audit_client:
+ *   GET  /admin/audit/security
+ *   GET  /admin/audit/security/{id}
+ *   POST /admin/audit/geo-lookup
+ *
+ * The backend has no /events, /stats, or /ip-locations routes. Functions keep
+ * existing return types and adapt shapes.
  *
  * Notes:
  *   - Security-audit rows carry id/title/status/createdAt/metadata only, so

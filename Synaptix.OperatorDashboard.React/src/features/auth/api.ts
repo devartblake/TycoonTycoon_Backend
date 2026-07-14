@@ -1,6 +1,16 @@
 /**
  * Authentication API client
- * Wraps admin auth endpoints from the backend
+ *
+ * Aligned to backend AdminAuthEndpoints + Django admin_auth_client:
+ *   POST /admin/auth/login
+ *   POST /admin/auth/refresh
+ *   GET  /admin/auth/me
+ *   POST /admin/auth/forgot-password
+ *   POST /admin/auth/reset-password
+ *   POST /admin/auth/validate-reset-token
+ *
+ * Transport is plain JSON via Vite/nginx proxy (X-Admin-Ops-Key injected at
+ * the edge). Django may optionally use KMS secure-channel; React does not yet.
  */
 
 import { apiPost, apiGet } from '@/lib/api-client'

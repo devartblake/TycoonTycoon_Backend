@@ -37,11 +37,23 @@ const EventQueueStreamingPage = React.lazy(() => import('@/features/event-queue/
 const PersonalizationArchetypesPage = React.lazy(() => import('@/features/personalization/pages/archetypes'))
 const ConfigSettingsPage = React.lazy(() => import('@/features/config/pages/settings'))
 const InstallerSetupPage = React.lazy(() => import('@/features/installer/pages/setup'))
+const InstallerUnavailablePage = React.lazy(() => import('@/features/installer/pages/unavailable'))
 const DiagnosticsMonitoringPage = React.lazy(() => import('@/features/diagnostics/pages/monitoring'))
+const DiagnosticsUnavailablePage = React.lazy(() => import('@/features/diagnostics/pages/unavailable'))
 const StorageBrowserPage = React.lazy(() => import('@/features/storage/pages/browser'))
 const MatchHistoryReplayPage = React.lazy(() => import('@/features/match-history/pages/replay'))
 const SkillsManagementPage = React.lazy(() => import('@/features/skills/pages/management'))
 const NotFoundPage = React.lazy(() => import('@/components/shared/not-found'))
+
+import { isDiagnosticsEnabled, isInstallerEnabled } from '@/lib/operator-feature-flags'
+
+function InstallerRoute() {
+  return isInstallerEnabled() ? <InstallerSetupPage /> : <InstallerUnavailablePage />
+}
+
+function DiagnosticsRoute() {
+  return isDiagnosticsEnabled() ? <DiagnosticsMonitoringPage /> : <DiagnosticsUnavailablePage />
+}
 
 export const router = createBrowserRouter([
   {
@@ -251,14 +263,14 @@ export const router = createBrowserRouter([
           },
         ],
       },
-      // Setup & diagnostics
+      // Setup & diagnostics — gated (default off; see operator-feature-flags.ts)
       {
         path: 'settings/setup',
-        element: <InstallerSetupPage />,
+        element: <InstallerRoute />,
       },
       {
         path: 'diagnostics',
-        element: <DiagnosticsMonitoringPage />,
+        element: <DiagnosticsRoute />,
       },
       // Storage section
       {

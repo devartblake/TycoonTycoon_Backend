@@ -1,18 +1,21 @@
 /**
- * Content API client
+ * Questions API — Django admin_questions_client + AdminQuestionsEndpoints.
  *
- * Reconciled to the real backend route surface under /admin/questions
- * (Synaptix.Backend.Api/Features/AdminQuestions). Stats, categories and
- * bulk-review are now served by dedicated backend routes (#420). Functions keep
- * their existing return types.
+ *   GET    /admin/questions
+ *   POST   /admin/questions
+ *   GET    /admin/questions/{id}
+ *   PATCH  /admin/questions/{id}
+ *   DELETE /admin/questions/{id}
+ *   POST   /admin/questions/{id}/approve|reject
+ *   POST   /admin/questions/bulk              (import)
+ *   POST   /admin/questions/bulk-review
+ *   GET    /admin/questions/stats
+ *   GET    /admin/questions/categories
  *
- * Remaining fidelity gap:
- *   - The list DTO omits status/options/explanation, so list items carry
- *     best-effort values (status inferred from the requested filter). Detail
- *     (GET /{id}) is fully populated.
+ * List DTO omits full options; detail is fully populated.
  */
 
-import { apiGet, apiPost } from '@/lib/api-client'
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api-client'
 import { getMockMode } from '@/lib/api-config'
 import * as mockApi from '@/lib/mock-api-client'
 import type { QuestionsListResponse, QuestionFilter, QuestionReview, QuestionsStats, Question, Answer } from './types'
@@ -159,4 +162,53 @@ export async function getQuestionsStats(): Promise<QuestionsStats> {
 export async function getCategories(): Promise<string[]> {
   if (getMockMode()) return mockApi.mockGetCategories()
   return apiGet<string[]>('/admin/questions/categories')
+}
+
+/** Django create_question */
+export async function createQuestion(payload: Record<string, unknown>): Promise<Question> {
+  if (getMockMode()) {
+    return {
+      id: `q_${Date.now()}`,
+      text: String(payload.text ?? ''),
+      category: String(payload.category ?? ''),
+      difficulty: 'medium',
+      answers: [],
+      correctAnswerId: '',
+      source: '',
+      status: 'pending',
+      submittedBy: '',
+      submittedAt: new Date().toISOString(),
+      tags: [],
+    }
+  }
+  const dto = await apiPost<BackendQuestionDto>('/admin/questions', payload)
+  return detailToQuestion(dto)
+}
+
+/** Django update_question */
+export async function updateQuestion(
+  questionId: string,
+  payload: Record<string, unknown>
+): Promise<Question> {
+  if (getMockMode()) return getQuestionDetail(questionId)
+  const dto = await apiPatch<BackendQuestionDto>(`/admin/questions/${questionId}`, payload)
+  return detailToQuestion(dto)
+}
+
+/** Django delete_question */
+export async function deleteQuestion(questionId: string): Promise<{ success: boolean }> {
+  if (getMockMode()) return { success: true }
+  await apiDelete(`/admin/questions/${questionId}`)
+  return { success: true }
+}
+
+/** Django bulk_import_questions → POST /admin/questions/bulk */
+export async function bulkImportQuestions(
+  questions: Record<string, unknown>[]
+): Promise<{ success: boolean; imported?: number }> {
+  if (getMockMode()) return { success: true, imported: questions.length }
+  const res = await apiPost<{ imported?: number; count?: number }>('/admin/questions/bulk', {
+    questions,
+  })
+  return { success: true, imported: res.imported ?? res.count ?? questions.length }
 }

@@ -12,22 +12,56 @@ namespace Synaptix.Security.Kms.Application.Sessions;
 /// key — so recorded traffic stays confidential even if X25519 is later broken by a
 /// quantum adversary.
 ///
-/// This component is deliberately self-contained and is NOT wired into the live
-/// <see cref="SecureSessionKeyExchange.SelectSuite"/> path. It is gated behind the
-/// <c>Kms:Suites:EnableHybridPq</c> feature flag and <see cref="IsAvailable"/>, and MUST
-/// receive an independent human cryptographic review before it is ever added to the live
-/// suite preference or enabled in production.
+/// Live session start uses this when <c>Kms:Suites:EnableHybridPq</c> is true and
+/// <see cref="IsAvailable"/>: the client is the initiator and the server is the responder.
+/// MUST receive an independent human cryptographic review before production enablement.
 ///
 /// The interface is intentionally KEM-shaped (initiator/responder, encapsulate/decapsulate)
-/// rather than the symmetric Diffie–Hellman shape of <see cref="ISecureSessionKeyExchange"/>,
-/// because ML-KEM is a KEM, not a DH primitive.
+/// rather than the symmetric Diffie–Hellman shape of classical suites, because ML-KEM is a
+/// KEM, not a DH primitive.
 /// </summary>
 public sealed class HybridKeyExchange
 {
     private static readonly ECCurve Curve25519 = ECCurve.CreateFromOid(new Oid("1.3.101.110"));
 
-    /// <summary>True only when the platform's crypto provider supports ML-KEM-768.</summary>
-    public static bool IsAvailable => MLKem.IsSupported;
+    // Approximate sizes for ML-KEM-768 (NIST Level 3)
+    private const int ExpectedX25519SpkiSize = 44;          // Typical for Curve25519 SPKI
+    private const int ExpectedMlkemEncapsulationKeySize = 1184;
+    private const int ExpectedMlkemCiphertextSize = 1088;
+    private const int ExpectedSharedSecretSize = 32;
+
+    private static readonly Lazy<bool> Available = new(DetectAvailable);
+
+    /// <summary>
+    /// True when the platform supports both ML-KEM-768 and X25519 (required for HybridPqV1).
+    /// </summary>
+    public static bool IsAvailable => Available.Value;
+
+    private static bool DetectAvailable()
+    {
+        if (!MLKem.IsSupported)
+            return false;
+
+        try
+        {
+            using var ecdh = ECDiffieHellman.Create(Curve25519);
+            _ = ecdh.ExportSubjectPublicKeyInfo();
+            using var kem = MLKem.GenerateKey(MLKemAlgorithm.MLKem768);
+            return true;
+        }
+        catch (CryptographicException)
+        {
+            return false;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return false;
+        }
+        catch (NotSupportedException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Ephemeral secret material held by the initiator between its two round-trip steps.</summary>
     public sealed class InitiatorState : IDisposable
@@ -49,7 +83,7 @@ public sealed class HybridKeyExchange
     {
         if (!IsAvailable)
             throw new PlatformNotSupportedException(
-                "ML-KEM-768 is not available on this platform; HybridPqV1 cannot be used.");
+                "HybridPqV1 requires platform support for both X25519 and ML-KEM-768.");
     }
 
     /// <summary>
@@ -80,6 +114,10 @@ public sealed class HybridKeyExchange
 
         var (initiatorEcdhSpki, initiatorEncapsulationKey) = Split(initiatorPublic);
 
+        // Quick validation of expected sizes
+        ValidateKeySize(initiatorEcdhSpki, ExpectedX25519SpkiSize, "X25519 SPKI");
+        ValidateKeySize(initiatorEncapsulationKey, ExpectedMlkemEncapsulationKeySize, "ML-KEM encapsulation key");
+
         using var responderEcdh = ECDiffieHellman.Create(Curve25519);
         var ecdhSecret = DeriveEcdh(responderEcdh, initiatorEcdhSpki);
 
@@ -106,6 +144,9 @@ public sealed class HybridKeyExchange
 
         var (responderEcdhSpki, kemCiphertext) = Split(responderPublic);
 
+        ValidateKeySize(responderEcdhSpki, ExpectedX25519SpkiSize, "X25519 SPKI");
+        ValidateKeySize(kemCiphertext, ExpectedMlkemCiphertextSize, "ML-KEM ciphertext");
+
         var ecdhSecret = DeriveEcdh(state.Ecdh, responderEcdhSpki);
         var kemSecret = state.Kem.Decapsulate(kemCiphertext);
 
@@ -115,6 +156,12 @@ public sealed class HybridKeyExchange
         CryptographicOperations.ZeroMemory(kemSecret);
 
         return shared;
+    }
+
+    private static void ValidateKeySize(byte[] key, int expectedSize, string name)
+    {
+        if (key == null || key.Length != expectedSize)
+            throw new CryptographicException($"Invalid {name} size: expected {expectedSize}, got {key?.Length ?? 0}.");
     }
 
     private static byte[] DeriveEcdh(ECDiffieHellman privateKey, byte[] peerSpki)
@@ -128,6 +175,9 @@ public sealed class HybridKeyExchange
     // secrets. Both must be recovered to derive the session key.
     private static byte[] CombineSecrets(byte[] ecdhSecret, byte[] kemSecret)
     {
+        if (ecdhSecret.Length != ExpectedSharedSecretSize || kemSecret.Length != ExpectedSharedSecretSize)
+            throw new CryptographicException("Unexpected shared secret lengths in hybrid combiner.");
+
         var ikm = Concat(ecdhSecret, kemSecret);
         try
         {
@@ -156,14 +206,17 @@ public sealed class HybridKeyExchange
 
     private static (byte[] First, byte[] Second) Split(byte[] bundle)
     {
+        if (bundle == null || bundle.Length < 8)
+            throw new CryptographicException("Malformed hybrid key-exchange bundle: too short.");
+
         var span = bundle.AsSpan();
         var firstLen = BinaryPrimitives.ReadInt32BigEndian(span);
-        if (firstLen < 0 || 4 + firstLen + 4 > bundle.Length)
+        if (firstLen <= 0 || 4 + firstLen + 4 > bundle.Length)
             throw new CryptographicException("Malformed hybrid key-exchange bundle.");
 
         var first = span.Slice(4, firstLen).ToArray();
         var secondLen = BinaryPrimitives.ReadInt32BigEndian(span[(4 + firstLen)..]);
-        if (secondLen < 0 || 8 + firstLen + secondLen != bundle.Length)
+        if (secondLen <= 0 || 8 + firstLen + secondLen != bundle.Length)
             throw new CryptographicException("Malformed hybrid key-exchange bundle.");
 
         var second = span.Slice(8 + firstLen, secondLen).ToArray();

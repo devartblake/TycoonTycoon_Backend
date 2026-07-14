@@ -1,18 +1,19 @@
 /**
- * Notifications API client
+ * Notifications API — Django admin_notifications_client + AdminNotificationsEndpoints.
  *
- * Reconciled to the real backend route surface under /admin/notifications
- * (see Synaptix.Backend.Api/Features/AdminNotifications). The backend and this
- * dashboard were designed against different data models, so the functions below
- * keep their existing return types (used by the components) and adapt the
- * backend shapes internally.
- *
- * Known fidelity gaps (backend does not expose these fields today; see the
- * notifications reconciliation sub-issue of #409):
- *   - ScheduledNotification.templateId / targetCount, DeadLetterMessage.recipient
- *     / error / attemptCount are best-effort placeholders.
- *   - A channel maps to a single backend channelKey; the email/push/sms "type"
- *     is inferred from the key.
+ *   GET    /admin/notifications/channels
+ *   PUT    /admin/notifications/channels/{key}
+ *   POST   /admin/notifications/send
+ *   POST   /admin/notifications/schedule
+ *   GET    /admin/notifications/scheduled
+ *   DELETE /admin/notifications/scheduled/{id}
+ *   GET    /admin/notifications/templates
+ *   POST   /admin/notifications/templates
+ *   PATCH  /admin/notifications/templates/{id}
+ *   DELETE /admin/notifications/templates/{id}
+ *   GET    /admin/notifications/dead-letter
+ *   POST   /admin/notifications/dead-letter/{id}/replay
+ *   GET    /admin/notifications/history
  */
 
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from '@/lib/api-client'
@@ -26,8 +27,6 @@ import type {
   TestSendPayload,
   CreateTemplatePayload,
 } from './types'
-
-// ── Backend DTO shapes (camelCase, System.Text.Json defaults) ────────────────
 
 type ChannelType = 'email' | 'push' | 'sms'
 
@@ -64,8 +63,6 @@ interface BackendListResponse<T> {
   totalItems: number
   totalPages: number
 }
-
-// ── Mapping helpers ──────────────────────────────────────────────────────────
 
 function inferChannelType(channelKey: string): ChannelType {
   const key = channelKey.toLowerCase()
@@ -144,8 +141,6 @@ async function fetchBackendTemplate(templateId: string): Promise<BackendTemplate
   return templates.find((t) => t.templateId === templateId)
 }
 
-// ── Templates ────────────────────────────────────────────────────────────────
-
 export async function getTemplates(): Promise<NotificationTemplate[]> {
   if (getMockMode()) return mockApi.mockGetTemplates()
   const dtos = await apiGet<BackendTemplateDto[]>('/admin/notifications/templates')
@@ -153,8 +148,10 @@ export async function getTemplates(): Promise<NotificationTemplate[]> {
 }
 
 export async function getTemplate(templateId: string): Promise<NotificationTemplate> {
-  if (getMockMode()) return mockApi.mockGetTemplates().then(t => t.find(x => x.id === templateId)!) as Promise<NotificationTemplate>
-  // Backend has no single-template GET; resolve from the list.
+  if (getMockMode()) {
+    const all = await mockApi.mockGetTemplates()
+    return all.find((x) => x.id === templateId)!
+  }
   const dto = await fetchBackendTemplate(templateId)
   if (!dto) throw new Error(`Template ${templateId} not found`)
   return toTemplate(dto)
@@ -177,7 +174,6 @@ export async function updateTemplate(
   payload: Partial<CreateTemplatePayload>
 ): Promise<NotificationTemplate> {
   if (getMockMode()) return mockApi.mockUpdateTemplate(templateId, payload)
-  // Backend PATCH requires the full template; merge with current values.
   const current = await fetchBackendTemplate(templateId)
   if (!current) throw new Error(`Template ${templateId} not found`)
   const dto = await apiPatch<BackendTemplateDto>(`/admin/notifications/templates/${templateId}`, {
@@ -196,8 +192,6 @@ export async function deleteTemplate(templateId: string): Promise<{ success: boo
   return { success: true }
 }
 
-// ── Channels ─────────────────────────────────────────────────────────────────
-
 export async function getChannels(): Promise<NotificationChannel[]> {
   if (getMockMode()) return mockApi.mockGetChannels()
   const dtos = await apiGet<BackendChannelDto[]>('/admin/notifications/channels')
@@ -210,7 +204,6 @@ export async function updateChannel(
   config?: Record<string, unknown>
 ): Promise<NotificationChannel> {
   if (getMockMode()) return mockApi.mockUpdateChannel(channelId, enabled, config)
-  // Backend PUT upserts the full channel; preserve name/description/importance.
   const channels = await apiGet<BackendChannelDto[]>('/admin/notifications/channels')
   const current = channels.find((c) => c.key === channelId)
   const dto = await apiPut<BackendChannelDto>(`/admin/notifications/channels/${channelId}`, {
@@ -221,8 +214,6 @@ export async function updateChannel(
   })
   return toChannel(dto)
 }
-
-// ── Schedules ──────────────────────────────────────────────────────────────────
 
 export async function getSchedules(): Promise<ScheduledNotification[]> {
   if (getMockMode()) return mockApi.mockGetSchedules()
@@ -238,7 +229,6 @@ export async function createSchedule(payload: {
   targetFilter?: Record<string, unknown>
 }): Promise<ScheduledNotification> {
   if (getMockMode()) return mockApi.mockCreateSchedule(payload)
-  // Backend schedules by explicit title/body/channel; resolve them from the template.
   const template = await fetchBackendTemplate(payload.templateId)
   if (!template) throw new Error(`Template ${payload.templateId} not found`)
   const res = await apiPost<{ scheduleId: string }>('/admin/notifications/schedule', {
@@ -265,8 +255,6 @@ export async function cancelSchedule(scheduleId: string): Promise<{ success: boo
   return { success: true }
 }
 
-// ── Dead-letter ──────────────────────────────────────────────────────────────────
-
 export async function getDeadLetterMessages(): Promise<DeadLetterMessage[]> {
   if (getMockMode()) return mockApi.mockGetDeadLetterMessages()
   const res = await apiGet<BackendListResponse<BackendScheduledItemDto>>(
@@ -281,12 +269,10 @@ export async function retryDeadLetterMessage(messageId: string): Promise<{ succe
   return { success: true }
 }
 
-// ── Test send ──────────────────────────────────────────────────────────────────
-
-export async function sendTestNotification(payload: TestSendPayload): Promise<{ success: boolean; messageId: string }> {
+export async function sendTestNotification(
+  payload: TestSendPayload
+): Promise<{ success: boolean; messageId: string }> {
   if (getMockMode()) return { success: true, messageId: `msg_${Date.now()}` }
-  // Backend has no dedicated test-send; resolve the template and use /send with a
-  // single-recipient audience.
   const template = await fetchBackendTemplate(payload.templateId)
   if (!template) throw new Error(`Template ${payload.templateId} not found`)
   const res = await apiPost<{ jobId: string }>('/admin/notifications/send', {
@@ -297,4 +283,15 @@ export async function sendTestNotification(payload: TestSendPayload): Promise<{ 
     payload: payload.variables ?? {},
   })
   return { success: true, messageId: res.jobId }
+}
+
+/** Django get_notification_history parity */
+export async function getNotificationHistory(
+  page: number = 1,
+  pageSize: number = 50
+): Promise<BackendListResponse<Record<string, unknown>>> {
+  if (getMockMode()) {
+    return { items: [], page, pageSize, totalItems: 0, totalPages: 0 }
+  }
+  return apiGet(`/admin/notifications/history?page=${page}&pageSize=${pageSize}`)
 }

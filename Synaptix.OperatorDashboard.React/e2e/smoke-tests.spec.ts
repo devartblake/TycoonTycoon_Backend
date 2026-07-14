@@ -65,10 +65,9 @@ test.describe('Smoke Tests - All Modules Load', () => {
     await expect(page).not.toHaveTitle(/error/i)
   })
 
-  test('Installer module loads without errors', async ({ page }) => {
-    await page.goto('/installer')
-    await expect(page.locator('h1')).toBeVisible()
-    await expect(page).not.toHaveTitle(/error/i)
+  test('Installer deep link shows unavailable when feature flag off', async ({ page }) => {
+    await page.goto('/settings/setup')
+    await expect(page.getByRole('heading', { name: /setup|installer disabled/i })).toBeVisible()
   })
 
   test('Storage module loads without errors', async ({ page }) => {
@@ -77,7 +76,12 @@ test.describe('Smoke Tests - All Modules Load', () => {
     await expect(page).not.toHaveTitle(/error/i)
   })
 
-  test('Diagnostics module loads without errors', async ({ page }) => {
+  test('Diagnostics deep link shows unavailable when feature flag off', async ({ page }) => {
+    await page.goto('/diagnostics')
+    await expect(page.getByRole('heading', { name: /diagnostics disabled/i })).toBeVisible()
+  })
+
+  test.skip('Diagnostics module full UI (requires VITE_ENABLE_DIAGNOSTICS)', async ({ page }) => {
     await page.goto('/diagnostics')
     await expect(page.locator('h1')).toBeVisible()
     await expect(page).not.toHaveTitle(/error/i)

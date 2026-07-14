@@ -139,6 +139,31 @@ jobs:
 
           echo "✅ /api/v1/app/config → ${STATUS}"
 
+      # ── KMS / secure-channel contract evidence (H3c) ─────────────────────────
+      # The main API proxies secure sessions under /api/v1/security/sessions/*.
+      # Full crypto handshake needs a client key; release-gate only proves the
+      # route is registered and not a silent 404 (auth may return 401 without a token).
+      - name: Secure-session routes registered (KMS proxy surface)
+        run: |
+          for PATH in \
+            /api/v1/security/sessions/start \
+            /api/v1/security/sessions/renew \
+            /api/v1/security/sessions/revoke
+          do
+            STATUS=$(curl -s -o /tmp/kms_resp.json -w "%{http_code}" \
+              -X POST "${API_URL}${PATH}" \
+              -H "Content-Type: application/json" \
+              -d '{}')
+            # 404 = route missing (fail). 401/400/415/422 = route exists, input/auth incomplete (ok for gate).
+            if [[ "${STATUS}" == "404" ]]; then
+              echo "::error::POST ${PATH} returned 404 — secure-session proxy route missing"
+              exit 1
+            fi
+            echo "✅ POST ${PATH} → ${STATUS} (not 404)"
+          done
+          echo "Unit coverage for handshake/hybrid lives in Synaptix.Security.Kms.Tests (dotnet-ci kms-compliance-tests)."
+          echo "HybridPq remains gated by Kms:Suites:EnableHybridPq=false until crypto review."
+
       - name: Verify disabled endpoints return 403 FeatureDisabled
         run: |
           FAILED=0

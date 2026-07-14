@@ -72,7 +72,7 @@ try
     builder.Services.AddAuthorization();
 
     // ── Application + Infrastructure ─────────────────────────────────────────
-    builder.Services.AddKmsApplication();
+    builder.Services.AddKmsApplication(builder.Configuration);
     builder.Services.AddKmsInfrastructure(builder.Configuration);
 
     // ── OpenAPI ───────────────────────────────────────────────────────────────

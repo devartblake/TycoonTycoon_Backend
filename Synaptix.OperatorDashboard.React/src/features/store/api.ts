@@ -191,26 +191,93 @@ export async function deleteProduct(id: string): Promise<{ success: boolean }> {
   return { success: true }
 }
 
-// ── Flash Sales (routes already match the backend) ───────────────────────────
+// ── Flash Sales (Django: showAll; response { sales: AdminFlashSaleDto[] }) ───
+
+interface BackendFlashSaleDto {
+  id: string
+  sku: string
+  discountPercent: number
+  startsAtUtc: string
+  endsAtUtc: string
+  isActive: boolean
+  reason?: string | null
+  createdAtUtc: string
+}
+
+function toFlashSale(dto: BackendFlashSaleDto): FlashSale {
+  const now = Date.now()
+  const start = new Date(dto.startsAtUtc).getTime()
+  const end = new Date(dto.endsAtUtc).getTime()
+  let status: FlashSale['status'] = 'scheduled'
+  if (now >= end || !dto.isActive) status = 'ended'
+  else if (now >= start) status = 'active'
+  return {
+    id: dto.id,
+    name: dto.reason || dto.sku,
+    productId: dto.sku,
+    productName: dto.sku,
+    discountPercentage: dto.discountPercent,
+    originalPrice: 0,
+    salePrice: 0,
+    startTime: dto.startsAtUtc,
+    endTime: dto.endsAtUtc,
+    maxUnits: 0,
+    unitsSold: 0,
+    status,
+    createdAt: dto.createdAtUtc,
+  }
+}
 
 export async function getFlashSales(offset: number = 0, limit: number = 50): Promise<FlashSalesListResponse> {
   if (getMockMode()) return mockApi.mockGetFlashSales(offset, limit)
-  return apiGet(`/admin/store/flash-sales?offset=${offset}&limit=${limit}`)
+  // Django/backend: GET /admin/store/flash-sales?showAll=true (not offset/limit)
+  const res = await apiGet<{ sales: BackendFlashSaleDto[] }>('/admin/store/flash-sales?showAll=true')
+  const all = (res.sales ?? []).map(toFlashSale)
+  const items = all.slice(offset, offset + limit)
+  return { items, total: all.length, offset, limit }
 }
 
 export async function createFlashSale(sale: Omit<FlashSale, 'id' | 'createdAt'>): Promise<FlashSale> {
   if (getMockMode()) return mockApi.mockCreateFlashSale(sale)
-  return apiPost('/admin/store/flash-sales', sale)
+  const created = await apiPost<{ id: string }>('/admin/store/flash-sales', {
+    sku: sale.productId || sale.productName || slug(sale.name),
+    discountPercent: sale.discountPercentage,
+    startsAtUtc: sale.startTime,
+    endsAtUtc: sale.endTime,
+    reason: sale.name || null,
+  })
+  return {
+    ...sale,
+    id: created.id,
+    createdAt: new Date().toISOString(),
+  }
 }
 
 export async function updateFlashSale(id: string, sale: Partial<FlashSale>): Promise<FlashSale> {
   if (getMockMode()) return mockApi.mockUpdateFlashSale(id, sale)
-  return apiPut(`/admin/store/flash-sales/${id}`, sale)
+  await apiPut(`/admin/store/flash-sales/${id}`, {
+    discountPercent: sale.discountPercentage,
+    startsAtUtc: sale.startTime,
+    endsAtUtc: sale.endTime,
+    reason: sale.name ?? null,
+  })
+  const list = await getFlashSales(0, 500)
+  const found = list.items.find((s) => s.id === id)
+  if (!found) throw new Error(`Flash sale ${id} not found after update`)
+  return found
 }
 
 export async function deleteFlashSale(id: string): Promise<{ success: boolean }> {
   if (getMockMode()) return mockApi.mockDeleteFlashSale(id)
-  return apiDelete(`/admin/store/flash-sales/${id}`)
+  await apiDelete(`/admin/store/flash-sales/${id}`)
+  return { success: true }
+}
+
+/** Django bulk_reset_stock parity */
+export async function bulkResetStock(skus: string[], reason?: string): Promise<{ success: boolean }> {
+  if (getMockMode()) return { success: true }
+  await apiPost('/admin/store/stock-policies/bulk-reset', { skus, reason: reason ?? null })
+  return { success: true }
 }
 
 // ── Stock Policies (keyed by sku) ────────────────────────────────────────────

@@ -20,7 +20,7 @@ dashboard pages unless it can reach a live backend API with matching admin auth 
    ADMIN_OPS_KEY=CHANGE_ME_IN_PRODUCTION
    ADMIN_AUTH_ALLOW_TRUSTED_BFF_PLAIN_JSON=true
    ADMIN_AUTH_TRANSPORT=auto
-   SUPER_ADMIN_EMAIL=admin@tycoon.local
+   SUPER_ADMIN_EMAIL=admin@synaptix.local
    SUPER_ADMIN_PASSWORD=ChangeMe123!
    MIGRATION_DASHBOARD_READINESS_ENABLED=true
    MIGRATION_DASHBOARD_READINESS_STRICT=true
@@ -55,7 +55,7 @@ dashboard pages unless it can reach a live backend API with matching admin auth 
 6. Open the dashboard:
 
    - URL: `http://localhost:8200/login`
-   - Email: `admin@tycoon.local`
+   - Email: `admin@synaptix.local`
    - Password: `ChangeMe123!`
 
 ## Pages To Review

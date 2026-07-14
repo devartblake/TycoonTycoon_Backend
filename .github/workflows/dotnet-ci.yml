@@ -157,6 +157,7 @@ jobs:
           mkdir -p TestResults
           exit_code=0
           declare -a filters=(
+            "RouteParityContractTests"
             "AdminStorageEndpointsTests"
             "AdminAuthSecurityContractTests"
             "AdminNotificationsSecurityContractTests"
@@ -193,6 +194,95 @@ jobs:
         with:
           name: security-contract-test-results
           path: TestResults/**/*.trx
+
+  kms-compliance-tests:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+
+      - name: Restore
+        run: dotnet restore Synaptix.Security.Kms.Tests/Synaptix.Security.Kms.Tests.csproj
+
+      - name: Test KMS + Compliance contracts
+        run: |
+          mkdir -p TestResults
+          dotnet test Synaptix.Security.Kms.Tests/Synaptix.Security.Kms.Tests.csproj \
+            --configuration Release \
+            --verbosity normal \
+            --results-directory TestResults \
+            --logger "trx;LogFileName=kms-compliance-results.trx"
+
+      - name: Upload KMS/Compliance test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kms-compliance-test-results
+          path: TestResults/**/*.trx
+
+  dependency-vulnerability-scan:
+    name: NuGet vulnerability scan (H4b)
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+
+      - name: Restore solution
+        run: dotnet restore TycoonTycoon_Backend.slnx
+
+      - name: List vulnerable packages
+        run: |
+          mkdir -p artifacts/security
+          set +e
+          dotnet list TycoonTycoon_Backend.slnx package --vulnerable --include-transitive \
+            2>&1 | tee artifacts/security/nuget-vulnerable.txt
+          code=$?
+          set -e
+
+          # Fail the job when the report mentions known vulnerable packages.
+          if grep -qiE 'has the following vulnerable packages|Vulnerable|Severity' artifacts/security/nuget-vulnerable.txt; then
+            if grep -qiE 'Critical|High' artifacts/security/nuget-vulnerable.txt; then
+              echo "::error::High/Critical NuGet vulnerabilities found. See artifacts/security/nuget-vulnerable.txt"
+              exit 1
+            fi
+            echo "::warning::Vulnerable packages reported (below High/Critical threshold). Review artifact."
+          fi
+
+          # Non-zero from dotnet list with no vulns is OK on some SDK builds
+          if [[ $code -ne 0 ]]; then
+            echo "::warning::dotnet list package --vulnerable exited with $code (see log)"
+          fi
+
+      - name: Upload vulnerability report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-vulnerability-report
+          path: artifacts/security/nuget-vulnerable.txt
 
   schema-validation:
     runs-on: ubuntu-latest
@@ -254,7 +344,7 @@ jobs:
 
   health-pass-report:
     runs-on: ubuntu-latest
-    needs: [build-test, schema-validation]
+    needs: [build-test, schema-validation, kms-compliance-tests, security-contract-tests, dependency-vulnerability-scan]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

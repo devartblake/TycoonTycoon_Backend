@@ -63,16 +63,21 @@ _Previous: 2026-05-14 — Operator dashboard direction reconciled ✅; Django ad
 ---
 
 
-## Operator Dashboard Direction — 2026-05-12 Decision
+## Operator Dashboard Direction
 
-- `Synaptix.OperatorDashboard.Django` is the canonical Operator Dashboard for all operator/admin roles.
-- Super-admin, admin, support, moderation, economy, audit, and read-only access must be separated with Django RBAC/permission scopes, not by splitting users across Django and Vue/Web.
-- `Synaptix.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web` are deprecated migration experiments. Do not add new workflows there.
-- Active cutover work is now limited to external release gates: apply pending EF migrations, complete the staging parallel-run, capture operator sign-off, then decommission Blazor after the rollback window.
-- Post-cutover product work remains in Django; personalization admin UI, player stock support workflows, and the first operational investigation workbench are implemented.
-- Migration and seed bootstrap is handled by `Tycoon.MigrationService`; see [`docs/OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md`](OPERATOR_DASHBOARD_MIGRATION_SEED_BOOTSTRAP.md).
-- May 2026 cutover closure is tracked in [`docs/OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md`](OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md).
-- CI/readiness automation, evidence-capture templates, and the repo verification baseline are complete as of 2026-05-14; live staging/prod gates remain open until environment evidence and sign-off are attached.
+### Superseding decision — 2026-07-13 (React replaces Django)
+
+- **`Synaptix.OperatorDashboard.React` is the canonical Operator Dashboard** for all operator/admin roles.
+- **`Synaptix.OperatorDashboard.Django` is legacy / replacement target** — no new features; keep only until React staging sign-off + rollback window.
+- Super-admin, admin, support, moderation, economy, audit, and read-only access must be enforced via **backend admin auth + role claims** (and React UI gating), not by growing Django-only RBAC.
+- `Synaptix.OperatorDashboard.Vue` and `Tycoon.OperatorDashboard.Web` remain deprecated. Do not add new workflows there.
+- **P0/P1 work:** close React `/admin/*` path drift vs `Synaptix.Backend.Api` — see [`../operator-dashboard/REACT_ADMIN_ROUTE_GAP_INVENTORY.md`](../operator-dashboard/REACT_ADMIN_ROUTE_GAP_INVENTORY.md) and [`../operator-dashboard/OPERATOR_DASHBOARD_DIRECTION_2026-07-13.md`](../operator-dashboard/OPERATOR_DASHBOARD_DIRECTION_2026-07-13.md).
+- Migration and seed bootstrap remains on MigrationService / Setup CLI; installer UI in React is optional and currently path-incomplete.
+- Staging cutover evidence should prove **React** as primary operator entry (Django may be fallback only during rollback window).
+
+### Historical note — 2026-05-12 (superseded)
+
+The May 2026 decision named Django as canonical for the Blazor/Vue cutover era. That direction is **superseded** by the 2026-07-13 React decision above. May cutover runbooks remain useful for **process/evidence**, not for UI target.
 
 ---
 

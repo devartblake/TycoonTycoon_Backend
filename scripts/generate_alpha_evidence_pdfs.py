@@ -295,7 +295,7 @@ def release_items() -> list[EvidenceItem]:
 def cutover_gates() -> list[EvidenceItem]:
     return [
         EvidenceItem("ef_migrations_applied", "efMigrationsApplied", "Staging and production migration logs/transcripts attached with final EF history verification.", "Any live migration evidence missing or failed.", "OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md"),
-        EvidenceItem("strict_readiness", "strictReadiness", "Strict Tycoon.MigrationService readiness logs attached for live environments.", "Strict readiness disabled, missing, or failed.", "OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md"),
+        EvidenceItem("strict_readiness", "strictReadiness", "Strict Synaptix.MigrationService readiness logs attached for live environments.", "Strict readiness disabled, missing, or failed.", "OPERATOR_DASHBOARD_MAY_CUTOVER_COMPLETION_GUIDE.md"),
         EvidenceItem("parallel_run", "parallelRun", "Staging runbook matrix completed with real operators and no blocking discrepancies.", "Blank result/evidence rows, login failure, 500, or functional discrepancy.", "STAGING_PARALLEL_RUN_RUNBOOK_2026-05-15.md"),
         EvidenceItem("sign_off", "signOff", "QA Lead, Backend Lead, and On-call Operator approval rows populated.", "Any required approver missing or withholding approval.", "OPERATOR_PARALLEL_RUN_EVIDENCE_2026-04-08.md"),
         EvidenceItem("cutover", "cutover", "Django route/upstream active, timestamp/owner/image tags recorded, post-cutover smoke passed.", "Route not flipped, smoke failure, or missing owner/timestamp.", "OPERATOR_RELEASE_ARTIFACTS_2026-04.md"),
@@ -334,7 +334,7 @@ def build_release_pdf() -> None:
     pdf.quick_guide(
         [
             "Start with repo evidence: release build, backend/application tests, EF schema validation, migration artifact generation, and local compose smoke.",
-            "Apply migrations to staging using Tycoon.MigrationService or the DBA fallback. Attach logs and the final EF history query before marking migration rows Pass.",
+            "Apply migrations to staging using Synaptix.MigrationService or the DBA fallback. Attach logs and the final EF history query before marking migration rows Pass.",
             "Run staging readiness and golden-path API smoke. Record request IDs, HTTP status, timestamps, and sanitized response snippets.",
             "Run Flutter live backend smoke against the migrated staging API. Attach command output or CI artifact link.",
             "Review rollback and known issues. Any P0/P1 issue must be resolved or explicitly mitigated before sign-off.",
