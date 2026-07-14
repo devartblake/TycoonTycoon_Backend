@@ -7,11 +7,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Users;
 
-public sealed class UserSearchEndpointTests : IClassFixture<TycoonApiFactory>
+public sealed class UserSearchEndpointTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public UserSearchEndpointTests(TycoonApiFactory factory)
+    public UserSearchEndpointTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

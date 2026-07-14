@@ -8,12 +8,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminMatches;
 
-public sealed class AdminMatchesEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminMatchesEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public AdminMatchesEndpointsTests(TycoonApiFactory factory)
+    public AdminMatchesEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();

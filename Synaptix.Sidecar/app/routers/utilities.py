@@ -554,18 +554,18 @@ async def get_rebalance_metrics():
 @router.get("/economy/rebalance/metrics/prometheus")
 async def get_rebalance_metrics_prometheus():
     lines = [
-        "# HELP tycoon_rebalance_apply_attempts_total Total number of rebalance apply attempts.",
-        "# TYPE tycoon_rebalance_apply_attempts_total counter",
-        f"tycoon_rebalance_apply_attempts_total {int(_rebalance_metrics['totalApplyAttempts'])}",
-        "# HELP tycoon_rebalance_apply_blocked_total Number of blocked rebalance apply attempts.",
-        "# TYPE tycoon_rebalance_apply_blocked_total counter",
-        f"tycoon_rebalance_apply_blocked_total {int(_rebalance_metrics['blockedCount'])}",
-        "# HELP tycoon_rebalance_apply_success_total Number of successful rebalance apply attempts.",
-        "# TYPE tycoon_rebalance_apply_success_total counter",
-        f"tycoon_rebalance_apply_success_total {int(_rebalance_metrics['successCount'])}",
-        "# HELP tycoon_rebalance_apply_error_total Number of errored rebalance apply attempts.",
-        "# TYPE tycoon_rebalance_apply_error_total counter",
-        f"tycoon_rebalance_apply_error_total {int(_rebalance_metrics['errorCount'])}",
+        "# HELP synaptix_rebalance_apply_attempts_total Total number of rebalance apply attempts.",
+        "# TYPE synaptix_rebalance_apply_attempts_total counter",
+        f"synaptix_rebalance_apply_attempts_total {int(_rebalance_metrics['totalApplyAttempts'])}",
+        "# HELP synaptix_rebalance_apply_blocked_total Number of blocked rebalance apply attempts.",
+        "# TYPE synaptix_rebalance_apply_blocked_total counter",
+        f"synaptix_rebalance_apply_blocked_total {int(_rebalance_metrics['blockedCount'])}",
+        "# HELP synaptix_rebalance_apply_success_total Number of successful rebalance apply attempts.",
+        "# TYPE synaptix_rebalance_apply_success_total counter",
+        f"synaptix_rebalance_apply_success_total {int(_rebalance_metrics['successCount'])}",
+        "# HELP synaptix_rebalance_apply_error_total Number of errored rebalance apply attempts.",
+        "# TYPE synaptix_rebalance_apply_error_total counter",
+        f"synaptix_rebalance_apply_error_total {int(_rebalance_metrics['errorCount'])}",
     ]
     return Response(content="\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 

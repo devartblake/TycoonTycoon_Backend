@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Shared.Contracts.Dtos;
@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Powerups;
 
-public sealed class PowerupsFlowTests : IClassFixture<TycoonApiFactory>
+public sealed class PowerupsFlowTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _admin;
     private readonly HttpClient _public;
 
-    public PowerupsFlowTests(TycoonApiFactory factory)
+    public PowerupsFlowTests(SynaptixApiFactory factory)
     {
         _admin = factory.CreateClient().WithAdminOpsKey();
         _public = factory.CreateClient();

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option csharp_namespace = "Synaptix.Backend.Api.Grpc";
 
-package tycoon.mobile;
+package synaptix.mobile;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MobileMatchService — consumed by the Flutter mobile client over gRPC

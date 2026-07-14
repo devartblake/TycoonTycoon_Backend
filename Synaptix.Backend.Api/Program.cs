@@ -395,7 +395,7 @@ builder.Services.AddSingleton<ISidecarInferenceStore>(sp =>
 {
     var path = builder.Configuration["SidecarInference:StorePath"]
         ?? Environment.GetEnvironmentVariable("SIDECAR_INFERENCE_STORE_PATH")
-        ?? "/tmp/tycoon-sidecar/inference-store.jsonl";
+        ?? "/tmp/synaptix-sidecar/inference-store.jsonl";
 
     try
     {
@@ -1210,7 +1210,7 @@ AdminExperimentEndpoints.Map(admin);
 AdminPrivacyEndpoints.Map(admin);
 
 // Startup logging
-app.Logger.LogInformation("🚀 Tycoon Backend API starting...");
+app.Logger.LogInformation("🚀 Synaptix Backend API starting...");
 app.Logger.LogInformation("Environment: {Environment}", app.Environment.EnvironmentName);
 app.Logger.LogInformation("Hangfire: {Status}", hangfireEnabled ? "Enabled" : "Disabled");
 app.Logger.LogInformation("Redis: {Status}", !string.IsNullOrWhiteSpace(redis) ? "Configured" : "Not Configured");

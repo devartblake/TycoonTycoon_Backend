@@ -5,11 +5,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Party;
 
-public sealed class PartyInvitesValidationContractTests : IClassFixture<TycoonApiFactory>
+public sealed class PartyInvitesValidationContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public PartyInvitesValidationContractTests(TycoonApiFactory factory)
+    public PartyInvitesValidationContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

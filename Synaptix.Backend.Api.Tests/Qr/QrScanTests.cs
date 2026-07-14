@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Shared.Contracts.Dtos;
@@ -6,11 +6,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Qr
 {
-    public sealed class QrScanTests : IClassFixture<TycoonApiFactory>
+    public sealed class QrScanTests : IClassFixture<SynaptixApiFactory>
     {
         private readonly HttpClient _http;
 
-        public QrScanTests(TycoonApiFactory factory)
+        public QrScanTests(SynaptixApiFactory factory)
         {
             _http = factory.CreateClient();
         }

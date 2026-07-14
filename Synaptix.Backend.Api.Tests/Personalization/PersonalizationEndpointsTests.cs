@@ -8,11 +8,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Personalization;
 
-public sealed class PersonalizationEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class PersonalizationEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public PersonalizationEndpointsTests(TycoonApiFactory factory)
+    public PersonalizationEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

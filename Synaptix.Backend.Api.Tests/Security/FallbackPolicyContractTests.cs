@@ -9,7 +9,7 @@ namespace Synaptix.Backend.Api.Tests.Security;
 // #405: verifies the global deny-by-default authorization FallbackPolicy that AdminPolicies.cs
 // installs. Runs against FallbackPolicyApiFactory (fallback ACTIVE, mirroring production) so these
 // tests actually exercise the deny-by-default behaviour the production config depends on — the
-// default TycoonApiFactory disables the fallback and cannot.
+// default SynaptixApiFactory disables the fallback and cannot.
 public sealed class FallbackPolicyContractTests : IClassFixture<FallbackPolicyApiFactory>
 {
     private readonly FallbackPolicyApiFactory _factory;

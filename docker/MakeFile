@@ -8,7 +8,7 @@ COMPOSE_PROD = docker compose -f docker/compose.yml -f docker/compose.prod.yml
 
 # Default target
 help:
-	@echo "Tycoon Backend - Docker Commands"
+	@echo "Synaptix Backend - Docker Commands"
 	@echo ""
 	@echo "Development:"
 	@echo "  make up                 Start all services"
@@ -188,7 +188,7 @@ restore-mongo:
 .PHONY: quick-start quick-dev quick-prod
 
 quick-start:
-	@echo "🚀 Starting Tycoon Backend..."
+	@echo "🚀 Starting Synaptix Backend..."
 	@make up
 	@echo ""
 	@echo "Waiting for services to be healthy..."
@@ -196,7 +196,7 @@ quick-start:
 	@echo ""
 	@make health
 	@echo ""
-	@echo "✅ Tycoon Backend is ready!"
+	@echo "✅ Synaptix Backend is ready!"
 	@echo ""
 	@echo "Access:"
 	@echo "  API: http://localhost:5000"
@@ -204,7 +204,7 @@ quick-start:
 	@echo "  Hangfire: http://localhost:5000/hangfire"
 
 quick-dev:
-	@echo "🚀 Starting Tycoon Backend (Development Mode)..."
+	@echo "🚀 Starting Synaptix Backend (Development Mode)..."
 	@make up-dev
 	@echo ""
 	@echo "Waiting for services to be healthy..."
@@ -212,7 +212,7 @@ quick-dev:
 	@echo ""
 	@make health
 	@echo ""
-	@echo "✅ Tycoon Backend is ready!"
+	@echo "✅ Synaptix Backend is ready!"
 	@echo ""
 	@echo "Access:"
 	@echo "  API: http://localhost:5000"
@@ -223,13 +223,13 @@ quick-dev:
 	@echo "  Kibana: http://localhost:5601"
 
 quick-prod:
-	@echo "🚀 Starting Tycoon Backend (Production Mode)..."
+	@echo "🚀 Starting Synaptix Backend (Production Mode)..."
 	@make up-prod
 	@echo ""
 	@echo "Waiting for services to be healthy..."
 	@sleep 20
 	@echo ""
-	@echo "✅ Tycoon Backend is ready!"
+	@echo "✅ Synaptix Backend is ready!"
 	@echo ""
 	@echo "Access:"
 	@echo "  API: http://localhost:5000"

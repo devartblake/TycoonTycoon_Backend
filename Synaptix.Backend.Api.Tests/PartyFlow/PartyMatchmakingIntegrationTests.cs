@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -9,13 +9,13 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Party;
 
-public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFactory>
+public sealed class PartyMatchmakingIntegrationTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
     private readonly HttpClient _admin;
 
-    public PartyMatchmakingIntegrationTests(TycoonApiFactory factory)
+    public PartyMatchmakingIntegrationTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();
@@ -162,7 +162,7 @@ public sealed class PartyMatchmakingIntegrationTests : IClassFixture<TycoonApiFa
         var req = await send.Content.ReadFromJsonAsync<FriendRequestDto>();
         req.Should().NotBeNull();
 
-        // If API returned synthetic accepted (RequestId == Guid.Empty), we’re done
+        // If API returned synthetic accepted (RequestId == Guid.Empty), we�re done
         if (req!.RequestId == Guid.Empty || req.Status == "Accepted")
             return;
 

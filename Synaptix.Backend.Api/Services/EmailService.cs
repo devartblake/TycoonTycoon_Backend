@@ -30,7 +30,7 @@ namespace Synaptix.Backend.Api.Services
             }
 
             var fromEmail = _config["SendGrid:FromEmail"] ?? "noreply@synaptixplay.com";
-            var fromName = _config["SendGrid:FromName"] ?? "Trivia Tycoon";
+            var fromName = _config["SendGrid:FromName"] ?? "Synaptix";
             var payload = new
             {
                 personalizations = new[]
@@ -82,7 +82,7 @@ namespace Synaptix.Backend.Api.Services
                 }
 
                 var fromEmail = _config["SendGrid:FromEmail"] ?? "noreply@synaptixplay.com";
-                var fromName = _config["SendGrid:FromName"] ?? "Trivia Tycoon";
+                var fromName = _config["SendGrid:FromName"] ?? "Synaptix";
 
                 var htmlContent = $@"
 <!DOCTYPE html>
@@ -119,7 +119,7 @@ namespace Synaptix.Backend.Api.Services
 
         <p>Hi {displayName},</p>
 
-        <p>You requested to reset your Trivia Tycoon password. Use this one-time code to proceed:</p>
+        <p>You requested to reset your Synaptix password. Use this one-time code to proceed:</p>
 
         <div class=""code-box"">
             <div class=""code"">{otp}</div>
@@ -129,7 +129,7 @@ namespace Synaptix.Backend.Api.Services
         <ul>
             <li>This code expires in 10 minutes</li>
             <li>Do not share this code with anyone</li>
-            <li>Trivia Tycoon staff will never ask for this code</li>
+            <li>Synaptix staff will never ask for this code</li>
         </ul>
 
         <div class=""warning"">
@@ -138,7 +138,7 @@ namespace Synaptix.Backend.Api.Services
 
         <div class=""footer"">
             <p>Sent at {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</p>
-            <p>Trivia Tycoon © 2026</p>
+            <p>Synaptix © 2026</p>
         </div>
     </div>
 </body>
@@ -148,7 +148,7 @@ namespace Synaptix.Backend.Api.Services
 
 Hi {displayName},
 
-You requested to reset your Trivia Tycoon password.
+You requested to reset your Synaptix password.
 
 Use this code: {otp}
 
@@ -163,7 +163,7 @@ Sent at {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
                     personalizations = new[] {
                         new {
                             to = new[] { new { email = email } },
-                            subject = "Reset Your Trivia Tycoon Password"
+                            subject = "Reset Your Synaptix Password"
                         }
                     },
                     from = new { email = fromEmail, name = fromName },
@@ -218,7 +218,7 @@ Sent at {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
                 }
 
                 var fromEmail = _config["SendGrid:FromEmail"] ?? "noreply@synaptixplay.com";
-                var fromName = _config["SendGrid:FromName"] ?? "Trivia Tycoon";
+                var fromName = _config["SendGrid:FromName"] ?? "Synaptix";
 
                 var htmlContent = $@"
 <!DOCTYPE html>
@@ -244,7 +244,7 @@ Sent at {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
             <strong>✓ Your password has been changed successfully!</strong>
         </div>
 
-        <p>Your Trivia Tycoon account is now secured with your new password.</p>
+        <p>Your Synaptix account is now secured with your new password.</p>
 
         <p><strong>Next steps:</strong></p>
         <ul>
@@ -255,7 +255,7 @@ Sent at {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
 
         <div class=""footer"">
             <p>Sent at {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</p>
-            <p>Trivia Tycoon © 2026</p>
+            <p>Synaptix © 2026</p>
         </div>
     </div>
 </body>
@@ -267,7 +267,7 @@ Hi {displayName},
 
 Your password has been changed successfully!
 
-Your Trivia Tycoon account is now secured.
+Your Synaptix account is now secured.
 
 Sign in with your new password to continue.
 
@@ -278,7 +278,7 @@ Sent at {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
                     personalizations = new[] {
                         new {
                             to = new[] { new { email = email } },
-                            subject = "Your Trivia Tycoon Password Has Been Changed"
+                            subject = "Your Synaptix Password Has Been Changed"
                         }
                     },
                     from = new { email = fromEmail, name = fromName },

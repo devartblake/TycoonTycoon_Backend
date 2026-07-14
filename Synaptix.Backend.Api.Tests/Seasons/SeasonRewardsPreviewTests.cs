@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -10,11 +10,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Seasons;
 
-public sealed class SeasonRewardsPreviewTests : IClassFixture<TycoonApiFactory>
+public sealed class SeasonRewardsPreviewTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public SeasonRewardsPreviewTests(TycoonApiFactory factory) => _factory = factory;
+    public SeasonRewardsPreviewTests(SynaptixApiFactory factory) => _factory = factory;
 
     private sealed record RewardPreviewDto(
         Guid SeasonId,

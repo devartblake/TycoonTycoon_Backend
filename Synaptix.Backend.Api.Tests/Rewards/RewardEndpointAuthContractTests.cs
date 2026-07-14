@@ -8,11 +8,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Rewards;
 
-public sealed class RewardEndpointAuthContractTests : IClassFixture<TycoonApiFactory>
+public sealed class RewardEndpointAuthContractTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public RewardEndpointAuthContractTests(TycoonApiFactory factory) => _factory = factory;
+    public RewardEndpointAuthContractTests(SynaptixApiFactory factory) => _factory = factory;
 
     [Theory]
     [InlineData("/api/v1/rewards/daily-config")]

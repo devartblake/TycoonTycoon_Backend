@@ -6,12 +6,12 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.AdminAuth;
 
-public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminSecurityAuditEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public AdminSecurityAuditEndpointsTests(TycoonApiFactory factory)
+    public AdminSecurityAuditEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();

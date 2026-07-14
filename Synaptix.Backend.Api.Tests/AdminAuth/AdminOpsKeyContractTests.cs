@@ -7,11 +7,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.AdminAuth;
 
-public sealed class AdminOpsKeyContractTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminOpsKeyContractTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public AdminOpsKeyContractTests(TycoonApiFactory factory)
+    public AdminOpsKeyContractTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

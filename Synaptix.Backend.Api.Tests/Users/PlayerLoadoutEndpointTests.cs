@@ -10,11 +10,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Users;
 
-public sealed class PlayerLoadoutEndpointTests : IClassFixture<TycoonApiFactory>
+public sealed class PlayerLoadoutEndpointTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public PlayerLoadoutEndpointTests(TycoonApiFactory factory)
+    public PlayerLoadoutEndpointTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

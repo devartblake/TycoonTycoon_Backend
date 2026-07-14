@@ -6,11 +6,11 @@ using Synaptix.Backend.Api.Tests.TestHost;
 
 namespace Synaptix.Backend.Api.Tests.Matches;
 
-public sealed class MobileEconomyEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class MobileEconomyEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public MobileEconomyEndpointsTests(TycoonApiFactory factory)
+    public MobileEconomyEndpointsTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

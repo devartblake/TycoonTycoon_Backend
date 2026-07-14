@@ -8,11 +8,11 @@ namespace Synaptix.Backend.Api.Tests.AdminQuestions;
 
 // Covers the operator content-dashboard routes added for #420:
 // GET /admin/questions/stats, GET /admin/questions/categories, POST /admin/questions/bulk-review.
-public sealed class AdminQuestionsReviewDashboardTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminQuestionsReviewDashboardTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AdminQuestionsReviewDashboardTests(TycoonApiFactory factory)
+    public AdminQuestionsReviewDashboardTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient().WithAdminOpsKey();
     }

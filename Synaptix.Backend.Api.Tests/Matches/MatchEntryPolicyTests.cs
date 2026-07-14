@@ -6,13 +6,13 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Matches;
 
-public sealed class MatchEntryPolicyTests : IClassFixture<TycoonApiFactory>
+public sealed class MatchEntryPolicyTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
     private readonly HttpClient _admin;
 
-    public MatchEntryPolicyTests(TycoonApiFactory factory)
+    public MatchEntryPolicyTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

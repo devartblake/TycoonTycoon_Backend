@@ -7,11 +7,11 @@ using Synaptix.Backend.Domain.Entities;
 
 namespace Synaptix.Backend.Api.Tests.AdminSetup;
 
-public sealed class AdminSetupEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminSetupEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AdminSetupEndpointsTests(TycoonApiFactory factory)
+    public AdminSetupEndpointsTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient().WithAdminOpsKey();
     }
@@ -29,7 +29,7 @@ public sealed class AdminSetupEndpointsTests : IClassFixture<TycoonApiFactory>
 
         response.IsSuccessStatusCode.Should().BeTrue();
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().NotContain(TycoonApiFactory.TestAdminKey);
+        body.Should().NotContain(SynaptixApiFactory.TestAdminKey);
         body.ToLowerInvariant().Should().NotContain("connectionstrings");
         body.ToLowerInvariant().Should().NotContain("password");
     }
@@ -55,7 +55,7 @@ public sealed class AdminSetupEndpointsTests : IClassFixture<TycoonApiFactory>
         response.GetProperty("reports").GetArrayLength().Should().BeGreaterThan(0);
 
         var body = response.GetRawText();
-        body.Should().NotContain(TycoonApiFactory.TestAdminKey);
+        body.Should().NotContain(SynaptixApiFactory.TestAdminKey);
         body.ToLowerInvariant().Should().NotContain("connectionstrings");
         body.ToLowerInvariant().Should().NotContain("password");
     }
@@ -71,7 +71,7 @@ public sealed class AdminSetupEndpointsTests : IClassFixture<TycoonApiFactory>
         response.GetProperty("report").GetProperty("status").GetProperty("readOnly").GetBoolean().Should().BeTrue();
 
         var body = response.GetRawText();
-        body.Should().NotContain(TycoonApiFactory.TestAdminKey);
+        body.Should().NotContain(SynaptixApiFactory.TestAdminKey);
         body.ToLowerInvariant().Should().NotContain("connectionstrings");
         body.ToLowerInvariant().Should().NotContain("password");
     }

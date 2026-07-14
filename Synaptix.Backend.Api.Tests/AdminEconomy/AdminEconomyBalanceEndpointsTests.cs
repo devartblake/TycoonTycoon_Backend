@@ -6,11 +6,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.AdminEconomy;
 
-public sealed class AdminEconomyBalanceEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminEconomyBalanceEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _admin;
 
-    public AdminEconomyBalanceEndpointsTests(TycoonApiFactory factory)
+    public AdminEconomyBalanceEndpointsTests(SynaptixApiFactory factory)
     {
         _admin = factory.CreateClient().WithAdminOpsKey();
     }

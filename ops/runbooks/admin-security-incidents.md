@@ -1,7 +1,7 @@
 # Admin Security Incident Runbook
 
 This runbook describes first-response actions for alerts emitted from the
-`Tycoon.Backend.Api.AdminSecurity` meter.
+Admin security meter on service `synaptix-backend` (legacy dashboards may still filter `tycoon-backend` / old meter labels).
 
 ## Alert: admin auth unauthorized spike
 

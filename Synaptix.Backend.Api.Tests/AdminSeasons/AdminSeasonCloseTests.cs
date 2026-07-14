@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -11,11 +11,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminSeasons;
 
-public sealed class AdminSeasonCloseTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminSeasonCloseTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public AdminSeasonCloseTests(TycoonApiFactory factory) => _factory = factory;
+    public AdminSeasonCloseTests(SynaptixApiFactory factory) => _factory = factory;
 
 
 

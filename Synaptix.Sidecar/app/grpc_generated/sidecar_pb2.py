@@ -24,28 +24,28 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rsidecar.proto\x12\x0etycoon.sidecar\"j\n\x15\x41nalyticsEventRequest\x12\x12\n\nevent_type\x18\x01 \x01(\t\x12\x11\n\tentity_id\x18\x02 \x01(\t\x12\x14\n\x0cpayload_json\x18\x03 \x01(\t\x12\x14\n\x0ctimestamp_ms\x18\x04 \x01(\x03\"S\n\x16\x41nalyticsEventResponse\x12\x10\n\x08\x61\x63\x63\x65pted\x18\x01 \x01(\x08\x12\x10\n\x08\x65vent_id\x18\x02 \x01(\t\x12\x15\n\rreject_reason\x18\x03 \x01(\t\"Z\n\rStreamSummary\x12\x17\n\x0f\x65vents_received\x18\x01 \x01(\x05\x12\x17\n\x0f\x65vents_accepted\x18\x02 \x01(\x05\x12\x17\n\x0f\x65vents_rejected\x18\x03 \x01(\x05\"e\n\x16InferenceResultRequest\x12\x12\n\nmodel_name\x18\x01 \x01(\t\x12\x11\n\tentity_id\x18\x02 \x01(\t\x12\r\n\x05score\x18\x03 \x01(\x02\x12\x15\n\rmetadata_json\x18\x04 \x01(\t\"<\n\x17InferenceResultResponse\x12\x0e\n\x06stored\x18\x01 \x01(\x08\x12\x11\n\trecord_id\x18\x02 \x01(\t\"N\n\x14\x42\x61\x63kendActionRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\x12\x11\n\ttarget_id\x18\x02 \x01(\t\x12\x13\n\x0bparams_json\x18\x03 \x01(\t\"U\n\x15\x42\x61\x63kendActionResponse\x12\x10\n\x08\x65xecuted\x18\x01 \x01(\x08\x12\x13\n\x0bresult_json\x18\x02 \x01(\t\x12\x15\n\rerror_message\x18\x03 \x01(\t2\xa7\x03\n\x0eSidecarService\x12\x65\n\x14ReportAnalyticsEvent\x12%.tycoon.sidecar.AnalyticsEventRequest\x1a&.tycoon.sidecar.AnalyticsEventResponse\x12_\n\x15StreamAnalyticsEvents\x12%.tycoon.sidecar.AnalyticsEventRequest\x1a\x1d.tycoon.sidecar.StreamSummary(\x01\x12h\n\x15SubmitInferenceResult\x12&.tycoon.sidecar.InferenceResultRequest\x1a\'.tycoon.sidecar.InferenceResultResponse\x12\x63\n\x14TriggerBackendAction\x12$.tycoon.sidecar.BackendActionRequest\x1a%.tycoon.sidecar.BackendActionResponseB\x1a\xaa\x02\x17Tycoon.Backend.Api.Grpcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rsidecar.proto\x12\x10synaptix.sidecar\"j\n\x15\x41nalyticsEventRequest\x12\x12\n\nevent_type\x18\x01 \x01(\t\x12\x11\n\tentity_id\x18\x02 \x01(\t\x12\x14\n\x0cpayload_json\x18\x03 \x01(\t\x12\x14\n\x0ctimestamp_ms\x18\x04 \x01(\x03\"S\n\x16\x41nalyticsEventResponse\x12\x10\n\x08\x61\x63\x63\x65pted\x18\x01 \x01(\x08\x12\x10\n\x08\x65vent_id\x18\x02 \x01(\t\x12\x15\n\rreject_reason\x18\x03 \x01(\t\"Z\n\rStreamSummary\x12\x17\n\x0f\x65vents_received\x18\x01 \x01(\x05\x12\x17\n\x0f\x65vents_accepted\x18\x02 \x01(\x05\x12\x17\n\x0f\x65vents_rejected\x18\x03 \x01(\x05\"e\n\x16InferenceResultRequest\x12\x12\n\nmodel_name\x18\x01 \x01(\t\x12\x11\n\tentity_id\x18\x02 \x01(\t\x12\r\n\x05score\x18\x03 \x01(\x02\x12\x15\n\rmetadata_json\x18\x04 \x01(\t\"<\n\x17InferenceResultResponse\x12\x0e\n\x06stored\x18\x01 \x01(\x08\x12\x11\n\trecord_id\x18\x02 \x01(\t\"N\n\x14\x42\x61\x63kendActionRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\x12\x11\n\ttarget_id\x18\x02 \x01(\t\x12\x13\n\x0bparams_json\x18\x03 \x01(\t\"U\n\x15\x42\x61\x63kendActionResponse\x12\x10\n\x08\x65xecuted\x18\x01 \x01(\x08\x12\x13\n\x0bresult_json\x18\x02 \x01(\t\x12\x15\n\rerror_message\x18\x03 \x01(\t2\xb7\x03\n\x0eSidecarService\x12i\n\x14ReportAnalyticsEvent\x12\'.synaptix.sidecar.AnalyticsEventRequest\x1a(.synaptix.sidecar.AnalyticsEventResponse\x12\x63\n\x15StreamAnalyticsEvents\x12\'.synaptix.sidecar.AnalyticsEventRequest\x1a\x1f.synaptix.sidecar.StreamSummary(\x01\x12l\n\x15SubmitInferenceResult\x12(.synaptix.sidecar.InferenceResultRequest\x1a).synaptix.sidecar.InferenceResultResponse\x12g\n\x14TriggerBackendAction\x12&.synaptix.sidecar.BackendActionRequest\x1a\'.synaptix.sidecar.BackendActionResponseB\x1c\xaa\x02\x19Synaptix.Backend.Api.Grpcb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'sidecar_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'\252\002\027Tycoon.Backend.Api.Grpc'
-  _globals['_ANALYTICSEVENTREQUEST']._serialized_start=33
-  _globals['_ANALYTICSEVENTREQUEST']._serialized_end=139
-  _globals['_ANALYTICSEVENTRESPONSE']._serialized_start=141
-  _globals['_ANALYTICSEVENTRESPONSE']._serialized_end=224
-  _globals['_STREAMSUMMARY']._serialized_start=226
-  _globals['_STREAMSUMMARY']._serialized_end=316
-  _globals['_INFERENCERESULTREQUEST']._serialized_start=318
-  _globals['_INFERENCERESULTREQUEST']._serialized_end=419
-  _globals['_INFERENCERESULTRESPONSE']._serialized_start=421
-  _globals['_INFERENCERESULTRESPONSE']._serialized_end=481
-  _globals['_BACKENDACTIONREQUEST']._serialized_start=483
-  _globals['_BACKENDACTIONREQUEST']._serialized_end=561
-  _globals['_BACKENDACTIONRESPONSE']._serialized_start=563
-  _globals['_BACKENDACTIONRESPONSE']._serialized_end=648
-  _globals['_SIDECARSERVICE']._serialized_start=651
-  _globals['_SIDECARSERVICE']._serialized_end=1074
+  _globals['DESCRIPTOR']._serialized_options = b'\252\002\031Synaptix.Backend.Api.Grpc'
+  _globals['_ANALYTICSEVENTREQUEST']._serialized_start=35
+  _globals['_ANALYTICSEVENTREQUEST']._serialized_end=141
+  _globals['_ANALYTICSEVENTRESPONSE']._serialized_start=143
+  _globals['_ANALYTICSEVENTRESPONSE']._serialized_end=226
+  _globals['_STREAMSUMMARY']._serialized_start=228
+  _globals['_STREAMSUMMARY']._serialized_end=318
+  _globals['_INFERENCERESULTREQUEST']._serialized_start=320
+  _globals['_INFERENCERESULTREQUEST']._serialized_end=421
+  _globals['_INFERENCERESULTRESPONSE']._serialized_start=423
+  _globals['_INFERENCERESULTRESPONSE']._serialized_end=483
+  _globals['_BACKENDACTIONREQUEST']._serialized_start=485
+  _globals['_BACKENDACTIONREQUEST']._serialized_end=563
+  _globals['_BACKENDACTIONRESPONSE']._serialized_start=565
+  _globals['_BACKENDACTIONRESPONSE']._serialized_end=650
+  _globals['_SIDECARSERVICE']._serialized_start=653
+  _globals['_SIDECARSERVICE']._serialized_end=1092
 # @@protoc_insertion_point(module_scope)

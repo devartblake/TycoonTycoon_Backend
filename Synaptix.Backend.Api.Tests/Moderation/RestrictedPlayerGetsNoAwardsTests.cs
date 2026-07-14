@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Shared.Contracts.Dtos;
@@ -6,13 +6,13 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Moderation;
 
-public sealed class RestrictedPlayerGetsNoAwardsTests : IClassFixture<TycoonApiFactory>
+public sealed class RestrictedPlayerGetsNoAwardsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _admin;
     private readonly HttpClient _public;
 
-    public RestrictedPlayerGetsNoAwardsTests(TycoonApiFactory factory)
+    public RestrictedPlayerGetsNoAwardsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# migrate.sh — Migration automation for TycoonTycoon Backend
+# migrate.sh — Migration automation for Synaptix Backend
 #
 # Usage:
 #   ./scripts/migrate.sh                  # Run migrations (Docker)

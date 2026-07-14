@@ -9,11 +9,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.AdminAuth;
 
-public sealed class AdminAuthSecurityContractTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminAuthSecurityContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AdminAuthSecurityContractTests(TycoonApiFactory factory)
+    public AdminAuthSecurityContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient().WithAdminOpsKey();
     }

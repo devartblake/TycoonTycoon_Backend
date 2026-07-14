@@ -5,11 +5,11 @@ using Synaptix.Backend.Api.Tests.TestHost;
 
 namespace Synaptix.Backend.Api.Tests.Analytics;
 
-public sealed class AnalyticsStartupEventCompatibilityTests : IClassFixture<TycoonApiFactory>
+public sealed class AnalyticsStartupEventCompatibilityTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AnalyticsStartupEventCompatibilityTests(TycoonApiFactory factory)
+    public AnalyticsStartupEventCompatibilityTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

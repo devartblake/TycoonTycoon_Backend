@@ -4,11 +4,11 @@ using Synaptix.Backend.Api.Tests.TestHost;
 
 namespace Synaptix.Backend.Api.Tests.Missions;
 
-public sealed class MissionClaimErrorEnvelopeContractTests : IClassFixture<TycoonApiFactory>
+public sealed class MissionClaimErrorEnvelopeContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public MissionClaimErrorEnvelopeContractTests(TycoonApiFactory factory)
+    public MissionClaimErrorEnvelopeContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

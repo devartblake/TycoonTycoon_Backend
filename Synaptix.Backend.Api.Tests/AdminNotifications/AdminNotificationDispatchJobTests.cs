@@ -8,11 +8,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminNotifications;
 
-public sealed class AdminNotificationDispatchJobTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminNotificationDispatchJobTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public AdminNotificationDispatchJobTests(TycoonApiFactory factory)
+    public AdminNotificationDispatchJobTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

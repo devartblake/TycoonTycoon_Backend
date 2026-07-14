@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
@@ -7,13 +7,13 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Moderation;
 
-public sealed class BannedPlayerCannotStartTests : IClassFixture<TycoonApiFactory>
+public sealed class BannedPlayerCannotStartTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _admin;
     private readonly HttpClient _public;
 
-    public BannedPlayerCannotStartTests(TycoonApiFactory factory)
+    public BannedPlayerCannotStartTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();

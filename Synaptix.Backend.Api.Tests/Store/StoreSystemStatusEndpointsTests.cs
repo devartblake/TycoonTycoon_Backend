@@ -9,11 +9,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Store;
 
-public sealed class StoreSystemStatusEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class StoreSystemStatusEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public StoreSystemStatusEndpointsTests(TycoonApiFactory factory)
+    public StoreSystemStatusEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

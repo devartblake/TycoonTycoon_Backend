@@ -1,5 +1,5 @@
 """
-gRPC client for communicating with Tycoon.Backend.Api on port 5001 (HTTP/2).
+gRPC client for communicating with Synaptix.Backend.Api on port 5001 (HTTP/2).
 
 Usage
 -----

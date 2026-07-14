@@ -4,11 +4,11 @@ using Synaptix.Backend.Api.Tests.TestHost;
 
 namespace Synaptix.Backend.Api.Tests.Smoke;
 
-public sealed class AlphaP0RouteContractsTests : IClassFixture<TycoonApiFactory>
+public sealed class AlphaP0RouteContractsTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AlphaP0RouteContractsTests(TycoonApiFactory factory)
+    public AlphaP0RouteContractsTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

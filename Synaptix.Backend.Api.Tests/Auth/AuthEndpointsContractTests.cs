@@ -7,11 +7,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Auth;
 
-public sealed class AuthEndpointsContractTests : IClassFixture<TycoonApiFactory>
+public sealed class AuthEndpointsContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AuthEndpointsContractTests(TycoonApiFactory factory)
+    public AuthEndpointsContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

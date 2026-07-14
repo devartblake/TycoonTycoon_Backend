@@ -9,12 +9,12 @@ using Synaptix.Backend.Infrastructure.Persistence;
 
 namespace Synaptix.Backend.Api.Tests.Friends;
 
-public sealed class UnfriendEndpointContractTests : IClassFixture<TycoonApiFactory>
+public sealed class UnfriendEndpointContractTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public UnfriendEndpointContractTests(TycoonApiFactory factory)
+    public UnfriendEndpointContractTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

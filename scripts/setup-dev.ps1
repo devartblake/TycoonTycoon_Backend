@@ -1,5 +1,5 @@
 # =============================================================================
-# Tycoon Backend - Development Environment Setup Script (Windows/PowerShell)
+# Synaptix Backend - Development Environment Setup Script (Windows/PowerShell)
 # =============================================================================
 # This script automates the setup of your local development environment.
 # It checks for required tools, validates configuration, and helps start services.
@@ -305,7 +305,7 @@ function Test-ServiceHealth {
 # =============================================================================
 
 function Main {
-    Write-Header "Tycoon Backend - Development Environment Setup"
+    Write-Header "Synaptix Backend - Development Environment Setup"
     
     Write-Host "This script will:"
     Write-Host "  1. Check for required development tools"

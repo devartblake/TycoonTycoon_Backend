@@ -8,11 +8,11 @@ using Synaptix.Backend.Application.Analytics.Models;
 
 namespace Synaptix.Backend.Api.Tests.Analytics;
 
-public sealed class AnalyticsCompatibilityEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AnalyticsCompatibilityEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public AnalyticsCompatibilityEndpointsTests(TycoonApiFactory factory)
+    public AnalyticsCompatibilityEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

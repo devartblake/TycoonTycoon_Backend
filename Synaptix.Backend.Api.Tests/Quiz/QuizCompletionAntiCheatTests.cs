@@ -11,12 +11,12 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Quiz;
 
-public sealed class QuizCompletionAntiCheatTests : IClassFixture<TycoonApiFactory>
+public sealed class QuizCompletionAntiCheatTests : IClassFixture<SynaptixApiFactory>
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public QuizCompletionAntiCheatTests(TycoonApiFactory factory)
+    public QuizCompletionAntiCheatTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

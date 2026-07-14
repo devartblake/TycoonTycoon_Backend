@@ -6,11 +6,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.AdminQuestions;
 
-public sealed class AdminQuestionsStatusWorkflowTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminQuestionsStatusWorkflowTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AdminQuestionsStatusWorkflowTests(TycoonApiFactory factory)
+    public AdminQuestionsStatusWorkflowTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient().WithAdminOpsKey();
     }

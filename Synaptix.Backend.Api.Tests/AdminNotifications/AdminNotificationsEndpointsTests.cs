@@ -11,12 +11,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminNotifications;
 
-public sealed class AdminNotificationsEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminNotificationsEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public AdminNotificationsEndpointsTests(TycoonApiFactory factory)
+    public AdminNotificationsEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();

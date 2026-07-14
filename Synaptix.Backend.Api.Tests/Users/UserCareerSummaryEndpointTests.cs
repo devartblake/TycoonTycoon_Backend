@@ -10,11 +10,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Users;
 
-public sealed class UserCareerSummaryEndpointTests : IClassFixture<TycoonApiFactory>
+public sealed class UserCareerSummaryEndpointTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public UserCareerSummaryEndpointTests(TycoonApiFactory factory)
+    public UserCareerSummaryEndpointTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

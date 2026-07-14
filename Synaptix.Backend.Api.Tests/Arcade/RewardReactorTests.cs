@@ -451,7 +451,7 @@ public sealed class RewardReactorTests : IClassFixture<ReactorEventActiveFactory
 /// assertions would only pass during that window; override the start/end so the
 /// test is deterministic regardless of wall-clock.
 /// </summary>
-public sealed class ReactorEventActiveFactory : TycoonApiFactory
+public sealed class ReactorEventActiveFactory : SynaptixApiFactory
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

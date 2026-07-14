@@ -75,11 +75,11 @@ public static class MinioBuilderExtensions
     /// </summary>
     /// <param name="builder">The dependent resource builder (e.g. the API project).</param>
     /// <param name="minio">The MinIO resource to connect to.</param>
-    /// <param name="bucket">The S3 bucket name (default: <c>tycoon-assets</c>).</param>
+    /// <param name="bucket">The S3 bucket name (default: <c>synaptix-assets</c>).</param>
     public static IResourceBuilder<TResource> WithMinioConnection<TResource>(
         this IResourceBuilder<TResource> builder,
         IResourceBuilder<MinioResource> minio,
-        string bucket = "tycoon-assets")
+        string bucket = "synaptix-assets")
         where TResource : IResourceWithEnvironment
     {
         return builder

@@ -7,12 +7,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.GameEvents;
 
-public sealed class AdminGameEventsEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminGameEventsEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public AdminGameEventsEndpointsTests(TycoonApiFactory factory)
+    public AdminGameEventsEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();

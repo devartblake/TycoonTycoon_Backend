@@ -15,11 +15,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Store;
 
-public sealed class StorePayPalEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class StorePayPalEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public StorePayPalEndpointsTests(TycoonApiFactory factory)
+    public StorePayPalEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

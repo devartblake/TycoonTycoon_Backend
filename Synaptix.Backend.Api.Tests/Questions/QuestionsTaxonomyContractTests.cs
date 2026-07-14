@@ -9,12 +9,12 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Questions;
 
-public sealed class QuestionsTaxonomyContractTests : IClassFixture<TycoonApiFactory>
+public sealed class QuestionsTaxonomyContractTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public QuestionsTaxonomyContractTests(TycoonApiFactory factory)
+    public QuestionsTaxonomyContractTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

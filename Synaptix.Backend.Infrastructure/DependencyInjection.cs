@@ -46,7 +46,7 @@ namespace Synaptix.Backend.Infrastructure
             var useInMemory = cfg.GetValue<bool>("Testing:UseInMemoryDb");
             if (useInMemory)
             {
-                var databaseName = cfg["Testing:InMemoryDbName"] ?? "tycoon-tests";
+                var databaseName = cfg["Testing:InMemoryDbName"] ?? "synaptix-tests";
                 services.AddDbContext<AppDb>(opt => opt.UseInMemoryDatabase(databaseName));
                 services.TryAddScoped<IAppDb>(sp => sp.GetRequiredService<AppDb>());
                 services.TryAddScoped<IEntitlementDb>(sp => sp.GetRequiredService<AppDb>());
@@ -72,10 +72,11 @@ namespace Synaptix.Backend.Infrastructure
                 {
                     throw new InvalidOperationException(
                         "Missing PostgreSQL connection string. Provide one of:\n" +
-                        "  - ConnectionStrings:tycoon_db\n" +
-                        "  - ConnectionStrings:tycoon-db (Aspire)\n" +
                         "  - ConnectionStrings:db (docker-compose common)\n" +
-                        "  - ConnectionStrings:PostgreSQL\n");
+                        "  - ConnectionStrings:synaptix-db (Aspire)\n" +
+                        "  - ConnectionStrings:synaptix_db\n" +
+                        "  - ConnectionStrings:PostgreSQL\n" +
+                        "  - Legacy: tycoon-db / tycoon_db\n");
                 }
 
                 opt.UseNpgsql(connectionString, npgsql =>
@@ -140,7 +141,7 @@ namespace Synaptix.Backend.Infrastructure
                 services.Configure<MongoOptions>(o =>
                 {
                     o.ConnectionString = mongo;
-                    o.Database = cfg["Mongo:Database"] ?? "tycoon_analytics";
+                    o.Database = cfg["Mongo:Database"] ?? "synaptix_analytics";
                 });
 
                 services.RemoveAll<IAnalyticsEventWriter>();
@@ -233,7 +234,7 @@ namespace Synaptix.Backend.Infrastructure
                     minioOptions.Endpoint = linodeEndpoint!;
                     minioOptions.AccessKey = cfg["LINODE_OBJECT_STORAGE_ACCESS_KEY"] ?? string.Empty;
                     minioOptions.SecretKey = cfg["LINODE_OBJECT_STORAGE_SECRET_KEY"] ?? string.Empty;
-                    minioOptions.Bucket = cfg["LINODE_OBJECT_STORAGE_BUCKET"] ?? "tycoon-assets";
+                    minioOptions.Bucket = cfg["LINODE_OBJECT_STORAGE_BUCKET"] ?? "synaptix-assets";
                     minioOptions.PublicEndpoint = cfg["LINODE_OBJECT_STORAGE_PUBLIC_ENDPOINT"];
                     minioOptions.UseSSL = true; // Linode ObjectStorage uses HTTPS
                 }
@@ -349,23 +350,24 @@ namespace Synaptix.Backend.Infrastructure
             return services;
         }
 
-        // ✅ Robust connection string resolution (Aspire + non-Aspire + legacy keys)
-        // IMPORTANT:
-        // - In Docker/Compose you often have ConnectionStrings:db
-        // - In Aspire you may have ConnectionStrings:tycoon-db (or a named resource)
-        // - Your current code only checks tycoon_db, which is why Docker shows empty connection string.
+        // Robust connection string resolution (Aspire + Compose + legacy Tycoon keys).
+        // Prefer: ConnectionStrings:db | synaptix-db | synaptix_db
+        // Legacy aliases retained: tycoon-db | tycoon_db
         private static string? ResolvePostgresConnectionString(IConfiguration cfg)
         {
-            // Supports docker-compose, Aspire, and local conventions.
             var candidates = new (string Kind, string Key, string? Value)[]
             {
-                ("ConnStr", "tycoon-db", cfg.GetConnectionString("tycoon-db")),  // common Aspire style
-                ("ConnStr", "tycoon_db", cfg.GetConnectionString("tycoon_db")),  // your current key
-                ("ConnStr", "db",       cfg.GetConnectionString("db")),         // common compose naming
-                ("ConnStr", "PostgreSQL", cfg.GetConnectionString("PostgreSQL")),  // sometimes used
-                ("Value",   "Postgres:ConnectionString", cfg["Postgres:ConnectionString"]), // optional custom
-                ("Value",   "ConnectionStrings:tycoon_db", cfg["ConnectionStrings:tycoon_db"]), // optional custom
-                ("Value",   "ConnectionStrings:db", cfg["ConnectionStrings:db"]),   // optional custom
+                ("ConnStr", "db", cfg.GetConnectionString("db")),
+                ("ConnStr", "synaptix-db", cfg.GetConnectionString("synaptix-db")),
+                ("ConnStr", "synaptix_db", cfg.GetConnectionString("synaptix_db")),
+                ("ConnStr", "PostgreSQL", cfg.GetConnectionString("PostgreSQL")),
+                // Legacy Tycoon Aspire / env keys (Wave 1 compatibility)
+                ("ConnStr", "tycoon-db", cfg.GetConnectionString("tycoon-db")),
+                ("ConnStr", "tycoon_db", cfg.GetConnectionString("tycoon_db")),
+                ("Value", "Postgres:ConnectionString", cfg["Postgres:ConnectionString"]),
+                ("Value", "ConnectionStrings:db", cfg["ConnectionStrings:db"]),
+                ("Value", "ConnectionStrings:synaptix_db", cfg["ConnectionStrings:synaptix_db"]),
+                ("Value", "ConnectionStrings:tycoon_db", cfg["ConnectionStrings:tycoon_db"]),
             };
 
             var found = candidates.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.Value)).Value;
@@ -378,7 +380,7 @@ namespace Synaptix.Backend.Infrastructure
             throw new InvalidOperationException(
                 "Missing PostgreSQL connection string. " +
                 $"Looked for: {lookedFor}. " +
-                "Fix docker-compose by setting ConnectionStrings__db (or ConnectionStrings__tycoon_db).");
+                "Fix compose/env by setting ConnectionStrings__db (or ConnectionStrings__synaptix_db).");
         }
     }
 }

@@ -9,11 +9,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Users;
 
-public sealed class UserProfileSecurityContractTests : IClassFixture<TycoonApiFactory>
+public sealed class UserProfileSecurityContractTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public UserProfileSecurityContractTests(TycoonApiFactory factory)
+    public UserProfileSecurityContractTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

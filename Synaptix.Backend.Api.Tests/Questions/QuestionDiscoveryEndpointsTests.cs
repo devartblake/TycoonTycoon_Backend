@@ -10,17 +10,17 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Questions;
 
-public sealed class QuestionDiscoveryEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class QuestionDiscoveryEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter() }
     };
 
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public QuestionDiscoveryEndpointsTests(TycoonApiFactory factory)
+    public QuestionDiscoveryEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

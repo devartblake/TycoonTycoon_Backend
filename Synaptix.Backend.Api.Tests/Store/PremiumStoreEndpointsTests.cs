@@ -16,11 +16,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Store;
 
-public sealed class PremiumStoreEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class PremiumStoreEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public PremiumStoreEndpointsTests(TycoonApiFactory factory)
+    public PremiumStoreEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

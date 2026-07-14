@@ -3,7 +3,9 @@
 This document defines the operational metrics introduced for admin hardening.
 
 ## Meter
-- `Tycoon.Backend.Api.AdminSecurity`
+- Canonical: platform AdminSecurity instruments (see API registration)
+- Historical label (Wave 1–3): `Tycoon.Backend.Api.AdminSecurity` may still appear on older dashboards
+- Service name: prefer `synaptix-backend` (legacy `tycoon-backend` dual-publish where configured)
 
 ## Counters
 - `admin_auth_events_total`

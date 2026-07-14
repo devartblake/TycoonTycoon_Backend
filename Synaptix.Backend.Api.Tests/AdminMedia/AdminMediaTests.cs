@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -8,12 +8,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminMedia
 {
-    public sealed class AdminMediaTests : IClassFixture<TycoonApiFactory>
+    public sealed class AdminMediaTests : IClassFixture<SynaptixApiFactory>
     {
-        private readonly TycoonApiFactory _factory;
+        private readonly SynaptixApiFactory _factory;
         private readonly HttpClient _http;
 
-        public AdminMediaTests(TycoonApiFactory factory)
+        public AdminMediaTests(SynaptixApiFactory factory)
         {
             _factory = factory;
             _http = factory.CreateClient().WithAdminOpsKey();

@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Shared.Contracts.Dtos;
@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Matches;
 
-public sealed class MatchQueryTests : IClassFixture<TycoonApiFactory>
+public sealed class MatchQueryTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public MatchQueryTests(TycoonApiFactory factory)
+    public MatchQueryTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

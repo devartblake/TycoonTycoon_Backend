@@ -10,11 +10,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminStorage;
 
-public sealed class AdminStorageEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminStorageEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AdminStorageEndpointsTests(TycoonApiFactory factory)
+    public AdminStorageEndpointsTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient().WithAdminOpsKey();
     }

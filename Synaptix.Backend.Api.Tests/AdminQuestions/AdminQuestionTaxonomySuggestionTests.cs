@@ -184,7 +184,7 @@ public sealed class AdminQuestionTaxonomySuggestionTests : IClassFixture<AdminQu
             "fake-taxonomy-v1",
             warnings);
 
-    public sealed class Factory : TycoonApiFactory
+    public sealed class Factory : SynaptixApiFactory
     {
         public FakeQuestionTaxonomySidecarClient Sidecar { get; } = new();
 

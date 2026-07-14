@@ -39,7 +39,7 @@ public static class InitLocalCommand
         // Write super-admin credential file for local dev convenience
         if (result.Values.TryGetValue("SUPER_ADMIN_PASSWORD", out var adminPass))
         {
-            var email = cfg["SUPER_ADMIN_EMAIL"] ?? "admin@tycoon.local";
+            var email = cfg["SUPER_ADMIN_EMAIL"] ?? "admin@synaptix.local";
             Directory.CreateDirectory(Path.GetDirectoryName(superAdminPath)!);
             await File.WriteAllTextAsync(superAdminPath, $"""
                 Synaptix Super Admin — LOCAL ONLY
@@ -89,7 +89,8 @@ public static class InitLocalCommand
         while (dir is not null)
         {
             if (File.Exists(Path.Combine(dir, "TycoonTycoon_Backend.slnx")) ||
-                File.Exists(Path.Combine(dir, "TycoonTycoon_Backend.sln")))
+                File.Exists(Path.Combine(dir, "TycoonTycoon_Backend.sln")) ||
+                File.Exists(Path.Combine(dir, "Synaptix_Backend.slnx")))
                 return dir;
             dir = Directory.GetParent(dir)?.FullName;
         }

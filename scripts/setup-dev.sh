@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Tycoon Backend - Development Environment Setup Script (Linux/macOS)
+# Synaptix Backend - Development Environment Setup Script (Linux/macOS)
 # =============================================================================
 # This script automates the setup of your local development environment.
 # It checks for required tools, validates configuration, and helps start services.
@@ -237,7 +237,7 @@ check_service_health() {
 # =============================================================================
 
 main() {
-    print_header "Tycoon Backend - Development Environment Setup"
+    print_header "Synaptix Backend - Development Environment Setup"
     
     echo "This script will:"
     echo "  1. Check for required development tools"

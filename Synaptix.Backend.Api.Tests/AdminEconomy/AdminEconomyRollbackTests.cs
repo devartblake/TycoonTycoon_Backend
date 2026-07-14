@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,12 +9,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminEconomy;
 
-public sealed class AdminEconomyRollbackTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminEconomyRollbackTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _admin;
 
-    public AdminEconomyRollbackTests(TycoonApiFactory factory)
+    public AdminEconomyRollbackTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();

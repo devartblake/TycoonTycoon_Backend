@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
@@ -6,11 +6,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Matchmaking;
 
-public sealed class MatchmakingQueueTests : IClassFixture<TycoonApiFactory>
+public sealed class MatchmakingQueueTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _client;
 
-    public MatchmakingQueueTests(TycoonApiFactory factory)
+    public MatchmakingQueueTests(SynaptixApiFactory factory)
     {
         _client = factory.CreateClient();
     }

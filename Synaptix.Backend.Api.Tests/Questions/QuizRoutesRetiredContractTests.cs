@@ -4,11 +4,11 @@ using Synaptix.Backend.Api.Tests.TestHost;
 
 namespace Synaptix.Backend.Api.Tests.Questions;
 
-public sealed class QuizRoutesRetiredContractTests : IClassFixture<TycoonApiFactory>
+public sealed class QuizRoutesRetiredContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public QuizRoutesRetiredContractTests(TycoonApiFactory factory)
+    public QuizRoutesRetiredContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

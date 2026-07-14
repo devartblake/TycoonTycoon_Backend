@@ -7,12 +7,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminConfig;
 
-public sealed class AdminConfigEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminConfigEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public AdminConfigEndpointsTests(TycoonApiFactory factory)
+    public AdminConfigEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();

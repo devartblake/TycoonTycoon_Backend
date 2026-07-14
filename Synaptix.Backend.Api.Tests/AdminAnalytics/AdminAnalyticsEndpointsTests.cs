@@ -17,11 +17,11 @@ namespace Synaptix.Backend.Api.Tests.AdminAnalytics;
 /// Because IRollupRebuilder is only registered when Elastic is configured,
 /// these tests inject a no-op stub via ConfigureTestServices.
 /// </summary>
-public sealed class AdminAnalyticsEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminAnalyticsEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public AdminAnalyticsEndpointsTests(TycoonApiFactory factory)
+    public AdminAnalyticsEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

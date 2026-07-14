@@ -5,7 +5,7 @@
 #
 # Usage:
 #   docker compose -f docker/compose.yml -f docker/compose.smoke.yml up -d
-#   SMOKE_ADMIN_EMAIL=smoke-admin@tycoon.local \
+#   SMOKE_ADMIN_EMAIL=smoke-admin@synaptix.local \
 #   SMOKE_ADMIN_PASSWORD=SmokeTest123! \
 #   docker compose -f docker/compose.yml -f docker/compose.smoke.yml up -d
 

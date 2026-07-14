@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # Connectivity to tycoon-api (injected by Aspire service discovery or Docker)
+    # Connectivity to synaptix-api / backend-api (Aspire service discovery or Docker)
     backend_base_url: str = "http://localhost:5000"
     # gRPC endpoint for the backend-api (HTTP/2, port 5001)
     backend_grpc_url: str = "localhost:5001"
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     rebalance_alert_min_attempts: int = 5
     rebalance_alert_error_rate_threshold: float = 0.3
     rebalance_alert_blocked_rate_threshold: float = 0.6
-    rebalance_metrics_index: str = "tycoon_rebalance_metrics"
+    rebalance_metrics_index: str = "synaptix_rebalance_metrics"
     rebalance_alert_webhook_url: str = ""
     rebalance_rollout_max_metrics_age_minutes: int = 120
     rebalance_rollout_max_dry_run_age_minutes: int = 180

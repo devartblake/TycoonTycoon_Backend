@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Shared.Contracts.Dtos;
@@ -6,11 +6,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminQuestions
 {
-    public sealed class AdminQuestionsImportExportTests : IClassFixture<TycoonApiFactory>
+    public sealed class AdminQuestionsImportExportTests : IClassFixture<SynaptixApiFactory>
     {
         private readonly HttpClient _http;
 
-        public AdminQuestionsImportExportTests(TycoonApiFactory factory)
+        public AdminQuestionsImportExportTests(SynaptixApiFactory factory)
         {
             _http = factory.CreateClient().WithAdminOpsKey();
         }

@@ -6,11 +6,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Users;
 
-public sealed class UserProfilePersistenceTests : IClassFixture<TycoonApiFactory>
+public sealed class UserProfilePersistenceTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public UserProfilePersistenceTests(TycoonApiFactory factory)
+    public UserProfilePersistenceTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

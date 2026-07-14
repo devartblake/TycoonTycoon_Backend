@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option csharp_namespace = "Synaptix.Backend.Api.Grpc";
 
-package tycoon.sidecar;
+package synaptix.sidecar;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SidecarService — called by the Python FastAPI sidecar to communicate with

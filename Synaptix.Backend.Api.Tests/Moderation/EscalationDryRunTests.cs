@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
@@ -7,12 +7,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Moderation;
 
-public sealed class EscalationDryRunTests : IClassFixture<TycoonApiFactory>
+public sealed class EscalationDryRunTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _admin;
 
-    public EscalationDryRunTests(TycoonApiFactory factory)
+    public EscalationDryRunTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();

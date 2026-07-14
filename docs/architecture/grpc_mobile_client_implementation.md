@@ -21,7 +21,7 @@ The backend exposes a gRPC service alongside the existing REST API and SignalR h
 
 ## Service Definition
 
-**File:** `protos/mobile.proto` — package `tycoon.mobile`
+**File:** `protos/mobile.proto` — package `synaptix.mobile`
 
 ### RPCs
 

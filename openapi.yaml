@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: TycoonTycoon Backend API
+  title: Synaptix Backend API
   description: |
-    Comprehensive REST API for TycoonTycoon game backend.
+    Comprehensive REST API for the Synaptix game backend.
 
     **Transport Layers:**
     - REST/HTTP: Standard synchronous operations (auth, store, leaderboards, etc.)
@@ -30,14 +30,15 @@ info:
   version: 1.0.0
   contact:
     name: API Support
-    email: api-support@tycoon-tycoon.dev
+    email: api-support@synaptix.local
   license:
     name: Proprietary
 
 servers:
-  - url: https://api.tycoonplay.com/api/v1
+  # Update hostnames when public DNS is finalized (legacy tycoonplay hosts may still be in use).
+  - url: https://api.synaptix.app/api/v1
     description: Production environment
-  - url: https://api-staging.tycoonplay.com/api/v1
+  - url: https://api-staging.synaptix.app/api/v1
     description: Staging environment
   - url: http://localhost:5000/api/v1
     description: Local development
@@ -87,7 +88,7 @@ components:
           format: uuid
         handle:
           type: string
-          example: "tycoon_master"
+          example: "synaptix_master"
         email:
           type: string
           format: email

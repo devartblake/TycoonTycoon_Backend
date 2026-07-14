@@ -15,7 +15,7 @@
 # The service auto-migrates its own schema ("compliance") on startup.
 # ============================================================
 
-name: tycoon-compliance
+name: synaptix-compliance
 
 services:
 

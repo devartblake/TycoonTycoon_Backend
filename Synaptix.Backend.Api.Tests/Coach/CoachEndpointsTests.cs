@@ -8,11 +8,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Coach;
 
-public sealed class CoachEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class CoachEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public CoachEndpointsTests(TycoonApiFactory factory)
+    public CoachEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

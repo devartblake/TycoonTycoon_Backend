@@ -80,7 +80,7 @@ public sealed class StoreIapStrictValidationContractTests : IClassFixture<Strict
     }
 }
 
-public sealed class StrictIapConfiguredFactory : TycoonApiFactory
+public sealed class StrictIapConfiguredFactory : SynaptixApiFactory
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

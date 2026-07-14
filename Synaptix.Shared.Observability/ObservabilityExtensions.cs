@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.AspNetCore.Builder;                  // WebApplicationBuilder
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,9 +23,9 @@ namespace Synaptix.Shared.Observability
         // -----------------------------
         public static WebApplicationBuilder AddObservability(this WebApplicationBuilder builder, string? serviceName = null)
         {
-            // Keep your original convention; adjust if your TycoonObservability differs.
+            // Keep your original convention; adjust if your SynaptixObservability differs.
             serviceName ??= builder.Configuration["Observability:ServiceName"]
-                         ?? TycoonObservability.ServiceName;
+                         ?? SynaptixObservability.ServiceName;
 
             ConfigureSerilog(builder.Configuration);
 
@@ -50,7 +50,7 @@ namespace Synaptix.Shared.Observability
             string? serviceName = null)
         {
             serviceName ??= configuration["Observability:ServiceName"]
-                         ?? TycoonObservability.ServiceName;
+                         ?? SynaptixObservability.ServiceName;
 
             // For Generic Host, you typically call .UseSerilog(...) on the host builder itself.
             // This ensures Log.Logger exists for anything that logs early.
@@ -88,7 +88,7 @@ namespace Synaptix.Shared.Observability
                 .WithTracing(t =>
                 {
                     t.SetResourceBuilder(resource)
-                     .AddSource(TycoonObservability.ActivitySourceName)
+                     .AddSource(SynaptixObservability.ActivitySourceName)
                      .AddAspNetCoreInstrumentation()
                      .AddHttpClientInstrumentation();
 
@@ -98,7 +98,7 @@ namespace Synaptix.Shared.Observability
                 .WithMetrics(m =>
                 {
                     m.SetResourceBuilder(resource)
-                     .AddMeter(TycoonObservability.MeterName)
+                     .AddMeter(SynaptixObservability.MeterName)
                      .AddAspNetCoreInstrumentation()
                      .AddHttpClientInstrumentation()
                      .AddRuntimeInstrumentation()

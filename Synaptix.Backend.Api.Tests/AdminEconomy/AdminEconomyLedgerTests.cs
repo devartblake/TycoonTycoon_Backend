@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Shared.Contracts.Dtos;
@@ -6,11 +6,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminEconomy;
 
-public sealed class AdminEconomyLedgerTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminEconomyLedgerTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AdminEconomyLedgerTests(TycoonApiFactory factory)
+    public AdminEconomyLedgerTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient().WithAdminOpsKey();
     }

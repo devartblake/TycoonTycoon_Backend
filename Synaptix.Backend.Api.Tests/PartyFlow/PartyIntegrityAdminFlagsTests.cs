@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,15 +12,15 @@ using MatchEntity = Synaptix.Backend.Domain.Entities.Match;
 
 namespace Synaptix.Backend.Api.Tests.Party;
 
-public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFactory>
+public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
     // Adjust if your match submit route differs
     private const string SubmitRoute = "/api/v1/matches/submit";
 
-    public PartyIntegrityAdminFlagsTests(TycoonApiFactory factory)
+    public PartyIntegrityAdminFlagsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();
@@ -120,7 +120,7 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDb>();
 
-        // ✅ Party (disambiguated)
+        // ? Party (disambiguated)
         var party = new PartyEntity(leaderId);
 
         // Force Party.Id (private setter) via reflection
@@ -132,7 +132,7 @@ public sealed class PartyIntegrityAdminFlagsTests : IClassFixture<TycoonApiFacto
         db.PartyMembers.Add(new PartyMember(partyId, leaderId, PartyRole.Leader));
         db.PartyMembers.Add(new PartyMember(partyId, mateId, PartyRole.Member));
 
-        // ✅ Match ctor only supports (hostPlayerId, mode)
+        // ? Match ctor only supports (hostPlayerId, mode)
         var match = new MatchEntity(hostPlayerId: leaderId, mode: "ranked");
         SetEntityId(match, matchId);
         db.Matches.Add(match);

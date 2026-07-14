@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -8,12 +8,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminSkills;
 
-public sealed class AdminSkillSeedTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminSkillSeedTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _admin;
 
-    public AdminSkillSeedTests(TycoonApiFactory factory)
+    public AdminSkillSeedTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _admin = factory.CreateClient().WithAdminOpsKey();

@@ -1,4 +1,19 @@
-.PHONY: migrate migrate-reset migrate-status migrate-local migrate-local-reset bootstrap build up down logs smoke smoke-live smoke-routes
+.PHONY: migrate migrate-reset migrate-status migrate-local migrate-local-reset bootstrap build up down logs smoke smoke-live smoke-routes dev dev-win happy-path react-route-inventory
+
+# ── Local happy path (E3 / docs/setup/LOCAL_DEV_HAPPY_PATH.md) ───────────────
+
+## One-command local bootstrap (Linux/macOS): secrets → compose stack
+dev happy-path:
+	@chmod +x ./scripts/bootstrap-local.sh ./scripts/bootstrap-stack.sh 2>/dev/null || true
+	@./scripts/bootstrap-local.sh
+
+## Windows PowerShell bootstrap
+dev-win:
+	@powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bootstrap-local.ps1
+
+## React admin path inventory vs backend (C / H3b)
+react-route-inventory:
+	@python scripts/compare-react-admin-routes.py
 
 # ── Migration targets ────────────────────────────────────────────────────────
 

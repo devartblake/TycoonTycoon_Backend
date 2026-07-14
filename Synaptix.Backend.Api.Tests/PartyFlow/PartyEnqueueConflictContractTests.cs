@@ -7,11 +7,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Party;
 
-public sealed class PartyEnqueueConflictContractTests : IClassFixture<TycoonApiFactory>
+public sealed class PartyEnqueueConflictContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public PartyEnqueueConflictContractTests(TycoonApiFactory factory)
+    public PartyEnqueueConflictContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

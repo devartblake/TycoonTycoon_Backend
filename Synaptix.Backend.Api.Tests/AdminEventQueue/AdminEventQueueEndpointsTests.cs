@@ -8,12 +8,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminEventQueue;
 
-public sealed class AdminEventQueueEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminEventQueueEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public AdminEventQueueEndpointsTests(TycoonApiFactory factory)
+    public AdminEventQueueEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();

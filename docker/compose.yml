@@ -704,7 +704,9 @@ services:
       start_period: 20s
 
   # ================================
-  # Operator Dashboard (Django) — PRIMARY/AUTHORITATIVE TARGET
+  # Operator Dashboard (Django) — FALLBACK / LEGACY (R4+)
+  # React is the canonical operator UI; keep Django for rollback only.
+  # See docs/operator-dashboard/OPERATOR_DASHBOARD_DIRECTION_2026-07-13.md
   # ================================
   operator-dashboard:
     build:
@@ -742,7 +744,9 @@ services:
       start_period: 20s
 
   # ================================
-  # Operator Dashboard (React) — Next-gen frontend
+  # Operator Dashboard (React) — PRIMARY / CANONICAL (R4+)
+  # Staging/prod cutover: point admin host Traefik at this service (port 8300).
+  # Parallel-run: docs/operator-dashboard/REACT_STAGING_PARALLEL_RUN.md
   # ================================
   operator-dashboard-react:
     build:

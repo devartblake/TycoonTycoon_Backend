@@ -1,9 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Tycoon Mobile — Flutter gRPC client example
+// Synaptix Mobile — Flutter gRPC client example
 //
 // This file shows how to call the MobileMatchService gRPC endpoints from a
 // Flutter app.  It is NOT production code — adapt patterns to your app's
 // state management (Riverpod / Bloc / etc.).
+//
+// Wire package (Wave 4): synaptix.mobile
+//   Full method paths look like:
+//     /synaptix.mobile.MobileMatchService/StartMatch
+//   Clients generated against package tycoon.mobile must be regenerated.
 //
 // Setup (pubspec.yaml):
 //   dependencies:
@@ -29,24 +34,24 @@ import 'dart:async';
 import 'package:grpc/grpc.dart';
 import 'package:fixnum/fixnum.dart';
 
-// Generated from protos/mobile.proto
+// Generated from protos/mobile.proto (package synaptix.mobile)
 // ignore: uri_does_not_exist
-import 'package:tycoon_app/src/grpc/generated/mobile.pb.dart';
+import 'package:synaptix_app/src/grpc/generated/mobile.pb.dart';
 // ignore: uri_does_not_exist
-import 'package:tycoon_app/src/grpc/generated/mobile.pbgrpc.dart';
+import 'package:synaptix_app/src/grpc/generated/mobile.pbgrpc.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TycoonGrpcClient — singleton wrapper around the gRPC channel + stub
+// SynaptixGrpcClient — singleton wrapper around the gRPC channel + stub
 // ─────────────────────────────────────────────────────────────────────────────
 
-class TycoonGrpcClient {
-  static TycoonGrpcClient? _instance;
+class SynaptixGrpcClient {
+  static SynaptixGrpcClient? _instance;
 
   final ClientChannel _channel;
   final MobileMatchServiceClient _stub;
   final String _bearerToken;
 
-  TycoonGrpcClient._({
+  SynaptixGrpcClient._({
     required ClientChannel channel,
     required MobileMatchServiceClient stub,
     required String bearerToken,
@@ -57,8 +62,8 @@ class TycoonGrpcClient {
   /// Create (or replace) the singleton.
   ///
   /// Call after the user logs in and you have a JWT:
-  ///   TycoonGrpcClient.init(host: 'api.tycoon.app', port: 5001, token: jwt);
-  factory TycoonGrpcClient.init({
+  ///   SynaptixGrpcClient.init(host: 'api.synaptix.app', port: 5001, token: jwt);
+  factory SynaptixGrpcClient.init({
     required String host,
     required int port,
     required String bearerToken,
@@ -81,7 +86,7 @@ class TycoonGrpcClient {
     );
 
     final stub = MobileMatchServiceClient(channel);
-    _instance = TycoonGrpcClient._(
+    _instance = SynaptixGrpcClient._(
       channel: channel,
       stub: stub,
       bearerToken: bearerToken,
@@ -89,8 +94,8 @@ class TycoonGrpcClient {
     return _instance!;
   }
 
-  static TycoonGrpcClient get instance {
-    assert(_instance != null, 'Call TycoonGrpcClient.init() first');
+  static SynaptixGrpcClient get instance {
+    assert(_instance != null, 'Call SynaptixGrpcClient.init() first');
     return _instance!;
   }
 
@@ -257,8 +262,8 @@ class MatchStreamSession {
 
 Future<void> exampleUsage() async {
   // 1. Initialize after login (do this once, store the client)
-  final client = TycoonGrpcClient.init(
-    host: 'api.tycoon.app',
+  final client = SynaptixGrpcClient.init(
+    host: 'api.synaptix.app',
     port: 5001,
     bearerToken: '<jwt-from-login>',
     useTls: true,

@@ -7,11 +7,11 @@ namespace Synaptix.Backend.Api.Tests.AdminDashboard;
 
 // Covers the operator overview route added for #418: GET /admin/dashboard/stats,
 // which projects the registered ASP.NET health checks into the dashboard shape.
-public sealed class AdminDashboardEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminDashboardEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _admin;
 
-    public AdminDashboardEndpointsTests(TycoonApiFactory factory)
+    public AdminDashboardEndpointsTests(SynaptixApiFactory factory)
     {
         _admin = factory.CreateClient().WithAdminOpsKey();
     }

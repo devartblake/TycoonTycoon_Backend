@@ -42,7 +42,7 @@ public sealed class AdminEconomyBalanceValidationFallbackTests : IClassFixture<A
     }
 }
 
-public sealed class AdminEconomyFallbackFactory : TycoonApiFactory
+public sealed class AdminEconomyFallbackFactory : SynaptixApiFactory
 {
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {

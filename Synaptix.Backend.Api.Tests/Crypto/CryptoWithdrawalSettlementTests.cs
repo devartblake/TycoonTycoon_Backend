@@ -18,12 +18,12 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Crypto;
 
-public sealed class CryptoWithdrawalSettlementTests : IClassFixture<TycoonApiFactory>
+public sealed class CryptoWithdrawalSettlementTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public CryptoWithdrawalSettlementTests(TycoonApiFactory factory)
+    public CryptoWithdrawalSettlementTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

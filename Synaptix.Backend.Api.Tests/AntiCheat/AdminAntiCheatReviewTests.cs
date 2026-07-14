@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,11 +13,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminAntiCheat;
 
-public sealed class AdminAntiCheatReviewTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminAntiCheatReviewTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     
-    public AdminAntiCheatReviewTests(TycoonApiFactory factory)
+    public AdminAntiCheatReviewTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

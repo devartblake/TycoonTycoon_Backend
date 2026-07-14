@@ -5,7 +5,7 @@ namespace Synaptix.Backend.Infrastructure.Storage
         public string Endpoint { get; set; } = string.Empty;
         public string AccessKey { get; set; } = string.Empty;
         public string SecretKey { get; set; } = string.Empty;
-        public string Bucket { get; set; } = "tycoon-assets";
+        public string Bucket { get; set; } = "synaptix-assets";
         public bool UseSSL { get; set; } = false;
 
         /// <summary>

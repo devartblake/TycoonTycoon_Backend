@@ -149,7 +149,7 @@ cookie_jar=$(mktemp)
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 echo "════════════════════════════════════════════════════════"
-echo "  Tycoon – Compose Smoke Test"
+echo "  Synaptix – Compose Smoke Test"
 echo "  API:       $API_URL"
 echo "  Dashboard: $DASHBOARD_URL"
 echo "════════════════════════════════════════════════════════"

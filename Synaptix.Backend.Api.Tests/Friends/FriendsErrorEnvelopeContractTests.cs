@@ -5,11 +5,11 @@ using Synaptix.Backend.Api.Tests.TestHost;
 
 namespace Synaptix.Backend.Api.Tests.Friends;
 
-public sealed class FriendsErrorEnvelopeContractTests : IClassFixture<TycoonApiFactory>
+public sealed class FriendsErrorEnvelopeContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public FriendsErrorEnvelopeContractTests(TycoonApiFactory factory)
+    public FriendsErrorEnvelopeContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

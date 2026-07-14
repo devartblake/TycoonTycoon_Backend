@@ -93,7 +93,7 @@ These items must remain stable in BE Packet A:
 | ServiceName `Tycoon.Backend.Api` | Observability config | Telemetry pipeline dependency |
 | MongoDB database `tycoon_analytics` | Analytics config | Data pipeline dependency |
 | Elasticsearch aliases `tycoon-qa-*` | Analytics writers | Data pipeline dependency |
-| gRPC package `tycoon.sidecar` | protos/sidecar.proto | Contract — breaking change |
+| gRPC package `synaptix.sidecar` | protos/sidecar.proto | Contract — wire package renamed from `tycoon.sidecar` (Wave 4) |
 | HttpClient name `"tycoon-api"` | Dashboard Program.cs | Internal wiring — low visibility |
 | Cookie name `tycoon-ops-dashboard` | themeConfig.ts | Browser persistence key |
 | Endpoint paths | All API endpoints | Contract — breaking change |

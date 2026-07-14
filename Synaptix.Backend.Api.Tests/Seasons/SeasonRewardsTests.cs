@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,11 +11,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Seasons;
 
-public sealed class SeasonRewardsTests : IClassFixture<TycoonApiFactory>
+public sealed class SeasonRewardsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public SeasonRewardsTests(TycoonApiFactory factory) => _factory = factory;
+    public SeasonRewardsTests(SynaptixApiFactory factory) => _factory = factory;
     private static void SetPrivate<T>(object obj, string propName, T value)
     {
         var p = obj.GetType().GetProperty(propName);

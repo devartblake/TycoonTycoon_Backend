@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Synaptix.Backend.Api.Tests.TestHost;
@@ -9,12 +9,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Referrals
 {
-    public sealed class ReferralFlowTests : IClassFixture<TycoonApiFactory>
+    public sealed class ReferralFlowTests : IClassFixture<SynaptixApiFactory>
     {
-        private readonly TycoonApiFactory _factory;
+        private readonly SynaptixApiFactory _factory;
         private readonly HttpClient _http;
 
-        public ReferralFlowTests(TycoonApiFactory factory)
+        public ReferralFlowTests(SynaptixApiFactory factory)
         {
             _factory = factory;
             _http = factory.CreateClient();
@@ -26,7 +26,7 @@ namespace Synaptix.Backend.Api.Tests.Referrals
             var ownerId = Guid.NewGuid();
             var redeemerId = Guid.NewGuid();
 
-            // Seed player rows — RedeemReferralCode requires both to exist in Players table
+            // Seed player rows � RedeemReferralCode requires both to exist in Players table
             await using (var scope = _factory.Services.CreateAsyncScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDb>();

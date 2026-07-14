@@ -16,11 +16,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Messaging;
 
-public sealed class MessagesEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class MessagesEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public MessagesEndpointsTests(TycoonApiFactory factory)
+    public MessagesEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

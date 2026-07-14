@@ -7,11 +7,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AdminUsers;
 
-public sealed class AdminPlayerLookupEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminPlayerLookupEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public AdminPlayerLookupEndpointsTests(TycoonApiFactory factory)
+    public AdminPlayerLookupEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

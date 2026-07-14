@@ -7,12 +7,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Moderation;
 
-public sealed class PartyEnqueueModerationContractTests : IClassFixture<TycoonApiFactory>
+public sealed class PartyEnqueueModerationContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _admin;
     private readonly HttpClient _public;
 
-    public PartyEnqueueModerationContractTests(TycoonApiFactory factory)
+    public PartyEnqueueModerationContractTests(SynaptixApiFactory factory)
     {
         _admin = factory.CreateClient().WithAdminOpsKey();
         _public = factory.CreateClient();

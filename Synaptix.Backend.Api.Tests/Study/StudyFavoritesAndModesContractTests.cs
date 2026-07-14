@@ -10,11 +10,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Study;
 
-public sealed class StudyFavoritesAndModesContractTests : IClassFixture<TycoonApiFactory>
+public sealed class StudyFavoritesAndModesContractTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public StudyFavoritesAndModesContractTests(TycoonApiFactory factory)
+    public StudyFavoritesAndModesContractTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

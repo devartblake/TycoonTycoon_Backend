@@ -6,11 +6,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.AdminSeasons;
 
-public sealed class AdminSeasonsNotFoundContractTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminSeasonsNotFoundContractTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public AdminSeasonsNotFoundContractTests(TycoonApiFactory factory)
+    public AdminSeasonsNotFoundContractTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

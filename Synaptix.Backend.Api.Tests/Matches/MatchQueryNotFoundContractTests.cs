@@ -4,11 +4,11 @@ using Synaptix.Backend.Api.Tests.TestHost;
 
 namespace Synaptix.Backend.Api.Tests.Matches;
 
-public sealed class MatchQueryNotFoundContractTests : IClassFixture<TycoonApiFactory>
+public sealed class MatchQueryNotFoundContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public MatchQueryNotFoundContractTests(TycoonApiFactory factory)
+    public MatchQueryNotFoundContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

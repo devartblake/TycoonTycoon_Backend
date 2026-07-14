@@ -11,17 +11,17 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.LearningModules;
 
-public sealed class LearningModulesEndpointsContractTests : IClassFixture<TycoonApiFactory>
+public sealed class LearningModulesEndpointsContractTests : IClassFixture<SynaptixApiFactory>
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter() }
     };
 
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public LearningModulesEndpointsContractTests(TycoonApiFactory factory)
+    public LearningModulesEndpointsContractTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

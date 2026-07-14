@@ -1,4 +1,4 @@
-ï»¿using Hangfire;
+using Hangfire;
 using Hangfire.InMemory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -13,10 +13,10 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.TestHost
 {
-    public class TycoonApiFactory : WebApplicationFactory<Program>
+    public class SynaptixApiFactory : WebApplicationFactory<Program>
     {
         public const string TestAdminKey = "test-admin-ops-key";
-        private readonly string _inMemoryDatabaseName = $"tycoon-tests-{Guid.NewGuid():N}";
+        private readonly string _inMemoryDatabaseName = $"synaptix-tests-{Guid.NewGuid():N}";
 
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
         {
@@ -31,9 +31,9 @@ namespace Synaptix.Backend.Api.Tests.TestHost
             builder.UseSetting("Testing:UseInMemoryDb", "true");
             // InMemoryDbName must be set via UseSetting (host config) so it is visible
             // when AddInfrastructure() calls cfg["Testing:InMemoryDbName"] during service
-            // registration â€” ConfigureAppConfiguration additions arrive too late.
+            // registration — ConfigureAppConfiguration additions arrive too late.
             builder.UseSetting("Testing:InMemoryDbName", _inMemoryDatabaseName);
-            // Disable the relational schema startup gate â€” it calls GetDbConnection() which
+            // Disable the relational schema startup gate — it calls GetDbConnection() which
             // is not available on the EF Core in-memory provider used during tests.
             builder.UseSetting("SchemaGate:Enabled", "false");
             builder.UseSetting("SchemaGate:StartupGateEnabled", "false");

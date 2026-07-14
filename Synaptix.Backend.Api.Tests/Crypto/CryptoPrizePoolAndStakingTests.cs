@@ -17,12 +17,12 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Crypto;
 
-public sealed class CryptoPrizePoolAndStakingTests : IClassFixture<TycoonApiFactory>
+public sealed class CryptoPrizePoolAndStakingTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public CryptoPrizePoolAndStakingTests(TycoonApiFactory factory)
+    public CryptoPrizePoolAndStakingTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

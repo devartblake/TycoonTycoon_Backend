@@ -9,11 +9,11 @@ namespace Synaptix.Backend.Api.Tests.AdminUsers;
 
 // Covers GET /admin/player-lookup/search — the multi-result search added for the
 // operator dashboard (the /resolve route only returns a single exact match).
-public sealed class AdminPlayerSearchEndpointTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminPlayerSearchEndpointTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public AdminPlayerSearchEndpointTests(TycoonApiFactory factory)
+    public AdminPlayerSearchEndpointTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient().WithAdminOpsKey();
     }

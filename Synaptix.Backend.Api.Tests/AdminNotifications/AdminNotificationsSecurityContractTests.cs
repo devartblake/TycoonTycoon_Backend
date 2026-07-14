@@ -6,12 +6,12 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.AdminNotifications;
 
-public sealed class AdminNotificationsSecurityContractTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminNotificationsSecurityContractTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public AdminNotificationsSecurityContractTests(TycoonApiFactory factory)
+    public AdminNotificationsSecurityContractTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient().WithAdminOpsKey();

@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,11 +9,11 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Leaderboards;
 
-public sealed class RankedLeaderboardsTests : IClassFixture<TycoonApiFactory>
+public sealed class RankedLeaderboardsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public RankedLeaderboardsTests(TycoonApiFactory factory) => _factory = factory;
+    public RankedLeaderboardsTests(SynaptixApiFactory factory) => _factory = factory;
 
     [Fact]
     public async Task GetRankedLeaderboard_ReturnsGridShape()

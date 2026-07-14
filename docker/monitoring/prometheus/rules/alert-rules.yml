@@ -306,6 +306,88 @@ groups:
           summary: "MongoDB Replication Lag High"
           description: "Replication lag is {{ $value }}s (threshold: 10s)"
 
+  # ── Alpha launch minimum set (H6 / ops/runbooks/alpha-launch-alerts.md) ──
+  # Metric names assume OTEL→Prometheus http_* / up / exporter series used by
+  # this stack. Tune label matchers if your exporter renames series in staging.
+  - name: alpha-launch
+    interval: 30s
+    rules:
+      - alert: AlphaApi5xxRateHigh
+        expr: |
+          (
+            sum(rate(http_requests_total{job="backend-api",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total{job="backend-api"}[5m])), 0.001)
+          ) > 0.02
+          or
+          sum(rate(http_requests_total{job="backend-api",status=~"5.."}[5m])) > 0.166
+        for: 5m
+        labels:
+          severity: critical
+          service: backend-api
+          runbook: alpha-launch-alerts
+        annotations:
+          summary: "API 5xx rate high (Alpha minimum set)"
+          description: "5xx share or absolute rate exceeded Alpha thresholds for 5m. See ops/runbooks/alpha-launch-alerts.md"
+
+      - alert: AlphaAuthFailureSpike
+        expr: |
+          sum(rate(http_requests_total{job="backend-api",status=~"401|403",endpoint=~".*auth.*"}[5m])) > 0.83
+          or
+          sum(rate(admin_auth_events_total{outcome="unauthorized"}[5m])) > 0.33
+        for: 5m
+        labels:
+          severity: warning
+          service: backend-api
+          runbook: alpha-launch-alerts
+        annotations:
+          summary: "Auth 401/403 spike (Alpha minimum set)"
+          description: "Elevated unauthorized traffic on auth/admin surfaces. Check JWT config and client contract drift."
+
+      - alert: AlphaBackendScrapeDown
+        expr: up{job="backend-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend-api
+          runbook: alpha-launch-alerts
+        annotations:
+          summary: "Backend API scrape target down"
+          description: "Prometheus cannot scrape backend-api for >1m."
+
+      - alert: AlphaRedisExporterDown
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: redis
+          runbook: alpha-launch-alerts
+        annotations:
+          summary: "Redis exporter/target down"
+          description: "Redis metrics target down for >2m (presence/cache/rate-limit risk)."
+
+      - alert: AlphaPostgresExporterDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql
+          runbook: alpha-launch-alerts
+        annotations:
+          summary: "Postgres exporter/target down"
+          description: "PostgreSQL metrics target down for >1m."
+
+      - alert: AlphaAdminRateLimitSustained
+        expr: sum(rate(admin_rate_limit_rejected_total[5m])) > 0.166
+        for: 5m
+        labels:
+          severity: warning
+          service: backend-api
+          runbook: admin-security-incidents
+        annotations:
+          summary: "Sustained admin rate-limit rejects"
+          description: "admin_rate_limit_rejected_total elevated — see docs/observability/admin-security-metrics.md"
+
   - name: redis
     interval: 30s
     rules:

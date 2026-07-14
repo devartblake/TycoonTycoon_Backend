@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Shared.Contracts.Dtos;
@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.RateLimit;
 
-public sealed class MatchSubmitRateLimitTests : IClassFixture<TycoonApiFactory>
+public sealed class MatchSubmitRateLimitTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public MatchSubmitRateLimitTests(TycoonApiFactory factory)
+    public MatchSubmitRateLimitTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

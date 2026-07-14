@@ -19,7 +19,7 @@
 #   synaptix-data-protection-wrap (aes256-gcm96)
 # ============================================================
 
-name: tycoon-security
+name: synaptix-security
 
 services:
 

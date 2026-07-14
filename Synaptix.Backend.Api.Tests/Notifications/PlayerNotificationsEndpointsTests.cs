@@ -16,11 +16,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Notifications;
 
-public sealed class PlayerNotificationsEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class PlayerNotificationsEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
 
-    public PlayerNotificationsEndpointsTests(TycoonApiFactory factory)
+    public PlayerNotificationsEndpointsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
     }

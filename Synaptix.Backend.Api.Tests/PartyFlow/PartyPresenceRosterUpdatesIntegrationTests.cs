@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -8,12 +8,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.Party;
 
-public sealed class PartyPresenceRosterUpdatesIntegrationTests : IClassFixture<TycoonApiFactory>
+public sealed class PartyPresenceRosterUpdatesIntegrationTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public PartyPresenceRosterUpdatesIntegrationTests(TycoonApiFactory factory)
+    public PartyPresenceRosterUpdatesIntegrationTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();

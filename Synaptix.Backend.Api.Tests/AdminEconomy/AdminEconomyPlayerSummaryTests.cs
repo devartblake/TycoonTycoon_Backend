@@ -8,11 +8,11 @@ namespace Synaptix.Backend.Api.Tests.AdminEconomy;
 
 // Covers the operator economy-dashboard routes added for #421:
 // GET /admin/economy/players/{id} (per-player summary) and GET /admin/economy/stats (aggregate).
-public sealed class AdminEconomyPlayerSummaryTests : IClassFixture<TycoonApiFactory>
+public sealed class AdminEconomyPlayerSummaryTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _admin;
 
-    public AdminEconomyPlayerSummaryTests(TycoonApiFactory factory)
+    public AdminEconomyPlayerSummaryTests(SynaptixApiFactory factory)
     {
         _admin = factory.CreateClient().WithAdminOpsKey();
     }

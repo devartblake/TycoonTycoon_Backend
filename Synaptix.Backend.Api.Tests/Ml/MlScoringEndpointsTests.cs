@@ -8,11 +8,11 @@ using Synaptix.Shared.Contracts.Dtos;
 
 namespace Synaptix.Backend.Api.Tests.Ml;
 
-public sealed class MlScoringEndpointsTests : IClassFixture<TycoonApiFactory>
+public sealed class MlScoringEndpointsTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public MlScoringEndpointsTests(TycoonApiFactory factory)
+    public MlScoringEndpointsTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

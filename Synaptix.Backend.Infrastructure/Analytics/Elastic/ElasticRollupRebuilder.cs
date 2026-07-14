@@ -1,4 +1,4 @@
-﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Bulk;
 using Synaptix.Backend.Application.Analytics.Abstractions;
 using Synaptix.Backend.Infrastructure.Analytics.Mongo;
@@ -108,7 +108,7 @@ namespace Synaptix.Backend.Infrastructure.Analytics.Elastic
                 throw new InvalidOperationException(
                     $"Elastic bulk rebuild failed: {resp.ElasticsearchServerError}");
 
-            Synaptix.Shared.Observability.TycoonObservability.RollupRebuildDocsIndexed.Add(ops.Count);
+            Synaptix.Shared.Observability.SynaptixObservability.RollupRebuildDocsIndexed.Add(ops.Count);
         }
 
         /// <summary>

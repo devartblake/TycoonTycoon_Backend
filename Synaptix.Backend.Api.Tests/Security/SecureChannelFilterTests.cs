@@ -233,7 +233,7 @@ public sealed class SecureChannelFilterTests : IClassFixture<SecureChannelApiFac
 }
 
 /// Test factory that replaces IKmsPayloadClient with a controllable fake.
-public sealed class SecureChannelApiFactory : TycoonApiFactory
+public sealed class SecureChannelApiFactory : SynaptixApiFactory
 {
     public FakeKmsPayloadClient FakeKms { get; } = new();
 

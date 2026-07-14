@@ -264,9 +264,9 @@ def test_rebalance_metrics_prometheus_endpoint_exposes_counters():
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/plain")
     body = resp.text
-    assert "tycoon_rebalance_apply_attempts_total 1" in body
-    assert "tycoon_rebalance_apply_success_total 1" in body
-    assert "tycoon_rebalance_apply_error_total 0" in body
+    assert "synaptix_rebalance_apply_attempts_total 1" in body
+    assert "synaptix_rebalance_apply_success_total 1" in body
+    assert "synaptix_rebalance_apply_error_total 0" in body
 
 
 def test_rebalance_alerts_endpoint_emits_blocked_rate_alert():
@@ -297,7 +297,7 @@ def test_publish_rebalance_metrics_persists_snapshot_to_external_sink():
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "ok"
-    assert body["index"] == "tycoon_rebalance_metrics"
+    assert body["index"] == "synaptix_rebalance_metrics"
     assert len(app.state.elasticsearch.docs) == 1
     assert app.state.elasticsearch.docs[0]["document"]["totalApplyAttempts"] == 1
 
@@ -306,11 +306,11 @@ def test_rebalance_metrics_history_reads_from_external_sink():
     client, app = _make_client()
     # seed two snapshots (newest should be first by capturedAtUtc)
     app.state.elasticsearch.docs.append({
-        "index": "tycoon_rebalance_metrics",
+        "index": "synaptix_rebalance_metrics",
         "document": {"capturedAtUtc": "2026-03-22T10:00:00Z", "totalApplyAttempts": 1},
     })
     app.state.elasticsearch.docs.append({
-        "index": "tycoon_rebalance_metrics",
+        "index": "synaptix_rebalance_metrics",
         "document": {"capturedAtUtc": "2026-03-22T11:00:00Z", "totalApplyAttempts": 2},
     })
 
@@ -326,7 +326,7 @@ def test_rebalance_metrics_history_reads_from_external_sink():
 def test_rebalance_alerts_from_sink_uses_latest_snapshot():
     client, app = _make_client()
     app.state.elasticsearch.docs.append({
-        "index": "tycoon_rebalance_metrics",
+        "index": "synaptix_rebalance_metrics",
         "document": {
             "capturedAtUtc": "2026-03-22T11:00:00Z",
             "totalApplyAttempts": 10,
@@ -347,7 +347,7 @@ def test_rebalance_alerts_from_sink_uses_latest_snapshot():
 def test_dispatch_rebalance_alerts_sends_when_webhook_configured():
     client, app = _make_client()
     app.state.elasticsearch.docs.append({
-        "index": "tycoon_rebalance_metrics",
+        "index": "synaptix_rebalance_metrics",
         "document": {
             "capturedAtUtc": "2026-03-22T12:00:00Z",
             "totalApplyAttempts": 10,
@@ -382,7 +382,7 @@ def test_dispatch_rebalance_alerts_sends_when_webhook_configured():
 def test_alert_delivery_health_reflects_configuration_and_last_dispatch():
     client, app = _make_client()
     app.state.elasticsearch.docs.append({
-        "index": "tycoon_rebalance_metrics",
+        "index": "synaptix_rebalance_metrics",
         "document": {
             "capturedAtUtc": "2026-03-22T12:00:00Z",
             "totalApplyAttempts": 10,
@@ -431,7 +431,7 @@ def test_rollout_validation_report_passes_with_recent_signals():
     client, app = _make_client()
     now = datetime.now(timezone.utc)
     app.state.elasticsearch.docs.append({
-        "index": "tycoon_rebalance_metrics",
+        "index": "synaptix_rebalance_metrics",
         "document": {
             "capturedAtUtc": now.isoformat(),
             "totalApplyAttempts": 10,
@@ -473,7 +473,7 @@ def test_rollout_validation_report_fails_for_stale_or_missing_signals():
     client, app = _make_client()
     stale = datetime.now(timezone.utc) - timedelta(hours=12)
     app.state.elasticsearch.docs.append({
-        "index": "tycoon_rebalance_metrics",
+        "index": "synaptix_rebalance_metrics",
         "document": {
             "capturedAtUtc": stale.isoformat(),
             "totalApplyAttempts": 10,

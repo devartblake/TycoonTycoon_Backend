@@ -45,22 +45,22 @@ class SidecarServiceStub(object):
             channel: A grpc.Channel.
         """
         self.ReportAnalyticsEvent = channel.unary_unary(
-                '/tycoon.sidecar.SidecarService/ReportAnalyticsEvent',
+                '/synaptix.sidecar.SidecarService/ReportAnalyticsEvent',
                 request_serializer=sidecar__pb2.AnalyticsEventRequest.SerializeToString,
                 response_deserializer=sidecar__pb2.AnalyticsEventResponse.FromString,
                 _registered_method=True)
         self.StreamAnalyticsEvents = channel.stream_unary(
-                '/tycoon.sidecar.SidecarService/StreamAnalyticsEvents',
+                '/synaptix.sidecar.SidecarService/StreamAnalyticsEvents',
                 request_serializer=sidecar__pb2.AnalyticsEventRequest.SerializeToString,
                 response_deserializer=sidecar__pb2.StreamSummary.FromString,
                 _registered_method=True)
         self.SubmitInferenceResult = channel.unary_unary(
-                '/tycoon.sidecar.SidecarService/SubmitInferenceResult',
+                '/synaptix.sidecar.SidecarService/SubmitInferenceResult',
                 request_serializer=sidecar__pb2.InferenceResultRequest.SerializeToString,
                 response_deserializer=sidecar__pb2.InferenceResultResponse.FromString,
                 _registered_method=True)
         self.TriggerBackendAction = channel.unary_unary(
-                '/tycoon.sidecar.SidecarService/TriggerBackendAction',
+                '/synaptix.sidecar.SidecarService/TriggerBackendAction',
                 request_serializer=sidecar__pb2.BackendActionRequest.SerializeToString,
                 response_deserializer=sidecar__pb2.BackendActionResponse.FromString,
                 _registered_method=True)
@@ -132,9 +132,9 @@ def add_SidecarServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'tycoon.sidecar.SidecarService', rpc_method_handlers)
+            'synaptix.sidecar.SidecarService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('tycoon.sidecar.SidecarService', rpc_method_handlers)
+    server.add_registered_method_handlers('synaptix.sidecar.SidecarService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -165,7 +165,7 @@ class SidecarService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/tycoon.sidecar.SidecarService/ReportAnalyticsEvent',
+            '/synaptix.sidecar.SidecarService/ReportAnalyticsEvent',
             sidecar__pb2.AnalyticsEventRequest.SerializeToString,
             sidecar__pb2.AnalyticsEventResponse.FromString,
             options,
@@ -192,7 +192,7 @@ class SidecarService(object):
         return grpc.experimental.stream_unary(
             request_iterator,
             target,
-            '/tycoon.sidecar.SidecarService/StreamAnalyticsEvents',
+            '/synaptix.sidecar.SidecarService/StreamAnalyticsEvents',
             sidecar__pb2.AnalyticsEventRequest.SerializeToString,
             sidecar__pb2.StreamSummary.FromString,
             options,
@@ -219,7 +219,7 @@ class SidecarService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/tycoon.sidecar.SidecarService/SubmitInferenceResult',
+            '/synaptix.sidecar.SidecarService/SubmitInferenceResult',
             sidecar__pb2.InferenceResultRequest.SerializeToString,
             sidecar__pb2.InferenceResultResponse.FromString,
             options,
@@ -246,7 +246,7 @@ class SidecarService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/tycoon.sidecar.SidecarService/TriggerBackendAction',
+            '/synaptix.sidecar.SidecarService/TriggerBackendAction',
             sidecar__pb2.BackendActionRequest.SerializeToString,
             sidecar__pb2.BackendActionResponse.FromString,
             options,

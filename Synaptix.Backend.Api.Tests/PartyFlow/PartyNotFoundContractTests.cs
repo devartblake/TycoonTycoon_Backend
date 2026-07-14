@@ -5,11 +5,11 @@ using Synaptix.Backend.Api.Tests.TestHost;
 
 namespace Synaptix.Backend.Api.Tests.Party;
 
-public sealed class PartyNotFoundContractTests : IClassFixture<TycoonApiFactory>
+public sealed class PartyNotFoundContractTests : IClassFixture<SynaptixApiFactory>
 {
     private readonly HttpClient _http;
 
-    public PartyNotFoundContractTests(TycoonApiFactory factory)
+    public PartyNotFoundContractTests(SynaptixApiFactory factory)
     {
         _http = factory.CreateClient();
     }

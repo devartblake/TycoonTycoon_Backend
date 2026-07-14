@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Synaptix.Backend.Api.Tests.TestHost;
 using Synaptix.Shared.Contracts.Dtos;
@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Synaptix.Backend.Api.Tests.AntiCheat;
 
-public sealed class AntiCheatBlocksRewardsTests : IClassFixture<TycoonApiFactory>
+public sealed class AntiCheatBlocksRewardsTests : IClassFixture<SynaptixApiFactory>
 {
-    private readonly TycoonApiFactory _factory;
+    private readonly SynaptixApiFactory _factory;
     private readonly HttpClient _http;
 
-    public AntiCheatBlocksRewardsTests(TycoonApiFactory factory)
+    public AntiCheatBlocksRewardsTests(SynaptixApiFactory factory)
     {
         _factory = factory;
         _http = factory.CreateClient();
