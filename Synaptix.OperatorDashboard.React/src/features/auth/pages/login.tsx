@@ -2,13 +2,13 @@
  * Login page
  */
 
-import { useState } from 'react'
+import { startTransition, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import ErrorBoundary from '@/components/shared/error-boundary'
-import { useAuthStore } from '@/features/auth/store'
+import { persistAuthState, useAuthStore } from '@/features/auth/store'
 import { adminLogin } from '@/features/auth/api'
 import { getMockMode, setMockMode } from '@/lib/api-config'
 
@@ -33,6 +33,15 @@ export default function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
+
+  const goToDashboard = () => {
+    // Lazy AppLayout/Dashboard suspend on first load. Navigating during a form
+    // submit is "synchronous input"; without startTransition React 18 throws #426
+    // and the UI blanks. Transition marks this as non-urgent so Suspense can show.
+    startTransition(() => {
+      navigate('/dashboard', { replace: true })
+    })
+  }
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
@@ -61,7 +70,8 @@ export default function LoginPage() {
             'personalization:read',
           ],
         })
-        navigate('/dashboard')
+        persistAuthState()
+        goToDashboard()
         return
       }
 
@@ -71,9 +81,9 @@ export default function LoginPage() {
       // Store tokens and profile
       setTokens(response.accessToken, response.refreshToken, response.expiresIn)
       setProfile(response.admin)
+      persistAuthState()
 
-      // Redirect to dashboard
-      navigate('/dashboard')
+      goToDashboard()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.'
       setError(errorMessage)

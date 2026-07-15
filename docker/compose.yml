@@ -717,9 +717,12 @@ services:
     ports:
       - "${DASHBOARD_PORT:-8200}:8200"
     environment:
-      DJANGO_DEBUG: "false"
-      DJANGO_ALLOWED_HOSTS: "*"
-      DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:${DASHBOARD_PORT:-8200},http://127.0.0.1:${DASHBOARD_PORT:-8200}"
+      # When DJANGO_DEBUG=false, settings.py requires a real SECRET_KEY and
+      # non-wildcard ALLOWED_HOSTS (see operator_dashboard/settings.py).
+      DJANGO_DEBUG: "${DJANGO_DEBUG:-false}"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in docker/.env (see .env.example)}"
+      DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,operator-dashboard}"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:${DASHBOARD_PORT:-8200},http://127.0.0.1:${DASHBOARD_PORT:-8200}}"
       DOTNET_API_BASE_URL: "http://backend-api:5000"
       FASTAPI_BASE_URL: "http://sidecar:8100"
       MINIO_BASE_URL: "http://minio:9000"
@@ -753,8 +756,9 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.dashboard-react
       args:
-        # Empty = same-origin: the browser calls this container's /admin proxy,
-        # which forwards to the API with the ops key injected server-side.
+        # MUST stay empty for browser builds. Non-empty values like
+        # http://backend-api:5000 bake Docker DNS into client JS → ERR_NAME_NOT_RESOLVED.
+        # Same-origin /admin is proxied by nginx (API_UPSTREAM + ADMIN_OPS_KEY below).
         VITE_API_BASE_URL: "${REACT_API_BASE_URL:-}"
         VITE_APP_ENV: "${REACT_APP_ENV:-production}"
     container_name: synaptix_operator_dashboard_react
@@ -762,6 +766,7 @@ services:
     ports:
       - "${REACT_DASHBOARD_PORT:-8300}:8300"
     environment:
+      # Runtime only — nginx envsubst into proxy_pass (not visible to browser).
       API_UPSTREAM: "${REACT_API_UPSTREAM:-http://backend-api:5000}"
       ADMIN_OPS_KEY: "${ADMIN_OPS_KEY:-CHANGE_ME}"
     depends_on:

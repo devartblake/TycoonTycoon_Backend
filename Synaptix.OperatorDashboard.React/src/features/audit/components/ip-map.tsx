@@ -2,15 +2,44 @@
  * IP Geolocation map for audit events
  */
 
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
+import { useEffect, useMemo } from 'react'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
 import type { IPLocationData } from '../types'
+import 'leaflet/dist/leaflet.css'
 
 interface IPMapProps {
   locations: IPLocationData[]
   isLoading: boolean
 }
 
+/** Leaflet needs an invalidateSize after the container is laid out (hidden tabs / flex). */
+function MapResizeFix() {
+  const map = useMap()
+  useEffect(() => {
+    const t = window.setTimeout(() => map.invalidateSize(), 80)
+    return () => window.clearTimeout(t)
+  }, [map])
+  return null
+}
+
+function isValidCoord(lat: number, lon: number) {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lon) <= 180
+  )
+}
+
 export function IPMap({ locations, isLoading }: IPMapProps) {
+  const validLocations = useMemo(
+    () =>
+      (locations ?? []).filter(
+        (l) => l && isValidCoord(Number(l.latitude), Number(l.longitude))
+      ),
+    [locations]
+  )
+
   if (isLoading) {
     return (
       <div className="operator-card h-96 bg-bg-secondary rounded flex items-center justify-center">
@@ -19,72 +48,78 @@ export function IPMap({ locations, isLoading }: IPMapProps) {
     )
   }
 
-  if (!locations || locations.length === 0) {
+  if (validLocations.length === 0) {
     return (
-      <div className="operator-card h-96 bg-bg-secondary rounded flex items-center justify-center">
-        <p className="text-ink-secondary">No location data available</p>
+      <div className="operator-card h-96 bg-bg-secondary rounded flex flex-col items-center justify-center gap-2 px-6 text-center">
+        <p className="text-ink-secondary font-medium">No location data available</p>
+        <p className="text-xs text-ink-tertiary">
+          Audit events need latitude/longitude (or a geo IP lookup) to plot on the map.
+        </p>
       </div>
     )
   }
 
-  // Calculate bounds to fit all markers
-  const latitudes = locations.map((l) => l.latitude)
-  const longitudes = locations.map((l) => l.longitude)
-  const minLat = Math.min(...latitudes)
-  const maxLat = Math.max(...latitudes)
-  const minLon = Math.min(...longitudes)
-  const maxLon = Math.max(...longitudes)
-  const centerLat = (minLat + maxLat) / 2
-  const centerLon = (minLon + maxLon) / 2
+  const latitudes = validLocations.map((l) => Number(l.latitude))
+  const longitudes = validLocations.map((l) => Number(l.longitude))
+  const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2
+  const centerLon = (Math.min(...longitudes) + Math.max(...longitudes)) / 2
 
-  // Color intensity based on event count
   const getColor = (eventCount: number, maxCount: number) => {
-    const intensity = eventCount / maxCount
-    const hue = 10 + intensity * 40 // From red (10) to orange (50)
+    const intensity = maxCount > 0 ? eventCount / maxCount : 0
+    const hue = 10 + intensity * 40
     return `hsl(${hue}, 100%, 50%)`
   }
 
-  const maxEventCount = Math.max(...locations.map((l) => l.eventCount), 1)
+  const maxEventCount = Math.max(...validLocations.map((l) => l.eventCount), 1)
 
   return (
     <div className="operator-card overflow-hidden rounded">
-      <MapContainer
-        center={[centerLat, centerLon]}
-        zoom={2}
-        className="w-full h-96"
-        style={{ height: '400px' }}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; OpenStreetMap contributors'
-          opacity={0.8}
-        />
+      <div className="px-4 py-2 border-b border-panel-border flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-ink-primary">Admin access by location</h3>
+        <span className="text-xs text-ink-tertiary">{validLocations.length} locations</span>
+      </div>
+      {/* Fixed height + relative: Leaflet requires explicit pixel height */}
+      <div className="relative w-full" style={{ height: 400 }}>
+        <MapContainer
+          center={[centerLat, centerLon]}
+          zoom={2}
+          scrollWheelZoom={false}
+          className="absolute inset-0 z-0 w-full h-full"
+          style={{ height: '100%', width: '100%', background: '#e8e4dd' }}
+        >
+          <MapResizeFix />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          />
 
-        {locations.map((location) => (
-          <CircleMarker
-            key={`${location.country}-${location.city}`}
-            center={[location.latitude, location.longitude]}
-            radius={Math.sqrt(location.eventCount) * 2}
-            pathOptions={{
-              fillColor: getColor(location.eventCount, maxEventCount),
-              color: '#333',
-              weight: 1,
-              opacity: 0.8,
-              fillOpacity: 0.6,
-            }}
-          >
-            <Popup>
-              <div className="text-xs">
-                <p className="font-semibold">{location.city}, {location.country}</p>
-                <p className="text-ink-secondary">IP: {location.ip}</p>
-                <p className="text-status-offline">Events: {location.eventCount}</p>
-              </div>
-            </Popup>
-          </CircleMarker>
-        ))}
-      </MapContainer>
+          {validLocations.map((location, idx) => (
+            <CircleMarker
+              key={`${location.ip}-${location.city}-${idx}`}
+              center={[Number(location.latitude), Number(location.longitude)]}
+              radius={Math.max(4, Math.sqrt(location.eventCount) * 2.5)}
+              pathOptions={{
+                fillColor: getColor(location.eventCount, maxEventCount),
+                color: '#333',
+                weight: 1,
+                opacity: 0.85,
+                fillOpacity: 0.65,
+              }}
+            >
+              <Popup>
+                <div className="text-xs">
+                  <p className="font-semibold">
+                    {location.city}, {location.country}
+                  </p>
+                  <p>IP: {location.ip}</p>
+                  <p>Events: {location.eventCount}</p>
+                </div>
+              </Popup>
+            </CircleMarker>
+          ))}
+        </MapContainer>
+      </div>
 
-      {/* Legend */}
       <div className="p-3 border-t border-panel-border">
         <p className="text-xs text-ink-tertiary mb-2">Marker size = event frequency</p>
         <div className="flex gap-4 text-xs">
@@ -93,11 +128,17 @@ export function IPMap({ locations, isLoading }: IPMapProps) {
             <span className="text-ink-secondary">Few events</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: getColor(maxEventCount * 0.5, maxEventCount) }} />
+            <div
+              className="w-4 h-4 rounded-full"
+              style={{ backgroundColor: getColor(maxEventCount * 0.5, maxEventCount) }}
+            />
             <span className="text-ink-secondary">Medium</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: getColor(maxEventCount, maxEventCount) }} />
+            <div
+              className="w-5 h-5 rounded-full"
+              style={{ backgroundColor: getColor(maxEventCount, maxEventCount) }}
+            />
             <span className="text-ink-secondary">Many events</span>
           </div>
         </div>

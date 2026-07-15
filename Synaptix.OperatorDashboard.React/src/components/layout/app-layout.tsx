@@ -3,19 +3,23 @@
  */
 
 import React from 'react'
-import { Outlet } from 'react-router-dom'
-import { useIsAuthenticated } from '@/hooks/use-permission'
+import { Navigate, Outlet } from 'react-router-dom'
+import { useIsAuthenticated, useIsAuthLoading } from '@/hooks/use-permission'
 import { Sidebar } from './sidebar'
 import { TopNav } from './top-nav'
 import { MockBanner } from '@/components/shared/mock-banner'
 
 export default function AppLayout() {
   const isAuthenticated = useIsAuthenticated()
+  const isAuthLoading = useIsAuthLoading()
+
+  // Wait for restoreAuthState before bouncing to login (avoids flash/blank after mock login reload)
+  if (isAuthLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-ink-secondary">Loading…</div>
+  }
 
   if (!isAuthenticated) {
-    // Redirect to login if not authenticated
-    window.location.href = '/auth/login'
-    return null
+    return <Navigate to="/auth/login" replace />
   }
 
   return (

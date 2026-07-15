@@ -2,7 +2,8 @@
  * Users table with TanStack Table
  */
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table'
 import { formatDate } from '@/lib/utils'
 import type { User } from '../types'
@@ -13,85 +14,115 @@ interface UsersTableProps {
   onSelectionChange: (selectedIds: string[]) => void
 }
 
-const columns: ColumnDef<User>[] = [
-  {
-    id: 'select',
-    header: ({ table }) => (
-      <input
-        type="checkbox"
-        checked={table.getIsAllRowsSelected()}
-        ref={(el) => {
-          if (el) el.indeterminate = table.getIsSomeRowsSelected()
-        }}
-        onChange={table.getToggleAllRowsSelectedHandler()}
-        className="cursor-pointer"
-      />
-    ),
-    cell: ({ row }) => (
-      <input
-        type="checkbox"
-        checked={row.getIsSelected()}
-        onChange={row.getToggleSelectedHandler()}
-        className="cursor-pointer"
-      />
-    ),
-    size: 50,
-  },
-  {
-    accessorKey: 'email',
-    header: 'Email',
-    cell: (info) => <span className="text-accent hover:underline cursor-pointer">{info.getValue() as string}</span>,
-  },
-  {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: (info) => {
-      const status = info.getValue() as string
-      const statusColor = {
-        active: 'bg-status-healthy/10 text-status-healthy',
-        suspended: 'bg-status-degraded/10 text-status-degraded',
-        banned: 'bg-status-offline/10 text-status-offline',
-        inactive: 'bg-status-unknown/10 text-status-unknown',
-      }
-      return (
-        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${statusColor[status as keyof typeof statusColor]}`}>
-          {status}
-        </span>
-      )
-    },
-  },
-  {
-    accessorKey: 'createdAt',
-    header: 'Created',
-    cell: (info) => formatDate(info.getValue() as string),
-  },
-  {
-    accessorKey: 'lastActiveAt',
-    header: 'Last Active',
-    cell: (info) => {
-      const date = info.getValue() as string | null
-      return date ? formatDate(date) : '—'
-    },
-  },
-  {
-    accessorKey: 'flaggedCount',
-    header: 'Flags',
-    cell: (info) => {
-      const count = info.getValue() as number
-      return count > 0 ? (
-        <span className="inline-block px-2 py-1 rounded bg-status-offline/10 text-status-offline text-xs font-medium">
-          {count}
-        </span>
-      ) : (
-        '—'
-      )
-    },
-    size: 60,
-  },
-]
-
 export function UsersTable({ users, isLoading, onSelectionChange }: UsersTableProps) {
   const [rowSelection, setRowSelection] = useState({})
+  const navigate = useNavigate()
+
+  const columns = useMemo<ColumnDef<User>[]>(
+    () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllRowsSelected()}
+            ref={(el) => {
+              if (el) el.indeterminate = table.getIsSomeRowsSelected()
+            }}
+            onChange={table.getToggleAllRowsSelectedHandler()}
+            className="cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+            className="cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        size: 50,
+      },
+      {
+        accessorKey: 'email',
+        header: 'Email',
+        cell: ({ row }) => (
+          <Link
+            to={`/users/${row.original.id}`}
+            className="text-accent hover:underline font-medium"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {row.original.email}
+          </Link>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: (info) => {
+          const status = info.getValue() as string
+          const statusColor = {
+            active: 'bg-status-healthy/10 text-status-healthy',
+            suspended: 'bg-status-degraded/10 text-status-degraded',
+            banned: 'bg-status-offline/10 text-status-offline',
+            inactive: 'bg-status-unknown/10 text-status-unknown',
+          }
+          return (
+            <span
+              className={`inline-block px-2 py-1 rounded text-xs font-medium ${statusColor[status as keyof typeof statusColor] ?? ''}`}
+            >
+              {status}
+            </span>
+          )
+        },
+      },
+      {
+        accessorKey: 'createdAt',
+        header: 'Created',
+        cell: (info) => formatDate(info.getValue() as string),
+      },
+      {
+        accessorKey: 'lastActiveAt',
+        header: 'Last Active',
+        cell: (info) => {
+          const date = info.getValue() as string | null
+          return date ? formatDate(date) : '—'
+        },
+      },
+      {
+        accessorKey: 'flaggedCount',
+        header: 'Flags',
+        cell: (info) => {
+          const count = info.getValue() as number
+          return count > 0 ? (
+            <span className="inline-block px-2 py-1 rounded bg-status-offline/10 text-status-offline text-xs font-medium">
+              {count}
+            </span>
+          ) : (
+            '—'
+          )
+        },
+        size: 60,
+      },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => (
+          <Link
+            to={`/users/${row.original.id}`}
+            className="text-xs text-accent hover:underline whitespace-nowrap"
+            onClick={(e) => e.stopPropagation()}
+          >
+            View →
+          </Link>
+        ),
+        size: 70,
+      },
+    ],
+    []
+  )
 
   const table = useReactTable({
     data: users,
@@ -106,7 +137,7 @@ export function UsersTable({ users, isLoading, onSelectionChange }: UsersTablePr
   React.useEffect(() => {
     const selectedIds = table.getSelectedRowModel().rows.map((row) => row.original.id)
     onSelectionChange(selectedIds)
-  }, [rowSelection, table])
+  }, [rowSelection, table, onSelectionChange])
 
   if (isLoading) {
     return (
@@ -147,7 +178,11 @@ export function UsersTable({ users, isLoading, onSelectionChange }: UsersTablePr
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="border-b border-panel-border hover:bg-bg-secondary transition-colors">
+            <tr
+              key={row.id}
+              className="border-b border-panel-border hover:bg-bg-secondary transition-colors cursor-pointer"
+              onClick={() => navigate(`/users/${row.original.id}`)}
+            >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="px-4 py-3" style={{ width: cell.column.getSize() }}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}

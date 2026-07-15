@@ -177,7 +177,7 @@ export function Sidebar() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : item.href ? (
               <NavLink
                 to={item.href}
                 className={({ isActive }) =>
@@ -191,7 +191,7 @@ export function Sidebar() {
                 {/* <NavItemIcon icon={item.icon} /> */}
                 <span className="text-sm font-medium">{item.label}</span>
               </NavLink>
-            )}
+            ) : null}
           </PermissionGate>
         ))}
       </nav>

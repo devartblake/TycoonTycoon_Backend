@@ -1,8 +1,10 @@
 /**
  * Store Management - Products, Flash Sales, Stock Policies, Reward Limits
+ * URL-synced tabs so sidebar links (Catalog / Flash Sales / Stock Policies) open the right view.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { usePermission } from '@/hooks/use-permission'
 import ErrorBoundary from '@/components/shared/error-boundary'
 import EmptyState from '@/components/shared/empty-state'
@@ -10,15 +12,58 @@ import { SkeletonGrid, SkeletonTable } from '@/components/shared/skeletons'
 import * as storeApi from '../api'
 import type { Product, FlashSale, StockPolicy, RewardLimit } from '../types'
 
+type StoreTab = 'products' | 'flash-sales' | 'policies' | 'limits'
+
+const TAB_META: Record<
+  StoreTab,
+  { label: string; path: string; title: string; description: string }
+> = {
+  products: {
+    label: '📦 Catalog',
+    path: '/store/catalog',
+    title: 'Product Catalog',
+    description: 'Browse and manage store SKUs, pricing, and stock levels',
+  },
+  'flash-sales': {
+    label: '⚡ Flash Sales',
+    path: '/store/flash-sales',
+    title: 'Flash Sales',
+    description: 'Time-boxed discounts and promotional campaigns',
+  },
+  policies: {
+    label: '📊 Stock Policies',
+    path: '/store/stock-policies',
+    title: 'Stock Policies',
+    description: 'Inventory rules, reorder thresholds, and allocation limits',
+  },
+  limits: {
+    label: '🎁 Reward Limits',
+    path: '/store/reward-limits',
+    title: 'Reward Limits',
+    description: 'Caps on grant frequency and reward quantity',
+  },
+}
+
+function tabFromPath(pathname: string): StoreTab {
+  if (pathname.includes('flash-sales')) return 'flash-sales'
+  if (pathname.includes('stock-policies')) return 'policies'
+  if (pathname.includes('reward-limits')) return 'limits'
+  return 'products'
+}
+
 export default function StoreManagementPage() {
   usePermission('storage:write')
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const activeTab = useMemo(() => tabFromPath(location.pathname), [location.pathname])
+  const meta = TAB_META[activeTab]
 
   const [products, setProducts] = useState<Product[]>([])
   const [sales, setSales] = useState<FlashSale[]>([])
   const [policies, setPolicies] = useState<StockPolicy[]>([])
   const [limits, setLimits] = useState<RewardLimit[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'products' | 'flash-sales' | 'policies' | 'limits'>('products')
 
   useEffect(() => {
     const loadData = async () => {
@@ -46,54 +91,57 @@ export default function StoreManagementPage() {
   return (
     <ErrorBoundary>
       <div className="operator-container space-y-8">
-        {/* Header */}
+        {/* Header — reflects active store area */}
         <div>
-          <h1 className="text-3xl font-bold text-ink-primary">Store Management</h1>
-          <p className="mt-2 text-ink-secondary">Manage products, sales, inventory, and rewards</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-tertiary mb-1">
+            Store Management
+          </p>
+          <h1 className="text-3xl font-bold text-ink-primary">{meta.title}</h1>
+          <p className="mt-2 text-ink-secondary">{meta.description}</p>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards — highlight active domain */}
         {loading ? (
           <SkeletonGrid count={4} />
         ) : (
-          <div className="grid grid-cols-4 gap-4">
-            <div className="operator-card">
-              <p className="text-xs text-ink-tertiary">Products</p>
-              <p className="text-2xl font-bold text-accent mt-1">{products.length}</p>
-            </div>
-            <div className="operator-card">
-              <p className="text-xs text-ink-tertiary">Flash Sales</p>
-              <p className="text-2xl font-bold text-status-degraded mt-1">{sales.length}</p>
-            </div>
-            <div className="operator-card">
-              <p className="text-xs text-ink-tertiary">Stock Policies</p>
-              <p className="text-2xl font-bold text-ink-primary mt-1">{policies.length}</p>
-            </div>
-            <div className="operator-card">
-              <p className="text-xs text-ink-tertiary">Reward Limits</p>
-              <p className="text-2xl font-bold text-status-healthy mt-1">{limits.length}</p>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {(
+              [
+                { tab: 'products' as const, value: products.length, label: 'Products' },
+                { tab: 'flash-sales' as const, value: sales.length, label: 'Flash Sales' },
+                { tab: 'policies' as const, value: policies.length, label: 'Stock Policies' },
+                { tab: 'limits' as const, value: limits.length, label: 'Reward Limits' },
+              ] as const
+            ).map((card) => (
+              <button
+                key={card.tab}
+                type="button"
+                onClick={() => navigate(TAB_META[card.tab].path)}
+                className={`operator-card text-left transition-smooth ${
+                  activeTab === card.tab ? 'ring-2 ring-accent' : 'hover:bg-bg-secondary'
+                }`}
+              >
+                <p className="text-xs text-ink-tertiary">{card.label}</p>
+                <p className="text-2xl font-bold text-accent mt-1">{card.value}</p>
+              </button>
+            ))}
           </div>
         )}
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-panel-border">
-        {[
-          { id: 'products' as const, label: '📦 Products' },
-          { id: 'flash-sales' as const, label: '⚡ Flash Sales' },
-          { id: 'policies' as const, label: '📊 Policies' },
-          { id: 'limits' as const, label: '🎁 Rewards' },
-        ].map((tab) => (
+      {/* Tab Navigation — URL-backed */}
+      <div className="flex gap-2 border-b border-panel-border overflow-x-auto">
+        {(Object.keys(TAB_META) as StoreTab[]).map((id) => (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
+            key={id}
+            type="button"
+            onClick={() => navigate(TAB_META[id].path)}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === id
                 ? 'border-accent text-accent'
                 : 'border-transparent text-ink-secondary hover:text-ink-primary'
             }`}
           >
-            {tab.label}
+            {TAB_META[id].label}
           </button>
         ))}
       </div>

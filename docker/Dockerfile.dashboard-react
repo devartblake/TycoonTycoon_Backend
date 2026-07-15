@@ -15,12 +15,15 @@ RUN npm install --legacy-peer-deps
 COPY Synaptix.OperatorDashboard.React/ .
 
 # Build arguments for environment configuration.
-# VITE_API_BASE_URL stays empty (same-origin): admin calls go through the nginx
-# /admin proxy below, which injects the ops key server-side.
+# VITE_API_BASE_URL MUST stay empty (same-origin). The browser cannot resolve
+# Docker service names (backend-api). Admin calls go through nginx /admin proxy,
+# which injects X-Admin-Ops-Key and forwards to API_UPSTREAM at runtime.
 ARG VITE_API_BASE_URL=""
 ARG VITE_APP_ENV=production
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_APP_ENV=$VITE_APP_ENV
 
-# Build the app
+# Build the app (vite.config.ts bakes VITE_API_BASE_URL into the bundle)
 RUN npm run build
 
 # Stage 2: Serve

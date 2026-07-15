@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePermission } from '@/hooks/use-permission'
 import ErrorBoundary from '@/components/shared/error-boundary'
 import EmptyState from '@/components/shared/empty-state'
@@ -16,10 +17,11 @@ import {
   useIPLocations,
   useEventLocations,
 } from '../hooks/useAuditEvents'
-import type { AuditFilter } from '../types'
+import type { AuditEvent, AuditFilter } from '../types'
 
 export default function SecurityAuditPage() {
   usePermission('audit:read')
+  const navigate = useNavigate()
 
   const [filters, setFilters] = useState<AuditFilter>({})
   const [offset, setOffset] = useState(0)
@@ -30,14 +32,19 @@ export default function SecurityAuditPage() {
   const ipLocationsQuery = useIPLocations(filters)
   const eventLocations = useEventLocations(eventsQuery.data?.items)
 
+  // Prefer aggregated geo API; fall back to coordinates on the current page of events
+  const mapLocations =
+    (ipLocationsQuery.data && ipLocationsQuery.data.length > 0
+      ? ipLocationsQuery.data
+      : eventLocations) ?? []
+
   const handleFiltersChange = (newFilters: AuditFilter) => {
     setFilters(newFilters)
-    setOffset(0) // Reset pagination when filters change
+    setOffset(0)
   }
 
-  const handleEventClick = (event: any) => {
-    // Could navigate to event detail or open a modal
-    console.log('Event clicked:', event)
+  const handleEventClick = (event: AuditEvent) => {
+    navigate(`/audit/security/${event.id}`)
   }
 
   return (
@@ -86,8 +93,8 @@ export default function SecurityAuditPage() {
         <div className="lg:col-span-3 space-y-6">
           {/* Map */}
           <IPMap
-            locations={eventLocations.length > 0 ? eventLocations : ipLocationsQuery.data || []}
-            isLoading={ipLocationsQuery.isLoading || eventsQuery.isLoading}
+            locations={mapLocations}
+            isLoading={ipLocationsQuery.isLoading || (eventsQuery.isLoading && mapLocations.length === 0)}
           />
 
           {/* Events Table */}

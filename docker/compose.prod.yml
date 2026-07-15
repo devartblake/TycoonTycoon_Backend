@@ -152,6 +152,7 @@ services:
     ports: !override []
     environment:
       DJANGO_DEBUG: "false"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required in prod}"
       DJANGO_ALLOWED_HOSTS: "admin.${DOMAIN:?DOMAIN is required in prod}"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://admin.${DOMAIN:?DOMAIN is required in prod}"
       DJANGO_SECURE_COOKIES: "true"

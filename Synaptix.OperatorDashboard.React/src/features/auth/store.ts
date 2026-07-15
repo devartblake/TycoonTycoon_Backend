@@ -30,7 +30,8 @@ const INITIAL_STATE: AuthState = {
   accessToken: null,
   refreshToken: null,
   profile: null,
-  isLoading: false,
+  // true until restoreAuthState finishes so AppLayout does not redirect to login on first paint
+  isLoading: true,
   error: null,
   isAuthenticated: false,
   expiresAt: null,
@@ -69,6 +70,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: () => {
     // Clear tokens from secure storage (httpOnly cookies handled by backend)
+    try {
+      localStorage.removeItem('auth_state')
+    } catch {
+      // ignore storage errors in private mode
+    }
     set({
       ...INITIAL_STATE,
       isAuthenticated: false,
