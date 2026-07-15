@@ -46,6 +46,61 @@ namespace Synaptix.Backend.Application.Moderation
         }
 
         /// <summary>
+        /// Submits an appeal for the player. Returns null when the player already
+        /// has a pending appeal (callers translate that to a conflict).
+        /// </summary>
+        public async Task<ModerationAppeal?> SubmitAppealAsync(Guid playerId, string reason, CancellationToken ct)
+        {
+            var hasPending = await db.ModerationAppeals
+                .AsNoTracking()
+                .AnyAsync(x => x.PlayerId == playerId && x.Status == ModerationAppealStatus.Pending, ct);
+            if (hasPending) return null;
+
+            var appeal = new ModerationAppeal(playerId, reason);
+            db.ModerationAppeals.Add(appeal);
+            await db.SaveChangesAsync(ct);
+            return appeal;
+        }
+
+        /// <summary>
+        /// Reviews a pending appeal. Returns null when the appeal does not exist.
+        /// Throws InvalidOperationException when it was already reviewed.
+        /// On approval the sanction is lifted through the normal moderation pipeline
+        /// (profile update + ModerationActionLog entry).
+        /// </summary>
+        public async Task<ModerationAppeal?> ReviewAppealAsync(
+            Guid appealId,
+            bool approve,
+            string? reviewerNotes,
+            string? reviewedBy,
+            CancellationToken ct)
+        {
+            var appeal = await db.ModerationAppeals.FirstOrDefaultAsync(x => x.Id == appealId, ct);
+            if (appeal is null) return null;
+
+            appeal.Review(
+                approve ? ModerationAppealStatus.Approved : ModerationAppealStatus.Rejected,
+                reviewerNotes,
+                reviewedBy);
+            await db.SaveChangesAsync(ct);
+
+            if (approve)
+            {
+                await SetStatusAsync(
+                    appeal.PlayerId,
+                    ModerationStatus.Normal,
+                    reason: "appeal approved",
+                    notes: reviewerNotes,
+                    setByAdmin: reviewedBy,
+                    expiresAtUtc: null,
+                    relatedFlagId: null,
+                    ct);
+            }
+
+            return appeal;
+        }
+
+        /// <summary>
         /// Returns the effective status, considering expiry.
         /// Expired Restricted/Banned automatically behave as Normal (but we do not mutate DB here).
         /// </summary>

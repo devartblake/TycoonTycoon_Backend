@@ -66,6 +66,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<AntiCheatFlag> AntiCheatFlags => Set<AntiCheatFlag>();
         public DbSet<PlayerModerationProfile> PlayerModerationProfiles => Set<PlayerModerationProfile>();
         public DbSet<ModerationActionLog> ModerationActionLogs => Set<ModerationActionLog>();
+        public DbSet<ModerationAppeal> ModerationAppeals => Set<ModerationAppeal>();
         public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
         public DbSet<FriendEdge> FriendEdges => Set<FriendEdge>();
         public DbSet<PlayerNotification> PlayerNotifications => Set<PlayerNotification>();
@@ -95,6 +96,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<AdminNotificationSchedule> AdminNotificationSchedules => Set<AdminNotificationSchedule>();
         public DbSet<AdminNotificationTemplate> AdminNotificationTemplates => Set<AdminNotificationTemplate>();
         public DbSet<AdminNotificationHistory> AdminNotificationHistory => Set<AdminNotificationHistory>();
+        public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
         public DbSet<AdminAppConfig> AdminAppConfigs => Set<AdminAppConfig>();
         public DbSet<GameBalanceConfig> GameBalanceConfigs => Set<GameBalanceConfig>();
         public DbSet<PlayerEconomySafeguardState> PlayerEconomySafeguardStates => Set<PlayerEconomySafeguardState>();

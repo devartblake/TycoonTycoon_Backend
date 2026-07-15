@@ -53,6 +53,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<AntiCheatFlag> AntiCheatFlags { get; }
         DbSet<PlayerModerationProfile> PlayerModerationProfiles { get; }
         DbSet<ModerationActionLog> ModerationActionLogs { get; }
+        DbSet<ModerationAppeal> ModerationAppeals { get; }
         DbSet<FriendRequest> FriendRequests { get; }
         DbSet<FriendEdge> FriendEdges { get; }
         DbSet<PlayerNotification> PlayerNotifications { get; }
@@ -81,6 +82,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<AdminNotificationSchedule> AdminNotificationSchedules { get; }
         DbSet<AdminNotificationTemplate> AdminNotificationTemplates { get; }
         DbSet<AdminNotificationHistory> AdminNotificationHistory { get; }
+        DbSet<AdminAuditLog> AdminAuditLogs { get; }
         DbSet<AdminAppConfig> AdminAppConfigs { get; }
         DbSet<GameBalanceConfig> GameBalanceConfigs { get; }
         DbSet<PlayerEconomySafeguardState> PlayerEconomySafeguardStates { get; }
