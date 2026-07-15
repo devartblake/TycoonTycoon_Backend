@@ -66,6 +66,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<AntiCheatFlag> AntiCheatFlags => Set<AntiCheatFlag>();
         public DbSet<PlayerModerationProfile> PlayerModerationProfiles => Set<PlayerModerationProfile>();
         public DbSet<ModerationActionLog> ModerationActionLogs => Set<ModerationActionLog>();
+        public DbSet<ModerationAppeal> ModerationAppeals => Set<ModerationAppeal>();
         public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
         public DbSet<FriendEdge> FriendEdges => Set<FriendEdge>();
         public DbSet<PlayerNotification> PlayerNotifications => Set<PlayerNotification>();

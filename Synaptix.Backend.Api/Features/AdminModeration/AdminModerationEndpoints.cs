@@ -146,6 +146,113 @@ namespace Synaptix.Backend.Api.Features.AdminModeration
                     ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
                     : Results.Ok(item);
             });
+
+            g.MapGet("/appeals", async (
+                [FromQuery] int page,
+                [FromQuery] int pageSize,
+                [FromQuery] Guid? playerId,
+                [FromQuery] string? status,
+                IAppDb db,
+                CancellationToken ct) =>
+            {
+                page = Math.Max(1, page);
+                pageSize = Math.Clamp(pageSize, 1, 100);
+
+                var q = db.ModerationAppeals.AsNoTracking();
+
+                if (playerId.HasValue)
+                    q = q.Where(x => x.PlayerId == playerId.Value);
+
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    var parsed = int.TryParse(status, out var statusNum)
+                        ? (ModerationAppealStatus?)(ModerationAppealStatus)statusNum
+                        : Enum.TryParse<ModerationAppealStatus>(status, true, out var statusEnum) ? statusEnum : null;
+
+                    if (parsed is null || !Enum.IsDefined(typeof(ModerationAppealStatus), parsed.Value))
+                        return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Invalid appeal status filter.");
+
+                    q = q.Where(x => x.Status == parsed.Value);
+                }
+
+                q = q.OrderByDescending(x => x.SubmittedAtUtc);
+
+                var total = await q.CountAsync(ct);
+
+                var items = await q.Skip((page - 1) * pageSize).Take(pageSize)
+                    .Select(x => new ModerationAppealDto(
+                        x.Id,
+                        x.PlayerId,
+                        x.Reason,
+                        (int)x.Status,
+                        x.ReviewerNotes,
+                        x.ReviewedBy,
+                        x.SubmittedAtUtc,
+                        x.ReviewedAtUtc
+                    ))
+                    .ToListAsync(ct);
+
+                return Results.Ok(new ModerationAppealListResponseDto(page, pageSize, total, items));
+            });
+
+            g.MapGet("/appeals/{id:guid}", async (
+                [FromRoute] Guid id,
+                IAppDb db,
+                CancellationToken ct) =>
+            {
+                var item = await db.ModerationAppeals.AsNoTracking()
+                    .Where(x => x.Id == id)
+                    .Select(x => new ModerationAppealDto(
+                        x.Id,
+                        x.PlayerId,
+                        x.Reason,
+                        (int)x.Status,
+                        x.ReviewerNotes,
+                        x.ReviewedBy,
+                        x.SubmittedAtUtc,
+                        x.ReviewedAtUtc
+                    ))
+                    .FirstOrDefaultAsync(ct);
+
+                return item is null
+                    ? AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.")
+                    : Results.Ok(item);
+            });
+
+            g.MapPost("/appeals/{id:guid}/review", async (
+                HttpContext ctx,
+                [FromRoute] Guid id,
+                [FromBody] ReviewAppealRequest req,
+                ModerationService svc,
+                CancellationToken ct) =>
+            {
+                var verdict = req.Verdict?.Trim().ToLowerInvariant();
+                if (verdict is not ("approve" or "reject"))
+                    return ApiResponses.Error(StatusCodes.Status400BadRequest, "VALIDATION_ERROR", "Verdict must be 'approve' or 'reject'.");
+
+                var adminUser = ctx.Request.Headers.TryGetValue(AdminHeader, out var h) ? h.ToString() : null;
+
+                try
+                {
+                    var appeal = await svc.ReviewAppealAsync(id, verdict == "approve", req.ReviewerNotes, adminUser, ct);
+                    if (appeal is null)
+                        return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.");
+
+                    return Results.Ok(new ModerationAppealDto(
+                        appeal.Id,
+                        appeal.PlayerId,
+                        appeal.Reason,
+                        (int)appeal.Status,
+                        appeal.ReviewerNotes,
+                        appeal.ReviewedBy,
+                        appeal.SubmittedAtUtc,
+                        appeal.ReviewedAtUtc));
+                }
+                catch (InvalidOperationException)
+                {
+                    return ApiResponses.Error(StatusCodes.Status409Conflict, "ALREADY_REVIEWED", "This appeal has already been reviewed.");
+                }
+            });
         }
     }
 }
