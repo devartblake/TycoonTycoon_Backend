@@ -94,6 +94,7 @@ using Synaptix.Backend.Api.Features.Referrals;
 using Synaptix.Backend.Api.Features.GameEvents;
 using Synaptix.Backend.Api.Features.Guardians;
 using Synaptix.Backend.Api.Features.Territory;
+using Synaptix.Backend.Api.Features.Moderation;
 using Synaptix.Backend.Api.Features.Votes;
 using Synaptix.Backend.Api.Features.Seasons;
 using Synaptix.Backend.Api.Features.Skills;
@@ -102,6 +103,7 @@ using Synaptix.Backend.Api.Features.Assets;
 using Synaptix.Backend.Api.Features.Users;
 using Synaptix.Backend.Api.Features.ParentalConsent;
 using Synaptix.Backend.Api.Features.AdminPrivacy;
+using Synaptix.Backend.Api.Features.AdminBatch;
 using Synaptix.Backend.Api.Features.Monitoring;
 using Synaptix.Backend.Api.Middleware;
 using Synaptix.Backend.Api.Observability;
@@ -1156,6 +1158,7 @@ GameEventStatsEndpoints.Map(v1);
 GameEventStatsEndpoints.MapTerritory(v1);
 GuardiansEndpoints.Map(v1);
 TerritoryEndpoints.Map(v1);
+ModerationAppealsEndpoints.Map(v1);
 
 // Mobile endpoints (separate route surface for mobile-specific contracts/workflows)
 var mobile = v1.MapGroup("/mobile").WithTags("Mobile");
@@ -1208,6 +1211,7 @@ AdminLearningModulesEndpoints.Map(admin);
 AdminPersonalizationEndpoints.Map(admin);
 AdminExperimentEndpoints.Map(admin);
 AdminPrivacyEndpoints.Map(admin);
+AdminBatchEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Synaptix Backend API starting...");
