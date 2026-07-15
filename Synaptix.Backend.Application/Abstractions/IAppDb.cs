@@ -82,6 +82,7 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<AdminNotificationSchedule> AdminNotificationSchedules { get; }
         DbSet<AdminNotificationTemplate> AdminNotificationTemplates { get; }
         DbSet<AdminNotificationHistory> AdminNotificationHistory { get; }
+        DbSet<AdminAuditLog> AdminAuditLogs { get; }
         DbSet<AdminAppConfig> AdminAppConfigs { get; }
         DbSet<GameBalanceConfig> GameBalanceConfigs { get; }
         DbSet<PlayerEconomySafeguardState> PlayerEconomySafeguardStates { get; }

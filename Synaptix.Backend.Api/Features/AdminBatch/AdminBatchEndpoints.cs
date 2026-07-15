@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Synaptix.Backend.Api.Contracts;
+using Synaptix.Backend.Api.Security;
+using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Admin;
 using Synaptix.Shared.Contracts.Dtos;
 
@@ -25,6 +27,7 @@ namespace Synaptix.Backend.Api.Features.AdminBatch
                 HttpContext ctx,
                 [FromBody] AdminBulkBanRequest req,
                 IMediator mediator,
+                IAppDb db,
                 CancellationToken ct) =>
             {
                 if (req.PlayerIds is null || req.PlayerIds.Count == 0)
@@ -36,6 +39,11 @@ namespace Synaptix.Backend.Api.Features.AdminBatch
 
                 var actor = GetActor(ctx);
                 var result = await mediator.Send(new AdminBulkBan(req.PlayerIds, req.Reason.Trim(), req.Until, actor), ct);
+
+                await WriteBatchAuditAsync(db, ctx, "batch.ban",
+                    new { playerCount = req.PlayerIds.Count, reason = req.Reason.Trim(), until = req.Until },
+                    result, ct);
+
                 return Results.Ok(result);
             });
 
@@ -43,6 +51,7 @@ namespace Synaptix.Backend.Api.Features.AdminBatch
                 HttpContext ctx,
                 [FromBody] AdminBulkRewardRequest req,
                 IMediator mediator,
+                IAppDb db,
                 CancellationToken ct) =>
             {
                 if (req.BatchId == Guid.Empty)
@@ -56,6 +65,11 @@ namespace Synaptix.Backend.Api.Features.AdminBatch
 
                 var actor = GetActor(ctx);
                 var result = await mediator.Send(new AdminBulkReward(req.BatchId, req.PlayerIds, req.Rewards, req.Note, actor), ct);
+
+                await WriteBatchAuditAsync(db, ctx, "batch.reward",
+                    new { batchId = req.BatchId, playerCount = req.PlayerIds.Count, rewards = req.Rewards, note = req.Note },
+                    result, ct);
+
                 return Results.Ok(result);
             });
 
@@ -63,6 +77,7 @@ namespace Synaptix.Backend.Api.Features.AdminBatch
                 HttpContext ctx,
                 [FromBody] AdminBulkResetProgressRequest req,
                 IMediator mediator,
+                IAppDb db,
                 CancellationToken ct) =>
             {
                 // Only the skills scope has an existing, audited, reversible single-player
@@ -81,9 +96,31 @@ namespace Synaptix.Backend.Api.Features.AdminBatch
 
                 var actor = GetActor(ctx);
                 var result = await mediator.Send(new AdminBulkResetProgress(req.BatchId, req.PlayerIds, refundPercent, actor), ct);
+
+                await WriteBatchAuditAsync(db, ctx, "batch.reset_progress",
+                    new { batchId = req.BatchId, playerCount = req.PlayerIds.Count, scope = "skills", refundPercent },
+                    result, ct);
+
                 return Results.Ok(result);
             });
         }
+
+        private static Task WriteBatchAuditAsync(
+            IAppDb db, HttpContext ctx, string action, object request,
+            BatchOperationResultDto result, CancellationToken ct) =>
+            AdminAuditLogger.WriteAsync(
+                db, ctx, action,
+                resourceType: "batch",
+                resourceId: null,
+                before: request,
+                after: new
+                {
+                    result.Requested,
+                    result.Succeeded,
+                    result.Failed,
+                    failedIds = result.Items.Where(i => !i.Success).Select(i => i.PlayerId).ToArray()
+                },
+                ct);
 
         private static string? GetActor(HttpContext ctx) =>
             ctx.Request.Headers.TryGetValue(AdminHeader, out var h) ? h.ToString() : null;

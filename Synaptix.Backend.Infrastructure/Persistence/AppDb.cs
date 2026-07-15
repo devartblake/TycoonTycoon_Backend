@@ -96,6 +96,7 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         public DbSet<AdminNotificationSchedule> AdminNotificationSchedules => Set<AdminNotificationSchedule>();
         public DbSet<AdminNotificationTemplate> AdminNotificationTemplates => Set<AdminNotificationTemplate>();
         public DbSet<AdminNotificationHistory> AdminNotificationHistory => Set<AdminNotificationHistory>();
+        public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
         public DbSet<AdminAppConfig> AdminAppConfigs => Set<AdminAppConfig>();
         public DbSet<GameBalanceConfig> GameBalanceConfigs => Set<GameBalanceConfig>();
         public DbSet<PlayerEconomySafeguardState> PlayerEconomySafeguardStates => Set<PlayerEconomySafeguardState>();

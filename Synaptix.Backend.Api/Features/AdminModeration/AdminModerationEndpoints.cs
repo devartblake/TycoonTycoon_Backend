@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Synaptix.Backend.Api.Contracts;
+using Synaptix.Backend.Api.Security;
 using Synaptix.Backend.Application.Abstractions;
 using Synaptix.Backend.Application.Moderation;
 using Synaptix.Backend.Domain.Entities;
@@ -46,11 +47,18 @@ namespace Synaptix.Backend.Api.Features.AdminModeration
                 HttpContext ctx,
                 [FromBody] SetModerationStatusRequest req,
                 ModerationService svc,
+                IAppDb db,
                 CancellationToken ct) =>
             {
                 var adminUser = ctx.Request.Headers.TryGetValue(AdminHeader, out var h) ? h.ToString() : null;
 
                 var status = (ModerationStatus)req.Status;
+
+                // Snapshot the pre-change state for the before/after audit trail (#413).
+                var before = await db.PlayerModerationProfiles.AsNoTracking()
+                    .Where(x => x.PlayerId == req.PlayerId)
+                    .Select(x => new { status = (int)x.Status, reason = x.Reason, expiresAtUtc = x.ExpiresAtUtc })
+                    .FirstOrDefaultAsync(ct);
 
                 var profile = await svc.SetStatusAsync(
                     req.PlayerId,
@@ -60,6 +68,15 @@ namespace Synaptix.Backend.Api.Features.AdminModeration
                     adminUser,
                     req.ExpiresAtUtc,
                     req.RelatedFlagId,
+                    ct);
+
+                await AdminAuditLogger.WriteAsync(
+                    db, ctx,
+                    action: "moderation.set_status",
+                    resourceType: "player",
+                    resourceId: req.PlayerId.ToString(),
+                    before: (object?)before ?? new { status = (int)ModerationStatus.Normal },
+                    after: new { status = (int)profile.Status, reason = profile.Reason, expiresAtUtc = profile.ExpiresAtUtc },
                     ct);
 
                 return Results.Ok(new ModerationProfileDto(
@@ -224,6 +241,7 @@ namespace Synaptix.Backend.Api.Features.AdminModeration
                 [FromRoute] Guid id,
                 [FromBody] ReviewAppealRequest req,
                 ModerationService svc,
+                IAppDb db,
                 CancellationToken ct) =>
             {
                 var verdict = req.Verdict?.Trim().ToLowerInvariant();
@@ -237,6 +255,15 @@ namespace Synaptix.Backend.Api.Features.AdminModeration
                     var appeal = await svc.ReviewAppealAsync(id, verdict == "approve", req.ReviewerNotes, adminUser, ct);
                     if (appeal is null)
                         return AdminApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", "Resource not found.");
+
+                    await AdminAuditLogger.WriteAsync(
+                        db, ctx,
+                        action: "appeal.review",
+                        resourceType: "appeal",
+                        resourceId: appeal.Id.ToString(),
+                        before: new { status = (int)ModerationAppealStatus.Pending },
+                        after: new { status = (int)appeal.Status, reviewerNotes = appeal.ReviewerNotes, playerId = appeal.PlayerId },
+                        ct);
 
                     return Results.Ok(new ModerationAppealDto(
                         appeal.Id,
