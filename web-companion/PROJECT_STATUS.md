@@ -1,8 +1,28 @@
 # Trivia Tycoon Web Companion — Project Status & Next Steps
 
-**Last Updated**: 2026-06-25  
-**Current Phase**: 3.2 ✅ Complete  
-**Overall Progress**: 45% Estimated
+**Last Updated**: 2026-07-19  
+**Current Phase**: 3.3 partial — API contract fixes landed  
+**Overall Progress**: ~30–35% of the v1 plan
+
+## ⚠️ 2026-07-19 Status Correction
+
+An audit against the actual backend (see [WEB_COMPANION_API_AUDIT.md](./WEB_COMPANION_API_AUDIT.md))
+found that the claims below overstated completion:
+
+- **Phase 2 "API Integration ✅"** was UI-complete but not contract-complete: the quiz
+  loop, friends, store purchase, missions claim, and personal rank all called endpoints
+  that don't exist on the backend or sent payloads it can't bind. All client-side
+  mismatches are now fixed (branch `claude/web-companion-audit-demwsv`); quiz grading
+  is now server-side via `/questions/check`.
+- **`npm run build` was broken** (4 TS errors in ForgotPasswordPage, including a bug
+  that made the OTP reset-token step non-functional). Fixed; build is green.
+- **Feature development was paused 2026-06-26 → 2026-07-13** (only infra commits).
+  The velocity table below describes the initial 2-day burst, not sustained progress.
+- **Skill tree (the signature web feature) is still a placeholder page**; Stripe,
+  SignalR, and Dexie are dependency-only. Remaining gaps that need backend/product
+  decisions are listed at the end of the audit doc.
+
+Original document (2026-06-25) follows, unmodified:
 
 ## Executive Summary
 

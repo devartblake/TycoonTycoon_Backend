@@ -10,13 +10,16 @@ export interface Question {
   category: string;
   difficulty: 'easy' | 'medium' | 'hard';
   options: string[];
-  correctAnswer: number; // Index of correct option
+  optionIds?: string[]; // Backend option ids, parallel to options (live API)
+  correctAnswer?: number; // Index of correct option — only present for local/mock data;
+  // the live API withholds answers and grades via /questions/check
   timeLimit: number; // Seconds
 }
 
 export interface QuizAnswer {
   questionId: string;
   selectedAnswer: number;
+  selectedOptionId?: string; // Backend option id (live API)
   isCorrect: boolean;
   timeSpent: number; // Seconds
   xpEarned: number;

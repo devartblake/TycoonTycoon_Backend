@@ -6,6 +6,7 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import env from '../env';
+import { useAuthStore } from '@stores/authStore';
 
 export interface ApiErrorResponse {
   message: string;
@@ -153,12 +154,35 @@ class ApiClient {
     return this.client;
   }
 
+  // Current authenticated player id (needed by endpoints that take an explicit playerId)
+  private requirePlayerId(): string {
+    const playerId = useAuthStore.getState().user?.id;
+    if (!playerId) throw new Error('Not authenticated');
+    return playerId;
+  }
+
   // Quiz/Question endpoints
   async getQuizQuestions(category: string, difficulty: string, count: number = 10) {
     const response = await this.get('/questions/set', {
       params: { category, difficulty, count },
     });
-    return response.data.questions;
+    // Backend serves GameplayQuestionDto and withholds correct answers
+    // (server-side grading via /questions/check). Map to the client Question shape.
+    const questions = response.data.questions || [];
+    return questions.map((q: any) => ({
+      id: q.id,
+      question: q.text,
+      category: q.category,
+      difficulty: String(q.difficulty).toLowerCase(),
+      options: (q.options || []).map((o: any) => o.text),
+      optionIds: (q.options || []).map((o: any) => o.id),
+      timeLimit: 30,
+    }));
+  }
+
+  async checkAnswer(questionId: string, selectedOptionId: string) {
+    const response = await this.post('/questions/check', { questionId, selectedOptionId });
+    return response.data; // { questionId, selectedOptionId, correctOptionId, isCorrect }
   }
 
   async checkAnswers(answers: Array<{ questionId: string; selectedOptionId: string }>) {
@@ -168,26 +192,51 @@ class ApiClient {
 
   async getQuestionCategories() {
     const response = await this.get('/questions/categories');
-    return response.data.categories;
+    return response.data.categories; // Array<{ key: string; count: number }>
   }
 
   // Match/Quiz endpoints
   async startMatch(mode: string = 'single') {
-    const response = await this.post('/matches/start', { mode });
-    return response.data;
+    const hostPlayerId = this.requirePlayerId();
+    const response = await this.post('/matches/start', { hostPlayerId, mode });
+    return response.data; // { matchId, startedAt }
   }
 
-  async submitMatchResults(
-    matchId: string,
-    answers: Array<{ questionId: string; selectedOptionId: string }>,
-    score: number
-  ) {
+  async submitMatchResults(params: {
+    matchId: string;
+    category: string;
+    questionCount: number;
+    startedAtUtc: string;
+    endedAtUtc: string;
+    score: number;
+    correct: number;
+    wrong: number;
+    avgAnswerTimeMs: number;
+    answers: Array<{ questionId: string; selectedOptionId: string; answerTimeMs: number }>;
+    mode?: string;
+  }) {
+    const playerId = this.requirePlayerId();
     const response = await this.post('/matches/submit', {
-      matchId,
-      answers,
-      score,
+      eventId: crypto.randomUUID(), // idempotency key for submission + payouts
+      matchId: params.matchId,
+      mode: params.mode ?? 'single',
+      category: params.category,
+      questionCount: params.questionCount,
+      startedAtUtc: params.startedAtUtc,
+      endedAtUtc: params.endedAtUtc,
+      status: 'Completed',
+      participants: [
+        {
+          playerId,
+          score: params.score,
+          correct: params.correct,
+          wrong: params.wrong,
+          avgAnswerTimeMs: params.avgAnswerTimeMs,
+        },
+      ],
+      answers: params.answers.map((a) => ({ playerId, ...a })),
     });
-    return response.data;
+    return response.data; // { eventId, matchId, status, awards }
   }
 
   async getMatchDetails(matchId: string) {
@@ -223,73 +272,154 @@ class ApiClient {
   }
 
   // Leaderboard endpoints
-  async getLeaderboard(limit: number = 50, offset: number = 0) {
+  async getLeaderboard(limit: number = 50) {
     const response = await this.get('/leaderboard', {
-      params: { limit, offset },
+      params: { limit },
     });
-    return response.data.players || response.data;
+    // Legacy rows: { user_id, playerName, score, rank, tier, tierRank, wins, avatar, level }
+    const rows = Array.isArray(response.data) ? response.data : response.data.players || [];
+    return rows.map((r: any) => ({
+      rank: r.rank,
+      playerId: r.user_id,
+      username: r.playerName,
+      xp: r.score,
+      level: r.level,
+      tier: String(r.tier),
+      avatar: r.avatar ?? undefined,
+    }));
   }
 
   async getPlayerRank(playerId: string) {
-    const response = await this.get(`/leaderboard/rank/${playerId}`);
-    return response.data;
+    try {
+      const response = await this.get(`/leaderboards/me/${playerId}`);
+      const d = response.data; // MyTierDto
+      return {
+        rank: d.globalRank,
+        playerId: d.playerId,
+        username: useAuthStore.getState().user?.displayName ?? 'You',
+        xp: d.score,
+        level: 0,
+        tier: String(d.tierId),
+      };
+    } catch (error) {
+      // No leaderboard entry yet — not an error worth surfacing
+      if (axios.isAxiosError(error) && error.response?.status === 404) return null;
+      throw error;
+    }
   }
 
   // Social/Friends endpoints
   async getFriends() {
-    const response = await this.get('/social/friends');
-    return response.data.friends || response.data;
+    const response = await this.get('/users/me/friends', {
+      params: { page: 1, pageSize: 100 },
+    });
+    const items = response.data.items || [];
+    return items.map((f: any) => ({
+      playerId: f.friendPlayerId,
+      username: f.username || f.displayName,
+      level: 0,
+      xp: 0,
+      avatar: f.avatarUrl ?? undefined,
+      isOnline: f.isOnline,
+    }));
   }
 
-  async addFriend(friendId: string) {
-    const response = await this.post('/social/friends/add', { friendId });
+  async addFriend(username: string) {
+    // The backend takes a target user id, so resolve the username first
+    const search = await this.get('/users/search', {
+      params: { handle: username, page: 1, pageSize: 10 },
+    });
+    const candidates = search.data.items || [];
+    const target =
+      candidates.find((u: any) => u.handle?.toLowerCase() === username.toLowerCase()) ??
+      candidates[0];
+    if (!target) throw new Error(`User "${username}" not found`);
+
+    const response = await this.post('/users/me/friends/request', {
+      targetUserId: target.id,
+    });
     return response.data;
   }
 
   async removeFriend(friendId: string) {
-    const response = await this.post('/social/friends/remove', { friendId });
+    const response = await this.delete(`/users/me/friends/${friendId}`);
     return response.data;
   }
 
   async getFriendRequests() {
-    const response = await this.get('/social/friend-requests');
-    return response.data.requests || response.data;
+    const response = await this.get('/users/me/friends/requests', {
+      params: { page: 1, pageSize: 50 },
+    });
+    const items = response.data.items || [];
+    return items.map((r: any) => ({
+      requestId: r.requestId,
+      fromPlayerId: r.fromPlayerId,
+      fromUsername: r.senderUsername || r.senderDisplayName,
+      timestamp: r.createdAtUtc,
+      avatar: r.senderAvatarUrl ?? undefined,
+    }));
   }
 
   async acceptFriendRequest(requestId: string) {
-    const response = await this.post(`/social/friend-requests/${requestId}/accept`, {});
+    const response = await this.post(`/users/me/friends/requests/${requestId}/accept`, {});
     return response.data;
   }
 
   async declineFriendRequest(requestId: string) {
-    const response = await this.post(`/social/friend-requests/${requestId}/decline`, {});
+    const response = await this.post(`/users/me/friends/requests/${requestId}/decline`, {});
     return response.data;
   }
 
   // Store endpoints
   async getStoreItems() {
-    const response = await this.get('/store/items');
-    return response.data.items || response.data;
+    const response = await this.get('/store/catalog');
+    const items = response.data.items || [];
+    return items.map((i: any) => ({
+      itemId: i.sku,
+      name: i.name,
+      description: i.description,
+      category: i.itemType,
+      price: i.priceCoins > 0 ? i.priceCoins : i.priceDiamonds,
+      currencyType: i.priceCoins > 0 ? 'coins' : 'diamonds',
+    }));
   }
 
-  async purchaseItem(itemId: string, currencyType: 'coins' | 'diamonds') {
-    const response = await this.post('/store/purchase', { itemId, currencyType });
+  async purchaseItem(sku: string, currencyType: 'coins' | 'diamonds') {
+    const playerId = this.requirePlayerId();
+    const response = await this.post('/store/purchase', {
+      playerId,
+      sku,
+      quantity: 1,
+      currency: currencyType,
+    });
     return response.data;
   }
 
   // Missions endpoints
   async getMissions() {
     const response = await this.get('/missions');
-    return response.data.missions || response.data;
-  }
-
-  async completeMission(missionId: string) {
-    const response = await this.post(`/missions/${missionId}/complete`, {});
-    return response.data;
+    // MissionDto: { id, type, key, goal, rewardXp } — global definitions, no per-player progress
+    const missions = response.data.missions || response.data || [];
+    return missions.map((m: any) => ({
+      missionId: m.id,
+      title: String(m.key || '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/^\w/, (c: string) => c.toUpperCase()),
+      description: '',
+      type: String(m.type || '').toLowerCase(),
+      progress: 0,
+      target: m.goal,
+      reward: { xp: m.rewardXp },
+      completed: false,
+      claimed: false,
+    }));
   }
 
   async claimMissionReward(missionId: string) {
-    const response = await this.post(`/missions/${missionId}/claim-reward`, {});
+    const playerId = this.requirePlayerId();
+    const response = await this.post(`/missions/${missionId}/claim`, {}, {
+      params: { playerId },
+    });
     return response.data;
   }
 

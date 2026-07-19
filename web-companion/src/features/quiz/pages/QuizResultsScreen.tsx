@@ -30,19 +30,36 @@ export function QuizResultsScreen() {
         setIsSubmitting(true);
         setSubmitError(null);
 
-        // Convert quiz session stats to API format
-        // Note: selectedAnswerIndex is the array index, we convert it to option ID format
-        const answers = stats.answers.map((answer) => ({
-          questionId: answer.questionId,
-          selectedOptionId: `option_${answer.selectedAnswer}`, // Convert index to option ID
-        }));
+        // Convert quiz session stats to the backend SubmitMatchRequest shape
+        const answers = stats.answers
+          .filter((answer) => answer.selectedOptionId)
+          .map((answer) => ({
+            questionId: answer.questionId,
+            selectedOptionId: answer.selectedOptionId!,
+            answerTimeMs: answer.timeSpent * 1000,
+          }));
+
+        const endedAt = new Date();
+        const startedAt = new Date(endedAt.getTime() - stats.timeSpent * 1000);
+        const avgAnswerTimeMs =
+          stats.answers.length > 0
+            ? (stats.answers.reduce((sum, a) => sum + a.timeSpent, 0) * 1000) /
+              stats.answers.length
+            : 0;
 
         // Submit to API
-        const response = await apiClient.submitMatchResults(
-          sessionId || 'unknown',
+        const response = await apiClient.submitMatchResults({
+          matchId: sessionId || '',
+          category: stats.categoryStats.category,
+          questionCount: stats.totalQuestions,
+          startedAtUtc: startedAt.toISOString(),
+          endedAtUtc: endedAt.toISOString(),
+          score: stats.totalScore,
+          correct: stats.correctAnswers,
+          wrong: stats.totalQuestions - stats.correctAnswers,
+          avgAnswerTimeMs,
           answers,
-          stats.totalScore
-        );
+        });
 
         // Update player profile with earned rewards
         if (response) {
