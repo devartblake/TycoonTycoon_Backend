@@ -35,7 +35,7 @@ export function LeaderboardPage() {
       setError(null);
 
       // Fetch top 50 players
-      const data = await apiClient.getLeaderboard(50, 0);
+      const data = await apiClient.getLeaderboard(50);
       setEntries(data);
 
       // Fetch user's rank if authenticated

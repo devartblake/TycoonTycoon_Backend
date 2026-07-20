@@ -27,10 +27,10 @@ export function QuizLobbyPage() {
         setIsLoading(true);
         setError(null);
         const fetchedCategories = await apiClient.getQuestionCategories();
-        // Convert API response to our format
-        const formatted = Object.entries(fetchedCategories).map(([id]) => ({
-          id,
-          label: id.charAt(0).toUpperCase() + id.slice(1),
+        // API returns Array<{ key, count }> facets
+        const formatted = fetchedCategories.map((c: { key: string; count: number }) => ({
+          id: c.key,
+          label: c.key.charAt(0).toUpperCase() + c.key.slice(1),
         }));
         setCategories(formatted);
       } catch (err) {
@@ -152,9 +152,9 @@ export function QuizLobbyPage() {
                   setError(null);
                   apiClient.getQuestionCategories()
                     .then(data => {
-                      const formatted = Object.entries(data).map(([id]) => ({
-                        id,
-                        label: id.charAt(0).toUpperCase() + id.slice(1),
+                      const formatted = data.map((c: { key: string; count: number }) => ({
+                        id: c.key,
+                        label: c.key.charAt(0).toUpperCase() + c.key.slice(1),
                       }));
                       setCategories(formatted);
                     })

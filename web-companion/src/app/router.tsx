@@ -20,6 +20,7 @@ import { LeaderboardPage } from '@features/leaderboard/pages/LeaderboardPage';
 import { ProfilePage } from '@features/profile/pages/ProfilePage';
 import { FriendsPage } from '@features/social/pages/FriendsPage';
 import { StorePage } from '@features/store/pages/StorePage';
+import { CheckoutResultPage } from '@features/store/pages/CheckoutResultPage';
 import { MissionsPage } from '@features/missions/pages/MissionsPage';
 import { StudyPage } from '@features/study/pages/StudyPage';
 
@@ -64,6 +65,8 @@ const router = createBrowserRouter([
 
               // Store
               { path: 'store', element: <StorePage /> },
+              { path: 'store/checkout/success', element: <CheckoutResultPage status="success" /> },
+              { path: 'store/checkout/cancelled', element: <CheckoutResultPage status="cancelled" /> },
 
               // Missions
               { path: 'missions', element: <MissionsPage /> },

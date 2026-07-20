@@ -1,8 +1,32 @@
 # Trivia Tycoon Web Companion — Project Status & Next Steps
 
-**Last Updated**: 2026-06-25  
-**Current Phase**: 3.2 ✅ Complete  
-**Overall Progress**: 45% Estimated
+**Last Updated**: 2026-07-19  
+**Current Phase**: 3.3 partial — API contract fixes landed  
+**Overall Progress**: ~30–35% of the v1 plan
+
+## ⚠️ 2026-07-19 Status Correction
+
+An audit against the actual backend (see [WEB_COMPANION_API_AUDIT.md](./WEB_COMPANION_API_AUDIT.md))
+found that the claims below overstated completion:
+
+- **Phase 2 "API Integration ✅"** was UI-complete but not contract-complete: the quiz
+  loop, friends, store purchase, missions claim, and personal rank all called endpoints
+  that don't exist on the backend or sent payloads it can't bind. All client-side
+  mismatches are now fixed (branch `claude/web-companion-audit-demwsv`); quiz grading
+  is now server-side via `/questions/check`.
+- **`npm run build` was broken** (4 TS errors in ForgotPasswordPage, including a bug
+  that made the OTP reset-token step non-functional). Fixed; build is green.
+- **Feature development was paused 2026-06-26 → 2026-07-13** (only infra commits).
+  The velocity table below describes the initial 2-day burst, not sustained progress.
+- **2026-07-19 follow-up**: the skill-tree hub is now built (catalog, unlock,
+  respec against `/skills/*`), and the Stripe one-time checkout flow is wired
+  end-to-end (store → session create → redirect → success/cancel pages) — but
+  checkout is blocked at runtime by the KMS secure-channel gate until the decision
+  in [PLANNED_TASKS.md](./PLANNED_TASKS.md) #1 is made. SignalR and Dexie remain
+  dependency-only. Remaining gaps needing backend/product decisions live in
+  PLANNED_TASKS.md.
+
+Original document (2026-06-25) follows, unmodified:
 
 ## Executive Summary
 

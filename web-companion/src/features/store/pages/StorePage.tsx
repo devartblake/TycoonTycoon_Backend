@@ -12,13 +12,14 @@ import { PageTransition } from '@components/PageTransition';
 import { useToast } from '@hooks/useToast';
 
 interface StoreItem {
-  itemId: string;
+  itemId: string; // backend SKU
   name: string;
   description: string;
   icon?: string;
-  category: 'power-up' | 'cosmetic' | 'skill-boost';
+  category: string; // backend itemType, e.g. power-up, cosmetic, premium-subscription
   price: number;
   currencyType: 'coins' | 'diamonds';
+  isRealMoney?: boolean; // no coin/diamond price — purchased with card via Stripe
   duration?: number; // For time-based items in seconds
   effect?: string;
 }
@@ -54,11 +55,41 @@ export function StorePage() {
     fetchStoreItems();
   }, [toast]);
 
+  const handleCardCheckout = async (item: StoreItem) => {
+    if (item.category === 'premium-subscription') {
+      toast.info('Subscriptions are coming soon on web — use the mobile app for now.');
+      return;
+    }
+
+    try {
+      setPurchasing(item.itemId);
+      const session = await apiClient.createStripeCheckoutSession(item.itemId);
+      // Hand off to the Stripe-hosted checkout page; fulfillment happens via webhook
+      window.location.href = session.checkoutUrl;
+    } catch (err: any) {
+      console.error('Failed to start checkout:', err);
+      const code = err?.response?.data?.error?.code;
+      if (code === 'secure_session_required' || code === 'secure_session_invalid') {
+        toast.error('Could not establish a secure session. Please try again.');
+      } else if (code === 'STRIPE_PRICE_NOT_CONFIGURED' || code === 'STRIPE_NOT_READY') {
+        toast.error('This item is not available for card purchase yet.');
+      } else {
+        toast.error('Failed to start checkout. Please try again.');
+      }
+      setPurchasing(null);
+    }
+  };
+
   const handlePurchase = async (item: StoreItem) => {
     if (!profile) {
       const msg = 'Please log in to make purchases.';
       setError(msg);
       toast.error(msg);
+      return;
+    }
+
+    if (item.isRealMoney) {
+      await handleCardCheckout(item);
       return;
     }
 
@@ -291,11 +322,21 @@ export function StorePage() {
                     className="flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-2 font-bold"
                     style={{
                       backgroundColor: 'var(--color-bg-tertiary)',
-                      color: item.currencyType === 'coins' ? 'var(--color-status-warning)' : 'var(--color-status-info)',
+                      color: item.isRealMoney
+                        ? 'var(--color-text-primary)'
+                        : item.currencyType === 'coins' ? 'var(--color-status-warning)' : 'var(--color-status-info)',
                     }}
                   >
-                    <span>{item.currencyType === 'coins' ? '🪙' : '💎'}</span>
-                    {item.price}
+                    {item.isRealMoney ? (
+                      <>
+                        <span>💳</span> Card
+                      </>
+                    ) : (
+                      <>
+                        <span>{item.currencyType === 'coins' ? '🪙' : '💎'}</span>
+                        {item.price}
+                      </>
+                    )}
                   </div>
                   <button
                     onClick={() => handlePurchase(item)}

@@ -6,6 +6,28 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import env from '../env';
+import { useAuthStore } from '@stores/authStore';
+import { SecureChannel, isEncryptedEnvelope } from '../security/secureChannel';
+
+/** JWT "sub" claim of the stored auth token — the secure-channel AAD subject. */
+function jwtSubject(): string {
+  const token = localStorage.getItem('auth_token');
+  if (!token) return '';
+  try {
+    const payload = JSON.parse(
+      atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+    );
+    return payload.sub ?? payload.nameid ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Path prefix the server sees for AAD targets (e.g. "/api/v1"). */
+function apiPathPrefix(): string {
+  const base = env.apiV1Url;
+  return base.startsWith('http') ? new URL(base).pathname : base;
+}
 
 export interface ApiErrorResponse {
   message: string;
@@ -75,7 +97,12 @@ class ApiClient {
           });
         }
 
-        if (error.response?.status === 401) {
+        // Secure-channel requests handle their own 401s (a KMS session-invalid
+        // 401 is not an auth failure, and replaying the same encrypted envelope
+        // after a token refresh would trip replay protection anyway).
+        const isSecureChannelRequest = !!error.config?.headers?.['X-Syn-Sec-Session'];
+
+        if (error.response?.status === 401 && !isSecureChannelRequest) {
           // Unauthorized: attempt token refresh or redirect to login
           const refreshed = await this.refreshToken();
           if (refreshed) {
@@ -153,12 +180,99 @@ class ApiClient {
     return this.client;
   }
 
+  // Current authenticated player id (needed by endpoints that take an explicit playerId)
+  private requirePlayerId(): string {
+    const playerId = useAuthStore.getState().user?.id;
+    if (!playerId) throw new Error('Not authenticated');
+    return playerId;
+  }
+
+  // KMS secure channel for RequireSecureChannel endpoints (store purchase, payments)
+  private secureChannel: SecureChannel | null = null;
+
+  private getSecureChannel(): SecureChannel {
+    if (!this.secureChannel) {
+      this.secureChannel = new SecureChannel({
+        post: (url, data) => this.post(url, data),
+        getDeviceId: () => this.getDeviceId(),
+        getSubjectId: () => jwtSubject(),
+      });
+    }
+    return this.secureChannel;
+  }
+
+  /**
+   * POST through the KMS secure channel: body encrypted into an envelope,
+   * response envelope decrypted. Retries once on a stale/invalid secure
+   * session by re-handshaking. Do not pass query params — the AAD binds the
+   * exact target path.
+   */
+  private async securePost<T = any>(url: string, data: unknown): Promise<{ data: T }> {
+    const channel = this.getSecureChannel();
+    const target = apiPathPrefix() + url;
+
+    const attempt = async (): Promise<{ data: T }> => {
+      const { envelope, headers, seq } = await channel.encryptRequest('POST', target, data);
+      try {
+        const response = await this.client.post(url, envelope, { headers });
+        if (isEncryptedEnvelope(response.data)) {
+          response.data = await channel.decryptResponse('POST', target, seq, response.data);
+        }
+        return response as { data: T };
+      } catch (error) {
+        // Endpoint errors (4xx/5xx from the handler) come back encrypted too
+        if (
+          axios.isAxiosError(error) &&
+          error.response &&
+          isEncryptedEnvelope(error.response.data)
+        ) {
+          error.response.data = await channel.decryptResponse(
+            'POST',
+            target,
+            seq,
+            error.response.data
+          );
+        }
+        throw error;
+      }
+    };
+
+    try {
+      return await attempt();
+    } catch (error) {
+      const code = axios.isAxiosError(error)
+        ? (error.response?.data as any)?.error?.code
+        : undefined;
+      if (code === 'secure_session_invalid' || code === 'secure_session_required') {
+        channel.invalidate();
+        return attempt();
+      }
+      throw error;
+    }
+  }
+
   // Quiz/Question endpoints
   async getQuizQuestions(category: string, difficulty: string, count: number = 10) {
     const response = await this.get('/questions/set', {
       params: { category, difficulty, count },
     });
-    return response.data.questions;
+    // Backend serves GameplayQuestionDto and withholds correct answers
+    // (server-side grading via /questions/check). Map to the client Question shape.
+    const questions = response.data.questions || [];
+    return questions.map((q: any) => ({
+      id: q.id,
+      question: q.text,
+      category: q.category,
+      difficulty: String(q.difficulty).toLowerCase(),
+      options: (q.options || []).map((o: any) => o.text),
+      optionIds: (q.options || []).map((o: any) => o.id),
+      timeLimit: 30,
+    }));
+  }
+
+  async checkAnswer(questionId: string, selectedOptionId: string) {
+    const response = await this.post('/questions/check', { questionId, selectedOptionId });
+    return response.data; // { questionId, selectedOptionId, correctOptionId, isCorrect }
   }
 
   async checkAnswers(answers: Array<{ questionId: string; selectedOptionId: string }>) {
@@ -168,26 +282,51 @@ class ApiClient {
 
   async getQuestionCategories() {
     const response = await this.get('/questions/categories');
-    return response.data.categories;
+    return response.data.categories; // Array<{ key: string; count: number }>
   }
 
   // Match/Quiz endpoints
   async startMatch(mode: string = 'single') {
-    const response = await this.post('/matches/start', { mode });
-    return response.data;
+    const hostPlayerId = this.requirePlayerId();
+    const response = await this.post('/matches/start', { hostPlayerId, mode });
+    return response.data; // { matchId, startedAt }
   }
 
-  async submitMatchResults(
-    matchId: string,
-    answers: Array<{ questionId: string; selectedOptionId: string }>,
-    score: number
-  ) {
+  async submitMatchResults(params: {
+    matchId: string;
+    category: string;
+    questionCount: number;
+    startedAtUtc: string;
+    endedAtUtc: string;
+    score: number;
+    correct: number;
+    wrong: number;
+    avgAnswerTimeMs: number;
+    answers: Array<{ questionId: string; selectedOptionId: string; answerTimeMs: number }>;
+    mode?: string;
+  }) {
+    const playerId = this.requirePlayerId();
     const response = await this.post('/matches/submit', {
-      matchId,
-      answers,
-      score,
+      eventId: crypto.randomUUID(), // idempotency key for submission + payouts
+      matchId: params.matchId,
+      mode: params.mode ?? 'single',
+      category: params.category,
+      questionCount: params.questionCount,
+      startedAtUtc: params.startedAtUtc,
+      endedAtUtc: params.endedAtUtc,
+      status: 'Completed',
+      participants: [
+        {
+          playerId,
+          score: params.score,
+          correct: params.correct,
+          wrong: params.wrong,
+          avgAnswerTimeMs: params.avgAnswerTimeMs,
+        },
+      ],
+      answers: params.answers.map((a) => ({ playerId, ...a })),
     });
-    return response.data;
+    return response.data; // { eventId, matchId, status, awards }
   }
 
   async getMatchDetails(matchId: string) {
@@ -223,74 +362,206 @@ class ApiClient {
   }
 
   // Leaderboard endpoints
-  async getLeaderboard(limit: number = 50, offset: number = 0) {
+  async getLeaderboard(limit: number = 50) {
     const response = await this.get('/leaderboard', {
-      params: { limit, offset },
+      params: { limit },
     });
-    return response.data.players || response.data;
+    // Legacy rows: { user_id, playerName, score, rank, tier, tierRank, wins, avatar, level }
+    const rows = Array.isArray(response.data) ? response.data : response.data.players || [];
+    return rows.map((r: any) => ({
+      rank: r.rank,
+      playerId: r.user_id,
+      username: r.playerName,
+      xp: r.score,
+      level: r.level,
+      tier: String(r.tier),
+      avatar: r.avatar ?? undefined,
+    }));
   }
 
   async getPlayerRank(playerId: string) {
-    const response = await this.get(`/leaderboard/rank/${playerId}`);
-    return response.data;
+    try {
+      const response = await this.get(`/leaderboards/me/${playerId}`);
+      const d = response.data; // MyTierDto
+      return {
+        rank: d.globalRank,
+        playerId: d.playerId,
+        username: useAuthStore.getState().user?.displayName ?? 'You',
+        xp: d.score,
+        level: 0,
+        tier: String(d.tierId),
+      };
+    } catch (error) {
+      // No leaderboard entry yet — not an error worth surfacing
+      if (axios.isAxiosError(error) && error.response?.status === 404) return null;
+      throw error;
+    }
   }
 
   // Social/Friends endpoints
   async getFriends() {
-    const response = await this.get('/social/friends');
-    return response.data.friends || response.data;
+    const response = await this.get('/users/me/friends', {
+      params: { page: 1, pageSize: 100 },
+    });
+    const items = response.data.items || [];
+    return items.map((f: any) => ({
+      playerId: f.friendPlayerId,
+      username: f.username || f.displayName,
+      level: 0,
+      xp: 0,
+      avatar: f.avatarUrl ?? undefined,
+      isOnline: f.isOnline,
+    }));
   }
 
-  async addFriend(friendId: string) {
-    const response = await this.post('/social/friends/add', { friendId });
+  async addFriend(username: string) {
+    // The backend takes a target user id, so resolve the username first
+    const search = await this.get('/users/search', {
+      params: { handle: username, page: 1, pageSize: 10 },
+    });
+    const candidates = search.data.items || [];
+    const target =
+      candidates.find((u: any) => u.handle?.toLowerCase() === username.toLowerCase()) ??
+      candidates[0];
+    if (!target) throw new Error(`User "${username}" not found`);
+
+    const response = await this.post('/users/me/friends/request', {
+      targetUserId: target.id,
+    });
     return response.data;
   }
 
   async removeFriend(friendId: string) {
-    const response = await this.post('/social/friends/remove', { friendId });
+    const response = await this.delete(`/users/me/friends/${friendId}`);
     return response.data;
   }
 
   async getFriendRequests() {
-    const response = await this.get('/social/friend-requests');
-    return response.data.requests || response.data;
+    const response = await this.get('/users/me/friends/requests', {
+      params: { page: 1, pageSize: 50 },
+    });
+    const items = response.data.items || [];
+    return items.map((r: any) => ({
+      requestId: r.requestId,
+      fromPlayerId: r.fromPlayerId,
+      fromUsername: r.senderUsername || r.senderDisplayName,
+      timestamp: r.createdAtUtc,
+      avatar: r.senderAvatarUrl ?? undefined,
+    }));
   }
 
   async acceptFriendRequest(requestId: string) {
-    const response = await this.post(`/social/friend-requests/${requestId}/accept`, {});
+    const response = await this.post(`/users/me/friends/requests/${requestId}/accept`, {});
     return response.data;
   }
 
   async declineFriendRequest(requestId: string) {
-    const response = await this.post(`/social/friend-requests/${requestId}/decline`, {});
+    const response = await this.post(`/users/me/friends/requests/${requestId}/decline`, {});
     return response.data;
   }
 
   // Store endpoints
   async getStoreItems() {
-    const response = await this.get('/store/items');
-    return response.data.items || response.data;
+    const response = await this.get('/store/catalog');
+    const items = response.data.items || [];
+    return items.map((i: any) => ({
+      itemId: i.sku,
+      name: i.name,
+      description: i.description,
+      category: i.itemType,
+      price: i.priceCoins > 0 ? i.priceCoins : i.priceDiamonds,
+      currencyType: i.priceCoins > 0 ? 'coins' : 'diamonds',
+      // Items with no coin/diamond price are real-money (Stripe) offerings
+      isRealMoney: !(i.priceCoins > 0) && !(i.priceDiamonds > 0),
+    }));
   }
 
-  async purchaseItem(itemId: string, currencyType: 'coins' | 'diamonds') {
-    const response = await this.post('/store/purchase', { itemId, currencyType });
+  async purchaseItem(sku: string, currencyType: 'coins' | 'diamonds') {
+    const playerId = this.requirePlayerId();
+    const response = await this.securePost('/store/purchase', {
+      playerId,
+      sku,
+      quantity: 1,
+      currency: currencyType,
+    });
     return response.data;
   }
 
   // Missions endpoints
   async getMissions() {
     const response = await this.get('/missions');
-    return response.data.missions || response.data;
-  }
-
-  async completeMission(missionId: string) {
-    const response = await this.post(`/missions/${missionId}/complete`, {});
-    return response.data;
+    // MissionDto: { id, type, key, goal, rewardXp } — global definitions, no per-player progress
+    const missions = response.data.missions || response.data || [];
+    return missions.map((m: any) => ({
+      missionId: m.id,
+      title: String(m.key || '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/^\w/, (c: string) => c.toUpperCase()),
+      description: '',
+      type: String(m.type || '').toLowerCase(),
+      progress: 0,
+      target: m.goal,
+      reward: { xp: m.rewardXp },
+      completed: false,
+      claimed: false,
+    }));
   }
 
   async claimMissionReward(missionId: string) {
-    const response = await this.post(`/missions/${missionId}/claim-reward`, {});
+    const playerId = this.requirePlayerId();
+    const response = await this.post(`/missions/${missionId}/claim`, {}, {
+      params: { playerId },
+    });
     return response.data;
+  }
+
+  // Skill tree endpoints
+  async getSkillTree() {
+    const response = await this.get('/skills/tree');
+    // SkillNodeDto: { key, branch, tier, title, description, prereqKeys, costs: [{currency, amount}], effects }
+    return response.data.nodes || [];
+  }
+
+  async getSkillState() {
+    const playerId = this.requirePlayerId();
+    const response = await this.get(`/skills/state/${playerId}`);
+    return response.data; // { playerId, unlockedKeys }
+  }
+
+  async unlockSkill(nodeKey: string) {
+    const playerId = this.requirePlayerId();
+    const response = await this.post('/skills/unlock', {
+      eventId: crypto.randomUUID(),
+      playerId,
+      nodeKey,
+    });
+    // { eventId, playerId, nodeKey, status: Unlocked|Duplicate|MissingPrereq|NotFound|InsufficientFunds, unlockedKeys }
+    return response.data;
+  }
+
+  async respecSkills(refundPercent: number = 80) {
+    const playerId = this.requirePlayerId();
+    const response = await this.post('/skills/respec', {
+      eventId: crypto.randomUUID(),
+      playerId,
+      refundPercent,
+    });
+    // { eventId, playerId, status: Respecced|Duplicate, refundedCoins, refundedDiamonds, unlockedKeys }
+    return response.data;
+  }
+
+  // Stripe checkout (one-time purchases), via the KMS secure channel
+  async createStripeCheckoutSession(sku: string, quantity: number = 1) {
+    const playerId = this.requirePlayerId();
+    const origin = window.location.origin;
+    const response = await this.securePost('/store/payments/checkout/session', {
+      playerId,
+      sku,
+      quantity,
+      successUrl: `${origin}/store/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${origin}/store/checkout/cancelled`,
+    });
+    return response.data; // { sessionId, checkoutUrl, currency, unitAmount, totalAmount, sku, quantity, publishableKey }
   }
 
   // Authentication endpoints

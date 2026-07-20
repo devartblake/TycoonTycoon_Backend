@@ -9,6 +9,7 @@ import { useQuizSessionStore } from '@stores/quizSessionStore';
 import { QuestionCard } from '@components/game/QuestionCard';
 import { AnswerButton } from '@components/game/AnswerButton';
 import { TimerBar } from '@components/game/TimerBar';
+import { apiClient } from '@core/api/client';
 import { BarChart3, Zap } from 'lucide-react';
 
 export function QuizSessionScreen() {
@@ -16,6 +17,10 @@ export function QuizSessionScreen() {
   const { sessionId } = useParams();
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  // Server-graded result for the current question (the API withholds correct answers)
+  const [correctIndex, setCorrectIndex] = useState<number | null>(null);
+  const [answeredCorrectly, setAnsweredCorrectly] = useState(false);
 
   const {
     questions,
@@ -75,23 +80,43 @@ export function QuizSessionScreen() {
     }
   };
 
-  const handleSubmitAnswer = () => {
-    if (!isRevealed) {
-      setIsRevealed(true);
+  const handleSubmitAnswer = async () => {
+    if (isRevealed || isChecking) return;
 
-      // Record answer
-      const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
-      const timeSpent = currentQuestion.timeLimit - timeRemaining;
-      const xpEarned = isCorrect ? 100 : 0;
+    const answerIndex = selectedAnswer;
+    const selectedOptionId =
+      answerIndex !== null ? currentQuestion.optionIds?.[answerIndex] : undefined;
+    const timeSpent = currentQuestion.timeLimit - timeRemaining;
 
-      answerQuestion({
-        questionId: currentQuestion.id,
-        selectedAnswer: selectedAnswer ?? -1,
-        isCorrect,
-        timeSpent,
-        xpEarned,
-      });
+    // Grade server-side — the API never sends correct answers to the client
+    let isCorrect = false;
+    let revealedCorrectIndex: number | null = null;
+    if (selectedOptionId) {
+      setIsChecking(true);
+      try {
+        const result = await apiClient.checkAnswer(currentQuestion.id, selectedOptionId);
+        isCorrect = result.isCorrect;
+        const idx = currentQuestion.optionIds?.indexOf(result.correctOptionId) ?? -1;
+        revealedCorrectIndex = idx >= 0 ? idx : null;
+      } catch (err) {
+        console.error('Failed to check answer:', err);
+      } finally {
+        setIsChecking(false);
+      }
     }
+
+    setCorrectIndex(revealedCorrectIndex);
+    setAnsweredCorrectly(isCorrect);
+    setIsRevealed(true);
+
+    answerQuestion({
+      questionId: currentQuestion.id,
+      selectedAnswer: answerIndex ?? -1,
+      selectedOptionId,
+      isCorrect,
+      timeSpent,
+      xpEarned: isCorrect ? 100 : 0,
+    });
   };
 
   const submitAnswer = () => {
@@ -105,6 +130,8 @@ export function QuizSessionScreen() {
       setCurrentQuestion(currentQuestionIndex + 1);
       setSelectedAnswer(null);
       setIsRevealed(false);
+      setCorrectIndex(null);
+      setAnsweredCorrectly(false);
     } else {
       // Quiz complete
       const stats = completeQuiz();
@@ -199,7 +226,7 @@ export function QuizSessionScreen() {
               index={index}
               isSelected={selectedAnswer === index}
               isRevealed={isRevealed}
-              isCorrect={index === currentQuestion.correctAnswer}
+              isCorrect={index === correctIndex}
               onClick={() => handleSelectAnswer(index)}
               disabled={isRevealed}
             />
@@ -212,14 +239,14 @@ export function QuizSessionScreen() {
             <>
               <button
                 onClick={handleSubmitAnswer}
-                disabled={selectedAnswer === null}
+                disabled={selectedAnswer === null || isChecking}
                 className="flex-1 py-3 px-6 rounded-lg font-semibold transition-all disabled:opacity-50"
                 style={{
                   backgroundColor: selectedAnswer === null ? 'var(--color-bg-tertiary)' : 'var(--color-brand-primary)',
                   color: selectedAnswer === null ? 'var(--color-text-secondary)' : 'white',
                 }}
               >
-                Submit Answer
+                {isChecking ? 'Checking…' : 'Submit Answer'}
               </button>
               <button
                 onClick={handleAbandonQuiz}
@@ -251,16 +278,16 @@ export function QuizSessionScreen() {
           <div
             className="mt-8 p-6 rounded-lg border-l-4"
             style={{
-              backgroundColor: selectedAnswer === currentQuestion.correctAnswer
+              backgroundColor: answeredCorrectly
                 ? 'var(--color-status-success)'
                 : 'var(--color-status-error)',
-              borderColor: selectedAnswer === currentQuestion.correctAnswer
+              borderColor: answeredCorrectly
                 ? 'var(--color-status-success)'
                 : 'var(--color-status-error)',
               color: 'white',
             }}
           >
-            {selectedAnswer === currentQuestion.correctAnswer ? (
+            {answeredCorrectly ? (
               <div>
                 <h3 className="font-bold mb-2">Correct! 🎉</h3>
                 <p>You earned 100 XP and 100 points!</p>
@@ -268,7 +295,9 @@ export function QuizSessionScreen() {
             ) : (
               <div>
                 <h3 className="font-bold mb-2">Not quite right</h3>
-                <p>The correct answer was: {currentQuestion.options[currentQuestion.correctAnswer]}</p>
+                {correctIndex !== null && (
+                  <p>The correct answer was: {currentQuestion.options[correctIndex]}</p>
+                )}
               </div>
             )}
           </div>

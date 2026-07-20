@@ -18,7 +18,7 @@ export function ForgotPasswordPage() {
 
   // Form data
   const [email, setEmail] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState<'email' | 'sms'>('email');
+  const [selectedMethod] = useState<'email' | 'sms'>('email');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,7 +57,7 @@ export function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post('/auth/forgot-password', {
+      await apiClient.post('/auth/forgot-password', {
         email,
         method: 'email',
       });
@@ -83,7 +83,7 @@ export function ForgotPasswordPage() {
         otp,
       });
 
-      setResetToken(response.resetToken);
+      setResetToken(response.data.resetToken);
       setOtp(''); // Clear OTP from form
       setSuccessMessage('OTP verified successfully');
       setStep('password');
@@ -102,7 +102,7 @@ export function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post('/auth/reset-password', {
+      await apiClient.post('/auth/reset-password', {
         email,
         token: resetToken,
         newPassword,
