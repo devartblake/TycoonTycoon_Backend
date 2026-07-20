@@ -7,6 +7,27 @@ import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import env from '../env';
 import { useAuthStore } from '@stores/authStore';
+import { SecureChannel, isEncryptedEnvelope } from '../security/secureChannel';
+
+/** JWT "sub" claim of the stored auth token — the secure-channel AAD subject. */
+function jwtSubject(): string {
+  const token = localStorage.getItem('auth_token');
+  if (!token) return '';
+  try {
+    const payload = JSON.parse(
+      atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+    );
+    return payload.sub ?? payload.nameid ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Path prefix the server sees for AAD targets (e.g. "/api/v1"). */
+function apiPathPrefix(): string {
+  const base = env.apiV1Url;
+  return base.startsWith('http') ? new URL(base).pathname : base;
+}
 
 export interface ApiErrorResponse {
   message: string;
@@ -76,7 +97,12 @@ class ApiClient {
           });
         }
 
-        if (error.response?.status === 401) {
+        // Secure-channel requests handle their own 401s (a KMS session-invalid
+        // 401 is not an auth failure, and replaying the same encrypted envelope
+        // after a token refresh would trip replay protection anyway).
+        const isSecureChannelRequest = !!error.config?.headers?.['X-Syn-Sec-Session'];
+
+        if (error.response?.status === 401 && !isSecureChannelRequest) {
           // Unauthorized: attempt token refresh or redirect to login
           const refreshed = await this.refreshToken();
           if (refreshed) {
@@ -159,6 +185,70 @@ class ApiClient {
     const playerId = useAuthStore.getState().user?.id;
     if (!playerId) throw new Error('Not authenticated');
     return playerId;
+  }
+
+  // KMS secure channel for RequireSecureChannel endpoints (store purchase, payments)
+  private secureChannel: SecureChannel | null = null;
+
+  private getSecureChannel(): SecureChannel {
+    if (!this.secureChannel) {
+      this.secureChannel = new SecureChannel({
+        post: (url, data) => this.post(url, data),
+        getDeviceId: () => this.getDeviceId(),
+        getSubjectId: () => jwtSubject(),
+      });
+    }
+    return this.secureChannel;
+  }
+
+  /**
+   * POST through the KMS secure channel: body encrypted into an envelope,
+   * response envelope decrypted. Retries once on a stale/invalid secure
+   * session by re-handshaking. Do not pass query params — the AAD binds the
+   * exact target path.
+   */
+  private async securePost<T = any>(url: string, data: unknown): Promise<{ data: T }> {
+    const channel = this.getSecureChannel();
+    const target = apiPathPrefix() + url;
+
+    const attempt = async (): Promise<{ data: T }> => {
+      const { envelope, headers, seq } = await channel.encryptRequest('POST', target, data);
+      try {
+        const response = await this.client.post(url, envelope, { headers });
+        if (isEncryptedEnvelope(response.data)) {
+          response.data = await channel.decryptResponse('POST', target, seq, response.data);
+        }
+        return response as { data: T };
+      } catch (error) {
+        // Endpoint errors (4xx/5xx from the handler) come back encrypted too
+        if (
+          axios.isAxiosError(error) &&
+          error.response &&
+          isEncryptedEnvelope(error.response.data)
+        ) {
+          error.response.data = await channel.decryptResponse(
+            'POST',
+            target,
+            seq,
+            error.response.data
+          );
+        }
+        throw error;
+      }
+    };
+
+    try {
+      return await attempt();
+    } catch (error) {
+      const code = axios.isAxiosError(error)
+        ? (error.response?.data as any)?.error?.code
+        : undefined;
+      if (code === 'secure_session_invalid' || code === 'secure_session_required') {
+        channel.invalidate();
+        return attempt();
+      }
+      throw error;
+    }
   }
 
   // Quiz/Question endpoints
@@ -388,7 +478,7 @@ class ApiClient {
 
   async purchaseItem(sku: string, currencyType: 'coins' | 'diamonds') {
     const playerId = this.requirePlayerId();
-    const response = await this.post('/store/purchase', {
+    const response = await this.securePost('/store/purchase', {
       playerId,
       sku,
       quantity: 1,
@@ -460,13 +550,11 @@ class ApiClient {
     return response.data;
   }
 
-  // Stripe checkout (one-time purchases). NOTE: this endpoint is gated by the
-  // KMS secure channel in production (RequireSecureChannel) — until the web
-  // secure-channel client exists, the backend answers 400 secure_session_required.
+  // Stripe checkout (one-time purchases), via the KMS secure channel
   async createStripeCheckoutSession(sku: string, quantity: number = 1) {
     const playerId = this.requirePlayerId();
     const origin = window.location.origin;
-    const response = await this.post('/store/payments/checkout/session', {
+    const response = await this.securePost('/store/payments/checkout/session', {
       playerId,
       sku,
       quantity,

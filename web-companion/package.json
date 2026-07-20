@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:secure-channel": "esbuild src/core/security/secureChannel.ts --format=esm --outfile=node_modules/.cache/secure-channel/secureChannel.mjs && node scripts/secure-channel-interop.mjs"
   },
   "dependencies": {
     "@microsoft/signalr": "^10.0.0",

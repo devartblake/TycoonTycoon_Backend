@@ -69,8 +69,8 @@ export function StorePage() {
     } catch (err: any) {
       console.error('Failed to start checkout:', err);
       const code = err?.response?.data?.error?.code;
-      if (code === 'secure_session_required') {
-        toast.error('Card purchases need the secure channel, which is not available on web yet.');
+      if (code === 'secure_session_required' || code === 'secure_session_invalid') {
+        toast.error('Could not establish a secure session. Please try again.');
       } else if (code === 'STRIPE_PRICE_NOT_CONFIGURED' || code === 'STRIPE_NOT_READY') {
         toast.error('This item is not available for card purchase yet.');
       } else {

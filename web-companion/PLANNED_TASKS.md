@@ -5,31 +5,28 @@
 Items here are known gaps that need a product or backend decision before (or
 instead of) more front-end work. Ordered by impact on the December release.
 
-## 1. Secure channel for web — THE revenue blocker (decision needed)
+## 1. Secure channel for web — ✅ DECIDED (a) and implemented 2026-07-19
 
-`POST /store/payments/checkout/session` and `POST /store/purchase` are gated by
-`RequireSecureChannel`: the request body must be a KMS-encrypted envelope tied to a
-secure session (`/api/v1/security/sessions/start` handshake — ECDH X25519/P-256,
-sequence numbers, replay nonces, encrypted responses). The mobile app implements
-this; the web client does not.
+Decision: implement the KMS secure-channel client in TypeScript (option a), for
+full parity with mobile across every `RequireSecureChannel` endpoint rather than
+per-endpoint exemptions.
 
-The Stripe checkout flow (store UI → session create → redirect → success/cancel
-pages) is now fully built and will work the moment this is resolved. Until then the
-backend answers `400 secure_session_required` and the store shows a clear error
-toast. Two options:
+Implemented in `src/core/security/secureChannel.ts` (syn-sec-v1: ECDH X25519 with
+P-256 fallback → HKDF-SHA256 → AES-256-GCM envelopes, transcript-signature
+verification, sequence + replay-nonce headers), wired into `apiClient.securePost`
+and used by `/store/purchase` and `/store/payments/checkout/session`. Interop is
+verified by `npm run test:secure-channel` — an independent Node implementation of
+the server role written from the C# sources (both suites, tamper/AAD/downgrade
+rejection, .NET encoding vectors).
 
-- **(a) Implement the secure-channel client in TypeScript** (Web Crypto: ECDH +
-  HKDF + AES-GCM, session lifecycle, envelope wrapper in `apiClient`). Significant,
-  security-sensitive work; needs a live KMS to verify against. Also unblocks
-  coin/diamond `/store/purchase` (same gate).
-- **(b) Relax the gate for web checkout-session creation** (e.g. an allowlisted
-  plain-JSON path for `payments/checkout/session` only). Defensible because Stripe
-  Checkout hosts the card entry — this call carries no payment data and is already
-  JWT-authenticated — but it is a deliberate security-boundary change that should go
-  through review (see `review-security-boundary`), not be slipped in.
-
-Until decided, **every purchase path on web (virtual currency AND card) is blocked
-at runtime** even though the UI and client plumbing are complete.
+**Remaining before calling it done:**
+- One end-to-end run against a real KMS in staging (this environment has no live
+  KMS; the harness proves protocol consistency, not deployment config).
+- Session renewal is not used (fresh handshake near the 30-min expiry instead) —
+  fine functionally; revisit only if handshake volume matters.
+- A genuine JWT expiry mid-secure-call surfaces as an error toast rather than a
+  silent token refresh (deliberate: replaying an encrypted envelope after refresh
+  would trip replay protection). Low impact; revisit with the auth-refresh UX.
 
 ## 2. Stripe subscriptions on web
 
