@@ -381,6 +381,8 @@ class ApiClient {
       category: i.itemType,
       price: i.priceCoins > 0 ? i.priceCoins : i.priceDiamonds,
       currencyType: i.priceCoins > 0 ? 'coins' : 'diamonds',
+      // Items with no coin/diamond price are real-money (Stripe) offerings
+      isRealMoney: !(i.priceCoins > 0) && !(i.priceDiamonds > 0),
     }));
   }
 
@@ -421,6 +423,57 @@ class ApiClient {
       params: { playerId },
     });
     return response.data;
+  }
+
+  // Skill tree endpoints
+  async getSkillTree() {
+    const response = await this.get('/skills/tree');
+    // SkillNodeDto: { key, branch, tier, title, description, prereqKeys, costs: [{currency, amount}], effects }
+    return response.data.nodes || [];
+  }
+
+  async getSkillState() {
+    const playerId = this.requirePlayerId();
+    const response = await this.get(`/skills/state/${playerId}`);
+    return response.data; // { playerId, unlockedKeys }
+  }
+
+  async unlockSkill(nodeKey: string) {
+    const playerId = this.requirePlayerId();
+    const response = await this.post('/skills/unlock', {
+      eventId: crypto.randomUUID(),
+      playerId,
+      nodeKey,
+    });
+    // { eventId, playerId, nodeKey, status: Unlocked|Duplicate|MissingPrereq|NotFound|InsufficientFunds, unlockedKeys }
+    return response.data;
+  }
+
+  async respecSkills(refundPercent: number = 80) {
+    const playerId = this.requirePlayerId();
+    const response = await this.post('/skills/respec', {
+      eventId: crypto.randomUUID(),
+      playerId,
+      refundPercent,
+    });
+    // { eventId, playerId, status: Respecced|Duplicate, refundedCoins, refundedDiamonds, unlockedKeys }
+    return response.data;
+  }
+
+  // Stripe checkout (one-time purchases). NOTE: this endpoint is gated by the
+  // KMS secure channel in production (RequireSecureChannel) — until the web
+  // secure-channel client exists, the backend answers 400 secure_session_required.
+  async createStripeCheckoutSession(sku: string, quantity: number = 1) {
+    const playerId = this.requirePlayerId();
+    const origin = window.location.origin;
+    const response = await this.post('/store/payments/checkout/session', {
+      playerId,
+      sku,
+      quantity,
+      successUrl: `${origin}/store/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${origin}/store/checkout/cancelled`,
+    });
+    return response.data; // { sessionId, checkoutUrl, currency, unitAmount, totalAmount, sku, quantity, publishableKey }
   }
 
   // Authentication endpoints

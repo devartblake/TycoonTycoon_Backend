@@ -18,9 +18,13 @@ found that the claims below overstated completion:
   that made the OTP reset-token step non-functional). Fixed; build is green.
 - **Feature development was paused 2026-06-26 → 2026-07-13** (only infra commits).
   The velocity table below describes the initial 2-day burst, not sustained progress.
-- **Skill tree (the signature web feature) is still a placeholder page**; Stripe,
-  SignalR, and Dexie are dependency-only. Remaining gaps that need backend/product
-  decisions are listed at the end of the audit doc.
+- **2026-07-19 follow-up**: the skill-tree hub is now built (catalog, unlock,
+  respec against `/skills/*`), and the Stripe one-time checkout flow is wired
+  end-to-end (store → session create → redirect → success/cancel pages) — but
+  checkout is blocked at runtime by the KMS secure-channel gate until the decision
+  in [PLANNED_TASKS.md](./PLANNED_TASKS.md) #1 is made. SignalR and Dexie remain
+  dependency-only. Remaining gaps needing backend/product decisions live in
+  PLANNED_TASKS.md.
 
 Original document (2026-06-25) follows, unmodified:
 
