@@ -155,6 +155,13 @@
     <PackageVersion Include="System.Linq.Async" Version="7.0.1" />
     <PackageVersion Include="System.Linq.Async.Queryable" Version="7.0.1" />
     <PackageVersion Include="System.Net.Http.Json" Version="10.0.7" />
+    <!-- Transitive-pin to the first patched build. GHSA-cvvh-rhrc-wg4q,
+         -g8r8-53c2-pm3f, -23rf-6693-g89p, -8q5v-6pqq-x66h, -mmjf-rqrv-855v
+         (High) affect the 10.0.x line through 10.0.9; 10.0.10 is the fix.
+         CentralPackageTransitivePinningEnabled forces every transitive
+         resolution up to this version (the package is pulled in transitively,
+         not referenced directly anywhere). -->
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup Label="Aspire">
     <PackageVersion Include="Aspire.Hosting" Version="13.4.6" />
