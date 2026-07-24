@@ -6,7 +6,14 @@ namespace Synaptix.Backend.Application.Auth
     public interface IAuthService
     {
         Task<AuthResult> LoginAsync(string email, string password, string deviceId);
-        Task<AuthResult> RefreshAsync(string refreshToken);
+        /// <summary>
+        /// Rotates a refresh token. When <paramref name="expectedSubject"/> is
+        /// supplied (e.g. the subject bound to the secure channel the request
+        /// arrived on), the stored token's owner must match it — this stops a
+        /// stolen refresh token from being replayed over a different subject's
+        /// channel. When null, no subject binding is enforced (anonymous refresh).
+        /// </summary>
+        Task<AuthResult> RefreshAsync(string refreshToken, Guid? expectedSubject = null);
         Task<AuthResult> AdminLoginAsync(string email, string password, string deviceId);
         Task<AuthResult> AdminRefreshAsync(string refreshToken);
         Task LogoutAsync(string deviceId, Guid userId);
