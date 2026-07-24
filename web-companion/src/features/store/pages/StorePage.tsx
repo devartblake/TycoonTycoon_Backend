@@ -34,6 +34,10 @@ export function StorePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  // Real-money item awaiting a payment-method choice (Stripe vs PayPal).
+  const [checkoutItem, setCheckoutItem] = useState<StoreItem | null>(null);
+  // PayPal crypto-funding disclosure the user must acknowledge before redirect.
+  const [cryptoNotice, setCryptoNotice] = useState<{ approveUrl: string; text: string } | null>(null);
 
   useEffect(() => {
     const fetchStoreItems = async () => {
@@ -80,6 +84,41 @@ export function StorePage() {
     }
   };
 
+  const handlePayPalCheckout = async (item: StoreItem) => {
+    try {
+      setPurchasing(item.itemId);
+      const order = await apiClient.createPayPalOrder(item.itemId);
+      const approveUrl: string | undefined = order?.approveUrl;
+      if (!approveUrl) {
+        toast.error('PayPal did not return an approval link. Please try again.');
+        setPurchasing(null);
+        return;
+      }
+      // When PayPal offers a crypto funding source, the backend returns a
+      // disclosure the buyer must acknowledge before we hand off to PayPal.
+      if (order?.cryptoFundingSourceAvailable && order?.cryptoDisclosure) {
+        setCryptoNotice({ approveUrl, text: String(order.cryptoDisclosure) });
+        return; // keep `purchasing` set until the user proceeds or cancels
+      }
+      window.location.href = approveUrl;
+    } catch (err: any) {
+      console.error('Failed to start PayPal checkout:', err);
+      const code = err?.response?.data?.error?.code;
+      if (code === 'secure_session_required' || code === 'secure_session_invalid') {
+        toast.error('Could not establish a secure session. Please try again.');
+      } else if (
+        code === 'PAYPAL_NOT_READY' ||
+        code === 'PAYPAL_PRICE_NOT_CONFIGURED' ||
+        code === 'PAYPAL_REDIRECT_URL_NOT_CONFIGURED'
+      ) {
+        toast.error('This item is not available for PayPal purchase yet.');
+      } else {
+        toast.error('Failed to start PayPal checkout. Please try again.');
+      }
+      setPurchasing(null);
+    }
+  };
+
   const handlePurchase = async (item: StoreItem) => {
     if (!profile) {
       const msg = 'Please log in to make purchases.';
@@ -89,7 +128,12 @@ export function StorePage() {
     }
 
     if (item.isRealMoney) {
-      await handleCardCheckout(item);
+      if (item.category === 'premium-subscription') {
+        toast.info('Subscriptions are coming soon on web — use the mobile app for now.');
+        return;
+      }
+      // Let the buyer pick a payment method (Stripe or PayPal).
+      setCheckoutItem(item);
       return;
     }
 
@@ -359,6 +403,122 @@ export function StorePage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Payment-method chooser for real-money items */}
+      {checkoutItem && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setCheckoutItem(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            padding: '1rem',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-lg p-6 w-full max-w-sm"
+            style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+          >
+            <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+              Choose a payment method
+            </h2>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+              {checkoutItem.name}
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  const item = checkoutItem;
+                  setCheckoutItem(null);
+                  handleCardCheckout(item);
+                }}
+                className="w-full py-2 rounded-lg font-semibold"
+                style={{ backgroundColor: 'var(--color-brand-primary)', color: 'white' }}
+              >
+                💳 Pay with Card
+              </button>
+              <button
+                onClick={() => {
+                  const item = checkoutItem;
+                  setCheckoutItem(null);
+                  handlePayPalCheckout(item);
+                }}
+                className="w-full py-2 rounded-lg font-semibold border"
+                style={{ borderColor: 'var(--color-ui-border)', color: 'var(--color-text-primary)' }}
+              >
+                Pay with PayPal
+              </button>
+              <button
+                onClick={() => setCheckoutItem(null)}
+                className="w-full py-2 rounded-lg text-sm"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PayPal crypto-funding disclosure — must be acknowledged before redirect */}
+      {cryptoNotice && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            padding: '1rem',
+          }}
+        >
+          <div
+            className="rounded-lg p-6 w-full max-w-md"
+            style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+          >
+            <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              Paying with cryptocurrency?
+            </h2>
+            <p className="text-sm mb-5" style={{ color: 'var(--color-text-secondary)' }}>
+              {cryptoNotice.text}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setCryptoNotice(null);
+                  setPurchasing(null);
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const url = cryptoNotice.approveUrl;
+                  setCryptoNotice(null);
+                  window.location.href = url;
+                }}
+                className="px-4 py-2 rounded-lg font-semibold"
+                style={{ backgroundColor: 'var(--color-brand-primary)', color: 'white' }}
+              >
+                Continue to PayPal
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
