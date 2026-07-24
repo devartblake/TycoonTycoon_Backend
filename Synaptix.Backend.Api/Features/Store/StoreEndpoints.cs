@@ -657,6 +657,10 @@ namespace Synaptix.Backend.Api.Features.Store
                         }),
                     ct);
 
+                db.PaymentCheckoutAttempts.Add(new PaymentCheckoutAttempt(
+                    req.PlayerId, "stripe", storeItem.Sku, req.Quantity, totalAmount / 100m, currency, checkoutSession.SessionId));
+                await db.SaveChangesAsync(ct);
+
                 return Results.Ok(new CreateStripeCheckoutSessionResponse(
                     checkoutSession.SessionId,
                     checkoutSession.CheckoutUrl,
@@ -736,6 +740,10 @@ namespace Synaptix.Backend.Api.Features.Store
                         cancelUrl!),
                     ct);
 
+                db.PaymentCheckoutAttempts.Add(new PaymentCheckoutAttempt(
+                    req.PlayerId, "paypal", storeItem.Sku, req.Quantity, totalAmount, catalogItem.Currency, order.OrderId));
+                await db.SaveChangesAsync(ct);
+
                 return Results.Ok(new CreatePayPalOrderResponse(
                     order.OrderId,
                     order.Status,
@@ -745,7 +753,11 @@ namespace Synaptix.Backend.Api.Features.Store
                     totalAmount,
                     storeItem.Sku,
                     req.Quantity,
-                    payPalOptions.ClientId));
+                    payPalOptions.ClientId,
+                    CryptoFundingSourceAvailable: payPalOptions.AllowCryptoFundingSource,
+                    CryptoDisclosure: payPalOptions.AllowCryptoFundingSource
+                        ? "If you choose to pay with cryptocurrency, PayPal processes the crypto payment and Synaptix receives the settlement in USD. Synaptix does not hold, custody, or convert your cryptocurrency."
+                        : null));
             }
             catch (InvalidOperationException ex)
             {
@@ -782,6 +794,9 @@ namespace Synaptix.Backend.Api.Features.Store
                 if (metadata is null || metadata.PlayerId != req.PlayerId)
                     return ApiResponses.Error(StatusCodes.Status403Forbidden, "FORBIDDEN", "PayPal order ownership could not be confirmed.");
 
+                if (!string.Equals(capture.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+                    return Results.Ok(new CapturePayPalOrderResponse(capture.OrderId, capture.Status, capture.CaptureId, null));
+
                 var storeItem = await db.StoreItems.FirstOrDefaultAsync(i => i.Sku == metadata.Sku, ct);
                 if (storeItem is null)
                     return ApiResponses.Error(StatusCodes.Status404NotFound, "NOT_FOUND", $"Store item '{metadata.Sku}' was not found.");
@@ -804,6 +819,14 @@ namespace Synaptix.Backend.Api.Features.Store
                 await db.SaveChangesAsync(ct);
 
                 await entitlementService.GrantAsync(req.PlayerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * metadata.Quantity, tx.Id, ct: ct);
+
+                var checkoutAttempt = await db.PaymentCheckoutAttempts
+                    .FirstOrDefaultAsync(a => a.Provider == "paypal" && a.ProviderRef == capture.OrderId, ct);
+                if (checkoutAttempt is not null)
+                {
+                    checkoutAttempt.MarkCaptured(tx.Id, capture.CaptureId);
+                    await db.SaveChangesAsync(ct);
+                }
 
                 return Results.Ok(new CapturePayPalOrderResponse(capture.OrderId, capture.Status, capture.CaptureId, tx.Id));
             }
@@ -894,7 +917,9 @@ namespace Synaptix.Backend.Api.Features.Store
                 if (string.IsNullOrWhiteSpace(orderId) || metadata is null)
                     return ApiResponses.Error(StatusCodes.Status400BadRequest, "PAYPAL_WEBHOOK_INVALID", "PayPal capture webhook was missing ownership metadata.");
 
-                var webhookEventId = CreateDeterministicGuid($"paypal-webhook:{eventId}");
+                // Keyed by orderId (not the webhook's own event id) so this dedupes against
+                // CapturePayPalOrder, which may fulfill the same order via the client-driven capture call.
+                var webhookEventId = CreateDeterministicGuid($"paypal-order:{orderId}");
                 var existingWebhook = await db.PlayerTransactions.AsNoTracking().AnyAsync(t => t.EventId == webhookEventId, ct);
                 if (existingWebhook)
                     return Results.Ok(new { received = true, duplicate = true, eventType });
@@ -916,6 +941,15 @@ namespace Synaptix.Backend.Api.Features.Store
                 await db.SaveChangesAsync(ct);
 
                 await entitlementService.GrantAsync(metadata.PlayerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * metadata.Quantity, tx.Id, ct: ct);
+
+                var captureId = resource.TryGetProperty("id", out var captureIdElement) ? captureIdElement.GetString() : null;
+                var checkoutAttempt = await db.PaymentCheckoutAttempts
+                    .FirstOrDefaultAsync(a => a.Provider == "paypal" && a.ProviderRef == orderId, ct);
+                if (checkoutAttempt is not null)
+                {
+                    checkoutAttempt.MarkCaptured(tx.Id, captureId);
+                    await db.SaveChangesAsync(ct);
+                }
 
                 _ = Task.Run(async () =>
                 {
@@ -1181,6 +1215,14 @@ namespace Synaptix.Backend.Api.Features.Store
             await db.SaveChangesAsync(ct);
 
             await entitlementService.GrantAsync(playerId, storeItem.Sku, storeItem.ItemType, storeItem.GrantQuantity * quantity, tx.Id, ct: ct);
+
+            var checkoutAttempt = await db.PaymentCheckoutAttempts
+                .FirstOrDefaultAsync(a => a.Provider == "stripe" && a.ProviderRef == completed.SessionId, ct);
+            if (checkoutAttempt is not null)
+            {
+                checkoutAttempt.MarkCaptured(tx.Id, providerCaptureRef: null);
+                await db.SaveChangesAsync(ct);
+            }
 
             try
             {

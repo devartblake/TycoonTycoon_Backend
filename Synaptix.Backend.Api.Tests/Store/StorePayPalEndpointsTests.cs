@@ -58,6 +58,42 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<SynaptixApiFactory
         body!.OrderId.Should().Be("ORDER-123");
         body.ApproveUrl.Should().Be("https://paypal.test/approve/ORDER-123");
         body.TotalAmount.Should().Be(5.98m);
+        body.CryptoFundingSourceAvailable.Should().BeFalse();
+        body.CryptoDisclosure.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreatePayPalOrder_WithCryptoFundingSourceEnabled_ReturnsDisclosure()
+    {
+        var fakeGateway = new FakePayPalGateway();
+        using var factory = CreateFactory(fakeGateway, allowCryptoFundingSource: true);
+        using var client = factory.CreateClient();
+
+        var signup = await SignupAsync(client, "paypal-crypto-order");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
+        var playerId = Guid.Parse(signup.UserId);
+
+        await SeedStoreItemAsync(factory, new StoreItem
+        {
+            Sku = "powerup:skip",
+            Name = "Skip Powerup",
+            Description = "Skip one question.",
+            ItemType = "powerup",
+            GrantQuantity = 1,
+            IsActive = true,
+            SortOrder = 1
+        });
+
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/v1/store/payments/paypal/order",
+            new CreatePayPalOrderRequest(playerId, "powerup:skip", 1));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<CreatePayPalOrderResponse>();
+        body!.CryptoFundingSourceAvailable.Should().BeTrue();
+        body.CryptoDisclosure.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
@@ -109,6 +145,122 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<SynaptixApiFactory
         transaction.Should().NotBeNull();
         transaction!.Actors.Should().ContainSingle(a => a.PlayerId == playerId);
         transaction.ItemChanges.Should().ContainSingle(i => i.ItemType == "powerup:skip" && i.Quantity == 6);
+    }
+
+    [Fact]
+    public async Task CapturePayPalOrder_WithNonCompletedStatus_DoesNotGrant()
+    {
+        var fakeGateway = new FakePayPalGateway();
+        using var factory = CreateFactory(fakeGateway);
+        using var client = factory.CreateClient();
+
+        var signup = await SignupAsync(client, "paypal-pending");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
+        var playerId = Guid.Parse(signup.UserId);
+
+        await SeedStoreItemAsync(factory, new StoreItem
+        {
+            Sku = "powerup:skip",
+            Name = "Skip Powerup",
+            Description = "Skip one question.",
+            ItemType = "powerup",
+            GrantQuantity = 3,
+            IsActive = true,
+            SortOrder = 1
+        });
+
+        fakeGateway.NextCaptureResult = new PayPalCaptureOrderResult(
+            "ORDER-PENDING",
+            "PENDING",
+            "CAPTURE-PENDING",
+            $"{playerId:N}|powerup:skip|2",
+            "USD",
+            5.98m);
+
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/v1/store/payments/paypal/capture",
+            new CapturePayPalOrderRequest(playerId, "ORDER-PENDING"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<CapturePayPalOrderResponse>();
+        body!.TransactionId.Should().BeNull();
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+        var transactionExists = await db.PlayerTransactions
+            .Include(t => t.Actors)
+            .AnyAsync(t => t.Kind == "paypal-order-payment" && t.Actors.Any(a => a.PlayerId == playerId));
+
+        transactionExists.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CapturePayPalOrder_ThenDuplicateWebhookForSameOrder_DoesNotDoubleGrant()
+    {
+        var fakeGateway = new FakePayPalGateway();
+        using var factory = CreateFactory(fakeGateway);
+        using var client = factory.CreateClient();
+
+        var signup = await SignupAsync(client, "paypal-dual-path");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signup.AccessToken);
+        var playerId = Guid.Parse(signup.UserId);
+
+        await SeedStoreItemAsync(factory, new StoreItem
+        {
+            Sku = "powerup:skip",
+            Name = "Skip Powerup",
+            Description = "Skip one question.",
+            ItemType = "powerup",
+            GrantQuantity = 3,
+            IsActive = true,
+            SortOrder = 1
+        });
+
+        var customId = $"{playerId:N}|powerup:skip|2";
+        fakeGateway.NextCaptureResult = new PayPalCaptureOrderResult(
+            "ORDER-DUAL-1",
+            "COMPLETED",
+            "CAPTURE-DUAL-1",
+            customId,
+            "USD",
+            5.98m);
+
+        await StoreTestSupport.EnableStorePurchasesAsync(factory);
+
+        // Client-driven capture fulfills first.
+        var captureResponse = await client.PostAsJsonAsync(
+            "/api/v1/store/payments/paypal/capture",
+            new CapturePayPalOrderRequest(playerId, "ORDER-DUAL-1"));
+        captureResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // PayPal's async webhook then arrives for the same capture, as it normally does in production.
+        using var webhookRequest = BuildWebhookRequest(new
+        {
+            id = "WH-CAPTURE-1",
+            event_type = "PAYMENT.CAPTURE.COMPLETED",
+            resource = new
+            {
+                custom_id = customId,
+                supplementary_data = new
+                {
+                    related_ids = new { order_id = "ORDER-DUAL-1" }
+                }
+            }
+        });
+
+        var webhookResponse = await client.SendAsync(webhookRequest);
+        webhookResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+        var grantCount = await db.PlayerTransactions
+            .Include(t => t.Actors)
+            .Where(t => t.Kind == "paypal-order-payment" && t.Actors.Any(a => a.PlayerId == playerId))
+            .CountAsync();
+
+        grantCount.Should().Be(1);
     }
 
     [Fact]
@@ -221,7 +373,7 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<SynaptixApiFactory
         status.IsActive.Should().BeTrue();
     }
 
-    private WebApplicationFactory<Program> CreateFactory(FakePayPalGateway fakeGateway)
+    private WebApplicationFactory<Program> CreateFactory(FakePayPalGateway fakeGateway, bool allowCryptoFundingSource = false)
     {
         return _factory.WithWebHostBuilder(builder =>
         {
@@ -235,6 +387,7 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<SynaptixApiFactory
                     ["PayPal:BaseUrl"] = "https://api-m.sandbox.paypal.com",
                     ["PayPal:ReturnUrl"] = "https://localhost:3000/store/paypal/return",
                     ["PayPal:CancelUrl"] = "https://localhost:3000/store/paypal/cancel",
+                    ["PayPal:AllowCryptoFundingSource"] = allowCryptoFundingSource ? "true" : "false",
                     ["PayPal:Catalog:0:Sku"] = "powerup:skip",
                     ["PayPal:Catalog:0:Currency"] = "USD",
                     ["PayPal:Catalog:0:UnitAmount"] = "2.99",
@@ -309,6 +462,17 @@ public sealed class StorePayPalEndpointsTests : IClassFixture<SynaptixApiFactory
 
         public Task<PayPalCaptureOrderResult> CaptureOrderAsync(string orderId, CancellationToken cancellationToken)
             => Task.FromResult(NextCaptureResult);
+
+        public PayPalOrderStatusResult NextOrderStatusResult { get; set; } =
+            new("ORDER-123", "COMPLETED", "CAPTURE-123", "USD", 2.99m);
+
+        public Task<PayPalOrderStatusResult> GetOrderAsync(string orderId, CancellationToken cancellationToken)
+            => Task.FromResult(NextOrderStatusResult);
+
+        public PayPalRefundResult NextRefundResult { get; set; } = new("REFUND-123", "COMPLETED");
+
+        public Task<PayPalRefundResult> RefundCaptureAsync(string captureId, decimal? amount, string? currency, CancellationToken cancellationToken)
+            => Task.FromResult(NextRefundResult);
 
         public Task<PayPalCreateSubscriptionResult> CreateSubscriptionAsync(PayPalCreateSubscriptionRequest request, CancellationToken cancellationToken)
             => Task.FromResult(new PayPalCreateSubscriptionResult("I-SUB-123", "APPROVAL_PENDING", "https://paypal.test/approve/I-SUB-123"));

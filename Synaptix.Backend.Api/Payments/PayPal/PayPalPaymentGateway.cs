@@ -142,6 +142,80 @@ public sealed class PayPalPaymentGateway : IPayPalPaymentGateway
             decimal.TryParse(amount.GetProperty("value").GetString(), out var total) ? total : null);
     }
 
+    public async Task<PayPalOrderStatusResult> GetOrderAsync(string orderId, CancellationToken cancellationToken)
+    {
+        EnsureConfigured();
+
+        using var http = await CreateAuthorizedClientAsync(cancellationToken);
+        using var response = await http.GetAsync($"/v2/checkout/orders/{orderId}", cancellationToken);
+        await EnsureSuccessAsync(response);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        var root = doc.RootElement;
+        var status = root.GetProperty("status").GetString() ?? string.Empty;
+
+        string? captureId = null;
+        string? currency = null;
+        decimal? total = null;
+
+        if (root.TryGetProperty("purchase_units", out var units) && units.GetArrayLength() > 0)
+        {
+            var purchaseUnit = units[0];
+            if (purchaseUnit.TryGetProperty("payments", out var payments)
+                && payments.TryGetProperty("captures", out var captures)
+                && captures.GetArrayLength() > 0)
+            {
+                var capture = captures[0];
+                captureId = capture.TryGetProperty("id", out var idElement) ? idElement.GetString() : null;
+                if (capture.TryGetProperty("amount", out var amount))
+                {
+                    currency = amount.GetProperty("currency_code").GetString();
+                    total = decimal.TryParse(amount.GetProperty("value").GetString(), out var parsed) ? parsed : null;
+                }
+            }
+        }
+
+        return new PayPalOrderStatusResult(
+            root.GetProperty("id").GetString() ?? orderId,
+            status,
+            captureId,
+            currency,
+            total);
+    }
+
+    public async Task<PayPalRefundResult> RefundCaptureAsync(
+        string captureId,
+        decimal? amount,
+        string? currency,
+        CancellationToken cancellationToken)
+    {
+        EnsureConfigured();
+
+        using var http = await CreateAuthorizedClientAsync(cancellationToken);
+
+        object body = amount is not null && currency is not null
+            ? new
+            {
+                amount = new
+                {
+                    value = amount.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                    currency_code = currency
+                }
+            }
+            : new { };
+
+        using var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        using var response = await http.PostAsync($"/v2/payments/captures/{captureId}/refund", content, cancellationToken);
+        await EnsureSuccessAsync(response);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        var root = doc.RootElement;
+
+        return new PayPalRefundResult(
+            root.GetProperty("id").GetString() ?? string.Empty,
+            root.GetProperty("status").GetString() ?? string.Empty);
+    }
+
     public async Task<PayPalCreateSubscriptionResult> CreateSubscriptionAsync(
         PayPalCreateSubscriptionRequest request,
         CancellationToken cancellationToken)

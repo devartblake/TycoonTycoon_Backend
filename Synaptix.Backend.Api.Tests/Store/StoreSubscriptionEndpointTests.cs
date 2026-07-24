@@ -249,5 +249,15 @@ public sealed class StoreSubscriptionEndpointTests : IClassFixture<SynaptixApiFa
         {
             return NextWebhookEvent;
         }
+
+        public Task<StripeSessionStatusResult> GetCheckoutSessionAsync(string sessionId, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<StripeRefundResult> RefundPaymentIntentAsync(string paymentIntentId, long? amount, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

@@ -14,6 +14,16 @@ public interface IPayPalPaymentGateway
         string orderId,
         CancellationToken cancellationToken);
 
+    Task<PayPalOrderStatusResult> GetOrderAsync(
+        string orderId,
+        CancellationToken cancellationToken);
+
+    Task<PayPalRefundResult> RefundCaptureAsync(
+        string captureId,
+        decimal? amount,
+        string? currency,
+        CancellationToken cancellationToken);
+
     Task<PayPalCreateSubscriptionResult> CreateSubscriptionAsync(
         PayPalCreateSubscriptionRequest request,
         CancellationToken cancellationToken);
@@ -60,6 +70,17 @@ public sealed record PayPalCaptureOrderResult(
     string? CustomId,
     string? Currency,
     decimal? TotalAmount);
+
+public sealed record PayPalOrderStatusResult(
+    string OrderId,
+    string Status,
+    string? CaptureId,
+    string? Currency,
+    decimal? TotalAmount);
+
+public sealed record PayPalRefundResult(
+    string RefundId,
+    string Status);
 
 public sealed record PayPalCreateSubscriptionRequest(
     Guid PlayerId,

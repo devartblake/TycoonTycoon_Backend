@@ -115,7 +115,9 @@ namespace Synaptix.Shared.Contracts.Dtos
         decimal TotalAmount,
         string Sku,
         int Quantity,
-        string? ClientId);
+        string? ClientId,
+        bool CryptoFundingSourceAvailable = false,
+        string? CryptoDisclosure = null);
 
     public sealed record CapturePayPalOrderRequest(
         Guid PlayerId,

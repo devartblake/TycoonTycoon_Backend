@@ -151,6 +151,10 @@ namespace Synaptix.Backend.Infrastructure.Persistence
         // Entitlements
         public DbSet<PlayerEntitlement> PlayerEntitlements => Set<PlayerEntitlement>();
 
+        // Payments (reconciliation)
+        public DbSet<PaymentCheckoutAttempt> PaymentCheckoutAttempts => Set<PaymentCheckoutAttempt>();
+        public DbSet<PaymentReconciliationIssue> PaymentReconciliationIssues => Set<PaymentReconciliationIssue>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

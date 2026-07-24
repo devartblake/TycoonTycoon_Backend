@@ -18,6 +18,16 @@ public sealed class PayPalOptions
 
     public string? WebhookId { get; set; }
 
+    /// <summary>
+    /// Whether crypto is surfaced as a PayPal-hosted funding source ("PayPal Pay with Crypto").
+    /// Requires PayPal merchant account eligibility/enrollment to actually take effect on
+    /// PayPal's hosted checkout — this flag only controls whether Synaptix discloses the
+    /// option to the client and does not itself alter custody, settlement (still USD), or
+    /// the underlying Orders API call. Default false per the Alpha/Beta guardrail in
+    /// docs/alpha-beta/SynaptixPlay_Managed_Crypto_Payments_Implementation_Plan.md §18.
+    /// </summary>
+    public bool AllowCryptoFundingSource { get; set; }
+
     public List<PayPalCatalogItemOptions> Catalog { get; set; } = [];
 
     public List<PayPalSubscriptionPlanOptions> SubscriptionPlans { get; set; } = [];

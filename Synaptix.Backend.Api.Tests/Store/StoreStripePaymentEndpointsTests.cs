@@ -290,5 +290,16 @@ public sealed class StoreStripePaymentEndpointsTests : IClassFixture<SynaptixApi
         {
             return NextWebhookEvent;
         }
+
+        public StripeSessionStatusResult NextSessionStatusResult { get; set; } =
+            new("cs_test_123", "paid", "pi_test_123", "usd", 299);
+
+        public Task<StripeSessionStatusResult> GetCheckoutSessionAsync(string sessionId, CancellationToken cancellationToken)
+            => Task.FromResult(NextSessionStatusResult);
+
+        public StripeRefundResult NextRefundResult { get; set; } = new("re_test_123", "succeeded");
+
+        public Task<StripeRefundResult> RefundPaymentIntentAsync(string paymentIntentId, long? amount, CancellationToken cancellationToken)
+            => Task.FromResult(NextRefundResult);
     }
 }

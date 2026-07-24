@@ -141,6 +141,42 @@ public sealed class StripePaymentGateway : IStripePaymentGateway
         return new StripeBillingPortalSessionResult(session.Id, session.Url);
     }
 
+    public async Task<StripeSessionStatusResult> GetCheckoutSessionAsync(string sessionId, CancellationToken cancellationToken)
+    {
+        EnsureStripeConfigured();
+
+        StripeConfiguration.ApiKey = _options.SecretKey;
+
+        var service = new global::Stripe.Checkout.SessionService();
+        var session = await service.GetAsync(sessionId, requestOptions: null, cancellationToken: cancellationToken);
+
+        return new StripeSessionStatusResult(
+            session.Id,
+            session.PaymentStatus,
+            session.PaymentIntentId,
+            session.Currency,
+            session.AmountTotal);
+    }
+
+    public async Task<StripeRefundResult> RefundPaymentIntentAsync(string paymentIntentId, long? amount, CancellationToken cancellationToken)
+    {
+        EnsureStripeConfigured();
+
+        StripeConfiguration.ApiKey = _options.SecretKey;
+
+        var service = new global::Stripe.RefundService();
+        var refund = await service.CreateAsync(
+            new global::Stripe.RefundCreateOptions
+            {
+                PaymentIntent = paymentIntentId,
+                Amount = amount
+            },
+            requestOptions: null,
+            cancellationToken: cancellationToken);
+
+        return new StripeRefundResult(refund.Id, refund.Status);
+    }
+
     public StripeWebhookEvent ParseWebhook(string payload, string? signatureHeader)
     {
         EnsureStripeConfigured();

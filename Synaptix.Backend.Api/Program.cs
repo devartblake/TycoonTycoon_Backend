@@ -760,6 +760,7 @@ builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection("PayP
 builder.Services.AddSingleton<IPayPalPaymentGateway, PayPalPaymentGateway>();
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
 builder.Services.AddSingleton<IStripePaymentGateway, StripePaymentGateway>();
+builder.Services.AddScoped<Synaptix.Backend.Api.Features.Payments.PaymentReconciliationJob>();
 
 builder.Services.AddAuthorization(opts => opts.AddAdminPolicies());
 
@@ -881,6 +882,12 @@ if (hangfireEnabled)
             "refresh-token-cleanup",
             job => job.RunAsync(CancellationToken.None),
             "30 3 * * *" // daily, off-peak; reaps expired/revoked refresh tokens
+        );
+
+        RecurringJob.AddOrUpdate<Synaptix.Backend.Api.Features.Payments.PaymentReconciliationJob>(
+            "payments-reconciliation-daily",
+            job => job.RunAsync(CancellationToken.None),
+            "0 6 * * *" // daily; compares PayPal/Stripe checkout attempts against provider state
         );
 
         app.Logger.LogInformation("✅ Hangfire recurring jobs configured");
@@ -1219,6 +1226,7 @@ AdminPersonalizationEndpoints.Map(admin);
 AdminExperimentEndpoints.Map(admin);
 AdminPrivacyEndpoints.Map(admin);
 AdminBatchEndpoints.Map(admin);
+Synaptix.Backend.Api.Features.AdminPayments.AdminPaymentsEndpoints.Map(admin);
 
 // Startup logging
 app.Logger.LogInformation("🚀 Synaptix Backend API starting...");

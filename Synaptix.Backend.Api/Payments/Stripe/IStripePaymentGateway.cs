@@ -15,7 +15,27 @@ public interface IStripePaymentGateway
         CancellationToken cancellationToken);
 
     StripeWebhookEvent ParseWebhook(string payload, string? signatureHeader);
+
+    Task<StripeSessionStatusResult> GetCheckoutSessionAsync(
+        string sessionId,
+        CancellationToken cancellationToken);
+
+    Task<StripeRefundResult> RefundPaymentIntentAsync(
+        string paymentIntentId,
+        long? amount,
+        CancellationToken cancellationToken);
 }
+
+public sealed record StripeSessionStatusResult(
+    string SessionId,
+    string? PaymentStatus,
+    string? PaymentIntentId,
+    string? Currency,
+    long? AmountTotal);
+
+public sealed record StripeRefundResult(
+    string RefundId,
+    string Status);
 
 public sealed record StripeCheckoutSessionCreateRequest(
     Guid PlayerId,

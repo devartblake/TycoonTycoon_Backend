@@ -129,6 +129,10 @@ namespace Synaptix.Backend.Application.Abstractions
         DbSet<ExperimentVariant> ExperimentVariants { get; }
         DbSet<ExperimentAssignment> ExperimentAssignments { get; }
 
+        // Payments (reconciliation)
+        DbSet<PaymentCheckoutAttempt> PaymentCheckoutAttempts { get; }
+        DbSet<PaymentReconciliationIssue> PaymentReconciliationIssues { get; }
+
         EntityEntry Entry(object entity);
     }
 }
