@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 using Synaptix.Backend.Api.Contracts;
 using Synaptix.Security.Kms.Client.Abstractions;
 using Synaptix.Security.Kms.Client.Exceptions;
@@ -22,6 +23,9 @@ namespace Synaptix.Backend.Api.Features.SecuritySessions
     /// </summary>
     public static class SecuritySessionsEndpoints
     {
+        private const string LogCategory =
+            "Synaptix.Backend.Api.Features.SecuritySessions";
+
         public static void Map(IEndpointRouteBuilder app)
         {
             var g = app.MapGroup("/security/sessions")
@@ -33,12 +37,12 @@ namespace Synaptix.Backend.Api.Features.SecuritySessions
             g.MapPost("/revoke", HandleRevoke);
         }
 
-        private static async Task<IResult> HandleStart(
+        private static Task<IResult> HandleStart(
             [FromBody] StartSessionRequest body,
             IKmsSessionClient sessions,
+            ILoggerFactory loggerFactory,
             CancellationToken ct)
-        {
-            try
+            => ExecuteAsync("session/start", loggerFactory, ct, async () =>
             {
                 var result = await sessions.StartAsync(
                     new StartSecureSessionRequest(
@@ -49,48 +53,77 @@ namespace Synaptix.Backend.Api.Features.SecuritySessions
                     ct);
 
                 return Results.Ok(result);
-            }
-            catch (KmsClientException ex)
-            {
-                return MapKmsError(ex);
-            }
-        }
+            });
 
-        private static async Task<IResult> HandleRenew(
+        private static Task<IResult> HandleRenew(
             [FromBody] RenewSessionRequest body,
             IKmsSessionClient sessions,
+            ILoggerFactory loggerFactory,
             CancellationToken ct)
-        {
-            try
+            => ExecuteAsync("session/renew", loggerFactory, ct, async () =>
             {
                 var result = await sessions.RenewAsync(
                     new RenewSecureSessionRequest(body.SessionId, body.DeviceId),
                     ct);
 
                 return Results.Ok(result);
-            }
-            catch (KmsClientException ex)
-            {
-                return MapKmsError(ex);
-            }
-        }
+            });
 
-        private static async Task<IResult> HandleRevoke(
+        private static Task<IResult> HandleRevoke(
             [FromBody] RevokeSessionRequest body,
             IKmsSessionClient sessions,
+            ILoggerFactory loggerFactory,
             CancellationToken ct)
-        {
-            try
+            => ExecuteAsync("session/revoke", loggerFactory, ct, async () =>
             {
                 await sessions.RevokeAsync(
                     new RevokeSecureSessionRequest(body.SessionId, body.Reason),
                     ct);
 
                 return Results.NoContent();
+            });
+
+        /// <summary>
+        /// Runs a KMS proxy call and converts failures into meaningful HTTP results.
+        /// A <see cref="KmsClientException"/> carries the upstream status; anything else
+        /// (KMS unreachable, request timeout, open circuit from the resilience handler,
+        /// or a malformed response) is an unavailable-dependency condition and is
+        /// returned as a clean 503 instead of an opaque 500 from the global handler.
+        /// The mobile client already retries then degrades gracefully on a non-2xx.
+        /// </summary>
+        private static async Task<IResult> ExecuteAsync(
+            string operation,
+            ILoggerFactory loggerFactory,
+            CancellationToken ct,
+            Func<Task<IResult>> action)
+        {
+            var logger = loggerFactory.CreateLogger(LogCategory);
+            try
+            {
+                return await action();
             }
             catch (KmsClientException ex)
             {
+                logger.LogWarning(
+                    ex, "KMS {Operation} returned upstream status {Status}",
+                    operation, ex.StatusCode);
                 return MapKmsError(ex);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // Caller aborted — let the framework handle the cancellation.
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(
+                    ex,
+                    "Secure {Operation} failed: the KMS dependency is unavailable",
+                    operation);
+                return ApiResponses.Error(
+                    StatusCodes.Status503ServiceUnavailable,
+                    "secure_session_unavailable",
+                    "The secure channel service is temporarily unavailable. Please retry.");
             }
         }
 
@@ -101,9 +134,17 @@ namespace Synaptix.Backend.Api.Features.SecuritySessions
                 401 => StatusCodes.Status401Unauthorized,
                 403 => StatusCodes.Status403Forbidden,
                 404 => StatusCodes.Status404NotFound,
+                // An upstream 5xx from KMS is a dependency failure, not a client bad
+                // request — surface it as a gateway error, not a misleading 400.
+                >= 500 => StatusCodes.Status502BadGateway,
                 _ => StatusCodes.Status400BadRequest,
             };
-            return ApiResponses.Error(status, "secure_session_failed", ex.Message);
+
+            var code = status == StatusCodes.Status502BadGateway
+                ? "secure_session_upstream_error"
+                : "secure_session_failed";
+
+            return ApiResponses.Error(status, code, ex.Message);
         }
 
         public sealed record StartSessionRequest(
