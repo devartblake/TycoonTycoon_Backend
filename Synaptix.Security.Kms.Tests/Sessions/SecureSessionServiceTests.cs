@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Synaptix.Security.Kms.Application.Sessions;
+using Synaptix.Security.Kms.Contracts.Models;
 using Synaptix.Security.Kms.Contracts.Suites;
 using Synaptix.Security.Kms.Tests.Helpers;
 
@@ -231,6 +232,47 @@ public sealed class SecureSessionServiceTests
         var act = () => svc.RenewAsync(start.SessionId, "user-6", "wrong-device", default);
 
         await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [Fact]
+    public async Task RenewAsync_WithinMaxLifetime_Succeeds()
+    {
+        var store = new InMemorySessionStore();
+        var svc = new SecureSessionService(store);
+        var id = Guid.NewGuid();
+
+        // Created an hour ago (well under the 12h ceiling), TTL nearly up.
+        await store.SaveAsync(new SecureSession(
+            id, "user-ml", "device-ml", "syn-sec-v1", SupportedSuite,
+            new byte[32], new byte[32],
+            DateTimeOffset.UtcNow.AddHours(-1),
+            DateTimeOffset.UtcNow.AddMinutes(5), 3L), default);
+
+        var renewed = await svc.RenewAsync(id, "user-ml", "device-ml", default);
+
+        renewed.ExpiresAtUtc.Should().BeAfter(DateTimeOffset.UtcNow.AddMinutes(20));
+        (await svc.GetAsync(id, default)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task RenewAsync_ExceededMaxLifetime_ThrowsAndRetiresSession()
+    {
+        var store = new InMemorySessionStore();
+        var svc = new SecureSessionService(store);
+        var id = Guid.NewGuid();
+
+        // Older than the 12h absolute lifetime ceiling.
+        await store.SaveAsync(new SecureSession(
+            id, "user-old", "device-old", "syn-sec-v1", SupportedSuite,
+            new byte[32], new byte[32],
+            DateTimeOffset.UtcNow.AddHours(-13),
+            DateTimeOffset.UtcNow.AddMinutes(5), 3L), default);
+
+        var act = () => svc.RenewAsync(id, "user-old", "device-old", default);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        (await svc.GetAsync(id, default)).Should()
+            .BeNull("an over-age session is retired (deleted) instead of renewed");
     }
 
     [Fact]
