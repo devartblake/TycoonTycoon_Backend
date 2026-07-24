@@ -26,7 +26,10 @@ jobs:
         run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
 
       - name: Ruff lint
-        run: python -m pip install ruff && ruff check .
+        # Pinned: an unpinned ruff silently widened its default rule set and
+        # broke this lint without any code change. Rule selection also lives in
+        # Synaptix.OperatorDashboard.Django/ruff.toml.
+        run: python -m pip install ruff==0.16.0 && ruff check .
 
       - name: Django system checks
         run: python manage.py check

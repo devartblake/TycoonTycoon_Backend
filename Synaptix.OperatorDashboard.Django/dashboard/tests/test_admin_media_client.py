@@ -3,7 +3,11 @@ from unittest import mock
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, override_settings
 
-from dashboard.services.admin_media_client import create_upload_intent, get_storage_diagnostics, upload_file_to_intent
+from dashboard.services.admin_media_client import (
+    create_upload_intent,
+    get_storage_diagnostics,
+    upload_file_to_intent,
+)
 
 
 class AdminMediaClientTests(SimpleTestCase):

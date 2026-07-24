@@ -10,7 +10,6 @@ from typing import Any, BinaryIO, Callable
 
 from django.conf import settings
 
-
 SEED_KEYS = {
     "storeItems": ("assets/seeds/store-items.json", "seeds/store-items.json"),
     "skillNodes": ("assets/seeds/skill-nodes.json", "seeds/skill-nodes.json"),

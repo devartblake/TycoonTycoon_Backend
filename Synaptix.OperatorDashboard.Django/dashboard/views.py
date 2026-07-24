@@ -17,25 +17,127 @@ from django.db.models import Q
 from django.http import Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.utils.dateparse import parse_datetime
-from django.utils.http import url_has_allowed_host_and_scheme, urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+from django.utils.http import (
+    url_has_allowed_host_and_scheme,
+    urlsafe_base64_decode,
+    urlsafe_base64_encode,
+)
 
 from .models import OperatorSavedView, OperatorSavedViewAuditEvent, ProbeCheckRecord
+from .services.admin_anticheat_client import (
+    get_anticheat_analytics_summary,
+    list_anticheat_flags,
+    list_party_anticheat_flags,
+    review_anticheat_flag,
+    review_party_anticheat_flag,
+)
 from .services.admin_audit_client import get_security_audit, get_security_audit_event
-from .services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError, admin_login, admin_me, admin_refresh
-from .services.admin_email_acl_client import create_admin_email_acl, delete_admin_email_acl, list_admin_email_acl, update_admin_email_acl
-from .services.admin_media_client import create_upload_intent, get_storage_diagnostics, upload_file_to_intent
+from .services.admin_auth_client import (
+    AdminAuthConfigurationError,
+    KmsUnavailableError,
+    admin_login,
+    admin_me,
+    admin_refresh,
+)
+from .services.admin_config_client import get_admin_config, update_feature_flags
+from .services.admin_economy_client import (
+    create_economy_transaction,
+    get_economy_balance,
+    get_economy_history,
+    rollback_economy_transaction,
+    simulate_economy,
+    update_economy_balance,
+)
+from .services.admin_email_acl_client import (
+    create_admin_email_acl,
+    delete_admin_email_acl,
+    list_admin_email_acl,
+    update_admin_email_acl,
+)
+from .services.admin_escalation_client import run_escalation
+from .services.admin_event_queue_client import reprocess_event_queue
+from .services.admin_game_events_client import (
+    close_game_event,
+    list_game_events,
+    open_game_event,
+    start_game_event,
+)
+from .services.admin_matches_client import get_matches
+from .services.admin_media_client import (
+    create_upload_intent,
+    get_storage_diagnostics,
+    upload_file_to_intent,
+)
+from .services.admin_moderation_client import (
+    get_moderation_log,
+    get_moderation_logs,
+    get_moderation_profile,
+    set_moderation_status,
+)
+from .services.admin_notifications_client import (
+    cancel_scheduled,
+    create_template,
+    delete_template,
+    get_dead_letter,
+    get_notification_history,
+    list_channels,
+    list_scheduled,
+    list_templates,
+    replay_dead_letter,
+    schedule_notification,
+    send_notification,
+    update_template,
+    upsert_channel,
+)
+from .services.admin_personalization_client import (
+    get_personalization_archetypes,
+    get_personalization_summary,
+    get_player_debug,
+    get_player_profile,
+    get_recommendation_performance,
+    list_rules,
+    recalculate_player,
+    reset_player,
+    upsert_rule,
+)
+from .services.admin_player_transactions_client import (
+    dispute_player_transaction,
+    get_player_transaction_history,
+    reverse_player_transaction,
+)
+from .services.admin_powerups_client import get_powerup_state, grant_powerup
+from .services.admin_questions_client import (
+    approve_question,
+    bulk_import_questions,
+    create_question,
+    delete_question,
+    get_question,
+    list_questions,
+    reject_question,
+    update_question,
+)
+from .services.admin_season_points_client import (
+    apply_season_points,
+    get_season_points_history,
+)
+from .services.admin_seasons_client import (
+    activate_season,
+    close_season,
+    get_reward_claims,
+    get_season_leaderboard,
+    list_seasons,
+    recompute_season_tiers,
+)
+from .services.admin_setup_client import get_setup_diagnostics
+from .services.admin_skills_client import seed_skills
 from .services.admin_storage_client import (
     get_storage_object_metadata,
     list_storage_objects,
     list_storage_prefixes,
     upload_storage_object_proxy,
 )
-from .services.admin_setup_client import get_setup_diagnostics
-from .services.admin_moderation_client import get_moderation_log, get_moderation_logs, get_moderation_profile, set_moderation_status
-from .services.admin_economy_client import create_economy_transaction, get_economy_balance, get_economy_history, rollback_economy_transaction, simulate_economy, update_economy_balance
-from .services.admin_questions_client import approve_question, bulk_import_questions, create_question, delete_question, get_question, list_questions, reject_question, update_question
 from .services.admin_store_client import (
     bulk_reset_stock,
     cancel_flash_sale,
@@ -56,65 +158,6 @@ from .services.admin_store_client import (
     upsert_reward_limit,
     upsert_stock_policy,
 )
-from .services.admin_game_events_client import (
-    close_game_event,
-    list_game_events,
-    open_game_event,
-    start_game_event,
-)
-from .services.admin_anticheat_client import (
-    get_anticheat_analytics_summary,
-    list_anticheat_flags,
-    list_party_anticheat_flags,
-    review_anticheat_flag,
-    review_party_anticheat_flag,
-)
-from .services.admin_seasons_client import (
-    activate_season,
-    close_season,
-    get_reward_claims,
-    get_season_leaderboard,
-    list_seasons,
-    recompute_season_tiers,
-)
-from .services.admin_notifications_client import (
-    cancel_scheduled,
-    create_template,
-    delete_template,
-    get_dead_letter,
-    get_notification_history,
-    list_scheduled,
-    list_channels,
-    list_templates,
-    replay_dead_letter,
-    send_notification,
-    schedule_notification,
-    update_template,
-    upsert_channel,
-)
-from .services.admin_personalization_client import (
-    get_personalization_archetypes,
-    get_personalization_summary,
-    get_player_debug,
-    get_player_profile,
-    get_recommendation_performance,
-    list_rules,
-    recalculate_player,
-    reset_player,
-    upsert_rule,
-)
-from .services.admin_event_queue_client import reprocess_event_queue
-from .services.admin_powerups_client import get_powerup_state, grant_powerup
-from .services.admin_skills_client import seed_skills
-from .services.admin_config_client import get_admin_config, update_feature_flags
-from .services.admin_escalation_client import run_escalation
-from .services.admin_player_transactions_client import (
-    dispute_player_transaction,
-    get_player_transaction_history,
-    reverse_player_transaction,
-)
-from .services.admin_season_points_client import apply_season_points, get_season_points_history
-from .services.admin_matches_client import get_matches
 from .services.admin_users_client import (
     ban_admin_user,
     get_admin_user,
@@ -133,8 +176,15 @@ from .services.charting import (
     top_skus_chart,
 )
 from .services.minio_diagnostics import get_minio_diagnostics
-from .services.mongodb_diagnostics import collection_warnings, find_mongodb_collection, get_mongodb_diagnostics
-from .services.upstream_error import build_upstream_http_error_response, build_upstream_unavailable_response
+from .services.mongodb_diagnostics import (
+    collection_warnings,
+    find_mongodb_collection,
+    get_mongodb_diagnostics,
+)
+from .services.upstream_error import (
+    build_upstream_http_error_response,
+    build_upstream_unavailable_response,
+)
 
 STATUS_CLASSES = {
     "healthy": "status-ok",
@@ -2712,7 +2762,8 @@ def _fmt_utc(dt_str: str | None) -> str:
 def _flash_sale_status(sale: dict) -> str:
     if not sale.get("isActive"):
         return "cancelled"
-    from datetime import datetime, timezone as _tz
+    from datetime import datetime
+    from datetime import timezone as _tz
     now = datetime.now(_tz.utc)
     try:
         ends = datetime.fromisoformat((sale.get("endsAtUtc") or "").replace("Z", "+00:00"))
@@ -2733,7 +2784,8 @@ def _flash_sale_status(sale: dict) -> str:
 @operator_login_required
 @require_permission("store:read")
 def store_flash_sales_view(request):
-    from datetime import datetime, timezone as _tz, timedelta
+    from datetime import datetime, timedelta
+    from datetime import timezone as _tz
     access_token = request.session.get(SESSION_ACCESS_TOKEN_KEY)
     show_all = request.GET.get("showAll") == "true"
     context = {

@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx
 from django.conf import settings
+
 from .http_client_pool import get_http_client
 
 

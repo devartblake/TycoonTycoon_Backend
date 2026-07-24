@@ -6,7 +6,6 @@ from typing import Any
 import httpx
 from django.conf import settings
 
-
 # Global HTTP client with connection pooling
 _http_client: httpx.Client | None = None
 _kms_session_cache: dict[str, Any] = {}

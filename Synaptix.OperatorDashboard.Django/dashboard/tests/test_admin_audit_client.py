@@ -2,7 +2,10 @@ from unittest import mock
 
 from django.test import SimpleTestCase, override_settings
 
-from dashboard.services.admin_audit_client import get_security_audit, get_security_audit_event
+from dashboard.services.admin_audit_client import (
+    get_security_audit,
+    get_security_audit_event,
+)
 
 
 class AdminAuditClientTests(SimpleTestCase):
