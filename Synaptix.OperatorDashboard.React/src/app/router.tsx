@@ -28,6 +28,8 @@ const PlayerProfilePage = React.lazy(() => import('@/features/moderation/pages/p
 const ModerationLogsPage = React.lazy(() => import('@/features/moderation/pages/logs'))
 const ModerationLogDetailPage = React.lazy(() => import('@/features/moderation/pages/log-detail'))
 const PlayerEconomyPage = React.lazy(() => import('@/features/economy/pages/player-economy'))
+const PaymentsPage = React.lazy(() => import('@/features/payments/pages/payments'))
+const PaymentReconciliationPage = React.lazy(() => import('@/features/payments/pages/reconciliation'))
 const QuestionsQueuePage = React.lazy(() => import('@/features/content/pages/questions-queue'))
 const LifecyclePage = React.lazy(() => import('@/features/operations/pages/lifecycle'))
 const StoreManagementPage = React.lazy(() => import('@/features/store/pages/store-management'))
@@ -192,6 +194,20 @@ export const router = createBrowserRouter([
           {
             path: 'player-transactions',
             element: <PlayerEconomyPage />,
+          },
+        ],
+      },
+      // Payments section
+      {
+        path: 'payments',
+        children: [
+          {
+            index: true,
+            element: <PaymentsPage />,
+          },
+          {
+            path: 'reconciliation',
+            element: <PaymentReconciliationPage />,
           },
         ],
       },

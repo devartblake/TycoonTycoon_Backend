@@ -3,7 +3,7 @@ import { afterEach, beforeAll, afterAll, vi } from 'vitest'
 const hasDom = typeof window !== 'undefined'
 
 if (hasDom) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   const { cleanup } = require('@testing-library/react')
   require('@testing-library/jest-dom')
 
