@@ -564,6 +564,36 @@ class ApiClient {
     return response.data; // { sessionId, checkoutUrl, currency, unitAmount, totalAmount, sku, quantity, publishableKey }
   }
 
+  // PayPal one-time checkout (create order), via the KMS secure channel.
+  // The response may include a crypto-funding disclosure the user must see
+  // before approval when PayPal offers a crypto funding source.
+  async createPayPalOrder(sku: string, quantity: number = 1) {
+    const playerId = this.requirePlayerId();
+    const origin = window.location.origin;
+    const response = await this.securePost('/store/payments/paypal/order', {
+      playerId,
+      sku,
+      quantity,
+      returnUrl: `${origin}/store/checkout/paypal/return`,
+      cancelUrl: `${origin}/store/checkout/cancelled`,
+    });
+    // { orderId, status, approveUrl, currency, unitAmount, totalAmount, sku, quantity,
+    //   clientId, cryptoFundingSourceAvailable, cryptoDisclosure }
+    return response.data;
+  }
+
+  // Captures an approved PayPal order after the approval redirect returns.
+  // A non-COMPLETED status with a null transactionId means the payment is not
+  // finalized yet (the async webhook may still fulfill it).
+  async capturePayPalOrder(orderId: string) {
+    const playerId = this.requirePlayerId();
+    const response = await this.securePost('/store/payments/paypal/capture', {
+      playerId,
+      orderId,
+    });
+    return response.data; // { orderId, status, captureId, transactionId }
+  }
+
   // Authentication endpoints
   async login(email: string, password: string) {
     const response = await this.post('/auth/login', {
