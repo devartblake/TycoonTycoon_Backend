@@ -285,13 +285,23 @@ namespace Synaptix.Backend.Api.Features.Auth
         }
 
         private static async Task<IResult> HandleTokenRefresh(
-            [FromBody] RefreshRequest request, 
-            IAuthService authService, 
+            [FromBody] RefreshRequest request,
+            HttpContext httpContext,
+            IAuthService authService,
             CancellationToken cancellation)
         {
             try
             {
-                var authData = await authService.RefreshAsync(request.RefreshToken);
+                // If the secure channel carried an authenticated subject, bind the
+                // refresh to it so a stolen token can't be rotated over another
+                // subject's channel. Anonymous refresh (no valid bearer) passes null.
+                var subjectClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? httpContext.User.FindFirst("sub")?.Value;
+                Guid? expectedSubject = Guid.TryParse(subjectClaim, out var parsedSubject)
+                    ? parsedSubject
+                    : null;
+
+                var authData = await authService.RefreshAsync(request.RefreshToken, expectedSubject);
                 
                 var refreshResult = new LoginResponse(
                     authData.AccessToken,

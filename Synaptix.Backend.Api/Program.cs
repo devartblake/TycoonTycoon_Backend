@@ -200,6 +200,7 @@ builder.Services.AddScoped<RewardClaimService>();
 // Register IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminNotificationDispatchJob>();
+builder.Services.AddScoped<Synaptix.Backend.Application.Auth.RefreshTokenCleanupJob>();
 
 // Observability + Serilog + OTEL
 builder.AddObservability();
@@ -874,6 +875,12 @@ if (hangfireEnabled)
             "season-tiebreaker-expiry",
             job => job.RunAsync(CancellationToken.None),
             "0 * * * *" // hourly; expiry windows are measured in hours
+        );
+
+        RecurringJob.AddOrUpdate<Synaptix.Backend.Application.Auth.RefreshTokenCleanupJob>(
+            "refresh-token-cleanup",
+            job => job.RunAsync(CancellationToken.None),
+            "30 3 * * *" // daily, off-peak; reaps expired/revoked refresh tokens
         );
 
         app.Logger.LogInformation("✅ Hangfire recurring jobs configured");

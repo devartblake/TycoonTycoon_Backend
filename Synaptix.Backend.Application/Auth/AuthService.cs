@@ -47,8 +47,8 @@ namespace Synaptix.Backend.Application.Auth
         public Task<AuthResult> LoginAsync(string email, string password, string deviceId)
             => LoginInternalAsync(email, password, deviceId, clientType: "user");
 
-        public Task<AuthResult> RefreshAsync(string refreshTokenString)
-            => RefreshInternalAsync(refreshTokenString, expectedClientType: "user");
+        public Task<AuthResult> RefreshAsync(string refreshTokenString, Guid? expectedSubject = null)
+            => RefreshInternalAsync(refreshTokenString, expectedClientType: "user", expectedSubject: expectedSubject);
 
         public Task<AuthResult> AdminLoginAsync(string email, string password, string deviceId)
             => LoginInternalAsync(email, password, deviceId, clientType: "admin");
@@ -368,18 +368,77 @@ namespace Synaptix.Backend.Application.Auth
             return BuildAuthResult(authenticatedUser, jwtToken, refreshToken: deviceRefreshToken);
         }
 
+        // OAuth2 refresh-token reuse detection: a rotated (already-revoked) token
+        // presented again is treated as replay. A short grace window absorbs benign
+        // client retries (a client that got a network drop after we rotated but
+        // before it stored the new token); reuse outside the window is treated as a
+        // compromised family and every active token for that user+device is revoked.
+        private static readonly TimeSpan RefreshReuseGraceWindow = TimeSpan.FromSeconds(30);
+
         private async Task<AuthResult> RefreshInternalAsync(
-            string refreshTokenString, string expectedClientType)
+            string refreshTokenString, string expectedClientType, Guid? expectedSubject = null)
         {
+            // Match regardless of revoked state so we can distinguish "unknown token"
+            // from "known but already-rotated token" (reuse).
             var storedToken = await _database.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.Token == refreshTokenString && !rt.IsRevoked);
+                .FirstOrDefaultAsync(rt => rt.Token == refreshTokenString);
 
             var currentTime = DateTimeOffset.UtcNow;
-            if (storedToken == null || storedToken.ExpiresAt < currentTime)
+            if (storedToken == null)
+                throw new UnauthorizedAccessException("Token refresh failed");
+
+            if (storedToken.IsRevoked)
+            {
+                var revokedAt = storedToken.RevokedAt ?? currentTime;
+                var withinGrace = currentTime - revokedAt <= RefreshReuseGraceWindow;
+
+                if (!withinGrace)
+                {
+                    // Reuse of a rotated token past the grace window => likely theft.
+                    // Revoke the entire active family for this user+device.
+                    var family = await _database.RefreshTokens
+                        .Where(rt => rt.UserId == storedToken.UserId
+                            && rt.DeviceId == storedToken.DeviceId
+                            && !rt.IsRevoked)
+                        .ToListAsync();
+
+                    foreach (var token in family)
+                        token.Revoke();
+
+                    if (family.Count > 0)
+                        await _database.SaveChangesAsync();
+
+                    _logger.LogWarning(
+                        "Refresh-token reuse detected for user {UserId} device {DeviceId}; revoked {Count} active token(s) in family.",
+                        storedToken.UserId, storedToken.DeviceId, family.Count);
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Refresh-token retry within grace window for user {UserId} device {DeviceId}; not treating as reuse.",
+                        storedToken.UserId, storedToken.DeviceId);
+                }
+
+                throw new UnauthorizedAccessException("Token refresh failed");
+            }
+
+            if (storedToken.ExpiresAt < currentTime)
                 throw new UnauthorizedAccessException("Token refresh failed");
 
             if (!string.Equals(storedToken.ClientType, expectedClientType, StringComparison.OrdinalIgnoreCase))
                 throw new UnauthorizedAccessException("Token refresh failed");
+
+            // Channel-subject binding: when the request arrived over a secure channel
+            // bound to an authenticated subject, the refresh token must belong to that
+            // same subject. Prevents replaying a stolen refresh token over an
+            // attacker's own channel. Skipped for anonymous refresh (expectedSubject null).
+            if (expectedSubject.HasValue && storedToken.UserId != expectedSubject.Value)
+            {
+                _logger.LogWarning(
+                    "Refresh subject mismatch: token owner {TokenOwner} does not match channel subject {ChannelSubject}.",
+                    storedToken.UserId, expectedSubject.Value);
+                throw new UnauthorizedAccessException("Token refresh failed");
+            }
 
             var tokenOwner = await _database.Users
                 .AsNoTracking()

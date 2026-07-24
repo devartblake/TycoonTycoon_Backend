@@ -13,6 +13,14 @@ public sealed class SecureSessionService(
     private const string ProtocolVersion = "syn-sec-v1";
     private static readonly TimeSpan SessionTtl = TimeSpan.FromMinutes(30);
 
+    // Hard ceiling on how long a single secure session may live, regardless of
+    // how often it is renewed. Renew extends the 30-min sliding TTL, but a
+    // session older than this is retired so a long-lived (or compromised)
+    // channel can't be kept alive indefinitely — the client must perform a fresh
+    // handshake. Sessions also self-evict from the cache at their sliding TTL;
+    // this bounds the *renewable* lifetime, which eviction alone does not.
+    private static readonly TimeSpan MaxSessionLifetime = TimeSpan.FromHours(12);
+
     // Shared hybrid engine for the live session path (server is always the KEM responder).
     private static readonly HybridKeyExchange Hybrid = new();
 
@@ -130,6 +138,15 @@ public sealed class SecureSessionService(
 
         if (existing.DeviceId != deviceId)
             throw new UnauthorizedAccessException("Session device mismatch.");
+
+        // Enforce the absolute lifetime ceiling: retire (delete) sessions that
+        // have been alive longer than MaxSessionLifetime instead of renewing them.
+        if (DateTimeOffset.UtcNow - existing.CreatedAtUtc >= MaxSessionLifetime)
+        {
+            await store.DeleteAsync(sessionId, ct);
+            throw new InvalidOperationException(
+                "Session exceeded maximum lifetime; start a new session.");
+        }
 
         var renewed = existing with { ExpiresAtUtc = DateTimeOffset.UtcNow.Add(SessionTtl) };
         await store.SaveAsync(renewed, ct);
