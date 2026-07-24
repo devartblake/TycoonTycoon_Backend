@@ -3,7 +3,10 @@ from unittest.mock import MagicMock, patch
 import httpx
 from django.test import TestCase, override_settings
 
-from dashboard.services.admin_economy_client import create_economy_transaction, get_economy_history
+from dashboard.services.admin_economy_client import (
+    create_economy_transaction,
+    get_economy_history,
+)
 
 DOTNET_BASE = "http://backend-api:5000"
 SETTINGS = {

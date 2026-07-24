@@ -8,8 +8,15 @@ from django.urls import reverse
 from django.utils import timezone
 
 from dashboard.models import OperatorSavedViewAuditEvent, ProbeCheckRecord
-from dashboard.services.admin_auth_client import AdminAuthConfigurationError, KmsUnavailableError
-from dashboard.views import _build_probe_history_context, _format_ago, _normalize_audit_rows
+from dashboard.services.admin_auth_client import (
+    AdminAuthConfigurationError,
+    KmsUnavailableError,
+)
+from dashboard.views import (
+    _build_probe_history_context,
+    _format_ago,
+    _normalize_audit_rows,
+)
 
 
 class OperatorDetailDrilldownViewsTests(TestCase):

@@ -7,7 +7,6 @@ from django.conf import settings
 
 from .admin_auth_client import _headers
 
-
 VALID_SETUP_SECTIONS = {"status", "readiness", "services", "seeds", "validation", "history"}
 
 

@@ -7,7 +7,6 @@ import plotly.io as pio
 from django.utils.safestring import SafeString, mark_safe
 from plotly.offline import get_plotlyjs
 
-
 _PLOT_CONFIG = {
     "displayModeBar": False,
     "responsive": True,

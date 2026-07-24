@@ -8,6 +8,7 @@ class DashboardConfig(AppConfig):
     def ready(self):
         """Initialize app and register signal handlers."""
         import atexit
+
         from .services.http_client_pool import close_http_client
 
         # Close HTTP client on app shutdown

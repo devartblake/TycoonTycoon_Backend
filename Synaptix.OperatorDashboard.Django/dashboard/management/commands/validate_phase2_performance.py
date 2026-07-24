@@ -7,12 +7,11 @@ Usage:
     python manage.py validate_phase2_performance --quick
 """
 
-import time
 import subprocess
+import time
 
-from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
-
+from django.core.management.base import BaseCommand, CommandError
 
 
 class Command(BaseCommand):
@@ -199,9 +198,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.HTTP_INFO("Test 3: KMS Session Caching"))
 
         from dashboard.services.http_client_pool import (
-            get_kms_session,
-            clear_kms_session,
             _kms_session_cache,
+            clear_kms_session,
+            get_kms_session,
         )
 
         # Clear cache
