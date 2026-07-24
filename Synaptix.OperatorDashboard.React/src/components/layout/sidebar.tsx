@@ -94,6 +94,8 @@ function buildNavItems(): NavItem[] {
       children: [
         { label: 'Player Economy', href: '/economy/player' },
         { label: 'Transactions', href: '/economy/player-transactions' },
+        { label: 'Payments', href: '/payments' },
+        { label: 'Reconciliation', href: '/payments/reconciliation' },
       ],
     },
     {

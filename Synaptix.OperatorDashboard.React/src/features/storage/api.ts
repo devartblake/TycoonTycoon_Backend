@@ -54,7 +54,7 @@ function authHeader(): Record<string, string> {
 }
 
 function normalizePath(path: string): string {
-  let p = path.replace(/\\/g, '/').replace(/^\/+/, '')
+  const p = path.replace(/\\/g, '/').replace(/^\/+/, '')
   if (p && !p.endsWith('/')) {
     // treat as prefix if it looks like a folder navigation
   }
