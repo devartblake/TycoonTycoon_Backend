@@ -1301,100 +1301,135 @@ Do not place actual secrets in `.env.example`.
 
 ## 19. Implementation Backlog
 
-## Epic A: Disable direct on-chain production functionality
+> **Status audit — 2026-07-24 (code-verified).** Checkboxes below reflect the
+> actual state of the codebase, not the original plan intent. `[x]` = present in
+> code; `[ ]` = not implemented; a trailing `— note` records partial coverage or
+> where the implementation diverged from the plan's naming. Net: the **managed
+> checkout / fulfillment / reconciliation / refund** path (Epics D–G) is largely
+> built; the **direct-crypto teardown** (Epic A), the **unified provider
+> abstraction** (Epic C), and the **security/legal** epics (H, I) are mostly
+> outstanding. Epic B was delivered with a leaner data model than specified.
 
-- [ ] Disable `.NET` crypto feature flags.
-- [ ] Remove Python crypto service from production deployment.
-- [ ] Block port 8300 from public access.
-- [ ] Remove treasury-key deployment requirements.
-- [ ] Hide wallet-linking UI.
-- [ ] Hide withdrawal UI.
-- [ ] Hide staking UI.
-- [ ] Hide crypto prize-pool UI.
+## Epic A: Disable direct on-chain production functionality — ❌ NOT STARTED
+
+> Managed-payments work proceeded in parallel without executing this Phase 0
+> teardown. `Crypto:Enabled` is still `true` in `appsettings.json` and the
+> `/crypto/*` routes (link-wallet, withdraw, stake, unstake) are live (config-
+> and secure-channel-gated, admin approval on withdrawals). Client crypto
+> surfaces are gated behind account upgrade, not removed.
+
+- [ ] Disable `.NET` crypto feature flags. — `Crypto:Enabled: true` in appsettings.
+- [ ] Remove Python crypto service from production deployment. — still present.
+- [ ] Block port 8300 from public access. — infra, not addressed.
+- [ ] Remove treasury-key deployment requirements. — not addressed.
+- [ ] Hide wallet-linking UI. — client route gated behind account upgrade, endpoint active.
+- [ ] Hide withdrawal UI. — same (gated, not removed).
+- [ ] Hide staking UI. — same (gated, not removed).
+- [ ] Hide crypto prize-pool UI. — same (gated, not removed).
 - [ ] Add release documentation.
 - [ ] Add deployment assertions.
 
-## Epic B: Payment domain
+## Epic B: Payment domain — ✅ DONE (leaner model than specified)
 
-- [ ] Create `PaymentOrder`.
-- [ ] Create `PaymentEvent`.
-- [ ] Create `PaymentRefund`.
-- [ ] Create `PaymentFulfillment`.
-- [ ] Add EF Core configurations.
-- [ ] Add migrations.
-- [ ] Add unique indexes.
-- [ ] Add repositories.
-- [ ] Add concurrency control.
+> Delivered as `PaymentCheckoutAttempt` + `PaymentReconciliationIssue` plus the
+> existing immutable `PlayerTransaction` ledger, rather than the four entities
+> named here. The four named entities were **not** created; the functional
+> outcome (persist payment state, refunds, fulfillment, reconciliation) is met.
 
-## Epic C: Provider abstraction
+- [ ] Create `PaymentOrder`. — replaced by `PaymentCheckoutAttempt`.
+- [ ] Create `PaymentEvent`. — covered by `PlayerTransaction` + deterministic event ids.
+- [ ] Create `PaymentRefund`. — refunds recorded as a `{provider}-refund` `PlayerTransaction` + `MarkRefunded`.
+- [ ] Create `PaymentFulfillment`. — covered by `PlayerTransaction` + entitlement grants.
+- [x] Add EF Core configurations. — for both new entities.
+- [x] Add migrations. — `20260724134710_AddPaymentReconciliation`.
+- [x] Add unique indexes. — unique `(Provider, ProviderRef)` on `PaymentCheckoutAttempt`.
+- [ ] Add repositories. — access is via `IAppDb` (EF context) directly, no repository layer.
+- [x] Add concurrency control. — idempotency via deterministic `EventId` + the unique index.
 
-- [ ] Create `IPaymentProvider`.
-- [ ] Create provider resolver/factory.
-- [ ] Create fake provider for tests.
-- [ ] Add provider-neutral models.
-- [ ] Add error normalization.
-- [ ] Add provider availability checks.
+## Epic C: Provider abstraction — ⚠️ PARTIAL (per-provider gateways, no unified abstraction)
 
-## Epic D: Checkout
+> Implemented as two provider-specific interfaces (`IPayPalPaymentGateway`,
+> `IStripePaymentGateway`); endpoints branch on a provider string. There is no
+> unified `IPaymentProvider` / resolver / provider-neutral model layer.
 
-- [ ] Add checkout endpoint.
-- [ ] Resolve price server-side.
-- [ ] Add idempotency.
-- [ ] Add return and cancel URL validation.
-- [ ] Add payment status endpoint.
-- [ ] Add client contracts.
-- [ ] Add API documentation.
+- [ ] Create `IPaymentProvider`. — separate PayPal/Stripe gateways instead.
+- [ ] Create provider resolver/factory. — endpoints switch on the provider string.
+- [x] Create fake provider for tests. — fake gateways in Store*/AdminPayments endpoint tests.
+- [ ] Add provider-neutral models. — provider-specific DTOs.
+- [ ] Add error normalization. — only the shared `ApiResponses.Error` envelope.
+- [x] Add provider availability checks. — `GET /store/system/status` reports enabled providers.
 
-## Epic E: PayPal
+## Epic D: Checkout — ✅ DONE (minor gaps)
 
-- [ ] Add OAuth token client.
-- [ ] Add order creation.
-- [ ] Add order retrieval.
-- [ ] Add capture status parsing.
-- [ ] Add webhook verification.
-- [ ] Add refund support.
-- [ ] Add sandbox configuration.
-- [ ] Add retry policies.
-- [ ] Add circuit breaker.
-- [ ] Add timeout handling.
+- [x] Add checkout endpoint. — Stripe `/store/payments/checkout/session`, PayPal `/store/payments/paypal/order`.
+- [x] Resolve price server-side. — from `StoreItems`.
+- [x] Add idempotency. — deterministic `CreateDeterministicGuid` event ids.
+- [x] Add return and cancel URL validation. — absolute-URI validation.
+- [ ] Add payment status endpoint. — no per-payment status GET (capture returns status; subscription status exists).
+- [x] Add client contracts. — mobile (Flutter) + web-companion clients wired.
+- [ ] Add API documentation. — Swagger tags only, no dedicated payment API doc.
 
-## Epic F: Fulfillment
+## Epic E: PayPal — ✅ DONE except HTTP resilience
 
-- [ ] Add entitlement fulfillment.
-- [ ] Add closed-loop currency fulfillment.
-- [ ] Add immutable ledger integration.
-- [ ] Add duplicate protection.
-- [ ] Add transactional processing.
-- [ ] Add retry workflow.
-- [ ] Add compensation workflow.
+> `PayPalPaymentGateway` covers the API surface. Gap: it uses a default
+> `IHttpClientFactory.CreateClient()` with no resilience handler, so there are
+> no retry/circuit-breaker/timeout policies on the PayPal HTTP calls.
 
-## Epic G: Reconciliation and admin
+- [x] Add OAuth token client. — `/v1/oauth2/token`.
+- [x] Add order creation. — `CreateOrderAsync`.
+- [x] Add order retrieval. — `GetOrderAsync`.
+- [x] Add capture status parsing. — `CaptureOrderAsync`.
+- [x] Add webhook verification. — `VerifyWebhookAsync`, called on the webhook route.
+- [x] Add refund support. — `RefundCaptureAsync`.
+- [x] Add sandbox configuration. — `PayPalOptions.BaseUrl` (sandbox default).
+- [ ] Add retry policies. — default HttpClient, no resilience handler.
+- [ ] Add circuit breaker. — not configured.
+- [ ] Add timeout handling. — no per-call timeout set.
 
-- [ ] Add scheduled reconciliation.
-- [ ] Add mismatch categories.
-- [ ] Add admin payment search.
-- [ ] Add manual reconcile.
-- [ ] Add retry fulfillment.
-- [ ] Add controlled refund.
-- [ ] Add financial audit log.
-- [ ] Add operator runbook.
+## Epic F: Fulfillment — ✅ DONE
 
-## Epic H: Security
+- [x] Add entitlement fulfillment. — `IEntitlementService.GrantAsync`.
+- [x] Add closed-loop currency fulfillment. — grants via `StoreItem.ItemType`/`GrantQuantity`.
+- [x] Add immutable ledger integration. — `PlayerTransaction`.
+- [x] Add duplicate protection. — deterministic event ids + the PayPal double-fulfillment fix.
+- [x] Add transactional processing. — `SaveChangesAsync` within the request.
+- [x] Add retry workflow. — admin `retry-fulfillment` endpoint.
+- [x] Add compensation workflow. — full refund revokes granted entitlements.
 
-- [ ] Store secrets in a managed secret system.
-- [ ] Add webhook replay protection.
+## Epic G: Reconciliation and admin — ✅ DONE except runbook
+
+> Operator UI added in the React dashboard (`features/payments`).
+
+- [x] Add scheduled reconciliation. — daily Hangfire `PaymentReconciliationJob`.
+- [x] Add mismatch categories. — `ProviderCapturedFulfillmentMissing`, `AmountMismatch`, `CurrencyMismatch`.
+- [x] Add admin payment search. — `GET /admin/payments`.
+- [x] Add manual reconcile. — `POST /admin/payments/{id}/reconcile`.
+- [x] Add retry fulfillment. — `POST /admin/payments/{id}/retry-fulfillment`.
+- [x] Add controlled refund. — `POST /admin/payments/{id}/refund` (entitlement reversal on full refund).
+- [x] Add financial audit log. — `AdminAuditLogger` on every payment action.
+- [ ] Add operator runbook. — no payments-specific runbook doc yet.
+
+## Epic H: Security — ⚠️ MOSTLY OUTSTANDING
+
+> Note: the payment endpoints ride the existing KMS secure channel
+> (`RequireSecureChannel`) + admin ops-key/role gating, which covers transport
+> and admin auth, but the payment-specific security items below are largely not
+> addressed.
+
+- [ ] Store secrets in a managed secret system. — provider secrets are env-var placeholders, not a vault.
+- [x] Add webhook replay protection. — signature verification + idempotent deterministic event ids make replays harmless.
 - [ ] Add administrative MFA policy.
 - [ ] Add least-privilege provider roles.
-- [ ] Add payment-specific rate limits.
+- [ ] Add payment-specific rate limits. — no `RequireRateLimiting` on payment routes.
 - [ ] Add structured redaction.
-- [ ] Add security tests.
+- [x] Add security tests. — `StorePayPalEndpointsTests`, `StoreStripePaymentEndpointsTests`, `AdminPaymentsEndpointsTests`.
 - [ ] Complete threat model.
 
-## Epic I: Legal and policy
+## Epic I: Legal and policy — ❌ NOT STARTED (non-engineering, except in-app disclosure)
 
 - [ ] Update Terms of Service.
 - [ ] Update Privacy Policy.
-- [ ] Add virtual-currency disclosures.
+- [ ] Add virtual-currency disclosures. — in-app PayPal crypto-funding disclosure string exists; no published policy.
 - [ ] Add refund policy.
 - [ ] Add minor-purchase controls.
 - [ ] Review contest and prize mechanics.
@@ -1405,26 +1440,28 @@ Do not place actual secrets in `.env.example`.
 
 ## 20. Definition of Done
 
-The managed crypto payment capability is production-ready only when all of the following are true:
+The managed crypto payment capability is production-ready only when all of the
+following are true. **Status as of the 2026-07-24 audit** (for the managed
+PayPal/Stripe path):
 
-- Synaptix does not hold customer crypto.
-- Synaptix does not hold blockchain private keys.
-- Synaptix does not sign blockchain transactions.
-- Synaptix receives USD settlement.
-- All products are priced server-side in USD.
-- Client callbacks cannot grant entitlements.
-- All webhook signatures are verified.
-- Duplicate events are harmless.
-- Duplicate fulfillment is prevented by database constraints.
-- Refunds are controlled and auditable.
-- Daily reconciliation is operational.
-- Monitoring and alerting are configured.
-- Terms and disclosures are published.
-- Direct withdrawal and staking routes are disabled.
-- Closed-loop credits are non-transferable and non-redeemable.
-- Security testing is complete.
-- Provider sandbox testing is complete.
-- Legal review is complete for the final product configuration.
+- [x] Synaptix does not hold customer crypto. — managed path settles in USD.
+- [x] Synaptix does not hold blockchain private keys. — managed path; (caveat: the still-enabled direct-crypto service is separate — see Epic A).
+- [x] Synaptix does not sign blockchain transactions. — managed path.
+- [x] Synaptix receives USD settlement.
+- [x] All products are priced server-side in USD. — from `StoreItems`.
+- [x] Client callbacks cannot grant entitlements. — fulfillment is server-side (capture/webhook).
+- [x] All webhook signatures are verified. — PayPal `VerifyWebhookAsync`; Stripe `EventUtility.ConstructEvent` (caveat: Stripe falls back to unverified parse if no `WebhookSecret` configured).
+- [x] Duplicate events are harmless. — deterministic event ids.
+- [x] Duplicate fulfillment is prevented by database constraints. — unique `(Provider, ProviderRef)` + unique `PlayerTransaction.EventId`.
+- [x] Refunds are controlled and auditable. — admin refund endpoint + `AdminAuditLogger`.
+- [x] Daily reconciliation is operational. — Hangfire `PaymentReconciliationJob`.
+- [ ] Monitoring and alerting are configured. — payment-specific metrics/alerts not verified.
+- [ ] Terms and disclosures are published. — only the in-app crypto-funding disclosure exists.
+- [ ] Direct withdrawal and staking routes are disabled. — **not disabled**; `Crypto:Enabled: true`, routes live (Epic A).
+- [x] Closed-loop credits are non-transferable and non-redeemable. — coins/diamonds are non-redeemable by design.
+- [ ] Security testing is complete. — endpoint tests exist; threat model / payment security suite not complete (Epic H).
+- [ ] Provider sandbox testing is complete. — sandbox config present; end-to-end sandbox sign-off not recorded.
+- [ ] Legal review is complete for the final product configuration.
 
 ---
 
